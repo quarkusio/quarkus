@@ -1,5 +1,6 @@
 package io.quarkus.it.resteasy.elytron;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -8,6 +9,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
+
+import io.quarkus.security.Authenticated;
 
 @Path("/")
 public class RootResource {
@@ -32,4 +35,19 @@ public class RootResource {
         }
         return "get success";
     }
+
+    @GET
+    @Path("/secure")
+    @Authenticated
+    public String getSecure() {
+        return "secure";
+    }
+
+    @GET
+    @Path("/user")
+    @RolesAllowed("user")
+    public String user(@Context SecurityContext sec) {
+        return sec.getUserPrincipal().getName();
+    }
+
 }

@@ -26,6 +26,16 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -33,15 +43,22 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-development-mode</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-platform-descriptor-json</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jprocesses</groupId>
+            <artifactId>jProcesses</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
+            <artifactId>quarkus-devmode-test-utils</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
@@ -59,11 +76,13 @@
                                 <argument>clean</argument>
                                 <argument>${gradle.task}</argument>
                                 <argument>-Pdescription=${project.description}</argument>
+                                <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
                                 <argument>-S</argument>
                                 <argument>--stacktrace</argument>
+                                <argument>--no-daemon</argument>
                             </arguments>
                             <environmentVariables>
-                                <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>
+                                <MAVEN_REPO_LOCAL>${settings.localRepository}</MAVEN_REPO_LOCAL>
                                 <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
                             </environmentVariables>
                             <skip>${skip.gradle.build}</skip>
@@ -142,10 +161,45 @@
             </properties>
         </profile>
         <profile>
+            <id>maven.test.skip</id>
+            <activation>
+                <property>
+                    <name>maven.test.skip</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
+            </properties>
+        </profile>
+        <profile>
             <id>basic-test-suite</id>
             <activation>
                 <property>
                     <name>basicTests</name>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
+            </properties>
+        </profile>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
+            </properties>
+        </profile>
+        <profile>
+            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+            <id>quick-build-ci</id>
+            <activation>
+                <property>
+                    <name>quickly-ci</name>
                 </property>
             </activation>
             <properties>

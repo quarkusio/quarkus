@@ -52,6 +52,7 @@ final class Execution {
         this.multis = new ConcurrentHashMap<>(builder.getInitialMulti());
         this.finalIds = finalIds;
         final EnhancedQueueExecutor.Builder executorBuilder = new EnhancedQueueExecutor.Builder();
+        executorBuilder.setRegisterMBean(false);
         executorBuilder.setCorePoolSize(8).setMaximumPoolSize(1024);
         executorBuilder.setExceptionHandler(JBossExecutors.loggingExceptionHandler());
         executorBuilder.setThreadFactory(new JBossThreadFactory(new ThreadGroup("build group"), Boolean.FALSE, null, "build-%t",
@@ -68,7 +69,7 @@ final class Execution {
     }
 
     BuildContext getBuildContext(StepInfo stepInfo) {
-        return contextCache.computeIfAbsent(stepInfo, si -> new BuildContext(si, this));
+        return contextCache.computeIfAbsent(stepInfo, si -> new BuildContext(chain.getClassLoader(), si, this));
     }
 
     void removeBuildContext(StepInfo stepInfo, BuildContext buildContext) {

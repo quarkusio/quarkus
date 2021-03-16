@@ -7,7 +7,7 @@
     <version>0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <properties>
-        <quarkus.version>0.19.0</quarkus.version>
+        <quarkus.version>1.6.0.Final</quarkus.version>
         <rest-assured.version>3.3.0</rest-assured.version>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
     </properties>
@@ -21,7 +21,7 @@
         <dependencies>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bom-deployment</artifactId>
+                <artifactId>quarkus-bom</artifactId>
                 <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>

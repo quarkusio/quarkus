@@ -15,8 +15,6 @@ import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.MappedSuperclass;
 
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -51,14 +49,14 @@ final class JpaJandexScavenger {
 
     private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
 
-    private final List<ParsedPersistenceXmlDescriptor> explicitDescriptors;
+    private final List<PersistenceXmlDescriptorBuildItem> explicitDescriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     private final IndexView indexView;
     private final Set<String> nonJpaModelClasses;
     private final Set<String> ignorableNonIndexedClasses;
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<ParsedPersistenceXmlDescriptor> explicitDescriptors,
+            List<PersistenceXmlDescriptorBuildItem> explicitDescriptors,
             IndexView indexView,
             Set<String> nonJpaModelClasses,
             Set<String> ignorableNonIndexedClasses) {
@@ -77,6 +75,9 @@ final class JpaJandexScavenger {
         final Set<String> javaTypeCollector = new HashSet<>();
         final Set<DotName> unindexedClasses = new TreeSet<>();
 
+        for (DotName packageAnnotation : HibernateOrmAnnotations.PACKAGE_ANNOTATIONS) {
+            enlistJPAModelAnnotatedPackages(indexView, domainObjectCollector, packageAnnotation);
+        }
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector, JPA_ENTITY,
                 unindexedClasses);
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector, EMBEDDABLE,
@@ -86,10 +87,10 @@ final class JpaJandexScavenger {
         enlistEmbeddedsAndElementCollections(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector,
                 unindexedClasses);
 
-        for (PersistenceUnitDescriptor pud : explicitDescriptors) {
+        for (PersistenceXmlDescriptorBuildItem pud : explicitDescriptors) {
+            final List<String> managedClassNames = pud.getDescriptor().getManagedClassNames();
             enlistExplicitClasses(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector,
-                    pud.getManagedClassNames(),
-                    unindexedClasses);
+                    managedClassNames, unindexedClasses);
         }
 
         domainObjectCollector.registerAllForReflection(reflectiveClass);
@@ -172,6 +173,30 @@ final class JpaJandexScavenger {
         }
     }
 
+    private void enlistJPAModelAnnotatedPackages(IndexView index, JpaEntitiesBuildItem domainObjectCollector, DotName dotName) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            if (annotation.target().kind() != AnnotationTarget.Kind.CLASS) {
+                continue; // Annotation on field, method, etc.
+            }
+            ClassInfo klass = annotation.target().asClass();
+            if (!klass.simpleName().equals("package-info")) {
+                continue; // Annotation on an actual class, not a package.
+            }
+            DotName targetDotName = klass.name();
+            // ignore non-jpa model classes that we think belong to JPA
+            if (nonJpaModelClasses.contains(targetDotName.toString())) {
+                continue;
+            }
+            collectPackage(domainObjectCollector, klass);
+        }
+    }
+
     private void enlistJPAModelClasses(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
             Set<String> enumTypeCollector, Set<String> javaTypeCollector, DotName dotName, Set<DotName> unindexedClasses) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
@@ -242,6 +267,12 @@ final class JpaJandexScavenger {
         }
     }
 
+    private static void collectPackage(JpaEntitiesBuildItem domainObjectCollector, ClassInfo classOrPackageInfo) {
+        String classOrPackageInfoName = classOrPackageInfo.name().toString();
+        String packageName = classOrPackageInfoName.substring(0, classOrPackageInfoName.lastIndexOf('.'));
+        domainObjectCollector.addModelPackage(packageName);
+    }
+
     private static void collectDomainObject(JpaEntitiesBuildItem domainObjectCollector, ClassInfo modelClass) {
         if (modelClass.classAnnotation(JPA_ENTITY) != null) {
             domainObjectCollector.addEntityClass(modelClass.name().toString());
@@ -273,7 +304,8 @@ final class JpaJandexScavenger {
     private static boolean isIgnored(DotName classDotName) {
         String className = classDotName.toString();
         if (className.startsWith("java.util.") || className.startsWith("java.lang.")
-                || className.startsWith("org.hibernate.engine.spi.")) {
+                || className.startsWith("org.hibernate.engine.spi.")
+                || className.startsWith("javax.persistence.")) {
             return true;
         }
         return false;

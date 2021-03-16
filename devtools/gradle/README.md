@@ -5,13 +5,19 @@ Builds a Quarkus application, and provides helpers to launch dev-mode, the Quark
 
 Releases are published at https://plugins.gradle.org/plugin/io.quarkus .
 
-Functional Tests
+Integration Tests
 ----------------
 
-To run the functional tests, run the following command:
+Integration tests are located in `integration-tests/gradle`. Use the following command to run them:
 
 ```bash
-./gradlew functionalTests
+./gradlew test
+```
+
+Native test can be run using the command: 
+
+```bash
+./gradlew nativeTest
 ```
 
 Local development

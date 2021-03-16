@@ -13,5 +13,10 @@ assignees: ''
 ### Analysis
 (links to analysis docs containing architecture design work, requirements gathering, etc)
 
-### Tasks
-- [ ] _Checklist of sub tasks goes here, represented as links to GitHub issues_
+<!-- task list will be automatically generated from below. 
+     Just add issue references, i.e. #23, #458 and it will
+     be picked up.
+ >
+<!-- EPIC:DATA
+     
+-->

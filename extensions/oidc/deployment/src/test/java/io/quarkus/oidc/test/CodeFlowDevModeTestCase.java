@@ -24,7 +24,10 @@ import io.quarkus.test.common.QuarkusTestResource;
 public class CodeFlowDevModeTestCase {
 
     private static Class<?>[] testClasses = {
-            ProtectedResource.class
+            ProtectedResource.class,
+            UnprotectedResource.class,
+            CustomTenantConfigResolver.class,
+            CustomTokenStateManager.class
     };
 
     @RegisterExtension
@@ -35,21 +38,28 @@ public class CodeFlowDevModeTestCase {
 
     @Test
     public void testAccessAndRefreshTokenInjectionDevMode() throws IOException, InterruptedException {
+        // Default tenant is disabled, check that having TenantConfigResolver is enough
+        useTenantConfigResolver();
+
         try (final WebClient webClient = createWebClient()) {
+
             // Default tenant is disabled and client-id is wrong
+            HtmlPage page = webClient.getPage("http://localhost:8080/unprotected");
+            assertEquals("unprotected", page.getBody().asText());
+
             try {
-                webClient.getPage("http://localhost:8080/web-app");
+                webClient.getPage("http://localhost:8080/protected");
                 fail("Exception is expected because the tenant is disabled and invalid client_id is used");
             } catch (FailingHttpStatusCodeException ex) {
                 // Reported by Quarkus
-                assertEquals(500, ex.getStatusCode());
+                assertEquals(401, ex.getStatusCode());
             }
 
             // Enable the default tenant
             test.modifyResourceFile("application.properties", s -> s.replace("tenant-enabled=false", "tenant-enabled=true"));
             // Default tenant is enabled, client-id is wrong
             try {
-                webClient.getPage("http://localhost:8080/web-app");
+                webClient.getPage("http://localhost:8080/protected");
                 fail("Exception is expected because the tenant is disabled and invalid client_id is used");
             } catch (FailingHttpStatusCodeException ex) {
                 // Reported by Keycloak
@@ -60,9 +70,9 @@ public class CodeFlowDevModeTestCase {
             // Now set the correct client-id
             test.modifyResourceFile("application.properties", s -> s.replace("client-dev", "client-dev-mode"));
 
-            HtmlPage page = webClient.getPage("http://localhost:8080/web-app");
+            page = webClient.getPage("http://localhost:8080/protected");
 
-            assertEquals("Log in to devmode", page.getTitleText());
+            assertEquals("Sign in to devmode", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -72,6 +82,28 @@ public class CodeFlowDevModeTestCase {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("alice-dev-mode", page.getBody().asText());
+
+            assertEquals("custom", page.getWebClient().getCookieManager().getCookie("q_session").getValue().split("\\|")[3]);
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void useTenantConfigResolver() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8080/protected/tenant/tenant-config-resolver");
+
+            assertEquals("Sign in to devmode", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice-dev-mode");
+            loginForm.getInputByName("password").setValueAttribute("alice-dev-mode");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("tenant-config-resolver:alice-dev-mode", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
         }
     }
 

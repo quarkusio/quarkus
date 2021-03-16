@@ -10,6 +10,8 @@ import io.quarkus.hibernate.orm.MyEntity;
 @Path("/orm-sql-load-script")
 public class SqlLoadScriptTestResource {
 
+    public static final String NO_ENTITY_MESSAGE = "no entity";
+
     @Inject
     EntityManager em;
 
@@ -22,6 +24,6 @@ public class SqlLoadScriptTestResource {
             return entity.getName();
         }
 
-        return "no entity";
+        return NO_ENTITY_MESSAGE;
     }
 }

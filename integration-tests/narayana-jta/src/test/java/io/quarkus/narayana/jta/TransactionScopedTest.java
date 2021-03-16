@@ -16,21 +16,24 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 class TransactionScopedTest {
     @Inject
-    private UserTransaction tx;
+    UserTransaction tx;
 
     @Inject
-    private TransactionManager tm;
+    TransactionManager tm;
 
     @Inject
-    private TransactionScopedBean beanTransactional;
+    TransactionScopedBean beanTransactional;
 
     @Inject
-    private TransactionBeanWithEvents beanEvents;
+    TransactionBeanWithEvents beanEvents;
 
     @Test
     void transactionScopedInTransaction() throws Exception {
+        TransactionScopedBean.resetCounters();
+
         tx.begin();
         beanTransactional.setValue(42);
+        assertEquals(1, TransactionScopedBean.getInitializedCount(), "Expected @PostConstruct to be invoked");
         assertEquals(42, beanTransactional.getValue(), "Transaction scope did not save the value");
         Transaction suspendedTransaction = tm.suspend();
 
@@ -40,8 +43,10 @@ class TransactionScopedTest {
 
         tx.begin();
         beanTransactional.setValue(1);
+        assertEquals(2, TransactionScopedBean.getInitializedCount(), "Expected @PostConstruct to be invoked");
         assertEquals(1, beanTransactional.getValue(), "Transaction scope did not save the value");
         tx.commit();
+        assertEquals(1, TransactionScopedBean.getPreDestroyCount(), "Expected @PreDestroy to be invoked");
 
         assertThrows(ContextNotActiveException.class, () -> {
             beanTransactional.getValue();
@@ -50,10 +55,13 @@ class TransactionScopedTest {
         tm.resume(suspendedTransaction);
         assertEquals(42, beanTransactional.getValue(), "Transaction scope did not resumed correctly");
         tx.rollback();
+        assertEquals(2, TransactionScopedBean.getPreDestroyCount(), "Expected @PreDestroy to be invoked");
     }
 
     @Test
     void scopeEventsAreEmitted() {
+        beanEvents.cleanCounts();
+
         beanEvents.doInTransaction(true);
 
         try {

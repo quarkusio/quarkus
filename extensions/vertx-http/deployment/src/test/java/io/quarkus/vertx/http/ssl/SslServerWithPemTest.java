@@ -21,6 +21,10 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
+/**
+ * We also set quarkus.http.insecure-requests=disabled in order to test that server starts correctly - see
+ * https://github.com/quarkusio/quarkus/issues/8336.
+ */
 public class SslServerWithPemTest {
 
     @TestHTTPResource(value = "/ssl", ssl = true)

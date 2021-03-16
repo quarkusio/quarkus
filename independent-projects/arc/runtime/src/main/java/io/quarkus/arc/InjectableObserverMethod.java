@@ -31,6 +31,13 @@ public interface InjectableObserverMethod<T> extends ObserverMethod<T> {
         return TransactionPhase.IN_PROGRESS;
     }
 
+    /**
+     * 
+     * @return the identifier or null for synthetic observers
+     * @see InjectableBean#getIdentifier()
+     */
+    String getDeclaringBeanIdentifier();
+
     static int compare(InjectableObserverMethod<?> o1, InjectableObserverMethod<?> o2) {
         return Integer.compare(o1.getPriority(), o2.getPriority());
     }

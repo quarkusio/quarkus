@@ -18,6 +18,76 @@ public class CustomTenantResolver implements TenantResolver {
         }
 
         String path = context.request().path();
-        return path.contains("callback-") ? "tenant-1" : path.contains("/web-app2") ? "tenant-2" : null;
+
+        if (path.contains("tenant-logout")) {
+            return "tenant-logout";
+        }
+
+        if (path.contains("tenant-query")) {
+            return "tenant-query";
+        }
+
+        if (path.contains("tenant-listener")) {
+            return "tenant-listener";
+        }
+
+        if (path.contains("tenant-idtoken-only")) {
+            return "tenant-idtoken-only";
+        }
+
+        if (path.contains("tenant-split-tokens")) {
+            return "tenant-split-tokens";
+        }
+
+        if (path.contains("tenant-id-refresh-token")) {
+            return "tenant-id-refresh-token";
+        }
+
+        if (path.contains("tenant-split-id-refresh-token")) {
+            return "tenant-split-id-refresh-token";
+        }
+
+        if (path.contains("tenant-autorefresh")) {
+            return "tenant-autorefresh";
+        }
+
+        if (path.contains("tenant-https")) {
+            return "tenant-https";
+        }
+
+        if (path.contains("tenant-xhr")) {
+            return "tenant-xhr";
+        }
+
+        if (path.contains("tenant-javascript")) {
+            return "tenant-javascript";
+        }
+
+        if (path.contains("tenant-cookie-path-header")) {
+            return "tenant-cookie-path-header";
+        }
+
+        if (path.contains("callback-before-wrong-redirect")) {
+            return context.getCookie("q_auth_tenant-before-wrong-redirect") == null ? "tenant-before-wrong-redirect"
+                    : "tenant-1";
+        }
+
+        if (path.contains("callback-after-redirect") || path.contains("callback-before-redirect")) {
+            return "tenant-1";
+        }
+
+        if (path.contains("callback-jwt-after-redirect") || path.contains("callback-jwt-before-redirect")) {
+            return "tenant-jwt";
+        }
+
+        if (path.contains("callback-jwt-not-used-after-redirect") || path.contains("callback-jwt-not-used-before-redirect")) {
+            return "tenant-jwt-not-used";
+        }
+
+        if (path.contains("/web-app2")) {
+            return "tenant-2";
+        }
+
+        return null;
     }
 }

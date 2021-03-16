@@ -1,6 +1,11 @@
 package io.quarkus.restclient.runtime;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyStore;
@@ -9,16 +14,21 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import javax.net.ssl.HostnameVerifier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.graalvm.nativeimage.ImageInfo;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.graal.DisabledSSLContext;
+import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 public class RestClientBase {
-
     public static final String MP_REST = "mp-rest";
     public static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
     public static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
@@ -33,15 +43,20 @@ public class RestClientBase {
     public static final String REST_KEY_STORE_PASSWORD = "%s/" + MP_REST + "/keyStorePassword";
     public static final String REST_KEY_STORE_TYPE = "%s/" + MP_REST + "/keyStoreType";
     public static final String REST_HOSTNAME_VERIFIER = "%s/" + MP_REST + "/hostnameVerifier";
+    public static final String REST_NOOP_HOSTNAME_VERIFIER = "io.quarkus.restclient.NoopHostnameVerifier";
+    public static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
 
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
     private final String propertyPrefix;
+    private final Class<?>[] annotationProviders;
 
-    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String propertyPrefix) {
+    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String propertyPrefix,
+            Class<?>[] annotationProviders) {
         this.proxyType = proxyType;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.propertyPrefix = propertyPrefix;
+        this.annotationProviders = annotationProviders;
     }
 
     public Object create() {
@@ -50,30 +65,59 @@ public class RestClientBase {
         configureTimeouts(builder);
         configureProviders(builder);
         configureSsl(builder);
+        // If we have context propagation, then propagate context to the async client threads
+        InstanceHandle<ManagedExecutor> managedExecutor = Arc.container().instance(ManagedExecutor.class);
+        if (managedExecutor.isAvailable()) {
+            builder.executorService(managedExecutor.get());
+        }
 
-        return builder.build(proxyType);
+        Object result = builder.build(proxyType);
+        return result;
     }
 
     private void configureSsl(RestClientBuilder builder) {
-        Optional<String> maybeTrustStore = getOptionalProperty(REST_TRUST_STORE, String.class);
-        maybeTrustStore.ifPresent(trustStore -> registerTrustStore(trustStore, builder));
 
-        Optional<String> maybeKeyStore = getOptionalProperty(REST_KEY_STORE, String.class);
-        maybeKeyStore.ifPresent(keyStore -> registerKeyStore(keyStore, builder));
+        Optional<Boolean> trustAll = getOptionalProperty(TLS_TRUST_ALL, Boolean.class);
+        if (trustAll.isPresent() && trustAll.get()) {
+            registerHostnameVerifier(REST_NOOP_HOSTNAME_VERIFIER, builder);
+        }
 
-        Optional<String> maybeHostnameVerifier = getOptionalProperty(REST_HOSTNAME_VERIFIER, String.class);
-        maybeHostnameVerifier.ifPresent(verifier -> registerHostnameVerifier(verifier, builder));
+        Optional<String> maybeTrustStore = getOptionalDynamicProperty(REST_TRUST_STORE, String.class);
+        if (maybeTrustStore.isPresent()) {
+            registerTrustStore(maybeTrustStore.get(), builder);
+        }
+
+        Optional<String> maybeKeyStore = getOptionalDynamicProperty(REST_KEY_STORE, String.class);
+        if (maybeKeyStore.isPresent()) {
+            registerKeyStore(maybeKeyStore.get(), builder);
+        }
+
+        Optional<String> maybeHostnameVerifier = getOptionalDynamicProperty(REST_HOSTNAME_VERIFIER, String.class);
+        if (maybeHostnameVerifier.isPresent()) {
+            registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
+        }
+
+        // we need to push a disabled SSL context when SSL has been disabled
+        // because otherwise Apache HTTP Client will try to initialize one and will fail
+        if (ImageInfo.inImageRuntimeCode() && !SslContextConfiguration.isSslNativeEnabled()) {
+            builder.sslContext(new DisabledSSLContext());
+        }
     }
 
     private void registerHostnameVerifier(String verifier, RestClientBuilder builder) {
         try {
-            Class<?> verifierClass = Class.forName(verifier, true, Thread.currentThread().getContextClassLoader());
-            builder.hostnameVerifier((HostnameVerifier) verifierClass.newInstance());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Could not find hostname verifier class" + verifier, e);
-        } catch (InstantiationException | IllegalAccessException e) {
+            Class<?> verifierClass = Thread.currentThread().getContextClassLoader().loadClass(verifier);
+            builder.hostnameVerifier((HostnameVerifier) verifierClass.getDeclaredConstructor().newInstance());
+        } catch (NoSuchMethodException e) {
             throw new RuntimeException(
-                    "Failed to instantiate hostname verifier class. Make sure it has a public, no-argument constructor", e);
+                    "Could not find a public, no-argument constructor for the hostname verifier class " + verifier, e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Could not find hostname verifier class " + verifier, e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(
+                    "Failed to instantiate hostname verifier class " + verifier
+                            + ". Make sure it has a public, no-argument constructor",
+                    e);
         } catch (ClassCastException e) {
             throw new RuntimeException("The provided hostname verifier " + verifier + " is not an instance of HostnameVerifier",
                     e);
@@ -81,13 +125,15 @@ public class RestClientBase {
     }
 
     private void registerKeyStore(String keyStorePath, RestClientBuilder builder) {
-        Optional<String> keyStorePassword = getOptionalProperty(REST_KEY_STORE_PASSWORD, String.class);
-        Optional<String> keyStoreType = getOptionalProperty(REST_KEY_STORE_TYPE, String.class);
+        Optional<String> keyStorePassword = getOptionalDynamicProperty(REST_KEY_STORE_PASSWORD, String.class);
+        Optional<String> keyStoreType = getOptionalDynamicProperty(REST_KEY_STORE_TYPE, String.class);
 
         try {
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
-            String password = keyStorePassword
-                    .orElseThrow(() -> new IllegalArgumentException("No password provided for keystore"));
+            if (!keyStorePassword.isPresent()) {
+                throw new IllegalArgumentException("No password provided for keystore");
+            }
+            String password = keyStorePassword.get();
 
             try (InputStream input = locateStream(keyStorePath)) {
                 keyStore.load(input, password.toCharArray());
@@ -103,13 +149,15 @@ public class RestClientBase {
     }
 
     private void registerTrustStore(String trustStorePath, RestClientBuilder builder) {
-        Optional<String> maybeTrustStorePassword = getOptionalProperty(REST_TRUST_STORE_PASSWORD, String.class);
-        Optional<String> maybeTrustStoreType = getOptionalProperty(REST_TRUST_STORE_TYPE, String.class);
+        Optional<String> maybeTrustStorePassword = getOptionalDynamicProperty(REST_TRUST_STORE_PASSWORD, String.class);
+        Optional<String> maybeTrustStoreType = getOptionalDynamicProperty(REST_TRUST_STORE_TYPE, String.class);
 
         try {
             KeyStore trustStore = KeyStore.getInstance(maybeTrustStoreType.orElse("JKS"));
-            String password = maybeTrustStorePassword
-                    .orElseThrow(() -> new IllegalArgumentException("No password provided for truststore"));
+            if (!maybeTrustStorePassword.isPresent()) {
+                throw new IllegalArgumentException("No password provided for truststore");
+            }
+            String password = maybeTrustStorePassword.get();
 
             try (InputStream input = locateStream(trustStorePath)) {
                 trustStore.load(input, password.toCharArray());
@@ -150,15 +198,21 @@ public class RestClientBase {
     }
 
     private void configureProviders(RestClientBuilder builder) {
-        Optional<String> maybeProviders = getOptionalProperty(REST_PROVIDERS, String.class);
-        maybeProviders.ifPresent(providers -> registerProviders(builder, providers));
+        Optional<String> maybeProviders = getOptionalDynamicProperty(REST_PROVIDERS, String.class);
+        if (maybeProviders.isPresent()) {
+            registerProviders(builder, maybeProviders.get());
+        }
+        if (annotationProviders != null) {
+            for (Class<?> annotationProvider : annotationProviders) {
+                builder.register(annotationProvider);
+            }
+        }
     }
 
     private void registerProviders(RestClientBuilder builder, String providersAsString) {
-        Stream.of(providersAsString.split(","))
-                .map(String::trim)
-                .map(this::providerClassForName)
-                .forEach(builder::register);
+        for (String s : providersAsString.split(",")) {
+            builder.register(providerClassForName(s.trim()));
+        }
     }
 
     private Class<?> providerClassForName(String name) {
@@ -170,17 +224,21 @@ public class RestClientBase {
     }
 
     private void configureTimeouts(RestClientBuilder builder) {
-        Optional<Long> connectTimeout = getOptionalProperty(REST_CONNECT_TIMEOUT_FORMAT, Long.class);
-        connectTimeout.ifPresent(timeout -> builder.connectTimeout(timeout, TimeUnit.MILLISECONDS));
+        Optional<Long> connectTimeout = getOptionalDynamicProperty(REST_CONNECT_TIMEOUT_FORMAT, Long.class);
+        if (connectTimeout.isPresent()) {
+            builder.connectTimeout(connectTimeout.get(), TimeUnit.MILLISECONDS);
+        }
 
-        Optional<Long> readTimeout = getOptionalProperty(REST_READ_TIMEOUT_FORMAT, Long.class);
-        readTimeout.ifPresent(timeout -> builder.readTimeout(timeout, TimeUnit.MILLISECONDS));
+        Optional<Long> readTimeout = getOptionalDynamicProperty(REST_READ_TIMEOUT_FORMAT, Long.class);
+        if (readTimeout.isPresent()) {
+            builder.readTimeout(readTimeout.get(), TimeUnit.MILLISECONDS);
+        }
     }
 
     private void configureBaseUrl(RestClientBuilder builder) {
-        Optional<String> propertyOptional = getOptionalProperty(REST_URI_FORMAT, String.class);
+        Optional<String> propertyOptional = getOptionalDynamicProperty(REST_URI_FORMAT, String.class);
         if (!propertyOptional.isPresent()) {
-            propertyOptional = getOptionalProperty(REST_URL_FORMAT, String.class);
+            propertyOptional = getOptionalDynamicProperty(REST_URL_FORMAT, String.class);
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && !propertyOptional.isPresent()) {
@@ -207,10 +265,16 @@ public class RestClientBase {
         }
     }
 
-    private <T> Optional<T> getOptionalProperty(String propertyFormat, Class<T> type) {
+    private <T> Optional<T> getOptionalDynamicProperty(String propertyFormat, Class<T> type) {
         final Config config = ConfigProvider.getConfig();
         Optional<T> interfaceNameValue = config.getOptionalValue(String.format(propertyFormat, proxyType.getName()), type);
         return interfaceNameValue.isPresent() ? interfaceNameValue
                 : config.getOptionalValue(String.format(propertyFormat, propertyPrefix), type);
     }
+
+    private <T> Optional<T> getOptionalProperty(String propertyName, Class<T> type) {
+        final Config config = ConfigProvider.getConfig();
+        return config.getOptionalValue(propertyName, type);
+    }
+
 }

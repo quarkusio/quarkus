@@ -59,9 +59,22 @@ public class RBACSecuredResource {
     }
 
     @GET
+    @RolesAllowed("**")
+    @Path("allRoles")
+    public String allRoles() {
+        return "allRoles";
+    }
+
+    @GET
     @Path("callingAuthenticated")
     public String callingAuthenticated() {
         return bean.authenticated();
+    }
+
+    @GET
+    @Path("callingAllRoles")
+    public String callingAllRoles() {
+        return bean.allRoles();
     }
 
     @GET

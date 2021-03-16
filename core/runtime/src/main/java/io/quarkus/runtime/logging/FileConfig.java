@@ -74,6 +74,8 @@ public class FileConfig {
 
         /**
          * Indicates whether to rotate log files on server initialization.
+         * <p>
+         * You need to either set a {@code max-file-size} or configure a {@code file-suffix} for it to work.
          */
         @ConfigItem(defaultValue = "true")
         boolean rotateOnBoot;

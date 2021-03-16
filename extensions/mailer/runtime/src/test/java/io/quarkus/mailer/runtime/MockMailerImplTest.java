@@ -3,7 +3,6 @@ package io.quarkus.mailer.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterAll;
@@ -36,7 +35,7 @@ class MockMailerImplTest {
     @BeforeEach
     void init() {
         mailer = new MutinyMailerImpl();
-        mailer.configure(Optional.of(FROM), Optional.empty(), true);
+        mailer.mailerSupport = new MailerSupport(FROM, null, true);
         mailer.vertx = vertx;
         mailer.mockMailbox = new MockMailboxImpl();
         mailer.mockMailbox.clear();

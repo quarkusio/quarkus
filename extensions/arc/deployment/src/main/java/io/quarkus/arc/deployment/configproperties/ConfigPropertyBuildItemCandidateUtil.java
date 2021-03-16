@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
+import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -14,6 +15,8 @@ import org.objectweb.asm.Opcodes;
 import io.quarkus.gizmo.Gizmo;
 
 public class ConfigPropertyBuildItemCandidateUtil {
+
+    private static final Logger LOGGER = Logger.getLogger(ClassConfigPropertiesUtil.class);
 
     /**
      * This method inspects the {@code configClass} bytecode to identify all fields that have a default value set in the class
@@ -25,7 +28,7 @@ public class ConfigPropertyBuildItemCandidateUtil {
             List<ConfigPropertyBuildItemCandidate> candidates) {
         try (InputStream is = classLoader.getResourceAsStream(configClass.replace('.', '/') + ".class")) {
             ClassReader configClassReader = new ClassReader(is);
-            configClassReader.accept(new ConfigClassVisitor(candidates), 0);
+            configClassReader.accept(new ConfigClassVisitor(candidates, configClass), 0);
         } catch (IOException e) {
             throw new UncheckedIOException(configClass + " class reading failed", e);
         }
@@ -33,17 +36,23 @@ public class ConfigPropertyBuildItemCandidateUtil {
 
     private static class ConfigClassVisitor extends ClassVisitor {
 
-        private List<ConfigPropertyBuildItemCandidate> candidates;
+        private final List<ConfigPropertyBuildItemCandidate> candidates;
+        private final String configClass;
 
-        private ConfigClassVisitor(List<ConfigPropertyBuildItemCandidate> candidates) {
+        private ConfigClassVisitor(List<ConfigPropertyBuildItemCandidate> candidates, String configClass) {
             super(Gizmo.ASM_API_VERSION);
             this.candidates = candidates;
+            this.configClass = configClass;
         }
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
             MethodVisitor superMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
-            if (access == Modifier.PUBLIC && name.equals("<init>") && descriptor.equals("()V")) {
+            if (name.equals("<init>") && descriptor.equals("()V")) {
+                if (access != Modifier.PUBLIC) {
+                    LOGGER.warn("Class '" + configClass
+                            + "' which is meant to hold configuration properties does not have a public constructor and therefore may not function correctly");
+                }
                 return new ConfigClassConstructorVisitor(superMethodVisitor, candidates);
             }
             return superMethodVisitor;

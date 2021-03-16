@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.metrics.runtime;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import javax.enterprise.inject.spi.CDI;
@@ -30,13 +31,20 @@ public class SmallRyeMetricsHandler implements Handler<RoutingContext> {
         HttpServerResponse response = routingContext.response();
         HttpServerRequest request = routingContext.request();
         Stream<String> acceptHeaders = request.headers().getAll("Accept").stream();
+        routingContext.currentRoute().getPath();
+        routingContext.mountPoint();
 
         try {
             internalHandler.handleRequest(request.path(), metricsPath, request.rawMethod(), acceptHeaders,
-                    (status, message, headers) -> {
-                        response.setStatusCode(status);
-                        headers.forEach(response::putHeader);
-                        response.end(Buffer.buffer(message));
+                    new MetricsRequestHandler.Responder() {
+                        @Override
+                        public void respondWith(int status, String message, Map<String, String> headers) throws IOException {
+                            response.setStatusCode(status);
+                            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                                response.putHeader(entry.getKey(), entry.getValue());
+                            }
+                            response.end(Buffer.buffer(message));
+                        }
                     });
         } catch (IOException e) {
             response.setStatusCode(503);

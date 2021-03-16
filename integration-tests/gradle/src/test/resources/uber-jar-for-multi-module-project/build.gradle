@@ -1,0 +1,47 @@
+buildscript {
+    repositories {
+        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+apply plugin: 'java'
+
+group = 'com.quarkus.demo'
+version = '1.0'
+
+
+subprojects {
+
+    apply plugin: 'java'
+
+    test {
+        dependsOn 'cleanTest'
+        useJUnitPlatform()
+        forkEvery 1
+    }
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+    dependencies {
+
+        implementation 'io.quarkus:quarkus-resteasy'
+
+        testImplementation 'io.quarkus:quarkus-junit5'
+        testImplementation 'io.rest-assured:rest-assured'
+
+        implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+
+    }
+}

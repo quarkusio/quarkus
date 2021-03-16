@@ -7,6 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import javax.enterprise.util.Nonbinding;
+import javax.interceptor.InterceptorBinding;
 
 import io.quarkus.cache.CacheInvalidateAll.List;
 
@@ -19,8 +20,9 @@ import io.quarkus.cache.CacheInvalidateAll.List;
  * <p>
  * The underlying caching provider can be chosen and configured in the Quarkus {@link application.properties} file.
  */
+@InterceptorBinding
+@Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
 @Repeatable(List.class)
 public @interface CacheInvalidateAll {
 
@@ -30,8 +32,8 @@ public @interface CacheInvalidateAll {
     @Nonbinding
     String cacheName();
 
+    @Target({ ElementType.TYPE, ElementType.METHOD })
     @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
     @interface List {
         CacheInvalidateAll[] value();
     }

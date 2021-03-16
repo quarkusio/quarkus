@@ -1,0 +1,15 @@
+---
+layout: guides-configuration-reference
+---
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+include::./attributes.adoc[]
+
+= Quarkus - Build Items
+
+Here you can find a list of Build Items and the extension that provides them:
+
+include::{generated-dir}/config/quarkus-all-build-items.adoc[opts=optional]

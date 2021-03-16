@@ -81,7 +81,7 @@ public class ExplicitCompositeKeyCacheTest {
         // Action: cache entry invalidation.
         // Expected effect: STEP 2 cache entry removed.
         // Verified by: STEP 7.
-        cachedService.invalidate(KEY_1_ELEMENT_1, KEY_1_ELEMENT_2, new Object());
+        cachedService.invalidate(new Object(), KEY_1_ELEMENT_1, KEY_1_ELEMENT_2);
 
         // STEP 7
         // Action: same call as STEP 2.
@@ -129,7 +129,7 @@ public class ExplicitCompositeKeyCacheTest {
         }
 
         @CacheInvalidate(cacheName = CACHE_NAME)
-        public void invalidate(@CacheKey Locale keyElement1, @CacheKey BigDecimal keyElement2, Object notPartOfTheKey) {
+        public void invalidate(Object notPartOfTheKey, @CacheKey Locale keyElement1, @CacheKey BigDecimal keyElement2) {
         }
 
         @CacheInvalidateAll(cacheName = CACHE_NAME)

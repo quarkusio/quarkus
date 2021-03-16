@@ -1,22 +1,20 @@
 package io.quarkus.deployment.util;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
  */
@@ -34,27 +32,16 @@ public final class ServiceUtil {
     }
 
     public static Set<String> classNamesNamedIn(ClassLoader classLoader, String fileName) throws IOException {
-        final Enumeration<URL> resources = classLoader.getResources(fileName);
-
         final Set<String> classNames = new LinkedHashSet<>();
-
-        while (resources.hasMoreElements()) {
-            final URL url = resources.nextElement();
-            URLConnection con = url.openConnection();
-            con.setUseCaches(false);
-            try (InputStream is = con.getInputStream()) {
-                try (BufferedInputStream bis = new BufferedInputStream(is)) {
-                    try (InputStreamReader isr = new InputStreamReader(bis, StandardCharsets.UTF_8)) {
-                        try (BufferedReader br = new BufferedReader(isr)) {
-                            readStream(classNames, br);
-                        }
-                    }
+        ClassPathUtils.consumeAsStreams(classLoader, fileName, classFile -> {
+            try (InputStreamReader reader = new InputStreamReader(classFile, StandardCharsets.UTF_8)) {
+                try (BufferedReader br = new BufferedReader(reader)) {
+                    readStream(classNames, br);
                 }
             } catch (IOException e) {
-                throw new IOException("Error reading " + url, e);
+                throw new UncheckedIOException(e);
             }
-        }
-
+        });
         return Collections.unmodifiableSet(classNames);
     }
 

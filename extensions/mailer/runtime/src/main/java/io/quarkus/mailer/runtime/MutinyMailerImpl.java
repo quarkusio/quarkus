@@ -5,8 +5,8 @@ import static java.util.Arrays.stream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -43,20 +43,15 @@ public class MutinyMailerImpl implements ReactiveMailer {
     @Inject
     MockMailboxImpl mockMailbox;
 
-    /**
-     * Default from value.
-     */
-    private volatile String from;
+    @Inject
+    MailerSupport mailerSupport;
 
-    /**
-     * Default bounce address.
-     */
-    private volatile String bounceAddress;
-
-    /**
-     * If {@code true}, mails are not sent to the server, the body is printed in the console.
-     */
-    private volatile boolean mock;
+    private static final Function<List<?>, Void> ignore = new Function<List<?>, Void>() {
+        @Override
+        public Void apply(List<?> results) {
+            return null;
+        }
+    };
 
     @Override
     public Uni<Void> send(Mail... mails) {
@@ -65,16 +60,25 @@ public class MutinyMailerImpl implements ReactiveMailer {
         }
 
         List<Uni<Void>> unis = stream(mails)
-                .map(mail -> toMailMessage(mail)
-                        .onItem().produceUni(mailMessage -> send(mail, mailMessage)))
+                .map(new Function<Mail, Uni<Void>>() {
+                    @Override
+                    public Uni<Void> apply(Mail mail) {
+                        return MutinyMailerImpl.this.toMailMessage(mail)
+                                .chain(new Function<MailMessage, Uni<? extends Void>>() {
+                                    @Override
+                                    public Uni<? extends Void> apply(MailMessage mailMessage) {
+                                        return send(mail, mailMessage);
+                                    }
+                                });
+                    }
+                })
                 .collect(Collectors.toList());
 
-        return Uni.combine().all().unis(unis).combinedWith(results -> null);
-
+        return Uni.combine().all().unis(unis).combinedWith(ignore);
     }
 
     private Uni<Void> send(Mail mail, MailMessage message) {
-        if (mock) {
+        if (mailerSupport.isMock()) {
             LOGGER.infof("Sending email %s from %s to %s, text body: \n%s\nhtml body: \n%s",
                     message.getSubject(), message.getFrom(), message.getTo(),
                     message.getText() == null ? "<empty>" : message.getText(),
@@ -92,13 +96,13 @@ public class MutinyMailerImpl implements ReactiveMailer {
         if (mail.getBounceAddress() != null) {
             message.setBounceAddress(mail.getBounceAddress());
         } else {
-            message.setBounceAddress(this.bounceAddress);
+            message.setBounceAddress(this.mailerSupport.getBounceAddress());
         }
 
         if (mail.getFrom() != null) {
             message.setFrom(mail.getFrom());
         } else {
-            message.setFrom(this.from);
+            message.setFrom(this.mailerSupport.getFrom());
         }
         message.setTo(mail.getTo());
         message.setCc(mail.getCc());
@@ -159,7 +163,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
         }
 
         return getAttachmentStream(vertx, attachment)
-                .onItem().apply(attach::setData);
+                .onItem().transform(attach::setData);
     }
 
     public static Uni<Buffer> getAttachmentStream(Vertx vertx, Attachment attachment) {
@@ -178,12 +182,5 @@ public class MutinyMailerImpl implements ReactiveMailer {
         } else {
             return Uni.createFrom().failure(new IllegalArgumentException("Attachment has no data"));
         }
-    }
-
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    void configure(Optional<String> from, Optional<String> bounceAddress, boolean mock) {
-        this.from = from.orElse(null);
-        this.bounceAddress = bounceAddress.orElse(null);
-        this.mock = mock;
     }
 }

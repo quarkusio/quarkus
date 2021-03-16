@@ -10,4 +10,10 @@ public class HealthBuildTimeConfig {
      */
     @ConfigItem(name = "extensions.enabled", defaultValue = "true")
     public boolean extensionsEnabled;
+
+    /**
+     * Whether or not to include the Liveness and Readiness Health endpoints in the generated OpenAPI document
+     */
+    @ConfigItem(name = "openapi.included", defaultValue = "false")
+    public boolean openapiIncluded;
 }

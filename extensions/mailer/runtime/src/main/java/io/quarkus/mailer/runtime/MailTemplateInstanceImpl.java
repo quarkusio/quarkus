@@ -1,14 +1,13 @@
 package io.quarkus.mailer.runtime;
 
-import static io.quarkus.qute.api.VariantTemplate.SELECTED_VARIANT;
-import static io.quarkus.qute.api.VariantTemplate.VARIANTS;
-
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.mailer.Mail;
@@ -16,7 +15,6 @@ import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
-import io.quarkus.qute.api.VariantTemplate;
 import io.smallrye.mutiny.Uni;
 
 class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
@@ -82,53 +80,71 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     }
 
     @Override
+    public MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId) {
+        this.mail.addInlineAttachment(name, file, contentType, contentId);
+        return this;
+    }
+
+    @Override
     public MailTemplateInstance data(String key, Object value) {
         this.data.put(key, value);
         return this;
     }
 
     @Override
-    public CompletionStage<Void> send() {
-        if (templateInstance.getAttribute(VariantTemplate.VARIANTS) != null) {
-
+    public Uni<Void> send() {
+        Object variantsAttr = templateInstance.getAttribute(TemplateInstance.VARIANTS);
+        if (variantsAttr != null) {
             List<Result> results = new ArrayList<>();
-
             @SuppressWarnings("unchecked")
-            List<Variant> variants = (List<Variant>) templateInstance.getAttribute(VARIANTS);
+            List<Variant> variants = (List<Variant>) variantsAttr;
             for (Variant variant : variants) {
-                if (variant.mediaType.equals(Variant.TEXT_HTML) || variant.mediaType.equals(Variant.TEXT_PLAIN)) {
+                if (variant.getContentType().equals(Variant.TEXT_HTML) || variant.getContentType().equals(Variant.TEXT_PLAIN)) {
                     results.add(new Result(variant,
                             Uni.createFrom().completionStage(
-                                    () -> templateInstance.setAttribute(SELECTED_VARIANT, variant).data(data).renderAsync())));
+                                    new Supplier<CompletionStage<? extends String>>() {
+                                        @Override
+                                        public CompletionStage<? extends String> get() {
+                                            return templateInstance
+                                                    .setAttribute(TemplateInstance.SELECTED_VARIANT, variant).data(data)
+                                                    .renderAsync();
+                                        }
+                                    })));
                 }
             }
-
             if (results.isEmpty()) {
                 throw new IllegalStateException("No suitable template variant found");
             }
-
-            List<Uni<String>> unis = results.stream().map(Result::getValue).collect(Collectors.toList());
+            List<Uni<String>> unis = results.stream().map(Result::resolve).collect(Collectors.toList());
             return Uni.combine().all().unis(unis)
                     .combinedWith(combine(results))
-                    .onItem().produceUni(m -> mailer.send((Mail) m))
-                    .subscribeAsCompletionStage();
+                    .chain(new Function<Mail, Uni<? extends Void>>() {
+                        @Override
+                        public Uni<? extends Void> apply(Mail m) {
+                            return mailer.send(m);
+                        }
+                    });
         } else {
             throw new IllegalStateException("No template variant found");
         }
     }
 
-    private Function<List<String>, Mail> combine(List<Result> results) {
-        return ignored -> {
-            for (Result res : results) {
-                // We can safely access the content here: 1. it has been resolved, 2. it's cached.
-                String content = res.value.await().indefinitely();
-                if (res.variant.mediaType.equals(Variant.TEXT_HTML)) {
-                    mail.setHtml(content);
-                } else if (res.variant.mediaType.equals(Variant.TEXT_PLAIN)) {
-                    mail.setText(content);
+    private Function<List<?>, Mail> combine(List<Result> results) {
+        return new Function<List<?>, Mail>() {
+            @Override
+            public Mail apply(List<?> resolved) {
+                for (int i = 0; i < resolved.size(); i++) {
+                    Result result = results.get(i);
+                    // We can safely cast, as we know that the results are Strings.
+                    String content = (String) resolved.get(i);
+                    if (result.variant.getContentType().equals(Variant.TEXT_HTML)) {
+                        mail.setHtml(content);
+                    } else if (result.variant.getContentType().equals(Variant.TEXT_PLAIN)) {
+                        mail.setText(content);
+                    }
                 }
+                return mail;
             }
-            return mail;
         };
     }
 
@@ -139,10 +155,10 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
         public Result(Variant variant, Uni<String> result) {
             this.variant = variant;
-            this.value = result.cache();
+            this.value = result;
         }
 
-        Uni<String> getValue() {
+        Uni<String> resolve() {
             return value;
         }
     }

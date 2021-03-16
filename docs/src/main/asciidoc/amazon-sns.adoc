@@ -1,0 +1,850 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Amazon SNS Client
+:extension-status: preview
+
+include::./attributes.adoc[]
+
+Amazon Simple Notification Service (SNS) is a highly available and fully managed pub/sub messaging service.
+It provides topics for high-throughput, push-based, many-to-many messaging. Messages can fan out to a large number of subscriber endpoints for
+parallel processing, including Amazon SQS queues, AWS Lambda functions, and HTTP/S webhooks. Additionally, SNS can be used
+to fan out notifications to end users using mobile push, SMS and email.
+
+You can find more information about SNS at https://aws.amazon.com/sns/[the Amazon SNS website].
+
+NOTE: The SNS extension is based on https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/welcome.html[AWS Java SDK 2.x].
+It's a major rewrite of the 1.x code base that offers two programming models (Blocking & Async).
+
+include::./status-include.adoc[]
+
+The Quarkus extension supports two programming models:
+
+* Blocking access using URL Connection HTTP client (by default) or the Apache HTTP Client
+* https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/basics-async.html[Asynchronous programming] based on JDK's `CompletableFuture` objects and the Netty HTTP client.
+
+In this guide, we see how you can get your REST services to use SNS locally and on AWS.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* an IDE
+* Apache Maven {maven-version}
+* An AWS Account to access the SNS service
+* Optionally, Docker for your system to run SNS locally for testing purposes
+
+=== Set up SNS locally
+
+The easiest way to start working with SNS is to run a local instance as a container.
+
+[source,bash,subs="verbatim,attributes"]
+----
+docker run -it --publish 8009:4575 -e SERVICES=sns -e START_WEB=0 localstack/localstack:0.11.1
+----
+This starts a SNS instance that is accessible on port `8009`.
+
+Create an AWS profile for your local instance using AWS CLI:
+[source,shell,subs="verbatim,attributes"]
+----
+$ aws configure --profile localstack
+AWS Access Key ID [None]: test-key
+AWS Secret Access Key [None]: test-secret
+Default region name [None]: us-east-1
+Default output format [None]:
+----
+
+=== Create a SNS topic
+
+Create a SNS topic using AWS CLI and store in `TOPIC_ARN` environment variable
+
+[source,bash,subs="verbatim,attributes"]
+----
+TOPIC_ARN=`aws sns create-topic --name=QuarksCollider --profile localstack --endpoint-url=http://localhost:8009`
+----
+
+If you want to run the demo using SNS on your AWS account, you can create a topic using AWS default profile
+[source,bash,subs="verbatim,attributes"]
+----
+TOPIC_ARN=`aws sns create-topic --name=QuarksCollider`
+----
+
+== Solution
+The application built here allows to shoot elementary particles (quarks) into a `QuarksCollider` topic of the AWS SNS.
+Additionally, we create a resource that allows to subscribe to the `QuarksCollider` topic in order to receive published quarks.
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `amazon-sns-quickstart` {quickstarts-tree-url}/amazon-sns-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=amazon-sns-quickstart \
+    -DclassName="org.acme.sns.QuarksCannonSyncResource" \
+    -Dpath="/sync-cannon" \
+    -Dextensions="resteasy,resteasy-jackson,amazon-sns,resteasy-mutiny"
+cd amazon-sns-quickstart
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Mutiny and Amazon SNS Client extensions.
+After this, the `amazon-sns` extension has been added to your `pom.xml` as well as the Mutiny support for RESTEasy.
+
+== Creating JSON REST service
+
+In this example, we will create an application that allows to publish quarks. The example application will demonstrate the two programming models supported by the extension.
+
+First, let's create the `Quark` bean as follows:
+
+[source,java]
+----
+package org.acme.sns.model;
+
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import java.util.Objects;
+
+@RegisterForReflection
+public class Quark {
+
+    private String flavor;
+    private String spin;
+
+    public Quark() {
+    }
+
+    public String getFlavor() {
+        return flavor;
+    }
+
+    public void setFlavor(String flavor) {
+        this.flavor = flavor;
+    }
+
+    public String getSpin() {
+        return spin;
+    }
+
+    public void setSpin(String spin) {
+        this.spin = spin;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Quark)) {
+            return false;
+        }
+
+        Quark other = (Quark) obj;
+
+        return Objects.equals(other.flavor, this.flavor);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.flavor);
+    }
+}
+----
+Then, create a `org.acme.sns.QuarksCannonSyncResource` that will provide an API to shoot quarks into the SNS topic via the SNS synchronous client.
+
+[source,java]
+----
+package org.acme.sns;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import org.acme.sns.model.Quark;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
+
+@Path("/sync/cannon")
+@Produces(MediaType.TEXT_PLAIN)
+public class QuarksCannonSyncResource {
+
+    private static final Logger LOGGER = Logger.getLogger(QuarksCannonSyncResource.class);
+
+    @Inject
+    SnsClient sns;
+
+    @ConfigProperty(name = "topic.arn")
+    String topicArn;
+
+    static ObjectWriter QUARK_WRITER = new ObjectMapper().writerFor(Quark.class);
+
+    @POST
+    @Path("/shoot")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response publish(Quark quark) throws Exception {
+        String message = QUARK_WRITER.writeValueAsString(quark);
+        PublishResponse response = sns.publish(p -> p.topicArn(topicArn).message(message));
+        LOGGER.infov("Fired Quark[{0}, {1}}]", quark.getFlavor(), quark.getSpin());
+        return Response.ok().entity(response.messageId()).build();
+    }
+}
+----
+
+Because of the fact that messages published must be simply a `String` we're using Jackson's `ObjectWriter` in order to serialize our `Quark` objects into a `String`.
+
+The missing piece is the subscriber that will receive the messages published to our topic. Before implementing subscribers, we need to define POJO classes representing messages posted by the AWS SNS.
+
+Let's create two classes that represent SNS Notification and SNS Subscription Confirmation messages based on the https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html[AWS SNS Message and JSON formats]
+
+Create `org.acme.sns.model.SnsNotification` class
+[source,java]
+----
+package org.acme.sns.model;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class SnsNotification {
+
+    @JsonProperty("Message")
+    private String message;
+
+    @JsonProperty("MessageId")
+    private String messageId;
+
+    @JsonProperty("Signature")
+    private String signature;
+
+    @JsonProperty("SignatureVersion")
+    private String signatureVersion;
+
+    @JsonProperty("SigningCertURL")
+    private String signinCertUrl;
+
+    @JsonProperty("Subject")
+    private String subject;
+
+    @JsonProperty("Timestamp")
+    private String timestamp;
+
+    @JsonProperty("TopicArn")
+    private String topicArn;
+
+    @JsonProperty("Type")
+    private String type;
+
+    @JsonProperty("UnsubscribeURL")
+    private String unsubscribeURL;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
+    }
+
+    public String getSignature() {
+        return signature;
+    }
+
+    public void setSignature(String signature) {
+        this.signature = signature;
+    }
+
+    public String getSignatureVersion() {
+        return signatureVersion;
+    }
+
+    public void setSignatureVersion(String signatureVersion) {
+        this.signatureVersion = signatureVersion;
+    }
+
+    public String getSigninCertUrl() {
+        return signinCertUrl;
+    }
+
+    public void setSigninCertUrl(String signinCertUrl) {
+        this.signinCertUrl = signinCertUrl;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getTopicArn() {
+        return topicArn;
+    }
+
+    public void setTopicArn(String topicArn) {
+        this.topicArn = topicArn;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getUnsubscribeURL() {
+        return unsubscribeURL;
+    }
+
+    public void setUnsubscribeURL(String unsubscribeURL) {
+        this.unsubscribeURL = unsubscribeURL;
+    }
+}
+----
+
+Then, create `org.acme.sns.SnsSubscriptionConfirmation`
+
+[source,java]
+----
+package org.acme.sns.model;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class SnsSubscriptionConfirmation {
+
+    @JsonProperty("Message")
+    private String message;
+
+    @JsonProperty("MessageId")
+    private String messageId;
+
+    @JsonProperty("Signature")
+    private String signature;
+
+    @JsonProperty("SignatureVersion")
+    private String signatureVersion;
+
+    @JsonProperty("SigningCertURL")
+    private String signingCertUrl;
+
+    @JsonProperty("SubscribeURL")
+    private String subscribeUrl;
+
+    @JsonProperty("Timestamp")
+    private String timestamp;
+
+    @JsonProperty("Token")
+    private String token;
+
+    @JsonProperty("TopicArn")
+    private String topicArn;
+
+    @JsonProperty("Type")
+    private String type;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
+    }
+
+    public String getSignature() {
+        return signature;
+    }
+
+    public void setSignature(String signature) {
+        this.signature = signature;
+    }
+
+    public String getSignatureVersion() {
+        return signatureVersion;
+    }
+
+    public void setSignatureVersion(String signatureVersion) {
+        this.signatureVersion = signatureVersion;
+    }
+
+    public String getSigningCertUrl() {
+        return signingCertUrl;
+    }
+
+    public void setSigningCertUrl(String signingCertUrl) {
+        this.signingCertUrl = signingCertUrl;
+    }
+
+    public String getSubscribeUrl() {
+        return subscribeUrl;
+    }
+
+    public void setSubscribeUrl(String subscribeUrl) {
+        this.subscribeUrl = subscribeUrl;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public String getTopicArn() {
+        return topicArn;
+    }
+
+    public void setTopicArn(String topicArn) {
+        this.topicArn = topicArn;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+}
+----
+
+Now, create `org.acme.QuarksShieldSyncResource` REST resources that:
+- Allows to subscribe itself to our SNS topic
+- Unsubscribe from the SNS topic
+- Receive notifications from the subscribed SNS topic
+
+NOTE: Keep in mind that AWS SNS supports multiple types of subscribers (that is web servers, email addresses, AWS SQS queues, AWS Lambda functions, and many more), but for the sake of the
+quickstart we will show how to subscribe an HTTP endpoint served by our application.
+
+[source,java]
+----
+package org.acme.sns;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import java.util.HashMap;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import org.acme.sns.model.Quark;
+import org.acme.sns.model.SnsNotification;
+import org.acme.sns.model.SnsSubscriptionConfirmation;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.SubscribeResponse;
+
+@Path("/sync/shield")
+public class QuarksShieldSyncResource {
+
+    private static final Logger LOGGER = Logger.getLogger(QuarksShieldSyncResource.class);
+
+    private static final String NOTIFICATION_TYPE = "Notification";
+    private static final String SUBSCRIPTION_CONFIRMATION_TYPE = "SubscriptionConfirmation";
+    private static final String UNSUBSCRIPTION_CONFIRMATION_TYPE = "UnsubscribeConfirmation";
+
+    @Inject
+    SnsClient sns;
+
+    @ConfigProperty(name = "topic.arn")
+    String topicArn;
+
+    @ConfigProperty(name = "quarks.shield.base.url")
+    String quarksShieldBaseUrl;
+
+    private volatile String subscriptionArn;
+
+    static Map<Class<?>, ObjectReader> READERS = new HashMap<>();
+
+    static {
+        READERS.put(SnsNotification.class, new ObjectMapper().readerFor(SnsNotification.class));
+        READERS.put(SnsSubscriptionConfirmation.class, new ObjectMapper().readerFor(SnsSubscriptionConfirmation.class));
+        READERS.put(Quark.class, new ObjectMapper().readerFor(Quark.class));
+    }
+
+    @POST
+    @Consumes({MediaType.TEXT_PLAIN})
+    public Response notificationEndpoint(@HeaderParam("x-amz-sns-message-type") String messageType, String message) throws JsonProcessingException {
+        if (messageType == null) {
+            return Response.status(400).build();
+        }
+
+        if (messageType.equals(NOTIFICATION_TYPE)) {
+            SnsNotification notification = readObject(SnsNotification.class, message);
+            Quark quark = readObject(Quark.class, notification.getMessage());
+            LOGGER.infov("Quark[{0}, {1}] collision with the shield.", quark.getFlavor(), quark.getSpin());
+        } else if (messageType.equals(SUBSCRIPTION_CONFIRMATION_TYPE)) {
+            SnsSubscriptionConfirmation subConf = readObject(SnsSubscriptionConfirmation.class, message);
+            sns.confirmSubscription(cs -> cs.topicArn(topicArn).token(subConf.getToken()));
+            LOGGER.info("Subscription confirmed. Ready for quarks collisions.");
+        } else if (messageType.equals(UNSUBSCRIPTION_CONFIRMATION_TYPE)) {
+            LOGGER.info("We are unsubscribed");
+        } else {
+            return Response.status(400).entity("Unknown messageType").build();
+        }
+
+        return Response.ok().build();
+    }
+
+    @POST
+    @Path("/subscribe")
+    public Response subscribe() {
+        String notificationEndpoint = notificationEndpoint();
+        SubscribeResponse response = sns.subscribe(s -> s.topicArn(topicArn).protocol("http").endpoint(notificationEndpoint));
+        subscriptionArn = response.subscriptionArn();
+        LOGGER.infov("Subscribed Quarks shield <{0}> : {1} ", notificationEndpoint, response.subscriptionArn());
+        return Response.ok().entity(response.subscriptionArn()).build();
+    }
+
+    @POST
+    @Path("/unsubscribe")
+    public Response unsubscribe() {
+        if (subscriptionArn != null) {
+            sns.unsubscribe(s -> s.subscriptionArn(subscriptionArn));
+            LOGGER.infov("Unsubscribed quarks shield for id = {0}", subscriptionArn);
+            return Response.ok().build();
+        } else {
+            LOGGER.info("Not subscribed yet");
+            return Response.status(400).entity("Not subscribed yet").build();
+        }
+    }
+
+    private String notificationEndpoint() {
+        return quarksShieldBaseUrl + "/sync/shield";
+    }
+
+    private <T> T readObject(Class<T> clazz, String message) {
+        T object = null;
+        try {
+            object = READERS.get(clazz).readValue(message);
+        } catch (JsonProcessingException e) {
+            LOGGER.errorv("Unable to deserialize message <{0}> to Class <{1}>", message, clazz.getSimpleName());
+            throw new RuntimeException(e);
+        }
+        return object;
+    }
+}
+----
+
+1. `subscribe()` endpoint subscribes to our topic by providing the URL to the POST endpoint receiving SNS notification requests.
+2. `unsubscribe()` simply removes our subscription, so any messages published to the topic will not be routed to our endpoint anymore
+3. `notificationEndpoint()` is called by SNS on new message if endpoint is subscribed.
+See https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html[Amazon SNS message and JSON formats] for details about the format of the messages SNS can submit.
+
+
+== Configuring SNS clients
+
+Both SNS clients (sync and async) are configurable via the `application.properties` file that can be provided in the `src/main/resources` directory.
+Additionally, you need to add to the classpath a proper implementation of the sync client. By default the extension uses URL connection HTTP client, so
+you need to add a URL connection client dependency to the `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>url-connection-client</artifactId>
+</dependency>
+----
+
+If you want to use Apache HTTP client instead, configure it as follows:
+[source,properties]
+----
+quarkus.sns.sync-client.type=apache
+----
+
+And add the following dependency to the application `pom.xml`:
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>apache-client</artifactId>
+</dependency>
+----
+
+If you're going to use a local SNS instance, configure it as follows:
+
+[source,properties]
+----
+quarkus.sns.endpoint-override=http://localhost:8009
+
+quarkus.sns.aws.region=us-east-1
+quarkus.sns.aws.credentials.type=static
+quarkus.sns.aws.credentials.static-provider.access-key-id=test-key
+quarkus.sns.aws.credentials.static-provider.secret-access-key=test-secret
+----
+
+- `quarkus.sns.aws.region` - It's required by the client, but since you're using a local SNS instance you can pick any valid AWS region.
+- `quarkus.sns.aws.credentials.type` - Set `static` credentials provider with any values for `access-key-id` and `secret-access-key`
+- `quarkus.sns.endpoint-override` - Override the SNS client to use a local instance instead of an AWS service
+
+If you want to work with an AWS account, you'd need to set it with:
+[source,properties]
+----
+quarkus.sns.aws.region=<YOUR_REGION>
+quarkus.sns.aws.credentials.type=default
+----
+
+- `quarkus.sns.aws.region` you should set it to the region where you provisioned the SNS table,
+- `quarkus.sns.aws.credentials.type` - use the `default` credentials provider chain that looks for credentials in this order:
+
+include::./amazon-credentials.adoc[]
+
+== Next steps
+
+=== Packaging
+
+Packaging your application is as simple as `./mvnw clean package`.
+It can be run with `java -Dtopic.arn=$TOPIC_ARN -jar target/quarkus-app/quarkus-run.jar`.
+
+With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
+Depending on your system, that will take some time.
+
+=== Going asynchronous
+
+Thanks to the AWS SDK v2.x used by the Quarkus extension, you can use the asynchronous programming model out of the box.
+
+Create a `org.acme.sns.QuarksCannonAsyncResource` REST resource that will be similar to our `QuarksCannonSyncResource` but using an asynchronous programming model.
+
+[source,java]
+----
+package org.acme.sns;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import io.smallrye.mutiny.Uni;
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import org.acme.sns.model.Quark;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+import software.amazon.awssdk.services.sns.SnsAsyncClient;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
+
+@Path("/async/cannon")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class QuarksCannonAsyncResource {
+
+    private static final Logger LOGGER = Logger.getLogger(QuarksCannonAsyncResource.class);
+
+    @Inject
+    SnsAsyncClient sns;
+
+    @ConfigProperty(name = "topic.arn")
+    String topicArn;
+
+    static ObjectWriter QUARK_WRITER = new ObjectMapper().writerFor(Quark.class);
+
+    @POST
+    @Path("/shoot")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Uni<Response> publish(Quark quark) throws Exception {
+        String message = QUARK_WRITER.writeValueAsString(quark);
+        return Uni.createFrom()
+            .completionStage(sns.publish(p -> p.topicArn(topicArn).message(message)))
+            .onItem().invoke(item -> LOGGER.infov("Fired Quark[{0}, {1}}]", quark.getFlavor(), quark.getSpin()))
+            .onItem().transform(PublishResponse::messageId)
+            .onItem().transform(id -> Response.ok().entity(id).build());
+    }
+}
+----
+We create `Uni` instances from the `CompletionStage` objects returned by the asynchronous SNS client, and then transform the emitted item.
+
+And corresponding async subscriber `org.acme.sns.QuarksShieldAsyncResource`
+[source,java]
+----
+package org.acme.sns;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import io.smallrye.mutiny.Uni;
+import java.util.HashMap;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import org.acme.sns.model.Quark;
+import org.acme.sns.model.SnsNotification;
+import org.acme.sns.model.SnsSubscriptionConfirmation;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+import software.amazon.awssdk.services.sns.SnsAsyncClient;
+import software.amazon.awssdk.services.sns.model.SubscribeResponse;
+
+@Path("/async/shield")
+public class QuarksShieldAsyncResource {
+
+    private static final Logger LOGGER = Logger.getLogger(QuarksShieldAsyncResource.class);
+
+    private static final String NOTIFICATION_TYPE = "Notification";
+    private static final String SUBSCRIPTION_CONFIRMATION_TYPE = "SubscriptionConfirmation";
+    private static final String UNSUBSCRIPTION_CONFIRMATION_TYPE = "UnsubscribeConfirmation";
+
+    @Inject
+    SnsAsyncClient sns;
+
+    @ConfigProperty(name = "topic.arn")
+    String topicArn;
+
+    @ConfigProperty(name = "quarks.shield.base.url")
+    String quarksShieldBaseUrl;
+
+    private volatile String subscriptionArn;
+
+    static Map<Class<?>, ObjectReader> READERS = new HashMap<>();
+
+    static {
+        READERS.put(SnsNotification.class, new ObjectMapper().readerFor(SnsNotification.class));
+        READERS.put(SnsSubscriptionConfirmation.class, new ObjectMapper().readerFor(SnsSubscriptionConfirmation.class));
+        READERS.put(Quark.class, new ObjectMapper().readerFor(Quark.class));
+    }
+
+    @POST
+    @Consumes({MediaType.TEXT_PLAIN})
+    public Uni<Response> notificationEndpoint(@HeaderParam("x-amz-sns-message-type") String messageType, String message) {
+        if (messageType == null) {
+            return Uni.createFrom().item(Response.status(400).build());
+        }
+
+        if (messageType.equals(NOTIFICATION_TYPE)) {
+            return Uni.createFrom().item(readObject(SnsNotification.class, message))
+                .onItem().transform(notification -> readObject(Quark.class, notification.getMessage()))
+                .onItem().invoke(quark -> LOGGER.infov("Quark[{0}, {1}] collision with the shield.", quark.getFlavor(), quark.getSpin()))
+                .onItem().transform(quark -> Response.ok().build());
+        } else if (messageType.equals(SUBSCRIPTION_CONFIRMATION_TYPE)) {
+            return Uni.createFrom().item(readObject(SnsSubscriptionConfirmation.class, message))
+                .onItem().transformToUni(msg ->
+                    Uni.createFrom().completionStage(
+                        sns.confirmSubscription(confirm -> confirm.topicArn(topicArn).token(msg.getToken())))
+                )
+                .onItem().invoke(resp -> LOGGER.info("Subscription confirmed. Ready for quarks collisions."))
+                .onItem().transform(resp -> Response.ok().build());
+        } else if (messageType.equals(UNSUBSCRIPTION_CONFIRMATION_TYPE)) {
+            LOGGER.info("We are unsubscribed");
+            return Uni.createFrom().item(Response.ok().build());
+        }
+
+        return Uni.createFrom().item(Response.status(400).entity("Unknown messageType").build());
+    }
+
+    @POST
+    @Path("/subscribe")
+    public Uni<Response> subscribe() {
+        return Uni.createFrom()
+            .completionStage(sns.subscribe(s -> s.topicArn(topicArn).protocol("http").endpoint(notificationEndpoint())))
+            .onItem().transform(SubscribeResponse::subscriptionArn)
+            .onItem().invoke(this::setSubscriptionArn)
+            .onItem().invoke(arn -> LOGGER.infov("Subscribed Quarks shield with id = {0} ", arn))
+            .onItem().transform(arn -> Response.ok().entity(arn).build());
+    }
+
+    @POST
+    @Path("/unsubscribe")
+    public Uni<Response> unsubscribe() {
+        if (subscriptionArn != null) {
+            return Uni.createFrom()
+                .completionStage(sns.unsubscribe(s -> s.subscriptionArn(subscriptionArn)))
+                .onItem().invoke(arn -> LOGGER.infov("Unsubscribed quarks shield for id = {0}", subscriptionArn))
+                .onItem().invoke(arn -> subscriptionArn = null)
+                .onItem().transform(arn -> Response.ok().build());
+        } else {
+            return Uni.createFrom().item(Response.status(400).entity("Not subscribed yet").build());
+        }
+    }
+
+    private String notificationEndpoint() {
+        return quarksShieldBaseUrl + "/async/shield";
+    }
+
+    private void setSubscriptionArn(String arn) {
+        this.subscriptionArn = arn;
+    }
+
+    private <T> T readObject(Class<T> clazz, String message) {
+        T object = null;
+        try {
+            object = READERS.get(clazz).readValue(message);
+        } catch (JsonProcessingException e) {
+            LOGGER.errorv("Unable to deserialize message <{0}> to Class <{1}>", message, clazz.getSimpleName());
+            throw new RuntimeException(e);
+        }
+        return object;
+    }
+}
+----
+
+And we need to add Netty HTTP client dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>netty-nio-client</artifactId>
+</dependency>
+----
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-amazon-sns.adoc[opts=optional, leveloffset=+1]

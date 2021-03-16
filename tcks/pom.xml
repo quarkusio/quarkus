@@ -19,19 +19,46 @@
         <module>microprofile-fault-tolerance</module>
         <module>microprofile-health</module>
         <module>microprofile-jwt</module>
+        <module>microprofile-graphql</module>
         <module>microprofile-metrics</module>
         <module>microprofile-reactive-messaging</module>
         <module>microprofile-rest-client</module>
+        <module>microprofile-rest-client-reactive</module>
         <module>microprofile-openapi</module>
         <module>microprofile-opentracing</module>
     </modules>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-deployment-deps</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-enforcer-rules</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>

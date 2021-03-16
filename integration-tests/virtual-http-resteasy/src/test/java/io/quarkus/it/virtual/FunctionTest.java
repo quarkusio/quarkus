@@ -27,20 +27,22 @@ import io.restassured.RestAssured;
 @QuarkusTest
 public class FunctionTest {
     @Test
-    public void testJaxrs() throws Exception {
-        String uri = "https://foo.com/hello";
-        testGET(uri);
-        testPOST(uri);
-    }
-
-    @Test
-    public void testNotFound() {
+    public void testSwagger() {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
-        req.setUri(URI.create("https://nowhere.com/badroute"));
+        req.setUri(URI.create("https://foo.com/q/swagger-ui/"));
         req.setHttpMethod(HttpMethod.GET);
 
         // Invoke
-        final HttpResponseMessage ret = new Function().run(req, new ExecutionContext() {
+        final HttpResponseMessage ret = new Function().run(req, createContext());
+
+        // Verify
+        Assertions.assertEquals(ret.getStatus(), HttpStatus.OK);
+        String body = new String((byte[]) ret.getBody(), StandardCharsets.UTF_8);
+        Assertions.assertTrue(body.contains("OpenAPI UI"));
+    }
+
+    private ExecutionContext createContext() {
+        return new ExecutionContext() {
             @Override
             public Logger getLogger() {
                 return null;
@@ -55,7 +57,24 @@ public class FunctionTest {
             public String getFunctionName() {
                 return null;
             }
-        });
+        };
+    }
+
+    @Test
+    public void testJaxrs() throws Exception {
+        String uri = "https://foo.com/hello";
+        testGET(uri);
+        testPOST(uri);
+    }
+
+    @Test
+    public void testNotFound() {
+        final HttpRequestMessageMock req = new HttpRequestMessageMock();
+        req.setUri(URI.create("https://nowhere.com/badroute"));
+        req.setHttpMethod(HttpMethod.GET);
+
+        // Invoke
+        final HttpResponseMessage ret = new Function().run(req, createContext());
 
         // Verify
         Assertions.assertEquals(ret.getStatus(), HttpStatus.NOT_FOUND);
@@ -79,22 +98,7 @@ public class FunctionTest {
         req.setHttpMethod(HttpMethod.GET);
 
         // Invoke
-        final HttpResponseMessage ret = new Function().run(req, new ExecutionContext() {
-            @Override
-            public Logger getLogger() {
-                return null;
-            }
-
-            @Override
-            public String getInvocationId() {
-                return null;
-            }
-
-            @Override
-            public String getFunctionName() {
-                return null;
-            }
-        });
+        final HttpResponseMessage ret = new Function().run(req, createContext());
 
         // Verify
         Assertions.assertEquals(ret.getStatus(), HttpStatus.OK);
@@ -108,26 +112,11 @@ public class FunctionTest {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
         req.setUri(URI.create(uri));
         req.setHttpMethod(HttpMethod.POST);
-        req.setBody("Bill".getBytes());
+        req.setBody("Bill");
         req.getHeaders().put("Content-Type", "text/plain");
 
         // Invoke
-        final HttpResponseMessage ret = new Function().run(req, new ExecutionContext() {
-            @Override
-            public Logger getLogger() {
-                return null;
-            }
-
-            @Override
-            public String getInvocationId() {
-                return null;
-            }
-
-            @Override
-            public String getFunctionName() {
-                return null;
-            }
-        });
+        final HttpResponseMessage ret = new Function().run(req, createContext());
 
         // Verify
         Assertions.assertEquals(ret.getStatus(), HttpStatus.OK);

@@ -1,15 +1,21 @@
 package io.quarkus.oidc.runtime;
 
-import io.vertx.ext.auth.oauth2.OAuth2Auth;
+import io.quarkus.oidc.OidcTenantConfig;
 
 class TenantConfigContext {
 
-    final OAuth2Auth auth;
+    /**
+     * OIDC Provider
+     */
+    final OidcProvider provider;
+
+    /**
+     * Tenant configuration
+     */
     final OidcTenantConfig oidcConfig;
 
-    TenantConfigContext(OAuth2Auth auth, OidcTenantConfig config) {
-        this.auth = auth;
-        oidcConfig = config;
+    public TenantConfigContext(OidcProvider client, OidcTenantConfig config) {
+        this.provider = client;
+        this.oidcConfig = config;
     }
-
 }

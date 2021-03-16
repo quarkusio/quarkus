@@ -18,6 +18,8 @@ import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -27,6 +29,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
+import io.quarkus.resteasy.runtime.ResteasyServlet;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServletMappingBuildItem;
 import io.quarkus.undertow.deployment.FilterBuildItem;
@@ -47,11 +50,19 @@ public class ResteasyServletProcessor {
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
 
     @BuildStep
-    public void jaxrsConfig(Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
-            BuildProducer<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig, HttpRootPathBuildItem httpRootPathBuildItem) {
+    public void jaxrsConfig(
+            Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
+            BuildProducer<ResteasyJaxrsConfigBuildItem> deprecatedResteasyJaxrsConfig,
+            BuildProducer<io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
+            HttpRootPathBuildItem httpRootPathBuildItem) {
         if (resteasyServerConfig.isPresent()) {
-            resteasyJaxrsConfig.produce(
-                    new ResteasyJaxrsConfigBuildItem(httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getPath())));
+            String rp = resteasyServerConfig.get().getRootPath();
+            String rootPath = httpRootPathBuildItem.resolvePath(rp.startsWith("/") ? rp.substring(1) : rp);
+            String defaultPath = httpRootPathBuildItem.resolvePath(resteasyServerConfig.get().getPath());
+
+            deprecatedResteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(defaultPath));
+            resteasyJaxrsConfig
+                    .produce(new io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem(rootPath, defaultPath));
         }
     }
 
@@ -83,10 +94,10 @@ public class ResteasyServletProcessor {
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
             Optional<ServletContextPathBuildItem> servletContextPathBuildItem,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
-        if (!capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+        if (!capabilities.isPresent(Capability.SERVLET)) {
             return;
         }
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
+        feature.produce(new FeatureBuildItem(Feature.RESTEASY));
 
         if (resteasyServerConfig.isPresent()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
@@ -98,12 +109,14 @@ public class ResteasyServletProcessor {
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
             if (path.equals("/") || path.isEmpty()) {
                 filter.produce(FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyFilter.class.getName()).setLoadOnStartup(1)
-                        .addFilterServletNameMapping("default", DispatcherType.REQUEST).setAsyncSupported(true)
+                        .addFilterServletNameMapping("default", DispatcherType.REQUEST)
+                        .addFilterServletNameMapping("default", DispatcherType.FORWARD)
+                        .addFilterServletNameMapping("default", DispatcherType.INCLUDE).setAsyncSupported(true)
                         .build());
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ResteasyFilter.class.getName()));
             } else {
                 String mappingPath = getMappingPath(path);
-                servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName())
+                servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, ResteasyServlet.class.getName())
                         .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true).build());
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
             }

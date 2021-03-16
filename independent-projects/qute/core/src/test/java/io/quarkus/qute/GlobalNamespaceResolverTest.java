@@ -15,7 +15,14 @@ public class GlobalNamespaceResolverTest {
 
                     @Override
                     public CompletionStage<Object> resolve(EvalContext context) {
-                        return context.getName().equals("foo") ? CompletableFuture.completedFuture("bar") : Results.NOT_FOUND;
+                        if (!context.getName().equals("foo")) {
+                            return Results.NOT_FOUND;
+                        }
+                        CompletableFuture<Object> ret = new CompletableFuture<>();
+                        context.evaluate(context.getParams().get(0)).whenComplete((r, e) -> {
+                            ret.complete(r);
+                        });
+                        return ret;
                     }
 
                     @Override
@@ -25,7 +32,7 @@ public class GlobalNamespaceResolverTest {
                 })
                 .build();
 
-        assertEquals("bar", engine.parse("{global:foo}").render(null));
+        assertEquals("bar", engine.parse("{global:foo('bar')}").render(null));
     }
 
 }

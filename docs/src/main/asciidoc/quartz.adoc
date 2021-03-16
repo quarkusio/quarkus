@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Scheduling Periodic Tasks with Quartz
 
@@ -22,7 +22,7 @@ To complete this guide, you need:
 * less than 10 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * Docker and Docker Compose installed on your machine
 
 == Architecture
@@ -42,14 +42,14 @@ The solution is located in the `quartz-quickstart` {quickstarts-tree-url}/quartz
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=quartz-quickstart \
     -DclassName="org.acme.quartz.TaskResource" \
     -Dpath="/tasks" \
-    -Dextensions="quartz, hibernate-orm-panache, flyway, resteasy-jsonb, jdbc-postgresql"
+    -Dextensions="resteasy,quartz,hibernate-orm-panache,flyway,resteasy-jackson,jdbc-postgresql"
 cd quartz-quickstart
 ----
 
@@ -63,6 +63,29 @@ It generates:
 * an associated test
 
 The Maven project also imports the Quarkus Quartz extension.
+
+If you already have your Quarkus project configured, you can add the `quartz` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="quartz"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-quartz</artifactId>
+</dependency>
+----
+
+[TIP]
+====
+To use a JDBC store, the `quarkus-agroal` extension, which provides the datasource support, is also required.
+====
 
 == Creating the Task Entity
 
@@ -92,7 +115,7 @@ public class Task extends PanacheEntity { <1>
     }
 }
 ----
-1. Declare the entity using https://quarkus.io/guides/hibernate-orm-panache[Panache]
+1. Declare the entity using link:hibernate-orm-panache[Panache]
 
 == Creating a scheduled job
 
@@ -112,7 +135,7 @@ import io.quarkus.scheduler.Scheduled;
 public class TaskBean {
 
     @Transactional
-    @Scheduled(every = "10s") <2>
+    @Scheduled(every = "10s", identity = "task-job") <2>
     void schedule() {
         Task task = new Task(); <3>
         task.persist(); <4>
@@ -120,9 +143,9 @@ public class TaskBean {
 }
 ----
 1. Declare the bean in the _application_ scope
-2. Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds.
+2. Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds and set the unique identifier for this job.
 3. Create a new `Task` with the current start time.
-4. Persist the task in database using https://quarkus.io/guides/hibernate-orm-panache[Panache].
+4. Persist the task in database using link:hibernate-orm-panache[Panache].
 
 === Scheduling Jobs Programmatically
 
@@ -139,7 +162,7 @@ public class TaskBean {
     @Inject
     org.quartz.Scheduler quartz; <1>
     
-    void onStart(@Observes StartupEvent event) {
+    void onStart(@Observes StartupEvent event) throws SchedulerException {
        JobDetail job = JobBuilder.newJob(MyJob.class)
                          .withIdentity("myJob", "myGroup")
                          .build();
@@ -161,10 +184,13 @@ public class TaskBean {
     }
     
     // A new instance of MyJob is created by Quartz for every job execution
-    static class MyJob implements Job {
+    public static class MyJob implements Job {
+
+       @Inject
+       TaskBean taskBean;
     
        public void execute(JobExecutionContext context) throws JobExecutionException {
-          Arc.container().instance(TaskBean.class).get(). performTask(); <3>
+          taskBean.performTask(); <3>
        }
     
     }
@@ -172,18 +198,18 @@ public class TaskBean {
 ----
 1. Inject the underlying `org.quartz.Scheduler` instance.
 2. Schedule a new job using the Quartz API.
-3. Lookup the bean instance of `TaskBean` and invoke the `performTask()` method from the job.
+3. Invoke the `TaskBean#performTask()` method from the job. Jobs are also link:cdi[container-managed] beans if they belong to a link:cdi-reference[bean archive].
 
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz-configuration-reference>>.  
 
 == Updating the application configuration file
 
 Edit the `application.properties` file and add the below configuration:
-[source,shell]
+[source,properties]
 ----
 # Quartz configuration
 quarkus.quartz.clustered=true <1>
-quarkus.quartz.store-type=db <2>
+quarkus.quartz.store-type=jdbc-cmt <2>
 
 # Datasource configuration.
 quarkus.datasource.db-kind=postgresql
@@ -224,7 +250,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("/tasks")
-@Produces(MediaType.APPLICATION_JSON)
 public class TaskResource {
 
     @GET
@@ -268,8 +293,8 @@ public class TaskResourceTest {
 
 == Creating Quartz Tables
 
-Add a SQL migration file named `src/main/resources/db/migration/V2.0.0__QuarkusQuartzTasks.sql` with the content copied from
-file with the content from {quickstarts-blob-url}/quartz-quickstart/src/main/resources/db/migration/V2.0.0__QuarkusQuartzTasks.sql[V2.0.0__QuarkusQuartzTasks.sql].
+Add a SQL migration file named `src/main/resources/db/migration/V2.0.0\__QuarkusQuartzTasks.sql` with the content copied from
+file with the content from link:{quickstarts-blob-url}/quartz-quickstart/src/main/resources/db/migration/V2.0.0__QuarkusQuartzTasks.sql[V2.0.0__QuarkusQuartzTasks.sql].
 
 == Configuring the load balancer
 
@@ -328,7 +353,7 @@ services:
       - tasks-network
 
   postgres: <3>
-    image: postgres:11.3
+    image: postgres:13.1
     container_name: quarkus_test
     environment:
       - POSTGRES_USER=quarkus_test
@@ -352,7 +377,7 @@ networks:
 
 In a separate terminal, run the below command:
 
-[source,shell]
+[source,bash]
 ----
 docker-compose up postgres <1>
 ----
@@ -364,14 +389,14 @@ docker-compose up postgres <1>
 Run the application with: `./mvnw quarkus:dev`.
 After a few seconds, open another terminal and run `curl localhost:8080/tasks` to verify that we have at least one task created.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
 == Packaging the application and run several instances
 
 The application can be packaged using `./mvnw clean package`. Once the build is successful, run the below command:
 
-[source,shell]
+[source,bash]
 ----
 docker-compose up --scale tasks=2 --scale nginx=1 <1>
 ----
@@ -381,6 +406,33 @@ docker-compose up --scale tasks=2 --scale nginx=1 <1>
 After a few seconds, in another terminal, run `curl localhost:8080/tasks` to verify that tasks were only created at different instants and in an interval of 10 seconds.
 
 You can also generate the native executable with `./mvnw clean package -Pnative`.
+
+WARNING: It's the reponsibility of the deployer to clear/remove the previous state, i.e. stale jobs and triggers. Moreover, the applications that form the "Quartz cluster" should be identical, otherwise an unpredictable result may occur.
+
+[[quartz-register-plugin-listeners]]
+== Registering Plugin and Listeners
+
+You can register `plugins`, `job-listeners` and `trigger-listeners` through Quarkus configuration.
+
+The example below registers the plugin `org.quartz.plugins.history.LoggingJobHistoryPlugin` named as `jobHistory` with the property `jobSuccessMessage` defined as `Job [{1}.{0}] execution complete and reports: {8}`
+
+[source,conf]
+----
+quarkus.quartz.plugins.jobHistory.class=org.quartz.plugins.history.LoggingJobHistoryPlugin
+quarkus.quartz.plugins.jobHistory.properties.jobSuccessMessage=Job [{1}.{0}] execution complete and reports: {8}
+----
+
+You can also register a listener programmatically with an injected `org.quartz.Scheduler`:
+
+[source,java]
+----
+public class MyListenerManager {
+    void onStart(@Observes StartupEvent event, org.quartz.Scheduler scheduler) throws SchedulerException {
+        scheduler.getListenerManager().addJobListener(new MyJogListener());
+        scheduler.getListenerManager().addTriggerListener(new MyTriggerListener());
+    }
+}
+----
 
 [[quartz-configuration-reference]]
 == Quartz Configuration Reference

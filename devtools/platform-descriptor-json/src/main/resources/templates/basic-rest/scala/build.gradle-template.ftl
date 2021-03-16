@@ -5,7 +5,7 @@ plugins {
 
 repositories {
      mavenLocal()
-     mavenCentral()
+     mavenCentral()${maven_repositories}
 }
 
 dependencies {
@@ -21,5 +21,12 @@ group '${project_groupId}'
 version '${project_version}'
 
 compileScala {
-  scalaCompileOptions.encoding = 'UTF-8'
+    scalaCompileOptions.encoding = 'UTF-8'
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }

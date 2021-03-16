@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.runtime;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +44,14 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
     private Merge.Mode merge;
 
     private Class<? extends Invoker> invokerClass;
+
+    private boolean blocking;
+
+    private boolean blockingExecutionOrdered;
+
+    private String workerPoolName;
+
+    private Type ingestedPayload;
 
     public String getBeanId() {
         return beanId;
@@ -188,13 +197,27 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
         return invokerClass;
     }
 
+    @Override
+    public Type getIngestedPayloadType() {
+        return ingestedPayload;
+    }
+
+    public void setIngestedPayloadType(Type ingestedPayload) {
+        this.ingestedPayload = ingestedPayload;
+    }
+
     public void setInvokerClass(Class<? extends Invoker> invokerClass) {
         this.invokerClass = invokerClass;
     }
 
     @Override
     public String methodAsString() {
-        return getBean().getBeanClass().getName() + "#" + getMethodName();
+        if (Arc.container() != null) {
+            return getBean().getBeanClass().getName() + "#" + getMethodName();
+        } else {
+            return getMethodName();
+        }
+
     }
 
     @Override
@@ -209,5 +232,32 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
         } else {
             return broadcastValue;
         }
+    }
+
+    @Override
+    public boolean isBlocking() {
+        return blocking;
+    }
+
+    @Override
+    public String getWorkerPoolName() {
+        return workerPoolName;
+    }
+
+    @Override
+    public boolean isBlockingExecutionOrdered() {
+        return blockingExecutionOrdered;
+    }
+
+    public void setBlocking(boolean blocking) {
+        this.blocking = blocking;
+    }
+
+    public void setBlockingExecutionOrdered(boolean blockingExecutionOrdered) {
+        this.blockingExecutionOrdered = blockingExecutionOrdered;
+    }
+
+    public void setWorkerPoolName(String workerPoolName) {
+        this.workerPoolName = workerPoolName;
     }
 }

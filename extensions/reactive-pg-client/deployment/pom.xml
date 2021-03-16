@@ -8,12 +8,16 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-reactive-pg-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-reactive-pg-client-deployment</artifactId>
 
     <name>Quarkus - Reactive PostgreSQL Client - Deployment</name>
+
+    <properties>
+        <postgres.image>postgres:13.1</postgres.image>
+        <reactive-postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</reactive-postgres.url>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -22,16 +26,28 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-credentials-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-pg-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -47,6 +63,12 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -74,7 +96,7 @@
             <id>test-postgresql</id>
             <activation>
                 <property>
-                    <name>test-postgresql</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -82,7 +104,7 @@
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <skip>true</skip>
+                            <skip>false</skip>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -93,11 +115,11 @@
             <id>docker-postgresql</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
+                <reactive-postgres.url>vertx-reactive:postgresql://:5431/hibernate_orm_test</reactive-postgres.url>
             </properties>
             <build>
                 <plugins>
@@ -107,7 +129,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>postgres:10.5</name>
+                                    <name>${postgres.image}</name>
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>
@@ -130,7 +152,7 @@
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all postgres:10.5 images currently running, not just those we just started.
+                            <!--Stops all postgres images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>
@@ -149,6 +171,22 @@
                                 <goals>
                                     <goal>stop</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-prune</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${docker-prune.location}</executable>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

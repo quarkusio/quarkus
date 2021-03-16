@@ -2,15 +2,19 @@ package io.quarkus.smallrye.context.runtime;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 
+import org.eclipse.microprofile.context.ThreadContext;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ContextManagerProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 
-import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.context.SmallRyeContextManager;
 import io.smallrye.context.SmallRyeContextManagerProvider;
+import io.smallrye.context.SmallRyeManagedExecutor;
+import io.smallrye.context.SmallRyeThreadContext;
 
 /**
  * The runtime value service used to create values related to the MP-JWT services
@@ -36,7 +40,7 @@ public class SmallRyeContextPropagationRecorder {
         builder.withContextManagerExtensions(discoveredExtensions.toArray(new ContextManagerExtension[0]));
     }
 
-    public void configureRuntime(BeanContainer container, ExecutorService executorService) {
+    public void configureRuntime(ExecutorService executorService) {
         // associate the static init manager to the runtime CL
         ContextManagerProvider contextManagerProvider = ContextManagerProvider.instance();
         // finish building our manager
@@ -45,9 +49,26 @@ public class SmallRyeContextPropagationRecorder {
         SmallRyeContextManager contextManager = builder.build();
 
         contextManagerProvider.registerContextManager(contextManager, Thread.currentThread().getContextClassLoader());
+    }
 
-        // initialise injection
-        SmallRyeContextPropagationProvider cpProvider = container.instance(SmallRyeContextPropagationProvider.class);
-        cpProvider.initialize(executorService);
+    public Supplier<Object> initializeManagedExecutor(ExecutorService executorService) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                ThreadContext threadContext = Arc.container().instance(ThreadContext.class).get();
+                return new SmallRyeManagedExecutor(-1, -1, (SmallRyeThreadContext) threadContext, executorService,
+                        "no-ip") {
+                    @Override
+                    public void shutdown() {
+                        throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
+                    }
+
+                    @Override
+                    public List<Runnable> shutdownNow() {
+                        throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
+                    }
+                };
+            }
+        };
     }
 }

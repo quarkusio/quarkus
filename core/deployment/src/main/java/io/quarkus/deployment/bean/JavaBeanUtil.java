@@ -1,12 +1,24 @@
 package io.quarkus.deployment.bean;
 
+import org.jboss.jandex.DotName;
+
 public class JavaBeanUtil {
+
+    private static final DotName PRIMITIVE_BOOLEAN = DotName.createSimple(boolean.class.getName());
 
     private static final String GET = "get";
     private static final String IS = "is";
 
-    public static String getGetterName(String name, String type) {
-        String prefix = type.equals("Z") ? IS : GET;
+    public static String getGetterName(String name, String typeDescriptor) {
+        return getGetterName(name, typeDescriptor.equals("Z"));
+    }
+
+    public static String getGetterName(String name, DotName dotName) {
+        return getGetterName(name, PRIMITIVE_BOOLEAN.equals(dotName));
+    }
+
+    private static String getGetterName(String name, boolean isPrimitiveBoolean) {
+        String prefix = isPrimitiveBoolean ? IS : GET;
         return prefix + capitalize(name);
     }
 

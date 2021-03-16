@@ -76,6 +76,16 @@ public class ExceptionUtil {
         return generateStackTrace(modifiedRoot).replace("Caused by:", "Resulted in:");
     }
 
+    public static Throwable getRootCause(Throwable exception) {
+        final List<Throwable> chain = new ArrayList<>();
+        Throwable curr = exception;
+        while (curr != null && !chain.contains(curr)) {
+            chain.add(curr);
+            curr = curr.getCause();
+        }
+        return chain.isEmpty() ? null : chain.get(chain.size() - 1);
+    }
+
     /**
      * Creates and returns a new {@link Throwable} which has the following characteristics:
      * <ul>

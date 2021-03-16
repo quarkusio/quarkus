@@ -21,8 +21,12 @@ import io.restassured.RestAssured;
 
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
+    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.ssl.url", "https://localhost:8543/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
+
+    static {
+        RestAssured.useRelaxedHTTPSValidation();
+    }
 
     @Override
     public Map<String, String> start() {
@@ -136,5 +140,18 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                 .when()
                 .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
+    }
+
+    public static String getRefreshToken(String userName) {
+        return RestAssured
+                .given()
+                .param("grant_type", "password")
+                .param("username", userName)
+                .param("password", userName)
+                .param("client_id", "quarkus-app")
+                .param("client_secret", "secret")
+                .when()
+                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
+                .as(AccessTokenResponse.class).getRefreshToken();
     }
 }

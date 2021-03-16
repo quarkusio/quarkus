@@ -33,7 +33,7 @@ public class VerticleWithClassNameDeploymentTest {
     public void testDeploymentOfVerticleUsingClassName() {
         String resp1 = RestAssured.get("http://localhost:8080").asString();
         String resp2 = RestAssured.get("http://localhost:8080").asString();
-        Assertions.assertTrue(resp1.startsWith("OK"));
+        Assertions.assertTrue(resp1.startsWith("OK"), resp1);
         Assertions.assertTrue(resp2.startsWith("OK"));
         Assertions.assertNotEquals(resp1, resp2);
     }

@@ -6,7 +6,6 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -16,6 +15,7 @@
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
+        <keycloak.ssl.url>https://localhost:8543/auth</keycloak.ssl.url>
     </properties>
 
     <dependencies>
@@ -52,6 +52,37 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elytron-security-properties-file-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -77,7 +108,6 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${project.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -94,7 +124,7 @@
             <id>test-keycloak</id>
             <activation>
                 <property>
-                    <name>test-keycloak</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -104,7 +134,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.url>${keycloak.url}</keycloak.url>
+                                <keycloak.url>${keycloak.ssl.url}</keycloak.url>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -113,14 +143,13 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.url>${keycloak.url}</keycloak.url>
+                                <keycloak.url>${keycloak.ssl.url}</keycloak.url>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -140,60 +169,22 @@
                     <name>native</name>
                 </property>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemProperties>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                    </systemProperties>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
-                        <executions>
-                            <execution>
-                                <id>native-image</id>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
-                                    <cleanupServer>true</cleanupServer>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <enableServer>false</enableServer>
-                                    <dumpProxies>false</dumpProxies>
-                                    <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <debugBuildProcess>false</debugBuildProcess>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <!-- add some custom config, the rest comes from parent -->
+            <properties>
+                <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
+            </properties>
         </profile>
 
         <profile>
             <id>docker-keycloak</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>
                 <keycloak.url>http://localhost:8180/auth</keycloak.url>
+                <keycloak.ssl.url>https://localhost:8543/auth</keycloak.ssl.url>
             </properties>
             <build>
                 <plugins>
@@ -208,6 +199,7 @@
                                     <run>
                                         <ports>
                                             <port>8180:8080</port>
+                                            <port>8543:8443</port>
                                         </ports>
                                         <env>
                                             <KEYCLOAK_USER>admin</KEYCLOAK_USER>
@@ -245,6 +237,22 @@
                                 <goals>
                                     <goal>stop</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-prune</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${docker-prune.location}</executable>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

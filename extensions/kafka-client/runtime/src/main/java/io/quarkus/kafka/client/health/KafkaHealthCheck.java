@@ -6,11 +6,12 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.common.Node;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
@@ -20,15 +21,15 @@ import org.eclipse.microprofile.health.Readiness;
 @ApplicationScoped
 public class KafkaHealthCheck implements HealthCheck {
 
-    @ConfigProperty(name = "kafka.bootstrap.servers", defaultValue = "localhost:9092")
-    private String bootstrapServers;
+    @Inject
+    @Named("default-kafka-broker")
+    Map<String, Object> config;
 
     private AdminClient client;
 
     @PostConstruct
     void init() {
-        Map<String, Object> conf = new HashMap<>();
-        conf.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        Map<String, Object> conf = new HashMap<>(config);
         conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000");
         client = AdminClient.create(conf);
     }

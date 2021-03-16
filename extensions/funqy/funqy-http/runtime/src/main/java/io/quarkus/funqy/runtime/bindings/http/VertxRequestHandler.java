@@ -8,6 +8,7 @@ import javax.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -17,7 +18,9 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.RequestContextImpl;
+import io.quarkus.funqy.runtime.query.QueryReader;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
@@ -41,15 +44,15 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             Executor executor) {
         this.vertx = vertx;
         this.beanContainer = beanContainer;
+        // make sure rootPath ends with "/" for easy parsing
         if (rootPath == null) {
             this.rootPath = "/";
+        } else if (!rootPath.endsWith("/")) {
+            this.rootPath = rootPath + "/";
         } else {
-            if (rootPath.startsWith("/")) {
-                this.rootPath = rootPath;
-            } else {
-                this.rootPath = "/" + rootPath;
-            }
+            this.rootPath = rootPath;
         }
+
         this.executor = executor;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
@@ -57,69 +60,105 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     @Override
-    public void handle(RoutingContext request) {
-        String path = request.request().path();
+    public void handle(RoutingContext routingContext) {
+        String path = routingContext.request().path();
         if (path == null) {
-            request.fail(404);
+            routingContext.fail(404);
             return;
         }
+        // expects rootPath to end with '/'
         if (!path.startsWith(rootPath)) {
-            request.fail(404);
+            routingContext.fail(404);
             return;
         }
+
         path = path.substring(rootPath.length());
 
         FunctionInvoker invoker = FunctionRecorder.registry.matchInvoker(path);
 
         if (invoker == null) {
-            request.fail(404);
+            routingContext.fail(404);
             return;
         }
 
-        if (request.request().method() != HttpMethod.POST) {
-            request.fail(405);
-            return;
-        }
-
-        request.request().bodyHandler(buff -> {
+        if (routingContext.request().method() == HttpMethod.GET) {
             Object input = null;
-            if (buff.length() > 0) {
-                ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
-                ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
+            if (invoker.hasInput()) {
+                QueryReader reader = (QueryReader) invoker.getBindingContext().get(QueryReader.class.getName());
                 try {
-                    input = reader.readValue((InputStream) in);
+                    input = reader.readValue(routingContext.request().params().iterator());
                 } catch (Exception e) {
                     log.error("Failed to unmarshal input", e);
-                    request.fail(400);
+                    routingContext.fail(400);
                     return;
                 }
             }
             Object finalInput = input;
             executor.execute(() -> {
-                dispatch(request, invoker, finalInput);
+                dispatch(routingContext, invoker, finalInput);
             });
-        });
+        } else if (routingContext.request().method() == HttpMethod.POST) {
+            routingContext.request().bodyHandler(buff -> {
+                Object input = null;
+                if (buff.length() > 0) {
+                    ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                    ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
+                    try {
+                        input = reader.readValue((InputStream) in);
+                    } catch (Exception e) {
+                        log.error("Failed to unmarshal input", e);
+                        routingContext.fail(400);
+                        return;
+                    }
+                }
+                Object finalInput = input;
+                executor.execute(() -> {
+                    dispatch(routingContext, invoker, finalInput);
+                });
+            });
+        } else {
+            routingContext.fail(405);
+            log.error("Must be POST or GET for: " + invoker.getName());
+        }
     }
 
     private void dispatch(RoutingContext routingContext, FunctionInvoker invoker, Object input) {
         ManagedContext requestContext = beanContainer.requestContext();
         requestContext.activate();
-        QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
-        if (user != null && association != null) {
-            association.setIdentity(user.getSecurityIdentity());
+        if (association != null) {
+            QuarkusHttpUser existing = (QuarkusHttpUser) routingContext.user();
+            if (existing != null) {
+                SecurityIdentity identity = existing.getSecurityIdentity();
+                association.setIdentity(identity);
+            } else {
+                association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
+            }
         }
         currentVertxRequest.setCurrent(routingContext);
         try {
             FunqyRequestImpl funqyRequest = new FunqyRequestImpl(new RequestContextImpl(), input);
             FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
             invoker.invoke(funqyRequest, funqyResponse);
-            routingContext.response().setStatusCode(200);
-            if (invoker.hasOutput()) {
-                ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                routingContext.response().end(writer.writeValueAsString(funqyResponse.getOutput()));
-            } else {
-                routingContext.response().end();
-            }
+
+            funqyResponse.getOutput().emitOn(executor).subscribe().with(
+                    o -> {
+                        if (invoker.hasOutput()) {
+                            routingContext.response().setStatusCode(200);
+                            routingContext.response().putHeader("Content-Type", "application/json");
+                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
+                            try {
+                                routingContext.response().end(writer.writeValueAsString(o));
+                            } catch (JsonProcessingException e) {
+                                log.error("Failed to marshal", e);
+                                routingContext.fail(400);
+                            }
+                        } else {
+                            routingContext.response().setStatusCode(204);
+                            routingContext.response().end();
+                        }
+                    },
+                    t -> routingContext.fail(t));
+
         } catch (Exception e) {
             routingContext.fail(e);
         } finally {

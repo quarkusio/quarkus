@@ -105,12 +105,6 @@ public class MongoClientConfig {
     public Optional<Duration> maxConnectionLifeTime;
 
     /**
-     * The maximum wait time that a thread may wait for a connection to become available.
-     */
-    @ConfigItem
-    public Optional<Duration> waitQueueTimeout;
-
-    /**
      * Configures the time period between runs of the maintenance job.
      */
     @ConfigItem
@@ -123,35 +117,27 @@ public class MongoClientConfig {
     public Optional<Duration> maintenanceInitialDelay;
 
     /**
-     * This multiplier, multiplied with the {@code maxPoolSize} setting, gives the maximum number of
-     * threads that may be waiting for a connection to become available from the pool. All further threads will get an
-     * exception right away.
-     */
-    @ConfigItem
-    public OptionalInt waitQueueMultiple;
-
-    /**
      * How long a connection can take to be opened before timing out.
      */
     @ConfigItem
     public Optional<Duration> connectTimeout;
 
     /**
-     * How long a send or receive on a socket can take before timing out.
+     * How long a socket read can take before timing out.
      */
     @ConfigItem
-    public Optional<Duration> socketTimeout;
+    public Optional<Duration> readTimeout;
 
     /**
      * If connecting with TLS, this option enables insecure TLS connections.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean tlsInsecure;
 
     /**
      * Whether to connect using TLS.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean tls;
 
     /**
@@ -197,12 +183,4 @@ public class MongoClientConfig {
      */
     @ConfigDocSection
     public CredentialConfig credentials;
-
-    /**
-     * Configures the maximum number of concurrent operations allowed to wait for a server to become available.
-     * All further operations will get an exception immediately.
-     */
-    @ConfigItem
-    public OptionalInt maxWaitQueueSize;
-
 }

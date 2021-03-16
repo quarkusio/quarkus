@@ -1,6 +1,5 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
@@ -20,6 +19,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -43,19 +43,21 @@ public class InterceptorGenerator extends BeanGenerator {
     protected static final String FIELD_NAME_BINDINGS = "bindings";
 
     public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
-            PrivateMembersCollector privateMembers, boolean generateSources) {
-        super(annotationLiterals, applicationClassPredicate, privateMembers, generateSources);
+            PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
+            Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
+            Predicate<DotName> injectionPointAnnotationsPredicate) {
+        super(annotationLiterals, applicationClassPredicate, privateMembers, generateSources, reflectionRegistration,
+                existingClasses, beanToGeneratedName, injectionPointAnnotationsPredicate);
     }
 
     /**
      *
      * @param interceptor bean
-     * @param reflectionRegistration
      * @return a collection of resources
      */
-    Collection<Resource> generate(InterceptorInfo interceptor, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generate(InterceptorInfo interceptor) {
 
-        Type providerType = interceptor.getProviderType();
+        ProviderType providerType = new ProviderType(interceptor.getProviderType());
         ClassInfo interceptorClass = interceptor.getTarget().get().asClass();
         String baseName;
         if (interceptorClass.enclosingClass() != null) {
@@ -63,10 +65,12 @@ public class InterceptorGenerator extends BeanGenerator {
         } else {
             baseName = DotNames.simpleName(interceptorClass);
         }
-        ClassInfo providerClass = getClassByName(interceptor.getDeployment().getIndex(), providerType.name());
-        String providerTypeName = providerClass.name().toString();
         String targetPackage = DotNames.packageName(providerType.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
+        beanToGeneratedName.put(interceptor, generatedName);
+        if (existingClasses.contains(generatedName)) {
+            return Collections.emptyList();
+        }
 
         boolean isApplicationClass = applicationClassPredicate.test(interceptor.getBeanClass());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
@@ -93,10 +97,11 @@ public class InterceptorGenerator extends BeanGenerator {
 
         implementGetIdentifier(interceptor, interceptorCreator);
         implementSupplierGet(interceptorCreator);
-        implementCreate(classOutput, interceptorCreator, interceptor, providerTypeName, baseName, injectionPointToProviderField,
+        implementCreate(classOutput, interceptorCreator, interceptor, providerType, baseName,
+                injectionPointToProviderField,
                 interceptorToProviderField,
                 reflectionRegistration, targetPackage, isApplicationClass);
-        implementGet(interceptor, interceptorCreator, providerTypeName, baseName);
+        implementGet(interceptor, interceptorCreator, providerType, baseName);
         implementGetTypes(interceptorCreator, beanTypes.getFieldDescriptor());
         implementGetBeanClass(interceptor, interceptorCreator);
         // Interceptors are always @Dependent and have always default qualifiers
@@ -104,8 +109,11 @@ public class InterceptorGenerator extends BeanGenerator {
         // InjectableInterceptor methods
         implementGetInterceptorBindings(interceptorCreator, bindings.getFieldDescriptor());
         implementIntercepts(interceptorCreator, interceptor);
-        implementIntercept(interceptorCreator, interceptor, providerTypeName, reflectionRegistration, isApplicationClass);
+        implementIntercept(interceptorCreator, interceptor, providerType, reflectionRegistration, isApplicationClass);
         implementGetPriority(interceptorCreator, interceptor);
+
+        implementEquals(interceptor, interceptorCreator);
+        implementHashCode(interceptor, interceptorCreator);
 
         interceptorCreator.close();
         return classOutput.getResources();
@@ -185,25 +193,25 @@ public class InterceptorGenerator extends BeanGenerator {
      *
      * @see InjectableInterceptor#intercept(InterceptionType, Object, javax.interceptor.InvocationContext)
      */
-    protected void implementIntercept(ClassCreator creator, InterceptorInfo interceptor, String providerTypeName,
+    protected void implementIntercept(ClassCreator creator, InterceptorInfo interceptor, ProviderType providerType,
             ReflectionRegistration reflectionRegistration, boolean isApplicationClass) {
         MethodCreator intercept = creator
                 .getMethodCreator("intercept", Object.class, InterceptionType.class, Object.class, InvocationContext.class)
                 .setModifiers(ACC_PUBLIC).addException(Exception.class);
 
-        addIntercept(intercept, interceptor.getAroundInvoke(), InterceptionType.AROUND_INVOKE, providerTypeName,
+        addIntercept(intercept, interceptor.getAroundInvoke(), InterceptionType.AROUND_INVOKE, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getPostConstruct(), InterceptionType.POST_CONSTRUCT, providerTypeName,
+        addIntercept(intercept, interceptor.getPostConstruct(), InterceptionType.POST_CONSTRUCT, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getPreDestroy(), InterceptionType.PRE_DESTROY, providerTypeName,
+        addIntercept(intercept, interceptor.getPreDestroy(), InterceptionType.PRE_DESTROY, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getAroundConstruct(), InterceptionType.AROUND_CONSTRUCT, providerTypeName,
+        addIntercept(intercept, interceptor.getAroundConstruct(), InterceptionType.AROUND_CONSTRUCT, providerType,
                 reflectionRegistration, isApplicationClass);
         intercept.returnValue(intercept.loadNull());
     }
 
     private void addIntercept(MethodCreator intercept, MethodInfo interceptorMethod, InterceptionType interceptionType,
-            String providerTypeName,
+            ProviderType providerType,
             ReflectionRegistration reflectionRegistration, boolean isApplicationClass) {
         if (interceptorMethod != null) {
             ResultHandle enumValue = intercept
@@ -215,10 +223,9 @@ public class InterceptorGenerator extends BeanGenerator {
             Class<?> retType = null;
             if (InterceptionType.AROUND_INVOKE.equals(interceptionType)) {
                 retType = Object.class;
-            } else if (InterceptionType.AROUND_CONSTRUCT.equals(interceptionType)) {
-                retType = interceptorMethod.returnType().kind().equals(Type.Kind.VOID) ? void.class : Object.class;
             } else {
-                retType = void.class;
+                // @PostConstruct, @PreDestroy, @AroundConstruct
+                retType = interceptorMethod.returnType().kind().equals(Type.Kind.VOID) ? void.class : Object.class;
             }
             ResultHandle ret;
             if (Modifier.isPrivate(interceptorMethod.flags())) {
@@ -238,7 +245,8 @@ public class InterceptorGenerator extends BeanGenerator {
                         trueBranch.load(interceptorMethod.name()), paramTypesArray, intercept.getMethodParam(1), argsArray);
             } else {
                 ret = trueBranch.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(providerTypeName, interceptorMethod.name(), retType, InvocationContext.class),
+                        MethodDescriptor.ofMethod(providerType.className(), interceptorMethod.name(), retType,
+                                InvocationContext.class),
                         intercept.getMethodParam(1), intercept.getMethodParam(2));
             }
             trueBranch.returnValue(InterceptionType.AROUND_INVOKE.equals(interceptionType) ? ret : trueBranch.loadNull());

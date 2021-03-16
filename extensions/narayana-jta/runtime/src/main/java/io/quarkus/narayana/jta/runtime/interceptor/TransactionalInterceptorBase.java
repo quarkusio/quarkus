@@ -15,7 +15,6 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 import org.reactivestreams.Publisher;
 
@@ -24,6 +23,7 @@ import com.arjuna.ats.jta.logging.jtaLogger;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
 
@@ -83,7 +83,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     private TransactionConfiguration getTransactionConfiguration(InvocationContext ic) {
         TransactionConfiguration configuration = ic.getMethod().getAnnotation(TransactionConfiguration.class);
         if (configuration == null) {
-            return ic.getTarget().getClass().getAnnotation(TransactionConfiguration.class);
+            Class<?> clazz;
+            Object target = ic.getTarget();
+            if (target != null) {
+                clazz = target.getClass();
+            } else {
+                // Very likely an intercepted static method
+                clazz = ic.getMethod().getDeclaringClass();
+            }
+            return clazz.getAnnotation(TransactionConfiguration.class);
         }
         return configuration;
     }
@@ -191,8 +199,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                 return v;
             });
         } else if (ret instanceof Publisher) {
-            ret = ReactiveStreams.fromPublisher(((Publisher<?>) ret))
-                    .onError(t -> {
+            ret = Multi.createFrom().publisher((Publisher<?>) ret)
+                    .onFailure().invoke(t -> {
                         try {
                             doInTransaction(tm, tx, () -> handleExceptionNoThrow(ic, t, tx));
                         } catch (RuntimeException e) {
@@ -207,18 +215,16 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                         if (t instanceof RuntimeException)
                             throw (RuntimeException) t;
                         throw new RuntimeException(t);
-                    }).onTerminate(() -> {
+                    }).on().termination(() -> {
                         try {
                             doInTransaction(tm, tx, () -> endTransaction(tm, tx, () -> {
                             }));
                         } catch (RuntimeException e) {
                             throw e;
                         } catch (Exception e) {
-                            RuntimeException x = new RuntimeException(e);
-                            throw x;
+                            throw new RuntimeException(e);
                         }
-                    })
-                    .buildRs();
+                    });
         }
         return ret;
     }
@@ -295,17 +301,19 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     protected void endTransaction(TransactionManager tm, Transaction tx, RunnableWithException afterEndTransaction)
             throws Exception {
-        if (tx != tm.getTransaction()) {
-            throw new RuntimeException(jtaLogger.i18NLogger.get_wrong_tx_on_thread());
-        }
+        try {
+            if (tx != tm.getTransaction()) {
+                throw new RuntimeException(jtaLogger.i18NLogger.get_wrong_tx_on_thread());
+            }
 
-        if (tx.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
-            tm.rollback();
-        } else {
-            tm.commit();
+            if (tx.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
+                tm.rollback();
+            } else {
+                tm.commit();
+            }
+        } finally {
+            afterEndTransaction.run();
         }
-
-        afterEndTransaction.run();
     }
 
     protected boolean setUserTransactionAvailable(boolean available) {

@@ -39,6 +39,6 @@ public class MountConfig {
      *
      * @return True if mount is readonly, False otherwise.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean readOnly;
 }

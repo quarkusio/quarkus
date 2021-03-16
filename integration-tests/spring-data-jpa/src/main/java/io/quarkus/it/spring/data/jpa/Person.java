@@ -3,8 +3,10 @@ package io.quarkus.it.spring.data.jpa;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.json.bind.annotation.JsonbProperty;
@@ -14,7 +16,10 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.MappedSuperclass;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
@@ -27,7 +32,7 @@ public class Person {
     @Id
     @SequenceGenerator(name = "personSeqGen", sequenceName = "personSeq", initialValue = 100, allocationSize = 1)
     @GeneratedValue(generator = "personSeqGen")
-    private Long id;
+    private long id;
 
     @JsonbProperty(nillable = true)
     private String name;
@@ -41,7 +46,11 @@ public class Person {
 
     @ManyToOne
     @JoinColumn(name = "address_id")
-    private Address address;
+    private Address someAddress;
+
+    @ManyToMany
+    @JoinTable(name = "liked_songs", joinColumns = @JoinColumn(name = "person_id"), inverseJoinColumns = @JoinColumn(name = "song_id"))
+    private Set<Song> likedSongs = new HashSet<>();
 
     public Person(String name) {
         this.name = name;
@@ -55,7 +64,7 @@ public class Person {
     public Person() {
     }
 
-    public Long getId() {
+    public long getId() {
         return id;
     }
 
@@ -95,41 +104,30 @@ public class Person {
         this.active = active;
     }
 
-    public Address getAddress() {
-        return address;
+    public Address getSomeAddress() {
+        return someAddress;
     }
 
-    public void setAddress(Address address) {
-        this.address = address;
+    public void setSomeAddress(Address address) {
+        this.someAddress = address;
     }
 
-    @Entity
-    @Table(name = "address")
-    public static class Address {
-        @Id
-        @GeneratedValue
-        private Long id;
+    public Set<Song> getLikedSongs() {
+        return likedSongs;
+    }
+
+    public void setLikedSongs(Set<Song> likedSongs) {
+        this.likedSongs = likedSongs;
+    }
+
+    @MappedSuperclass
+    public static class StreetEntity {
 
         @Column(name = "street_name")
         private String streetName;
 
         @Column(name = "street_number")
         private String streetNumber;
-
-        @Column(name = "zip_code")
-        private String zipCode;
-
-        @JsonbTransient
-        @OneToMany(mappedBy = "address")
-        private List<Person> people;
-
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
 
         public String getStreetName() {
             return streetName;
@@ -145,6 +143,29 @@ public class Person {
 
         public void setStreetNumber(String streetNumber) {
             this.streetNumber = streetNumber;
+        }
+    }
+
+    @Entity
+    @Table(name = "address")
+    public static class Address extends StreetEntity {
+        @Id
+        @GeneratedValue
+        private Long id;
+
+        @Column(name = "zip_code")
+        private String zipCode;
+
+        @JsonbTransient
+        @OneToMany(mappedBy = "someAddress")
+        private List<Person> people;
+
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
         }
 
         public String getZipCode() {
@@ -163,4 +184,5 @@ public class Person {
             this.people = people;
         }
     }
+
 }

@@ -6,12 +6,12 @@
         <artifactId>quarkus-elytron-security-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-elytron-security-common</artifactId>
     <name>Quarkus - Elytron Security - Common - Runtime</name>
+    <description>Common components to secure your applications via Elytron</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -20,6 +20,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.wildfly.security</groupId>

@@ -1,0 +1,8 @@
+name: config-properties
+type: config
+fallback: true
+language:
+  base:
+    shared-data:
+      config:
+        file-name: application.properties

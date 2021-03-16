@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - JGit
 
@@ -21,14 +21,14 @@ to your project by running the following command in your project base directory.
 ./mvnw quarkus:add-extension -Dextensions="jgit"
 ----
 
-This will add the following to your pom.xml:
+This will add the following to your `pom.xml`:
 
 [source,xml]
 ----
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jgit</artifactId>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jgit</artifactId>
+</dependency>
 ----
 
 == Usage
@@ -52,5 +52,5 @@ Here is an example using it in a JAX-RS endpoint:
 
 [WARNING]
 ====
-When running in native mode, make sure that the link:native-and-ssl#the-sunec-library-and-friends[SSL access is configured correctly].
+When running in native mode, make sure that the link:native-and-ssl#the-truststore-path[SSL access is configured correctly].
 ====

@@ -27,7 +27,16 @@ public class TransactionBeanWithEvents {
     private static int commitCount, rollbackCount;
 
     @Inject
-    private TransactionManager tm;
+    TransactionManager tm;
+
+    static void cleanCounts() {
+        initializedCount = 0;
+        beforeDestroyedCount = 0;
+        destroyedCount = 0;
+
+        commitCount = 0;
+        rollbackCount = 0;
+    }
 
     static int getInitialized() {
         return initializedCount;
@@ -90,7 +99,7 @@ public class TransactionBeanWithEvents {
             log.error("@Initialized expects transaction is Status.STATUS_ACTIVE");
             throw new IllegalStateException("@Initialized expects transaction is Status.STATUS_ACTIVE");
         }
-        Context ctx = null;
+        Context ctx;
         try {
             ctx = beanManager.getContext(TransactionScoped.class);
         } catch (Exception e) {
@@ -116,7 +125,7 @@ public class TransactionBeanWithEvents {
             log.error("@BeforeDestroyed expects an active transaction");
             throw new IllegalStateException("@BeforeDestroyed expects an active transaction");
         }
-        Context ctx = null;
+        Context ctx;
         try {
             ctx = beanManager.getContext(TransactionScoped.class);
         } catch (Exception e) {

@@ -3,7 +3,6 @@ package io.quarkus.jwt.test;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 
-import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -27,10 +26,6 @@ public class RolesAllowedUnitTest {
      * The test generated JWT token string
      */
     private String token;
-    // Time claims in the token
-    private Long iatClaim;
-    private Long authTimeClaim;
-    private Long expClaim;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -46,9 +41,6 @@ public class RolesAllowedUnitTest {
     public void generateToken() throws Exception {
         HashMap<String, Long> timeClaims = new HashMap<>();
         token = TokenUtils.generateTokenString("/Token1.json", null, timeClaims);
-        iatClaim = timeClaims.get(Claims.iat.name());
-        authTimeClaim = timeClaims.get(Claims.auth_time.name());
-        expClaim = timeClaims.get(Claims.exp.name());
     }
 
     @Test()
@@ -170,8 +162,6 @@ public class RolesAllowedUnitTest {
                 .get("/endp/echo2").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
-        String replyString = response.body().asString();
-        Assertions.assertEquals("Forbidden", replyString);
     }
 
     /**
@@ -245,8 +235,6 @@ public class RolesAllowedUnitTest {
                 .get("/endp/echo").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
-        String replyString = response.body().asString();
-        Assertions.assertEquals("Forbidden", replyString);
     }
 
     /**

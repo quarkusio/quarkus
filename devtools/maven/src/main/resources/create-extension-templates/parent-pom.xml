@@ -7,11 +7,13 @@
         <groupId>[=grandParentGroupId]</groupId>
         <artifactId>[=grandParentArtifactId]</artifactId>
         <version>[=grandParentVersion]</version>
-        <relativePath>[=grandParentRelativePath]</relativePath>
+[#if grandParentRelativePath?? ]        <relativePath>[=grandParentRelativePath]</relativePath>
+[/#if]
     </parent>
 [/#if]
 
-[#if grandParentGroupId?? ][#if groupId != grandParentGroupId ]    <groupId>[=groupId]</groupId>[/#if][#else ]    <groupId>[=groupId]</groupId>
+[#if grandParentGroupId?? ][#if groupId != grandParentGroupId ]    <groupId>[=groupId]</groupId>
+[/#if][#else ]    <groupId>[=groupId]</groupId>
 [/#if]
     <artifactId>[=artifactId]-parent</artifactId>
 [#if groupId?? && (!grandParentGroupId?? || groupId != grandParentGroupId) && version?? && (!grandParentVersion?? || version != grandParentVersion) ]    <version>[=version]</version>
@@ -20,6 +22,15 @@
 [/#if]
 
     <packaging>pom</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+    </properties>
+
     <modules>
         <module>deployment</module>
         <module>runtime</module>

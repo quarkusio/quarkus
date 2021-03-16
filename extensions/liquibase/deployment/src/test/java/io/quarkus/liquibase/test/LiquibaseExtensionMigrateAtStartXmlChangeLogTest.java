@@ -27,6 +27,7 @@ public class LiquibaseExtensionMigrateAtStartXmlChangeLogTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("db/xml/changeLog.xml")
                     .addAsResource("db/xml/create-tables.xml")
+                    .addAsResource("db/xml/create-views.xml")
                     .addAsResource("db/xml/test/test.xml")
                     .addAsResource("migrate-at-start-xml-config.properties", "application.properties"));
 
@@ -37,9 +38,10 @@ public class LiquibaseExtensionMigrateAtStartXmlChangeLogTest {
             List<ChangeSetStatus> status = liquibase.getChangeSetStatuses(liquibaseFactory.createContexts(),
                     liquibaseFactory.createLabels());
             assertNotNull(status);
-            assertEquals(2, status.size());
+            assertEquals(3, status.size());
             assertFalse(status.get(0).getWillRun());
             assertFalse(status.get(1).getWillRun());
+            assertFalse(status.get(2).getWillRun());
         }
     }
 }

@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 import io.netty.util.AsciiString;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
@@ -37,7 +38,6 @@ class ForwardedParser {
     private static final AsciiString FORWARDED = AsciiString.cached("Forwarded");
     private static final AsciiString X_FORWARDED_SSL = AsciiString.cached("X-Forwarded-Ssl");
     private static final AsciiString X_FORWARDED_PROTO = AsciiString.cached("X-Forwarded-Proto");
-    private static final AsciiString X_FORWARDED_HOST = AsciiString.cached("X-Forwarded-Host");
     private static final AsciiString X_FORWARDED_PORT = AsciiString.cached("X-Forwarded-Port");
     private static final AsciiString X_FORWARDED_FOR = AsciiString.cached("X-Forwarded-For");
 
@@ -46,18 +46,19 @@ class ForwardedParser {
     private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?");
 
     private final HttpServerRequest delegate;
-    private final boolean allowForward;
+    private final ForwardingProxyOptions forwardingProxyOptions;
 
     private boolean calculated;
     private String host;
     private int port = -1;
     private String scheme;
+    private String uri;
     private String absoluteURI;
     private SocketAddress remoteAddress;
 
-    ForwardedParser(HttpServerRequest delegate, boolean allowForward) {
+    ForwardedParser(HttpServerRequest delegate, ForwardingProxyOptions forwardingProxyOptions) {
         this.delegate = delegate;
-        this.allowForward = allowForward;
+        this.forwardingProxyOptions = forwardingProxyOptions;
     }
 
     public String scheme() {
@@ -93,17 +94,25 @@ class ForwardedParser {
         return remoteAddress;
     }
 
+    String uri() {
+        if (!calculated)
+            calculate();
+
+        return uri;
+    }
+
     private void calculate() {
         calculated = true;
         remoteAddress = delegate.remoteAddress();
         scheme = delegate.scheme();
         setHostAndPort(delegate.host(), port);
+        uri = delegate.uri();
 
         String forwardedSsl = delegate.getHeader(X_FORWARDED_SSL);
         boolean isForwardedSslOn = forwardedSsl != null && forwardedSsl.equalsIgnoreCase("on");
 
         String forwarded = delegate.getHeader(FORWARDED);
-        if (allowForward && forwarded != null) {
+        if (forwardingProxyOptions.allowForwarded && forwarded != null) {
             String forwardedToUse = forwarded.split(",")[0];
             Matcher matcher = FORWARDED_PROTO_PATTERN.matcher(forwardedToUse);
             if (matcher.find()) {
@@ -123,7 +132,7 @@ class ForwardedParser {
             if (matcher.find()) {
                 remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress.port());
             }
-        } else if (!allowForward) {
+        } else if (!forwardingProxyOptions.allowForwarded) {
             String protocolHeader = delegate.getHeader(X_FORWARDED_PROTO);
             if (protocolHeader != null) {
                 scheme = protocolHeader.split(",")[0];
@@ -133,9 +142,18 @@ class ForwardedParser {
                 port = -1;
             }
 
-            String hostHeader = delegate.getHeader(X_FORWARDED_HOST);
-            if (hostHeader != null) {
-                setHostAndPort(hostHeader.split(",")[0], port);
+            if (forwardingProxyOptions.enableForwardedHost) {
+                String hostHeader = delegate.getHeader(forwardingProxyOptions.forwardedHostHeader);
+                if (hostHeader != null) {
+                    setHostAndPort(hostHeader.split(",")[0], port);
+                }
+            }
+
+            if (forwardingProxyOptions.enableForwardedPrefix) {
+                String prefixHeader = delegate.getHeader(forwardingProxyOptions.forwardedPrefixHeader);
+                if (prefixHeader != null) {
+                    uri = appendPrefixToUri(prefixHeader, uri);
+                }
             }
 
             String portHeader = delegate.getHeader(X_FORWARDED_PORT);
@@ -154,38 +172,83 @@ class ForwardedParser {
         }
 
         host = host + (port >= 0 ? ":" + port : "");
-        absoluteURI = scheme + "://" + host + delegate.uri();
+        delegate.headers().set(HttpHeaders.HOST, host);
+        absoluteURI = scheme + "://" + host + uri;
+        log.debug("Recalculated absoluteURI to " + absoluteURI);
     }
 
     private void setHostAndPort(String hostToParse, int defaultPort) {
-        int portSeparatorIdx = hostToParse.lastIndexOf(':');
-        if (portSeparatorIdx > hostToParse.lastIndexOf(']')) {
-            host = hostToParse.substring(0, portSeparatorIdx);
-            port = parsePort(hostToParse.substring(portSeparatorIdx + 1), defaultPort);
-        } else {
-            host = hostToParse;
-            port = -1;
+        if (hostToParse == null) {
+            hostToParse = "";
         }
+        String[] hostAndPort = parseHostAndPort(hostToParse);
+        host = hostAndPort[0];
+        delegate.headers().set(HttpHeaders.HOST, host);
+        port = parsePort(hostAndPort[1], defaultPort);
     }
 
     private SocketAddress parseFor(String forToParse, int defaultPort) {
-        String host = forToParse;
-        int port = defaultPort;
-        int portSeparatorIdx = forToParse.lastIndexOf(':');
-        if (portSeparatorIdx > forToParse.lastIndexOf(']')) {
-            host = forToParse.substring(0, portSeparatorIdx);
-            port = parsePort(forToParse.substring(portSeparatorIdx + 1), defaultPort);
-        }
-
+        String[] hostAndPort = parseHostAndPort(forToParse);
+        String host = hostAndPort[0];
+        int port = parsePort(hostAndPort[1], defaultPort);
         return new SocketAddressImpl(port, host);
     }
 
-    private int parsePort(String portToParse, int defaultPort) {
-        try {
-            return Integer.parseInt(portToParse);
-        } catch (NumberFormatException ignored) {
-            log.error("Failed to parse a port from \"forwarded\"-type headers.");
-            return defaultPort;
+    /**
+     * Returns a String[] of 2 elements, with the first being the host and the second the port
+     */
+    private String[] parseHostAndPort(String hostToParse) {
+        String[] hostAndPort = { hostToParse, "" };
+        int portSeparatorIdx = hostToParse.lastIndexOf(':');
+        int squareBracketIdx = hostToParse.lastIndexOf(']');
+        if ((squareBracketIdx > -1 && portSeparatorIdx > squareBracketIdx)) {
+            // ipv6 with port
+            hostAndPort[0] = hostToParse.substring(0, portSeparatorIdx);
+            hostAndPort[1] = hostToParse.substring(portSeparatorIdx + 1);
+        } else {
+            long numberOfColons = hostToParse.chars().filter(ch -> ch == ':').count();
+            if (numberOfColons == 1 && !hostToParse.endsWith(":")) {
+                // ipv4 with port
+                hostAndPort[0] = hostToParse.substring(0, portSeparatorIdx);
+                hostAndPort[1] = hostToParse.substring(portSeparatorIdx + 1);
+            }
         }
+        return hostAndPort;
+    }
+
+    private int parsePort(String portToParse, int defaultPort) {
+        if (portToParse != null && portToParse.length() > 0) {
+            try {
+                return Integer.parseInt(portToParse);
+            } catch (NumberFormatException ignored) {
+                log.error("Failed to parse a port from \"forwarded\"-type headers.");
+            }
+        }
+        return defaultPort;
+    }
+
+    private String appendPrefixToUri(String prefix, String uri) {
+        String parsed = stripSlashes(prefix);
+        return parsed.isEmpty() ? uri : '/' + parsed + uri;
+    }
+
+    private String stripSlashes(String uri) {
+        String result;
+        if (!uri.isEmpty()) {
+            int beginIndex = 0;
+            if (uri.startsWith("/")) {
+                beginIndex = 1;
+            }
+
+            int endIndex = uri.length();
+            if (uri.endsWith("/") && uri.length() > 1) {
+                endIndex = uri.length() - 1;
+            }
+            result = uri.substring(beginIndex, endIndex);
+        } else {
+            result = uri;
+        }
+
+        return result;
     }
 }

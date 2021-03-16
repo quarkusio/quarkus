@@ -28,6 +28,15 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
     String getIdentifier();
 
     /**
+     * 
+     * @return the kind of the bean
+     * @see Kind
+     */
+    default Kind getKind() {
+        return Kind.CLASS;
+    }
+
+    /**
      *
      * @return the scope
      */
@@ -103,6 +112,25 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      */
     default boolean isDefaultBean() {
         return false;
+    }
+
+    enum Kind {
+
+        CLASS,
+        PRODUCER_FIELD,
+        PRODUCER_METHOD,
+        SYNTHETIC,
+        INTERCEPTOR;
+
+        public static Kind from(String value) {
+            for (Kind kind : values()) {
+                if (kind.toString().equals(value)) {
+                    return kind;
+                }
+            }
+            return null;
+        }
+
     }
 
 }

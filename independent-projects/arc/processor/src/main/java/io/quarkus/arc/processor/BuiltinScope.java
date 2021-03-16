@@ -30,9 +30,9 @@ public enum BuiltinScope {
         return info.getDotName();
     }
 
-    public static BuiltinScope from(DotName name) {
+    public static BuiltinScope from(DotName scopeAnnotationName) {
         for (BuiltinScope scope : BuiltinScope.values()) {
-            if (scope.getInfo().getDotName().equals(name)) {
+            if (scope.getInfo().getDotName().equals(scopeAnnotationName)) {
                 return scope;
             }
         }

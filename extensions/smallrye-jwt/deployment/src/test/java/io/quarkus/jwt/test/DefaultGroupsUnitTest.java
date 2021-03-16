@@ -1,10 +1,9 @@
 package io.quarkus.jwt.test;
 
-import java.net.HttpURLConnection;
+import static org.hamcrest.Matchers.equalTo;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,13 +42,19 @@ public class DefaultGroupsUnitTest {
      */
     @Test
     public void echoGroups() {
-        io.restassured.response.Response response = RestAssured.given().auth()
+        RestAssured.given().auth()
                 .oauth2(token)
-                .get("/endp/echo").andReturn();
+                .get("/endp/echo")
+                .then().assertThat().statusCode(200)
+                .body(equalTo("User"));
+    }
 
-        Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
-        String replyString = response.body().asString();
-        // The missing 'groups' claim's default value, 'User' is expected
-        Assertions.assertEquals("User", replyString);
+    @Test
+    public void echoGroupsWithParser() {
+        RestAssured.given().auth()
+                .oauth2(token)
+                .get("/endp/echo-parser")
+                .then().assertThat().statusCode(200)
+                .body(equalTo("parser:User"));
     }
 }

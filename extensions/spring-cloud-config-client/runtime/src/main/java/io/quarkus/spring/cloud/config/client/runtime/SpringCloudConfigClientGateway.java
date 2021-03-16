@@ -1,8 +1,10 @@
 package io.quarkus.spring.cloud.config.client.runtime;
 
-import java.io.IOException;
+import io.smallrye.mutiny.Uni;
 
 interface SpringCloudConfigClientGateway {
 
-    Response exchange(String applicationName, String profile) throws IOException;
+    Uni<Response> exchange(String applicationName, String profile) throws Exception;
+
+    void close();
 }

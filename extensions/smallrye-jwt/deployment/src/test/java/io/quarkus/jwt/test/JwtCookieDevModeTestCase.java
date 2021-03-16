@@ -1,8 +1,9 @@
 package io.quarkus.jwt.test;
 
+import static org.hamcrest.Matchers.equalTo;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -28,7 +29,7 @@ public class JwtCookieDevModeTestCase {
                     .addAsResource("publicKey.pem")
                     .addAsResource("privateKey.pem")
                     .addAsResource("TokenNoGroups.json")
-                    .addAsResource("applicationJwtCookie.properties", "application.properties"));
+                    .addAsResource("applicationJwtCookieDev.properties", "application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {
@@ -42,9 +43,11 @@ public class JwtCookieDevModeTestCase {
      */
     @Test
     public void echoGroupsHotReplacement() throws Exception {
+        testBadResponse("cookie_a");
+        test.modifyResourceFile("application.properties", s -> s.replaceAll("#", ""));
         testOKResponse("cookie_a");
-        testBadResponse("cookie_b");
 
+        testBadResponse("cookie_b");
         test.modifyResourceFile("application.properties", s -> s.replace("cookie_a", "cookie_b"));
 
         testOKResponse("cookie_b");
@@ -52,22 +55,18 @@ public class JwtCookieDevModeTestCase {
     }
 
     private void testOKResponse(String cookieName) {
-        io.restassured.response.Response response = RestAssured.given()
+        RestAssured.given()
                 .header("Cookie", cookieName + "=" + token)
-                .get("/endp/echo").andReturn();
-
-        Assertions.assertEquals(200, response.getStatusCode());
-        String replyString = response.body().asString();
-        // The missing 'groups' claim's default value, 'User' is expected
-        Assertions.assertEquals("User", replyString);
+                .get("/endp/echo")
+                .then().assertThat().statusCode(200)
+                .body(equalTo("User"));
     }
 
     private void testBadResponse(String cookieName) {
-        io.restassured.response.Response response = RestAssured.given()
+        RestAssured.given()
                 .header("Cookie", cookieName + "=" + token)
-                .get("/endp/echo").andReturn();
-
-        Assertions.assertEquals(401, response.getStatusCode());
+                .get("/endp/echo")
+                .then().assertThat().statusCode(401);
     }
 
 }

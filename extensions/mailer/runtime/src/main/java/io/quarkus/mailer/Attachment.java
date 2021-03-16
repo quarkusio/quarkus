@@ -4,8 +4,9 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.reactivestreams.Publisher;
+
+import io.smallrye.mutiny.Multi;
 
 /**
  * Defines an attachment.
@@ -198,7 +199,7 @@ public class Attachment {
 
     public Attachment setData(byte[] data) {
         if (data == null || data.length == 0) {
-            this.data = ReactiveStreams.<Byte> empty().buildRs();
+            this.data = Multi.createFrom().empty();
             return this;
         }
 
@@ -223,13 +224,13 @@ public class Attachment {
             }
         };
 
-        this.data = ReactiveStreams.fromIterable(iterable).buildRs();
+        this.data = Multi.createFrom().iterable(iterable);
         return this;
     }
 
     public Attachment setData(Publisher<Byte> data) {
         if (data == null) {
-            this.data = ReactiveStreams.<Byte> empty().buildRs();
+            this.data = Multi.createFrom().empty();
         }
         this.data = data;
         return this;

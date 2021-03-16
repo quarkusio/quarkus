@@ -20,4 +20,18 @@ public class VaultUserpassAuthenticationConfig {
     @ConfigItem
     public Optional<String> password;
 
+    /**
+     * Wrapping token containing a Password, obtained from:
+     * <p>
+     * vault kv get -wrap-ttl=60s secret/<path>
+     * <p>
+     * The key has to be 'password', meaning the password has initially been provisioned with:
+     * <p>
+     * vault kv put secret/<path> password=<password value>
+     * <p>
+     * password and password-wrapping-token are exclusive
+     */
+    @ConfigItem
+    public Optional<String> passwordWrappingToken;
+
 }

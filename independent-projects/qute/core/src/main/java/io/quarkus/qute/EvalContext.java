@@ -6,7 +6,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Evaluation context of a specific part of an expression.
  * 
- * @see Expression
+ * @see Expression.Part
  */
 public interface EvalContext {
 
@@ -48,5 +48,13 @@ public interface EvalContext {
      * @return the result
      */
     CompletionStage<Object> evaluate(Expression expression);
+
+    /**
+     * 
+     * @param key
+     * @return the attribute or null
+     * @see TemplateInstance#getAttribute(String)
+     */
+    Object getAttribute(String key);
 
 }

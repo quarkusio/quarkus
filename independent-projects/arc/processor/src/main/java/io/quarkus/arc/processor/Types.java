@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import javax.enterprise.inject.spi.DefinitionException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -39,11 +40,24 @@ import org.jboss.logging.Logger;
  *
  * @author Martin Kouba
  */
-final class Types {
+public final class Types {
 
     static final Logger LOGGER = Logger.getLogger(Types.class);
 
     private static final Type OBJECT_TYPE = Type.create(DotNames.OBJECT, Kind.CLASS);
+
+    private static final Set<String> PRIMITIVE_CLASS_NAMES = new HashSet<>();
+
+    static {
+        PRIMITIVE_CLASS_NAMES.add("byte");
+        PRIMITIVE_CLASS_NAMES.add("char");
+        PRIMITIVE_CLASS_NAMES.add("double");
+        PRIMITIVE_CLASS_NAMES.add("float");
+        PRIMITIVE_CLASS_NAMES.add("int");
+        PRIMITIVE_CLASS_NAMES.add("long");
+        PRIMITIVE_CLASS_NAMES.add("short");
+        PRIMITIVE_CLASS_NAMES.add("boolean");
+    }
 
     // we ban these interfaces because they are new to Java 12 and are used by java.lang.String which
     // means that they cannot be included in bytecode if we want to have application built with Java 12+ but targeting Java 8 - 11
@@ -85,15 +99,7 @@ final class Types {
             // E.g. List<String> -> new ParameterizedTypeImpl(List.class, String.class)
             ParameterizedType parameterizedType = type.asParameterizedType();
 
-            List<Type> arguments = parameterizedType.arguments();
-            ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
-            for (int i = 0; i < arguments.size(); i++) {
-                creator.writeArrayValue(typeArgsHandle, i, getTypeHandle(creator, arguments.get(i), tccl));
-            }
-            return creator.newInstance(
-                    MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
-                            java.lang.reflect.Type[].class),
-                    doLoadClass(creator, parameterizedType.name().toString(), tccl), typeArgsHandle);
+            return getParameterizedType(creator, tccl, parameterizedType);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
             Type componentType = type.asArrayType().component();
@@ -142,6 +148,19 @@ final class Types {
         }
     }
 
+    public static ResultHandle getParameterizedType(BytecodeCreator creator, ResultHandle tccl,
+            ParameterizedType parameterizedType) {
+        List<Type> arguments = parameterizedType.arguments();
+        ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
+        for (int i = 0; i < arguments.size(); i++) {
+            creator.writeArrayValue(typeArgsHandle, i, getTypeHandle(creator, arguments.get(i), tccl));
+        }
+        return creator.newInstance(
+                MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
+                        java.lang.reflect.Type[].class),
+                doLoadClass(creator, parameterizedType.name().toString(), tccl), typeArgsHandle);
+    }
+
     private static ResultHandle doLoadClass(BytecodeCreator creator, String className, ResultHandle tccl) {
         //we need to use Class.forName as the class may be package private
         if (tccl == null) {
@@ -164,13 +183,16 @@ final class Types {
     static Set<Type> getProducerMethodTypeClosure(MethodInfo producerMethod, BeanDeployment beanDeployment) {
         Set<Type> types;
         Type returnType = producerMethod.returnType();
+        if (returnType.kind() == Kind.TYPE_VARIABLE) {
+            throw new DefinitionException("A type variable is not a legal bean type: " + producerMethod);
+        }
         if (returnType.kind() == Kind.PRIMITIVE || returnType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
             types.add(returnType);
             types.add(OBJECT_TYPE);
             return types;
         } else {
-            ClassInfo returnTypeClassInfo = getClassByName(beanDeployment.getIndex(), returnType);
+            ClassInfo returnTypeClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), returnType);
             if (returnTypeClassInfo == null) {
                 throw new IllegalArgumentException(
                         "Producer method return type not found in index: " + producerMethod.returnType().name());
@@ -180,7 +202,7 @@ final class Types {
             } else if (Kind.PARAMETERIZED_TYPE.equals(returnType.kind())) {
                 types = getTypeClosure(returnTypeClassInfo, producerMethod,
                         buildResolvedMap(returnType.asParameterizedType().arguments(), returnTypeClassInfo.typeParameters(),
-                                Collections.emptyMap(), beanDeployment.getIndex()),
+                                Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()),
                         beanDeployment, null);
             } else {
                 throw new IllegalArgumentException("Unsupported return type");
@@ -192,12 +214,15 @@ final class Types {
     static Set<Type> getProducerFieldTypeClosure(FieldInfo producerField, BeanDeployment beanDeployment) {
         Set<Type> types;
         Type fieldType = producerField.type();
+        if (fieldType.kind() == Kind.TYPE_VARIABLE) {
+            throw new DefinitionException("A type variable is not a legal bean type: " + producerField);
+        }
         if (fieldType.kind() == Kind.PRIMITIVE || fieldType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
             types.add(fieldType);
             types.add(OBJECT_TYPE);
         } else {
-            ClassInfo fieldClassInfo = getClassByName(beanDeployment.getIndex(), producerField.type());
+            ClassInfo fieldClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), producerField.type());
             if (fieldClassInfo == null) {
                 throw new IllegalArgumentException("Producer field type not found in index: " + producerField.type().name());
             }
@@ -206,7 +231,7 @@ final class Types {
             } else if (Kind.PARAMETERIZED_TYPE.equals(fieldType.kind())) {
                 types = getTypeClosure(fieldClassInfo, producerField,
                         buildResolvedMap(fieldType.asParameterizedType().arguments(), fieldClassInfo.typeParameters(),
-                                Collections.emptyMap(), beanDeployment.getIndex()),
+                                Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()),
                         beanDeployment, null);
             } else {
                 throw new IllegalArgumentException("Unsupported return type");
@@ -222,7 +247,7 @@ final class Types {
             types = getTypeClosure(classInfo, null, Collections.emptyMap(), beanDeployment, null);
         } else {
             types = getTypeClosure(classInfo, null, buildResolvedMap(typeParameters, typeParameters,
-                    Collections.emptyMap(), beanDeployment.getIndex()), beanDeployment, null);
+                    Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()), beanDeployment, null);
         }
         return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo));
     }
@@ -269,12 +294,12 @@ final class Types {
             if (BANNED_INTERFACE_TYPES.contains(interfaceType.name())) {
                 continue;
             }
-            ClassInfo interfaceClassInfo = getClassByName(beanDeployment.getIndex(), interfaceType.name());
+            ClassInfo interfaceClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), interfaceType.name());
             if (interfaceClassInfo != null) {
                 Map<TypeVariable, Type> resolved = Collections.emptyMap();
                 if (Kind.PARAMETERIZED_TYPE.equals(interfaceType.kind())) {
                     resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(),
-                            interfaceClassInfo.typeParameters(), resolvedTypeParameters, beanDeployment.getIndex());
+                            interfaceClassInfo.typeParameters(), resolvedTypeParameters, beanDeployment.getBeanArchiveIndex());
                 }
                 types.addAll(getTypeClosure(interfaceClassInfo, producerFieldOrMethod, resolved, beanDeployment,
                         resolvedTypeVariablesConsumer));
@@ -282,13 +307,13 @@ final class Types {
         }
         // Superclass
         if (classInfo.superClassType() != null) {
-            ClassInfo superClassInfo = getClassByName(beanDeployment.getIndex(), classInfo.superName());
+            ClassInfo superClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClassInfo != null) {
                 Map<TypeVariable, Type> resolved = Collections.emptyMap();
                 if (Kind.PARAMETERIZED_TYPE.equals(classInfo.superClassType().kind())) {
                     resolved = buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(),
                             superClassInfo.typeParameters(),
-                            resolvedTypeParameters, beanDeployment.getIndex());
+                            resolvedTypeParameters, beanDeployment.getBeanArchiveIndex());
                 }
                 types.addAll(getTypeClosure(superClassInfo, producerFieldOrMethod, resolved, beanDeployment,
                         resolvedTypeVariablesConsumer));
@@ -396,6 +421,10 @@ final class Types {
             default:
                 throw new IllegalArgumentException("Unsupported primitive: " + primitive);
         }
+    }
+
+    static boolean isPrimitiveClassName(String className) {
+        return PRIMITIVE_CLASS_NAMES.contains(className);
     }
 
 }

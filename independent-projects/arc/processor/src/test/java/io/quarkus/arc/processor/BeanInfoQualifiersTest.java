@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.util.AbstractCollection;
 import java.util.AbstractList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -35,7 +34,9 @@ public class BeanInfoQualifiersTest {
         DotName fooQualifierName = name(FooQualifier.class);
         ClassInfo fooClass = index.getClassByName(fooName);
 
-        BeanInfo bean = Beans.createClassBean(fooClass, new BeanDeployment(index, null, Collections.emptyList()), null);
+        BeanInfo bean = Beans.createClassBean(fooClass,
+                BeanProcessor.builder().setBeanArchiveIndex(index).build().getBeanDeployment(),
+                null);
 
         AnnotationInstance requiredFooQualifier = index.getAnnotations(fooQualifierName).stream()
                 .filter(a -> Kind.FIELD.equals(a.target().kind()) && a.target().asField().name().equals("foo")).findFirst()

@@ -13,13 +13,13 @@ import java.util.function.Consumer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -27,6 +27,8 @@ import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.panache.common.deployment.TypeBundle;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.data.deployment.DotNames;
 
 public class SpringDataRepositoryCreator {
@@ -39,19 +41,21 @@ public class SpringDataRepositoryCreator {
     private final CustomQueryMethodsAdder customQueryMethodsAdder;
 
     public SpringDataRepositoryCreator(ClassOutput classOutput, ClassOutput otherClassOutput, IndexView index,
-            Consumer<String> fragmentImplClassResolvedCallback, Consumer<String> customClassCreatedCallback) {
+            Consumer<String> fragmentImplClassResolvedCallback,
+            Consumer<String> customClassCreatedCallback, TypeBundle typeBundle) {
         this.classOutput = classOutput;
         this.index = index;
         this.fragmentMethodsAdder = new FragmentMethodsAdder(fragmentImplClassResolvedCallback, index);
-        this.stockMethodsAdder = new StockMethodsAdder(index);
-        this.derivedMethodsAdder = new DerivedMethodsAdder(index);
+        this.stockMethodsAdder = new StockMethodsAdder(index, typeBundle);
+        this.derivedMethodsAdder = new DerivedMethodsAdder(index, typeBundle, otherClassOutput, customClassCreatedCallback);
 
         // custom queries may generate non-bean classes
-        this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index, otherClassOutput, customClassCreatedCallback);
+        this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index, otherClassOutput, customClassCreatedCallback,
+                typeBundle);
     }
 
-    public void implementCrudRepository(ClassInfo repositoryToImplement) {
-        Map.Entry<DotName, DotName> extraTypesResult = extractIdAndEntityTypes(repositoryToImplement);
+    public void implementCrudRepository(ClassInfo repositoryToImplement, IndexView indexView) {
+        Map.Entry<DotName, DotName> extraTypesResult = extractIdAndEntityTypes(repositoryToImplement, indexView);
 
         String idTypeStr = extraTypesResult.getKey().toString();
         DotName entityDotName = extraTypesResult.getValue();
@@ -70,7 +74,8 @@ public class SpringDataRepositoryCreator {
         List<DotName> interfaceNames = repositoryToImplement.interfaceNames();
         List<DotName> fragmentNamesToImplement = new ArrayList<>(interfaceNames.size());
         for (DotName interfaceName : interfaceNames) {
-            if (!DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)) {
+            if (!DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)
+                    && !GenerationUtil.isIntermediateRepository(interfaceName, indexView)) {
                 fragmentNamesToImplement.add(interfaceName);
             }
         }
@@ -115,14 +120,21 @@ public class SpringDataRepositoryCreator {
         }
     }
 
-    private Map.Entry<DotName, DotName> extractIdAndEntityTypes(ClassInfo repositoryToImplement) {
+    private Map.Entry<DotName, DotName> extractIdAndEntityTypes(ClassInfo repositoryToImplement, IndexView indexView) {
+        AnnotationInstance repositoryDefinitionInstance = repositoryToImplement
+                .classAnnotation(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
+        if (repositoryDefinitionInstance != null) {
+            return new AbstractMap.SimpleEntry<>(repositoryDefinitionInstance.value("idClass").asClass().name(),
+                    repositoryDefinitionInstance.value("domainClass").asClass().name());
+        }
+
         DotName entityDotName = null;
         DotName idDotName = null;
 
         // we need to pull the entity and ID types for the Spring Data generic types
         // we also need to make sure that the user didn't try to specify multiple different types
         // in the same interface (which is possible if only Repository is used)
-        for (DotName extendedSpringDataRepo : GenerationUtil.extendedSpringDataRepos(repositoryToImplement)) {
+        for (DotName extendedSpringDataRepo : GenerationUtil.extendedSpringDataRepos(repositoryToImplement, indexView)) {
             List<Type> types = JandexUtil.resolveTypeParameters(repositoryToImplement.name(), extendedSpringDataRepo, index);
             if (!(types.get(0) instanceof ClassType)) {
                 throw new IllegalArgumentException(

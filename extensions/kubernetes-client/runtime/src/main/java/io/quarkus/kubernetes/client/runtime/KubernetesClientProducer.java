@@ -1,6 +1,6 @@
 package io.quarkus.kubernetes.client.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.annotation.PreDestroy;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
@@ -9,26 +9,23 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.arc.DefaultBean;
 
-@ApplicationScoped
+@Singleton
 public class KubernetesClientProducer {
 
-    private volatile KubernetesClientBuildConfig buildConfig;
-
-    @DefaultBean
-    @Singleton
-    @Produces
-    public Config config() {
-        return KubernetesClientUtils.createConfig(buildConfig);
-    }
+    private KubernetesClient client;
 
     @DefaultBean
     @Singleton
     @Produces
     public KubernetesClient kubernetesClient(Config config) {
-        return new DefaultKubernetesClient(config);
+        client = new DefaultKubernetesClient(config);
+        return client;
     }
 
-    public void setKubernetesClientBuildConfig(KubernetesClientBuildConfig buildConfig) {
-        this.buildConfig = buildConfig;
+    @PreDestroy
+    public void destroy() {
+        if (client != null) {
+            client.close();
+        }
     }
 }

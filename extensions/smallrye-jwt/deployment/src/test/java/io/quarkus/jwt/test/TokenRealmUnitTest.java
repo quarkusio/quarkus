@@ -17,6 +17,7 @@ import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.AnonymousIdentityProvider;
 import io.quarkus.security.runtime.QuarkusIdentityProviderManagerImpl;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
+import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 /**
@@ -30,7 +31,7 @@ public class TokenRealmUnitTest {
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) pk1, "https://server.example.com");
-        MpJwtValidator jwtValidator = new MpJwtValidator(contextInfo);
+        MpJwtValidator jwtValidator = new MpJwtValidator(new DefaultJWTParser(contextInfo));
         QuarkusIdentityProviderManagerImpl authenticator = QuarkusIdentityProviderManagerImpl.builder()
                 .addProvider(new AnonymousIdentityProvider())
                 .setBlockingExecutor(new Executor() {
@@ -43,7 +44,7 @@ public class TokenRealmUnitTest {
 
         String jwt = TokenUtils.generateTokenString("/Token1.json", pk1Priv, "testTokenRealm");
         TokenAuthenticationRequest tokenEvidence = new TokenAuthenticationRequest(new TokenCredential(jwt, "bearer"));
-        SecurityIdentity securityIdentity = authenticator.authenticate(tokenEvidence).toCompletableFuture().get();
+        SecurityIdentity securityIdentity = authenticator.authenticate(tokenEvidence).await().indefinitely();
         Assertions.assertNotNull(securityIdentity);
         Assertions.assertEquals("jdoe@example.com", securityIdentity.getPrincipal().getName());
     }

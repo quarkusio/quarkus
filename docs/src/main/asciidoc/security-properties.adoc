@@ -1,9 +1,9 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Elytron Properties File Config
+= Quarkus - Using Security with .properties File
 
 include::./attributes.adoc[]
 
@@ -15,13 +15,10 @@ Add the following to your `pom.xml`:
 
 [source,xml]
 ----
-<dependencies>
-    <!-- Elytron Security extension -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-elytron-security-properties-file</artifactId>
-    </dependency>
-</dependencies>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elytron-security-properties-file</artifactId>
+</dependency>
 ----
 
 == Configuration
@@ -137,3 +134,7 @@ quarkus.security.users.embedded.roles.noadmin=user
 ----
 <1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
 <2> User `stuart` has roles `admin` and `user`
+
+== References
+
+* link:security[Quarkus Security]

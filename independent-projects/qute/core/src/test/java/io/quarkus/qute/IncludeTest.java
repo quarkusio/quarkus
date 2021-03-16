@@ -50,4 +50,69 @@ public class IncludeTest {
                 engine.parse("{#include detail/}").render(data));
     }
 
+    @Test
+    public void testOptionalBlockEndTags() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("{#insert header}header{/}:{#insert footer /}"));
+        assertEquals("super header:super footer",
+                engine.parse("{#include super}{#header}super header{#footer}super footer{/include}").render());
+    }
+
+    @Test
+    public void testIncludeInLoop() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo", engine.parse("{#insert snippet}empty{/insert}"));
+        assertEquals("1.2.3.4.5.",
+                engine.parse("{#for i in 5}{#include foo}{#snippet}{count}.{/snippet} this should be ingored {/include}{/for}")
+                        .render());
+    }
+
+    @Test
+    public void testIncludeInIf() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo", engine.parse("{#insert snippet}empty{/insert}"));
+        assertEquals("1",
+                engine.parse("{#if true}{#include foo} {#snippet}1{/snippet} {/include}{/if}")
+                        .render());
+    }
+
+    @Test
+    public void testUserTagInsideInsert() {
+        Engine engine = Engine.builder().addDefaults().addSectionHelper(new UserTagSectionHelper.Factory("hello", "hello"))
+                .build();
+        engine.putTemplate("hello", engine.parse("{name}"));
+        engine.putTemplate("base", engine.parse("{#insert snippet}{/insert}"));
+        assertEquals("foo",
+                engine.parse("{#include base} {#snippet}{#hello name='foo'/}{/snippet} {/include}")
+                        .render());
+    }
+
+    @Test
+    public void testIncludeStandaloneLines() {
+        Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
+        engine.putTemplate("super", engine.parse("{#insert header}\n"
+                + "default header\n"
+                + "{/insert}"));
+        assertEquals("super header\n",
+                engine.parse("{#include super}\n"
+                        + "{#header}\n"
+                        + "super header\n"
+                        + "{/header}\n"
+                        + "{/include}").render());
+    }
+
+    @Test
+    public void testEmptyInclude() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("bar/fool.html", engine.parse("{foo} and {that}"));
+        assertEquals("1 and true", engine.parse("{#include bar/fool.html that=true /}").data("foo", 1).render());
+    }
+
+    @Test
+    public void testInsertParam() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("{#insert header}default header{/insert} and {#insert footer}{that}{/}"));
+        assertEquals("1 and 1", engine.parse("{#include 'super' that=foo}{#header}{that}{/}{/}").data("foo", 1).render());
+    }
+
 }

@@ -65,7 +65,7 @@ public class ConfigInstantiator {
                 return;
             }
             for (Field field : cls.getDeclaredFields()) {
-                if (Modifier.isFinal(field.getModifiers())) {
+                if (field.isSynthetic() || Modifier.isFinal(field.getModifiers())) {
                     continue;
                 }
                 field.setAccessible(true);

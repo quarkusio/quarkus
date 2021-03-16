@@ -29,6 +29,15 @@ public class TextNode implements TemplateNode, ResultNode {
     }
 
     @Override
+    public boolean isConstant() {
+        return true;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    @Override
     public void process(Consumer<String> consumer) {
         consumer.accept(value);
     }

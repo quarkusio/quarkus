@@ -18,6 +18,8 @@ public class DependencyVersionOverridesManagedVersionTest extends ExecutableOutp
         addToExpectedLib(extB_100_rt);
 
         final TsArtifact bom = new TsArtifact("test.quarkus", "test-bom", null, "pom", "1.0.0");
+        bom.addManagedDependency(platformDescriptor());
+        bom.addManagedDependency(platformProperties());
         bom.addManagedDependency(new TsDependency(extA_100.getRuntime()));
         bom.addManagedDependency(new TsDependency(extB_100_rt));
         install(bom);

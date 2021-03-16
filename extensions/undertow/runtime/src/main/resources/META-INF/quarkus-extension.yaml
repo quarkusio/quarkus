@@ -5,7 +5,7 @@ metadata:
   keywords:
   - "undertow"
   - "servlet"
+  - "http"
   categories:
   - "web"
-  - "http"
   status: "stable"

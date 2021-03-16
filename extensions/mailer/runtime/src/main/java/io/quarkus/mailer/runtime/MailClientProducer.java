@@ -1,12 +1,17 @@
 package io.quarkus.mailer.runtime;
 
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.TlsConfig;
+import io.vertx.core.Vertx;
+import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailClient;
+import io.vertx.ext.mail.StartTLSOptions;
 
 /**
  * Beans producing the Vert.x Mail clients.
@@ -16,52 +21,75 @@ public class MailClientProducer {
 
     private static final Logger LOGGER = Logger.getLogger(MailClientProducer.class);
 
-    private io.vertx.axle.ext.mail.MailClient axleMailClient;
-    private io.vertx.reactivex.ext.mail.MailClient rxMailClient;
-    private io.vertx.mutiny.ext.mail.MailClient mutinyClient;
-    private MailClient client;
+    private final io.vertx.mutiny.ext.mail.MailClient mutinyClient;
+    private final MailClient client;
 
-    synchronized void initialize(MailClient client) {
-        this.client = client;
-        this.mutinyClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(client);
+    public MailClientProducer(Vertx vertx, MailConfig config, TlsConfig tlsConfig) {
+        this.client = mailClient(vertx, config, tlsConfig);
+        this.mutinyClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(this.client);
     }
 
     @Singleton
     @Produces
-    public synchronized MailClient mailClient() {
+    public MailClient mailClient() {
         return client;
     }
 
     @Singleton
     @Produces
-    public synchronized io.vertx.mutiny.ext.mail.MailClient mutinyClient() {
+    public io.vertx.mutiny.ext.mail.MailClient mutinyClient() {
         return mutinyClient;
     }
 
-    @Singleton
-    @Produces
-    @Deprecated
-    public synchronized io.vertx.axle.ext.mail.MailClient axleMailClient() {
-        if (axleMailClient == null) {
-            LOGGER.warn(
-                    "`io.vertx.axle.ext.mail.MailClient` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `io.vertx.mutiny.ext.mail.MailClient`");
-            axleMailClient = io.vertx.axle.ext.mail.MailClient.newInstance(client);
-        }
-        return axleMailClient;
+    @PreDestroy
+    public void stop() {
+        client.close();
     }
 
-    @Singleton
-    @Produces
-    @Deprecated
-    public synchronized io.vertx.reactivex.ext.mail.MailClient rxMailClient() {
-        if (rxMailClient == null) {
-            LOGGER.warn(
-                    "`io.vertx.reactivex.ext.mail.MailClient` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `io.vertx.mutiny.ext.mail.MailClient`");
-            rxMailClient = io.vertx.reactivex.ext.mail.MailClient.newInstance(client);
+    private MailClient mailClient(Vertx vertx, MailConfig config, TlsConfig tlsConfig) {
+        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config, tlsConfig);
+        return MailClient.createShared(vertx, cfg);
+    }
+
+    private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailConfig config, TlsConfig tlsConfig) {
+        io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
+        if (config.authMethods.isPresent()) {
+            cfg.setAuthMethods(config.authMethods.get());
         }
-        return rxMailClient;
+        cfg.setDisableEsmtp(config.disableEsmtp);
+        cfg.setHostname(config.host);
+        cfg.setKeepAlive(config.keepAlive);
+        if (config.keyStore.isPresent()) {
+            cfg.setKeyStore(config.keyStore.get());
+        }
+        if (config.keyStorePassword.isPresent()) {
+            cfg.setKeyStorePassword(config.keyStorePassword.get());
+        }
+        if (config.login.isPresent()) {
+            cfg.setLogin(LoginOption.valueOf(config.login.get().toUpperCase()));
+        }
+        if (config.maxPoolSize.isPresent()) {
+            cfg.setMaxPoolSize(config.maxPoolSize.getAsInt());
+        }
+        if (config.ownHostName.isPresent()) {
+            cfg.setOwnHostname(config.ownHostName.get());
+        }
+        if (config.username.isPresent()) {
+            cfg.setUsername(config.username.get());
+        }
+        if (config.password.isPresent()) {
+            cfg.setPassword(config.password.get());
+        }
+        if (config.port.isPresent()) {
+            cfg.setPort(config.port.getAsInt());
+        }
+        cfg.setSsl(config.ssl);
+        if (config.startTLS.isPresent()) {
+            cfg.setStarttls(StartTLSOptions.valueOf(config.startTLS.get().toUpperCase()));
+        }
+        boolean trustAll = config.trustAll.isPresent() ? config.trustAll.get() : tlsConfig.trustAll;
+        cfg.setTrustAll(trustAll);
+        return cfg;
     }
 
 }

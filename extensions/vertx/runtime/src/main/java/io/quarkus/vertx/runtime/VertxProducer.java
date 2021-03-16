@@ -10,7 +10,6 @@ import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
@@ -20,93 +19,34 @@ import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 
 /**
- * Expose the Vert.x event bus and produces Mutiny, Axle (Deprecated) and Rx Vert.x (Deprecated) instances.
+ * Expose the Vert.x event bus and produces Mutiny instances.
  * <p>
  * The original Vert.x instance is coming from the core artifact.
  *
- * IMPORTANT: The Axle and RxJava 2 API are now deprecated. It is recommended to switch to the Mutiny API.
+ * IMPL NOTE: There is no need to cache the mutiny locally because the bean instances are stored in the
+ * singleton context, i.e. the producer method is only called once.
  */
 @ApplicationScoped
 public class VertxProducer {
 
     private static final Logger LOGGER = Logger.getLogger(VertxProducer.class);
 
-    @Inject
-    Vertx vertx;
-
-    @Deprecated
-    private io.vertx.axle.core.Vertx axleVertx;
-
-    @Deprecated
-    private io.vertx.reactivex.core.Vertx rxVertx;
-
-    private io.vertx.mutiny.core.Vertx mutinyVertx;
-
     @Singleton
     @Produces
-    public EventBus eventbus() {
+    public EventBus eventbus(Vertx vertx) {
         return vertx.eventBus();
     }
 
     @Singleton
     @Produces
-    public synchronized io.vertx.mutiny.core.Vertx mutiny() {
-        if (mutinyVertx == null) {
-            mutinyVertx = io.vertx.mutiny.core.Vertx.newInstance(vertx);
-        }
-        return mutinyVertx;
+    public io.vertx.mutiny.core.Vertx mutiny(Vertx vertx) {
+        return io.vertx.mutiny.core.Vertx.newInstance(vertx);
     }
 
     @Singleton
     @Produces
-    @Deprecated
-    public synchronized io.vertx.axle.core.Vertx axle() {
-        if (axleVertx == null) {
-            LOGGER.warn(
-                    "`io.vertx.axle.core.Vertx` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `io.vertx.mutiny.core.Vertx`");
-            axleVertx = io.vertx.axle.core.Vertx.newInstance(vertx);
-        }
-        return axleVertx;
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.reactivex.core.Vertx rx() {
-        if (rxVertx == null) {
-            LOGGER.warn(
-                    "`io.vertx.reactivex.core.Vertx` is deprecated  and will be removed in a future version - it is "
-                            + "recommended to switch to `io.vertx.mutiny.core.eventbus.Vertx`");
-            rxVertx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
-        }
-        return rxVertx;
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.axle.core.eventbus.EventBus axleEventBus() {
-        LOGGER.warn(
-                "`io.vertx.axle.core.eventbus.EventBus` is deprecated and will be removed in a future version - it is "
-                        + "recommended to switch to `io.vertx.mutiny.core.eventbus.EventBus`");
-        return axle().eventBus();
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public synchronized io.vertx.reactivex.core.eventbus.EventBus rxEventBus() {
-        LOGGER.warn(
-                "`io.vertx.reactivex.core.eventbus.EventBus` is deprecated and will be removed in a future version - it "
-                        + "is recommended to switch to `io.vertx.mutiny.core.eventbus.EventBus`");
-        return rx().eventBus();
-    }
-
-    @Singleton
-    @Produces
-    public synchronized io.vertx.mutiny.core.eventbus.EventBus mutinyEventBus() {
-        return mutiny().eventBus();
+    public io.vertx.mutiny.core.eventbus.EventBus mutinyEventBus(io.vertx.mutiny.core.Vertx mutiny) {
+        return mutiny.eventBus();
     }
 
     /**
@@ -116,8 +56,7 @@ public class VertxProducer {
      * @param event
      * @param beanManager
      */
-    void undeployVerticles(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event,
-            BeanManager beanManager) {
+    void undeployVerticles(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event, BeanManager beanManager) {
         // Only beans with the AbstractVerticle in the set of bean types are considered - we need a deployment id 
         Set<Bean<?>> beans = beanManager.getBeans(AbstractVerticle.class, Any.Literal.INSTANCE);
         Context applicationContext = beanManager.getContext(ApplicationScoped.class);
@@ -129,8 +68,10 @@ public class VertxProducer {
                     // Only existing instances are considered
                     try {
                         AbstractVerticle verticle = (AbstractVerticle) instance;
-                        mutinyVertx.undeploy(verticle.deploymentID()).await().indefinitely();
-                        LOGGER.debugf("Undeployed verticle %s:", instance.getClass());
+                        io.vertx.mutiny.core.Vertx mutiny = beanManager.createInstance()
+                                .select(io.vertx.mutiny.core.Vertx.class).get();
+                        mutiny.undeploy(verticle.deploymentID()).await().indefinitely();
+                        LOGGER.debugf("Undeployed verticle: %s", instance.getClass());
                     } catch (Exception e) {
                         // In theory, a user can undeploy the verticle manually
                         LOGGER.debugf("Unable to undeploy verticle %s: %s", instance.getClass(), e.toString());

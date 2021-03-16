@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="{devRootAppend}/resources/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{devRootAppend}/resources/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="{devRootAppend}/resources/css/dev-console.css?2">
+  <link rel="stylesheet" href="{devRootAppend}/resources/css/logstream.css">
+  
+  <link rel="shortcut icon" type="image/png" href="{devRootAppend}/resources/images/favicon.ico" >
+  
+  <style>
+  {#insert style/}
+  </style>
+  
+  <title>
+    {#if currentExtensionName && currentExtensionName != 'Eclipse Vert.x - HTTP'}
+      {currentExtensionName} ›
+    {/if}
+    {#insert title/}
+    {#if applicationName and applicationVersion} | {applicationName} {applicationVersion}{/if}
+  </title>
+ </head>
+ <body>
+  
+  <nav class="navbar sticky-top navbar-dark bg-dark">
+    <a class="navbar-brand" href="{devRootAppend}/">
+      <img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
+      <span id="navbar-title" class="align-middle">Dev UI</span>
+    </a>
+    {#if currentExtensionName}
+    <span id="navbar-subtitle" class="navbar-nav">
+      <span class="navbar-item">
+      {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
+        <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
+      {#else}
+        <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {currentExtensionName} <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
+      {/if}
+      </span>
+    </span>   
+    {/}  
+    <span class="navbar-text">
+      {#if applicationName and applicationVersion}{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion}){/if}
+    </span>
+  </nav>
+
+  <div class="container{#if fluid}-fluid{/if} main-container">
+    
+   {#if flash['message']}
+     <div class="alert alert-{flash['message']['class']} show fade" role="alert" data-timer="{flash['displayTime']}">
+      {flash['message']['text']}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+     </div>
+   {/if}
+   {#insert body/}
+  </div>
+
+    <div id="logstreamFooter" class="footer fixed-bottom">
+
+    <button id="logstreamViewLogButton" type="button" class="btn float-right" onclick="showLog();">
+        <i id="logstreamViewLogButtonIcon" class="fas fa-caret-up fa-lg" data-toggle='tooltip' data-placement='left' title='Show Log'></i>
+    </button>
+    <div id="logstreamManager">
+        {#include logmanagerNav}{/include}
+        {#include logmanagerLog}{/include}
+    </div>
+  </div>
+  {#include logmanagerModals}{/include}
+
+  <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
+  <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
+  <script src="{devRootAppend}/resources/js/logstream.js"></script>
+  <script>
+  {|
+    if (jQuery(".alert").length) {
+     // dismiss alert
+     jQuery(function() {
+       window.setTimeout(function(){
+         jQuery(".alert").alert("close");
+       }, jQuery(".alert").data("timer"));
+     });
+    }
+  |}
+    var sourceMap = \{\};
+  {#for sourcePackageEntry in ideInfo:sourcePackages}
+    var {sourcePackageEntry.key}Packages = [];
+    {#for rootPackage in sourcePackageEntry.value}
+    {sourcePackageEntry.key}Packages.push("{rootPackage}")
+    {/for}
+    sourceMap["{sourcePackageEntry.key}"] = {sourcePackageEntry.key}Packages;
+  {/for}
+
+    var srcMainPath = "{ideInfo:srcMainPath}";
+    var ideLinkType = "{ideInfo:ideLinkType}";
+    var ideClientLinkFormat = "{ideInfo:ideClientLinkFormat}";
+    var ideServerLinkEndpoint = "{ideInfo:ideServerLinkEndpoint}";
+    var devRootAppend = "{devRootAppend}";
+
+  {|
+
+    var langToExt = {"java": "java", "kotlin": "kt"};
+
+    function ideKnown() {
+      return (ideLinkType == "client") || (ideLinkType == "server");
+    }
+
+    // if the class is an application class, return the source language it was written in
+    // or null if the class is not an application class
+    function appClassLang(className) {
+      for (var key in sourceMap){
+        if (sourceMap.hasOwnProperty(key)) {
+          var packages = sourceMap[key];
+          for (var i = 0; i < packages.length; i++) {
+            if (className.startsWith(packages[i] + ".")) {
+              return key;
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function openInIDE(className, line) {
+      var lang = appClassLang(className);
+      if (lang == null) {
+        console.error("Unable to determine file name of class: '" + className + "'");
+        return;
+      }
+      var fileName = className.replaceAll(".", "/") + "." + langToExt[lang];
+      if (ideLinkType == "client") {
+        var location = ideClientLinkFormat.replace("{0}", srcMainPath + "/" + lang + "/" + fileName);
+        if (line) {
+           location = location.replace("{1}", line);
+        } else {
+            location = location.replace(":{1}", "");
+        }
+        window.location = location;
+        return;
+      } else if (ideLinkType == "server") {
+
+        var fd = new FormData();
+        fd.append('className', className);
+        fd.append('lang', lang);
+        fd.append('srcMainPath', srcMainPath);
+        if (line) {
+         fd.append('line', line);
+        }
+
+        $.ajax({
+          url: window.location.protocol + "//" + window.location.host + devRootAppend + ideServerLinkEndpoint,
+          data: fd,
+          processData: false,
+          contentType: false,
+          type: 'POST'
+        }).fail(function() {
+            console.error("Unable to open class: '" + className + "' in the IDE. See server logs for more information");
+        });
+      } else {
+         console.error("Unknown IDE link type: " + ideLinkType);
+      }
+    }
+  |}
+
+  {#insert script /}
+  </script>
+ </body>
+</html>

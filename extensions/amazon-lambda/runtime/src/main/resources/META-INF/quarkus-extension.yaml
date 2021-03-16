@@ -9,3 +9,4 @@ metadata:
   - "cloud"
   guide: "https://quarkus.io/guides/amazon-lambda"
   status: "preview"
+  codestart: "amazon-lambda"

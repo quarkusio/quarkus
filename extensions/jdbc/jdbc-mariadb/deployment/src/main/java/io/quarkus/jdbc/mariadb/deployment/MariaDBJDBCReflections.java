@@ -23,6 +23,7 @@ public final class MariaDBJDBCReflections {
     void runtimeInit(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized) {
         //MastersSlavesListener starts threads in DynamicSizedSchedulerImpl which is disallowed during build time in GraalVM
         runtimeInitialized
-                .produce(new RuntimeInitializedClassBuildItem("org.mariadb.jdbc.internal.failover.impl.MastersSlavesListener"));
+                .produce(new RuntimeInitializedClassBuildItem(
+                        "org.mariadb.jdbc.internal.failover.impl.MastersReplicasListener"));
     }
 }

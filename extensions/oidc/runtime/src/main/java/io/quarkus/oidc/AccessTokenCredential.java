@@ -1,11 +1,12 @@
 package io.quarkus.oidc;
 
-import io.quarkus.oidc.runtime.ContextAwareTokenCredential;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
-public class AccessTokenCredential extends ContextAwareTokenCredential {
+public class AccessTokenCredential extends OidcTokenCredential {
 
     private RefreshToken refreshToken;
+    private boolean opaque;
 
     public AccessTokenCredential() {
         this(null, null);
@@ -17,7 +18,7 @@ public class AccessTokenCredential extends ContextAwareTokenCredential {
      * @param accessToken - access token
      */
     public AccessTokenCredential(String accessToken, RoutingContext context) {
-        super(accessToken, "bearer", context);
+        this(accessToken, null, context);
     }
 
     /**
@@ -27,11 +28,18 @@ public class AccessTokenCredential extends ContextAwareTokenCredential {
      * @param refreshToken - refresh token which can be used to refresh this access token, may be null
      */
     public AccessTokenCredential(String accessToken, RefreshToken refreshToken, RoutingContext context) {
-        this(accessToken, context);
+        super(accessToken, "bearer", context);
         this.refreshToken = refreshToken;
+        if (accessToken != null) {
+            this.opaque = OidcUtils.isOpaqueToken(accessToken);
+        }
     }
 
     public RefreshToken getRefreshToken() {
         return refreshToken;
+    }
+
+    public boolean isOpaque() {
+        return opaque;
     }
 }

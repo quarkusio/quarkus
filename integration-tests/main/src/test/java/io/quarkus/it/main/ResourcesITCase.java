@@ -1,0 +1,24 @@
+package io.quarkus.it.main;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.NativeImageTest;
+import io.restassured.RestAssured;
+
+@NativeImageTest
+public class ResourcesITCase extends ResourcesTestCase {
+
+    @Test
+    public void excludedNative() {
+        RestAssured.when()
+                .get("/resources/test-resources/file.adoc")
+                .then()
+                .statusCode(404);
+
+        RestAssured.when()
+                .get("/resources/test-resources/excluded/unwanted.txt")
+                .then()
+                .statusCode(404);
+    }
+
+}

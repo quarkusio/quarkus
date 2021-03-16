@@ -24,6 +24,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
 import org.wildfly.common.Assert;
@@ -50,10 +51,10 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.Converters;
+import io.smallrye.config.Expressions;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -133,6 +134,11 @@ public final class BuildTimeConfigurationReader {
     private static void processClass(ClassDefinition.Builder builder, Class<?> clazz,
             final Map<Class<?>, GroupDefinition> groups) {
         builder.setConfigurationClass(clazz);
+        processClassFields(builder, clazz, groups);
+    }
+
+    private static void processClassFields(final ClassDefinition.Builder builder, final Class<?> clazz,
+            final Map<Class<?>, GroupDefinition> groups) {
         for (Field field : clazz.getDeclaredFields()) {
             int mods = field.getModifiers();
             if (Modifier.isStatic(mods)) {
@@ -148,6 +154,10 @@ public final class BuildTimeConfigurationReader {
                 field.setAccessible(true);
             }
             builder.addMember(processValue(field, field.getGenericType(), groups));
+        }
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass != null) {
+            processClassFields(builder, superclass, groups);
         }
     }
 
@@ -248,6 +258,7 @@ public final class BuildTimeConfigurationReader {
         final Map<Class<?>, Object> objectsByRootClass = new HashMap<>();
         final Map<String, String> specifiedRunTimeDefaultValues = new TreeMap<>();
         final Map<String, String> buildTimeRunTimeVisibleValues = new TreeMap<>();
+        final Map<String, String> allBuildTimeValues = new TreeMap<>();
 
         final Map<ConverterType, Converter<?>> convByType = new HashMap<>();
 
@@ -285,13 +296,19 @@ public final class BuildTimeConfigurationReader {
                 nameBuilder.setLength(len);
             }
             // sweep-up
-            for (String propertyName : config.getPropertyNames()) {
+            for (String propertyName : getAllProperties()) {
+                if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
+                    continue;
+                }
+
                 NameIterator ni = new NameIterator(propertyName);
                 if (ni.hasNext() && ni.nextSegmentEquals("quarkus")) {
                     ni.next();
                     // build time patterns
                     Container matched = buildTimePatternMap.match(ni);
                     if (matched instanceof FieldContainer) {
+                        allBuildTimeValues.put(propertyName,
+                                config.getOptionalValue(propertyName, String.class).orElse(""));
                         ni.goToEnd();
                         // cursor is located after group property key (if any)
                         getGroup((FieldContainer) matched, ni);
@@ -309,6 +326,8 @@ public final class BuildTimeConfigurationReader {
                         Field field = matched.findField();
                         Converter<?> converter = getConverter(config, field, ConverterType.of(field));
                         map.put(key, config.getValue(propertyName, converter));
+                        allBuildTimeValues.put(propertyName,
+                                config.getOptionalValue(propertyName, String.class).orElse(""));
                         continue;
                     }
                     // build time (run time visible) patterns
@@ -319,6 +338,8 @@ public final class BuildTimeConfigurationReader {
                         ni.goToEnd();
                         // cursor is located after group property key (if any)
                         getGroup((FieldContainer) matched, ni);
+                        allBuildTimeValues.put(propertyName,
+                                config.getOptionalValue(propertyName, String.class).orElse(""));
                         buildTimeRunTimeVisibleValues.put(propertyName,
                                 config.getOptionalValue(propertyName, String.class).orElse(""));
                         continue;
@@ -337,6 +358,8 @@ public final class BuildTimeConfigurationReader {
                         // cache the resolved value
                         buildTimeRunTimeVisibleValues.put(propertyName,
                                 config.getOptionalValue(propertyName, String.class).orElse(""));
+                        allBuildTimeValues.put(propertyName,
+                                config.getOptionalValue(propertyName, String.class).orElse(""));
                         continue;
                     }
                     // run time patterns
@@ -345,13 +368,9 @@ public final class BuildTimeConfigurationReader {
                     matched = runTimePatternMap.match(ni);
                     if (matched != null) {
                         // it's a specified run-time default (record for later)
-                        boolean old = ExpandingConfigSource.setExpanding(false);
-                        try {
-                            specifiedRunTimeDefaultValues.put(propertyName,
-                                    config.getOptionalValue(propertyName, String.class).orElse(""));
-                        } finally {
-                            ExpandingConfigSource.setExpanding(old);
-                        }
+                        specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
+                                () -> config.getOptionalValue(propertyName, String.class).orElse("")));
+
                         continue;
                     }
                     // also check for the bootstrap properties since those need to be added to specifiedRunTimeDefaultValues as well
@@ -360,26 +379,17 @@ public final class BuildTimeConfigurationReader {
                     matched = bootstrapPatternMap.match(ni);
                     if (matched != null) {
                         // it's a specified run-time default (record for later)
-                        boolean old = ExpandingConfigSource.setExpanding(false);
-                        try {
-                            specifiedRunTimeDefaultValues.put(propertyName,
-                                    config.getOptionalValue(propertyName, String.class).orElse(""));
-                        } finally {
-                            ExpandingConfigSource.setExpanding(old);
-                        }
+                        specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
+                                () -> config.getOptionalValue(propertyName, String.class).orElse("")));
                     }
                 } else {
                     // it's not managed by us; record it
-                    boolean old = ExpandingConfigSource.setExpanding(false);
-                    try {
-                        specifiedRunTimeDefaultValues.put(propertyName,
-                                config.getOptionalValue(propertyName, String.class).orElse(""));
-                    } finally {
-                        ExpandingConfigSource.setExpanding(old);
-                    }
+                    specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
+                            () -> config.getOptionalValue(propertyName, String.class).orElse("")));
                 }
             }
             return new ReadResult(objectsByRootClass, specifiedRunTimeDefaultValues, buildTimeRunTimeVisibleValues,
+                    allBuildTimeValues,
                     buildTimePatternMap, buildTimeRunTimePatternMap, bootstrapPatternMap, runTimePatternMap, allRoots,
                     bootstrapRootsEmpty);
         }
@@ -708,12 +718,26 @@ public final class BuildTimeConfigurationReader {
             convByType.put(valueType, converter);
             return converter;
         }
+
+        /**
+         * We collect all properties from ConfigSources, because Config#getPropertyNames exclude the active profiled
+         * properties, meaning that the property is written in the default config source unprofiled. This may cause
+         * issues if we run with a different profile and fallback to defaults.
+         */
+        private Set<String> getAllProperties() {
+            Set<String> properties = new HashSet<>();
+            for (ConfigSource configSource : config.getConfigSources()) {
+                properties.addAll(configSource.getPropertyNames());
+            }
+            return properties;
+        }
     }
 
     public static final class ReadResult {
         final Map<Class<?>, Object> objectsByRootClass;
         final Map<String, String> specifiedRunTimeDefaultValues;
         final Map<String, String> buildTimeRunTimeVisibleValues;
+        final Map<String, String> allBuildTimeValues;
         final ConfigPatternMap<Container> buildTimePatternMap;
         final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
         final ConfigPatternMap<Container> bootstrapPatternMap;
@@ -724,6 +748,7 @@ public final class BuildTimeConfigurationReader {
 
         ReadResult(final Map<Class<?>, Object> objectsByRootClass, final Map<String, String> specifiedRunTimeDefaultValues,
                 final Map<String, String> buildTimeRunTimeVisibleValues,
+                Map<String, String> allBuildTimeValues,
                 final ConfigPatternMap<Container> buildTimePatternMap,
                 final ConfigPatternMap<Container> buildTimeRunTimePatternMap,
                 final ConfigPatternMap<Container> bootstrapPatternMap,
@@ -738,6 +763,7 @@ public final class BuildTimeConfigurationReader {
             this.runTimePatternMap = runTimePatternMap;
             this.allRoots = allRoots;
             this.bootstrapRootsEmpty = bootstrapRootsEmpty;
+            this.allBuildTimeValues = allBuildTimeValues;
             Map<Class<?>, RootDefinition> map = new HashMap<>();
             for (RootDefinition root : allRoots) {
                 map.put(root.getConfigurationClass(), root);
@@ -779,6 +805,10 @@ public final class BuildTimeConfigurationReader {
 
         public ConfigPatternMap<Container> getRunTimePatternMap() {
             return runTimePatternMap;
+        }
+
+        public Map<String, String> getAllBuildTimeValues() {
+            return allBuildTimeValues;
         }
 
         public List<RootDefinition> getAllRoots() {

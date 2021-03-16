@@ -1,18 +1,11 @@
 package io.quarkus.mongodb.impl;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
-import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.reactivestreams.Publisher;
-
-import com.mongodb.reactivestreams.client.Success;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -31,12 +24,7 @@ class Wrappers {
         return uni;
     }
 
-    static Uni<Void> toEmptyUni(Publisher<Success> publisher) {
-        return toUni(publisher).onItem().apply(s -> null);
-    }
-
     static <T> Multi<T> toMulti(Publisher<T> publisher) {
-        @Nullable
         Context context = Vertx.currentContext();
         if (context != null) {
             return Multi.createFrom().publisher(publisher).emitOn(command -> context.runOnContext(x -> command.run()));
@@ -46,7 +34,6 @@ class Wrappers {
     }
 
     static <T> Uni<List<T>> toUniOfList(Publisher<T> publisher) {
-        @Nullable
         Context context = Vertx.currentContext();
         Uni<List<T>> uni = Multi.createFrom().publisher(publisher)
                 .collectItems().asList();
@@ -56,71 +43,4 @@ class Wrappers {
         }
         return uni;
     }
-
-    static <T> PublisherBuilder<T> toPublisherBuilder(Publisher<T> publisher) {
-        @Nullable
-        Context context = Vertx.currentContext();
-        if (context != null) {
-            Multi<T> multi = Multi.createFrom().publisher(publisher)
-                    .emitOn(command -> context.runOnContext(x -> command.run()));
-            return ReactiveStreams.fromPublisher(multi);
-        } else {
-            return ReactiveStreams.fromPublisher(publisher);
-        }
-    }
-
-    public static <T> CompletionStage<T> toCompletionStage(Publisher<T> publisher) {
-        Context context = Vertx.currentContext();
-        CompletableFuture<T> future = Multi.createFrom().publisher(publisher)
-                .collectItems().first()
-                .subscribeAsCompletionStage();
-
-        CompletableFuture<T> result = new CompletableFuture<>();
-        future.whenComplete((value, err) -> {
-            if (context != null) {
-                context.runOnContext(x -> completeOrFailedTheFuture(result, value, err));
-            } else {
-                completeOrFailedTheFuture(result, value, err);
-            }
-        });
-        return result;
-    }
-
-    private static final RuntimeException UNEXPECTED_EMPTY_STREAM = new IllegalStateException(
-            "Unexpected empty stream");
-
-    private static <T> void completeOrFailedTheFuture(CompletableFuture<T> cf, T value, Throwable err) {
-        if (err != null) {
-            cf.completeExceptionally(err);
-        } else {
-            if (value == null) {
-                cf.completeExceptionally(UNEXPECTED_EMPTY_STREAM);
-            } else {
-                cf.complete(value);
-            }
-        }
-    }
-
-    static CompletionStage<Void> toEmptyCompletionStage(Publisher<Success> publisher) {
-        return toCompletionStage(publisher).thenApply(x -> null);
-    }
-
-    static <T> CompletionStage<List<T>> toCompletionStageOfList(Publisher<T> publisher) {
-        @Nullable
-        Context context = Vertx.currentContext();
-        CompletionStage<List<T>> run = Multi.createFrom().publisher(publisher)
-                .collectItems().asList()
-                .subscribeAsCompletionStage();
-        CompletableFuture<List<T>> cf = new CompletableFuture<>();
-        run.thenAccept(list -> {
-            if (context != null) {
-                context.runOnContext(x -> cf.complete(list));
-            } else {
-                cf.complete(list);
-            }
-        });
-        return cf;
-
-    }
-
 }

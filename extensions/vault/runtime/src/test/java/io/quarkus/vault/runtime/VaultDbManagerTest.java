@@ -1,44 +1,66 @@
 package io.quarkus.vault.runtime;
 
-import static io.quarkus.vault.CredentialsProvider.PASSWORD_PROPERTY_NAME;
-import static io.quarkus.vault.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static java.time.Instant.EPOCH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.runtime.TlsConfig;
+import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.VertxVaultClient;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalAppRoleAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalKubernetesAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalTokenAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalUserpassAuthMethod;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentialsData;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalDatabaseSecretEngine;
 import io.quarkus.vault.runtime.config.VaultAppRoleAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.runtime.config.VaultKubernetesAuthenticationConfig;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.runtime.config.VaultTlsConfig;
 import io.quarkus.vault.runtime.config.VaultUserpassAuthenticationConfig;
 
 public class VaultDbManagerTest {
 
-    VaultRuntimeConfig config = createConfig();
+    VaultBootstrapConfig config = createConfig();
+    TlsConfig tlsConfig = new TlsConfig();
     VaultDatabaseCredentials credentials = new VaultDatabaseCredentials();
     VaultLeasesLookup vaultLeasesLookup = new VaultLeasesLookup();
     AtomicBoolean lookupLeaseShouldReturn400 = new AtomicBoolean(false);
     VaultRenewLease vaultRenewLease = new VaultRenewLease();
-    OkHttpVaultClient vaultClient = createVaultClient();
-    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultClient, config);
-    VaultDbManager vaultDbManager = new VaultDbManager(vaultAuthManager, vaultClient, config);
+    VaultConfigHolder vaultConfigHolder = new VaultConfigHolder().setVaultBootstrapConfig(config);
+    VaultClient vaultClient = createVaultClient();
+    VaultInternalSystemBackend vaultInternalSystemBackend = createSystemBackend();
+    VaultInternalDatabaseSecretEngine vaultInternalDatabaseSecretEngine = createVaultInternalDatabaseSecretEngine();
+    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultConfigHolder, vaultInternalSystemBackend,
+            new VaultInternalAppRoleAuthMethod(),
+            new VaultInternalKubernetesAuthMethod(),
+            new VaultInternalUserpassAuthMethod(), new VaultInternalTokenAuthMethod());
+    VaultDbManager vaultDbManager = new VaultDbManager(vaultConfigHolder, vaultAuthManager,
+            vaultInternalSystemBackend, vaultInternalDatabaseSecretEngine);
     String mydbrole = "mydbrole";
     String mylease = "mylease";
+
+    @AfterEach
+    public void after() {
+        vaultClient.close();
+    }
 
     @Test
     public void getDynamicDbCredentials() {
@@ -54,7 +76,7 @@ public class VaultDbManagerTest {
         vaultRenewLease.leaseDurationSecs = 10;
         vaultRenewLease.renewable = true;
 
-        Properties properties = vaultDbManager.getDynamicDbCredentials(mydbrole);
+        Map<String, String> properties = vaultDbManager.getDynamicDbCredentials(mydbrole);
         assertEquals("bob", properties.get(USER_PROPERTY_NAME));
         assertEquals("sinclair1", properties.get(PASSWORD_PROPERTY_NAME));
 
@@ -93,9 +115,9 @@ public class VaultDbManagerTest {
         assertEquals("sinclair5", properties.get(PASSWORD_PROPERTY_NAME), "reaching max-ttl");
     }
 
-    private VaultRuntimeConfig createConfig() {
+    private VaultBootstrapConfig createConfig() {
         try {
-            VaultRuntimeConfig config = new VaultRuntimeConfig();
+            VaultBootstrapConfig config = new VaultBootstrapConfig();
             config.tls = new VaultTlsConfig();
             config.authentication = new VaultAuthenticationConfig();
             config.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
@@ -103,14 +125,17 @@ public class VaultDbManagerTest {
             config.authentication.userpass = new VaultUserpassAuthenticationConfig();
             config.url = Optional.of(new URL("http://localhost:8200"));
             config.authentication.clientToken = Optional.of("123");
+            config.authentication.clientTokenWrappingToken = Optional.empty();
             config.authentication.kubernetes.role = Optional.empty();
             config.authentication.appRole.roleId = Optional.empty();
             config.authentication.appRole.secretId = Optional.empty();
+            config.authentication.appRole.secretIdWrappingToken = Optional.empty();
             config.authentication.userpass.username = Optional.empty();
             config.authentication.userpass.password = Optional.empty();
+            config.authentication.userpass.passwordWrappingToken = Optional.empty();
             config.connectTimeout = Duration.ofSeconds(1);
             config.readTimeout = Duration.ofSeconds(1);
-            config.tls.skipVerify = true;
+            config.tls.skipVerify = Optional.of(true);
             config.logConfidentialityLevel = LogConfidentialityLevel.LOW;
             config.renewGracePeriod = Duration.ofSeconds(3);
             return config;
@@ -119,13 +144,23 @@ public class VaultDbManagerTest {
         }
     }
 
-    private OkHttpVaultClient createVaultClient() {
-        return new OkHttpVaultClient(config) {
+    private VaultClient createVaultClient() {
+        VertxVaultClient vaultClient = new VertxVaultClient(vaultConfigHolder, tlsConfig);
+        vaultClient.init();
+        return vaultClient;
+    }
+
+    private VaultInternalDatabaseSecretEngine createVaultInternalDatabaseSecretEngine() {
+        return new VaultInternalDatabaseSecretEngine() {
             @Override
-            public VaultDatabaseCredentials generateDatabaseCredentials(String token, String databaseCredentialsRole) {
+            public VaultDatabaseCredentials generateCredentials(String token, String databaseCredentialsRole) {
                 return credentials;
             }
+        };
+    }
 
+    private VaultInternalSystemBackend createSystemBackend() {
+        return new VaultInternalSystemBackend() {
             @Override
             public VaultLeasesLookup lookupLease(String token, String leaseId) {
                 if (lookupLeaseShouldReturn400.get()) {
@@ -140,5 +175,4 @@ public class VaultDbManagerTest {
             }
         };
     }
-
 }

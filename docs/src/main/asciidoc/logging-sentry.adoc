@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Logging to Sentry
 
@@ -23,21 +23,22 @@ WARNING: Sentry's Java SDK is open source, but recently sentry.io https://blog.s
 
 To start with, you need to get a Sentry DSN either by https://sentry.io/signup/[creating a Sentry account] or https://docs.sentry.io/server/[installing your own self-hosted Sentry].
 
-In order to configure Sentry logging, add the `quarkus-logging-sentry` extension to your
-application `pom.xml` as illustrated in the following snippet:
+In order to configure Sentry logging, add the `logging-sentry` extension
+to your project by running the following command in your project base directory:
 
-.Add the Sentry logging extension to your pom.xml
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="logging-sentry"
+----
+
+This will add the following to your `pom.xml`:
+
 [source,xml]
 ----
-<build>
-  <dependencies>
-    <!-- ... your other dependencies are here ... -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-logging-sentry</artifactId>
-    </dependency>
-  </dependencies>
-</build>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-logging-sentry</artifactId>
+</dependency>
 ----
 
 [id="in-app-packages"]

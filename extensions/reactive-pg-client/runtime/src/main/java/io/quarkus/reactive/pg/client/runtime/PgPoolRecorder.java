@@ -1,11 +1,25 @@
 package io.quarkus.reactive.pg.client.runtime;
 
-import io.quarkus.arc.runtime.BeanContainer;
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksTrustOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.datasource.runtime.LegacyDataSourceRuntimeConfig;
-import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -18,30 +32,26 @@ import io.vertx.sqlclient.PoolOptions;
 @SuppressWarnings("deprecation")
 public class PgPoolRecorder {
 
-    public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx, BeanContainer container,
+    private static final Logger log = Logger.getLogger(PgPoolRecorder.class);
+
+    public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
+            String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
-            LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
-            LegacyDataSourceReactivePostgreSQLConfig legacyDataSourceReactivePostgreSQLConfig,
-            boolean isLegacy,
+            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
+            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
             ShutdownContext shutdown) {
 
-        PgPool pgPool;
-        if (!isLegacy) {
-            pgPool = initialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
-                    dataSourceReactiveRuntimeConfig,
-                    dataSourceReactivePostgreSQLConfig);
-        } else {
-            pgPool = legacyInitialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
-                    legacyDataSourcesRuntimeConfig.defaultDataSource, legacyDataSourceReactivePostgreSQLConfig);
-        }
-
-        PgPoolProducer producer = container.instance(PgPoolProducer.class);
-        producer.initialize(pgPool);
+        PgPool pgPool = initialize(vertx.getValue(),
+                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
+                dataSourcesReactivePostgreSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
 
         shutdown.addShutdownTask(pgPool::close);
         return new RuntimeValue<>(pgPool);
+    }
+
+    public RuntimeValue<io.vertx.mutiny.pgclient.PgPool> mutinyPgPool(RuntimeValue<PgPool> pgPool) {
+        return new RuntimeValue<>(io.vertx.mutiny.pgclient.PgPool.newInstance(pgPool.getValue()));
     }
 
     private PgPool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -51,7 +61,11 @@ public class PgPoolRecorder {
                 dataSourceReactivePostgreSQLConfig);
         PgConnectOptions pgConnectOptions = toPgConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
-        return PgPool.pool(vertx, pgConnectOptions, poolOptions);
+        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
+            log.warn(
+                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
+        }
+        return new ThreadLocalPgPool(vertx, pgConnectOptions, poolOptions);
     }
 
     private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -91,65 +105,55 @@ public class PgPoolRecorder {
             pgConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
         }
 
-        if (dataSourceReactivePostgreSQLConfig.cachePreparedStatements.isPresent()) {
-            pgConnectOptions.setCachePreparedStatements(dataSourceReactivePostgreSQLConfig.cachePreparedStatements.get());
+        // credentials provider
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            String user = credentials.get(USER_PROPERTY_NAME);
+            String password = credentials.get(PASSWORD_PROPERTY_NAME);
+            if (user != null) {
+                pgConnectOptions.setUser(user);
+            }
+            if (password != null) {
+                pgConnectOptions.setPassword(password);
+            }
         }
+
+        if (dataSourceReactivePostgreSQLConfig.cachePreparedStatements.isPresent()) {
+            log.warn(
+                    "datasource.reactive.postgresql.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
+            pgConnectOptions.setCachePreparedStatements(dataSourceReactivePostgreSQLConfig.cachePreparedStatements.get());
+        } else {
+            pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
+        }
+
         if (dataSourceReactivePostgreSQLConfig.pipeliningLimit.isPresent()) {
             pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit.getAsInt());
         }
 
-        return pgConnectOptions;
-    }
-
-    // Legacy configuration
-
-    private PgPool legacyInitialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
-            LegacyDataSourceReactivePostgreSQLConfig legacyDataSourceReactivePostgreSQLConfig) {
-        PoolOptions poolOptions = legacyToPoolOptionsLegacy(legacyDataSourceRuntimeConfig);
-        PgConnectOptions pgConnectOptions = legacyToPostgreSQLConnectOptions(dataSourceRuntimeConfig,
-                legacyDataSourceRuntimeConfig, legacyDataSourceReactivePostgreSQLConfig);
-        return PgPool.pool(vertx, pgConnectOptions, poolOptions);
-    }
-
-    private PoolOptions legacyToPoolOptionsLegacy(LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig) {
-        PoolOptions poolOptions;
-        poolOptions = new PoolOptions();
-
-        // Slight change of behavior compared to the legacy code: the default max size is set to 20
-        poolOptions.setMaxSize(legacyDataSourceRuntimeConfig.maxSize);
-
-        return poolOptions;
-    }
-
-    private PgConnectOptions legacyToPostgreSQLConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
-            LegacyDataSourceReactivePostgreSQLConfig legacyDataSourceReactivePostgreSQLConfig) {
-        PgConnectOptions pgConnectOptions;
-        if (legacyDataSourceRuntimeConfig.url.isPresent()) {
-            String url = legacyDataSourceRuntimeConfig.url.get();
-            // clean up the URL to make migrations easier
-            if (url.matches("^vertx-reactive:postgre(?:s|sql)://.*$")) {
-                url = url.substring("vertx-reactive:".length());
-            }
-            pgConnectOptions = PgConnectOptions.fromUri(url);
-        } else {
-            pgConnectOptions = new PgConnectOptions();
+        if (dataSourceReactivePostgreSQLConfig.sslMode.isPresent()) {
+            pgConnectOptions.setSslMode(dataSourceReactivePostgreSQLConfig.sslMode.get());
         }
 
-        if (dataSourceRuntimeConfig.username.isPresent()) {
-            pgConnectOptions.setUser(dataSourceRuntimeConfig.username.get());
-        }
+        pgConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
 
-        if (dataSourceRuntimeConfig.password.isPresent()) {
-            pgConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
-        }
+        configurePemTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
+        configureJksTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
+        configurePfxTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
 
-        if (legacyDataSourceReactivePostgreSQLConfig.cachePreparedStatements.isPresent()) {
-            pgConnectOptions.setCachePreparedStatements(legacyDataSourceReactivePostgreSQLConfig.cachePreparedStatements.get());
-        }
-        if (legacyDataSourceReactivePostgreSQLConfig.pipeliningLimit.isPresent()) {
-            pgConnectOptions.setPipeliningLimit(legacyDataSourceReactivePostgreSQLConfig.pipeliningLimit.getAsInt());
+        configurePemKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
+        configureJksKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
+        configurePfxKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
+
+        pgConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
+
+        pgConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
+
+        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
+            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
+            pgConnectOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
 
         return pgConnectOptions;

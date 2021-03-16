@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Simplified Hibernate ORM with Panache
 
@@ -195,8 +195,11 @@ Person.delete("status", Status.Alive);
 // delete all persons
 Person.deleteAll();
 
-// update all living persons
-Person.update("name = 'Moral' where status = ?1", Status.Alive);
+// delete by id
+boolean deleted = Person.deleteById(personId);
+
+// set the name of all living persons to 'Mortal'
+Person.update("name = 'Mortal' where status = ?1", Status.Alive);
 
 ----
 
@@ -338,9 +341,9 @@ Once you have written your repository, here are the most common operations you w
 ----
 // creating a person
 Person person = new Person();
-person.name = "Stef";
-person.birth = LocalDate.of(1910, Month.FEBRUARY, 1);
-person.status = Status.Alive;
+person.setName("Stef");
+person.setBirth(LocalDate.of(1910, Month.FEBRUARY, 1));
+person.setStatus(Status.Alive);
 
 // persist it
 personRepository.persist(person);
@@ -379,8 +382,11 @@ personRepository.delete("status", Status.Alive);
 // delete all persons
 personRepository.deleteAll();
 
-// update all living persons
-personRepository.update("name = 'Moral' where status = ?1", Status.Alive);
+// delete by id
+boolean deleted = personRepository.deleteById(personId);
+
+// set the name of all living persons to 'Mortal'
+personRepository.update("name = 'Mortal' where status = ?1", Status.Alive);
 
 ----
 
@@ -399,7 +405,7 @@ NOTE: The `stream` methods require a transaction to work.
 
 NOTE: The rest of the documentation show usages based on the active record pattern only,
 but keep in mind that they can be performed with the repository pattern as well.
-The repository pattern examples have been omitted for brevity. 
+The repository pattern examples have been omitted for brevity.
 
 == Advanced Query
 
@@ -429,7 +435,7 @@ List<Person> page7 = livingPersons.page(Page.of(7, 25)).list();
 int numberOfPages = livingPersons.pageCount();
 
 // get the total number of entities returned by this query without paging
-int count = livingPersons.count();
+long count = livingPersons.count();
 
 // and you can chain methods of course
 return Person.find("status", Status.Alive)
@@ -439,6 +445,31 @@ return Person.find("status", Status.Alive)
 ----
 
 The `PanacheQuery` type has many other methods to deal with paging and returning streams.
+
+=== Using a range instead of pages
+
+`PanacheQuery` also allows range-based queries.
+
+[source,java]
+----
+// create a query for all living persons
+PanacheQuery<Person> livingPersons = Person.find("status", Status.Alive);
+
+// make it use a range: start at index 0 until index 24 (inclusive).
+livingPersons.range(0, 24);
+
+// get the range
+List<Person> firstRange = livingPersons.list();
+
+// to get the next range, you need to call range again
+List<Person> secondRange = livingPersons.range(25, 49).list();
+----
+
+[WARNING]
+====
+You cannot mix ranges and pages: if you use a range, all methods that depend on having a current page will throw an `UnsupportedOperationException`;
+you can switch back to paging using `page(Page)` or `page(int, int)`.
+====
 
 === Sorting
 
@@ -484,8 +515,33 @@ link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_Us
 [source,java]
 ----
 Order.find("select distinct o from Order o left join fetch o.lineItems");
-Order.update("update from Person set name = 'Moral' where status = ?", Status.Alive);
+Order.update("update from Person set name = 'Mortal' where status = ?", Status.Alive);
 ----
+
+=== Named queries
+
+You can reference a named query instead of a (simplified) HQL query by prefixing its name with the '#' character.
+
+[source,java]
+----
+@Entity
+@NamedQuery(name = "Person.getByName", query = "from Person where name = :name")
+public class Person extends PanacheEntity {
+    public String name;
+    public LocalDate birth;
+    public Status status;
+
+    public static Person findByName(String name){
+        return find("#Person.getByName", name).firstResult();
+    }
+}
+----
+
+[WARNING]
+====
+Named queries can only be defined inside your JPA entity classes (being the Panache entity class, or the repository parameterized type),
+or on one of its super classes.
+====
 
 === Query parameters
 
@@ -521,6 +577,83 @@ Person.find("name = :name and status = :status",
 
 Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
 
+=== Query projection
+
+Query projection can be done with the `project(Class)` method on the `PanacheQuery` object that is returned by the `find()` methods.
+
+You can use it to restrict which fields will be returned by the database.
+
+Hibernate will use **DTO projection** and generate a SELECT clause with the attributes from the projection class.
+This is also called **dynamic instantiation** or **constructor expression**, more info can be found on the Hibernate guide:
+link:https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#hql-select-clause[hql select clause]
+
+The projection class needs to be a valid Java Bean and have a constructor that contains all its attributes, this constructor will be used to
+instantiate the projection DTO instead of using the entity class. This must be the only constructor of the class.
+
+[source,java]
+----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection // <1>
+public class PersonName {
+    public final String name; // <2>
+
+    public PersonName(String name){ // <3>
+        this.name = name;
+    }
+}
+
+// only 'name' will be loaded from the database
+PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
+----
+
+1. If you plan to deploy your application as a native executable, you must register manually the projection class for reflection.
+2. We use public fields here, but you can use private fields and getters/setters if you prefer.
+3. This constructor will be used by Hibernate, it must be the only constructor in your class and have all the class attributes as parameters.
+
+[WARNING]
+====
+The implementation of the `project(Class)` method uses the constructor's parameter names to build the select clause of the query,
+so the compiler must be configured to store parameter names inside the compiled class.
+This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your pom.xml.
+====
+
+If in the DTO projection object you have a field from a referenced entity, you can use the `@ProjectedFieldName` annotation to provide the path for the SELECT statement.
+
+[source,java]
+----
+@Entity
+public class Dog extends PanacheEntity {
+    public String name;
+    public String race;
+    @ManyToOne
+    public Person owner;
+}
+
+@RegisterForReflection
+public class DogDto {
+    public String name;
+    public String ownerName;
+
+    public DogDto(String name, @ProjectedFieldName("owner.name") String ownerName) {  // <1>
+        this.name = name;
+        this.ownerName = ownerName;
+    }
+}
+
+PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
+----
+
+1. The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
+
+== Multiple Persistence Units
+
+The support for multiple persistence units is described in detail in link:hibernate-orm#multiple-persistence-units[the Hibernate ORM guide].
+
+When using Panache, things are simple:
+
+* A given Panache entity can be attached to only a single persistence unit.
+* Given that, Panache already provides the necessary plumbing to transparently find the appropriate `EntityManager` associated to a Panache entity.
 
 == Transactions
 
@@ -555,7 +688,7 @@ public void create(Parameter parameter){
 
 Panache provides direct support for database locking with your entity/repository, using `findById(Object, LockModeType)` or `find().withLock(LockModeType)`.
 
-The following examples are for the entity pattern, but the same can be used with repositories.
+The following examples are for the active record pattern, but the same can be used with repositories.
 
 === First: Locking using findById().
 
@@ -630,6 +763,210 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 }
 ----
 
+== Mocking
+
+=== Using the active record pattern
+
+If you are using the active record pattern you cannot use Mockito directly as it does not support mocking static methods,
+but you can use the `quarkus-panache-mock` module which allows you to use Mockito to mock all provided static
+methods, including your own.
+
+Add this dependency to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-panache-mock</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+
+Given this simple entity:
+
+[source,java]
+----
+@Entity
+public class Person extends PanacheEntity {
+
+    public String name;
+
+    public static List<Person> findOrdered() {
+        return find("ORDER BY name").list();
+    }
+}
+----
+
+You can write your mocking test like this:
+
+[source,java]
+----
+@QuarkusTest
+public class PanacheFunctionalityTest {
+
+    @Test
+    public void testPanacheMocking() {
+        PanacheMock.mock(Person.class);
+
+        // Mocked classes always return a default value
+        Assertions.assertEquals(0, Person.count());
+
+        // Now let's specify the return value
+        Mockito.when(Person.count()).thenReturn(23L);
+        Assertions.assertEquals(23, Person.count());
+
+        // Now let's change the return value
+        Mockito.when(Person.count()).thenReturn(42L);
+        Assertions.assertEquals(42, Person.count());
+
+        // Now let's call the original method
+        Mockito.when(Person.count()).thenCallRealMethod();
+        Assertions.assertEquals(0, Person.count());
+
+        // Check that we called it 4 times
+        PanacheMock.verify(Person.class, Mockito.times(4)).count();// <1>
+
+        // Mock only with specific parameters
+        Person p = new Person();
+        Mockito.when(Person.findById(12L)).thenReturn(p);
+        Assertions.assertSame(p, Person.findById(12L));
+        Assertions.assertNull(Person.findById(42L));
+
+        // Mock throwing
+        Mockito.when(Person.findById(12L)).thenThrow(new WebApplicationException());
+        Assertions.assertThrows(WebApplicationException.class, () -> Person.findById(12L));
+
+        // We can even mock your custom methods
+        Mockito.when(Person.findOrdered()).thenReturn(Collections.emptyList());
+        Assertions.assertTrue(Person.findOrdered().isEmpty());
+        
+        // Mocking a void method
+        Person.voidMethod();
+
+        // Make it throw
+        PanacheMock.doThrow(new RuntimeException("Stef2")).when(Person.class).voidMethod();
+        try {
+            Person.voidMethod();
+            Assertions.fail();
+        } catch (RuntimeException x) {
+            Assertions.assertEquals("Stef2", x.getMessage());
+        }
+
+        // Back to doNothing
+        PanacheMock.doNothing().when(Person.class).voidMethod();
+        Person.voidMethod();
+
+        // Make it call the real method
+        PanacheMock.doCallRealMethod().when(Person.class).voidMethod();
+        try {
+            Person.voidMethod();
+            Assertions.fail();
+        } catch (RuntimeException x) {
+            Assertions.assertEquals("void", x.getMessage());
+        }
+
+        PanacheMock.verify(Person.class).findOrdered();
+        PanacheMock.verify(Person.class, Mockito.atLeast(4)).voidMethod();
+        PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
+        PanacheMock.verifyNoMoreInteractions(Person.class);
+    }
+}
+----
+<1> Be sure to call your `verify` and `do*` methods on `PanacheMock` rather than `Mockito`, otherwise you won't know
+what mock object to pass.
+
+=== Using the repository pattern
+
+If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit5-mockito` module,
+which makes mocking beans much easier:
+
+[source,java]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5-mockito</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Given this simple entity:
+
+[source,java]
+----
+@Entity
+public class Person {
+
+    @Id
+    @GeneratedValue
+    public Long id;
+
+    public String name;
+}
+----
+
+And this repository:
+
+[source,java]
+----
+@ApplicationScoped
+public class PersonRepository implements PanacheRepository<Person> {
+    public List<Person> findOrdered() {
+        return find("ORDER BY name").list();
+    }
+}
+----
+
+You can write your mocking test like this:
+
+[source,java]
+----
+@QuarkusTest
+public class PanacheFunctionalityTest {
+    @InjectMock
+    PersonRepository personRepository;
+
+    @Test
+    public void testPanacheRepositoryMocking() throws Throwable {
+        // Mocked classes always return a default value
+        Assertions.assertEquals(0, personRepository.count());
+
+        // Now let's specify the return value
+        Mockito.when(personRepository.count()).thenReturn(23L);
+        Assertions.assertEquals(23, personRepository.count());
+
+        // Now let's change the return value
+        Mockito.when(personRepository.count()).thenReturn(42L);
+        Assertions.assertEquals(42, personRepository.count());
+
+        // Now let's call the original method
+        Mockito.when(personRepository.count()).thenCallRealMethod();
+        Assertions.assertEquals(0, personRepository.count());
+
+        // Check that we called it 4 times
+        Mockito.verify(personRepository, Mockito.times(4)).count();
+
+        // Mock only with specific parameters
+        Person p = new Person();
+        Mockito.when(personRepository.findById(12L)).thenReturn(p);
+        Assertions.assertSame(p, personRepository.findById(12L));
+        Assertions.assertNull(personRepository.findById(42L));
+
+        // Mock throwing
+        Mockito.when(personRepository.findById(12L)).thenThrow(new WebApplicationException());
+        Assertions.assertThrows(WebApplicationException.class, () -> personRepository.findById(12L));
+
+        Mockito.when(personRepository.findOrdered()).thenReturn(Collections.emptyList());
+        Assertions.assertTrue(personRepository.findOrdered().isEmpty());
+
+        // We can even mock your custom methods
+        Mockito.verify(personRepository).findOrdered();
+        Mockito.verify(personRepository, Mockito.atLeastOnce()).findById(Mockito.any());
+        Mockito.verifyNoMoreInteractions(personRepository);
+    }
+}
+----
+
 == How and why we simplify Hibernate ORM mappings
 
 When it comes to writing Hibernate ORM entities, there are a number of annoying things that users have grown used to
@@ -670,7 +1007,35 @@ That's all there is to it: with Panache, Hibernate ORM has never looked so trim 
 == Defining entities in external projects or jars
 
 Hibernate ORM with Panache relies on compile-time bytecode enhancements to your entities.
-If you define your entities in the same project where you build your Quarkus application, everything will work fine.
-If the entities come from external projects or jars, you can make sure that your jar is treated like a Quarkus application library
-by indexing it via Jandex, see link:cdi-reference#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
-This will allow Quarkus to index and enhance your entities as if they were inside the current project.
+
+It attempts to identity archives with Panache entities (and consumers of Panache entities)
+by the presence of the marker file `META-INF/panache-archive.marker`. Panache includes an
+annotation processor that will automatically create this file in archives that depend on
+Panache (even indirectly). If you have disabled annotation processors you may need to create
+this file manually in some cases.
+
+WARNING: If you include the jpa-modelgen annotation processor this will exclude the Panache
+annotation processor by default. If you do this you should either create the marker file
+yourself, or add the `quarkus-panache-common` as well, as shown below:
+
+[source,xml]
+----
+<plugin>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>${compiler-plugin.version}</version>
+    <configuration>
+      <annotationProcessorPaths>
+        <annotationProcessorPath>
+          <groupId>org.hibernate</groupId>
+          <artifactId>hibernate-jpamodelgen</artifactId>
+          <version>${hibernate.version}</version>
+        </annotationProcessorPath>
+        <annotationProcessorPath>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-panache-common</artifactId>
+          <version>${quarkus.platform.version}</version>
+        </annotationProcessorPath>
+      </annotationProcessorPaths>
+    </configuration>
+</plugin>
+----

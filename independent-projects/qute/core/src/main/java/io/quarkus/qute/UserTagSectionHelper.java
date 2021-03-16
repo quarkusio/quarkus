@@ -2,47 +2,56 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Futures.evaluateParams;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class UserTagSectionHelper implements SectionHelper {
 
     private static final String IT = "it";
+    private static final String NESTED_CONTENT = "nested-content";
 
     private final Supplier<Template> templateSupplier;
     private final Map<String, Expression> parameters;
+    private final boolean isEmpty;
 
-    public UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, Expression> parameters) {
+    UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, Expression> parameters, boolean isEmpty) {
         this.templateSupplier = templateSupplier;
         this.parameters = parameters;
+        this.isEmpty = isEmpty;
     }
 
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         CompletableFuture<ResultNode> result = new CompletableFuture<>();
-        evaluateParams(parameters, context.resolutionContext()).whenComplete((r1, t1) -> {
+        evaluateParams(parameters, context.resolutionContext()).whenComplete((evaluatedParams, t1) -> {
             if (t1 != null) {
                 result.completeExceptionally(t1);
             } else {
-                // Execute the template with the params as the root context object
+                if (!isEmpty) {
+                    // Execute the nested content first and make it accessible via the "nested-content" key 
+                    evaluatedParams.put(NESTED_CONTENT,
+                            context.execute(
+                                    context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null)));
+                }
                 try {
+                    // Execute the template with the params as the root context object
                     TemplateImpl tagTemplate = (TemplateImpl) templateSupplier.get();
-                    tagTemplate.root.resolve(context.resolutionContext().createChild(r1, null))
-                            .whenComplete((r2, t2) -> {
+                    tagTemplate.root.resolve(context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null))
+                            .whenComplete((resultNode, t2) -> {
                                 if (t2 != null) {
                                     result.completeExceptionally(t2);
                                 } else {
-                                    result.complete(r2);
+                                    result.complete(resultNode);
                                 }
                             });
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     result.completeExceptionally(e);
                 }
-
             }
         });
         return result;
@@ -75,21 +84,24 @@ public class UserTagSectionHelper implements SectionHelper {
 
         @Override
         public UserTagSectionHelper initialize(SectionInitContext context) {
-
-            Map<String, Expression> params = context.getParameters().entrySet().stream()
-                    .collect(Collectors.toMap(e -> e.getKey(), e -> context.parseValue(e.getValue())));
+            Map<String, Expression> params = new HashMap<>();
+            for (Entry<String, String> entry : context.getParameters().entrySet()) {
+                params.put(entry.getKey(), context.parseValue(entry.getValue()));
+            }
+            boolean isEmpty = context.getBlocks().size() == 1 && context.getBlocks().get(0).isEmpty();
+            final Engine engine = context.getEngine();
 
             return new UserTagSectionHelper(new Supplier<Template>() {
 
                 @Override
                 public Template get() {
-                    Template template = context.getEngine().getTemplate(templateId);
+                    Template template = engine.getTemplate(templateId);
                     if (template == null) {
-                        throw new IllegalStateException("Tag template not found: " + templateId);
+                        throw new TemplateException("Tag template not found: " + templateId);
                     }
                     return template;
                 }
-            }, params);
+            }, params, isEmpty);
         }
 
     }

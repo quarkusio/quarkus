@@ -10,14 +10,20 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 
-public class InterceptorResolver {
+public final class InterceptorResolver {
 
     private final BeanDeployment beanDeployment;
 
-    public InterceptorResolver(BeanDeployment beanDeployment) {
+    InterceptorResolver(BeanDeployment beanDeployment) {
         this.beanDeployment = beanDeployment;
     }
 
+    /**
+     * 
+     * @param interceptionType
+     * @param bindings
+     * @return the list of interceptors for a set of interceptor bindings and a type of interception
+     */
     public List<InterceptorInfo> resolve(InterceptionType interceptionType, Set<AnnotationInstance> bindings) {
         if (bindings.isEmpty()) {
             return Collections.emptyList();
@@ -76,12 +82,13 @@ public class InterceptorResolver {
         if (candidate.name().equals(interceptorBinding.name())) {
             // Must have the same annotation member value for each member which is not annotated @Nonbinding
             boolean matches = true;
-            Set<String> nonBindingFields = beanDeployment.getNonBindingFields(interceptorBinding.name());
-            for (AnnotationValue value : candidate.valuesWithDefaults(beanDeployment.getIndex())) {
+            Set<String> nonBindingFields = beanDeployment.getInterceptorNonbindingMembers(interceptorBinding.name());
+            for (AnnotationValue value : candidate.valuesWithDefaults(beanDeployment.getBeanArchiveIndex())) {
                 String annotationField = value.name();
                 if (!interceptorBindingClass.method(annotationField).hasAnnotation(DotNames.NONBINDING)
                         && !nonBindingFields.contains(annotationField)
-                        && !value.equals(interceptorBinding.valueWithDefault(beanDeployment.getIndex(), annotationField))) {
+                        && !value.equals(
+                                interceptorBinding.valueWithDefault(beanDeployment.getBeanArchiveIndex(), annotationField))) {
                     matches = false;
                     break;
                 }

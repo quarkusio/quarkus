@@ -1,17 +1,18 @@
 package io.quarkus.funqy.lambda;
 
 import io.quarkus.funqy.runtime.FunqyServerResponse;
+import io.smallrye.mutiny.Uni;
 
 public class FunqyResponseImpl implements FunqyServerResponse {
-    protected Object output;
+    protected Uni<?> output;
 
     @Override
-    public Object getOutput() {
+    public Uni<?> getOutput() {
         return output;
     }
 
     @Override
-    public void setOutput(Object output) {
+    public void setOutput(Uni<?> output) {
         this.output = output;
     }
 }

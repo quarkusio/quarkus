@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - MicroProfile Health
 
@@ -22,12 +22,12 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 
 == Architecture
 
 In this guide, we build a simple REST application that exposes MicroProfile Health 
-functionalities at the `/health/live` and `/health/ready` endpoints according to the 
+functionalities at the `/q/health/live` and `/q/health/ready` endpoints according to the
 specification.
 
 == Solution
@@ -45,31 +45,49 @@ The solution is located in the `microprofile-health-quickstart`
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-health-quickstart \
-    -Dextensions="health"
+    -Dextensions="smallrye-health"
 cd microprofile-health-quickstart
 ----
 
 This command generates a Maven project, importing the `smallrye-health` extension 
 which is an implementation of the MicroProfile Health specification used in Quarkus.
 
+If you already have your Quarkus project configured, you can add the `smallrye-health` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="smallrye-health"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-health</artifactId>
+</dependency>
+----
+
 == Running the health check
 
 Importing the `smallrye-health` extension directly exposes three REST endpoints:
 
-- `/health/live` - The application is up and running.
-- `/health/ready` - The application is ready to serve requests.
-- `/health` - Accumulating all health check procedures in the application.
+- `/q/health/live` - The application is up and running.
+- `/q/health/ready` - The application is ready to serve requests.
+- `/q/health` - Accumulating all health check procedures in the application.
  
 To check that the `smallrye-health` extension is working as expected:
 
 * start your Quarkus application with `./mvnw compile quarkus:dev`
-* access the `http://localhost:8080/health/live` endpoint using your browser or 
-`curl http://localhost:8080/health/live`
+* access the `http://localhost:8080/q/health/live` endpoint using your browser or
+`curl http://localhost:8080/q/health/live`
 
 All of the health REST endpoints return a simple JSON object with two fields:
 
@@ -97,7 +115,7 @@ import org.eclipse.microprofile.health.Liveness;
 import javax.enterprise.context.ApplicationScoped;
 
 @Liveness
-@ApplicationScoped
+@ApplicationScoped <1> <2>
 public class SimpleHealthCheck implements HealthCheck {
 
     @Override
@@ -106,21 +124,21 @@ public class SimpleHealthCheck implements HealthCheck {
     }
 }
 ----
+<1> It's recommended to annotate the health check class with `@ApplicationScoped` or the `@Singleton` scope so that a single bean instance is used for all health check requests. 
+<2> If a bean class annotated with one of the health check annotations declares no scope then the `@Singleton` scope is used automatically.
 
-As you can see health check procedures are defined as implementations of the 
-`HealthCheck` interface which are defined as CDI beans with the one of the 
-following CDI qualifiers: 
+As you can see, the health check procedures are defined as CDI beans that implement the `HealthCheck` interface and are annotated with one of the health check qualifiers, such as: 
 
-- `@Liveness` - the liveness check accessible at `/health/live`
-- `@Readiness` - the readiness check accessible at `/health/ready`
+- `@Liveness` - the liveness check accessible at `/q/health/live`
+- `@Readiness` - the readiness check accessible at `/q/health/ready`
 
 `HealthCheck` is a functional interface whose single method `call` returns a 
 `HealthCheckResponse` object which can be easily constructed by the fluent builder 
 API shown in the example.
 
 As we have started our Quarkus application in dev mode simply repeat the request 
-to `http://localhost:8080/health/live` by refreshing your browser window or by 
-using `curl http://localhost:8080/health/live`. Because we defined our health check 
+to `http://localhost:8080/q/health/live` by refreshing your browser window or by
+using `curl http://localhost:8080/q/health/live`. Because we defined our health check
 to be a liveness procedure (with `@Liveness` qualifier) the new health check procedure 
 is now present in the `checks` array.
 
@@ -162,15 +180,15 @@ public class DatabaseConnectionHealthCheck implements HealthCheck {
 
 ----
 
-If you now rerun the health check at `http://localhost:8080/health/live` the `checks` 
+If you now rerun the health check at `http://localhost:8080/q/health/live` the `checks`
 array will contain only the previously defined `SimpleHealthCheck` as it is the only 
 check defined with the `@Liveness` qualifier. However, if you access 
-`http://localhost:8080/health/ready` (in the browser or with 
-`curl http://localhost:8080/health/ready`) you will see only the 
+`http://localhost:8080/q/health/ready` (in the browser or with
+`curl http://localhost:8080/q/health/ready`) you will see only the
 `Database connection health check` as it is the only health check defined with the 
 `@Readiness` qualifier as the readiness health check procedure.
 
-NOTE: If you access `http://localhost:8080/health` you will get back both checks.
+NOTE: If you access `http://localhost:8080/q/health` you will get back both checks.
 
 More information about which health check procedures should be used in which situation 
 is detailed in the MicroProfile Health specification. Generally, the liveness 
@@ -235,9 +253,9 @@ through the `HealthCheckResponse#up(String)` (there is also
 From now on, we utilize the full builder capabilities provided by the
 `HealthCheckResponseBuilder` class.
 
-If you now rerun the readiness health check (at `http://localhost:8080/health/ready`) 
+If you now rerun the readiness health check (at `http://localhost:8080/q/health/ready`)
 the overall `status` should be DOWN. You can also check the liveness check at 
-`http://localhost:8080/health/live` which will return the overall `status` UP because 
+`http://localhost:8080/q/health/live` which will return the overall `status` UP because
 it isn't influenced by the readiness checks.
 
 As we shouldn't leave this application with a readiness check in a DOWN state and 
@@ -282,7 +300,7 @@ public class DataHealthCheck implements HealthCheck {
 }
 ----
 
-If you rerun the liveness health check procedure by accessing the `/health/live` 
+If you rerun the liveness health check procedure by accessing the `/q/health/live`
 endpoint you can see that the new health check `Health check with data` is present 
 in the `checks` array. This check contains a new attribute called `data` which is a 
 JSON object consisting of the properties we have defined in our health check procedure.
@@ -312,6 +330,18 @@ that will validate each datasources: link:datasource#datasource-health-check[Dat
 
 You can disable extension health check via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
 
+== Health UI 
+
+NOTE: Experimental - not included in the MicroProfile specification
+
+`health-ui` allows you to see your Health Checks in a Web GUI.
+
+The Quarkus `smallrye-health` extension ships with `health-ui` and enables it by default in dev and test modes, but it can also be explicitly configured for production mode as well.
+
+`health-ui` can be accessed from http://localhost:8080/q/health-ui/ .
+
+image:health-ui-screenshot01.png[alt=Health UI]
+
 == Conclusion
 
 MicroProfile Health provides a way for your application to distribute information 
@@ -325,7 +355,7 @@ All that is needed to enable the MicroProfile Health features in Quarkus is:
 `quarkus-maven-plugin`: +
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="health"
+./mvnw quarkus:add-extension -Dextensions="smallrye-health"
 ----
 
 * or simply adding the following Maven dependency: +

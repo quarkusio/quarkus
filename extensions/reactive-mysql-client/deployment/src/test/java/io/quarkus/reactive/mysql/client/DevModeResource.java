@@ -25,7 +25,7 @@ public class DevModeResource {
     @Produces(MediaType.TEXT_PLAIN)
     public CompletionStage<Response> getErrorMessage() throws SQLException {
         CompletableFuture<Response> future = new CompletableFuture<>();
-        client.query("SELECT 1", ar -> {
+        client.query("SELECT 1").execute(ar -> {
             Class<?> expectedExceptionClass = ConnectException.class;
             if (ar.succeeded()) {
                 future.complete(Response.serverError().entity("Expected SQL query to fail").build());

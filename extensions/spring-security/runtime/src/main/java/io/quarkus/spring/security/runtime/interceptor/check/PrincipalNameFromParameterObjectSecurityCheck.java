@@ -34,9 +34,13 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
     }
 
     public static PrincipalNameFromParameterObjectSecurityCheck of(int index, String expectedParameterClass,
-            String stringPropertyAccessorClass, String propertyName) throws ClassNotFoundException {
-        return new PrincipalNameFromParameterObjectSecurityCheck(index, expectedParameterClass, stringPropertyAccessorClass,
-                propertyName);
+            String stringPropertyAccessorClass, String propertyName) {
+        try {
+            return new PrincipalNameFromParameterObjectSecurityCheck(index, expectedParameterClass, stringPropertyAccessorClass,
+                    propertyName);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

@@ -5,7 +5,7 @@
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -313,7 +313,8 @@ public class VirtualChannel extends AbstractChannel {
                     // It is possible the peer could have closed while we are writing, and in this case we should
                     // simulate real socket behavior and ensure the sendMessage operation is failed.
                     if (peer.isConnected()) {
-                        peer.queue().add(ReferenceCountUtil.retain(msg));
+                        ReferenceCountUtil.retain(msg);
+                        peer.handler.handleMessage(msg);
                         in.remove();
                     } else {
                         if (exception == null) {

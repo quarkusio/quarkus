@@ -10,11 +10,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.AfterEach;
 
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class RunAndCheckMojoTestBase extends MojoTestBase {
 
@@ -26,7 +28,7 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
         if (running != null) {
             running.stop();
         }
-        awaitUntilServerDown();
+        DevModeTestUtils.awaitUntilServerDown();
     }
 
     protected void run(boolean performCompile, String... options) throws FileNotFoundException, MavenInvocationException {
@@ -65,12 +67,12 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
             throws FileNotFoundException, MavenInvocationException {
         run(performCompile, options);
 
-        String resp = getHttpResponse();
+        String resp = DevModeTestUtils.getHttpResponse();
 
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = getHttpResponse("/app/hello");
+        String greeting = DevModeTestUtils.getHttpResponse("/app/hello");
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
@@ -81,6 +83,18 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
         mvnRunProps.setProperty("debug", "false");
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
 
-        getHttpErrorResponse();
+        DevModeTestUtils.getHttpErrorResponse();
+    }
+
+    public String getHttpErrorResponse() {
+        return DevModeTestUtils.getHttpErrorResponse(getBrokenReason());
+    }
+
+    public String getHttpResponse() {
+        return DevModeTestUtils.getHttpResponse(getBrokenReason());
+    }
+
+    protected Supplier<String> getBrokenReason() {
+        return () -> null;
     }
 }

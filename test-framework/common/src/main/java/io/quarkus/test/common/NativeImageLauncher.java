@@ -1,45 +1,48 @@
 package io.quarkus.test.common;
 
-import java.io.Closeable;
+import static io.quarkus.test.common.LauncherUtil.installAndGetSomeConfig;
+import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
+import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
+
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.ServiceLoader;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
-import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
-import io.smallrye.config.SmallRyeConfig;
 
-public class NativeImageLauncher implements Closeable {
+public class NativeImageLauncher implements ArtifactLauncher {
 
     private static final int DEFAULT_PORT = 8081;
     private static final int DEFAULT_HTTPS_PORT = 8444;
     private static final long DEFAULT_IMAGE_WAIT_TIME = 60;
 
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
+
     private final Class<?> testClass;
     private final String profile;
     private Process quarkusProcess;
-    private final int port;
+    private final int httpPort;
     private final int httpsPort;
-    private final long imageWaitTime;
+    private final long waitTimeSeconds;
     private final Map<String, String> systemProps = new HashMap<>();
-    private List<NativeImageStartedNotifier> startedNotifiers;
+    private Supplier<Boolean> startedSupplier = null;
+
+    private boolean isSsl;
 
     private NativeImageLauncher(Class<?> testClass, Config config) {
         this(testClass,
@@ -55,35 +58,30 @@ public class NativeImageLauncher implements Closeable {
         this(testClass, installAndGetSomeConfig());
     }
 
-    private static Config installAndGetSomeConfig() {
-        final SmallRyeConfig config = ConfigUtils.configBuilder(false).build();
-        QuarkusConfigFactory.setConfig(config);
-        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-        try {
-            final Config installed = cpr.getConfig();
-            if (installed != config) {
-                cpr.releaseConfig(installed);
-            }
-        } catch (IllegalStateException ignored) {
-        }
-        return config;
-    }
-
-    public NativeImageLauncher(Class<?> testClass, int port, int httpsPort, long imageWaitTime, String profile) {
+    public NativeImageLauncher(Class<?> testClass, int httpPort, int httpsPort, long waitTimeSeconds, String profile) {
         this.testClass = testClass;
-        this.port = port;
+        this.httpPort = httpPort;
         this.httpsPort = httpsPort;
-        this.imageWaitTime = imageWaitTime;
+        this.waitTimeSeconds = waitTimeSeconds;
         List<NativeImageStartedNotifier> startedNotifiers = new ArrayList<>();
         for (NativeImageStartedNotifier i : ServiceLoader.load(NativeImageStartedNotifier.class)) {
             startedNotifiers.add(i);
         }
-        this.startedNotifiers = startedNotifiers;
         this.profile = profile;
+        if (!startedNotifiers.isEmpty()) {
+            this.startedSupplier = () -> {
+                for (NativeImageStartedNotifier i : startedNotifiers) {
+                    if (i.isNativeImageStarted()) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+        }
+
     }
 
     public void start() throws IOException {
-
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         String path = System.getProperty("native.image.path");
@@ -92,10 +90,14 @@ public class NativeImageLauncher implements Closeable {
         }
         List<String> args = new ArrayList<>();
         args.add(path);
-        args.add("-Dquarkus.http.port=" + port);
+        args.add("-Dquarkus.http.port=" + httpPort);
         args.add("-Dquarkus.http.ssl-port=" + httpsPort);
+        // this won't be correct when using the random port but it's really only used by us for the rest client tests
+        // in the main module, since those tests hit the application itself
         args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
-        args.add("-Dquarkus.log.file.path=" + PropertyTestUtil.getLogFileLocation());
+        Path logFile = PropertyTestUtil.getLogFilePath();
+        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
+        args.add("-Dquarkus.log.file.enable=true");
         if (profile != null) {
             args.add("-Dquarkus.profile=" + profile);
         }
@@ -105,11 +107,40 @@ public class NativeImageLauncher implements Closeable {
 
         System.out.println("Executing " + args);
 
-        quarkusProcess = Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
-        new Thread(new ProcessReader(quarkusProcess.getInputStream())).start();
-        new Thread(new ProcessReader(quarkusProcess.getErrorStream())).start();
+        Files.deleteIfExists(logFile);
+        quarkusProcess = LauncherUtil.launchProcess(args);
 
-        waitForQuarkus();
+        if (startedSupplier != null) {
+            waitForStartedSupplier(quarkusProcess, startedSupplier, waitTimeSeconds);
+        } else {
+            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
+            updateConfigForPort(result.getPort());
+            isSsl = result.isSsl();
+        }
+    }
+
+    private void waitForStartedSupplier(Process quarkusProcess, Supplier<Boolean> startedSupplier, long waitTime) {
+        long bailout = System.currentTimeMillis() + waitTime * 1000;
+        boolean started = false;
+        while (System.currentTimeMillis() < bailout) {
+            if (!quarkusProcess.isAlive()) {
+                throw new RuntimeException("Failed to start target quarkus application, process has exited");
+            }
+            try {
+                Thread.sleep(100);
+                if (startedSupplier.get()) {
+                    isSsl = false;
+                    started = true;
+                    break;
+                }
+            } catch (Exception ignored) {
+
+            }
+        }
+        if (!started) {
+            quarkusProcess.destroyForcibly();
+            throw new RuntimeException("Unable to start target quarkus application " + this.waitTimeSeconds + "s");
+        }
     }
 
     private static String guessPath(Class<?> testClass) {
@@ -150,7 +181,7 @@ public class NativeImageLauncher implements Closeable {
             //we have the maven test classes dir
             File testClasses = new File(url.getPath());
             for (File file : testClasses.getParentFile().listFiles()) {
-                if (file.getName().endsWith("-runner")) {
+                if (isNativeExecutable(file)) {
                     logGuessedPath(file.getAbsolutePath());
                     return file.getAbsolutePath();
                 }
@@ -159,7 +190,7 @@ public class NativeImageLauncher implements Closeable {
             //we have the gradle test classes dir, build/classes/java/test
             File testClasses = new File(url.getPath());
             for (File file : testClasses.getParentFile().getParentFile().getParentFile().listFiles()) {
-                if (file.getName().endsWith("-runner")) {
+                if (isNativeExecutable(file)) {
                     logGuessedPath(file.getAbsolutePath());
                     return file.getAbsolutePath();
                 }
@@ -170,7 +201,7 @@ public class NativeImageLauncher implements Closeable {
             int index = path.lastIndexOf("/target/");
             File targetDir = new File(path.substring(0, index) + "/target/");
             for (File file : targetDir.listFiles()) {
-                if (file.getName().endsWith("-runner")) {
+                if (isNativeExecutable(file)) {
                     logGuessedPath(file.getAbsolutePath());
                     return file.getAbsolutePath();
                 }
@@ -180,6 +211,14 @@ public class NativeImageLauncher implements Closeable {
         return null;
     }
 
+    private static boolean isNativeExecutable(File file) {
+        if (IS_WINDOWS) {
+            return file.getName().endsWith("-runner.exe");
+        } else {
+            return file.getName().endsWith("-runner");
+        }
+    }
+
     private static void logGuessedPath(String guessedPath) {
         System.err.println("======================================================================================");
         System.err.println("  native.image.path was not set, making a guess for the correct path of native image");
@@ -187,55 +226,12 @@ public class NativeImageLauncher implements Closeable {
         System.err.println("======================================================================================");
     }
 
-    private void waitForQuarkus() {
-        long bailout = System.currentTimeMillis() + imageWaitTime * 1000;
-
-        while (System.currentTimeMillis() < bailout) {
-            if (!quarkusProcess.isAlive()) {
-                throw new RuntimeException("Failed to start native image, process has exited");
-            }
-            try {
-                Thread.sleep(100);
-                for (NativeImageStartedNotifier i : startedNotifiers) {
-                    if (i.isNativeImageStarted()) {
-                        return;
-                    }
-                }
-                try (Socket s = new Socket()) {
-                    s.connect(new InetSocketAddress("localhost", port));
-                    return;
-                }
-            } catch (Exception expected) {
-            }
-        }
-
-        throw new RuntimeException("Unable to start native image in " + imageWaitTime + "s");
+    public boolean listensOnSsl() {
+        return isSsl;
     }
 
     public void addSystemProperties(Map<String, String> systemProps) {
         this.systemProps.putAll(systemProps);
-    }
-
-    private static final class ProcessReader implements Runnable {
-
-        private final InputStream inputStream;
-
-        private ProcessReader(InputStream inputStream) {
-            this.inputStream = inputStream;
-        }
-
-        @Override
-        public void run() {
-            byte[] b = new byte[100];
-            int i;
-            try {
-                while ((i = inputStream.read(b)) > 0) {
-                    System.out.print(new String(b, 0, i, StandardCharsets.UTF_8));
-                }
-            } catch (IOException e) {
-                //ignore
-            }
-        }
     }
 
     @Override

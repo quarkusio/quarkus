@@ -1,6 +1,7 @@
 package io.quarkus.deployment.steps;
 
 import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.C_CREATE_BOOTSTRAP_CONFIG;
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -34,6 +35,9 @@ public class BootstrapConfigSetupBuildStep {
                 .interfaces(StartupTask.class).build()) {
 
             try (MethodCreator deploy = clazz.getMethodCreator("deploy", void.class, StartupContext.class)) {
+                deploy.invokeVirtualMethod(ofMethod(StartupContext.class, "setCurrentBuildStepName", void.class, String.class),
+                        deploy.getMethodParam(0), deploy.load("BootstrapConfigSetupBuildStep.setupBootstrapConfig"));
+
                 deploy.invokeStaticMethod(C_CREATE_BOOTSTRAP_CONFIG);
                 deploy.returnValue(null);
             }

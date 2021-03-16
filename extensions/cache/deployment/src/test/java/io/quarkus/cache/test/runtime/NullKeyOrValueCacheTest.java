@@ -1,6 +1,6 @@
 package io.quarkus.cache.test.runtime;
 
-import static io.quarkus.cache.runtime.CacheKeyBuilder.NULL_KEYS_NOT_SUPPORTED_MSG;
+import static io.quarkus.cache.runtime.AbstractCache.NULL_KEYS_NOT_SUPPORTED_MSG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;

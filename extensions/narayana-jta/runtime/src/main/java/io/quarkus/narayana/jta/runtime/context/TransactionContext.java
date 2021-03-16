@@ -9,7 +9,9 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.transaction.RollbackException;
 import javax.transaction.Status;
+import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
@@ -70,7 +72,7 @@ public class TransactionContext implements InjectableContext {
         TransactionContextState contextState = (TransactionContextState) transactionSynchronizationRegistry
                 .getResource(TRANSACTION_CONTEXT_MARKER);
         if (contextState == null) {
-            result = new TransactionContextState();
+            result = new TransactionContextState(getCurrentTransaction());
         } else {
             result = contextState;
         }
@@ -97,7 +99,7 @@ public class TransactionContext implements InjectableContext {
                 .getResource(TRANSACTION_CONTEXT_MARKER);
 
         if (contextState == null) {
-            contextState = new TransactionContextState();
+            contextState = new TransactionContextState(getCurrentTransaction());
             transactionSynchronizationRegistry.putResource(TRANSACTION_CONTEXT_MARKER, contextState);
         }
 
@@ -158,9 +160,17 @@ public class TransactionContext implements InjectableContext {
      * Representing of the context state. It's a container for all available beans in the context.
      * It's filled during bean usage and cleared on destroy.
      */
-    private static class TransactionContextState implements ContextState {
+    private static class TransactionContextState implements ContextState, Synchronization {
 
         private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> mapBeanToInstanceHandle = new ConcurrentHashMap<>();
+
+        TransactionContextState(Transaction transaction) {
+            try {
+                transaction.registerSynchronization(this);
+            } catch (RollbackException | SystemException e) {
+                throw new RuntimeException("Cannot register synchronization", e);
+            }
+        }
 
         /**
          * Put the contextual bean and its handle to the container.
@@ -178,7 +188,10 @@ public class TransactionContext implements InjectableContext {
          * @param bean contextual bean instance
          */
         <T> void remove(Contextual<T> bean) {
-            mapBeanToInstanceHandle.remove(bean);
+            ContextInstanceHandle<?> instance = mapBeanToInstanceHandle.remove(bean);
+            if (instance != null) {
+                instance.destroy();
+            }
         }
 
         /**
@@ -212,5 +225,13 @@ public class TransactionContext implements InjectableContext {
                     .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
         }
 
+        @Override
+        public void beforeCompletion() {
+        }
+
+        @Override
+        public void afterCompletion(int status) {
+            this.destroy();
+        }
     }
 }

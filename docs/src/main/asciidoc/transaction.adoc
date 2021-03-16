@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Transactions in Quarkus
 
@@ -21,15 +21,12 @@ You might need to add it as a dependency explicitly if you are using transaction
 Add the following to your `pom.xml`:
 
 [source,xml]
---
-<dependencies>
-    <!-- Transaction Manager extension -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-narayana-jta</artifactId>
-    </dependency>
-</dependencies>
---
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-narayana-jta</artifactId>
+</dependency>
+----
 
 == Starting and stopping transactions: defining your boundaries
 
@@ -40,26 +37,26 @@ You can define your transaction boundaries the easy way, or the less easy way :)
 The easiest way to define your transaction boundaries is to use the `@Transactional` annotation on your entry method (`javax.transaction.Transactional`).
 
 [source,java]
---
+----
 @ApplicationScoped
 public class SantaClausService {
 
     @Inject ChildDAO childDAO;
     @Inject SantaClausDAO santaDAO;
 
-    @Transactional <1>
+    @Transactional // <1>
     public void getAGiftFromSanta(Child child, String giftDescription) {
         // some transaction work
         Gift gift = childDAO.addToGiftList(child, giftDescription);
         if (gift == null) {
-            throw new OMGGiftNotRecognizedException(); <2>
+            throw new OMGGiftNotRecognizedException(); // <2>
         }
         else {
             santaDAO.addToSantaTodoList(gift);
         }
     }
 }
---
+----
 
 <1> This annotation defines your transaction boundaries and will wrap this call within a transaction.
 <2> A `RuntimeException` crossing the transaction boundaries will rollback the transaction.
@@ -88,27 +85,27 @@ You can also programmatically ask for a transaction to be marked for rollback.
 Inject a `TransactionManager` for this.
 
 [source,java]
---
+----
 @ApplicationScoped
 public class SantaClausService {
 
-    @Inject TransactionManager tm; <1>
+    @Inject TransactionManager tm; // <1>
     @Inject ChildDAO childDAO;
     @Inject SantaClausDAO santaDAO;
 
     @Transactional
-    public void getAGiftFromSanta(Child child, String giftDescription) throws Exception {
+    public void getAGiftFromSanta(Child child, String giftDescription) {
         // some transaction work
         Gift gift = childDAO.addToGiftList(child, giftDescription);
         if (gift == null) {
-            tm.setRollbackOnly(); <2>
+            tm.setRollbackOnly(); // <2>
         }
         else {
             santaDAO.addToSantaTodoList(gift);
         }
     }
 }
---
+----
 
 <1> Inject the `TransactionManager` to be able to activate `setRollbackOnly` semantic.
 <2> Programmatically decide to set the transaction for rollback.
@@ -116,7 +113,7 @@ public class SantaClausService {
 
 === Transaction Configuration
 
-Extended configuration of the transaction is possible with the use of the `@TransactionConfiguration` annotation that is set in addition to the standard `@Transactional` annotation on your entry method or at the class level.
+Advanced configuration of the transaction is possible with the use of the `@TransactionConfiguration` annotation that is set in addition to the standard `@Transactional` annotation on your entry method or at the class level.
 
 The `@TransactionConfiguration` annotation allows to set a timeout property, in seconds, that applies to transactions created within the annotated method.
 
@@ -150,15 +147,15 @@ link:context-propagation[Context Propagation guide].
 The less easy way is to inject a `UserTransaction` and use the various transaction demarcation methods.
 
 [source,java]
---
+----
 @ApplicationScoped
 public class SantaClausService {
 
-    @Inject ChildDAO childDAO
-    @Inject SantaClausDAO santaDAO
-    @Inject UserTransaction transaction
+    @Inject ChildDAO childDAO;
+    @Inject SantaClausDAO santaDAO;
+    @Inject UserTransaction transaction;
 
-    public void getAGiftFromSanta(Child child, String giftDescription) throws Exception {
+    public void getAGiftFromSanta(Child child, String giftDescription) {
         // some transaction work
         try {
             transaction.begin();
@@ -172,7 +169,7 @@ public class SantaClausService {
         }
     }
 }
---
+----
 
 [NOTE]
 ====
@@ -209,7 +206,7 @@ Does it work everywhere I want to?::
 Yep, it works in your Quarkus application, in your IDE, in your tests, because all of these are Quarkus applications.
 JTA has some bad press for some people.
 I don't know why.
-Let's just say that this is not your grand'pa's JTA implementation.
+Let's just say that this is not your grandpa's JTA implementation.
 What we have is perfectly embeddable and lean.
 
 Does it do 2 Phase Commit and slow down my app?::

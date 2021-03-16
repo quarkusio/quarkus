@@ -6,6 +6,9 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.runtime.RuntimeValue;
 
+/**
+ * Provide the MongoDB clients as RuntimeValue's.
+ */
 public final class MongoClientBuildItem extends MultiBuildItem {
     private final RuntimeValue<MongoClient> client;
     private final RuntimeValue<ReactiveMongoClient> reactive;

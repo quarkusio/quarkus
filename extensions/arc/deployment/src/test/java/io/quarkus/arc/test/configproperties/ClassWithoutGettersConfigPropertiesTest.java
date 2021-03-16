@@ -24,7 +24,7 @@ public class ClassWithoutGettersConfigPropertiesTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.unused=whatever"),
+                            "dummy.name=quarkus\ndummy.my-enum=OPTIONAL\ndummy.other-enum=Enum_Two\ndummy.numbers=1,2,3,4\ndummy.unused=whatever"),
                             "application.properties"));
 
     @Inject
@@ -32,22 +32,18 @@ public class ClassWithoutGettersConfigPropertiesTest {
 
     @Test
     public void testConfiguredValues() {
-        assertEquals("quarkus", dummyBean.getName());
-        assertEquals(Arrays.asList(1, 2, 3, 4), dummyBean.getNumbers());
+        DummyProperties dummyProperties = dummyBean.dummyProperties;
+        assertEquals("quarkus", dummyProperties.name);
+        assertEquals(Arrays.asList(1, 2, 3, 4), dummyProperties.numbers);
+        assertEquals(MyEnum.OPTIONAL, dummyProperties.myEnum);
+        assertEquals(MyEnum.ENUM_ONE, dummyProperties.unsetEnum);
+        assertEquals(MyEnum.Enum_Two, dummyProperties.otherEnum);
     }
 
     @Singleton
     public static class DummyBean {
         @Inject
         DummyProperties dummyProperties;
-
-        String getName() {
-            return dummyProperties.name;
-        }
-
-        List<Integer> getNumbers() {
-            return dummyProperties.numbers;
-        }
     }
 
     @ConfigProperties(prefix = "dummy")
@@ -55,6 +51,9 @@ public class ClassWithoutGettersConfigPropertiesTest {
 
         public String name;
         public List<Integer> numbers;
+        public MyEnum myEnum;
+        public MyEnum otherEnum = MyEnum.ENUM_ONE;
+        public MyEnum unsetEnum = MyEnum.ENUM_ONE;
 
         public void setName(String name) {
             this.name = name;
@@ -63,5 +62,11 @@ public class ClassWithoutGettersConfigPropertiesTest {
         public void setNumbers(List<Integer> numbers) {
             this.numbers = numbers;
         }
+    }
+
+    public enum MyEnum {
+        OPTIONAL,
+        ENUM_ONE,
+        Enum_Two
     }
 }

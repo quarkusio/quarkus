@@ -91,6 +91,14 @@ public class LambdaClient {
         }
     }
 
+    /**
+     * Marshalls input and output as JSON using Jackson
+     *
+     * @param returnType
+     * @param input
+     * @param <T>
+     * @return
+     */
     public static <T> T invoke(Class<T> returnType, Object input) {
         if (problem != null) {
             throw new RuntimeException(problem);
@@ -111,6 +119,54 @@ public class LambdaClient {
                 @Override
                 public String getValue() {
                     return requestBody;
+                }
+
+                @Override
+                public String setValue(String value) {
+                    return null;
+                }
+            });
+            String output = result.get();
+            return mapper.readerFor(returnType).readValue(output);
+        } catch (Exception e) {
+            if (e instanceof ExecutionException) {
+                Throwable ex = e.getCause();
+                if (ex instanceof RuntimeException) {
+                    throw (RuntimeException) ex;
+                }
+                throw new RuntimeException(ex);
+            }
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Takes a json string as input. Unmarshalls return value using Jackson.
+     *
+     * @param returnType
+     * @param json
+     * @param <T>
+     * @return
+     */
+    public static <T> T invokeJson(Class<T> returnType, String json) {
+        if (problem != null) {
+            throw new RuntimeException(problem);
+        }
+        try {
+            final ObjectMapper mapper = getObjectMapper();
+            String id = "aws-request-" + REQUEST_ID_GENERATOR.incrementAndGet();
+            CompletableFuture<String> result = new CompletableFuture<>();
+            REQUESTS.put(id, result);
+            REQUEST_QUEUE.add(new Map.Entry<String, String>() {
+
+                @Override
+                public String getKey() {
+                    return id;
+                }
+
+                @Override
+                public String getValue() {
+                    return json;
                 }
 
                 @Override

@@ -1,0 +1,562 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Amazon S3 Client
+
+include::./attributes.adoc[]
+
+Amazon S3 is an object storage service. It can be employed to store any type of object which allows for uses like storage for Internet applications,
+backup and recovery, disaster recovery, data archives, data lakes for analytics, any hybrid cloud storage.
+This extension provides functionality that allows the client to communicate with the service when running in Quarkus.
+You can find more information about S3 at https://aws.amazon.com/s3/[the Amazon S3 website].
+
+NOTE: The S3 extension is based on https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/welcome.html[AWS Java SDK 2.x].
+It's a major rewrite of the 1.x code base that offers two programming models (Blocking & Async).
+
+The Quarkus extension supports two programming models:
+
+* Blocking access using URL Connection HTTP client (by default) or the Apache HTTP Client
+* https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/basics-async.html[Asynchronous programming] based on JDK's `CompletableFuture` objects and the Netty HTTP client.
+
+In this guide, we see how you can get your REST services to use S3 locally and on AWS.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* an IDE
+* Apache Maven 3.5.3+
+* https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html[AWS Command line interface]
+* An AWS Account to access the S3 service. Before you can use the AWS SDKs with Amazon S3, you must get an AWS access key ID and secret access key.
+* Optionally, Docker for your system to run S3 locally for testing purposes
+
+=== Provision S3 locally
+
+The easiest way to start working with S3 is to run a local instance as a container.
+
+[source,bash,subs="verbatim,attributes"]
+----
+docker run -it --publish 8008:4566 -e SERVICES=s3 -e START_WEB=0 localstack/localstack:0.11.5
+----
+This starts a S3 instance that is accessible on port `8008`.
+
+
+NOTE: Versions of localstack newer than v0.11.5 require port `4566` instead of port `4572`. See this https://github.com/localstack/localstack/issues/2983[GitHub issue] for details on this change.
+
+Create an AWS profile for your local instance using AWS CLI:
+[source,shell,subs="verbatim,attributes"]
+----
+$ aws configure --profile localstack
+AWS Access Key ID [None]: test-key
+AWS Secret Access Key [None]: test-secret
+Default region name [None]: us-east-1
+Default output format [None]:
+----
+
+=== Create a S3 bucket
+
+Create a S3 bucket using AWS CLI
+
+[source,bash,subs="verbatim,attributes"]
+----
+aws s3 mb s3://quarkus.s3.quickstart --profile localstack --endpoint-url=http://localhost:8008
+----
+
+== Solution
+
+The application built here allows to manage files stored in Amazon S3.
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `amazon-s3-quickstart` {quickstarts-tree-url}/amazon-s3-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=amazon-s3-quickstart \
+    -DclassName="org.acme.s3.S3SyncClientResource" \
+    -Dpath="/s3" \
+    -Dextensions="resteasy,resteasy-jackson,amazon-s3"
+cd amazon-s3-quickstart
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS and S3 Client extensions.
+After this, the `amazon-s3` extension has been added to your `pom.xml`.
+
+Then, we'll add the following dependency to support `multipart/form-data` requests:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-multipart</artifactId>
+</dependency>
+----
+
+NOTE: The default setting for `quarkus.http.limits.max-body-size` is 10240K. This may limit your ability to upload multipart files larger than the default. If you want to upload larger files, you will need to set this limit explicitly.
+
+== Setting up the model
+
+In this example, we will create an application to manage a list of files. The example application will demonstrate the two programming models supported by the extension.
+
+Because the primary goal of our application is to upload a file into the S3 bucket, we need to setup the model we will be using to define the `multipart/form-data` payload,
+in the form of a `MultipartBody` POJO.
+
+Create a `org.acme.s3.FormData` class as follows:
+
+[source,java]
+----
+package org.acme.s3;
+
+import java.io.InputStream;
+
+import javax.ws.rs.FormParam;
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.annotations.providers.multipart.PartType;
+
+public class FormData {
+
+    @FormParam("file")
+    @PartType(MediaType.APPLICATION_OCTET_STREAM)
+    public InputStream data;
+
+    @FormParam("filename")
+    @PartType(MediaType.TEXT_PLAIN)
+    public String fileName;
+
+    @FormParam("mimetype")
+    @PartType(MediaType.TEXT_PLAIN)
+    public String mimeType;
+
+}
+----
+
+The class defines three fields:
+
+* `data` that fill capture stream of uploaded bytes from the client
+* `fileName` that captures a filename as provided by the submited form
+* `mimeType` content type of the uploaded file
+
+In the second step let's create a bean that will represent a file in a Amazon S3 bucket as follows:
+
+[source,java]
+----
+package org.acme.s3;
+
+import software.amazon.awssdk.services.s3.model.S3Object;
+
+public class FileObject {
+    private String objectKey;
+
+    private Long size;
+
+    public FileObject() {
+    }
+
+    public static FileObject from(S3Object s3Object) {
+        FileObject file = new FileObject();
+        if (s3Object != null) {
+            file.setObjectKey(s3Object.key());
+            file.setSize(s3Object.size());
+        }
+        return file;
+    }
+
+    public String getObjectKey() {
+        return objectKey;
+    }
+
+    public Long getSize() {
+        return size;
+    }
+
+    public FileObject setObjectKey(String objectKey) {
+        this.objectKey = objectKey;
+        return this;
+    }
+
+    public FileObject setSize(Long size) {
+        this.size = size;
+        return this;
+    }
+}
+----
+
+Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer. The static `from` method creates a bean based on the `S3Object`
+object provided by the S3 client response when listing all the objects in a bucket.
+
+== Create JAX-RS resource
+
+Now create a `org.acme.s3.CommonResource` that will consist of methods to prepare S3 request to get object from a S3 bucket, or to put file into a S3 bucket.
+Note a configuration property `bucket.name` is defined here as the request method required name of the S3 bucket.
+
+[source,java]
+----
+package org.acme.s3;
+
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.Date;
+import java.util.UUID;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+abstract public class CommonResource {
+    private final static String TEMP_DIR = System.getProperty("java.io.tmpdir");
+
+    @ConfigProperty(name = "bucket.name")
+    String bucketName;
+
+    protected PutObjectRequest buildPutRequest(FormData formData) {
+        return PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(formData.fileName)
+                .contentType(formData.mimeType)
+                .build();
+    }
+
+    protected GetObjectRequest buildGetRequest(String objectKey) {
+        return GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .build();
+    }
+
+    protected File tempFilePath() {
+        return new File(TEMP_DIR, new StringBuilder().append("s3AsyncDownloadedTemp")
+                .append((new Date()).getTime()).append(UUID.randomUUID())
+                .append(".").append(".tmp").toString());
+    }
+
+    protected File uploadToTemp(InputStream data) {
+        File tempPath;
+        try {
+            tempPath = File.createTempFile("uploadS3Tmp", ".tmp");
+            Files.copy(data, tempPath.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+
+        return tempPath;
+    }
+}
+----
+
+Then, create a `org.acme.s3.S3SyncClientResource` that will provides an API to upload/download files as well as to list all the files in a bucket.
+
+[source,java]
+----
+package org.acme.s3;
+
+import java.io.ByteArrayOutputStream;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.StreamingOutput;
+
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
+
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
+@Path("/s3")
+public class S3SyncClientResource extends CommonResource {
+    @Inject
+    S3Client s3;
+
+    @POST
+    @Path("upload")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response uploadFile(@MultipartForm FormData formData) throws Exception {
+
+        if (formData.fileName == null || formData.fileName.isEmpty()) {
+            return Response.status(Status.BAD_REQUEST).build();
+        }
+
+        if (formData.mimeType == null || formData.mimeType.isEmpty()) {
+            return Response.status(Status.BAD_REQUEST).build();
+        }
+
+        PutObjectResponse putResponse = s3.putObject(buildPutRequest(formData),
+                RequestBody.fromFile(uploadToTemp(formData.data)));
+        if (putResponse != null) {
+            return Response.ok().status(Status.CREATED).build();
+        } else {
+            return Response.serverError().build();
+        }
+    }
+
+    @GET
+    @Path("download/{objectKey}")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response downloadFile(@PathParam("objectKey") String objectKey) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GetObjectResponse object = s3.getObject(buildGetRequest(objectKey), ResponseTransformer.toOutputStream(baos));
+
+        ResponseBuilder response = Response.ok((StreamingOutput) output -> baos.writeTo(output));
+        response.header("Content-Disposition", "attachment;filename=" + objectKey);
+        response.header("Content-Type", object.contentType());
+        return response.build();
+    }
+
+    @GET
+    public List<FileObject> listFiles() {
+        ListObjectsRequest listRequest = ListObjectsRequest.builder().bucket(bucketName).build();
+
+        //HEAD S3 objects to get metadata
+        return s3.listObjects(listRequest).contents().stream().sorted(Comparator.comparing(S3Object::lastModified).reversed())
+                .map(FileObject::from).collect(Collectors.toList());
+    }
+}
+----
+
+== Configuring S3 clients
+
+Both S3 clients (sync and async) are configurable via the `application.properties` file that can be provided in the `src/main/resources` directory.
+
+NOTE: You need to add to the classpath a proper implementation of the sync client. By default the extension uses the URL connection HTTP client, so
+add a URL connection client dependency to the `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>url-connection-client</artifactId>
+</dependency>
+----
+
+If you want to use Apache HTTP client instead, configure it as follows:
+[source,properties]
+----
+quarkus.s3.sync-client.type=apache
+----
+
+And add following dependency to the application `pom.xml`:
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>apache-client</artifactId>
+</dependency>
+----
+
+For asynchronous client refer to <<Going asynchronous>> for more information.
+
+
+If you're going to use a local S3 instance, configure it as follows:
+
+[source,properties]
+----
+quarkus.s3.endpoint-override=http://localhost:8008
+
+quarkus.s3.aws.region=us-east-1
+quarkus.s3.aws.credentials.type=static
+quarkus.s3.aws.credentials.static-provider.access-key-id=test-key
+quarkus.s3.aws.credentials.static-provider.secret-access-key=test-secret
+
+bucket.name=quarkus.s3.quickstart
+----
+
+- `quarkus.s3.aws.region` - It's required by the client, but since you're using a local S3 instance you can pick any valid AWS region.
+- `quarkus.s3.aws.credentials.type` - Set `static` credentials provider with any values for `access-key-id` and `secret-access-key`
+- `quarkus.s3.endpoint-override` - Override the S3 client to use a local instance instead of an AWS service
+- `bucket.name` - Name of the S3 bucket
+
+If you want to work with an AWS account, you'd need to set it with:
+[source,properties]
+----
+bucket.name=<your-bucket-name>
+
+quarkus.s3.aws.region=<YOUR_REGION>
+quarkus.s3.aws.credentials.type=default
+----
+
+- `bucket.name` - name of the S3 bucket on your AWS account.
+- `quarkus.s3.aws.region` you should set it to the region where your S3 bucket was created,
+- `quarkus.s3.aws.credentials.type` - use the `default` credentials provider chain that looks for credentials in this order:
+
+include::./amazon-credentials.adoc[]
+
+== Creating a frontend
+
+Now let's add a simple web page to interact with our `S3SyncClientResource`.
+Quarkus automatically serves static resources located under the `META-INF/resources` directory.
+In the `src/main/resources/META-INF/resources` directory, add a `s3.html` file with the content from this {quickstarts-blob-url}/amazon-s3-quickstart/src/main/resources/META-INF/resources/s3.html[s3.html] file in it.
+
+You can now interact with your REST service:
+
+* start Quarkus with `./mvnw compile quarkus:dev`
+* open a browser to `http://localhost:8080/s3.html`
+* upload new file to the current S3 bucket via the form and see the list of files in the bucket
+
+== Next steps
+
+=== Packaging
+
+Packaging your application is as simple as `./mvnw clean package`.
+It can be run with `java -jar target/quarkus-app/quarkus-run.jar`.
+
+With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
+Depending on your system, that will take some time.
+
+=== Going asynchronous
+
+Thanks to the AWS SDK v2.x used by the Quarkus extension, you can use the asynchronous programming model out of the box.
+
+Create a `org.acme.s3.S3AsyncClientResource` that will be similar to our `S3SyncClientResource` but using an asynchronous programming model.
+
+[source,java]
+----
+package org.acme.s3;
+
+import java.io.File;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
+
+import io.smallrye.mutiny.Uni;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
+@Path("/async-s3")
+public class S3AsyncClientResource extends CommonResource {
+    @Inject
+    S3AsyncClient s3;
+
+    @POST
+    @Path("upload")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Uni<Response> uploadFile(@MultipartForm FormData formData) throws Exception {
+
+        if (formData.fileName == null || formData.fileName.isEmpty()) {
+            return Uni.createFrom().item(Response.status(Status.BAD_REQUEST).build());
+        }
+
+        if (formData.mimeType == null || formData.mimeType.isEmpty()) {
+            return Uni.createFrom().item(Response.status(Status.BAD_REQUEST).build());
+        }
+
+        return Uni.createFrom()
+                .completionStage(() -> {
+                    return s3.putObject(buildPutRequest(formData), AsyncRequestBody.fromFile(uploadToTemp(formData.data)));
+                })
+                .onItem().ignore().andSwitchTo(Uni.createFrom().item(Response.created(null).build()))
+                .onFailure().recoverWithItem(th -> {
+                    th.printStackTrace();
+                    return Response.serverError().build();
+                });
+    }
+
+    @GET
+    @Path("download/{objectKey}")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Uni<Response> downloadFile(@PathParam("objectKey") String objectKey) throws Exception {
+        File tempFile = tempFilePath();
+
+        return Uni.createFrom()
+                .completionStage(() -> s3.getObject(buildGetRequest(objectKey), AsyncResponseTransformer.toFile(tempFile)))
+                .onItem()
+                .apply(object -> Response.ok(tempFile)
+                        .header("Content-Disposition", "attachment;filename=" + objectKey)
+                        .header("Content-Type", object.contentType()).build());
+    }
+
+    @GET
+    public Uni<List<FileObject>> listFiles() {
+        ListObjectsRequest listRequest = ListObjectsRequest.builder()
+                .bucket(bucketName)
+                .build();
+
+        return Uni.createFrom().completionStage(() -> s3.listObjects(listRequest))
+                .onItem().transform(result -> toFileItems(result));
+    }
+
+    private List<FileObject> toFileItems(ListObjectsResponse objects) {
+        return objects.contents().stream()
+                .sorted(Comparator.comparing(S3Object::lastModified).reversed())
+                .map(FileObject::from).collect(Collectors.toList());
+    }
+}
+----
+
+You need the RESTEasy Mutiny support for asynchronous programming. Add the dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-mutiny</artifactId>
+</dependency>
+----
+
+Or you can alternatively run this command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
+----
+
+And add the Netty HTTP client dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>netty-nio-client</artifactId>
+</dependency>
+----
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-amazon-s3.adoc[opts=optional, leveloffset=+1]

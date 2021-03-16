@@ -27,8 +27,12 @@ graph-output.dot
 *.swo
 ObjectStore
 .gradle
-build
 docker/distroless/bazel-*
 /.apt_generated_tests/
 quarkus.log
 replay_*.logß
+nbactions.xml
+nb-configuration.xml
+.cache
+/lsp/
+.jbang

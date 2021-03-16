@@ -57,6 +57,9 @@ public class RuntimeConfigSetupBuildStep {
                 .interfaces(StartupTask.class).build()) {
 
             try (MethodCreator method = clazz.getMethodCreator("deploy", void.class, StartupContext.class)) {
+                method.invokeVirtualMethod(ofMethod(StartupContext.class, "setCurrentBuildStepName", void.class, String.class),
+                        method.getMethodParam(0), method.load("RuntimeConfigSetupBuildStep.setupRuntimeConfig"));
+
                 ResultHandle config = method.readStaticField(C_INSTANCE);
 
                 if (runTimeConfigurationSourceValues.isEmpty()) {

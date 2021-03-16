@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
 import io.quarkus.mailer.runtime.MutinyMailerImpl;
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.file.FileSystemException;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.mutiny.core.Vertx;
@@ -71,8 +71,8 @@ class AttachmentTest {
     @Test
     void testAttachmentCreationFromStream() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().produceMulti(af -> af.toMulti()
-                        .onItem().produceIterable(this::getBytes).concatenate());
+                .onItem().transformToMulti(af -> af.toMulti()
+                        .onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain");
         assertThat(attachment.getFile()).isNull();
@@ -110,8 +110,8 @@ class AttachmentTest {
     @Test
     void testInlineAttachmentCreationFromStream() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().produceMulti(af -> af.toMulti()
-                        .onItem().produceIterable(this::getBytes).concatenate());
+                .onItem().transformToMulti(af -> af.toMulti()
+                        .onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain", "<my-id>");
         assertThat(attachment.getFile()).isNull();
@@ -129,8 +129,8 @@ class AttachmentTest {
     @Test
     void testAttachmentCreationWithDescription() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().produceMulti(af -> af.toMulti()
-                        .onItem().produceIterable(this::getBytes).concatenate());
+                .onItem().transformToMulti(af -> af.toMulti()
+                        .onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain",
                 DESCRIPTION, Attachment.DISPOSITION_ATTACHMENT);
@@ -155,8 +155,8 @@ class AttachmentTest {
     @Test
     void testInlineAttachmentCreationWithDescription() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().produceMulti(af -> af.toMulti()
-                        .onItem().produceIterable(this::getBytes).concatenate());
+                .onItem().transformToMulti(af -> af.toMulti()
+                        .onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain",
                 DESCRIPTION, Attachment.DISPOSITION_INLINE);
@@ -195,14 +195,11 @@ class AttachmentTest {
     void testCreationWithEmptyContent() {
         Attachment attachment1 = new Attachment("attachment-1", (byte[]) null, "text/plain");
         Attachment attachment2 = new Attachment("attachment-2", new byte[0], "text/plain");
-        Attachment attachment3 = new Attachment("attachment-3", ReactiveStreams.<Byte> empty().buildRs(), "text/plain");
+        Attachment attachment3 = new Attachment("attachment-3", Multi.createFrom().empty(), "text/plain");
 
-        assertThat(ReactiveStreams.fromPublisher(attachment1.getData()).findFirst().run().toCompletableFuture().join())
-                .isEmpty();
-        assertThat(ReactiveStreams.fromPublisher(attachment2.getData()).findFirst().run().toCompletableFuture().join())
-                .isEmpty();
-        assertThat(ReactiveStreams.fromPublisher(attachment3.getData()).findFirst().run().toCompletableFuture().join())
-                .isEmpty();
+        assertThat(Multi.createFrom().publisher(attachment1.getData()).collectItems().first().await().indefinitely()).isNull();
+        assertThat(Multi.createFrom().publisher(attachment2.getData()).collectItems().first().await().indefinitely()).isNull();
+        assertThat(Multi.createFrom().publisher(attachment3.getData()).collectItems().first().await().indefinitely()).isNull();
     }
 
     @Test

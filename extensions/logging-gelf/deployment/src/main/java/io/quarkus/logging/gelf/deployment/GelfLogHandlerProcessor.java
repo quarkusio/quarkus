@@ -1,5 +1,6 @@
 package io.quarkus.logging.gelf.deployment;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -14,7 +15,7 @@ class GelfLogHandlerProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.LOGGING_GELF);
+        return new FeatureBuildItem(Feature.LOGGING_GELF);
     }
 
     @BuildStep

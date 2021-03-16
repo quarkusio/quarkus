@@ -15,8 +15,8 @@ import org.eclipse.microprofile.config.spi.Converter;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -27,6 +27,9 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.graal.InetRunTime;
+import io.smallrye.config.ConfigSourceFactory;
+import io.smallrye.config.ConfigSourceInterceptor;
+import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 class ConfigBuildSteps {
@@ -37,8 +40,12 @@ class ConfigBuildSteps {
 
     @BuildStep
     void generateConfigSources(List<RunTimeConfigurationSourceBuildItem> runTimeSources,
-            final BuildProducer<GeneratedClassBuildItem> generatedClass) {
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+            final BuildProducer<GeneratedClassBuildItem> generatedClass,
+            LiveReloadBuildItem liveReloadBuildItem) {
+        if (liveReloadBuildItem.isLiveReload()) {
+            return;
+        }
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, false);
 
         try (ClassCreator cc = ClassCreator.builder().interfaces(ConfigSourceProvider.class).setFinal(true)
                 .className(PROVIDER_CLASS_NAME)
@@ -70,16 +77,18 @@ class ConfigBuildSteps {
     // XXX replace this with constant-folded service loader impl
     @BuildStep
     void nativeServiceProviders(
-            final DeploymentClassLoaderBuildItem classLoaderItem,
             final BuildProducer<ServiceProviderBuildItem> providerProducer) throws IOException {
         providerProducer.produce(new ServiceProviderBuildItem(ConfigProviderResolver.class.getName(),
                 SmallRyeConfigProviderResolver.class.getName()));
-        final ClassLoader classLoader = classLoaderItem.getClassLoader();
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         classLoader.getResources(SERVICES_PREFIX + ConfigSourceProvider.class.getName());
         for (Class<?> serviceClass : Arrays.asList(
                 ConfigSource.class,
                 ConfigSourceProvider.class,
-                Converter.class)) {
+                Converter.class,
+                ConfigSourceInterceptor.class,
+                ConfigSourceInterceptorFactory.class,
+                ConfigSourceFactory.class)) {
             final String serviceName = serviceClass.getName();
             final Set<String> names = ServiceUtil.classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceName);
             final List<String> list = names.stream()

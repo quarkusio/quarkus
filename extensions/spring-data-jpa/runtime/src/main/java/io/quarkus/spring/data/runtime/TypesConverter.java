@@ -35,6 +35,12 @@ public final class TypesConverter {
     }
 
     public static io.quarkus.panache.common.Page toPanachePage(org.springframework.data.domain.Pageable pageable) {
-        return new io.quarkus.panache.common.Page(pageable.getPageNumber(), pageable.getPageSize());
+        // only generate queries with paging if param is actually paged (ex. Unpaged.INSTANCE is a Pageable not paged)
+        if (pageable.isPaged()) {
+            int pageNumber = pageable.getPageNumber();
+            int pageSize = pageable.getPageSize();
+            return new io.quarkus.panache.common.Page(pageNumber, pageSize);
+        }
+        return null; //PanacheQueryImpl#list properly handles null
     }
 }

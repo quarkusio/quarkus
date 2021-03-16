@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-client</artifactId>
+            <artifactId>quarkus-kubernetes-client-internal</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -29,6 +29,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
         </dependency>
     </dependencies>
 

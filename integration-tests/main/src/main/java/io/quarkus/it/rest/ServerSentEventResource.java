@@ -62,7 +62,8 @@ public class ServerSentEventResource {
 
     @GET
     @Path("/stream-xml")
-    @Produces("text/event-stream;element-type=text/xml")
+    @SseElementType(MediaType.TEXT_XML)
+    @Produces(MediaType.SERVER_SENT_EVENTS)
     public void sendXmlData(@Context SseEventSink sink) {
         // send a stream of few events
         try {

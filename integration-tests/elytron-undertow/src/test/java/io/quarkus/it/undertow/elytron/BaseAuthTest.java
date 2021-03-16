@@ -10,7 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
-public class BaseAuthTest {
+public class BaseAuthTest extends HttpsSetup {
 
     @RepeatedTest(100)
     public void testPost() {

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -114,7 +115,6 @@ public class MovieResource {
     @Produces("application/json")
     public List<MovieRepository.MovieCountByRating> countByRating() {
         List<MovieRepository.MovieCountByRating> list = movieRepository.countByRating();
-
         // #6205 - Make sure elements in list have been properly cast to the target object type.
         // If the type is wrong (Object array), this will throw a ClassNotFoundException
         MovieRepository.MovieCountByRating first = list.get(0);
@@ -122,4 +122,47 @@ public class MovieResource {
 
         return list;
     }
+
+    @GET
+    @Path("/rating/forTitle/{title}")
+    @Produces("application/json")
+    public MovieRepository.MovieRating titleRating(@PathParam("title") String title) {
+        MovieRepository.MovieRating result = movieRepository.findRatingByTitle(title);
+        Objects.requireNonNull(result);
+        return result;
+    }
+
+    @GET
+    @Path("/rating/opt/forTitle/{title}")
+    @Produces("application/json")
+    public Optional<MovieRepository.MovieRating> optionalTitleRating(@PathParam("title") String title) {
+        Optional result = movieRepository.findOptionalRatingByTitle(title);
+        return result;
+    }
+
+    @GET
+    @Path("/ratings")
+    @Produces("application/json")
+    public List<String> findAllRatings() {
+        return movieRepository.findAllRatings();
+    }
+
+    @Path("/new/{id}/{title}")
+    @GET
+    @Produces("application/json")
+    public Movie newPerson(@PathParam("id") Long id, @PathParam("title") String title) {
+        Movie movie = new Movie(id, title, null, -1);
+        movie = movieRepository.save(movie);
+
+        movie.setDuration(1000);
+        return movieRepository.save(movie);
+    }
+
+    @GET
+    @Path("/titles/rating/{rating}")
+    @Produces("application/json")
+    public List<MovieRepository.MovieProjection> getTitlesByRating(@PathParam("rating") String rating) {
+        return movieRepository.findTitleAndRatingByRating(rating);
+    }
+
 }

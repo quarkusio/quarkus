@@ -37,10 +37,10 @@ public class PersistentLoginManager {
     private final long newCookieIntervalMillis;
 
     public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieIntervalMillis) {
+        this.cookieName = cookieName;
+        this.newCookieIntervalMillis = newCookieIntervalMillis;
+        this.timeoutMillis = timeoutMillis;
         try {
-            this.cookieName = cookieName;
-            this.newCookieIntervalMillis = newCookieIntervalMillis;
-            this.timeoutMillis = timeoutMillis;
             if (encryptionKey == null) {
                 this.secretKey = KeyGenerator.getInstance("AES").generateKey();
             } else if (encryptionKey.length() < 16) {
@@ -99,7 +99,7 @@ public class PersistentLoginManager {
         }
     }
 
-    public void save(SecurityIdentity identity, RoutingContext context, RestoreResult restoreResult) {
+    public void save(SecurityIdentity identity, RoutingContext context, RestoreResult restoreResult, boolean secureCookie) {
         if (restoreResult != null) {
             if (!restoreResult.newCookieNeeded) {
                 return;
@@ -122,7 +122,7 @@ public class PersistentLoginManager {
             message.put(iv);
             message.put(encrypted);
             String cookieValue = Base64.getEncoder().encodeToString(message.array());
-            context.addCookie(Cookie.cookie(cookieName, cookieValue).setPath("/"));
+            context.addCookie(Cookie.cookie(cookieName, cookieValue).setPath("/").setSecure(secureCookie));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

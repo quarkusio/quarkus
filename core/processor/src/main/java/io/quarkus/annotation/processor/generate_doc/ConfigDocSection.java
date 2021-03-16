@@ -13,11 +13,30 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
     private String sectionDetails;
     private String sectionDetailsTitle;
     private ConfigPhase configPhase;
+    private String topLevelGrouping;
+    private String configGroupType;
+    private boolean showSection;
 
     private List<ConfigDocItem> configDocItems = new ArrayList<>();
     private String anchorPrefix;
 
     public ConfigDocSection() {
+    }
+
+    public String getConfigGroupType() {
+        return configGroupType;
+    }
+
+    public void setConfigGroupType(String configGroupType) {
+        this.configGroupType = configGroupType;
+    }
+
+    public boolean isShowSection() {
+        return showSection;
+    }
+
+    public void setShowSection(boolean showSection) {
+        this.showSection = showSection;
     }
 
     public boolean isWithinAMap() {
@@ -101,11 +120,12 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
     public String toString() {
         return "ConfigDocSection{" +
                 "name='" + name + '\'' +
-                ", optional='" + optional + '\'' +
+                ", optional=" + optional +
                 ", withinAMap=" + withinAMap +
                 ", sectionDetails='" + sectionDetails + '\'' +
                 ", sectionDetailsTitle='" + sectionDetailsTitle + '\'' +
                 ", configPhase=" + configPhase +
+                ", topLevelGrouping='" + topLevelGrouping + '\'' +
                 ", configDocItems=" + configDocItems +
                 ", anchorPrefix='" + anchorPrefix + '\'' +
                 '}';
@@ -141,5 +161,13 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
 
     public void setOptional(boolean optional) {
         this.optional = optional;
+    }
+
+    public String getTopLevelGrouping() {
+        return topLevelGrouping;
+    }
+
+    public void setTopLevelGrouping(String topLevelGrouping) {
+        this.topLevelGrouping = topLevelGrouping;
     }
 }

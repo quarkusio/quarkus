@@ -64,13 +64,8 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.21.0</version>
                 <configuration>
-                    <systemProperties>
-                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    </systemProperties>
                     <threadCount>1</threadCount>
-                    <trimStackTrace>false</trimStackTrace>
                 </configuration>
             </plugin>
         </plugins>

@@ -84,11 +84,18 @@ public @interface ConsumeEvent {
     boolean blocking() default false;
 
     /**
+     * @return {@code true} if the <em>blocking</em> consumption of the event must be ordered, meaning that the method
+     *         won't be called concurrently. Instead it serializes all the invocations based on the event order.
+     *         {@code ordered} must be used in conjunction with {@code blocking=true} or {@code @Blocking}.
+     * @see io.vertx.core.Vertx#executeBlocking(io.vertx.core.Handler, boolean, io.vertx.core.Handler)
+     */
+    boolean ordered() default false;
+
+    /**
      * 
      * @return {@code null} if it should use a default MessageCodec
      * @see io.quarkus.vertx.LocalEventBusCodec
      */
-    @SuppressWarnings("rawtypes")
     Class<? extends MessageCodec> codec() default LocalEventBusCodec.class;
 
 }

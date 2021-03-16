@@ -9,6 +9,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.annotations.Stream;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import io.quarkus.resteasy.mutiny.test.annotations.Async;
 import io.smallrye.mutiny.Multi;
@@ -54,8 +55,34 @@ public class MutinyResource {
     @GET
     public Uni<String> failingBecauseOfApplicationCode() {
         return Uni.createFrom().item("not ok")
-                .onItem().apply(s -> {
+                .onItem().transform(s -> {
                     throw new IllegalStateException("BOOM!");
                 });
+    }
+
+    @Path("response/tea-pot")
+    @GET
+    public Uni<Response> teapot() {
+        return Uni.createFrom().item(() -> Response.status(418).build());
+    }
+
+    @Path("response/no-content")
+    @GET
+    public Uni<Response> noContent() {
+        return Uni.createFrom().item(() -> Response.noContent().build());
+    }
+
+    @Path("response/accepted")
+    @GET
+    public Uni<Response> accepted() {
+        return Uni.createFrom().item(() -> Response.accepted("Hello").build());
+    }
+
+    @Path("response/conditional/{test}")
+    @GET
+    public Uni<Response> conditional(@PathParam("test") boolean test) {
+        return Uni.createFrom().item(test)
+                .map(b -> b ? Response.accepted() : Response.noContent())
+                .map(Response.ResponseBuilder::build);
     }
 }

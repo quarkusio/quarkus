@@ -2,15 +2,28 @@ package io.quarkus.mongodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+
+import javax.enterprise.inject.Default;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.mongodb.runtime.MongoClientName;
+import com.mongodb.reactivestreams.client.MongoClient;
+import com.mongodb.reactivestreams.client.internal.MongoClientImpl;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.runtime.ClientProxyUnwrapper;
+import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBase {
@@ -22,19 +35,13 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
 
     @Inject
     @MongoClientName("cluster1")
-    ReactiveMongoClient legacyClient;
-
-    @Inject
-    @MongoClientName("cluster1")
-    io.quarkus.mongodb.reactive.ReactiveMongoClient client;
+    ReactiveMongoClient client;
 
     @Inject
     @MongoClientName("cluster2")
-    ReactiveMongoClient legacyClient2;
+    ReactiveMongoClient client2;
 
-    @Inject
-    @MongoClientName("cluster2")
-    io.quarkus.mongodb.reactive.ReactiveMongoClient client2;
+    private final ClientProxyUnwrapper unwrapper = new ClientProxyUnwrapper();
 
     @AfterEach
     void cleanup() {
@@ -44,19 +51,51 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
         if (client2 != null) {
             client2.close();
         }
-        if (legacyClient != null) {
-            legacyClient.close();
-        }
-        if (legacyClient2 != null) {
-            legacyClient2.close();
-        }
     }
 
     @Test
     public void testNamedDataSourceInjection() {
+        assertProperConnection(client, 27018);
+        assertProperConnection(client2, 27019);
+
         assertThat(client.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
         assertThat(client2.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
-        assertThat(legacyClient.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
-        assertThat(legacyClient2.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
+
+        assertNoDefaultClient();
+    }
+
+    private void assertProperConnection(ReactiveMongoClient client, int expectedPort) {
+        assertThat(unwrapper.apply(client)).isInstanceOfSatisfying(ReactiveMongoClientImpl.class, rc -> {
+            Field mongoClientField;
+            try {
+                mongoClientField = ReactiveMongoClientImpl.class.getDeclaredField("client");
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+            mongoClientField.setAccessible(true);
+            MongoClient c;
+            try {
+                c = (MongoClientImpl) mongoClientField.get(rc);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+            assertThat(c.getClusterDescription().getClusterSettings().getHosts()).singleElement().satisfies(sa -> {
+                assertThat(sa.getPort()).isEqualTo(expectedPort);
+            });
+        });
+    }
+
+    private void assertNoDefaultClient() {
+        boolean hasDefault = false;
+        for (InstanceHandle<ReactiveMongoClient> handle : Arc.container().select(ReactiveMongoClient.class).handles()) {
+            InjectableBean<ReactiveMongoClient> bean = handle.getBean();
+            for (Annotation qualifier : bean.getQualifiers()) {
+                if (qualifier.annotationType().equals(Default.class)) {
+                    hasDefault = true;
+                }
+            }
+        }
+        Assertions.assertFalse(hasDefault,
+                "The default reactive mongo client should not have been present as it is not used in any injection point");
     }
 }

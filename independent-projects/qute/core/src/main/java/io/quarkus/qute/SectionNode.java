@@ -2,7 +2,7 @@ package io.quarkus.qute;
 
 import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -17,13 +17,13 @@ class SectionNode implements TemplateNode {
         return new Builder(helperName, origin);
     }
 
+    final String name;
     final List<SectionBlock> blocks;
-
     private final SectionHelper helper;
-
     private final Origin origin;
 
-    SectionNode(List<SectionBlock> blocks, SectionHelper helper, Origin origin) {
+    SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin) {
+        this.name = name;
         this.blocks = ImmutableList.copyOf(blocks);
         this.helper = helper;
         this.origin = origin;
@@ -38,6 +38,12 @@ class SectionNode implements TemplateNode {
         return origin;
     }
 
+    void optimizeNodes(Set<TemplateNode> nodes) {
+        for (SectionBlock block : blocks) {
+            block.optimizeNodes(nodes);
+        }
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -46,8 +52,8 @@ class SectionNode implements TemplateNode {
         return builder.toString();
     }
 
-    public Set<Expression> getExpressions() {
-        Set<Expression> expressions = new HashSet<>();
+    public List<Expression> getExpressions() {
+        List<Expression> expressions = new ArrayList<>();
         for (SectionBlock block : blocks) {
             expressions.addAll(block.getExpressions());
         }
@@ -84,7 +90,7 @@ class SectionNode implements TemplateNode {
         }
 
         SectionNode build() {
-            return new SectionNode(blocks,
+            return new SectionNode(helperName, blocks,
                     factory.initialize(new SectionInitContextImpl(engine, blocks, this::createParserError)), origin);
         }
 
@@ -115,25 +121,41 @@ class SectionNode implements TemplateNode {
                 // Use the main block
                 block = blocks.get(0);
             }
-            if (block.nodes.size() == 1) {
+            int size = block.nodes.size();
+            if (size == 1) {
                 return block.nodes.get(0).resolve(context);
             }
             CompletableFuture<ResultNode> result = new CompletableFuture<ResultNode>();
             @SuppressWarnings("unchecked")
-            CompletableFuture<ResultNode>[] results = new CompletableFuture[block.nodes.size()];
+            CompletableFuture<ResultNode>[] allResults = new CompletableFuture[size];
+            List<CompletableFuture<ResultNode>> asyncResults = new LinkedList<>();
             int idx = 0;
             for (TemplateNode node : block.nodes) {
-                results[idx++] = node.resolve(context).toCompletableFuture();
+                CompletableFuture<ResultNode> nodeResult = node.resolve(context).toCompletableFuture();
+                allResults[idx++] = nodeResult;
+                if (node.isConstant()) {
+                    continue;
+                }
+                asyncResults.add(nodeResult);
             }
-            CompletableFuture
-                    .allOf(results)
-                    .whenComplete((v, t) -> {
-                        if (t != null) {
-                            result.completeExceptionally(t);
-                        } else {
-                            result.complete(new MultiResultNode(results));
-                        }
-                    });
+            if (asyncResults.isEmpty()) {
+                result.complete(new MultiResultNode(allResults));
+            } else {
+                CompletionStage<?> cs;
+                if (asyncResults.size() == 1) {
+                    cs = asyncResults.get(0);
+                } else {
+                    cs = CompletableFuture
+                            .allOf(asyncResults.toArray(new CompletableFuture[0]));
+                }
+                cs.whenComplete((v, t) -> {
+                    if (t != null) {
+                        result.completeExceptionally(t);
+                    } else {
+                        result.complete(new MultiResultNode(allResults));
+                    }
+                });
+            }
             return result;
         }
 

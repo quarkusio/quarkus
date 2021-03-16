@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using OpenTracing
 
@@ -17,7 +17,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * Docker
 
 
@@ -39,19 +39,37 @@ The solution is located in the `opentracing-quickstart` {quickstarts-tree-url}/o
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=opentracing-quickstart \
     -DclassName="org.acme.opentracing.TracedResource" \
     -Dpath="/hello" \
-    -Dextensions="quarkus-smallrye-opentracing"
+    -Dextensions="resteasy,quarkus-smallrye-opentracing"
 cd opentracing-quickstart
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `smallrye-opentracing` extension, which
 includes the OpenTracing support and the default https://www.jaegertracing.io/[Jaeger] tracer.
+
+If you already have your Quarkus project configured, you can add the `smallrye-opentracing` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="smallrye-opentracing"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-opentracing</artifactId>
+</dependency>
+----
 
 === Examine the JAX-RS resource
 
@@ -90,12 +108,12 @@ There are two ways to configure the Jaeger tracer within the application.
 
 The first approach is by providing the properties within the `src/main/resources/application.properties` file:
 
-[source,shell]
+[source,properties]
 ----
 quarkus.jaeger.service-name=myservice // <1>
 quarkus.jaeger.sampler-type=const // <2>
 quarkus.jaeger.sampler-param=1 // <3>
-quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n // <4>
+quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n // <4>
 ----
 
 <1> If the `quarkus.jaeger.service-name` property (or `JAEGER_SERVICE_NAME` environment variable) is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend.
@@ -109,40 +127,70 @@ The second approach is to supply the properties as https://www.jaegertracing.io/
 
 The first step is to start the tracing system to collect and display the captured traces:
 
-[source, text]
+[source,bash]
 ----
 docker run -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14268:14268 jaegertracing/all-in-one:latest
 ----
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 
-[source, text]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
 
 or if configuring the tracer via environment variables:
 
-[source, text]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1"
 ----
 
 Once both the application and tracing system are started, you can make a request to the provided endpoint:
 
-```
+[source,shell]
+----
 $ curl http://localhost:8080/hello
 hello
-```
+----
 When the first request has been submitted, the Jaeger tracer within the app will be initialized:
-```
+
+[source]
+----
 2019-10-16 09:35:23,464 INFO  [io.jae.Configuration] (executor-thread-1) Initialized tracer=JaegerTracer(version=Java-0.34.0, serviceName=myservice, reporter=RemoteReporter(sender=UdpSender(), closeEnqueueTimeout=1000), sampler=ConstSampler(decision=true, tags={sampler.type=const, sampler.param=true}), tags={hostname=localhost.localdomain, jaeger.version=Java-0.34.0, ip=127.0.0.1}, zipkinSharedRpcSpan=false, expandExceptionLogs=false, useTraceId128Bit=false)
-13:20:11 INFO  traceId=1336b2b0a76a96a3, spanId=1336b2b0a76a96a3, sampled=true [or.ac.qu.TracedResource] (executor-thread-63) hello
-```
+13:20:11 INFO  traceId=1336b2b0a76a96a3, parentId=0, spanId=1336b2b0a76a96a3, sampled=true [or.ac.qu.TracedResource] (executor-thread-63) hello
+----
 
 Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
 
 Hit `CTRL+C` to stop the application.
+
+== Tracing additional methods
+
+REST endpoints are automatically traced.
+If you need to trace additional methods, you can use the `org.eclipse.microprofile.opentracing.Traced` annotation at class or method level.
+
+This can be useful to trace incoming requests from non-REST calls (like request coming from a message) or to create spans inside a trace.
+
+Here is an example of a `FrancophoneService` which methods are traced.
+
+[source, java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.opentracing.Traced;
+
+@Traced
+@ApplicationScoped
+public class FrancophoneService {
+
+    public String bonjour() {
+        return "bonjour";
+    }
+}
+----
+
+NOTE: the best way to add OpenTracing capability to reactive messaging based applications is by adding the `Traced` annotation to all incoming methods.
 
 == Additional instrumentation
 
@@ -175,8 +223,40 @@ quarkus.datasource.jdbc.driver=io.opentracing.contrib.jdbc.TracingDriver
 quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
 ----
 
+
+=== Kafka
+
+The https://github.com/opentracing-contrib/java-kafka-client[Kafka instrumentation] will add a span for each message sent to or received from a Kafka topic. To enable it, add the following dependency to your pom.xml:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.opentracing.contrib</groupId>
+    <artifactId>opentracing-kafka-client</artifactId>
+</dependency>
+----
+
+It contains OpenTracing interceptors that must be registered on Kafka producers and consumers.
+
+If you followed the link:kafka[Kafka guide], the interceptors can be added on the `generated-price` and the `prices` channels as follows:
+
+[source, properties]
+----
+# Configure the Kafka sink (we write to it)
+mp.messaging.outgoing.generated-price.connector=smallrye-kafka
+mp.messaging.outgoing.generated-price.topic=prices
+mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.serialization.IntegerSerializer
+mp.messaging.outgoing.generated-price.interceptor.classes=io.opentracing.contrib.kafka.TracingProducerInterceptor
+
+# Configure the Kafka source (we read from it)
+mp.messaging.incoming.prices.connector=smallrye-kafka
+mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
+mp.messaging.incoming.prices.interceptor.classes=io.opentracing.contrib.kafka.TracingConsumerInterceptor
+----
+
+NOTE: `interceptor.classes` accept a list of classes separated by a comma.
+
 [[configuration-reference]]
 == Jaeger Configuration Reference
 
 include::{generated-dir}/config/quarkus-jaeger.adoc[leveloffset=+1, opts=optional]
-

@@ -1,0 +1,25 @@
+name: Quarkiverse Pre Release
+
+on:
+  pull_request:
+    paths:
+      - '.github/project.yml'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: pre release
+
+    steps:
+      - uses: radcortez/project-metadata-action@master
+        name: retrieve project metadata
+        id: metadata
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          metadata-file-path: '.github/project.yml'
+
+      - name: Validate version
+        if: contains(steps.metadata.outputs.current-version, 'SNAPSHOT')
+        run: |
+          echo '::error::Cannot release a SNAPSHOT version.'
+          exit 1

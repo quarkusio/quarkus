@@ -6,7 +6,6 @@
     <artifactId>quarkus-smallrye-reactive-messaging-parent</artifactId>
     <groupId>io.quarkus</groupId>
     <version>999-SNAPSHOT</version>
-    <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -29,15 +28,25 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
+      <artifactId>quarkus-smallrye-health-spi</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-vertx-core</artifactId>
+      <artifactId>quarkus-mutiny-reactive-streams-operators-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-smallrye-metrics-spi</artifactId>
+      <artifactId>quarkus-vertx-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-vertx-http-deployment</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -62,20 +71,9 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-vertx-http-deployment</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy-deployment</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>

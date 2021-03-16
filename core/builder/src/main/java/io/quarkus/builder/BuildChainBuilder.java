@@ -37,6 +37,7 @@ public final class BuildChainBuilder {
     private final Map<BuildStepBuilder, StackTraceElement[]> steps = new HashMap<BuildStepBuilder, StackTraceElement[]>();
     private final Set<ItemId> initialIds = new HashSet<>();
     private final Set<ItemId> finalIds = new HashSet<>();
+    private ClassLoader classLoader = BuildChainBuilder.class.getClassLoader();
 
     BuildChainBuilder() {
         finalStep = addBuildStep(new FinalStep());
@@ -129,6 +130,19 @@ public final class BuildChainBuilder {
         return this;
     }
 
+    ClassLoader getClassLoader() {
+        return classLoader;
+    }
+
+    /**
+     * Sets the ClassLoader for the build. Every build step will be run with this as the TCCL.
+     *
+     * @param classLoader The ClassLoader
+     */
+    public void setClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
+
     /**
      * Build the build step chain from the current builder configuration.
      *
@@ -141,7 +155,7 @@ public final class BuildChainBuilder {
         int initialSingleCount = 0;
         int initialMultiCount = 0;
         final Map<BuildStepBuilder, StackTraceElement[]> steps = this.steps;
-        // compile master produce/consume maps
+        // compile main produce/consume maps
         final Map<ItemId, List<Consume>> allConsumes = new HashMap<>();
         final Map<ItemId, List<Produce>> allProduces = new HashMap<>();
         final Set<ItemId> initialIds = this.initialIds;

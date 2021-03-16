@@ -1,11 +1,9 @@
 package io.quarkus.security.deployment;
 
-import static io.quarkus.security.deployment.SecurityCheckInstantiationUtil.authenticatedSecurityCheck;
-import static io.quarkus.security.deployment.SecurityCheckInstantiationUtil.denyAllSecurityCheck;
-import static io.quarkus.security.deployment.SecurityCheckInstantiationUtil.permitAllSecurityCheck;
-import static io.quarkus.security.deployment.SecurityCheckInstantiationUtil.rolesAllowedSecurityCheck;
-
+import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -16,8 +14,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+
+import javax.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -25,32 +26,35 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
-import io.quarkus.arc.processor.BeanConfigurator;
-import io.quarkus.arc.processor.BeanRegistrar;
-import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
 import io.quarkus.security.runtime.SecurityBuildTimeConfig;
+import io.quarkus.security.runtime.SecurityCheckRecorder;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.runtime.SecurityIdentityProxy;
+import io.quarkus.security.runtime.SecurityProviderRecorder;
+import io.quarkus.security.runtime.SecurityProviderUtils;
+import io.quarkus.security.runtime.X509IdentityProvider;
 import io.quarkus.security.runtime.interceptor.AuthenticatedInterceptor;
 import io.quarkus.security.runtime.interceptor.DenyAllInterceptor;
 import io.quarkus.security.runtime.interceptor.PermitAllInterceptor;
@@ -61,6 +65,7 @@ import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
+import io.quarkus.security.spi.runtime.AuthorizationController;
 
 public class SecurityProcessor {
 
@@ -69,14 +74,25 @@ public class SecurityProcessor {
     SecurityConfig security;
 
     /**
-     * Register the Elytron-provided password factory SPI implementation
-     *
+     * Create JCAProviderBuildItems for any configured provider names
      */
     @BuildStep
-    void services(BuildProducer<JCAProviderBuildItem> jcaProviders) {
-        // Create JCAProviderBuildItems for any configured provider names
-        for (String providerName : security.securityProviders.orElse(Collections.emptyList())) {
-            jcaProviders.produce(new JCAProviderBuildItem(providerName));
+    void produceJcaSecurityProviders(BuildProducer<JCAProviderBuildItem> jcaProviders,
+            BuildProducer<BouncyCastleProviderBuildItem> bouncyCastleProvider,
+            BuildProducer<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
+        Set<String> providers = new HashSet<>(security.securityProviders.orElse(Collections.emptyList()));
+        for (String providerName : providers) {
+            if (SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_NAME.equals(providerName)) {
+                bouncyCastleProvider.produce(new BouncyCastleProviderBuildItem());
+            } else if (SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_NAME.equals(providerName)) {
+                bouncyCastleJsseProvider.produce(new BouncyCastleJsseProviderBuildItem());
+            } else if (SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_NAME.equals(providerName)) {
+                bouncyCastleProvider.produce(new BouncyCastleProviderBuildItem(true));
+            } else if (SecurityProviderUtils.BOUNCYCASTLE_FIPS_JSSE_PROVIDER_NAME.equals(providerName)) {
+                bouncyCastleJsseProvider.produce(new BouncyCastleJsseProviderBuildItem(true));
+            } else {
+                jcaProviders.produce(new JCAProviderBuildItem(providerName));
+            }
             log.debugf("Added providerName: %s", providerName);
         }
     }
@@ -86,9 +102,12 @@ public class SecurityProcessor {
      *
      * @param classes - ReflectiveClassBuildItem producer
      * @param jcaProviders - JCAProviderBuildItem for requested providers
+     * @throws URISyntaxException
+     * @throws MalformedURLException
      */
     @BuildStep
-    void registerJCAProviders(BuildProducer<ReflectiveClassBuildItem> classes, List<JCAProviderBuildItem> jcaProviders) {
+    void registerJCAProvidersForReflection(BuildProducer<ReflectiveClassBuildItem> classes,
+            List<JCAProviderBuildItem> jcaProviders) throws IOException, URISyntaxException {
         for (JCAProviderBuildItem provider : jcaProviders) {
             List<String> providerClasses = registerProvider(provider.getProviderName());
             for (String className : providerClasses) {
@@ -99,10 +118,84 @@ public class SecurityProcessor {
     }
 
     @BuildStep
+    void prepareBouncyCastleProviders(BuildProducer<ReflectiveClassBuildItem> reflection,
+            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
+            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) throws Exception {
+        if (bouncyCastleJsseProvider.isPresent()) {
+            reflection.produce(
+                    new ReflectiveClassBuildItem(true, true, SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
+            prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleJsseProvider.get().isInFipsMode());
+        } else if (bouncyCastleProvider.isPresent()) {
+            prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleProvider.get().isInFipsMode());
+        }
+    }
+
+    private static void prepareBouncyCastleProvider(BuildProducer<ReflectiveClassBuildItem> reflection,
+            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
+            boolean inFipsMode) {
+        reflection.produce(new ReflectiveClassBuildItem(true, true,
+                inFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                        : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME));
+        reflection.produce(new ReflectiveClassBuildItem(true, true,
+                "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi"));
+        reflection.produce(new ReflectiveClassBuildItem(true, true,
+                "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA"));
+        runtimeReInitialized
+                .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
+        if (!inFipsMode) {
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
+        }
+
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void recordBouncyCastleProviders(SecurityProviderRecorder recorder,
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
+            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
+        if (bouncyCastleJsseProvider.isPresent()) {
+            if (bouncyCastleJsseProvider.get().isInFipsMode()) {
+                recorder.addBouncyCastleFipsJsseProvider();
+            } else {
+                recorder.addBouncyCastleJsseProvider();
+            }
+        } else if (bouncyCastleProvider.isPresent()) {
+            recorder.addBouncyCastleProvider(bouncyCastleProvider.get().isInFipsMode());
+        }
+    }
+
+    /**
+     * Determine the classes that make up the provider and its services
+     *
+     * @param providerName - JCA provider name
+     * @return class names that make up the provider and its services
+     */
+    private List<String> registerProvider(String providerName) {
+        List<String> providerClasses = new ArrayList<>();
+        Provider provider = Security.getProvider(providerName);
+        if (provider != null) {
+            providerClasses.add(provider.getClass().getName());
+            for (Provider.Service service : provider.getServices()) {
+                providerClasses.add(service.getClassName());
+                // Need to pull in the key classes
+                String supportedKeyClasses = service.getAttribute("SupportedKeyClasses");
+                if (supportedKeyClasses != null) {
+                    providerClasses.addAll(Arrays.asList(supportedKeyClasses.split("\\|")));
+                }
+            }
+        }
+        return providerClasses;
+    }
+
+    @BuildStep
     void registerSecurityInterceptors(BuildProducer<InterceptorBindingRegistrarBuildItem> registrars,
             BuildProducer<AdditionalBeanBuildItem> beans) {
         registrars.produce(new InterceptorBindingRegistrarBuildItem(new SecurityAnnotationsRegistrar()));
-        Class[] interceptors = { AuthenticatedInterceptor.class, DenyAllInterceptor.class, PermitAllInterceptor.class,
+        Class<?>[] interceptors = { AuthenticatedInterceptor.class, DenyAllInterceptor.class, PermitAllInterceptor.class,
                 RolesAllowedInterceptor.class };
         beans.produce(new AdditionalBeanBuildItem(interceptors));
         beans.produce(new AdditionalBeanBuildItem(SecurityHandler.class, SecurityConstrainer.class));
@@ -133,106 +226,84 @@ public class SecurityProcessor {
     }
 
     @BuildStep
-    void gatherSecurityChecks(BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
+    @Record(ExecutionTime.STATIC_INIT)
+    void gatherSecurityChecks(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BeanArchiveIndexBuildItem beanArchiveBuildItem,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
             List<AdditionalSecuredClassesBuildIem> additionalSecuredClasses,
+            SecurityCheckRecorder recorder,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
 
-        Set<ClassInfo> additionalSecured = new HashSet<>();
+        final Map<DotName, ClassInfo> additionalSecured = new HashMap<>();
         for (AdditionalSecuredClassesBuildIem securedClasses : additionalSecuredClasses) {
-            additionalSecured.addAll(securedClasses.additionalSecuredClasses);
-        }
-
-        beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
-
-            @Override
-            public void register(RegistrationContext registrationContext) {
-                IndexView index = beanArchiveBuildItem.getIndex();
-                Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> securityChecks = gatherSecurityAnnotations(
-                        index, additionalSecured, config.denyUnannotated);
-                for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
-                    securityChecks.put(additionalSecurityCheck.getMethodInfo(),
-                            additionalSecurityCheck.getSecurityCheckResultHandleCreator());
+            securedClasses.additionalSecuredClasses.forEach(c -> {
+                if (!additionalSecured.containsKey(c.name())) {
+                    additionalSecured.put(c.name(), c);
                 }
-
-                DotName name = DotName.createSimple(SecurityCheckStorage.class.getName());
-
-                BeanConfigurator<Object> configurator = registrationContext.configure(name);
-                configurator.addType(name);
-                configurator.scope(BuiltinScope.APPLICATION.getInfo());
-                configurator.creator(creator -> {
-                    ResultHandle storageBuilder = creator
-                            .newInstance(MethodDescriptor.ofConstructor(SecurityCheckStorageBuilder.class));
-                    for (Map.Entry<MethodInfo, Function<BytecodeCreator, ResultHandle>> methodEntry : securityChecks
-                            .entrySet()) {
-                        registerSecuredMethod(storageBuilder, creator, methodEntry);
-                    }
-                    ResultHandle ret = creator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(SecurityCheckStorageBuilder.class, "create",
-                                    SecurityCheckStorage.class),
-                            storageBuilder);
-                    creator.returnValue(ret);
-                });
-                configurator.done();
-            }
-        }));
-    }
-
-    private void registerSecuredMethod(ResultHandle checkStorage,
-            MethodCreator methodCreator,
-            Map.Entry<MethodInfo, Function<BytecodeCreator, ResultHandle>> methodEntry) {
-        MethodInfo methodInfo = methodEntry.getKey();
-        ResultHandle declaringClass = methodCreator.load(methodInfo.declaringClass().name().toString());
-        ResultHandle methodName = methodCreator.load(methodInfo.name());
-        ResultHandle methodParamTypes = paramTypes(methodCreator, methodInfo.parameters());
-
-        methodCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(SecurityCheckStorageBuilder.class, "registerCheck", void.class, String.class,
-                        String.class, String[].class, SecurityCheck.class),
-                checkStorage,
-                declaringClass, methodName, methodParamTypes, methodEntry.getValue().apply(methodCreator));
-    }
-
-    private ResultHandle paramTypes(MethodCreator ctor, List<Type> parameters) {
-        ResultHandle result = ctor.newArray(String.class, parameters.size());
-
-        for (int i = 0; i < parameters.size(); i++) {
-            ctor.writeArrayValue(result, i, ctor.load(parameters.get(i).name().toString()));
+            });
         }
 
-        return result;
+        IndexView index = beanArchiveBuildItem.getIndex();
+        Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(
+                index, additionalSecured, config.denyUnannotated, recorder);
+        for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
+            securityChecks.put(additionalSecurityCheck.getMethodInfo(),
+                    additionalSecurityCheck.getSecurityCheck());
+        }
+
+        RuntimeValue<SecurityCheckStorageBuilder> builder = recorder.newBuilder();
+        for (Map.Entry<MethodInfo, SecurityCheck> methodEntry : securityChecks
+                .entrySet()) {
+            MethodInfo method = methodEntry.getKey();
+            String[] params = new String[method.parameters().size()];
+            for (int i = 0; i < method.parameters().size(); ++i) {
+                params[i] = method.parameters().get(i).name().toString();
+            }
+            recorder.addMethod(builder, method.declaringClass().name().toString(), method.name(), params,
+                    methodEntry.getValue());
+        }
+        recorder.create(builder);
+
+        syntheticBeans.produce(
+                SyntheticBeanBuildItem.configure(SecurityCheckStorage.class)
+                        .scope(ApplicationScoped.class)
+                        .creator(creator -> {
+                            ResultHandle ret = creator.invokeStaticMethod(MethodDescriptor.ofMethod(SecurityCheckRecorder.class,
+                                    "getStorage", SecurityCheckStorage.class));
+                            creator.returnValue(ret);
+                        }).done());
     }
 
-    private Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> gatherSecurityAnnotations(
+    private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(
             IndexView index,
-            Set<ClassInfo> additionalSecuredClasses, boolean denyUnannotated) {
+            Map<DotName, ClassInfo> additionalSecuredClasses, boolean denyUnannotated, SecurityCheckRecorder recorder) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
-        Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> result = new HashMap<>(gatherSecurityAnnotations(
-                index, DotNames.ROLES_ALLOWED, methodToInstanceCollector,
-                (instance -> rolesAllowedSecurityCheck(instance.value().asStringArray()))));
-        result.putAll(gatherSecurityAnnotations(index, DotNames.PERMIT_ALL, methodToInstanceCollector,
-                (instance -> permitAllSecurityCheck())));
-        result.putAll(gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector,
-                (instance -> authenticatedSecurityCheck())));
+        Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
+        Map<MethodInfo, SecurityCheck> result = new HashMap<>(gatherSecurityAnnotations(
+                index, DotNames.ROLES_ALLOWED, methodToInstanceCollector, classAnnotations,
+                (instance -> recorder.rolesAllowed(instance.value().asStringArray()))));
+        result.putAll(gatherSecurityAnnotations(index, DotNames.PERMIT_ALL, methodToInstanceCollector, classAnnotations,
+                (instance -> recorder.permitAll())));
+        result.putAll(gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector, classAnnotations,
+                (instance -> recorder.authenticated())));
 
-        result.putAll(gatherSecurityAnnotations(index, DotNames.DENY_ALL, methodToInstanceCollector,
-                (instance -> denyAllSecurityCheck())));
+        result.putAll(gatherSecurityAnnotations(index, DotNames.DENY_ALL, methodToInstanceCollector, classAnnotations,
+                (instance -> recorder.denyAll())));
 
         /*
          * Handle additional secured classes by adding the denyAll check to all public non-static methods
          * that don't have security annotations
          */
-        for (ClassInfo additionalSecureClassInfo : additionalSecuredClasses) {
-            for (MethodInfo methodInfo : additionalSecureClassInfo.methods()) {
+        for (Map.Entry<DotName, ClassInfo> additionalSecureClassInfo : additionalSecuredClasses.entrySet()) {
+            for (MethodInfo methodInfo : additionalSecureClassInfo.getValue().methods()) {
                 if (!isPublicNonStaticNonConstructor(methodInfo)) {
                     continue;
                 }
                 AnnotationInstance alreadyExistingInstance = methodToInstanceCollector.get(methodInfo);
                 if ((alreadyExistingInstance == null)) {
-                    result.put(methodInfo, denyAllSecurityCheck());
+                    result.put(methodInfo, recorder.denyAll());
                 } else if (alreadyExistingInstance.target().kind() == AnnotationTarget.Kind.CLASS) {
                     throw new IllegalStateException("Class " + methodInfo.declaringClass()
                             + " should not have been added as an additional secured class");
@@ -257,7 +328,7 @@ public class SecurityProcessor {
                     if (methodToInstanceCollector.containsKey(methodInfo)) { // the method already has a security check
                         continue;
                     }
-                    result.put(methodInfo, denyAllSecurityCheck());
+                    result.put(methodInfo, recorder.denyAll());
                 }
             }
         }
@@ -270,12 +341,13 @@ public class SecurityProcessor {
                 && !"<init>".equals(methodInfo.name());
     }
 
-    private Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> gatherSecurityAnnotations(
+    private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(
             IndexView index, DotName dotName,
             Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods,
-            Function<AnnotationInstance, Function<BytecodeCreator, ResultHandle>> securityCheckInstanceCreator) {
+            Map<ClassInfo, AnnotationInstance> classLevelAnnotations,
+            Function<AnnotationInstance, SecurityCheck> securityCheckInstanceCreator) {
 
-        Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> result = new HashMap<>();
+        Map<MethodInfo, SecurityCheck> result = new HashMap<>();
 
         Collection<AnnotationInstance> instances = index.getAnnotations(dotName);
         // make sure we process annotations on methods first
@@ -296,53 +368,35 @@ public class SecurityProcessor {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
                 List<MethodInfo> methods = target.asClass().methods();
-                for (MethodInfo methodInfo : methods) {
-                    AnnotationInstance alreadyExistingInstance = alreadyCheckedMethods.get(methodInfo);
-                    if ((alreadyExistingInstance == null)) {
-                        result.put(methodInfo, securityCheckInstanceCreator.apply(instance));
-                    } else if (alreadyExistingInstance.target().kind() == AnnotationTarget.Kind.CLASS) {
-                        throw new IllegalStateException(
-                                "Class " + methodInfo.declaringClass() + " is annotated with multiple security annotations");
+                AnnotationInstance existingClassInstance = classLevelAnnotations.get(target.asClass());
+                if (existingClassInstance == null) {
+                    classLevelAnnotations.put(target.asClass(), instance);
+                    for (MethodInfo methodInfo : methods) {
+                        AnnotationInstance alreadyExistingInstance = alreadyCheckedMethods.get(methodInfo);
+                        if ((alreadyExistingInstance == null)) {
+                            result.put(methodInfo, securityCheckInstanceCreator.apply(instance));
+                        }
                     }
+                } else {
+                    throw new IllegalStateException(
+                            "Class " + target.asClass() + " is annotated with multiple security annotations " + instance.name()
+                                    + " and " + existingClassInstance.name());
                 }
             }
+
         }
 
         return result;
     }
 
-    /**
-     * Determine the classes that make up the provider and its services
-     *
-     * @param providerName - JCA provider name
-     * @return class names that make up the provider and its services
-     */
-    private List<String> registerProvider(String providerName) {
-        ArrayList<String> providerClasses = new ArrayList<>();
-        Provider provider = Security.getProvider(providerName);
-        providerClasses.add(provider.getClass().getName());
-        Set<Provider.Service> services = provider.getServices();
-        for (Provider.Service service : services) {
-            String serviceClass = service.getClassName();
-            providerClasses.add(serviceClass);
-            // Need to pull in the key classes
-            String supportedKeyClasses = service.getAttribute("SupportedKeyClasses");
-            if (supportedKeyClasses != null) {
-                String[] keyClasses = supportedKeyClasses.split("\\|");
-                providerClasses.addAll(Arrays.asList(keyClasses));
-            }
-        }
-        return providerClasses;
-    }
-
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.SECURITY);
+        return new CapabilityBuildItem(Capability.SECURITY);
     }
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SECURITY);
+        return new FeatureBuildItem(Feature.SECURITY);
     }
 
     @BuildStep
@@ -350,5 +404,11 @@ public class SecurityProcessor {
         beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityIdentityAssociation.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(IdentityProviderManagerCreator.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityIdentityProxy.class));
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(X509IdentityProvider.class));
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem authorizationController() {
+        return AdditionalBeanBuildItem.builder().addBeanClass(AuthorizationController.class).build();
     }
 }

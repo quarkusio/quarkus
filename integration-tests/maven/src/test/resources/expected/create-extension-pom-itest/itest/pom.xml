@@ -7,13 +7,21 @@
         <groupId>org.acme</groupId>
         <artifactId>grand-parent</artifactId>
         <version>0.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>my-project-itest-parent</artifactId>
     <name>Itest - Parent</name>
 
     <packaging>pom</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+    </properties>
+
     <modules>
         <module>deployment</module>
         <module>runtime</module>

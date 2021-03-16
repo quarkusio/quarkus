@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.axle.core.buffer.Buffer;
 import io.vertx.core.Vertx;
 
 public class VertxProducerTest {
@@ -24,8 +23,6 @@ public class VertxProducerTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new File("src/test/resources/lorem.txt"), "files/lorem.txt")
                     .addClasses(BeanUsingBareVertx.class)
-                    .addClasses(BeanUsingAxleVertx.class)
-                    .addClasses(BeanUsingRXVertx.class)
                     .addClasses(BeanUsingMutinyVertx.class));
 
     @Inject
@@ -34,17 +31,9 @@ public class VertxProducerTest {
     @Inject
     BeanUsingMutinyVertx beanUsingMutiny;
 
-    @Inject
-    BeanUsingAxleVertx beanUsingAxle;
-
-    @Inject
-    BeanUsingRXVertx beanUsingRx;
-
     @Test
     public void testVertxInjection() throws Exception {
         beanUsingVertx.verify();
-        beanUsingAxle.verify();
-        beanUsingRx.verify();
         beanUsingMutiny.verify();
     }
 
@@ -63,36 +52,6 @@ public class VertxProducerTest {
                     latch.countDown();
                 }
             });
-            latch.await(5, TimeUnit.SECONDS);
-        }
-
-    }
-
-    @ApplicationScoped
-    static class BeanUsingAxleVertx {
-
-        @Inject
-        io.vertx.axle.core.Vertx vertx;
-
-        public void verify() throws Exception {
-            CountDownLatch latch = new CountDownLatch(1);
-            CompletionStage<Buffer> stage = vertx.fileSystem().readFile("files/lorem.txt");
-            stage.thenAccept(buffer -> latch.countDown());
-            latch.await(5, TimeUnit.SECONDS);
-        }
-
-    }
-
-    @ApplicationScoped
-    static class BeanUsingRXVertx {
-
-        @Inject
-        io.vertx.reactivex.core.Vertx vertx;
-
-        public void verify() throws Exception {
-            CountDownLatch latch = new CountDownLatch(1);
-            vertx.fileSystem().rxReadFile("src/test/resources/lorem.txt")
-                    .subscribe(buffer -> latch.countDown());
             latch.await(5, TimeUnit.SECONDS);
         }
 

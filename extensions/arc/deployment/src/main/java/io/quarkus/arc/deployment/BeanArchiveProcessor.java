@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.CompositeIndex;
@@ -16,50 +14,47 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 
+import com.google.common.base.Objects;
+
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.runtime.LifecycleEventRunner;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.PersistentClassIndex;
 
 public class BeanArchiveProcessor {
 
-    @Inject
-    ApplicationArchivesBuildItem applicationArchivesBuildItem;
-
-    @Inject
-    List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations;
-
-    @Inject
-    List<AdditionalBeanBuildItem> additionalBeans;
-
-    @Inject
-    List<GeneratedBeanBuildItem> generatedBeans;
-
-    @Inject
-    BuildProducer<GeneratedClassBuildItem> generatedClass;
-
-    @BuildStep(loadsApplicationClasses = true)
-    public BeanArchiveIndexBuildItem build() throws Exception {
+    @BuildStep
+    public BeanArchiveIndexBuildItem build(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
+            List<AdditionalBeanBuildItem> additionalBeans, List<GeneratedBeanBuildItem> generatedBeans,
+            LiveReloadBuildItem liveReloadBuildItem, BuildProducer<GeneratedClassBuildItem> generatedClass,
+            CustomScopeAnnotationsBuildItem customScopes)
+            throws Exception {
 
         // First build an index from application archives
-        IndexView applicationIndex = buildApplicationIndex();
+        IndexView applicationIndex = buildApplicationIndex(config, applicationArchivesBuildItem,
+                additionalBeanDefiningAnnotations, customScopes);
 
         // Then build additional index for beans added by extensions
         Indexer additionalBeanIndexer = new Indexer();
-        List<String> additionalBeans = new ArrayList<>();
-        for (AdditionalBeanBuildItem i : this.additionalBeans) {
-            additionalBeans.addAll(i.getBeanClasses());
+        List<String> additionalBeanClasses = new ArrayList<>();
+        for (AdditionalBeanBuildItem i : additionalBeans) {
+            additionalBeanClasses.addAll(i.getBeanClasses());
         }
-        additionalBeans.add(LifecycleEventRunner.class.getName());
+
+        // Build the index for additional beans and generated bean classes
         Set<DotName> additionalIndex = new HashSet<>();
-        for (String beanClass : additionalBeans) {
+        for (String beanClass : additionalBeanClasses) {
             IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,
                     Thread.currentThread().getContextClassLoader());
         }
@@ -73,15 +68,23 @@ public class BeanArchiveProcessor {
                     generatedBeanClass.getSource()));
         }
 
+        PersistentClassIndex index = liveReloadBuildItem.getContextObject(PersistentClassIndex.class);
+        if (index == null) {
+            index = new PersistentClassIndex();
+            liveReloadBuildItem.setContextObject(PersistentClassIndex.class, index);
+        }
+
         // Finally, index ArC/CDI API built-in classes
         return new BeanArchiveIndexBuildItem(
-                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), applicationIndex,
+                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), index.getAdditionalClasses(),
+                        applicationIndex,
                         additionalBeanIndexer.complete()),
-                generatedClassNames,
-                additionalBeans);
+                generatedClassNames);
     }
 
-    private IndexView buildApplicationIndex() {
+    private IndexView buildApplicationIndex(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
+            CustomScopeAnnotationsBuildItem customScopes) {
 
         Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
@@ -98,10 +101,13 @@ public class BeanArchiveProcessor {
             }
         }
 
-        Collection<DotName> beanDefiningAnnotations = BeanDeployment
+        Set<DotName> beanDefiningAnnotations = BeanDeployment
                 .initBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
                         .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
                         .collect(Collectors.toList()), stereotypes);
+        for (DotName customScopeAnnotationName : customScopes.getCustomScopeNames()) {
+            beanDefiningAnnotations.add(customScopeAnnotationName);
+        }
         // Also include archives that are not bean archives but contain qualifiers or interceptor bindings
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
@@ -109,6 +115,9 @@ public class BeanArchiveProcessor {
         List<IndexView> indexes = new ArrayList<>();
 
         for (ApplicationArchive archive : applicationArchivesBuildItem.getApplicationArchives()) {
+            if (isApplicationArchiveExcluded(config, archive)) {
+                continue;
+            }
             IndexView index = archive.getIndex();
             // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining annotation and no extension
             if (archive.getChildPath("META-INF/beans.xml") != null || archive.getChildPath("WEB-INF/beans.xml") != null
@@ -119,6 +128,23 @@ public class BeanArchiveProcessor {
         }
         indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
         return CompositeIndex.create(indexes);
+    }
+
+    private boolean isApplicationArchiveExcluded(ArcConfig config, ApplicationArchive archive) {
+        if (archive.getArtifactKey() != null) {
+            AppArtifactKey key = archive.getArtifactKey();
+            for (IndexDependencyConfig excludeDependency : config.excludeDependency.values()) {
+                if (Objects.equal(key.getArtifactId(), excludeDependency.artifactId)
+                        && Objects.equal(key.getGroupId(), excludeDependency.groupId)) {
+                    if (excludeDependency.classifier.isPresent()) {
+                        return Objects.equal(key.getClassifier(), excludeDependency.classifier.get());
+                    } else {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     boolean containsBeanDefiningAnnotation(IndexView index, Collection<DotName> beanDefiningAnnotations) {

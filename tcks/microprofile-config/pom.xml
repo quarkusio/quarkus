@@ -18,6 +18,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>src/test/resources/tck-suite.xml</suiteXmlFile>
+                    </suiteXmlFiles>
                     <!-- These env variables are required for org.eclipse.microprofile.config.tck.CDIPropertyNameMatchingTest -->
                     <environmentVariables>
                         <my_int_property>45</my_int_property>
@@ -40,13 +43,6 @@
                         <dependency>org.eclipse.microprofile.config:microprofile-config-tck</dependency>
                     </dependenciesToScan>
                     <reuseForks>false</reuseForks>
-                    <excludes>
-                        <!-- TCK and spec dispute: https://github.com/eclipse/microprofile-config/pull/407 -->
-                        <exclude>org.eclipse.microprofile.config.tck.EmptyValuesTest</exclude>
-                        <!-- "testEnvironmentConfigSource" fails because of the above TCK/spec dispute -->
-                        <!-- We have a custom version of this TCK class that excludes "testEnvironmentConfigSource", allowing other tests to run -->
-                        <exclude>org.eclipse.microprofile.config.tck.ConfigProviderTest</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
@@ -64,6 +60,21 @@
             <groupId>org.eclipse.microprofile.config</groupId>
             <artifactId>microprofile-config-tck</artifactId>
             <version>${microprofile-config-api.version}</version>
+        </dependency>
+
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

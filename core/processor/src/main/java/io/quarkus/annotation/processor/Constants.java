@@ -1,19 +1,30 @@
 package io.quarkus.annotation.processor;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
+
 final public class Constants {
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static TypeReference<List<ConfigDocItem>> LIST_OF_CONFIG_ITEMS_TYPE_REF = new TypeReference<List<ConfigDocItem>>() {
+    };
+
     public static final char DOT = '.';
     public static final String EMPTY = "";
     public static final String DASH = "-";
@@ -27,9 +38,10 @@ final public class Constants {
     public static final String COMMON = "common";
     public static final String RUNTIME = "runtime";
     public static final String DEPLOYMENT = "deployment";
+    public static final String CONFIG = "config";
 
     public static final Pattern CLASS_NAME_PATTERN = Pattern.compile("^.+[\\.$](\\w+)$");
-    public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?");
+    public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?\\.?(\\w+)?");
 
     public static final String INSTANCE_SYM = "__instance";
     public static final String QUARKUS = "quarkus";
@@ -41,29 +53,20 @@ final public class Constants {
     public static final String ANNOTATION_CONFIG_ITEM = "io.quarkus.runtime.annotations.ConfigItem";
     public static final String ANNOTATION_BUILD_STEP = "io.quarkus.deployment.annotations.BuildStep";
     public static final String ANNOTATION_CONFIG_ROOT = "io.quarkus.runtime.annotations.ConfigRoot";
+    public static final String ANNOTATION_DEFAULT_CONVERTER = "io.quarkus.runtime.annotations.DefaultConverter";
+    public static final String ANNOTATION_CONVERT_WITH = "io.quarkus.runtime.annotations.ConvertWith";
     public static final String ANNOTATION_CONFIG_GROUP = "io.quarkus.runtime.annotations.ConfigGroup";
     public static final String ANNOTATION_CONFIG_DOC_MAP_KEY = "io.quarkus.runtime.annotations.ConfigDocMapKey";
     public static final String ANNOTATION_CONFIG_DOC_SECTION = "io.quarkus.runtime.annotations.ConfigDocSection";
 
-    public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = new HashSet<>();
-    public static final Map<String, String> ALIASED_TYPES = new HashMap<>();
-    public static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/target/asciidoc/generated/config/";
-    public static final Path GENERATED_DOCS_PATH = Paths
-            .get(System.getProperties().getProperty("maven.multiModuleProjectDirectory")
-                    + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED);
-    public static final File GENERATED_DOCS_DIR = GENERATED_DOCS_PATH.toFile();
+    public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES;
+    public static final Map<String, String> ALIASED_TYPES;
+    private static final Properties SYSTEM_PROPERTIES = System.getProperties();
 
-    /**
-     * Holds the list of configuration items / configuration sections of each configuration roots.
-     */
-    public static final File ALL_CR_GENERATED_DOC = GENERATED_DOCS_PATH
-            .resolve("all-configuration-roots-generated-doc.properties").toFile();
-
-    /**
-     * Holds the list of computed file names and the list of configuration roots of this extension
-     */
-    public static final File EXTENSION_CONFIGURATION_ROOT_LIST = GENERATED_DOCS_PATH
-            .resolve("extensions-configuration-roots-list.properties").toFile();
+    private static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/target/asciidoc/generated/config/";
+    private static final String DOCS_OUT_DIR = System.getProperty("quarkus.docsOutputDir",
+            SYSTEM_PROPERTIES.getProperty("maven.multiModuleProjectDirectory", "."));
+    public static final Path GENERATED_DOCS_PATH = Paths.get(DOCS_OUT_DIR + DOCS_SRC_MAIN_ASCIIDOC_GENERATED).toAbsolutePath();
 
     public static final String DURATION_NOTE_ANCHOR = "duration-note-anchor";
     public static final String MEMORY_SIZE_NOTE_ANCHOR = "memory-size-note-anchor";
@@ -78,7 +81,7 @@ final public class Constants {
             "%n%s Configuration property fixed at build time - All other configuration properties are overridable at runtime",
             CONFIG_PHASE_BUILD_TIME_ILLUSTRATION);
 
-    public static final String DURATION_FORMAT_NOTE = "\n[NOTE]" +
+    public static final String DURATION_FORMAT_NOTE = "\nifndef::no-duration-note[]\n[NOTE]" +
             "\n[[" + DURATION_NOTE_ANCHOR + "]]\n" +
             ".About the Duration format\n" +
             "====\n" +
@@ -89,7 +92,8 @@ final public class Constants {
             "You can also provide duration values starting with a number.\n" +
             "In this case, if the value consists only of a number, the converter treats the value as seconds.\n" +
             "Otherwise, `PT` is implicitly prepended to the value to obtain a standard `java.time.Duration` format.\n" +
-            "====\n";
+            "====\n" +
+            "endif::no-duration-note[]\n";
 
     public static final String MEMORY_SIZE_FORMAT_NOTE = "\n[NOTE]" +
             "\n[[" + MEMORY_SIZE_NOTE_ANCHOR + "]]\n" +
@@ -101,18 +105,23 @@ final public class Constants {
             "====\n";
 
     static {
-        ALIASED_TYPES.put(OptionalLong.class.getName(), Long.class.getName());
-        ALIASED_TYPES.put(OptionalInt.class.getName(), Integer.class.getName());
-        ALIASED_TYPES.put(OptionalDouble.class.getName(), Double.class.getName());
-        ALIASED_TYPES.put("java.lang.Class<?>", "class name");
-        ALIASED_TYPES.put("java.net.InetSocketAddress", "host:port");
-        ALIASED_TYPES.put(Path.class.getName(), "path");
-        ALIASED_TYPES.put(String.class.getName(), "string");
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_BUILD_STEP);
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_GROUP);
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_ROOT);
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_TEMPLATE);
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_RECORDER);
+        final Map<String, String> aliasedTypes = new HashMap<>();
+        aliasedTypes.put(OptionalLong.class.getName(), Long.class.getName());
+        aliasedTypes.put(OptionalInt.class.getName(), Integer.class.getName());
+        aliasedTypes.put(OptionalDouble.class.getName(), Double.class.getName());
+        aliasedTypes.put("java.lang.Class<?>", "class name");
+        aliasedTypes.put("java.net.InetSocketAddress", "host:port");
+        aliasedTypes.put(Path.class.getName(), "path");
+        aliasedTypes.put(String.class.getName(), "string");
+        ALIASED_TYPES = Collections.unmodifiableMap(aliasedTypes);
+
+        final Set<String> supportedAnnotationTypes = new HashSet<>();
+        supportedAnnotationTypes.add(ANNOTATION_BUILD_STEP);
+        supportedAnnotationTypes.add(ANNOTATION_CONFIG_GROUP);
+        supportedAnnotationTypes.add(ANNOTATION_CONFIG_ROOT);
+        supportedAnnotationTypes.add(ANNOTATION_TEMPLATE);
+        supportedAnnotationTypes.add(ANNOTATION_RECORDER);
+        SUPPORTED_ANNOTATIONS_TYPES = Collections.unmodifiableSet(supportedAnnotationTypes);
     }
 
 }

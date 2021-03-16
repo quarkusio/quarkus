@@ -1,0 +1,173 @@
+{{#packageName}}
+package {{packageName}};
+{{/packageName}}
+
+import static {{packageName}}.{{serviceName}}Grpc.getServiceDescriptor;
+import static io.grpc.stub.ServerCalls.asyncUnaryCall;
+import static io.grpc.stub.ServerCalls.asyncServerStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncClientStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
+
+
+{{#deprecated}}
+@java.lang.Deprecated
+{{/deprecated}}
+@javax.annotation.Generated(
+value = "by {{classPrefix}} Grpc generator",
+comments = "Source: {{protoName}}")
+public final class {{className}} {
+    private {{className}}() {}
+
+    public static {{classPrefix}}{{serviceName}}Stub new{{classPrefix}}Stub(io.grpc.Channel channel) {
+        return new {{classPrefix}}{{serviceName}}Stub(channel);
+    }
+
+    {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
+    public static final class {{classPrefix}}{{serviceName}}Stub extends io.grpc.stub.AbstractStub<{{classPrefix}}{{serviceName}}Stub> {
+        private {{serviceName}}Grpc.{{serviceName}}Stub delegateStub;
+
+        private {{classPrefix}}{{serviceName}}Stub(io.grpc.Channel channel) {
+            super(channel);
+            delegateStub = {{serviceName}}Grpc.newStub(channel);
+        }
+
+        private {{classPrefix}}{{serviceName}}Stub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+            super(channel, callOptions);
+            delegateStub = {{serviceName}}Grpc.newStub(channel).build(channel, callOptions);
+        }
+
+        @Override
+        protected {{classPrefix}}{{serviceName}}Stub build(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+            return new {{classPrefix}}{{serviceName}}Stub(channel, callOptions);
+        }
+
+        {{#unaryUnaryMethods}}
+        {{{methodHeader}}}
+        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}({{inputType}} request) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(request, delegateStub::{{methodName}});
+        }
+
+        {{/unaryUnaryMethods}}
+        {{#unaryManyMethods}}
+        {{{methodHeader}}}
+        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}({{inputType}} request) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(request, delegateStub::{{methodName}});
+        }
+
+        {{/unaryManyMethods}}
+        {{#manyUnaryMethods}}
+        {{{methodHeader}}}
+        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> hdlr) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        }
+
+        {{/manyUnaryMethods}}
+        {{#manyManyMethods}}
+        {{{methodHeader}}}
+        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> hdlr) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        }
+        {{/manyManyMethods}}
+    }
+
+    {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
+    public static abstract class {{serviceName}}ImplBase implements io.grpc.BindableService {
+
+
+        {{#unaryUnaryMethods}}
+        {{{methodHeader}}}
+        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}({{inputType}} request) {
+            throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+        }
+
+        {{/unaryUnaryMethods}}
+        {{#unaryManyMethods}}
+        {{{methodHeader}}}
+        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}({{inputType}} request) {
+            throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+        }
+
+        {{/unaryManyMethods}}
+        {{#manyUnaryMethods}}
+        {{{methodHeader}}}
+        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+            throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+        }
+
+        {{/manyUnaryMethods}}
+        {{#manyManyMethods}}
+        {{{methodHeader}}}
+        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+            throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+        }
+
+        {{/manyManyMethods}}
+        @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
+            return io.grpc.ServerServiceDefinition.builder(getServiceDescriptor())
+                    {{#methods}}
+                    .addMethod(
+                            {{packageName}}.{{serviceName}}Grpc.get{{methodNamePascalCase}}Method(),
+                            {{grpcCallsMethodName}}(
+                                    new MethodHandlers<
+                                            {{inputType}},
+                                            {{outputType}}>(
+                                            this, METHODID_{{methodNameUpperUnderscore}})))
+                    {{/methods}}
+                    .build();
+        }
+    }
+
+    {{#methods}}
+    private static final int METHODID_{{methodNameUpperUnderscore}} = {{methodNumber}};
+    {{/methods}}
+
+    private static final class MethodHandlers<Req, Resp> implements
+            io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
+            io.grpc.stub.ServerCalls.ServerStreamingMethod<Req, Resp>,
+            io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
+            io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
+        private final {{serviceName}}ImplBase serviceImpl;
+        private final int methodId;
+
+        MethodHandlers({{serviceName}}ImplBase serviceImpl, int methodId) {
+            this.serviceImpl = serviceImpl;
+            this.methodId = methodId;
+        }
+
+        @java.lang.Override
+        @java.lang.SuppressWarnings("unchecked")
+        public void invoke(Req request, io.grpc.stub.StreamObserver<Resp> responseObserver) {
+            switch (methodId) {
+                {{#methods}}
+                {{^isManyInput}}
+                case METHODID_{{methodNameUpperUnderscore}}:
+                    io.quarkus.grpc.runtime.ServerCalls.{{mutinyCallsMethodName}}(({{inputType}}) request,
+                            (io.grpc.stub.StreamObserver<{{outputType}}>) responseObserver,
+                            serviceImpl::{{methodName}});
+                    break;
+                {{/isManyInput}}
+                {{/methods}}
+                default:
+                    throw new java.lang.AssertionError();
+            }
+        }
+
+        @java.lang.Override
+        @java.lang.SuppressWarnings("unchecked")
+        public io.grpc.stub.StreamObserver<Req> invoke(io.grpc.stub.StreamObserver<Resp> responseObserver) {
+            switch (methodId) {
+                {{#methods}}
+                {{#isManyInput}}
+                case METHODID_{{methodNameUpperUnderscore}}:
+                    return (io.grpc.stub.StreamObserver<Req>) io.quarkus.grpc.runtime.ServerCalls.{{mutinyCallsMethodName}}(
+                            (io.grpc.stub.StreamObserver<{{outputType}}>) responseObserver,
+                            serviceImpl::{{methodName}});
+                {{/isManyInput}}
+                {{/methods}}
+                default:
+                    throw new java.lang.AssertionError();
+            }
+        }
+    }
+
+}

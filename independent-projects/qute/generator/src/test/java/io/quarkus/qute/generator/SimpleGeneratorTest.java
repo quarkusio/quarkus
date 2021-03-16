@@ -9,7 +9,7 @@ import io.quarkus.qute.TestEvalContext;
 import io.quarkus.qute.ValueResolver;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,20 +37,31 @@ public class SimpleGeneratorTest {
         Index index = index(MyService.class, PublicMyService.class, BaseService.class, MyItem.class, String.class,
                 CompletionStage.class,
                 List.class);
-        ValueResolverGenerator generator = new ValueResolverGenerator(index, classOutput, Collections.emptyMap());
         ClassInfo myServiceClazz = index.getClassByName(DotName.createSimple(MyService.class.getName()));
-        generator.generate(myServiceClazz);
-        generator.generate(index.getClassByName(DotName.createSimple(PublicMyService.class.getName())));
-        generator.generate(index.getClassByName(DotName.createSimple(MyItem.class.getName())));
-        generator.generate(index.getClassByName(DotName.createSimple(String.class.getName())));
-        generator.generate(index.getClassByName(DotName.createSimple(List.class.getName())));
+        ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
+                .addClass(myServiceClazz)
+                .addClass(index.getClassByName(DotName.createSimple(PublicMyService.class.getName())))
+                .addClass(index.getClassByName(DotName.createSimple(MyItem.class.getName())))
+                .addClass(index.getClassByName(DotName.createSimple(String.class.getName())))
+                .addClass(index.getClassByName(DotName.createSimple(List.class.getName())))
+                .build();
+
+        generator.generate();
         generatedTypes.addAll(generator.getGeneratedTypes());
 
-        ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(classOutput);
+        ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(index, classOutput);
         MethodInfo extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS));
-        extensionMethodGenerator.generate(extensionMethod, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, null, null);
+        extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
+                "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
+                PrimitiveType.LONG);
+        extensionMethodGenerator.generate(extensionMethod, null, null, null);
+        extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
+                "getDummyVarargs", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
+                Type.create(DotName.createSimple("[L" + String.class.getName() + ";"), Kind.ARRAY));
+        extensionMethodGenerator.generate(extensionMethod, null, null, null);
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
     }
 
@@ -58,7 +69,7 @@ public class SimpleGeneratorTest {
     public void testGenerator() throws Exception {
         Class<?> clazz = SimpleGeneratorTest.class.getClassLoader()
                 .loadClass("io.quarkus.qute.generator.MyService_ValueResolver");
-        ValueResolver resolver = (ValueResolver) clazz.newInstance();
+        ValueResolver resolver = (ValueResolver) clazz.getDeclaredConstructor().newInstance();
         assertEquals("Foo",
                 resolver.resolve(new TestEvalContext(new MyService(), "getName", null))
                         .toCompletableFuture().get(1, TimeUnit.SECONDS).toString());
@@ -94,33 +105,43 @@ public class SimpleGeneratorTest {
         }
         Engine engine = builder.build();
         assertEquals(" FOO ", engine.parse("{#if isActive} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if active} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if !hasItems} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if !items} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals("OK", engine.parse("{#if this.getList(5).size == 5}OK{/if}").render(new MyService()));
+        assertEquals("2", engine.parse("{this.getListVarargs('foo','bar').size}").render(new MyService()));
+        assertEquals("NOT_FOUND", engine.parse("{this.getAnotherTestName(1)}").render(new MyService()));
         assertEquals("Martin NOT_FOUND OK NOT_FOUND",
                 engine.parse("{name} {surname} {isStatic ?: 'OK'} {base}").render(new PublicMyService()));
         assertEquals("foo NOT_FOUND", engine.parse("{id} {bar}").render(new MyItem()));
-        try {
-            engine.parse("{this.getList(5,5)}").render(new MyService());
-            fail();
-        } catch (ClassCastException ClassCastException) {
-        }
-        try {
-            engine.parse("{service.getDummy(5,resultNotFound)}").data("service", new MyService()).render();
-            fail();
-        } catch (ClassCastException ClassCastException) {
-        }
+        // Param types don't match - NOT_FOUND
+        assertEquals("NOT_FOUND", engine.parse("{this.getList(5,5)}").render(new MyService()));
+        // Test multiple extension methods with the same number of parameters
+        assertEquals("1", engine.parse("{service.getDummy(5,2l).size}").data("service", new MyService()).render());
+        // No extension method matches the param types
+        assertEquals("NOT_FOUND",
+                engine.parse("{service.getDummy(5,resultNotFound)}").data("service", new MyService()).render());
+        // Extension method with varargs
+        assertEquals("alphabravo",
+                engine.parse("{#each service.getDummyVarargs(5,'alpha','bravo')}{it}{/}").data("service", new MyService())
+                        .render());
+        assertEquals("5",
+                engine.parse("{#each service.getDummyVarargs(5)}{it}{/}").data("service", new MyService())
+                        .render());
     }
 
     private ValueResolver newResolver(String className)
-            throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+            throws ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
+            InvocationTargetException, NoSuchMethodException, SecurityException {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
             cl = SimpleGeneratorTest.class.getClassLoader();
         }
         Class<?> clazz = cl.loadClass(className);
-        return (ValueResolver) clazz.newInstance();
+        return (ValueResolver) clazz.getDeclaredConstructor().newInstance();
     }
 
-    private static Index index(Class<?>... classes) throws IOException {
+    static Index index(Class<?>... classes) throws IOException {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             try (InputStream stream = SimpleGeneratorTest.class.getClassLoader()

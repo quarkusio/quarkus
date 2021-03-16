@@ -1,0 +1,41 @@
+{#include main}
+{#title}Index Entities{/title}
+{#body}
+<form method="post" enctype="application/x-www-form-urlencoded">
+    <input id="index" type="submit" class="btn btn-primary mb-2" value="Reindex Entities" >
+    <table id="table" class="table table-striped">
+        <thead class="thead-dark">
+        <tr>
+            <th scope="col">
+                <div class="custom-control">
+                    <input type="checkbox" class="form-check-input" id="check-all">
+                </div>
+            </th>
+            <th scope="col">Entity type</th>
+        </tr>
+        </thead>
+        <tbody>
+        {#for entityType in info:entityTypes}
+        <tr>
+            <td>
+                <div class="custom-control">
+                    <input type="checkbox" class="form-check-input checkbox" name="{entityType}" id="{entityType}">
+                </div>
+            </td>
+            <td>{entityType}</td>
+        </tr>
+        {/for}
+        </tbody>
+    </table>
+</form>
+<script type="text/javascript">
+    jQuery('#check-all').change(function() {
+        if (this.checked) {
+            jQuery('.checkbox').prop('checked', true);
+        } else {
+            jQuery('.checkbox').prop('checked', false);
+        }
+    });
+</script>
+{/body}
+{/include}

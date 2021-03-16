@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.hamcrest.core.Is;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -225,5 +226,22 @@ public class CatResourceTest {
                 .statusCode(200)
                 .body(containsString("British Shorthair"))
                 .body(not(containsString("Persian")));
+    }
+
+    @Test
+    void testCustomFindPublicationYearObject() {
+        when().get("/cat/customFindDistinctive/2").then()
+                .statusCode(200)
+                .body(Is.is("true"));
+    }
+
+    @Test
+    void testCustomQueryCatColors() {
+        List<String> catColors = when().get("/cat/customQueryCatColors").then()
+                .statusCode(200)
+                .extract().body().jsonPath().getList(".", String.class);
+        assertThat(catColors)
+                .containsOnlyOnce("Grey", "White", "Black")
+                .hasSize(3);
     }
 }

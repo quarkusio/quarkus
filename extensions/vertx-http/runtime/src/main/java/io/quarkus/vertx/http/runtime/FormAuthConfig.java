@@ -23,6 +23,24 @@ public class FormAuthConfig {
     public String loginPage;
 
     /**
+     * The post location.
+     */
+    @ConfigItem(defaultValue = "/j_security_check")
+    public String postLocation;
+
+    /**
+     * The username field name.
+     */
+    @ConfigItem(defaultValue = "j_username")
+    public String usernameParameter;
+
+    /**
+     * The password field name.
+     */
+    @ConfigItem(defaultValue = "j_password")
+    public String passwordParameter;
+
+    /**
      * The error page
      */
     @ConfigItem(defaultValue = "/error.html")
@@ -40,6 +58,13 @@ public class FormAuthConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean redirectAfterLogin;
+
+    /**
+     * Option to control the name of the cookie used to redirect the user back
+     * to where he want to get access to.
+     */
+    @ConfigItem(defaultValue = "quarkus-redirect-location")
+    public String locationCookie;
 
     /**
      * The inactivity (idle) timeout

@@ -1,12 +1,9 @@
 package io.quarkus.security.deployment;
 
-import java.util.function.Function;
-
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
 
 /**
  * Used as an integration point when extensions need to customize the security behavior of a bean
@@ -15,18 +12,18 @@ import io.quarkus.gizmo.ResultHandle;
 public final class AdditionalSecurityCheckBuildItem extends MultiBuildItem {
 
     private final MethodInfo methodInfo;
-    private final Function<BytecodeCreator, ResultHandle> function;
+    private final SecurityCheck securityCheck;
 
-    public AdditionalSecurityCheckBuildItem(MethodInfo methodInfo, Function<BytecodeCreator, ResultHandle> function) {
+    public AdditionalSecurityCheckBuildItem(MethodInfo methodInfo, SecurityCheck securityCheck) {
         this.methodInfo = methodInfo;
-        this.function = function;
+        this.securityCheck = securityCheck;
     }
 
     public MethodInfo getMethodInfo() {
         return methodInfo;
     }
 
-    public Function<BytecodeCreator, ResultHandle> getSecurityCheckResultHandleCreator() {
-        return function;
+    public SecurityCheck getSecurityCheck() {
+        return securityCheck;
     }
 }

@@ -2,7 +2,6 @@ package io.quarkus.smallrye.openapi.deployment;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -13,9 +12,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
 import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
-import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 
 public class RESTEasyExtension implements AnnotationScannerExtension {
 
@@ -23,11 +20,9 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
     private static final DotName DOTNAME_ASYNC_RESPONSE_PROVIDER = DotName
             .createSimple("org.jboss.resteasy.spi.AsyncResponseProvider");
 
-    private List<DotName> asyncTypes = new ArrayList<>();
-    private String defaultPath;
+    private final List<DotName> asyncTypes = new ArrayList<>();
 
-    public RESTEasyExtension(ResteasyJaxrsConfigBuildItem jaxrsConfig, IndexView index) {
-        this.defaultPath = jaxrsConfig.defaultPath;
+    public RESTEasyExtension(IndexView index) {
         // the index is not enough to scan for providers because it does not contain
         // dependencies, so we have to rely on scanning the declared providers via services
         scanAsyncResponseProvidersFromServices();
@@ -36,7 +31,8 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
 
     private void scanAsyncResponseProvidersFromServices() {
         try {
-            Class<?> asyncResponseProvider = Class.forName("org.jboss.resteasy.spi.AsyncResponseProvider");
+            Class<?> asyncResponseProvider = Class.forName("org.jboss.resteasy.spi.AsyncResponseProvider", false,
+                    Thread.currentThread().getContextClassLoader());
             // can't use the ServiceLoader API because Providers is not an interface
             for (String provider : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                     "META-INF/services/javax.ws.rs.ext.Providers")) {
@@ -51,7 +47,8 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
 
     private void scanAsyncResponseProvidersFromClassName(Class<?> asyncResponseProviderClass, String name) {
         try {
-            Class<?> klass = Class.forName(name);
+            Class<?> klass = Class.forName(name, false,
+                    Thread.currentThread().getContextClassLoader());
             if (asyncResponseProviderClass.isAssignableFrom(klass)) {
                 for (java.lang.reflect.Type type : klass.getGenericInterfaces()) {
                     if (type instanceof java.lang.reflect.ParameterizedType) {
@@ -103,12 +100,5 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
             }
         }
         return null;
-    }
-
-    @Override
-    public void processJaxRsApplications(OpenApiAnnotationScanner scanner, Collection<ClassInfo> applications) {
-        if (applications.isEmpty()) {
-            scanner.setCurrentAppPath(defaultPath);
-        }
     }
 }

@@ -9,3 +9,4 @@ metadata:
   - "core"
   status: "preview"
   guide: "https://quarkus.io/guides/logging#json-logging"
+  codestart: logging-json

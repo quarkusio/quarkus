@@ -1,5 +1,16 @@
 package io.quarkus.jdbc.mysql.deployment;
 
+import java.sql.Wrapper;
+
+import com.mysql.cj.conf.url.FailoverConnectionUrl;
+import com.mysql.cj.conf.url.FailoverDnsSrvConnectionUrl;
+import com.mysql.cj.conf.url.LoadBalanceConnectionUrl;
+import com.mysql.cj.conf.url.LoadBalanceDnsSrvConnectionUrl;
+import com.mysql.cj.conf.url.ReplicationConnectionUrl;
+import com.mysql.cj.conf.url.ReplicationDnsSrvConnectionUrl;
+import com.mysql.cj.conf.url.SingleConnectionUrl;
+import com.mysql.cj.conf.url.XDevApiConnectionUrl;
+import com.mysql.cj.conf.url.XDevApiDnsSrvConnectionUrl;
 import com.mysql.cj.exceptions.AssertionFailedException;
 import com.mysql.cj.exceptions.CJCommunicationsException;
 import com.mysql.cj.exceptions.CJConnectionFeatureNotAvailableException;
@@ -26,7 +37,10 @@ import com.mysql.cj.exceptions.StreamingNotifiable;
 import com.mysql.cj.exceptions.UnableToConnectException;
 import com.mysql.cj.exceptions.UnsupportedConnectionStringException;
 import com.mysql.cj.exceptions.WrongArgumentException;
-import com.mysql.cj.protocol.AsyncSocketFactory;
+import com.mysql.cj.jdbc.Driver;
+import com.mysql.cj.jdbc.ha.NdbLoadBalanceExceptionChecker;
+import com.mysql.cj.jdbc.ha.StandardLoadBalanceExceptionChecker;
+import com.mysql.cj.log.StandardLogger;
 import com.mysql.cj.protocol.NamedPipeSocketFactory;
 import com.mysql.cj.protocol.SocksProxySocketFactory;
 import com.mysql.cj.protocol.StandardSocketFactory;
@@ -39,28 +53,31 @@ public final class MySQLJDBCReflections {
 
     @BuildStep
     void registerDriverForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, com.mysql.cj.jdbc.Driver.class.getName()));
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, Driver.class.getName()));
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.FailoverDnsSrvConnectionUrl.class.getName()));
+                new ReflectiveClassBuildItem(false, false, FailoverDnsSrvConnectionUrl.class.getName()));
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.FailoverConnectionUrl.class.getName()));
+                new ReflectiveClassBuildItem(false, false, FailoverConnectionUrl.class.getName()));
         reflectiveClass
-                .produce(new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.SingleConnectionUrl.class.getName()));
+                .produce(new ReflectiveClassBuildItem(false, false, SingleConnectionUrl.class.getName()));
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.LoadBalanceConnectionUrl.class.getName()));
+                new ReflectiveClassBuildItem(false, false, LoadBalanceConnectionUrl.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                com.mysql.cj.conf.url.LoadBalanceDnsSrvConnectionUrl.class.getName()));
+                LoadBalanceDnsSrvConnectionUrl.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                com.mysql.cj.conf.url.ReplicationDnsSrvConnectionUrl.class.getName()));
+                ReplicationDnsSrvConnectionUrl.class.getName()));
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.ReplicationConnectionUrl.class.getName()));
+                new ReflectiveClassBuildItem(false, false, ReplicationConnectionUrl.class.getName()));
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.XDevApiConnectionUrl.class.getName()));
+                new ReflectiveClassBuildItem(false, false, XDevApiConnectionUrl.class.getName()));
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.XDevApiDnsSrvConnectionUrl.class.getName()));
+                new ReflectiveClassBuildItem(false, false, XDevApiDnsSrvConnectionUrl.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 com.mysql.cj.jdbc.ha.LoadBalancedAutoCommitInterceptor.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, com.mysql.cj.log.StandardLogger.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StandardLogger.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, Wrapper.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.mysql.cj.jdbc.MysqlDataSource.class.getName()));
     }
 
     @BuildStep
@@ -68,7 +85,6 @@ public final class MySQLJDBCReflections {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, NamedPipeSocketFactory.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StandardSocketFactory.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, SocksProxySocketFactory.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, AsyncSocketFactory.class.getName()));
     }
 
     @BuildStep
@@ -103,5 +119,9 @@ public final class MySQLJDBCReflections {
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, UnsupportedConnectionStringException.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, WrongArgumentException.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "com.mysql.cj.jdbc.MysqlXAException"));
+        reflectiveClass
+                .produce(new ReflectiveClassBuildItem(false, false, StandardLoadBalanceExceptionChecker.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, NdbLoadBalanceExceptionChecker.class.getName()));
     }
 }

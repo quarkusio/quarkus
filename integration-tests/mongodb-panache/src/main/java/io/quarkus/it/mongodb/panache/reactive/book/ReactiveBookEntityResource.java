@@ -19,8 +19,6 @@ import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 @Path("/reactive/books/entity")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class ReactiveBookEntityResource {
     private static final Logger LOGGER = Logger.getLogger(ReactiveBookEntityResource.class);
 
@@ -73,7 +71,13 @@ public class ReactiveBookEntityResource {
     @DELETE
     @Path("/{id}")
     public Uni<Void> deleteBook(@PathParam("id") String id) {
-        return ReactiveBookEntity.findById(new ObjectId(id)).flatMap(book -> book.delete());
+        return ReactiveBookEntity.deleteById(new ObjectId(id))
+                .map(d -> {
+                    if (d) {
+                        return null;
+                    }
+                    throw new NotFoundException();
+                });
     }
 
     @GET

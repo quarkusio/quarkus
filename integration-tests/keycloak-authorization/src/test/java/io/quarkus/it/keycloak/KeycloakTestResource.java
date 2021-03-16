@@ -1,6 +1,5 @@
 package io.quarkus.it.keycloak;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,7 +8,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.keycloak.representations.AccessTokenResponse;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -19,15 +19,15 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
-import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.restassured.RestAssured;
 
 public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager {
 
     private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
+
+    private Keycloak keycloak;
 
     @Override
     public Map<String, String> start() {
@@ -39,38 +39,16 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         realm.getUsers().add(createUser("admin", "user", "admin"));
         realm.getUsers().add(createUser("jdoe", "user", "confidential"));
 
-        try {
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
-                    .when()
-                    .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
-                    .statusCode(201);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        keycloak = KeycloakBuilder.builder()
+                .serverUrl(KEYCLOAK_SERVER_URL)
+                .realm("master")
+                .clientId("admin-cli")
+                .username("admin")
+                .password("admin")
+                .build();
+        keycloak.realms().create(realm);
 
-        HashMap<String, String> map = new HashMap<>();
-
-        // a workaround to set system properties defined when executing tests. Looks like this commit introduced an
-        // unexpected behavior: 3ca0b323dd1c6d80edb66136eb42be7f9bde3310
-        map.put("keycloak.url", System.getProperty("keycloak.url"));
-
-        return map;
-    }
-
-    private static String getAdminAccessToken() {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", "admin")
-                .param("password", "admin")
-                .param("client_id", "admin-cli")
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/master/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+        return Collections.emptyMap();
     }
 
     private static RealmRepresentation createRealm(String name) {
@@ -115,6 +93,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         configureHttpResponseClaimBasedPermission(authorizationSettings);
         configureBodyClaimBasedPermission(authorizationSettings);
         configurePaths(authorizationSettings);
+        configureScopePermission(authorizationSettings);
 
         client.setAuthorizationSettings(authorizationSettings);
 
@@ -128,6 +107,13 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
                 "$evaluation.grant();\n" +
                 "}", settings);
         createPermission(settings, createResource(settings, "Permission Resource", "/api/permission"), policy);
+    }
+
+    private static void configureScopePermission(ResourceServerRepresentation settings) {
+        PolicyRepresentation policy = createJSPolicy("Grant Policy", "$evaluation.grant();", settings);
+        createScopePermission(settings,
+                createResource(settings, "Scope Permission Resource", "/api/permission/scope", "read", "write"), policy,
+                "read");
     }
 
     private static void configureClaimBasedPermission(ResourceServerRepresentation settings) {
@@ -188,9 +174,29 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         settings.getPolicies().add(permission);
     }
 
+    private static void createScopePermission(ResourceServerRepresentation settings, ResourceRepresentation resource,
+            PolicyRepresentation policy, String scope) {
+        PolicyRepresentation permission = new PolicyRepresentation();
+
+        permission.setName(resource.getName() + " Permission");
+        permission.setType("scope");
+        permission.setResources(new HashSet<>());
+        permission.getResources().add(resource.getName());
+        permission.setScopes(new HashSet<>());
+        permission.getScopes().add(scope);
+        permission.setPolicies(new HashSet<>());
+        permission.getPolicies().add(policy.getName());
+
+        settings.getPolicies().add(permission);
+    }
+
     private static ResourceRepresentation createResource(ResourceServerRepresentation authorizationSettings, String name,
-            String uri) {
+            String uri, String... scopes) {
         ResourceRepresentation resource = new ResourceRepresentation(name);
+
+        for (String scope : scopes) {
+            resource.addScope(scope);
+        }
 
         if (uri != null) {
             resource.setUris(Collections.singleton(uri));
@@ -234,11 +240,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
 
     @Override
     public void stop() {
-        RestAssured
-                .given()
-                .auth().oauth2(getAdminAccessToken())
-                .when()
-                .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
+        keycloak.realm(KEYCLOAK_REALM).remove();
 
     }
 }

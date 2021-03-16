@@ -1,0 +1,59 @@
+{#include main fluid=true}
+   {#style}
+   .annotation {
+     color: gray;
+     font-style: italic;
+   }
+   span.larger-badge {
+     font-size: 0.9em;
+   }
+  {/style}
+  {#title}Observers{/title}
+  {#body}
+  <table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Source</th>
+      <th scope="col">Observed Type/Qualifiers</th>
+      <th scope="col">Priority</th>
+      <th scope="col">Reception</th>
+      <th scope="col">Transaction Phase</th>
+      <th scope="col">Async</th>
+    </tr>
+   </thead>
+   <tbody>
+    {#for observer in info:devBeanInfos.observers}
+    <tr>
+      <td>{count}.</td>
+      <td>
+       {#if observer.declaringClass}
+       {observer.declaringClass}#{observer.methodName}()
+       {#else}
+       <span class="badge badge-secondary larger-badge">Synthetic</span>
+       {/if}
+      </td>
+      <td>
+       {#each observer.qualifiers}
+        <span title="{it}" class="annotation"><i>{it.simpleName}</i> </span>
+       {/each}
+       {observer.observedType}
+      </td>
+      <td>
+       {observer.priority}
+      </td>
+      <td>
+       {observer.reception}
+      </td>
+      <td>
+       {observer.transactionPhase}
+      </td>
+      <td>
+       {observer.async}
+      </td>
+     </tr>
+    {/for}
+   </tbody>
+  </table>
+ {/body}
+{/include}

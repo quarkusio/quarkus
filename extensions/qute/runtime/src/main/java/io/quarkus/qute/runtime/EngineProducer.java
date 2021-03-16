@@ -20,15 +20,12 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
-import io.quarkus.qute.Escaper;
-import io.quarkus.qute.Expression;
+import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
-import io.quarkus.qute.RawString;
 import io.quarkus.qute.ReflectionValueResolver;
-import io.quarkus.qute.ResultMapper;
+import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
-import io.quarkus.qute.TemplateNode.Origin;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
@@ -47,13 +44,16 @@ public class EngineProducer {
     private static final Logger LOGGER = Logger.getLogger(EngineProducer.class);
 
     private final Engine engine;
+    private final ContentTypes contentTypes;
     private final List<String> tags;
     private final List<String> suffixes;
     private final String basePath;
     private final String tagPath;
 
-    public EngineProducer(QuteContext context, Event<EngineBuilder> event) {
-        this.suffixes = context.getConfig().suffixes;
+    public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
+            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes) {
+        this.contentTypes = contentTypes;
+        this.suffixes = config.suffixes;
         this.basePath = "templates/";
         this.tagPath = basePath + TAGS;
         this.tags = context.getTags();
@@ -74,29 +74,39 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.mapEntryResolver());
         // foo.string.raw returns a RawString which is never escaped
         builder.addValueResolver(ValueResolvers.rawResolver());
+        builder.addValueResolver(ValueResolvers.logicalAndResolver());
+        builder.addValueResolver(ValueResolvers.logicalOrResolver());
+        builder.addValueResolver(ValueResolvers.orEmpty());
+        // Note that arrays are handled specifically during validation
+        builder.addValueResolver(ValueResolvers.arrayResolver());
+
+        // If needed use a specific result mapper for the selected strategy  
+        switch (runtimeConfig.propertyNotFoundStrategy) {
+            case THROW_EXCEPTION:
+                builder.addResultMapper(new PropertyNotFoundThrowException());
+                break;
+            case NOOP:
+                builder.addResultMapper(new PropertyNotFoundNoop());
+                break;
+            case OUTPUT_ORIGINAL:
+                builder.addResultMapper(new PropertyNotFoundOutputOriginal());
+                break;
+            default:
+                // Use the default strategy
+                break;
+        }
 
         // Escape some characters for HTML templates
-        Escaper htmlEscaper = Escaper.builder().add('"', "&quot;").add('\'', "&#39;")
-                .add('&', "&amp;").add('<', "&lt;").add('>', "&gt;").build();
-        builder.addResultMapper(new ResultMapper() {
-
-            @Override
-            public boolean appliesTo(Origin origin, Object result) {
-                return !(result instanceof RawString)
-                        && origin.getVariant().filter(EngineProducer::requiresDefaultEscaping).isPresent();
-            }
-
-            @Override
-            public String map(Object result, Expression expression) {
-                return htmlEscaper.escape(result.toString());
-            }
-        });
+        builder.addResultMapper(new HtmlEscaper());
 
         // Fallback reflection resolver
         builder.addValueResolver(new ReflectionValueResolver());
 
+        // Remove standalone lines if desired
+        builder.removeStandaloneLines(runtimeConfig.removeStandaloneLines);
+
         // Allow anyone to customize the builder
-        event.fire(builder);
+        builderReady.fire(builder);
 
         // Resolve @Named beans
         builder.addNamespaceResolver(NamespaceResolver.builder(INJECT_NAMESPACE).resolve(ctx -> {
@@ -106,7 +116,12 @@ public class EngineProducer {
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {
-            builder.addValueResolver(createResolver(resolverClass));
+            Resolver resolver = createResolver(resolverClass);
+            if (resolver instanceof NamespaceResolver) {
+                builder.addNamespaceResolver((NamespaceResolver) resolver);
+            } else {
+                builder.addValueResolver((ValueResolver) resolver);
+            }
             LOGGER.debugf("Added generated value resolver: %s", resolverClass);
         }
         // Add tags
@@ -125,6 +140,7 @@ public class EngineProducer {
         for (String path : context.getTemplatePaths()) {
             engine.getTemplate(path);
         }
+        engineReady.fire(engine);
     }
 
     @Produces
@@ -141,14 +157,14 @@ public class EngineProducer {
         return tagPath;
     }
 
-    private ValueResolver createResolver(String resolverClassName) {
+    private Resolver createResolver(String resolverClassName) {
         try {
             Class<?> resolverClazz = Thread.currentThread()
                     .getContextClassLoader().loadClass(resolverClassName);
-            if (ValueResolver.class.isAssignableFrom(resolverClazz)) {
-                return (ValueResolver) resolverClazz.newInstance();
+            if (Resolver.class.isAssignableFrom(resolverClazz)) {
+                return (Resolver) resolverClazz.newInstance();
             }
-            throw new IllegalStateException("Not a value resolver: " + resolverClassName);
+            throw new IllegalStateException("Not a resolver: " + resolverClassName);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             throw new IllegalStateException("Unable to create resolver: " + resolverClassName, e);
         }
@@ -187,20 +203,9 @@ public class EngineProducer {
         return cl.getResource(path);
     }
 
-    static Variant guessVariant(String path) {
-        // TODO we need a proper way to detect the variant
-        int suffixIdx = path.lastIndexOf('.');
-        if (suffixIdx != -1) {
-            String suffix = path.substring(suffixIdx);
-            return new Variant(null, VariantTemplateProducer.parseMediaType(suffix), null);
-        }
-        return null;
-    }
-
-    static boolean requiresDefaultEscaping(Variant variant) {
-        return variant.mediaType != null
-                ? (Variant.TEXT_HTML.equals(variant.mediaType) || Variant.TEXT_XML.equals(variant.mediaType))
-                : false;
+    Variant guessVariant(String path) {
+        // TODO detect locale and encoding
+        return Variant.forContentType(contentTypes.getContentType(path));
     }
 
     static class ResourceTemplateLocation implements TemplateLocation {

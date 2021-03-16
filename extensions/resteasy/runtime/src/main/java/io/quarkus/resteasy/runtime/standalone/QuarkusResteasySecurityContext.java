@@ -6,20 +6,27 @@ import javax.ws.rs.core.SecurityContext;
 
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusResteasySecurityContext implements SecurityContext {
 
     private final HttpServerRequest request;
+    private final RoutingContext routingContext;
 
-    public QuarkusResteasySecurityContext(HttpServerRequest request) {
+    public QuarkusResteasySecurityContext(HttpServerRequest request, RoutingContext routingContext) {
         this.request = request;
+        this.routingContext = routingContext;
     }
 
     @Override
     public Principal getUserPrincipal() {
-        SecurityIdentity user = CurrentIdentityAssociation.current();
-        return user.isAnonymous() ? null : user.getPrincipal();
+        QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
+        if (user == null || user.getSecurityIdentity().isAnonymous()) {
+            return null;
+        }
+        return user.getSecurityIdentity().getPrincipal();
     }
 
     @Override

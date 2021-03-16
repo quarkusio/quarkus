@@ -9,13 +9,18 @@ package io.quarkus.scheduler;
 public interface Scheduler {
 
     /**
-     * Pause all jobs.
+     * Pause the scheduler. No triggers are fired.
      */
     void pause();
 
     /**
-     * Resume all jobs.
+     * Resume the scheduler. Triggers can be fired again.
      */
     void resume();
+
+    /**
+     * @return if a scheduler is running the triggers are fired and jobs are executed.
+     */
+    boolean isRunning();
 
 }

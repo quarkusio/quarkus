@@ -6,7 +6,6 @@
         <artifactId>quarkus-reactive-datasource-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -25,6 +24,20 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-datasource</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-sql-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-core</artifactId>
+        </dependency>
+        <!-- Add the health extension as optional as we will produce the health check only if it's included -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

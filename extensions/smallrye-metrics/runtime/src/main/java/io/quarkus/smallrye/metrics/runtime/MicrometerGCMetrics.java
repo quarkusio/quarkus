@@ -14,6 +14,7 @@ import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
 
+import org.eclipse.microprofile.metrics.Gauge;
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
@@ -155,7 +156,12 @@ class MicrometerGCMetrics {
                             .withDescription("Time spent in GC pause")
                             .skipsScopeInOpenMetricsExportCompletely(true)
                             .build(),
-                            new LambdaGauge(() -> mapForStoringMax.get(causeAndAction).doubleValue() / 1000.0), tags);
+                            new Gauge() {
+                                @Override
+                                public Number getValue() {
+                                    return mapForStoringMax.get(causeAndAction).doubleValue() / 1000.0;
+                                }
+                            }, tags);
                 }
 
                 ExtendedMetadata countMetadata = new ExtendedMetadataBuilder()

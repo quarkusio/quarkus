@@ -10,7 +10,6 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.annotations.DefaultConverter;
 
 @ConfigRoot(name = "keycloak", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class KeycloakPolicyEnforcerConfig {
@@ -40,8 +39,8 @@ public class KeycloakPolicyEnforcerConfig {
         /**
          * Specifies how policies are enforced.
          */
-        @ConfigItem(defaultValue = "ENFORCING")
-        public String enforcementMode;
+        @ConfigItem(defaultValue = "enforcing")
+        public PolicyEnforcerConfig.EnforcementMode enforcementMode;
 
         /**
          * Specifies the paths to protect.
@@ -56,7 +55,7 @@ public class KeycloakPolicyEnforcerConfig {
          * protected resources
          */
         @ConfigItem
-        public Optional<PathCacheConfig> pathCache;
+        public PathCacheConfig pathCache = new PathCacheConfig();
 
         /**
          * Specifies how the adapter should fetch the server for resources associated with paths in your application. If true,
@@ -108,8 +107,7 @@ public class KeycloakPolicyEnforcerConfig {
             /**
              * Specifies how policies are enforced
              */
-            @DefaultConverter
-            @ConfigItem(defaultValue = "ENFORCING")
+            @ConfigItem(defaultValue = "enforcing")
             public PolicyEnforcerConfig.EnforcementMode enforcementMode;
 
             /**
@@ -139,8 +137,7 @@ public class KeycloakPolicyEnforcerConfig {
             /**
              * A string referencing the enforcement mode for the scopes associated with a method
              */
-            @DefaultConverter
-            @ConfigItem(defaultValue = "ALL")
+            @ConfigItem(defaultValue = "all")
             public PolicyEnforcerConfig.ScopeEnforcementMode scopesEnforcementMode;
         }
 

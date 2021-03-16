@@ -9,42 +9,36 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.runtime.BlockingMailerImpl;
 import io.quarkus.mailer.runtime.MailClientProducer;
-import io.quarkus.mailer.runtime.MailConfig;
-import io.quarkus.mailer.runtime.MailConfigRecorder;
 import io.quarkus.mailer.runtime.MailTemplateProducer;
+import io.quarkus.mailer.runtime.MailerSupportProducer;
 import io.quarkus.mailer.runtime.MockMailboxImpl;
 import io.quarkus.mailer.runtime.MutinyMailerImpl;
 import io.quarkus.mailer.runtime.ReactiveMailerImpl;
+import io.quarkus.qute.deployment.CheckedTemplateAdapterBuildItem;
 import io.quarkus.qute.deployment.QuteProcessor;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.vertx.deployment.VertxBuildItem;
-import io.vertx.ext.mail.MailClient;
 
 public class MailerProcessor {
 
     private static final DotName MAIL_TEMPLATE = DotName.createSimple(MailTemplate.class.getName());
 
     @BuildStep
-    AdditionalBeanBuildItem registerClients() {
-        return AdditionalBeanBuildItem.unremovableOf(MailClientProducer.class);
+    void unremoveableBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(MailClientProducer.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(MailerSupportProducer.class));
     }
 
     @BuildStep
@@ -56,8 +50,13 @@ public class MailerProcessor {
     }
 
     @BuildStep
+    CheckedTemplateAdapterBuildItem registerCheckedTemplateAdaptor() {
+        return new CheckedTemplateAdapterBuildItem(new MailTemplateInstanceAdaptor());
+    }
+
+    @BuildStep
     ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
-        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MAILER);
+        return new ExtensionSslNativeSupportBuildItem(Feature.MAILER);
     }
 
     @BuildStep
@@ -74,19 +73,8 @@ public class MailerProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    MailerBuildItem build(BuildProducer<FeatureBuildItem> feature, MailConfigRecorder recorder, VertxBuildItem vertx,
-            BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
-            MailConfig config) {
-
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.MAILER));
-
-        RuntimeValue<MailClient> client = recorder.configureTheClient(vertx.getVertx(), beanContainer.getValue(), config,
-                shutdown);
-
-        recorder.configureTheMailer(beanContainer.getValue(), config, launchMode.getLaunchMode());
-
-        return new MailerBuildItem(client);
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.MAILER);
     }
 
     @BuildStep

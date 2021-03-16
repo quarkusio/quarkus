@@ -15,15 +15,20 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.vault.VaultKVSecretEngine;
+import io.quarkus.vault.VaultTransitExportKeyType;
 import io.quarkus.vault.VaultTransitSecretEngine;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.transit.ClearData;
+import io.quarkus.vault.transit.KeyConfigRequestDetail;
+import io.quarkus.vault.transit.KeyCreationRequestDetail;
 import io.quarkus.vault.transit.SigningInput;
 
 @ApplicationScoped
 public class VaultTestService {
 
     private static final Logger log = Logger.getLogger(VaultTestService.class);
+
+    private static final String KEY_NAME = "mykey";
 
     @Inject
     EntityManager entityManager;
@@ -105,7 +110,19 @@ public class VaultTestService {
 
         transit.verifySignature("my-sign-key", signature, input, null);
 
+        keyAdminTest();
+
         return "OK";
+    }
+
+    protected void keyAdminTest() {
+
+        transit.createKey(KEY_NAME, new KeyCreationRequestDetail().setExportable(true));
+        transit.readKey(KEY_NAME);
+        transit.listKeys();
+        transit.exportKey(KEY_NAME, VaultTransitExportKeyType.encryption, null);
+        transit.updateKeyConfiguration(KEY_NAME, new KeyConfigRequestDetail().setDeletionAllowed(true));
+        transit.deleteKey(KEY_NAME);
     }
 
 }

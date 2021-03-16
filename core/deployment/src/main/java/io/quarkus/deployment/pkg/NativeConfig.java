@@ -4,9 +4,12 @@ import java.io.File;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
@@ -26,13 +29,13 @@ public class NativeConfig {
     /**
      * If the HTTPS url handler should be enabled, allowing you to do URL.openConnection() for HTTPS URLs
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableHttpsUrlHandler;
 
     /**
      * If all security services should be added to the native image
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableAllSecurityServices;
 
     /**
@@ -43,16 +46,40 @@ public class NativeConfig {
     public boolean enableJni;
 
     /**
-     * If all character sets should be added to the native image. This increases image size
+     * Defines the user language used for building the native executable.
+     * <p>
+     * Defaults to the system one.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean addAllCharsets;
+    @ConfigItem(defaultValue = "${user.language:}")
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> userLanguage;
 
     /**
-     * If all time zones should be added to the native image. This increases image size
+     * Defines the user country used for building the native executable.
+     * <p>
+     * Defaults to the system one.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean includeAllTimeZones;
+    @ConfigItem(defaultValue = "${user.country:}")
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> userCountry;
+
+    /**
+     * Defines the file encoding as in -Dfile.encoding=...
+     *
+     * Native image runtime uses the host's (i.e. build time) value of file.encoding
+     * system property. We intentionally default this to UTF-8 to avoid platform specific
+     * defaults to be picked up which can then result in inconsistent behavior in the
+     * generated native executable.
+     */
+    @ConfigItem(defaultValue = "UTF-8")
+    @ConvertWith(TrimmedStringConverter.class)
+    public String fileEncoding;
+
+    /**
+     * If all character sets should be added to the native image. This increases image size
+     */
+    @ConfigItem
+    public boolean addAllCharsets;
 
     /**
      * The location of the Graal distribution
@@ -73,16 +100,10 @@ public class NativeConfig {
     public Optional<String> nativeImageXmx;
 
     /**
-     * If debug symbols should be included
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean debugSymbols;
-
-    /**
      * If the native image build should wait for a debugger to be attached before running. This is an advanced option
      * and is generally only intended for those familiar with GraalVM internals
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean debugBuildProcess;
 
     /**
@@ -94,7 +115,7 @@ public class NativeConfig {
     /**
      * If the native image server should be restarted
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean cleanupServer;
 
     /**
@@ -107,39 +128,45 @@ public class NativeConfig {
      * If a JVM based 'fallback image' should be created if native image fails. This is not recommended, as this is
      * functionally the same as just running the application in a JVM
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableFallbackImages;
 
     /**
      * If the native image server should be used. This can speed up compilation but can result in changes not always
      * being picked up due to cache invalidation not working 100%
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableServer;
 
     /**
      * If all META-INF/services entries should be automatically registered
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean autoServiceLoaderRegistration;
 
     /**
      * If the bytecode of all proxies should be dumped for inspection
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean dumpProxies;
 
     /**
      * If this build should be done using a container runtime. If this is set docker will be used by default,
      * unless container-runtime is also set.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean containerBuild;
+
+    /**
+     * If this build is done using a remote docker daemon.
+     */
+    @ConfigItem
+    public boolean remoteContainerBuild;
 
     /**
      * The docker image to use to do the image build
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java11")
+    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
     public String builderImage;
 
     /**
@@ -147,7 +174,7 @@ public class NativeConfig {
      * a container build is always done.
      */
     @ConfigItem
-    public Optional<String> containerRuntime;
+    public Optional<ContainerRuntime> containerRuntime;
 
     /**
      * Options to pass to the container runtime
@@ -158,7 +185,7 @@ public class NativeConfig {
     /**
      * If the resulting image should allow VM introspection
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableVmInspection;
 
     /**
@@ -168,9 +195,9 @@ public class NativeConfig {
     public boolean fullStackTraces;
 
     /**
-     * If reporting on call paths should be enabled
+     * If the reports on call paths and included packages/classes/methods should be generated
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableReports;
 
     /**
@@ -180,9 +207,156 @@ public class NativeConfig {
     public boolean reportExceptionStackTraces;
 
     /**
-     * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it means
+     * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it
+     * means
      * your application may fail at runtime if an unsupported feature is used by accident.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean reportErrorsAtRuntime;
+
+    /**
+     * Build time configuration options for resources inclusion in the native executable.
+     */
+    @ConfigItem
+    public ResourcesConfig resources;
+
+    @ConfigGroup
+    public static class ResourcesConfig {
+
+        /**
+         * A comma separated list of globs to match resource paths that should be added to the native image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash.
+         * <p>
+         * By default, no resources are included.
+         * <p>
+         * Example: Given that you have {@code src/main/resources/ignored.png}
+         * and {@code src/main/resources/foo/selected.png} in your source tree and one of your dependency JARs contains
+         * {@code bar/some.txt} file, with the following configuration
+         *
+         * <pre>
+         * quarkus.native.resources.includes = foo/**,bar/**&#47;*.txt
+         * </pre>
+         *
+         * the files {@code src/main/resources/foo/selected.png} and {@code bar/some.txt} will be included in the native
+         * image, while {@code src/main/resources/ignored.png} will not be included.
+         * <p>
+         * <h3>Supported glob features</h3>
+         * <table>
+         * <tr>
+         * <th>Feature</th>
+         * <th>Description</th>
+         * </tr>
+         * <tr>
+         * <td><code>*</code></td>
+         * <td>Matches a (possibly empty) sequence of characters that does not contain slash ({@code /})</td>
+         * </tr>
+         * <tr>
+         * <td><code>**</code></td>
+         * <td>Matches a (possibly empty) sequence of characters that may contain slash ({@code /})</td>
+         * </tr>
+         * <tr>
+         * <td><code>?</code></td>
+         * <td>Matches one character, but not slash</td>
+         * </tr>
+         * <tr>
+         * <td><code>[abc]</code></td>
+         * <td>Matches one character given in the bracket, but not slash</td>
+         * </tr>
+         * <tr>
+         * <td><code>[a-z]</code></td>
+         * <td>Matches one character from the range given in the bracket, but not slash</td>
+         * </tr>
+         * <tr>
+         * <td><code>[!abc]</code></td>
+         * <td>Matches one character not named in the bracket; does not match slash</td>
+         * </tr>
+         * <tr>
+         * <td><code>[a-z]</code></td>
+         * <td>Matches one character outside the range given in the bracket; does not match slash</td>
+         * </tr>
+         * <tr>
+         * <td><code>{one,two,three}</code></td>
+         * <td>Matches any of the alternating tokens separated by comma; the tokens may contain wildcards, nested
+         * alternations and ranges</td>
+         * </tr>
+         * <tr>
+         * <td><code>\</code></td>
+         * <td>The escape character</td>
+         * </tr>
+         * </table>
+         * <p>
+         * Note that there are three levels of escaping when passing this option via {@code application.properties}:
+         * <ol>
+         * <li>{@code application.properties} parser</li>
+         * <li>MicroProfile Config list converter that splits the comma separated list</li>
+         * <li>Glob parser</li>
+         * </ol>
+         * All three levels use backslash ({@code \}) as the escaping character. So you need to use an appropriate
+         * number of backslashes depending on which level you want to escape.
+         * <p>
+         * Note that Quarkus extensions typically include the resources they require by themselves. This option is
+         * useful in situations when the built-in functionality is not sufficient.
+         */
+        @ConfigItem
+        public Optional<List<String>> includes;
+
+        /**
+         * A comma separated list of globs to match resource paths that should <b>not</b> be added to the native image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash.
+         * <p>
+         * Please refer to {@link #includes} for details about the glob syntax.
+         * <p>
+         * By default, no resources are excluded.
+         * <p>
+         * Example: Given that you have {@code src/main/resources/red.png}
+         * and {@code src/main/resources/foo/green.png} in your source tree and one of your dependency JARs contains
+         * {@code bar/blue.png} file, with the following configuration
+         *
+         * <pre>
+         * quarkus.native.resources.includes = **&#47;*.png
+         * quarkus.native.resources.excludes = foo/**,**&#47;green.png
+         * </pre>
+         *
+         * the resource {@code red.png} will be available in the native image while the resources {@code foo/green.png}
+         * and {@code bar/blue.png} will not be available in the native image.
+         */
+        @ConfigItem
+        public Optional<List<String>> excludes;
+    }
+
+    /**
+     * Debugging options.
+     */
+    @ConfigItem
+    public Debug debug;
+
+    @ConfigGroup
+    public static class Debug {
+        /**
+         * If debug is enabled and debug symbols are generated.
+         * The symbols will be generated in a separate .debug file.
+         */
+        @ConfigItem
+        public boolean enabled;
+    }
+
+    /**
+     * Generate the report files for GraalVM Dashboard.
+     */
+    @ConfigItem
+    public boolean enableDashboardDump;
+
+    /**
+     * Supported Container runtimes
+     */
+    public static enum ContainerRuntime {
+        DOCKER,
+        PODMAN;
+
+        public String getExecutableName() {
+            return this.name().toLowerCase();
+        }
+    }
 }

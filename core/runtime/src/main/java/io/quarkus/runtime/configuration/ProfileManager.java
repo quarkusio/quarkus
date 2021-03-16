@@ -37,6 +37,7 @@ public class ProfileManager {
         runtimeDefaultProfile = profile;
     }
 
+    //NOTE: changes made here must be replicated in BootstrapProfileManager
     public static String getActiveProfile() {
         if (launchMode == LaunchMode.TEST) {
             String profile = System.getProperty(QUARKUS_TEST_PROFILE_PROP);

@@ -2,7 +2,8 @@ package io.quarkus.it.main;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -42,6 +45,14 @@ public class RestClientTestCase {
     public void testMicroprofileClientCDIIntegration() {
         RestAssured.when().get("/client/cdi").then()
                 .body(is("TEST"));
+    }
+
+    @DisabledOnOs(OS.WINDOWS)
+    @Test
+    public void testEmojis() {
+        RestAssured.when().get("/client/encoding")
+                .then().body(is(
+                        "\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00"));
     }
 
     @Test
@@ -136,5 +147,30 @@ public class RestClientTestCase {
         RestAssured.when().get("/ssl").then()
                 .statusCode(500)
                 .body(containsString("SSL support"), containsString("disabled"));
+    }
+
+    @Test
+    public void testIssue8795() {
+        RestAssured.when().get("/client/publisher-client").then()
+                .body(is("\n\ndata: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"
+                        + "data: 75056-2\n\n"));
     }
 }

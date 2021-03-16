@@ -8,4 +8,4 @@ metadata:
   guide: "https://quarkus.io/guides/security-openid-connect"
   categories:
   - "security"
-  status: "preview"
+  status: "stable"

@@ -30,7 +30,9 @@ public class ThreadPoolConfig {
 
     /**
      * The maximum number of threads. If this is not specified then
-     * it will be automatically sized to 8 * the number of available processors
+     * it will be automatically sized to the greater of 8 * the number of available processors and 200.
+     * For example if there are 4 processors the max threads will be 200.
+     * If there are 48 processors it will be 384.
      */
     @ConfigItem
     public OptionalInt maxThreads;
@@ -49,7 +51,7 @@ public class ThreadPoolConfig {
      * threads beyond the core size should be created as aggressively as threads within it; a value of {@code 1.0f}
      * implies that threads beyond the core size should never be created.
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     public float growthResistance;
 
     /**

@@ -45,7 +45,10 @@ public interface RecorderContext {
      *
      * @param name The class name
      * @return A Class instance that can be passed to a recording proxy
+     * @deprecated This construct is no longer needed since directly loading deployment/application classes at
+     *             processing time in build steps is now safe
      */
+    @Deprecated
     Class<?> classProxy(String name);
 
     /**

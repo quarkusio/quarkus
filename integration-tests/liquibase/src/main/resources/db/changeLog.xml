@@ -8,4 +8,5 @@
     <include relativeToChangelogFile="true" file="json/changeLog.json" />
     <include relativeToChangelogFile="true" file="sql/changeLog.sql" />
     <include relativeToChangelogFile="true" file="yaml/changeLog.yaml" />
+    <include relativeToChangelogFile="true" file="complex-schema/changeLog.xml" />
 </databaseChangeLog>

@@ -3,89 +3,89 @@ package io.quarkus.arc.deployment;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import javax.enterprise.inject.CreationException;
 
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
-import io.quarkus.arc.processor.QualifierConfigurator;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.util.HashUtil;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.util.HashUtil;
 
 public class SyntheticBeansProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void build(ArcRecorder recorder, List<RuntimeBeanBuildItem> runtimeBeans, List<SyntheticBeanBuildItem> syntheticBeans,
+    void initStatic(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
         Map<String, Supplier<?>> suppliersMap = new HashMap<>();
 
-        for (RuntimeBeanBuildItem bean : runtimeBeans) {
-            //deterministic name
-            //as we know the maps are sorted this will result in the same hash for the same bean
-            String name = createName(bean.type, bean.qualifiers.toString());
-            if (bean.runtimeValue != null) {
-                suppliersMap.put(name, recorder.createSupplier(bean.runtimeValue));
-            } else {
-                suppliersMap.put(name, bean.supplier);
+        for (SyntheticBeanBuildItem bean : syntheticBeans) {
+            if (bean.hasRecorderInstance() && bean.isStaticInit()) {
+                configureSyntheticBean(recorder, suppliersMap, beanRegistration, bean);
             }
-            DotName beanClass = DotName.createSimple(bean.type);
-            BeanConfigurator<Object> configurator = beanRegistration.getContext().configure(beanClass);
-            // Bean types
-            configurator.addType(beanClass);
-            // Qualifiers
-            if (!bean.qualifiers.isEmpty()) {
-                for (Map.Entry<String, NavigableMap<String, Object>> entry : bean.qualifiers.entrySet()) {
-                    DotName qualifierName = DotName.createSimple(entry.getKey());
-                    QualifierConfigurator<BeanConfigurator<Object>> qualifier = configurator.addQualifier()
-                            .annotation(qualifierName);
-                    if (!entry.getValue().isEmpty()) {
-                        for (Entry<String, Object> valEntry : entry.getValue().entrySet()) {
-                            qualifier.addValue(valEntry.getKey(), valEntry.getValue());
-                        }
-                    }
-                    qualifier.done();
-                }
-            }
-            configurator.scope(bean.scope);
-            if (!bean.removable) {
-                configurator.unremovable();
-            }
-            // Create the bean instance
-            configurator.creator(creator(name));
-            // Finish the registration
-            configurator.done();
         }
+        // Init the map of bean instances
+        recorder.initStaticSupplierBeans(suppliersMap);
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Produce(SyntheticBeansRuntimeInitBuildItem.class)
+    @BuildStep
+    ServiceStartBuildItem initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
+            BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
+
+        Map<String, Supplier<?>> suppliersMap = new HashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
-            DotName implClazz = bean.configurator().getImplClazz();
-            String name = createName(implClazz.toString(), bean.configurator().getQualifiers().toString());
-            if (bean.configurator().runtimeValue != null) {
-                suppliersMap.put(name, recorder.createSupplier(bean.configurator().runtimeValue));
-            } else {
-                suppliersMap.put(name, bean.configurator().supplier);
+            if (bean.hasRecorderInstance() && !bean.isStaticInit()) {
+                configureSyntheticBean(recorder, suppliersMap, beanRegistration, bean);
             }
-            beanRegistration.getContext().configure(implClazz)
-                    .read(bean.configurator())
-                    .creator(creator(name))
-                    .done();
         }
+        recorder.initRuntimeSupplierBeans(suppliersMap);
+        return new ServiceStartBuildItem("runtime-bean-init");
+    }
 
-        // Init the map of bean instances
-        recorder.initSupplierBeans(suppliersMap);
+    @BuildStep
+    void initRegular(List<SyntheticBeanBuildItem> syntheticBeans,
+            BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
+
+        for (SyntheticBeanBuildItem bean : syntheticBeans) {
+            if (!bean.hasRecorderInstance()) {
+                configureSyntheticBean(null, null, beanRegistration, bean);
+            }
+        }
+    }
+
+    private void configureSyntheticBean(ArcRecorder recorder, Map<String, Supplier<?>> suppliersMap,
+            BeanRegistrationPhaseBuildItem beanRegistration, SyntheticBeanBuildItem bean) {
+        DotName implClazz = bean.configurator().getImplClazz();
+        String name = createName(implClazz.toString(), bean.configurator().getQualifiers().toString());
+        if (bean.configurator().getRuntimeValue() != null) {
+            suppliersMap.put(name, recorder.createSupplier(bean.configurator().getRuntimeValue()));
+        } else if (bean.configurator().getSupplier() != null) {
+            suppliersMap.put(name, bean.configurator().getSupplier());
+        }
+        BeanConfigurator<?> configurator = beanRegistration.getContext().configure(implClazz)
+                .read(bean.configurator());
+        if (bean.hasRecorderInstance()) {
+            configurator.creator(creator(name, bean));
+        }
+        configurator.done();
     }
 
     private String createName(String beanClass, String qualifiers) {
@@ -93,7 +93,7 @@ public class SyntheticBeansProcessor {
                 + HashUtil.sha1(qualifiers);
     }
 
-    private Consumer<MethodCreator> creator(String name) {
+    private Consumer<MethodCreator> creator(String name, SyntheticBeanBuildItem bean) {
         return new Consumer<MethodCreator>() {
             @Override
             public void accept(MethodCreator m) {
@@ -102,12 +102,29 @@ public class SyntheticBeansProcessor {
                 ResultHandle supplier = m.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class), staticMap,
                         m.load(name));
+                // Throw an exception if no supplier is found
+                m.ifNull(supplier).trueBranch().throwException(CreationException.class,
+                        createMessage(name, bean));
                 ResultHandle result = m.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
                         supplier);
                 m.returnValue(result);
             }
         };
+    }
+
+    private String createMessage(String name, SyntheticBeanBuildItem bean) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Synthetic bean instance for ");
+        builder.append(bean.configurator().getImplClazz());
+        builder.append(" not initialized yet: ");
+        builder.append(name);
+        if (!bean.isStaticInit()) {
+            builder.append("\n\t- a synthetic bean initialized during RUNTIME_INIT must not be accessed during STATIC_INIT");
+            builder.append(
+                    "\n\t- RUNTIME_INIT build steps that require access to synthetic beans initialized during RUNTIME_INIT should consume the SyntheticBeansRuntimeInitBuildItem");
+        }
+        return builder.toString();
     }
 
 }

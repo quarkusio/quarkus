@@ -1,7 +1,7 @@
 package io.quarkus.deployment.steps;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -26,12 +26,13 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.BannerRecorder;
 import io.quarkus.runtime.BannerRuntimeConfig;
+import io.quarkus.runtime.util.ClassPathUtils;
 
 public class BannerProcessor {
 
     private static final Logger logger = Logger.getLogger(BannerProcessor.class);
 
-    @BuildStep(loadsApplicationClasses = true, onlyIfNot = { IsTest.class })
+    @BuildStep(onlyIfNot = { IsTest.class })
     @Record(ExecutionTime.RUNTIME_INIT)
     public ConsoleFormatterBannerBuildItem recordBanner(BannerRecorder recorder, BannerConfig config,
             BannerRuntimeConfig bannerRuntimeConfig) {
@@ -52,24 +53,29 @@ public class BannerProcessor {
                 logger.warn("Could not locate banner file");
                 return "";
             }
-            try (InputStream is = bannerResourceURL.openStream()) {
-                byte[] content = FileUtil.readFileContents(is);
-                String bannerTitle = new String(content, StandardCharsets.UTF_8);
+            return ClassPathUtils.readStream(bannerResourceURL, is -> {
+                try {
+                    byte[] content = FileUtil.readFileContents(is);
+                    String bannerTitle = new String(content, StandardCharsets.UTF_8);
 
-                int width = 0;
-                Scanner scanner = new Scanner(bannerTitle);
-                while (scanner.hasNextLine()) {
-                    width = Math.max(width, scanner.nextLine().length());
+                    int width = 0;
+                    try (Scanner scanner = new Scanner(bannerTitle)) {
+                        while (scanner.hasNextLine()) {
+                            width = Math.max(width, scanner.nextLine().length());
+                        }
+                    }
+
+                    String tagline = "\n";
+                    Boolean isDefaultBanner = entry.getValue();
+                    if (!isDefaultBanner) {
+                        tagline = String.format("\n%" + width + "s\n", "Powered by Quarkus " + Version.getVersion());
+                    }
+
+                    return bannerTitle + tagline;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
-
-                String tagline = "\n";
-                Boolean isDefaultBanner = entry.getValue();
-                if (!isDefaultBanner) {
-                    tagline = String.format("\n%" + width + "s\n", "Powered by Quarkus " + Version.getVersion());
-                }
-
-                return bannerTitle + tagline;
-            }
+            });
         } catch (IOException e) {
             logger.warn("Unable to read banner file");
             return "";
@@ -83,17 +89,20 @@ public class BannerProcessor {
     private Map.Entry<URL, Boolean> getBanner(BannerConfig config) throws IOException {
         Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(config.path);
         URL defaultBanner = null;
-        URL selectedBanner = null;
-        while (resources.hasMoreElements()) {
+        URL firstNonDefaultBanner = null;
+        while (resources.hasMoreElements() && firstNonDefaultBanner == null) {
             URL url = resources.nextElement();
             if (defaultBanner == null && isQuarkusCoreBanner(url)) {
                 defaultBanner = url;
-            }
-            if (selectedBanner == null) {
-                selectedBanner = url;
+            } else {
+                firstNonDefaultBanner = url;
             }
         }
-        return new AbstractMap.SimpleEntry<>(selectedBanner, defaultBanner == selectedBanner);
+        if (firstNonDefaultBanner == null) {
+            return new AbstractMap.SimpleEntry<>(defaultBanner, true);
+        } else {
+            return new AbstractMap.SimpleEntry<>(firstNonDefaultBanner, false);
+        }
     }
 
     private boolean isQuarkusCoreBanner(URL url) throws IOException {

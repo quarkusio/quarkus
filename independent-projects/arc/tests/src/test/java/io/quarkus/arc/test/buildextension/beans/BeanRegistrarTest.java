@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanRegistrar;
@@ -25,16 +26,28 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
+import javax.inject.Singleton;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BeanRegistrarTest {
+
+    public static volatile boolean beanDestroyerInvoked = false;
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(UselessBean.class, MyQualifier.class, NextQualifier.class)
             .removeUnusedBeans(true)
             .beanRegistrars(new TestRegistrar()).build();
+
+    @AfterAll
+    public static void assertDestroyerInvoked() {
+        Assertions.assertTrue(beanDestroyerInvoked);
+    }
 
     @SuppressWarnings("serial")
     static class NextQualifierLiteral extends AnnotationLiteral<NextQualifier> implements NextQualifier {
@@ -85,6 +98,8 @@ public class BeanRegistrarTest {
                 ResultHandle ret = mc.newInstance(MethodDescriptor.ofConstructor(Integer.class, int.class), mc.load(152));
                 mc.returnValue(ret);
             });
+            integerConfigurator.destroyer(SimpleDestroyer.class);
+            integerConfigurator.scope(Singleton.class);
             integerConfigurator.done();
 
             context.configure(String.class).unremovable().types(String.class).param("name", "Frantisek")
@@ -94,6 +109,13 @@ public class BeanRegistrarTest {
                     .creator(StringCreator.class).addQualifier().annotation(NextQualifier.class).addValue("name", "Roman")
                     .addValue("age", 42)
                     .addValue("classes", new Class[] { String.class }).done().unremovable().done();
+
+            uselessBean = context.beans()
+                    .assignableTo(
+                            Type.create(DotName.createSimple(UselessBean.class.getName()), org.jboss.jandex.Type.Kind.CLASS))
+                    .firstResult();
+            assertTrue(uselessBean.isPresent());
+            assertEquals(UselessBean.class.getName(), uselessBean.get().getBeanClass().toString());
         }
 
     }
@@ -105,6 +127,14 @@ public class BeanRegistrarTest {
             return "Hello " + params.get("name") + "!";
         }
 
+    }
+
+    public static class SimpleDestroyer implements BeanDestroyer<Integer> {
+
+        @Override
+        public void destroy(Integer instance, CreationalContext<Integer> creationalContext, Map<String, Object> params) {
+            beanDestroyerInvoked = true;
+        }
     }
 
     @Qualifier

@@ -1,6 +1,7 @@
 package io.quarkus.amazon.lambda.deployment;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import io.quarkus.amazon.lambda.runtime.LambdaConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.BuildException;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -50,13 +52,14 @@ public final class AmazonLambdaProcessor {
 
     private static final DotName REQUEST_HANDLER = DotName.createSimple(RequestHandler.class.getName());
     private static final DotName REQUEST_STREAM_HANDLER = DotName.createSimple(RequestStreamHandler.class.getName());
+    private static final DotName SKILL_STREAM_HANDLER = DotName.createSimple("com.amazon.ask.SkillStreamHandler");
 
     private static final DotName NAMED = DotName.createSimple(Named.class.getName());
     private static final Logger log = Logger.getLogger(AmazonLambdaProcessor.class);
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.AMAZON_LAMBDA);
+        return new FeatureBuildItem(Feature.AMAZON_LAMBDA);
     }
 
     @BuildStep
@@ -70,11 +73,13 @@ public final class AmazonLambdaProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) throws BuildException {
-        Collection<ClassInfo> allKnownImplementors = combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER);
-        Collection<ClassInfo> allKnownStreamImplementors = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(REQUEST_STREAM_HANDLER);
 
-        allKnownImplementors.addAll(allKnownStreamImplementors);
+        Collection<ClassInfo> allKnownImplementors = combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER);
+        allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
+                .getAllKnownImplementors(REQUEST_STREAM_HANDLER));
+        allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
+                .getAllKnownSubclasses(SKILL_STREAM_HANDLER));
+
         if (allKnownImplementors.size() > 0 && providedLambda.isPresent()) {
             throw new BuildException(
                     "Multiple handler classes.  You have a custom handler class and the " + providedLambda.get().getProvider()
@@ -86,20 +91,24 @@ public final class AmazonLambdaProcessor {
         List<AmazonLambdaBuildItem> ret = new ArrayList<>();
 
         for (ClassInfo info : allKnownImplementors) {
-            final DotName name = info.name();
-            builder.addBeanClass(name.toString());
-            String cdiName = null;
-            List<AnnotationInstance> named = info.annotations().get(NAMED);
-            if (named != null && !named.isEmpty()) {
-                cdiName = named.get(0).value().asString();
+            if (Modifier.isAbstract(info.flags())) {
+                continue;
             }
 
+            final DotName name = info.name();
             final String lambda = name.toString();
+            builder.addBeanClass(lambda);
             reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, lambda));
+
+            String cdiName = null;
+            AnnotationInstance named = info.classAnnotation(NAMED);
+            if (named != null) {
+                cdiName = named.value().asString();
+            }
 
             ClassInfo current = info;
             boolean done = false;
-            boolean streamHandler = false;
+            boolean streamHandler = info.superName().equals(SKILL_STREAM_HANDLER) ? true : false;
             while (current != null && !done) {
                 for (MethodInfo method : current.methods()) {
                     if (method.name().equals("handleRequest")) {
@@ -109,8 +118,16 @@ public final class AmazonLambdaProcessor {
                             break;
                         } else if (method.parameters().size() == 2
                                 && !method.parameters().get(0).name().equals(DotName.createSimple(Object.class.getName()))) {
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.parameters().get(0)));
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
+                            String source = getClass().getSimpleName() + " > " + method.declaringClass() + "[" + method + "]";
+
+                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                    .type(method.parameters().get(0))
+                                    .source(source)
+                                    .build());
+                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                    .type(method.returnType())
+                                    .source(source)
+                                    .build());
                             done = true;
                             break;
                         }

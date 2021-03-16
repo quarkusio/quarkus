@@ -12,11 +12,14 @@ import javax.inject.Qualifier;
 /**
  * Marker annotation to select mongo connection of cluster configuration
  * Use name parameter to select it
+ *
+ * @deprecated in favor of {@link io.quarkus.mongodb.MongoClientName}
  */
 @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
 @Retention(RUNTIME)
 @Documented
 @Qualifier
+@Deprecated
 public @interface MongoClientName {
     /**
      * Specify the cluster name of the connection.

@@ -14,9 +14,11 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -80,10 +82,34 @@ public class VertxRecorder {
                 consumer.handler(new Handler<Message<Object>>() {
                     @Override
                     public void handle(Message<Object> m) {
-                        try {
-                            invoker.invoke(m);
-                        } catch (Throwable e) {
-                            m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                        if (invoker.isBlocking()) {
+                            vertx.executeBlocking(new Handler<Promise<Object>>() {
+                                @Override
+                                public void handle(Promise<Object> event) {
+                                    try {
+                                        invoker.invoke(m);
+                                    } catch (Exception e) {
+                                        if (m.replyAddress() == null) {
+                                            // No reply handler
+                                            throw wrapIfNecessary(e);
+                                        } else {
+                                            m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                        }
+                                    }
+                                    event.complete();
+                                }
+                            }, invoker.isOrdered(), null);
+                        } else {
+                            try {
+                                invoker.invoke(m);
+                            } catch (Exception e) {
+                                if (m.replyAddress() == null) {
+                                    // No reply handler
+                                    throw wrapIfNecessary(e);
+                                } else {
+                                    m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                }
+                            }
                         }
                     }
                 });
@@ -104,6 +130,16 @@ public class VertxRecorder {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Unable to register all message consumer methods", e);
             }
+        }
+    }
+
+    static RuntimeException wrapIfNecessary(Throwable e) {
+        if (e instanceof Error) {
+            throw (Error) e;
+        } else if (e instanceof RuntimeException) {
+            return (RuntimeException) e;
+        } else {
+            return new RuntimeException(e);
         }
     }
 
@@ -144,12 +180,19 @@ public class VertxRecorder {
     @SuppressWarnings("unchecked")
     private void registerCodecs(Map<Class<?>, Class<?>> codecByClass) {
         EventBus eventBus = vertx.eventBus();
+        boolean isDevMode = ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
         for (Map.Entry<Class<?>, Class<?>> codecEntry : codecByClass.entrySet()) {
             Class<?> target = codecEntry.getKey();
             Class<?> codec = codecEntry.getValue();
             try {
                 if (MessageCodec.class.isAssignableFrom(codec)) {
                     MessageCodec messageCodec = (MessageCodec) codec.newInstance();
+                    if (isDevMode) {
+                        // we need to unregister the codecs because in dev mode vert.x is not reloaded
+                        // which means that if we don't unregister, we get an exception mentioning that the
+                        // codec has already been registered
+                        eventBus.unregisterDefaultCodec(target);
+                    }
                     eventBus.registerDefaultCodec(target, messageCodec);
                 } else {
                     LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", target.toString()));

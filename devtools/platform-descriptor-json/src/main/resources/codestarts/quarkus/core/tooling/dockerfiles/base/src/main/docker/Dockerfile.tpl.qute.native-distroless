@@ -1,0 +1,23 @@
+####
+# This Dockerfile is used in order to build a distroless container that runs the Quarkus application in native (no JVM) mode
+#
+# Before building the container image run:
+#
+# {buildtool.cli} {buildtool.cmd.package-native}
+#
+# Then, build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.native-distroless -t quarkus/{project.artifact-id} .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 8080:8080 quarkus/{project.artifact-id}
+#
+###
+FROM {dockerfile.native-distroless.from}
+COPY {buildtool.build-dir}/*-runner /application
+
+EXPOSE 8080
+USER nonroot
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

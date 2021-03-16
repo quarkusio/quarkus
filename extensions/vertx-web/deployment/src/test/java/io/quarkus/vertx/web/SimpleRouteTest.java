@@ -20,6 +20,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
@@ -42,7 +43,6 @@ public class SimpleRouteTest {
     public void testSimpleRoute() {
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/no-slash").then().statusCode(200).body(is("Hello world!"));
-        when().get("/rx-hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/bzuk").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-event-bus?name=ping").then().statusCode(200).body(is("Hello PING!"));
         when().get("/foo?name=foo").then().statusCode(200).body(is("Hello foo!"));
@@ -54,6 +54,7 @@ public class SimpleRouteTest {
         given().contentType("text/plain").body("world")
                 .post("/body").then().body(is("Hello world!"));
         when().get("/request").then().statusCode(200).body(is("HellO!"));
+        when().get("/inject?foo=Hey").then().statusCode(200).body(is("Hey"));
     }
 
     @Test
@@ -63,10 +64,19 @@ public class SimpleRouteTest {
         given().auth().basic("alice", "alice").get("/secured").then().statusCode(200);
     }
 
+    @Test
+    public void testSecurityIdentityInjection() {
+        when().get("/security-identity").then().statusCode(200).body(is(""));
+        given().auth().preemptive().basic("alice", "alice").get("/security-identity").then().statusCode(200).body(is("alice"));
+    }
+
     static class SimpleBean {
 
         @Inject
         Transformer transformer;
+
+        @Inject
+        SecurityIdentity securityIdentity;
 
         @Route(path = "/hello")
         @Route(path = "/foo")
@@ -82,10 +92,10 @@ public class SimpleRouteTest {
             context.response().setStatusCode(200).end();
         }
 
-        @Route(path = "/rx-hello")
-        void rxHello(io.vertx.reactivex.ext.web.RoutingContext context) {
-            String name = context.request().getParam("name");
-            context.response().setStatusCode(200).end("Hello " + (name != null ? name : "world") + "!");
+        @Route(path = "/security-identity")
+        //we are just testing that this does not throw an exception, see https://github.com/quarkusio/quarkus/issues/13835
+        void secIdentity(RoutingContext context) {
+            context.response().setStatusCode(200).end(securityIdentity.getPrincipal().getName());
         }
 
         @Route // path is derived from the method name
@@ -106,6 +116,11 @@ public class SimpleRouteTest {
         @Route
         void request(RoutingContext context) {
             context.response().setStatusCode(200).end(transformer.transform("Hello!"));
+        }
+
+        @Route
+        void inject(RoutingExchange exchange) {
+            exchange.ok(transformer.getFoo());
         }
 
     }
@@ -157,8 +172,15 @@ public class SimpleRouteTest {
     @RequestScoped
     static class Transformer {
 
+        @Inject
+        RoutingContext context;
+
         String transform(String message) {
             return message.replace('o', 'O');
+        }
+
+        String getFoo() {
+            return context.request().getParam("foo");
         }
 
     }

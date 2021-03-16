@@ -7,6 +7,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 
 import com.mongodb.MongoNamespace;
+import com.mongodb.ReadPreference;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.model.BulkWriteOptions;
 import com.mongodb.client.model.CountOptions;
@@ -27,6 +28,8 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.InsertManyResult;
+import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
 import com.mongodb.reactivestreams.client.AggregatePublisher;
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher;
@@ -240,7 +243,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<Document> aggregate(List<? extends Bson> pipeline) {
+    public Multi<T> aggregate(List<? extends Bson> pipeline) {
         return Wrappers.toMulti(collection.aggregate(pipeline));
     }
 
@@ -250,7 +253,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline) {
+    public Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline) {
         return Wrappers.toMulti(collection.aggregate(clientSession, pipeline));
     }
 
@@ -267,7 +270,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<Document> aggregate(List<? extends Bson> pipeline, AggregateOptions options) {
+    public Multi<T> aggregate(List<? extends Bson> pipeline, AggregateOptions options) {
         return Multi.createFrom().publisher(apply(options, collection.aggregate(pipeline)));
     }
 
@@ -277,7 +280,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
+    public Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
             AggregateOptions options) {
         return Multi.createFrom().publisher(apply(options, collection.aggregate(clientSession, pipeline)));
     }
@@ -381,7 +384,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<Document> mapReduce(String mapFunction, String reduceFunction) {
+    public Multi<T> mapReduce(String mapFunction, String reduceFunction) {
         return Wrappers.toMulti(collection.mapReduce(mapFunction, reduceFunction));
     }
 
@@ -391,7 +394,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<Document> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction) {
+    public Multi<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction) {
         return Wrappers.toMulti(collection.mapReduce(clientSession, mapFunction, reduceFunction));
     }
 
@@ -402,7 +405,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<Document> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options) {
+    public Multi<T> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options) {
         return Multi.createFrom().publisher(apply(options, collection.mapReduce(mapFunction, reduceFunction)));
     }
 
@@ -420,7 +423,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<Document> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
+    public Multi<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
             MapReduceOptions options) {
         return Multi.createFrom()
                 .publisher(apply(options, collection.mapReduce(clientSession, mapFunction, reduceFunction)));
@@ -457,44 +460,44 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Uni<Void> insertOne(T t) {
-        return Wrappers.toEmptyUni(collection.insertOne(t));
+    public Uni<InsertOneResult> insertOne(T t) {
+        return Wrappers.toUni(collection.insertOne(t));
     }
 
     @Override
-    public Uni<Void> insertOne(T t, InsertOneOptions options) {
-        return Wrappers.toEmptyUni(collection.insertOne(t, options));
+    public Uni<InsertOneResult> insertOne(T t, InsertOneOptions options) {
+        return Wrappers.toUni(collection.insertOne(t, options));
     }
 
     @Override
-    public Uni<Void> insertOne(ClientSession clientSession, T t) {
-        return Wrappers.toEmptyUni(collection.insertOne(clientSession, t));
+    public Uni<InsertOneResult> insertOne(ClientSession clientSession, T t) {
+        return Wrappers.toUni(collection.insertOne(clientSession, t));
     }
 
     @Override
-    public Uni<Void> insertOne(ClientSession clientSession, T t, InsertOneOptions options) {
-        return Wrappers.toEmptyUni(collection.insertOne(clientSession, t, options));
+    public Uni<InsertOneResult> insertOne(ClientSession clientSession, T t, InsertOneOptions options) {
+        return Wrappers.toUni(collection.insertOne(clientSession, t, options));
     }
 
     @Override
-    public Uni<Void> insertMany(List<? extends T> tDocuments) {
-        return Wrappers.toEmptyUni(collection.insertMany(tDocuments));
+    public Uni<InsertManyResult> insertMany(List<? extends T> tDocuments) {
+        return Wrappers.toUni(collection.insertMany(tDocuments));
     }
 
     @Override
-    public Uni<Void> insertMany(List<? extends T> tDocuments, InsertManyOptions options) {
-        return Wrappers.toEmptyUni(collection.insertMany(tDocuments, options));
+    public Uni<InsertManyResult> insertMany(List<? extends T> tDocuments, InsertManyOptions options) {
+        return Wrappers.toUni(collection.insertMany(tDocuments, options));
     }
 
     @Override
-    public Uni<Void> insertMany(ClientSession clientSession, List<? extends T> tDocuments) {
-        return Wrappers.toEmptyUni(collection.insertMany(clientSession, tDocuments));
+    public Uni<InsertManyResult> insertMany(ClientSession clientSession, List<? extends T> tDocuments) {
+        return Wrappers.toUni(collection.insertMany(clientSession, tDocuments));
     }
 
     @Override
-    public Uni<Void> insertMany(ClientSession clientSession, List<? extends T> tDocuments,
+    public Uni<InsertManyResult> insertMany(ClientSession clientSession, List<? extends T> tDocuments,
             InsertManyOptions options) {
-        return Wrappers.toEmptyUni(collection.insertMany(clientSession, tDocuments, options));
+        return Wrappers.toUni(collection.insertMany(clientSession, tDocuments, options));
     }
 
     @Override
@@ -664,12 +667,12 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
 
     @Override
     public Uni<Void> drop() {
-        return Wrappers.toEmptyUni(collection.drop());
+        return Wrappers.toUni(collection.drop());
     }
 
     @Override
     public Uni<Void> drop(ClientSession clientSession) {
-        return Wrappers.toEmptyUni(collection.drop(clientSession));
+        return Wrappers.toUni(collection.drop(clientSession));
     }
 
     @Override
@@ -735,87 +738,97 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
 
     @Override
     public Uni<Void> dropIndex(String indexName) {
-        return Wrappers.toEmptyUni(collection.dropIndex(indexName));
+        return Wrappers.toUni(collection.dropIndex(indexName));
     }
 
     @Override
     public Uni<Void> dropIndex(Bson keys) {
-        return Wrappers.toEmptyUni(collection.dropIndex(keys));
+        return Wrappers.toUni(collection.dropIndex(keys));
     }
 
     @Override
     public Uni<Void> dropIndex(String indexName, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyUni(collection.dropIndex(indexName, dropIndexOptions));
+        return Wrappers.toUni(collection.dropIndex(indexName, dropIndexOptions));
     }
 
     @Override
     public Uni<Void> dropIndex(Bson keys, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyUni(collection.dropIndex(keys, dropIndexOptions));
+        return Wrappers.toUni(collection.dropIndex(keys, dropIndexOptions));
     }
 
     @Override
     public Uni<Void> dropIndex(ClientSession clientSession, String indexName) {
-        return Wrappers.toEmptyUni(collection.dropIndex(clientSession, indexName));
+        return Wrappers.toUni(collection.dropIndex(clientSession, indexName));
     }
 
     @Override
     public Uni<Void> dropIndex(ClientSession clientSession, Bson keys) {
-        return Wrappers.toEmptyUni(collection.dropIndex(clientSession, keys));
+        return Wrappers.toUni(collection.dropIndex(clientSession, keys));
     }
 
     @Override
     public Uni<Void> dropIndex(ClientSession clientSession, String indexName, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyUni(collection.dropIndex(clientSession, indexName, dropIndexOptions));
+        return Wrappers.toUni(collection.dropIndex(clientSession, indexName, dropIndexOptions));
     }
 
     @Override
     public Uni<Void> dropIndex(ClientSession clientSession, Bson keys, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyUni(collection.dropIndex(clientSession, keys, dropIndexOptions));
+        return Wrappers.toUni(collection.dropIndex(clientSession, keys, dropIndexOptions));
     }
 
     @Override
     public Uni<Void> dropIndexes() {
-        return Wrappers.toEmptyUni(collection.dropIndexes());
+        return Wrappers.toUni(collection.dropIndexes());
     }
 
     @Override
     public Uni<Void> dropIndexes(DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyUni(collection.dropIndexes(dropIndexOptions));
+        return Wrappers.toUni(collection.dropIndexes(dropIndexOptions));
     }
 
     @Override
     public Uni<Void> dropIndexes(ClientSession clientSession) {
-        return Wrappers.toEmptyUni(collection.dropIndexes(clientSession));
+        return Wrappers.toUni(collection.dropIndexes(clientSession));
     }
 
     @Override
     public Uni<Void> dropIndexes(ClientSession clientSession, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyUni(collection.dropIndexes(clientSession, dropIndexOptions));
+        return Wrappers.toUni(collection.dropIndexes(clientSession, dropIndexOptions));
     }
 
     @Override
     public Uni<Void> renameCollection(MongoNamespace newCollectionNamespace) {
-        return Wrappers.toEmptyUni(collection.renameCollection(newCollectionNamespace));
+        return Wrappers.toUni(collection.renameCollection(newCollectionNamespace));
     }
 
     @Override
     public Uni<Void> renameCollection(MongoNamespace newCollectionNamespace, RenameCollectionOptions options) {
-        return Wrappers.toEmptyUni(collection.renameCollection(newCollectionNamespace, options));
+        return Wrappers.toUni(collection.renameCollection(newCollectionNamespace, options));
     }
 
     @Override
     public Uni<Void> renameCollection(ClientSession clientSession, MongoNamespace newCollectionNamespace) {
-        return Wrappers.toEmptyUni(collection.renameCollection(clientSession, newCollectionNamespace));
+        return Wrappers.toUni(collection.renameCollection(clientSession, newCollectionNamespace));
     }
 
     @Override
     public Uni<Void> renameCollection(ClientSession clientSession, MongoNamespace newCollectionNamespace,
             RenameCollectionOptions options) {
-        return Wrappers.toEmptyUni(collection.renameCollection(clientSession, newCollectionNamespace, options));
+        return Wrappers.toUni(collection.renameCollection(clientSession, newCollectionNamespace, options));
     }
 
     @Override
     public CodecRegistry getCodecRegistry() {
         return collection.getCodecRegistry();
+    }
+
+    @Override
+    public <NewTDocument> ReactiveMongoCollection<NewTDocument> withDocumentClass(Class<NewTDocument> clazz) {
+        return new ReactiveMongoCollectionImpl<>(this.collection.withDocumentClass(clazz));
+    }
+
+    @Override
+    public ReactiveMongoCollectionImpl<T> withReadPreference(ReadPreference readPreference) {
+        return new ReactiveMongoCollectionImpl<>(this.collection.withReadPreference(readPreference));
     }
 }

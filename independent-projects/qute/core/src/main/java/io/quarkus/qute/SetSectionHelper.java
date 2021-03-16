@@ -2,8 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Futures.evaluateParams;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -17,6 +15,7 @@ import java.util.stream.Collectors;
 public class SetSectionHelper implements SectionHelper {
 
     private static final String SET = "set";
+    private static final String LET = "let";
 
     private final Map<String, Expression> parameters;
 
@@ -32,7 +31,7 @@ public class SetSectionHelper implements SectionHelper {
                 result.completeExceptionally(t);
             } else {
                 // Execute the main block with the params as the current context object
-                context.execute(context.resolutionContext().createChild(r, null)).whenComplete((r2, t2) -> {
+                context.execute(context.resolutionContext().createChild(Mapper.wrap(r), null)).whenComplete((r2, t2) -> {
                     if (t2 != null) {
                         result.completeExceptionally(t2);
                     } else {
@@ -46,9 +45,11 @@ public class SetSectionHelper implements SectionHelper {
 
     public static class Factory implements SectionHelperFactory<SetSectionHelper> {
 
+        public static final String HINT_PREFIX = "<set#";
+
         @Override
         public List<String> getDefaultAliases() {
-            return ImmutableList.of(SET);
+            return ImmutableList.of(SET, LET);
         }
 
         @Override
@@ -64,16 +65,21 @@ public class SetSectionHelper implements SectionHelper {
         }
 
         @Override
-        public Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
+        public Scope initializeBlock(Scope previousScope, BlockInfo block) {
             if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
-                Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);
+                Scope newScope = new Scope(previousScope);
                 for (Entry<String, String> entry : block.getParameters().entrySet()) {
                     Expression expr = block.addExpression(entry.getKey(), entry.getValue());
-                    typeInfos.put(entry.getKey(), expr.collectTypeInfo());
+                    if (expr.hasTypeInfo()) {
+                        // item.name becomes item<set#1>.name
+                        newScope.putBinding(entry.getKey(), entry.getKey() + HINT_PREFIX + expr.getGeneratedId() + ">");
+                    } else {
+                        newScope.putBinding(entry.getKey(), null);
+                    }
                 }
-                return typeInfos;
+                return newScope;
             } else {
-                return Collections.emptyMap();
+                return previousScope;
             }
         }
 

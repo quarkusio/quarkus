@@ -1,0 +1,176 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Reading properties from Consul
+
+include::./attributes.adoc[]
+:extension-status: preview
+
+This guide explains how your Quarkus application can read configuration properties at runtime from https://www.consul.io[Consul].
+
+include::./status-include.adoc[]
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+
+== Introduction
+
+Consul is a versatile system which among other things, provides a distributed Key-Value store that is used in many architectures as a source of configuration for services.
+This Key-Value store is what the `quarkus-consul-config` extension interacts with in order to allow Quarkus applications to read runtime configuration properties from Consul.
+
+== Starting Consul
+
+There are various ways to start Consul that vary in complexity, but for the purposes of this guide, we elect to start a single Consul server with no persistence via Docker, like so:
+
+[source,bash]
+----
+docker run --rm --name consul -p 8500:8500 -p 8501:8501 consul:1.7 agent -dev -ui -client=0.0.0.0 -bind=0.0.0.0 --https-port=8501
+----
+
+Please consult the https://www.consul.io/docs/install[documentation] to learn more about the various Consul installation options.
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=consul-config-quickstart \
+    -DclassName="org.acme.consul.config.GreetingResource" \
+    -Dpath="/greeting" \
+    -Dextensions="consul-config"
+cd consul-config-quickstart
+----
+
+This command generates a Maven project with a REST endpoint and imports the `consul-config` extension.
+
+If you already have your Quarkus project configured, you can add the `consul-config` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="consul-config"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-consul-config</artifactId>
+</dependency>
+----
+
+== GreetingController
+
+The Quarkus Maven plugin automatically generated a `GreetingResource` JAX-RS resource in the
+`src/main/java/org/acme/consul/config/client/GreetingResource.java` file that looks like:
+
+[source,java]
+----
+package org.acme.consul.config.client;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+As we want to use configuration properties obtained from the Config Server, we will update the `GreetingResource` to inject the `message` property. The updated code will look like this:
+
+[source,java]
+----
+package org.acme.consul.config.client;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@Path("/hello")
+public class GreetingResource {
+
+    @ConfigProperty(name = "message", defaultValue="Hello from default")
+    String message;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return message;
+    }
+}
+----
+
+== Configuring the application
+
+Quarkus provides various configuration knobs under the `quarkus.consul-config` root. For the purposes of this guide, our Quarkus application is going to be configured in `application.properties` as follows:
+
+[source,properties]
+----
+# use the same name as the application name that was configured when standing up the Config Server
+quarkus.application.name=consul-test
+# enable retrieval of configuration from Consul - this is off by default
+quarkus.consul-config.enabled=true
+# this is a key in Consul's KV store that the Quarkus application will read and try to extract properties from
+quarkus.consul-config.properties-value-keys=config/${quarkus.application.name}
+----
+
+== Add Configuration to Consul
+
+For the previous application configuration to work, we need to add a `config/consul-test` key under Consul's Key Value store. The value of this key will essentially be a properties "file" containing the application configuration.
+In this case we want to add the following data to the `config/consul-test` key:
+
+[source,properties]
+----
+greeting.message=Hello from Consul
+----
+
+When adding this configuration from the UI, Consul will automatically convert the data into the necessary base64 encoding. If you instead add the configuration via the Consul's https://www.consul.io/api/kv.html#create-update-key[REST API],
+make sure to first encode the previous data into base64.
+
+NOTE: In this use case we made the value of the key as a properties "file", because we used `quarkus.consul-config.properties-value-keys` in the application. The
+extension also provides the ability to use the raw values of keys when `quarkus.consul-config.raw-value-keys` is used. Furthermore, these two properties can be used
+simultaneously, while each one also supports setting multiple keys.
+
+== Package and run the application
+
+Run the application with: `./mvnw compile quarkus:dev`.
+Open your browser to http://localhost:8080/greeting.
+
+The result should be: `Hello from Consul` as it is the value obtained from the Consul Key Value store.
+
+== Run the application as a native executable
+
+You can of course create a native image using the instructions of the link:building-native-image[Building a native executable guide].
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-consul-config.adoc[opts=optional, leveloffset=+1]

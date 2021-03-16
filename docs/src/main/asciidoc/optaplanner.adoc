@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = OptaPlanner - Using AI to optimize a schedule with OptaPlanner
 
@@ -25,6 +25,7 @@ by using AI to adhere to hard and soft scheduling _constraints_, such as:
 * A student can attend at most one lesson at the same time.
 * A teacher prefers to teach in a single room.
 * A teacher prefers to teach sequential lessons and dislikes gaps between lessons.
+* A student dislikes sequential lessons on the same subject.
 
 Mathematically speaking, school timetabling is an _NP-hard_ problem.
 That means it is difficult to scale.
@@ -50,7 +51,7 @@ To complete this guide, you need:
 * about 30 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+ or Gradle 4+
+* Apache Maven {maven-version} or Gradle 4+
 
 == The build file and the dependencies
 
@@ -59,17 +60,18 @@ with the following extensions, for Maven or Gradle:
 
 * RESTEasy JAX-RS (`quarkus-resteasy`)
 * RESTEasy Jackson (`quarkus-resteasy-jackson`)
-* OptaPlanner (`quarkus-optaplanner`)
-* OptaPlanner Jackson (`quarkus-optaplanner-jackson`)
+* OptaPlanner (`optaplanner-quarkus`)
+* OptaPlanner Jackson (`optaplanner-quarkus-jackson`)
 
 Alternatively, generate it from the command line with Maven:
 
-[source,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=optaplanner-quickstart \
-    -Dextensions="resteasy, resteasy-jackson, optaplanner, optaplanner-jackson"
+    -Dextensions="resteasy,resteasy-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson" \
+    -DnoExamples
 cd optaplanner-quickstart
 ----
 
@@ -98,12 +100,12 @@ In Maven, your `pom.xml` file contains these dependencies:
       <artifactId>quarkus-resteasy-jackson</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-optaplanner</artifactId>
+      <groupId>org.optaplanner</groupId>
+      <artifactId>optaplanner-quarkus</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-optaplanner-jackson</artifactId>
+      <groupId>org.optaplanner</groupId>
+      <artifactId>optaplanner-quarkus-jackson</artifactId>
     </dependency>
 
     <dependency>
@@ -122,8 +124,8 @@ In Maven, your `pom.xml` file contains these dependencies:
 //    implementation enforcedPlatform("io.quarkus:quarkus-universe-bom:{quarkus-version}")
 //    implementation 'io.quarkus:quarkus-resteasy'
 //    implementation 'io.quarkus:quarkus-resteasy-jackson'
-//    implementation 'io.quarkus:quarkus-optaplanner'
-//    implementation 'io.quarkus:quarkus-optaplanner-jackson'
+//    implementation 'org.optaplanner:optaplanner-quarkus'
+//    implementation 'org.optaplanner:optaplanner-quarkus-jackson'
 //
 //    testImplementation 'io.quarkus:quarkus-junit5'
 //}
@@ -146,11 +148,11 @@ and there are no time slots during lunch or other breaks.
 A time slot has no date, because a high school schedule just repeats every week.
 So there is no need for https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html#continuousPlanning[continuous planning].
 
-Create the `src/main/java/org/acme/domain/Timeslot.java` class:
+Create the `src/main/java/org/acme/optaplanner/domain/Timeslot.java` class:
 
 [source,java]
 ----
-package org.acme.domain;
+package org.acme.optaplanner.domain;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -184,7 +186,7 @@ public class Timeslot {
 
     @Override
     public String toString() {
-        return dayOfWeek + " " + startTime.toString();
+        return dayOfWeek + " " + startTime;
     }
 
 }
@@ -203,11 +205,11 @@ for example, `Room A` or `Room B`.
 For simplicity's sake, all rooms are without capacity limits
 and they can accommodate all lessons.
 
-Create the `src/main/java/org/acme/domain/Room.java` class:
+Create the `src/main/java/org/acme/optaplanner/domain/Room.java` class:
 
 [source,java]
 ----
-package org.acme.domain;
+package org.acme.optaplanner.domain;
 
 public class Room {
 
@@ -258,11 +260,11 @@ In order for OptaPlanner to recognize them,
 both the `timeslot` and `room` fields require an `@PlanningVariable` annotation.
 Their containing class, `Lesson`, requires an `@PlanningEntity` annotation.
 
-Create the `src/main/java/org/acme/domain/Lesson.java` class:
+Create the `src/main/java/org/acme/optaplanner/domain/Lesson.java` class:
 
 [source,java]
 ----
-package org.acme.domain;
+package org.acme.optaplanner.domain;
 
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.lookup.PlanningId;
@@ -411,15 +413,15 @@ Unfortunately **that does not scale well**, because it is non-incremental:
 every time a lesson is assigned to a different time slot or room,
 all lessons are re-evaluated to calculate the new score.
 
-Instead, create a `src/main/java/org/acme/solver/TimeTableConstraintProvider.java` class
+Instead, create a `src/main/java/org/acme/optaplanner/solver/TimeTableConstraintProvider.java` class
 to perform incremental score calculation.
 It uses OptaPlanner's ConstraintStream API which is inspired by Java 8 Streams and SQL:
 
 [source,java]
 ----
-package org.acme.solver;
+package org.acme.optaplanner.solver;
 
-import org.acme.domain.Lesson;
+import org.acme.optaplanner.domain.Lesson;
 import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 import org.optaplanner.core.api.score.stream.Constraint;
 import org.optaplanner.core.api.score.stream.ConstraintFactory;
@@ -449,9 +451,7 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                         // ... in the same timeslot ...
                         Joiners.equal(Lesson::getTimeslot),
                         // ... in the same room ...
-                        Joiners.equal(Lesson::getRoom),
-                        // ... and the pair is unique (different id, no reverse pairs)
-                        Joiners.lessThan(Lesson::getId))
+                        Joiners.equal(Lesson::getRoom))
                 // then penalize each pair with a hard weight.
                 .penalize("Room conflict", HardSoftScore.ONE_HARD);
     }
@@ -492,18 +492,18 @@ for example, a solution with the score `-2hard/-3soft`.
 * If it adheres to all hard constraints, then it is a _feasible_ solution,
 for example, a solution with the score `0hard/-7soft`.
 
-Create the `src/main/java/org/acme/domain/TimeTable.java` class:
+Create the `src/main/java/org/acme/optaplanner/domain/TimeTable.java` class:
 
 [source,java]
 ----
-package org.acme.domain;
+package org.acme.optaplanner.domain;
 
 import java.util.List;
 
 import org.optaplanner.core.api.domain.solution.PlanningEntityCollectionProperty;
 import org.optaplanner.core.api.domain.solution.PlanningScore;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
-import org.optaplanner.core.api.domain.solution.drools.ProblemFactCollectionProperty;
+import org.optaplanner.core.api.domain.solution.ProblemFactCollectionProperty;
 import org.optaplanner.core.api.domain.valuerange.ValueRangeProvider;
 import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 
@@ -602,32 +602,27 @@ Therefore, the Quarkus extension injects a `SolverManager`,
 which runs solvers in a separate thread pool
 and can solve multiple datasets in parallel.
 
-Create the `src/main/java/org/acme/solver/TimeTableResource.java` class:
+Create the `src/main/java/org/acme/optaplanner/rest/TimeTableResource.java` class:
 
 [source,java]
 ----
-package org.acme.rest;
+package org.acme.optaplanner.rest;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
-import org.acme.domain.TimeTable;
+import org.acme.optaplanner.domain.TimeTable;
 import org.optaplanner.core.api.solver.SolverJob;
 import org.optaplanner.core.api.solver.SolverManager;
 
 @Path("/timeTable")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class TimeTableResource {
 
     @Inject
-    private SolverManager<TimeTable, UUID> solverManager;
+    SolverManager<TimeTable, UUID> solverManager;
 
     @POST
     @Path("/solve")
@@ -719,11 +714,11 @@ On the server side, the `info` log show what OptaPlanner did in those five secon
 A good application includes test coverage.
 In a JUnit test, generate a test dataset and send it to the `TimeTableResource` to solve.
 
-Create the `src/test/java/org/acme/solver/TimeTableResourceTest.java` class:
+Create the `src/test/java/org/acme/optaplanner/rest/TimeTableResourceTest.java` class:
 
 [source,java]
 ----
-package org.acme;
+package org.acme.optaplanner.rest;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -733,11 +728,11 @@ import java.util.List;
 import javax.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
-import org.acme.domain.Room;
-import org.acme.domain.Timeslot;
-import org.acme.domain.Lesson;
-import org.acme.domain.TimeTable;
-import org.acme.rest.TimeTableResource;
+import org.acme.optaplanner.domain.Room;
+import org.acme.optaplanner.domain.Timeslot;
+import org.acme.optaplanner.domain.Lesson;
+import org.acme.optaplanner.domain.TimeTable;
+import org.acme.optaplanner.rest.TimeTableResource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -749,7 +744,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TimeTableResourceTest {
 
     @Inject
-    private TimeTableResource timeTableResource;
+    TimeTableResource timeTableResource;
 
     @Test
     @Timeout(600_000)
@@ -858,9 +853,9 @@ You have just developed a Quarkus application with https://www.optaplanner.org/[
 
 Now try adding database and UI integration:
 
-. Store `Timeslot`, `Room`, and `Lesson` in the database with https://quarkus.io/guides/hibernate-orm-panache[Hibernate and Panache].
+. Store `Timeslot`, `Room`, and `Lesson` in the database with link:hibernate-orm-panache[Hibernate and Panache].
 
-. https://quarkus.io/guides/rest-json[Expose them through REST].
+. link:rest-json[Expose them through REST].
 
 . Adjust the `TimeTableResource` to read and write a `TimeTable` in a single transaction
 and use those accordingly:
@@ -884,6 +879,7 @@ import org.acme.optaplanner.domain.Room;
 import org.acme.optaplanner.domain.TimeTable;
 import org.acme.optaplanner.domain.Timeslot;
 import org.optaplanner.core.api.score.ScoreManager;
+import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 import org.optaplanner.core.api.solver.SolverManager;
 import org.optaplanner.core.api.solver.SolverStatus;
 
@@ -895,9 +891,9 @@ public class TimeTableResource {
     public static final Long SINGLETON_TIME_TABLE_ID = 1L;
 
     @Inject
-    private SolverManager<TimeTable, Long> solverManager;
+    SolverManager<TimeTable, Long> solverManager;
     @Inject
-    private ScoreManager<TimeTable> scoreManager;
+    ScoreManager<TimeTable, HardSoftScore> scoreManager;
 
     // To try, open http://localhost:8080/timeTable
     @GET
@@ -991,7 +987,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TimeTableResourceTest {
 
     @Inject
-    private TimeTableResource timeTableResource;
+    TimeTableResource timeTableResource;
 
     @Test
     @Timeout(600_000)

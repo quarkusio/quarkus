@@ -1,7 +1,9 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.Lock;
 import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
 import io.quarkus.arc.impl.InjectableRequestContextController;
+import io.quarkus.arc.impl.LockInterceptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -14,8 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
@@ -23,6 +23,7 @@ import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Intercepted;
+import javax.enterprise.inject.Model;
 import javax.inject.Named;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -43,11 +44,13 @@ public final class BeanArchives {
      * @param applicationIndexes
      * @return the final bean archive index
      */
-    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader, IndexView... applicationIndexes) {
+    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader,
+            Map<DotName, Optional<ClassInfo>> persistentClassIndex,
+            IndexView... applicationIndexes) {
         List<IndexView> indexes = new ArrayList<>();
         Collections.addAll(indexes, applicationIndexes);
         indexes.add(buildAdditionalIndex());
-        return new IndexWrapper(CompositeIndex.create(indexes), deploymentClassLoader);
+        return new IndexWrapper(CompositeIndex.create(indexes), deploymentClassLoader, persistentClassIndex);
     }
 
     private static IndexView buildAdditionalIndex() {
@@ -61,9 +64,12 @@ public final class BeanArchives {
         index(indexer, BeforeDestroyed.class.getName());
         index(indexer, Destroyed.class.getName());
         index(indexer, Intercepted.class.getName());
+        index(indexer, Model.class.getName());
+        index(indexer, Lock.class.getName());
         // Arc built-in beans
         index(indexer, ActivateRequestContextInterceptor.class.getName());
         index(indexer, InjectableRequestContextController.class.getName());
+        index(indexer, LockInterceptor.class.getName());
         return indexer.complete();
     }
 
@@ -72,30 +78,20 @@ public final class BeanArchives {
      */
     static class IndexWrapper implements IndexView {
 
-        private final Map<DotName, Optional<ClassInfo>> additionalClasses;
-
         private final IndexView index;
         private final ClassLoader deploymentClassLoader;
+        final Map<DotName, Optional<ClassInfo>> additionalClasses;
 
-        public IndexWrapper(IndexView index, ClassLoader deploymentClassLoader) {
+        public IndexWrapper(IndexView index, ClassLoader deploymentClassLoader,
+                Map<DotName, Optional<ClassInfo>> additionalClasses) {
             this.index = index;
             this.deploymentClassLoader = deploymentClassLoader;
-            this.additionalClasses = new ConcurrentHashMap<>();
+            this.additionalClasses = additionalClasses;
         }
 
         @Override
         public Collection<ClassInfo> getKnownClasses() {
-            if (additionalClasses.isEmpty()) {
-                return index.getKnownClasses();
-            }
-            Collection<ClassInfo> known = index.getKnownClasses();
-            Collection<ClassInfo> additional = additionalClasses.values().stream().filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
-            List<ClassInfo> all = new ArrayList<>(known.size() + additional.size());
-            all.addAll(known);
-            all.addAll(additional);
-            return all;
+            return index.getKnownClasses();
         }
 
         @Override
@@ -176,6 +172,11 @@ public final class BeanArchives {
             return index.getAnnotations(annotationName);
         }
 
+        @Override
+        public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName annotationName, IndexView index) {
+            return this.index.getAnnotationsWithRepeatable(annotationName, index);
+        }
+
         private void getAllKnownSubClasses(DotName className, Set<ClassInfo> allKnown, Set<DotName> processedClasses) {
             final Set<DotName> subClassesToProcess = new HashSet<DotName>();
             subClassesToProcess.add(className);
@@ -242,14 +243,21 @@ public final class BeanArchives {
     }
 
     static boolean index(Indexer indexer, String className, ClassLoader classLoader) {
-        try (InputStream stream = classLoader
-                .getResourceAsStream(className.replace('.', '/') + ".class")) {
-            indexer.index(stream);
-            return true;
-        } catch (IOException e) {
-            LOGGER.warnf("Failed to index %s: %s", className, e.getMessage());
+        boolean result = false;
+        if (Types.isPrimitiveClassName(className)) {
             return false;
         }
+        try (InputStream stream = classLoader
+                .getResourceAsStream(className.replace('.', '/') + ".class")) {
+            if (stream != null) {
+                indexer.index(stream);
+                result = true;
+            } else {
+                LOGGER.warnf("Failed to index %s: Class does not exist in ClassLoader %s", className, classLoader);
+            }
+        } catch (IOException e) {
+            LOGGER.warnf(e, "Failed to index %s: %s", className, e.getMessage());
+        }
+        return result;
     }
-
 }

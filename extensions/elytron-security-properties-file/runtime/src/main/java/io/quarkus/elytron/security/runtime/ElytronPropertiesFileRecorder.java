@@ -1,7 +1,6 @@
 package io.quarkus.elytron.security.runtime;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -30,11 +29,11 @@ import org.wildfly.security.password.Password;
 import org.wildfly.security.password.PasswordFactory;
 import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.interfaces.ClearPassword;
-import org.wildfly.security.password.interfaces.DigestPassword;
 import org.wildfly.security.password.spec.DigestPasswordSpec;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
  * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security objects.
@@ -87,9 +86,19 @@ public class ElytronPropertiesFileRecorder {
                         throw new IllegalStateException(msg);
                     }
                     LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
-                    try (InputStream usersStream = users.openStream(); InputStream rolesStream = roles.openStream()) {
-                        propsRealm.load(usersStream, rolesStream);
-                    }
+                    ClassPathUtils.consumeStream(users, usersStream -> {
+                        try {
+                            ClassPathUtils.consumeStream(roles, rolesStream -> {
+                                try {
+                                    propsRealm.load(usersStream, rolesStream);
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            });
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -104,7 +113,8 @@ public class ElytronPropertiesFileRecorder {
      * @param config - the realm config
      * @throws Exception
      */
-    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, MPRealmConfig config) throws Exception {
+    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, MPRealmConfig config, MPRealmRuntimeConfig runtimeConfig)
+            throws Exception {
         return new Runnable() {
             @Override
             public void run() {
@@ -115,15 +125,15 @@ public class ElytronPropertiesFileRecorder {
                 }
                 SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
                 HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
-                Map<String, String> userInfo = config.getUsers();
+                Map<String, String> userInfo = runtimeConfig.users;
                 log.debugf("UserInfoMap: %s%n", userInfo);
-                Map<String, String> roleInfo = config.getRoles();
+                Map<String, String> roleInfo = runtimeConfig.roles;
                 log.debugf("RoleInfoMap: %s%n", roleInfo);
                 for (Map.Entry<String, String> userPasswordEntry : userInfo.entrySet()) {
                     Password password;
                     String user = userPasswordEntry.getKey();
 
-                    if (config.plainText) {
+                    if (runtimeConfig.plainText) {
                         password = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
                                 userPasswordEntry.getValue().toCharArray());
                     } else {
@@ -132,7 +142,8 @@ public class ElytronPropertiesFileRecorder {
                                     .asUtf8String().hexDecode().drain();
 
                             password = PasswordFactory
-                                    .getInstance(DigestPassword.ALGORITHM_DIGEST_MD5, new WildFlyElytronPasswordProvider())
+                                    .getInstance(runtimeConfig.algorithm.getName(),
+                                            new WildFlyElytronPasswordProvider())
                                     .generatePassword(new DigestPasswordSpec(user, config.realmName, hashed));
                         } catch (Exception e) {
                             throw new RuntimeException("Unable to register password for user:" + user

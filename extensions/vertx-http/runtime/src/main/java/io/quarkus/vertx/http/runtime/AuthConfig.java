@@ -14,10 +14,7 @@ public class AuthConfig {
     /**
      * If basic auth should be enabled. If both basic and form auth is enabled then basic auth will be enabled in silent mode.
      *
-     * If no authentication mechanisms are configured basic auth is the default, unless an
-     * {@link io.quarkus.security.identity.IdentityProvider}
-     * is present that supports {@link io.quarkus.security.identity.request.TokenAuthenticationRequest} in which case
-     * form auth will be the default.
+     * If no authentication mechanisms are configured basic auth is the default.
      */
     @ConfigItem
     public boolean basic;
@@ -45,4 +42,14 @@ public class AuthConfig {
      */
     @ConfigItem(name = "policy")
     public Map<String, PolicyConfig> rolePolicy;
+
+    /**
+     * If this is true and credentials are present then a user will always be authenticated
+     * before the request progresses.
+     * 
+     * If this is false then an attempt will only be made to authenticate the user if a permission
+     * check is performed or the current user is required for some other reason.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean proactive;
 }

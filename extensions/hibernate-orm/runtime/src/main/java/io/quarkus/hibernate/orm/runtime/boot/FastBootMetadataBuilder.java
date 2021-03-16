@@ -19,18 +19,22 @@ import static org.hibernate.jpa.AvailableSettings.CLASS_CACHE_PREFIX;
 import static org.hibernate.jpa.AvailableSettings.COLLECTION_CACHE_PREFIX;
 import static org.hibernate.jpa.AvailableSettings.PERSISTENCE_UNIT_NAME;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.persistence.PersistenceException;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.CacheRegionDefinition;
 import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.MetadataSources;
@@ -39,21 +43,17 @@ import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
-import org.hibernate.boot.registry.BootstrapServiceRegistry;
-import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
-import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
-import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.EntityManagerMessageLogger;
@@ -65,6 +65,7 @@ import org.hibernate.jpa.boot.spi.TypeContributorList;
 import org.hibernate.jpa.internal.util.LogHelper;
 import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
+import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.service.Service;
@@ -74,14 +75,15 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
-import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
+import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
 /**
  * Alternative to EntityManagerFactoryBuilderImpl so to have full control of how MetadataBuilderImplementor
@@ -96,32 +98,33 @@ public class FastBootMetadataBuilder {
     private final StandardServiceRegistry standardServiceRegistry;
     private final ManagedResources managedResources;
     private final MetadataBuilderImplementor metamodelBuilder;
-    private final Object validatorFactory;
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
     private final Collection<ProvidedService> providedServices;
+    private final PreGeneratedProxies preGeneratedProxies;
+    private final String dataSource;
+    private final MultiTenancyStrategy multiTenancyStrategy;
+    private final boolean isReactive;
+    private final boolean fromPersistenceXml;
+    private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     @SuppressWarnings("unchecked")
-    public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner,
-            Collection<Class<? extends Integrator>> additionalIntegrators) {
-        this.persistenceUnit = persistenceUnit;
+    public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
+            Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
+        this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
+        this.dataSource = puDefinition.getDataSource();
+        this.isReactive = puDefinition.isReactive();
+        this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
         this.additionalIntegrators = additionalIntegrators;
-        final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
+        this.preGeneratedProxies = preGeneratedProxies;
+        this.integrationStaticDescriptors = puDefinition.getIntegrationStaticDescriptors();
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
         // integration, instance );
         // Except we remove support for several legacy features and XML binding
-        final ClassLoader providedClassLoader = null;
 
         LogHelper.logPersistenceUnitInformation(persistenceUnit);
 
-        // Build the boot-strap service registry, which mainly handles class loader
-        // interactions
-        final BootstrapServiceRegistry bsr = buildBootstrapServiceRegistry(providedClassLoaderService);
-
-        // merge configuration sources and build the "standard" service registry
-        final RecordableBootstrap ssrBuilder = new RecordableBootstrap(bsr);
-
-        insertStateRecorders(ssrBuilder);
+        final RecordableBootstrap ssrBuilder = RecordableBootstrapFactory.createRecordableBootstrapBuilder(puDefinition);
 
         final MergedSettings mergedSettings = mergeSettings(persistenceUnit);
         this.buildTimeSettings = new BuildTimeSettings(mergedSettings.getConfigurationValues());
@@ -155,24 +158,20 @@ public class FastBootMetadataBuilder {
                     standardServiceRegistry.getService(postBuildProvidedService)));
         }
 
-        final MetadataSources metadataSources = new MetadataSources(bsr);
-        addPUManagedClassNamesToMetadataSources(persistenceUnit, metadataSources);
+        final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
+        // No need to populate annotatedClassNames/annotatedPackages: they are populated through scanning
 
         this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources
                 .getMetadataBuilder(standardServiceRegistry);
         if (scanner != null) {
             this.metamodelBuilder.applyScanner(scanner);
         }
-        populate(metamodelBuilder, mergedSettings.cacheRegionDefinitions, standardServiceRegistry);
+        populate(metamodelBuilder, mergedSettings.cacheRegionDefinitions);
 
         this.managedResources = MetadataBuildingProcess.prepare(metadataSources,
                 metamodelBuilder.getBootstrapContext());
 
         applyMetadataBuilderContributor();
-
-        // BVAL integration:
-        this.validatorFactory = withValidatorFactory(
-                buildTimeSettings.get(org.hibernate.cfg.AvailableSettings.JPA_VALIDATION_FACTORY));
 
         // Unable to automatically handle:
         // AvailableSettings.ENHANCER_ENABLE_DIRTY_TRACKING,
@@ -182,34 +181,14 @@ public class FastBootMetadataBuilder {
         // for the time being we want to revoke access to the temp ClassLoader if one
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
-    }
 
-    private void addPUManagedClassNamesToMetadataSources(PersistenceUnitDescriptor persistenceUnit,
-            MetadataSources metadataSources) {
-        for (String className : persistenceUnit.getManagedClassNames()) {
-            metadataSources.addAnnotatedClassName(className);
+        final MultiTenancyStrategy strategy = puDefinition.getMultitenancyStrategy();
+        if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
+            ssrBuilder.addService(MultiTenantConnectionProvider.class,
+                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
         }
-    }
+        this.multiTenancyStrategy = strategy;
 
-    private void insertStateRecorders(StandardServiceRegistryBuilder ssrBuilder) {
-        //        ssrBuilder.addService( DialectFactory.class, new RecordingDialectFactory() );
-        //        ssrBuilder.addInitiator(  )
-    }
-
-    private BootstrapServiceRegistry buildBootstrapServiceRegistry(ClassLoaderService providedClassLoaderService) {
-
-        final BootstrapServiceRegistryBuilder bsrBuilder = new BootstrapServiceRegistryBuilder();
-
-        // N.B. support for custom IntegratorProvider injected via Properties (as
-        // instance) removed
-
-        // N.B. support for custom StrategySelector removed
-        // TODO see to inject a custom
-        // org.hibernate.boot.registry.selector.spi.StrategySelector ?
-
-        bsrBuilder.applyClassLoaderService(providedClassLoaderService);
-
-        return bsrBuilder.build();
     }
 
     /**
@@ -264,21 +243,47 @@ public class FastBootMetadataBuilder {
         //Agroal already does disable auto-commit, so Hibernate ORM should trust that:
         cfg.put(AvailableSettings.CONNECTION_PROVIDER_DISABLES_AUTOCOMMIT, Boolean.TRUE.toString());
 
+        /*
+         * Set CONNECTION_HANDLING to DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION
+         * as it generally performs better, at no known drawbacks.
+         * This is a new mode in Hibernate ORM, it might become the default in the future.
+         *
+         * Note: other connection handling modes lead to leaked resources, statements in particular.
+         * See https://github.com/quarkusio/quarkus/issues/7242, https://github.com/quarkusio/quarkus/issues/13273
+         *
+         * @see org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
+         */
+        cfg.putIfAbsent(AvailableSettings.CONNECTION_HANDLING,
+                PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
+
         if (readBooleanConfigurationValue(cfg, WRAP_RESULT_SETS)) {
             LOG.warn("Wrapping result sets is not supported. Setting " + WRAP_RESULT_SETS + " to false.");
         }
         cfg.put(WRAP_RESULT_SETS, "false");
 
-        if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
-            LOG.warn("XML mapping is not supported. Setting " + XML_MAPPING_ENABLED + " to false.");
+        // Hibernate Envers (and others) require XML_MAPPING_ENABLED to be activated,
+        // but we don't want to enable this for any other use:
+        List<String> integrationsRequiringXmlMapping = integrationStaticDescriptors.stream()
+                .filter(HibernateOrmIntegrationStaticDescriptor::isXmlMappingRequired)
+                .map(HibernateOrmIntegrationStaticDescriptor::getIntegrationName).collect(Collectors.toList());
+        if (integrationStaticDescriptors.stream().anyMatch(HibernateOrmIntegrationStaticDescriptor::isXmlMappingRequired)) {
+            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
+                LOG.warnf(
+                        "XML mapping is not supported. It will be partially activated to allow compatibility with %s, but this support is temporary",
+                        integrationsRequiringXmlMapping);
+            }
+        } else {
+            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
+                LOG.warn("XML mapping is not supported. Setting " + XML_MAPPING_ENABLED + " to false.");
+            }
+            cfg.put(XML_MAPPING_ENABLED, "false");
         }
-        cfg.put(XML_MAPPING_ENABLED, "false");
 
         // Note: this one is not a boolean, just having the property enables it
         if (cfg.containsKey(JACC_ENABLED)) {
             LOG.warn("JACC is not supported. Disabling it.");
+            cfg.remove(JACC_ENABLED);
         }
-        cfg.remove(JACC_ENABLED);
 
         // here we are going to iterate the merged config settings looking for:
         // 1) additional JACC permissions
@@ -316,7 +321,12 @@ public class FastBootMetadataBuilder {
         cfg.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
                 QuarkusInfinispanRegionFactory.class.getName());
 
-        HibernateOrmIntegrations.contributeBootProperties((k, v) -> cfg.put(k, v));
+        for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
+            Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();
+            if (listenerOptional.isPresent()) {
+                listenerOptional.get().contributeBootProperties(cfg::put);
+            }
+        }
 
         return mergedSettings;
     }
@@ -329,20 +339,26 @@ public class FastBootMetadataBuilder {
         );
 
         IntegrationSettings.Builder integrationSettingsBuilder = new IntegrationSettings.Builder();
-        HibernateOrmIntegrations.onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
-                (k, v) -> integrationSettingsBuilder.put(k, v));
+
+        for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
+            Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();
+            if (listenerOptional.isPresent()) {
+                listenerOptional.get().onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
+                        integrationSettingsBuilder::put);
+            }
+        }
 
         Dialect dialect = extractDialect();
-        JtaPlatform jtaPlatform = extractJtaPlatform();
         PrevalidatedQuarkusMetadata storeableMetadata = trimBootstrapMetadata(fullMeta);
         //Make sure that the service is destroyed after the metadata has been validated and trimmed, as validation needs to use it.
-        destroyServiceRegistry(fullMeta);
-        ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata);
-        return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions);
+        destroyServiceRegistry();
+        ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
+        return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(),
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, dataSource, multiTenancyStrategy,
+                isReactive, fromPersistenceXml);
     }
 
-    private void destroyServiceRegistry(MetadataImplementor fullMeta) {
+    private void destroyServiceRegistry() {
         final AbstractServiceRegistryImpl serviceRegistry = (AbstractServiceRegistryImpl) metamodelBuilder.getBootstrapContext()
                 .getServiceRegistry();
         serviceRegistry.close();
@@ -373,10 +389,6 @@ public class FastBootMetadataBuilder {
         );
 
         return PrevalidatedQuarkusMetadata.validateAndWrap(replacement);
-    }
-
-    private JtaPlatform extractJtaPlatform() {
-        return QuarkusJtaPlatform.INSTANCE;
     }
 
     private Dialect extractDialect() {
@@ -542,8 +554,7 @@ public class FastBootMetadataBuilder {
      * org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.MergedSettings,
      * org.hibernate.boot.registry.StandardServiceRegistry, java.util.List)
      */
-    protected void populate(MetadataBuilder metamodelBuilder, List<CacheRegionDefinition> cacheRegionDefinitions,
-            StandardServiceRegistry ssr) {
+    protected void populate(MetadataBuilder metamodelBuilder, List<CacheRegionDefinition> cacheRegionDefinitions) {
 
         ((MetadataBuilderImplementor) metamodelBuilder).getBootstrapContext().markAsJpaBootstrap();
 
@@ -593,8 +604,8 @@ public class FastBootMetadataBuilder {
 
         if (metadataBuilderContributorImplClass != null) {
             try {
-                metadataBuilderContributor = metadataBuilderContributorImplClass.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
+                metadataBuilderContributor = metadataBuilderContributorImplClass.getDeclaredConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalArgumentException("The MetadataBuilderContributor class ["
                         + metadataBuilderContributorImplClass + "] could not be instantiated!", e);
             }
@@ -603,13 +614,6 @@ public class FastBootMetadataBuilder {
         if (metadataBuilderContributor != null) {
             metadataBuilderContributor.contribute(metamodelBuilder);
         }
-    }
-
-    public Object withValidatorFactory(Object validatorFactory) {
-        if (validatorFactory != null) {
-            BeanValidationIntegrator.validateFactory(validatorFactory);
-        }
-        return validatorFactory;
     }
 
 }

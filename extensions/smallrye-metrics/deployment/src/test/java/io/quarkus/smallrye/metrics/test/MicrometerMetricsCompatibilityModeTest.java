@@ -25,7 +25,7 @@ public class MicrometerMetricsCompatibilityModeTest {
 
     @Test
     public void verifyOpenMetricsExport() {
-        RestAssured.when().get("/metrics").then()
+        RestAssured.when().get("/q/metrics").then()
                 .body(containsString("jvm_memory_max_bytes{"),
                         containsString("jvm_memory_used_bytes{"),
                         containsString("jvm_memory_committed_bytes{"),

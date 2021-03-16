@@ -13,11 +13,16 @@
     <artifactId>quarkus-kubernetes-client-internal</artifactId>
     <name>Quarkus - Kubernetes Client - Runtime - Internal</name>
     <description>This module only exists as a separate module to house the configuration that needs to be present on the runtime classpath when the kubernetes extension is used</description>
-    
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+            <scope>provided</scope> <!-- we don't want this ending up on the runtime classpath -->
         </dependency>
     </dependencies>
 

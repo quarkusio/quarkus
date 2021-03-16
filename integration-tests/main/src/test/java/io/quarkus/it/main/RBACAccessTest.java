@@ -53,6 +53,12 @@ public class RBACAccessTest {
     }
 
     @Test
+    public void shouldRestrictAllRoles() {
+        assertForAnonymous("/rbac-secured/allRoles", 401, Optional.empty());
+        assertForUsers("/rbac-secured/allRoles", 200, Optional.of("allRoles"));
+    }
+
+    @Test
     public void shouldRestrictAccessToSpecificRoleOnBean() {
         String path = "/rbac-secured/callingTesterOnly";
         assertForAnonymous(path, 401, Optional.empty());
@@ -77,6 +83,12 @@ public class RBACAccessTest {
     public void shouldRestrictAuthenticatedOnBean() {
         assertForAnonymous("/rbac-secured/callingAuthenticated", 401, Optional.empty());
         assertForUsers("/rbac-secured/callingAuthenticated", 200, Optional.of("callingAuthenticated"));
+    }
+
+    @Test
+    public void shouldRestrictAllRolesOnBean() {
+        assertForAnonymous("/rbac-secured/callingAllRoles", 401, Optional.empty());
+        assertForUsers("/rbac-secured/callingAllRoles", 200, Optional.of("callingAllRoles"));
     }
 
     private void assertForAnonymous(String path, int status, Optional<String> content) {

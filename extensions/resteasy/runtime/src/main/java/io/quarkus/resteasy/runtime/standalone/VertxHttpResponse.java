@@ -20,6 +20,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.RoutingContext;
 
 public class VertxHttpResponse implements HttpResponse {
     private int status = 200;
@@ -32,9 +33,11 @@ public class VertxHttpResponse implements HttpResponse {
     private ResteasyProviderFactory providerFactory;
     private final HttpMethod method;
     private final VertxOutput output;
+    private final RoutingContext routingContext;
 
     public VertxHttpResponse(HttpServerRequest request, ResteasyProviderFactory providerFactory,
-            final HttpMethod method, BufferAllocator allocator, VertxOutput output) {
+            final HttpMethod method, BufferAllocator allocator, VertxOutput output, RoutingContext routingContext) {
+        this.routingContext = routingContext;
         outputHeaders = new MultivaluedMapImpl<String, Object>();
         this.method = method;
         os = (method == null || !method.equals(HttpMethod.HEAD)) ? new VertxOutputStream(this, allocator)
@@ -140,7 +143,7 @@ public class VertxHttpResponse implements HttpResponse {
                 committed = true;
                 response.setStatusCode(getStatus());
                 transformHeaders(this, response, providerFactory);
-                response.headersEndHandler(h -> {
+                routingContext.addHeadersEndHandler(h -> {
                     response.headers().remove(HttpHeaders.CONTENT_LENGTH);
                     response.headers().set(HttpHeaders.CONNECTION, HttpHeaders.KEEP_ALIVE);
                 });

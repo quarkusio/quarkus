@@ -1,14 +1,16 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Set;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -20,37 +22,19 @@ public class JPAConfig {
 
     private static final Logger LOGGER = Logger.getLogger(JPAConfig.class.getName());
 
-    private final AtomicBoolean jtaEnabled;
+    private final Map<String, Set<String>> entityPersistenceUnitMapping;
 
     private final Map<String, LazyPersistenceUnit> persistenceUnits;
 
-    private final AtomicReference<String> defaultPersistenceUnitName;
+    @Inject
+    public JPAConfig(JPAConfigSupport jpaConfigSupport) {
+        this.entityPersistenceUnitMapping = Collections.unmodifiableMap(jpaConfigSupport.entityPersistenceUnitMapping);
 
-    public JPAConfig() {
-        this.jtaEnabled = new AtomicBoolean();
-        this.persistenceUnits = new ConcurrentHashMap<>();
-        this.defaultPersistenceUnitName = new AtomicReference<String>();
-    }
-
-    void setJtaEnabled(boolean value) {
-        jtaEnabled.set(value);
-    }
-
-    public EntityManagerFactory getEntityManagerFactory(String unitName) {
-        if (unitName == null || unitName.isEmpty()) {
-            if (persistenceUnits.size() == 1) {
-                String defaultUnitName = defaultPersistenceUnitName.get();
-                return defaultUnitName != null ? persistenceUnits.get(defaultUnitName).get()
-                        : persistenceUnits.values().iterator().next().get();
-            } else {
-                throw new IllegalStateException("Unable to identify the default PU: " + persistenceUnits);
-            }
+        Map<String, LazyPersistenceUnit> persistenceUnitsBuilder = new HashMap<>();
+        for (String persistenceUnitName : jpaConfigSupport.persistenceUnitNames) {
+            persistenceUnitsBuilder.put(persistenceUnitName, new LazyPersistenceUnit(persistenceUnitName));
         }
-        return persistenceUnits.get(unitName).get();
-    }
-
-    void registerPersistenceUnit(String unitName) {
-        persistenceUnits.put(unitName, new LazyPersistenceUnit(unitName));
+        this.persistenceUnits = persistenceUnitsBuilder;
     }
 
     void startAll() {
@@ -59,14 +43,38 @@ public class JPAConfig {
         }
     }
 
-    void initDefaultPersistenceUnit() {
-        if (persistenceUnits.size() == 1) {
-            defaultPersistenceUnitName.set(persistenceUnits.keySet().iterator().next());
+    public EntityManagerFactory getEntityManagerFactory(String unitName) {
+        LazyPersistenceUnit lazyPersistenceUnit = null;
+        if (unitName == null) {
+            if (persistenceUnits.size() == 1) {
+                lazyPersistenceUnit = persistenceUnits.values().iterator().next();
+            }
+        } else {
+            lazyPersistenceUnit = persistenceUnits.get(unitName);
         }
+
+        if (lazyPersistenceUnit == null) {
+            throw new IllegalArgumentException(
+                    String.format(Locale.ROOT, "Unable to find an EntityManagerFactory for persistence unit '%s'", unitName));
+        }
+
+        return lazyPersistenceUnit.get();
     }
 
-    boolean isJtaEnabled() {
-        return jtaEnabled.get();
+    /**
+     * Returns the registered persistence units.
+     *
+     * @return Set containing the names of all registered persistence units.
+     */
+    public Set<String> getPersistenceUnits() {
+        return persistenceUnits.keySet();
+    }
+
+    /**
+     * Returns the set of persistence units an entity is attached to.
+     */
+    public Set<String> getPersistenceUnitsForEntity(String entityClass) {
+        return entityPersistenceUnitMapping.getOrDefault(entityClass, Collections.emptySet());
     }
 
     /**

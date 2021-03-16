@@ -1,26 +1,32 @@
 package io.quarkus.agroal.runtime;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import java.util.function.Supplier;
+
+import io.agroal.api.AgroalDataSource;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
-@SuppressWarnings("deprecation")
 public class AgroalRecorder {
 
-    public void configureDatasources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
-            LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
-            LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
-            LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig,
-            boolean disableSslSupport) {
-        Arc.container().instance(AbstractDataSourceProducer.class).get().configureDataSources(dataSourcesBuildTimeConfig,
-                dataSourcesJdbcBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesJdbcRuntimeConfig,
-                legacyDataSourcesJdbcBuildTimeConfig, legacyDataSourcesRuntimeConfig, legacyDataSourcesJdbcRuntimeConfig,
-                disableSslSupport);
+    public Supplier<DataSourceSupport> dataSourceSupportSupplier(DataSourceSupport dataSourceSupport) {
+        return new Supplier<DataSourceSupport>() {
+            @Override
+            public DataSourceSupport get() {
+                return dataSourceSupport;
+            }
+        };
     }
+
+    public Supplier<AgroalDataSource> agroalDataSourceSupplier(String dataSourceName,
+            @SuppressWarnings("unused") DataSourcesRuntimeConfig dataSourcesRuntimeConfig) {
+        final AgroalDataSource agroalDataSource = DataSources.fromName(dataSourceName);
+        return new Supplier<AgroalDataSource>() {
+            @Override
+            public AgroalDataSource get() {
+                return agroalDataSource;
+            }
+        };
+    }
+
 }

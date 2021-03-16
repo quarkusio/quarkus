@@ -1,28 +1,39 @@
 package io.quarkus.deployment;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.file.Path;
 
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class ApplicationArchiveImpl extends MultiBuildItem implements ApplicationArchive, Closeable {
+public final class ApplicationArchiveImpl extends MultiBuildItem implements ApplicationArchive {
 
     private final IndexView indexView;
-    private final Path archiveRoot;
-    private final Closeable closeable;
+    private final PathsCollection rootDirs;
     private final boolean jar;
-    private final Path archiveLocation;
+    private final PathsCollection paths;
+    private final AppArtifactKey artifactKey;
 
     public ApplicationArchiveImpl(IndexView indexView, Path archiveRoot, Closeable closeable, boolean jar,
-            Path archiveLocation) {
+            Path archiveLocation, AppArtifactKey artifactKey) {
+        this(indexView, PathsCollection.of(archiveRoot), PathsCollection.of(archiveLocation), artifactKey);
+    }
+
+    public ApplicationArchiveImpl(IndexView indexView, PathsCollection rootDirs, PathsCollection paths,
+            AppArtifactKey artifactKey) {
+        this(indexView, rootDirs, paths, false, artifactKey);
+    }
+
+    private ApplicationArchiveImpl(IndexView indexView, PathsCollection rootDirs, PathsCollection paths, boolean jar,
+            AppArtifactKey artifactKey) {
         this.indexView = indexView;
-        this.archiveRoot = archiveRoot;
-        this.closeable = closeable;
+        this.rootDirs = rootDirs;
+        this.paths = paths;
         this.jar = jar;
-        this.archiveLocation = archiveLocation;
+        this.artifactKey = artifactKey;
     }
 
     @Override
@@ -31,24 +42,36 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
     }
 
     @Override
+    @Deprecated
     public Path getArchiveRoot() {
-        return archiveRoot;
+        return rootDirs.iterator().next();
     }
 
     @Override
+    @Deprecated
     public boolean isJarArchive() {
         return jar;
     }
 
     @Override
+    @Deprecated
     public Path getArchiveLocation() {
-        return archiveLocation;
+        return paths.iterator().next();
     }
 
     @Override
-    public void close() throws IOException {
-        if (closeable != null) {
-            closeable.close();
-        }
+    public PathsCollection getRootDirs() {
+        return rootDirs;
     }
+
+    @Override
+    public PathsCollection getPaths() {
+        return paths;
+    }
+
+    @Override
+    public AppArtifactKey getArtifactKey() {
+        return artifactKey;
+    }
+
 }

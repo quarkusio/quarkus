@@ -22,7 +22,8 @@ public class VertxWebRecorder {
             }
             Class<? extends Handler<RoutingContext>> handlerClazz = (Class<? extends Handler<RoutingContext>>) cl
                     .loadClass(handlerClassName);
-            return handlerClazz.getDeclaredConstructor().newInstance();
+            RouteHandler handler = (RouteHandler) handlerClazz.getDeclaredConstructor().newInstance();
+            return handler;
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException
                 | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create route handler: " + handlerClassName, e);

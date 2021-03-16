@@ -1,14 +1,18 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -18,16 +22,17 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.runner.bootstrap.GenerateConfigTask;
 
 /**
- * Generates an example application-config.properties, with all properties commented out
+ * Generates an example application.properties, with all properties commented out.
  *
  * If this is already present then it will be appended too, although only properties that were not already present
  *
@@ -43,6 +48,9 @@ public class GenerateConfigMojo extends AbstractMojo {
      */
     @Component
     private RepositorySystem repoSystem;
+
+    @Component
+    private RemoteRepositoryManager remoteRepoManager;
 
     @Component
     private MavenProjectHelper projectHelper;
@@ -83,10 +91,6 @@ public class GenerateConfigMojo extends AbstractMojo {
     @Parameter(defaultValue = "${file}")
     private String file;
 
-    public GenerateConfigMojo() {
-        MojoLogger.logSupplier = this::getLog;
-    }
-
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -98,17 +102,39 @@ public class GenerateConfigMojo extends AbstractMojo {
             throw new MojoExecutionException("No resources directory, cannot create application.properties");
         }
 
+        // Here we are creating the output dir if it does not exist just to be able to resolve
+        // the root app artifact, otherwise the project has to be compiled at least
+        final Path classesDir = Paths.get(project.getBuild().getOutputDirectory());
+        if (!Files.exists(classesDir)) {
+            if (getLog().isDebugEnabled()) {
+                getLog().debug("Creating empty " + classesDir + " just to be able to resolve the project's artifact");
+            }
+            try {
+                Files.createDirectories(classesDir);
+            } catch (IOException e) {
+                throw new MojoExecutionException("Failed to create " + classesDir);
+            }
+        }
+
         try {
             MavenArtifactResolver resolver = MavenArtifactResolver.builder()
                     .setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepoManager)
                     .build();
 
+            final Artifact projectArtifact = project.getArtifact();
+            final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+                    projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
+                    projectArtifact.getVersion());
+            appArtifact.setPath(classesDir);
+
             try (CuratedApplication curatedApplication = QuarkusBootstrap
-                    .builder(Paths.get(project.getBuild().getOutputDirectory()))
-                    .setMavenArtifactResolver(resolver)
+                    .builder()
+                    .setAppArtifact(appArtifact)
                     .setProjectRoot(project.getBasedir().toPath())
+                    .setMavenArtifactResolver(resolver)
                     .setBaseClassLoader(getClass().getClassLoader())
                     .setBuildSystemProperties(project.getProperties())
                     .build().bootstrap()) {
@@ -123,12 +149,15 @@ public class GenerateConfigMojo extends AbstractMojo {
                 Path configFile = new File(target, name).toPath();
                 curatedApplication.runInAugmentClassLoader(GenerateConfigTask.class.getName(),
                         Collections.singletonMap(GenerateConfigTask.CONFIG_FILE, configFile));
-
-            } catch (Exception e) {
-                throw new MojoExecutionException("Failed to generate config file", e);
             }
-        } catch (AppModelResolverException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to generate config file", e);
         }
+    }
+
+    @Override
+    public void setLog(Log log) {
+        super.setLog(log);
+        MojoLogger.delegate = log;
     }
 }

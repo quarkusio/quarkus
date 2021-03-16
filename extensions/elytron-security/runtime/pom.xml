@@ -6,7 +6,6 @@
         <artifactId>quarkus-elytron-security-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -67,6 +66,11 @@
         <dependency>
             <groupId>jakarta.security.auth.message</groupId>
             <artifactId>jakarta.security.auth.message-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

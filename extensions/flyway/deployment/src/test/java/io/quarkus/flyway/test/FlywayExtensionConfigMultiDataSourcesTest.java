@@ -41,7 +41,7 @@ public class FlywayExtensionConfigMultiDataSourcesTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(FlywayExtensionConfigFixture.class)
+                    .addClasses(FlywayExtensionConfigFixture.class, FlywayExtensionCallback.class)
                     .addAsResource("config-for-multiple-datasources.properties", "application.properties"));
 
     @Test

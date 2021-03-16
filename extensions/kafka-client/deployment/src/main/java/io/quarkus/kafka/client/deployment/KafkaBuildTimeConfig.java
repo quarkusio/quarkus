@@ -13,4 +13,13 @@ public class KafkaBuildTimeConfig {
      */
     @ConfigItem(name = "health.enabled", defaultValue = "false")
     public boolean healthEnabled;
+
+    /**
+     * Whether or not to enable Snappy in native mode.
+     * <p>
+     * Note that Snappy requires GraalVM 21+ and embeds a native library in the native executable.
+     * This library is unpacked and loaded when the application starts.
+     */
+    @ConfigItem(name = "snappy.enabled", defaultValue = "false")
+    public boolean snappyEnabled;
 }

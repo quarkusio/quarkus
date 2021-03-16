@@ -1,7 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,9 +15,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
-import io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
-import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -27,6 +23,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
 
 //TODO: this should go away, once we decide on which one of the API's we want
@@ -41,7 +38,6 @@ class NativeImageConfigBuildStep {
             SslNativeConfigBuildItem sslNativeConfig,
             List<JniBuildItem> jniBuildItems,
             List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
-            List<NativeImageEnableAllTimeZonesBuildItem> nativeImageEnableAllTimeZonesBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             List<EnableAllSecurityServicesBuildItem> enableAllSecurityServicesBuildItems,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
@@ -50,8 +46,7 @@ class NativeImageConfigBuildStep {
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
-            BuildProducer<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPath,
-            BuildProducer<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty) {
+            BuildProducer<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPath) {
         for (NativeImageConfigBuildItem nativeImageConfigBuildItem : nativeImageConfigBuildItems) {
             for (String i : nativeImageConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
@@ -75,15 +70,6 @@ class NativeImageConfigBuildStep {
         sslContextConfigurationRecorder.setSslNativeEnabled(!sslNativeConfig.isExplicitlyDisabled());
 
         Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
-        if (sslNativeEnabled) {
-            // This makes the native image dependent on the local path used to build it.
-            String graalVmHome = System.getenv("GRAALVM_HOME");
-            if (graalVmHome != null) {
-                Path graalVmCacertsPath = Paths.get(graalVmHome, "jre", "lib", "security", "cacerts");
-                // This is useful for testing but the user will have to override it.
-                sslTrustStoreSystemProperty.produce(new SslTrustStoreSystemPropertyBuildItem(graalVmCacertsPath.toString()));
-            }
-        }
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
 
         if (!enableAllSecurityServicesBuildItems.isEmpty()) {
@@ -101,10 +87,15 @@ class NativeImageConfigBuildStep {
         if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
         }
+    }
 
-        if (!nativeImageEnableAllTimeZonesBuildItems.isEmpty()) {
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-timezones", "true"));
-        }
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void reinitHostNameUtil(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitClass) {
+        // certain libraries like JBoss logging internally use this class to determine the hostname
+        // of the system. This HostName class computes and stores the hostname as a static field in a class,
+        // so we reinitialize this to re-compute the field (and other related fields) during native application's
+        // runtime
+        runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

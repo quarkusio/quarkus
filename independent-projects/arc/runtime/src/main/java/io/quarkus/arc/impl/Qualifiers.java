@@ -1,16 +1,17 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.util.Nonbinding;
+import javax.inject.Qualifier;
 
 public final class Qualifiers {
 
@@ -21,20 +22,30 @@ public final class Qualifiers {
     private Qualifiers() {
     }
 
-    static boolean hasQualifiers(InjectableBean<?> bean, Annotation... requiredQualifiers) {
+    static void verify(Iterable<Annotation> qualifiers) {
+        for (Annotation qualifier : qualifiers) {
+            verifyQualifier(qualifier.annotationType());
+        }
+    }
+
+    static void verify(Annotation... qualifiers) {
+        for (Annotation qualifier : qualifiers) {
+            verifyQualifier(qualifier.annotationType());
+        }
+    }
+
+    static boolean hasQualifiers(Set<Annotation> beanQualifiers, Map<String, Set<String>> qualifierNonbindingMembers,
+            Annotation... requiredQualifiers) {
         for (Annotation qualifier : requiredQualifiers) {
-            if (!hasQualifier(bean, qualifier)) {
+            if (!hasQualifier(beanQualifiers, qualifier, qualifierNonbindingMembers)) {
                 return false;
             }
         }
         return true;
     }
 
-    static boolean hasQualifier(InjectableBean<?> bean, Annotation requiredQualifier) {
-        return hasQualifier(bean.getQualifiers(), requiredQualifier);
-    }
-
-    static boolean hasQualifier(Iterable<Annotation> qualifiers, Annotation requiredQualifier) {
+    static boolean hasQualifier(Iterable<Annotation> qualifiers, Annotation requiredQualifier,
+            Map<String, Set<String>> qualifierNonbindingMembers) {
 
         Class<? extends Annotation> requiredQualifierClass = requiredQualifier.annotationType();
         Method[] members = requiredQualifierClass.getDeclaredMethods();
@@ -48,6 +59,12 @@ public final class Qualifiers {
             for (Method value : members) {
                 if (value.isAnnotationPresent(Nonbinding.class)) {
                     continue;
+                }
+                if (!qualifierNonbindingMembers.isEmpty()) {
+                    Set<String> nonbindingMembers = qualifierNonbindingMembers.get(qualifierClass.getName());
+                    if (nonbindingMembers != null && nonbindingMembers.contains(value.getName())) {
+                        continue;
+                    }
                 }
                 Object val1 = invoke(value, requiredQualifier);
                 Object val2 = invoke(value, qualifier);
@@ -68,9 +85,10 @@ public final class Qualifiers {
         return false;
     }
 
-    static boolean isSubset(Set<Annotation> observedQualifiers, Set<Annotation> eventQualifiers) {
+    static boolean isSubset(Set<Annotation> observedQualifiers, Set<Annotation> eventQualifiers,
+            Map<String, Set<String>> qualifierNonbindingMembers) {
         for (Annotation required : observedQualifiers) {
-            if (!hasQualifier(eventQualifiers, required)) {
+            if (!hasQualifier(eventQualifiers, required, qualifierNonbindingMembers)) {
                 return false;
             }
         }
@@ -81,7 +99,7 @@ public final class Qualifiers {
         Set<Annotation> qualifiers = new HashSet<>();
         qualifiers.add(Default.Literal.INSTANCE);
         qualifiers.add(Any.Literal.INSTANCE);
-        return qualifiers;
+        return Collections.unmodifiableSet(qualifiers);
     }
 
     private static Object invoke(Method method, Object instance) {
@@ -93,6 +111,12 @@ public final class Qualifiers {
         } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(
                     "Error checking value of member method " + method.getName() + " on " + method.getDeclaringClass(), e);
+        }
+    }
+
+    private static void verifyQualifier(Class<? extends Annotation> annotationType) {
+        if (!annotationType.isAnnotationPresent(Qualifier.class)) {
+            throw new IllegalArgumentException("Annotation is not a qualifier: " + annotationType);
         }
     }
 

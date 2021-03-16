@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class PrincipalInjectionUnitTest {
-    private static Class[] testClasses = {
+    private static Class<?>[] testClasses = {
             PrincipalInjectionEndpoint.class,
             TokenUtils.class
     };
@@ -29,9 +29,7 @@ public class PrincipalInjectionUnitTest {
      */
     private String token;
     // Time claims in the token
-    private Long iatClaim;
     private Long authTimeClaim;
-    private Long expClaim;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -46,9 +44,7 @@ public class PrincipalInjectionUnitTest {
     public void generateToken() throws Exception {
         HashMap<String, Long> timeClaims = new HashMap<>();
         token = TokenUtils.generateTokenString("/Token1.json", null, timeClaims);
-        iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
-        expClaim = timeClaims.get(Claims.exp.name());
     }
 
     /**

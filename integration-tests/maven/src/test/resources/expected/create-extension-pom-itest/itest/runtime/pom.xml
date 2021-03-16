@@ -14,10 +14,6 @@
     <name>Itest - Runtime</name>
 
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

@@ -4,7 +4,6 @@ import io.quarkus.qute.SectionHelperFactory.BlockInfo;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,10 +11,10 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Each section tag consists of one or more blocks. The main block is always present. Additional blocks start with a label
+ * Each section consists of one or more blocks. The main block is always present. Additional blocks start with a label
  * definition: <code>{#label param1}</code>.
  */
-public class SectionBlock {
+public final class SectionBlock {
 
     public final Origin origin;
 
@@ -28,7 +27,7 @@ public class SectionBlock {
      */
     public final String label;
     /**
-     * Map of parsed parameters.
+     * An ordered map of parsed parameters.
      */
     public final Map<String, String> parameters;
 
@@ -37,7 +36,7 @@ public class SectionBlock {
     /**
      * Section content.
      */
-    final List<TemplateNode> nodes;
+    List<TemplateNode> nodes;
 
     public SectionBlock(Origin origin, String id, String label, Map<String, String> parameters,
             Map<String, Expression> expressions,
@@ -50,8 +49,12 @@ public class SectionBlock {
         this.nodes = ImmutableList.copyOf(nodes);
     }
 
-    Set<Expression> getExpressions() {
-        Set<Expression> expressions = new HashSet<>();
+    public boolean isEmpty() {
+        return nodes.isEmpty();
+    }
+
+    List<Expression> getExpressions() {
+        List<Expression> expressions = new ArrayList<>();
         expressions.addAll(this.expressions.values());
         for (TemplateNode node : nodes) {
             expressions.addAll(node.getExpressions());
@@ -65,6 +68,54 @@ public class SectionBlock {
         builder.append("SectionBlock [origin=").append(origin).append(", id=").append(id).append(", label=").append(label)
                 .append("]");
         return builder.toString();
+    }
+
+    void optimizeNodes(Set<TemplateNode> nodesToRemove) {
+        List<TemplateNode> effectiveNodes = new ArrayList<>();
+        for (TemplateNode node : nodes) {
+            if (node instanceof SectionNode) {
+                effectiveNodes.add(node);
+                ((SectionNode) node).optimizeNodes(nodesToRemove);
+            } else if (node != Parser.COMMENT_NODE && !(node instanceof ParameterDeclarationNode)
+                    && (nodesToRemove.isEmpty() || !nodesToRemove.contains(node))) {
+                // Ignore comments, param declarations and nodes for removal
+                effectiveNodes.add(node);
+            }
+        }
+        // Collapse adjacent text and line separator nodes
+        List<TemplateNode> finalNodes = new ArrayList<>();
+        List<TextNode> group = null;
+        for (TemplateNode node : effectiveNodes) {
+            if (node instanceof TextNode) {
+                if (group == null) {
+                    group = new ArrayList<>();
+                }
+                group.add((TextNode) node);
+            } else {
+                if (group != null) {
+                    collapseGroup(group, finalNodes);
+                    group = null;
+                }
+                finalNodes.add(node);
+            }
+        }
+        if (group != null) {
+            collapseGroup(group, finalNodes);
+        }
+        nodes = ImmutableList.copyOf(finalNodes);
+    }
+
+    private void collapseGroup(List<TextNode> group, List<TemplateNode> finalNodes) {
+        if (group.size() > 1) {
+            // Collapse the group...
+            StringBuilder val = new StringBuilder();
+            for (TextNode textNode : group) {
+                val.append(textNode.getValue());
+            }
+            finalNodes.add(new TextNode(val.toString(), group.get(0).getOrigin()));
+        } else {
+            finalNodes.add(group.get(0));
+        }
     }
 
     static SectionBlock.Builder builder(String id, Function<String, Expression> expressionFunc,

@@ -1,10 +1,9 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Qute Templating Engine
-:extension-status: experimental
 
 include::./attributes.adoc[]
 
@@ -15,11 +14,9 @@ In the development mode, all files located in `src/main/resources/templates` are
 Furthermore, we try to detect most of the template problems at build time.
 In this guide, you will learn how to easily render templates in your application.
 
-include::./status-include.adoc[]
-
 == Hello World with JAX-RS
 
-If you want to use Qute in your JAX-RS application, you need to add the `quarkus-qute-resteasy` extension first.
+If you want to use Qute in your JAX-RS application, you need to add the `quarkus-resteasy-qute` extension first.
 In your `pom.xml` file, add:
 
 [source,xml]
@@ -75,18 +72,120 @@ public class HelloResource {
 
 If your application is running, you can request the endpoint:
 
-[source, shell]
+[source,shell]
 ----
 $ curl -w "\n" http://localhost:8080/hello?name=Martin
 Hello Martin!
 ----
 
-== Parameter Declarations and Template Extension Methods
+== Type-safe templates
 
-Qute has many useful features.
-In this example, we'll demonstrate two of them.
+There's an alternate way to declare your templates in your Java code, which relies on the following convention:
+
+- Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
+  your `ItemResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/ItemResource/hello.txt`
+  and `/src/main/resources/templates/ItemResource/goodbye.txt`. Grouping templates per resource class makes it easier to navigate to them.
+- In each of your resource class, declare a `@CheckedTemplate static class Template {}` class within your resource class.
+- Declare one `public static native TemplateInstance method();` per template file for your resource.
+- Use those static methods to build your template instances.
+
+Here's the previous example, rewritten using this style:
+
+We'll start with a very simple template:
+
+.HelloResource/hello.txt
+[source]
+----
+Hello {name}! <1>
+----
+<1> `{name}` is a value expression that is evaluated when the template is rendered.
+
+Now let's declare and use those templates in the resource class.
+
+.HelloResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+
+import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.CheckedTemplate;
+
+@Path("hello")
+public class HelloResource {
+
+    @CheckedTemplate
+    public static class Templates {
+        public static native TemplateInstance hello(); <1>
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public TemplateInstance get(@QueryParam("name") String name) {
+        return Templates.hello().data("name", name); <2> <3>
+    }
+}
+----
+<1> This declares a template with path `templates/HelloResource/hello.txt`.
+<2> `Templates.hello()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
+<3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
+ 
+NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template from your Java code and you forgot to add it, we will let you know at build time :)
+
+Keep in mind this style of declaration allows you to reference templates declared in other resources too:
+
+.HelloResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+
+import io.quarkus.qute.TemplateInstance;
+
+@Path("goodbye")
+public class GoodbyeResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public TemplateInstance get(@QueryParam("name") String name) {
+        return HelloResource.Templates.hello().data("name", name);
+    }
+}
+----
+
+=== Top-level type-safe templates
+
+Naturally, if you want to declare templates at the top-level, directly in `/src/main/resources/templates/hello.txt`, for example,
+you can declare them in a toplevel (non-nested) `Templates` class:
+
+.HelloResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.Template;
+import io.quarkus.qute.CheckedTemplate;
+
+@CheckedTemplate
+public class Templates {
+    public static native TemplateInstance hello(); <1>
+}
+----
+<1> This declares a template with path `templates/hello.txt`.
+
+
+== Template Parameter Declarations 
+
 If you declare a *parameter declaration* in a template then Qute attempts to validate all expressions that reference this parameter and if an incorrect expression is found the build fails.
-*Template extension methods* are used to extend the set of accessible properties of data objects.
 
 Let's suppose we have a simple class like this:
 
@@ -99,9 +198,69 @@ public class Item {
 }
 ----
 
-And we'd like to render a simple HTML page that contains the item name, price and also a discounted price.
-The discounted price is sometimes called a "computed property".
-We will implement a template extension method to render this property easily.
+And we'd like to render a simple HTML page that contains the item name and price.
+
+Let's start again with the template:
+
+.ItemResource/item.html
+[source,html]
+----
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{item.name}</title> <1>
+</head>
+<body>
+    <h1>{item.name}</h1>
+    <div>Price: {item.price}</div> <2> 
+</body>
+</html>
+----
+<1> This expression is validated. Try to change the expression to `{item.nonSense}` and the build should fail.
+<2> This is also validated.
+
+Finally, let's create a resource class with type-safe templates:
+
+.ItemResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.Template;
+import io.quarkus.qute.CheckedTemplate;
+
+@Path("item")
+public class ItemResource {
+
+    @CheckedTemplate
+    public static class Templates {
+        public static native TemplateInstance item(Item item); <1>
+    }
+
+    @GET
+    @Path("{id}")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance get(@PathParam("id") Integer id) {
+        return Templates.item(service.findItem(id)); <2>
+    }
+}
+----
+<1> Declare a method that gives us a `TemplateInstance` for `templates/ItemResource/item.html` and declare its `Item item` parameter so we can validate the template.
+<2> Make the `Item` object accessible in the template.
+
+=== Template parameter declaration inside the template itself
+
+Alternatively, you can declare your template parameters in the template file itself.
+
 Let's start again with the template:
 
 .item.html
@@ -117,16 +276,11 @@ Let's start again with the template:
 <body>
     <h1>{item.name}</h1>
     <div>Price: {item.price}</div> 
-    {#if item.price > 100} <3>
-    <div>Discounted Price: {item.discountedPrice}</div> <4>
-    {/if}
 </body>
 </html>
 ----
 <1> Optional parameter declaration. Qute attempts to validate all expressions that reference the parameter `item`.
 <2> This expression is validated. Try to change the expression to `{item.nonSense}` and the build should fail.
-<3> `if` is a basic control flow section.
-<4> This expression is also validated against the `Item` class and obviously there is no such property declared. However, there is a template extension method declared on the `ItemResource` class - see below.
 
 Finally, let's create a resource class.
 
@@ -160,16 +314,66 @@ public class ItemResource {
     public TemplateInstance get(@PathParam("id") Integer id) {
         return item.data("item", service.findItem(id)); <2>
     }
-
-    @TemplateExtension <3>
-    static BigDecimal discountedPrice(Item item) {
-        return item.price.multiply(new BigDecimal("0.9"));
-    }
 }
 ----
 <1> Inject the template with path `templates/item.html`.
 <2> Make the `Item` object accessible in the template.
-<3> A static template extension method can be used to add "computed properties" to a data class. The class of the first parameter is used to match the base object and the method name is used to match the property name.
+
+== Template Extension Methods
+
+*Template extension methods* are used to extend the set of accessible properties of data objects.
+
+Sometimes, you're not in control of the classes that you want to use in your template, and you cannot add methods
+to them. Template extension methods allows you to declare new method for those classes that will be available
+from your templates just as if they belonged to the target class.
+
+Let's keep extending on our simple HTML page that contains the item name, price and add a discounted price.
+The discounted price is sometimes called a "computed property".
+We will implement a template extension method to render this property easily.
+Let's update our template:
+
+.HelloResource/item.html
+[source,html]
+----
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{item.name}</title>
+</head>
+<body>
+    <h1>{item.name}</h1>
+    <div>Price: {item.price}</div> 
+    {#if item.price > 100} <1>
+    <div>Discounted Price: {item.discountedPrice}</div> <2>
+    {/if}
+</body>
+</html>
+----
+<1> `if` is a basic control flow section.
+<2> This expression is also validated against the `Item` class and obviously there is no such property declared. However, there is a template extension method declared on the `TemplateExtensions` class - see below.
+
+Finally, let's create a class where we put all our extension methods:
+
+.TemplateExtensions.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import io.quarkus.qute.TemplateExtension;
+
+@TemplateExtension
+public class TemplateExtensions {
+
+    public static BigDecimal discountedPrice(Item item) { <1>
+        return item.price.multiply(new BigDecimal("0.9"));
+    }
+}
+----
+<1> A static template extension method can be used to add "computed properties" to a data class. The class of the first parameter is used to match the base object and the method name is used to match the property name.
+
+NOTE: you can place template extension methods in every class if you annotate them with `@TemplateExtension` but we advise to keep them either
+grouped by target type, or in a single `TemplateExtensions` class by convention.
 
 == Rendering Periodic Reports
 

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Flyway
 
@@ -27,7 +27,7 @@ In your `pom.xml`, add the following dependencies:
 * your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
 
 [source,xml]
---
+----
 <dependencies>
     <!-- Flyway specific dependencies -->
     <dependency>
@@ -41,7 +41,7 @@ In your `pom.xml`, add the following dependencies:
         <artifactId>quarkus-jdbc-postgresql</artifactId>
     </dependency>
 </dependencies>
---
+----
 
 Flyway support relies on the Quarkus datasource config.
 It can be customized for the default datasource as well as for every <<multiple-datasources,named datasource>>.
@@ -55,7 +55,7 @@ include::{generated-dir}/config/quarkus-flyway.adoc[opts=optional, leveloffset=+
 The following is an example for the `{config-file}` file:
 
 [source,properties]
---
+----
 # configure your datasource
 quarkus.datasource.db-kind=postgresql
 quarkus.datasource.username=sarah
@@ -75,13 +75,12 @@ quarkus.flyway.migrate-at-start=true
 # quarkus.flyway.locations=db/location1,db/location2
 # quarkus.flyway.sql-migration-prefix=X
 # quarkus.flyway.repeatable-sql-migration-prefix=K
-
---
+----
 
 Add a SQL migration to the default folder following the Flyway naming conventions: `{migrations-path}/V1.0.0__Quarkus.sql`
 
 [source,sql]
---
+----
 CREATE TABLE quarkus
 (
   id   INT,
@@ -89,12 +88,12 @@ CREATE TABLE quarkus
 );
 INSERT INTO quarkus(id, name)
 VALUES (1, 'QUARKED');
---
+----
 
 Now you can start your application and Quarkus will run the Flyway's migrate method according to your config:
 
 [source,java]
---
+----
 @ApplicationScoped
 public class MigrationService {
     // You can Inject the object if you want to use it manually
@@ -106,7 +105,7 @@ public class MigrationService {
         System.out.println(flyway.info().current().getVersion().toString());
     }
 }
---
+----
 
 <1> Inject the Flyway object if you want to use it directly
 
@@ -116,23 +115,20 @@ Flyway can be configured for multiple datasources.
 The Flyway properties are prefixed exactly the same way as the named datasources, for example:
 
 [source,properties]
---
+----
 quarkus.datasource.db-kind=h2
 quarkus.datasource.username=username-default
 quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:default
-quarkus.datasource.jdbc.min-size=3
 quarkus.datasource.jdbc.max-size=13
 
 quarkus.datasource.users.db-kind=h2
 quarkus.datasource.users.username=username1
 quarkus.datasource.users.jdbc.url=jdbc:h2:tcp://localhost/mem:users
-quarkus.datasource.users.jdbc.min-size=1
 quarkus.datasource.users.jdbc.max-size=11
 
 quarkus.datasource.inventory.db-kind=h2
 quarkus.datasource.inventory.username=username2
 quarkus.datasource.inventory.jdbc.url=jdbc:h2:tcp://localhost/mem:inventory
-quarkus.datasource.inventory.jdbc.min-size=2
 quarkus.datasource.inventory.jdbc.max-size=12
 
 # Flyway configuration for the default datasource
@@ -149,7 +145,7 @@ quarkus.flyway.users.migrate-at-start=true
 quarkus.flyway.inventory.schemas=INVENTORY_TEST_SCHEMA
 quarkus.flyway.inventory.locations=db/inventory/location1,db/inventory/location2
 quarkus.flyway.inventory.migrate-at-start=true
---
+----
 
 Notice there's an extra bit in the key.
 The syntax is as follows: `quarkus.flyway.[optional name.][datasource property]`.
@@ -164,7 +160,7 @@ NOTE: If you enabled the `quarkus.flyway.migrate-at-start` property, by the time
 Quarkus will already have run the migrate operation
 
 [source,java]
---
+----
 @ApplicationScoped
 public class MigrationService {
     // You can Inject the object if you want to use it manually
@@ -187,7 +183,7 @@ public class MigrationService {
         System.out.println(flyway.info().current().getVersion().toString());
     }
 }
---
+----
 
 <1> Inject the Flyway object if you want to use it directly
 <2> Inject Flyway for named datasources using the Quarkus `FlywayDataSource` qualifier

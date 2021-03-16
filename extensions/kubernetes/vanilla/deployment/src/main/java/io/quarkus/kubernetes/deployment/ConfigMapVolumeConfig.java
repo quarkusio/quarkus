@@ -24,7 +24,7 @@ public class ConfigMapVolumeConfig {
     /**
      * Optional
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean optional;
 
 }

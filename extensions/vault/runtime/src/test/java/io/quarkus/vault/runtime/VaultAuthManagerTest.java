@@ -9,10 +9,18 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.runtime.TlsConfig;
+import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.VertxVaultClient;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalAppRoleAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalKubernetesAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalTokenAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalUserpassAuthMethod;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfAuth;
@@ -20,20 +28,30 @@ import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuthAuth;
 import io.quarkus.vault.runtime.config.VaultAppRoleAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.runtime.config.VaultKubernetesAuthenticationConfig;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.runtime.config.VaultTlsConfig;
 import io.quarkus.vault.runtime.config.VaultUserpassAuthenticationConfig;
 
 public class VaultAuthManagerTest {
 
-    VaultRuntimeConfig config = createConfig();
+    VaultBootstrapConfig config = createConfig();
+    TlsConfig tlsConfig = new TlsConfig();
     AtomicBoolean lookupSelfShouldReturn403 = new AtomicBoolean(false);
-    OkHttpVaultClient vaultClient = createVaultClient();
-    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultClient, config);
+    VaultConfigHolder vaultConfigHolder = new VaultConfigHolder().setVaultBootstrapConfig(config);
+    VaultClient vaultClient = createVaultClient();
+    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultConfigHolder,
+            new VaultInternalSystemBackend(), new VaultInternalAppRoleAuthMethod(),
+            new VaultInternalKubernetesAuthMethod(), createUserpassAuthMethod(),
+            createTokenAuthMethod());
     VaultUserPassAuth vaultUserPassAuth = new VaultUserPassAuth();
     VaultLookupSelf vaultLookupSelf = new VaultLookupSelf();
     VaultRenewSelf vaultRenewSelf = new VaultRenewSelf();
+
+    @AfterEach
+    public void after() {
+        vaultClient.close();
+    }
 
     @Test
     public void login() {
@@ -87,9 +105,9 @@ public class VaultAuthManagerTest {
         assertEquals("6", token.clientToken, "expires soon");
     }
 
-    private VaultRuntimeConfig createConfig() {
+    private VaultBootstrapConfig createConfig() {
         try {
-            VaultRuntimeConfig config = new VaultRuntimeConfig();
+            VaultBootstrapConfig config = new VaultBootstrapConfig();
             config.tls = new VaultTlsConfig();
             config.authentication = new VaultAuthenticationConfig();
             config.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
@@ -97,14 +115,17 @@ public class VaultAuthManagerTest {
             config.authentication.userpass = new VaultUserpassAuthenticationConfig();
             config.url = Optional.of(new URL("http://localhost:8200"));
             config.authentication.clientToken = Optional.empty();
+            config.authentication.clientTokenWrappingToken = Optional.empty();
             config.authentication.kubernetes.role = Optional.empty();
             config.authentication.appRole.roleId = Optional.empty();
             config.authentication.appRole.secretId = Optional.empty();
+            config.authentication.appRole.secretIdWrappingToken = Optional.empty();
             config.authentication.userpass.username = Optional.of("bob");
             config.authentication.userpass.password = Optional.of("sinclair");
+            config.authentication.userpass.passwordWrappingToken = Optional.empty();
             config.connectTimeout = Duration.ofSeconds(1);
             config.readTimeout = Duration.ofSeconds(1);
-            config.tls.skipVerify = true;
+            config.tls.skipVerify = Optional.of(true);
             config.logConfidentialityLevel = LogConfidentialityLevel.LOW;
             config.renewGracePeriod = Duration.ofSeconds(3);
             return config;
@@ -113,13 +134,14 @@ public class VaultAuthManagerTest {
         }
     }
 
-    private OkHttpVaultClient createVaultClient() {
-        return new OkHttpVaultClient(config) {
-            @Override
-            public VaultUserPassAuth loginUserPass(String user, String password) {
-                return vaultUserPassAuth;
-            }
+    private VaultClient createVaultClient() {
+        VertxVaultClient vaultClient = new VertxVaultClient(vaultConfigHolder, tlsConfig);
+        vaultClient.init();
+        return vaultClient;
+    }
 
+    private VaultInternalTokenAuthMethod createTokenAuthMethod() {
+        return new VaultInternalTokenAuthMethod() {
             @Override
             public VaultLookupSelf lookupSelf(String token) {
                 if (lookupSelfShouldReturn403.get()) {
@@ -135,4 +157,12 @@ public class VaultAuthManagerTest {
         };
     }
 
+    private VaultInternalUserpassAuthMethod createUserpassAuthMethod() {
+        return new VaultInternalUserpassAuthMethod() {
+            @Override
+            public VaultUserPassAuth login(String user, String password) {
+                return vaultUserPassAuth;
+            }
+        };
+    }
 }

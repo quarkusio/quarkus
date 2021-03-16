@@ -13,6 +13,8 @@ import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 
+import org.jboss.resteasy.annotations.SseElementType;
+
 @Path("/constructorproperties")
 public class TestResourceForConstructorProperties {
 
@@ -44,7 +46,8 @@ public class TestResourceForConstructorProperties {
 
     @GET
     @Path("/sse")
-    @Produces(MediaType.SERVER_SENT_EVENTS + ";element-type=" + MediaType.APPLICATION_JSON)
+    @SseElementType(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.SERVER_SENT_EVENTS)
     public void serverSentEvents(@Context SseEventSink sink) {
         VanillaJavaImmutableData data = new VanillaJavaImmutableData("sse", "ssevalue");
         try {

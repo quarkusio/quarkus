@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -15,9 +16,9 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryB
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.graphql.runtime.VertxGraphqlRecorder;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
@@ -29,7 +30,7 @@ class VertxGraphqlProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.VERTX_GRAPHQL);
+        return new FeatureBuildItem(Feature.VERTX_GRAPHQL);
     }
 
     @BuildStep
@@ -49,7 +50,8 @@ class VertxGraphqlProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void registerVertxGraphqlUI(VertxGraphqlRecorder recorder,
             BuildProducer<NativeImageResourceDirectoryBuildItem> nativeResourcesProducer, VertxGraphqlConfig config,
-            LaunchModeBuildItem launchMode, BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            LaunchModeBuildItem launchMode,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<RouteBuildItem> routes) {
 
         boolean includeVertxGraphqlUi = launchMode.getLaunchMode().isDevOrTest() || config.ui.alwaysInclude;
@@ -65,10 +67,19 @@ class VertxGraphqlProcessor {
                             + "\", this is not allowed as it blocks the application from serving anything else.");
         }
 
-        Handler<RoutingContext> handler = recorder.handler(path);
-        routes.produce(new RouteBuildItem(path, handler));
-        routes.produce(new RouteBuildItem(path + "/*", handler));
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(path + "/"));
+        Handler<RoutingContext> handler = recorder.handler();
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(path)
+                .handler(handler)
+                .requiresLegacyRedirect()
+                .displayOnNotFoundPage("GraphQL UI")
+                .build());
+        routes.produce(
+                nonApplicationRootPathBuildItem.routeBuilder()
+                        .route(path + "/*")
+                        .handler(handler)
+                        .requiresLegacyRedirect()
+                        .build());
         nativeResourcesProducer.produce(new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql"));
     }
 }

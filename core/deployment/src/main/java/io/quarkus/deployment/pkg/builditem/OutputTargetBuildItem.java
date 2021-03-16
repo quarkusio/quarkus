@@ -1,6 +1,7 @@
 package io.quarkus.deployment.pkg.builditem;
 
 import java.nio.file.Path;
+import java.util.Properties;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
@@ -13,10 +14,14 @@ public final class OutputTargetBuildItem extends SimpleBuildItem {
 
     private final Path outputDirectory;
     private final String baseName;
+    private final boolean rebuild;
+    private final Properties buildSystemProperties;
 
-    public OutputTargetBuildItem(Path outputDirectory, String baseName) {
+    public OutputTargetBuildItem(Path outputDirectory, String baseName, boolean rebuild, Properties buildSystemProperties) {
         this.outputDirectory = outputDirectory;
         this.baseName = baseName;
+        this.rebuild = rebuild;
+        this.buildSystemProperties = buildSystemProperties;
     }
 
     public Path getOutputDirectory() {
@@ -25,5 +30,13 @@ public final class OutputTargetBuildItem extends SimpleBuildItem {
 
     public String getBaseName() {
         return baseName;
+    }
+
+    public boolean isRebuild() {
+        return rebuild;
+    }
+
+    public Properties getBuildSystemProperties() {
+        return buildSystemProperties;
     }
 }

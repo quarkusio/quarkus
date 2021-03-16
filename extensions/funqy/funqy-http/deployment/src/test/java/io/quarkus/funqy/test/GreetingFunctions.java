@@ -3,6 +3,7 @@ package io.quarkus.funqy.test;
 import javax.inject.Inject;
 
 import io.quarkus.funqy.Funq;
+import io.smallrye.mutiny.Uni;
 
 public class GreetingFunctions {
     @Inject
@@ -21,6 +22,15 @@ public class GreetingFunctions {
         greeting.setMessage(message);
         greeting.setName(name);
         return greeting;
+    }
+
+    @Funq
+    public Uni<Greeting> greetAsync(String name) {
+        String message = service.hello(name);
+        Greeting greeting = new Greeting();
+        greeting.setMessage(message);
+        greeting.setName(name);
+        return Uni.createFrom().item(() -> greeting);
     }
 
 }

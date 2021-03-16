@@ -1,0 +1,36 @@
+{#include main}
+  {#title}Dev UI{/title}
+  {#body}
+   <div class="cards-index">
+   <div class="row row-cols-1 row-cols-md-4">
+   <div class="col mb-4">
+       <div class="card h-100 shadow">
+           <div class="card-header bg-primary text-light">
+               Configuration 
+               <a href="https://quarkus.io/guides/config" class="text-light float-right" title="Guide">
+                   <i class="fa fa-book"></i>
+               </a>
+           </div>
+           <div class="card-body">
+               <p class="card-text">
+                   <a href="io.quarkus.quarkus-vertx-http/config" class="badge badge-light">
+                   <i class="fa fa-edit fa-fw"></i>
+                   Config Editor</a>
+               </p>
+           </div>
+       </div>
+   </div>
+   {#each actionableExtensions}
+       {#actionableExtension it/}
+   {/each}
+   </div>
+   {#if nonActionableExtensions.size() > 0}
+   <hr/>
+   <div class="row row-cols-1 row-cols-md-4">
+   {#each nonActionableExtensions}
+       {#nonActionableExtension it/}
+   {/each}
+   {/if}
+   </div>
+  {/body}
+{/include}

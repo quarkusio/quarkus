@@ -33,7 +33,7 @@ public class VaultAppRoleITCase {
     VaultKVSecretEngine kvSecretEngine;
 
     @Test
-    public void secretV1() {
+    public void secretV2() {
         Map<String, String> secrets = kvSecretEngine.readSecret(APP_SECRET_PATH);
         assertEquals("{" + SECRET_KEY + "=" + SECRET_VALUE + "}", secrets.toString());
     }

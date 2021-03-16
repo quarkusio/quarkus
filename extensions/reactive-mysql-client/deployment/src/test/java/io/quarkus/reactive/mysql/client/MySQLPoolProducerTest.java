@@ -21,18 +21,10 @@ public class MySQLPoolProducerTest {
             .withConfigurationResource("application-default-datasource.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(BeanUsingBareMySQLClient.class)
-                    .addClasses(BeanUsingMutinyMySQLClient.class)
-                    .addClasses(BeanUsingAxleMySQLClient.class)
-                    .addClasses(BeanUsingRXMySQLClient.class));
+                    .addClasses(BeanUsingMutinyMySQLClient.class));
 
     @Inject
     BeanUsingBareMySQLClient beanUsingBare;
-
-    @Inject
-    BeanUsingAxleMySQLClient beanUsingAxle;
-
-    @Inject
-    BeanUsingRXMySQLClient beanUsingRx;
 
     @Inject
     BeanUsingMutinyMySQLClient beanUsingMutiny;
@@ -40,8 +32,6 @@ public class MySQLPoolProducerTest {
     @Test
     public void testVertxInjection() {
         beanUsingBare.verify()
-                .thenCompose(v -> beanUsingAxle.verify())
-                .thenCompose(v -> beanUsingRx.verify())
                 .thenCompose(v -> beanUsingMutiny.verify())
                 .toCompletableFuture()
                 .join();
@@ -55,24 +45,8 @@ public class MySQLPoolProducerTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            mysqlClient.query("SELECT 1", ar -> {
-                cf.complete(null);
-            });
+            mysqlClient.query("SELECT 1").execute(ar -> cf.complete(null));
             return cf;
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingAxleMySQLClient {
-
-        @Inject
-        io.vertx.mutiny.mysqlclient.MySQLPool mysqlClient;
-
-        public CompletionStage<Void> verify() {
-            return mysqlClient.query("SELECT 1")
-                    .onItem().ignore().andContinueWithNull()
-                    .onFailure().recoverWithItem((Void) null)
-                    .subscribeAsCompletionStage();
         }
     }
 
@@ -80,28 +54,13 @@ public class MySQLPoolProducerTest {
     static class BeanUsingMutinyMySQLClient {
 
         @Inject
-        io.vertx.axle.mysqlclient.MySQLPool mysqlClient;
+        io.vertx.mutiny.mysqlclient.MySQLPool mysqlClient;
 
         public CompletionStage<Void> verify() {
-            return mysqlClient.query("SELECT 1")
-                    .<Void> thenApply(rs -> null)
-                    .exceptionally(t -> null);
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingRXMySQLClient {
-
-        @Inject
-        io.vertx.reactivex.mysqlclient.MySQLPool mysqlClient;
-
-        public CompletionStage<Void> verify() {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            mysqlClient.rxQuery("SELECT 1")
-                    .ignoreElement()
-                    .onErrorComplete()
-                    .subscribe(() -> cf.complete(null));
-            return cf;
+            return mysqlClient.query("SELECT 1").execute()
+                    .onItem().ignore().andContinueWithNull()
+                    .onFailure().recoverWithItem((Void) null)
+                    .subscribeAsCompletionStage();
         }
     }
 }

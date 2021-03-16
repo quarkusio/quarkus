@@ -25,6 +25,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -35,11 +36,14 @@ import org.jboss.resteasy.spring.web.ResponseStatusFeature;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -54,10 +58,13 @@ import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentCustomizer
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
+import io.quarkus.spring.web.runtime.ResponseStatusExceptionMapper;
 import io.quarkus.undertow.deployment.BlacklistedServletContainerInitializerBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 
 public class SpringWebProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger(SpringWebProcessor.class.getName());
 
     private static final DotName REST_CONTROLLER_ANNOTATION = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
@@ -98,7 +105,12 @@ public class SpringWebProcessor {
 
     @BuildStep
     FeatureBuildItem registerFeature() {
-        return new FeatureBuildItem(FeatureBuildItem.SPRING_WEB);
+        return new FeatureBuildItem(Feature.SPRING_WEB);
+    }
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capability.SPRING_WEB);
     }
 
     @BuildStep
@@ -129,11 +141,14 @@ public class SpringWebProcessor {
 
     @BuildStep
     public void ignoreReflectionHierarchy(BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> ignore) {
-        ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(RESPONSE_ENTITY));
+        ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
+                new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(RESPONSE_ENTITY)));
         ignore.produce(
-                new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple("org.springframework.util.MimeType")));
+                new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+                        DotName.createSimple("org.springframework.util.MimeType"))));
         ignore.produce(
-                new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple("org.springframework.util.MultiValueMap")));
+                new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+                        DotName.createSimple("org.springframework.util.MultiValueMap"))));
     }
 
     @BuildStep
@@ -149,6 +164,8 @@ public class SpringWebProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServletInitParamBuildItem> initParamProducer,
             BuildProducer<ResteasyDeploymentCustomizerBuildItem> deploymentCustomizerProducer) {
+
+        validateControllers(beanArchiveIndexBuildItem);
 
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         final Collection<AnnotationInstance> annotations = index.getAnnotations(REST_CONTROLLER_ANNOTATION);
@@ -176,6 +193,37 @@ public class SpringWebProcessor {
         }));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
+    }
+
+    /**
+     * Make sure the controllers have the proper annotation and warn if not
+     */
+    private void validateControllers(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        Set<DotName> classesWithoutRestController = new HashSet<>();
+        for (DotName mappingAnnotation : MAPPING_ANNOTATIONS) {
+            Collection<AnnotationInstance> annotations = beanArchiveIndexBuildItem.getIndex().getAnnotations(mappingAnnotation);
+            for (AnnotationInstance annotation : annotations) {
+                ClassInfo targetClass;
+                if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                    targetClass = annotation.target().asClass();
+                } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                    targetClass = annotation.target().asMethod().declaringClass();
+                } else {
+                    continue;
+                }
+
+                if (targetClass.classAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
+                    classesWithoutRestController.add(targetClass.name());
+                }
+            }
+        }
+
+        if (!classesWithoutRestController.isEmpty()) {
+            for (DotName dotName : classesWithoutRestController) {
+                LOGGER.warn("Class '" + dotName
+                        + "' uses a mapping annotation but the class itself was not annotated with '@RestContoller'. The mappings will therefore be ignored.");
+            }
+        }
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -325,7 +373,7 @@ public class SpringWebProcessor {
         return false;
     }
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     public void generateExceptionMapperProviders(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedExceptionMappers,
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
@@ -340,6 +388,11 @@ public class SpringWebProcessor {
         generateMappersForResponseStatusOnException(providersProducer, index, classOutput, typesUtil);
         generateMappersForExceptionHandlerInControllerAdvice(providersProducer, reflectiveClassProducer, index, classOutput,
                 typesUtil);
+    }
+
+    @BuildStep
+    public void registerStandardExceptionMappers(BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer) {
+        providersProducer.produce(new ResteasyJaxrsProviderBuildItem(ResponseStatusExceptionMapper.class.getName()));
     }
 
     private void generateMappersForResponseStatusOnException(BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,

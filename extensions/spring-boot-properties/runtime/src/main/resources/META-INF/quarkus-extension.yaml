@@ -4,6 +4,7 @@ metadata:
   keywords:
   - "spring-boot"
   - "properties"
+  guide: "https://quarkus.io/guides/spring-boot-properties"
   categories:
   - "compatibility"
   status: "preview"

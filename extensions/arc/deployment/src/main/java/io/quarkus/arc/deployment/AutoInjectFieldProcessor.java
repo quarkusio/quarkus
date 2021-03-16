@@ -1,15 +1,16 @@
 package io.quarkus.arc.deployment;
 
+import static io.quarkus.arc.processor.Annotations.contains;
+import static io.quarkus.arc.processor.Annotations.containsAny;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -23,10 +24,14 @@ public class AutoInjectFieldProcessor {
 
     @BuildStep
     void autoInjectQualifiers(BeanArchiveIndexBuildItem beanArchiveIndex,
-            BuildProducer<AutoInjectAnnotationBuildItem> autoInjectAnnotations) {
+            BuildProducer<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
+            List<QualifierRegistrarBuildItem> qualifierRegistrars) {
         List<DotName> qualifiers = new ArrayList<>();
         for (AnnotationInstance qualifier : beanArchiveIndex.getIndex().getAnnotations(DotNames.QUALIFIER)) {
             qualifiers.add(qualifier.target().asClass().name());
+        }
+        for (QualifierRegistrarBuildItem registrar : qualifierRegistrars) {
+            qualifiers.addAll(registrar.getQualifierRegistrar().getAdditionalQualifiers().keySet());
         }
         autoInjectAnnotations.produce(new AutoInjectAnnotationBuildItem(qualifiers));
     }
@@ -41,14 +46,14 @@ public class AutoInjectFieldProcessor {
         if (!config.autoInjectFields) {
             return;
         }
-        Set<DotName> annotations = new HashSet<>();
+        List<DotName> annotationNames = new ArrayList<>();
         for (AutoInjectAnnotationBuildItem autoInjectAnnotation : autoInjectAnnotations) {
-            annotations.addAll(autoInjectAnnotation.getAnnotationNames());
+            annotationNames.addAll(autoInjectAnnotation.getAnnotationNames());
         }
-        if (annotations.isEmpty()) {
+        if (annotationNames.isEmpty()) {
             return;
         }
-        LOGGER.debugf("Add missing @Inject to fields annotated with %s", annotations);
+        LOGGER.debugf("Add missing @Inject to fields annotated with %s", annotationNames);
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override
             public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -56,17 +61,21 @@ public class AutoInjectFieldProcessor {
             }
 
             @Override
-            public void transform(TransformationContext transformationContext) {
-                FieldInfo field = transformationContext.getTarget().asField();
-                if (Modifier.isStatic(field.flags()) || field.hasAnnotation(DotNames.INJECT)
-                        || field.hasAnnotation(DotNames.PRODUCES)) {
+            public int getPriority() {
+                // Make sure this annotation transformer is invoked after the transformers with default priority
+                return DEFAULT_PRIORITY - 1;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                Collection<AnnotationInstance> fieldAnnotations = ctx.getAnnotations();
+                if (Modifier.isStatic(ctx.getTarget().asField().flags()) || contains(fieldAnnotations, DotNames.INJECT)
+                        || contains(fieldAnnotations, DotNames.PRODUCES)) {
                     return;
                 }
-                for (DotName annotation : annotations) {
-                    if (field.hasAnnotation(annotation)) {
-                        transformationContext.transform().add(DotNames.INJECT).done();
-                        return;
-                    }
+                if (containsAny(fieldAnnotations, annotationNames)) {
+                    ctx.transform().add(DotNames.INJECT).done();
+                    return;
                 }
             }
         }));

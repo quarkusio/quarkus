@@ -24,6 +24,6 @@ public class SecretVolumeConfig {
     /**
      * Optional
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean optional;
 }

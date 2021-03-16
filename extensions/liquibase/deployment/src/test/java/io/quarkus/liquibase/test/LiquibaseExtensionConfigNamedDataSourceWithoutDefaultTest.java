@@ -32,6 +32,7 @@ public class LiquibaseExtensionConfigNamedDataSourceWithoutDefaultTest {
                     .addClass(LiquibaseExtensionConfigFixture.class)
                     .addAsResource("db/xml/changeLog.xml")
                     .addAsResource("db/xml/create-tables.xml")
+                    .addAsResource("db/xml/create-views.xml")
                     .addAsResource("db/xml/test/test.xml")
                     .addAsResource("config-for-named-datasource-without-default.properties", "application.properties"));
 

@@ -3,6 +3,7 @@ package io.quarkus.it.rest;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
@@ -19,6 +20,7 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.quarkus.arc.Arc;
+import io.smallrye.mutiny.Multi;
 
 @Path("/client")
 public class ClientResource {
@@ -97,6 +99,13 @@ public class ClientResource {
     }
 
     @GET
+    @Path("encoding")
+    public String testEmojis() {
+        return restClientInterface.echo(
+                "\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00");
+    }
+
+    @GET
     @Path("async/cdi/jackson")
     @Produces("application/json")
     public CompletionStage<TestResource.MyData> getDataAsync() {
@@ -154,7 +163,6 @@ public class ClientResource {
 
     @GET
     @Path("/jaxrs-client")
-    @Produces(MediaType.APPLICATION_JSON)
     public Greeting testJaxrsClient() throws ClassNotFoundException {
         Greeting greeting = client.target(loopbackEndpoint.get())
                 .request()
@@ -178,5 +186,31 @@ public class ClientResource {
             e.printStackTrace();
             return -1;
         }
+    }
+
+    @Inject
+    @RestClient
+    GouvFrGeoApiClient api;
+
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @GET
+    @Path("publisher-client")
+    public Multi<String> publisherClient() {
+        Set<Commune> communes = api.getCommunes("75007");
+        return Multi.createFrom().emitter(emitter -> {
+            try {
+                communes.forEach((commune) -> {
+                    commune.codesPostaux.forEach((postalCode) -> {
+                        int level = org.jboss.resteasy.core.ResteasyContext.getContextDataLevelCount();
+                        api.getCommunes(postalCode).forEach(c -> emitter.emit(c.code + "-" + level));
+                    });
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                emitter.fail(e);
+            } finally {
+                emitter.complete();
+            }
+        });
     }
 }

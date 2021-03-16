@@ -17,11 +17,11 @@ import org.hibernate.integrator.spi.IntegratorService;
  * extensions over loadJavaServices. This implies the state needs to be recorded
  * when all extension points are discoverable.
  */
-final class MirroringIntegratorService implements IntegratorService {
+public final class MirroringIntegratorService implements IntegratorService {
 
     private final Collection<Integrator> integrators;
 
-    MirroringIntegratorService(Collection<Integrator> integrators) {
+    public MirroringIntegratorService(Collection<Integrator> integrators) {
         this.integrators = integrators;
     }
 

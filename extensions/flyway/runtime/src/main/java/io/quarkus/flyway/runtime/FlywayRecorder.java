@@ -1,54 +1,79 @@
 package io.quarkus.flyway.runtime;
 
-import java.lang.annotation.Annotation;
-import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.util.AnnotationLiteral;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
+import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.callback.Callback;
+import org.flywaydb.core.api.migration.JavaMigration;
+import org.jboss.logging.Logger;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
-import io.quarkus.flyway.FlywayDataSource;
+import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.UnconfiguredDataSource;
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class FlywayRecorder {
 
-    public BeanContainerListener setFlywayBuildConfig(FlywayBuildTimeConfig flywayBuildConfig) {
-        return beanContainer -> {
-            FlywayProducer producer = beanContainer.instance(FlywayProducer.class);
-            producer.setFlywayBuildConfig(flywayBuildConfig);
+    private static final Logger log = Logger.getLogger(FlywayRecorder.class);
+
+    static final List<FlywayContainer> FLYWAY_CONTAINERS = new ArrayList<>(2);
+
+    public void setApplicationMigrationFiles(Collection<String> migrationFiles) {
+        log.debugv("Setting the following application migration files: {0}", migrationFiles);
+        QuarkusPathLocationScanner.setApplicationMigrationFiles(migrationFiles);
+    }
+
+    public void setApplicationMigrationClasses(Collection<Class<? extends JavaMigration>> migrationClasses) {
+        log.debugv("Setting the following application migration classes: {0}", migrationClasses);
+        QuarkusPathLocationScanner.setApplicationMigrationClasses(migrationClasses);
+    }
+
+    public void setApplicationCallbackClasses(Map<String, Collection<Callback>> callbackClasses) {
+        log.debugv("Setting application callbacks: {0} total", callbackClasses.values().size());
+        QuarkusPathLocationScanner.setApplicationCallbackClasses(callbackClasses);
+    }
+
+    public void resetFlywayContainers() {
+        FLYWAY_CONTAINERS.clear();
+    }
+
+    public Supplier<Flyway> flywaySupplier(String dataSourceName) {
+        DataSource dataSource = DataSources.fromName(dataSourceName);
+        if (dataSource instanceof UnconfiguredDataSource) {
+            return new Supplier<Flyway>() {
+                @Override
+                public Flyway get() {
+                    throw new UnsatisfiedResolutionException("No datasource present");
+                }
+            };
+        }
+        FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
+        FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName);
+        FLYWAY_CONTAINERS.add(flywayContainer);
+        return new Supplier<Flyway>() {
+            @Override
+            public Flyway get() {
+                return flywayContainer.getFlyway();
+            }
         };
     }
 
-    public void configureFlywayProperties(FlywayRuntimeConfig flywayRuntimeConfig, BeanContainer container) {
-        container.instance(FlywayProducer.class).setFlywayRuntimeConfig(flywayRuntimeConfig);
-    }
-
-    public void doStartActions(FlywayRuntimeConfig config, BeanContainer container) {
-        if (config.defaultDataSource.cleanAtStart) {
-            clean(container, Default.Literal.INSTANCE);
-        }
-        if (config.defaultDataSource.migrateAtStart) {
-            migrate(container, Default.Literal.INSTANCE);
-        }
-        for (Entry<String, FlywayDataSourceRuntimeConfig> configPerDataSource : config.namedDataSources.entrySet()) {
-            if (configPerDataSource.getValue().cleanAtStart) {
-                clean(container, FlywayDataSource.FlywayDataSourceLiteral.of(configPerDataSource.getKey()));
+    public void doStartActions() {
+        for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
+            if (flywayContainer.isCleanAtStart()) {
+                flywayContainer.getFlyway().clean();
             }
-            if (configPerDataSource.getValue().migrateAtStart) {
-                migrate(container, FlywayDataSource.FlywayDataSourceLiteral.of(configPerDataSource.getKey()));
+            if (flywayContainer.isMigrateAtStart()) {
+                flywayContainer.getFlyway().migrate();
             }
         }
-    }
-
-    private void clean(BeanContainer container, AnnotationLiteral<? extends Annotation> qualifier) {
-        container.instance(Flyway.class, qualifier).clean();
-    }
-
-    private void migrate(BeanContainer container, AnnotationLiteral<? extends Annotation> qualifier) {
-        container.instance(Flyway.class, qualifier).migrate();
     }
 }

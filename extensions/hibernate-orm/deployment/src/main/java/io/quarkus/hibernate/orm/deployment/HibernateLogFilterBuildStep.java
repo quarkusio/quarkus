@@ -22,7 +22,7 @@ public final class HibernateLogFilterBuildStep {
                 new LogCleanupFilterBuildItem("org.hibernate.engine.jdbc.env.internal.LobCreatorBuilderImpl", "HHH000422"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.dialect.Dialect", "HHH000400"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.type.BasicTypeRegistry", "HHH000270"));
-        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.beans", "HHH10005002"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.beans", "HHH10005002", "HHH10005004"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.tuple.PojoInstantiator", "HHH000182"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.tuple.entity.EntityMetamodel", "HHH000157"));
         filters.produce(new LogCleanupFilterBuildItem(

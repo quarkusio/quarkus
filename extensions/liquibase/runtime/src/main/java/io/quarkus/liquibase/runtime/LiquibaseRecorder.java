@@ -1,120 +1,75 @@
 package io.quarkus.liquibase.runtime;
 
-import java.lang.annotation.Annotation;
-import java.util.Map.Entry;
+import java.util.function.Supplier;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.util.AnnotationLiteral;
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
+import javax.sql.DataSource;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
-import io.quarkus.liquibase.LiquibaseDataSource;
+import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.UnconfiguredDataSource;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
-import liquibase.exception.LiquibaseException;
 
-/**
- * The liquibase recorder
- */
 @Recorder
 public class LiquibaseRecorder {
 
-    /**
-     * Sets the liquibase build configuration
-     * 
-     * @param liquibaseBuildConfig the liquibase build time configuration
-     * @return the bean container listener
-     */
-    public BeanContainerListener setLiquibaseBuildConfig(LiquibaseBuildTimeConfig liquibaseBuildConfig) {
-        return beanContainer -> {
-            LiquibaseProducer producer = beanContainer.instance(LiquibaseProducer.class);
-            producer.setLiquibaseBuildConfig(liquibaseBuildConfig);
+    public Supplier<LiquibaseFactory> liquibaseSupplier(String dataSourceName) {
+        DataSource dataSource = DataSources.fromName(dataSourceName);
+        if (dataSource instanceof UnconfiguredDataSource) {
+            return new Supplier<LiquibaseFactory>() {
+                @Override
+                public LiquibaseFactory get() {
+                    throw new UnsatisfiedResolutionException("No datasource has been configured");
+                }
+            };
+        }
+        LiquibaseFactoryProducer liquibaseProducer = Arc.container().instance(LiquibaseFactoryProducer.class).get();
+        LiquibaseFactory liquibaseFactory = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
+        return new Supplier<LiquibaseFactory>() {
+            @Override
+            public LiquibaseFactory get() {
+                return liquibaseFactory;
+            }
         };
     }
 
-    /**
-     * Configure the liquibase runtime properties
-     * 
-     * @param liquibaseRuntimeConfig the liquibase runtime configuration
-     * @param container the bean container
-     */
-    public void configureLiquibaseProperties(LiquibaseRuntimeConfig liquibaseRuntimeConfig, BeanContainer container) {
-        container.instance(LiquibaseProducer.class).setLiquibaseRuntimeConfig(liquibaseRuntimeConfig);
-    }
-
-    /**
-     * Do start actions
-     * 
-     * @param config the runtime configuration
-     * @param container the bean container
-     */
-    public void doStartActions(LiquibaseRuntimeConfig config, BeanContainer container) {
+    public void doStartActions() {
         try {
-            if (config.defaultDataSource.cleanAtStart) {
-                dropAll(container, Default.Literal.INSTANCE);
+            InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container()
+                    .select(LiquibaseFactory.class, Any.Literal.INSTANCE);
+            if (liquibaseFactoryInstance.isUnsatisfied()) {
+                return;
             }
-            if (config.defaultDataSource.migrateAtStart) {
-                if (config.defaultDataSource.validateOnMigrate) {
-                    validate(container, Default.Literal.INSTANCE);
-                }
-                migrate(container, Default.Literal.INSTANCE);
-            }
-            for (Entry<String, LiquibaseDataSourceRuntimeConfig> configPerDataSource : config.namedDataSources.entrySet()) {
-                if (configPerDataSource.getValue().cleanAtStart) {
-                    dropAll(container, LiquibaseDataSource.LiquibaseDataSourceLiteral.of(configPerDataSource.getKey()));
-                }
-                if (configPerDataSource.getValue().migrateAtStart) {
-                    if (configPerDataSource.getValue().validateOnMigrate) {
-                        validate(container, LiquibaseDataSource.LiquibaseDataSourceLiteral.of(configPerDataSource.getKey()));
+
+            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
+                try {
+                    LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
+                    if (liquibaseFactory.getConfiguration().cleanAtStart) {
+                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                            liquibase.dropAll();
+                        }
                     }
-                    migrate(container, LiquibaseDataSource.LiquibaseDataSourceLiteral.of(configPerDataSource.getKey()));
+                    if (liquibaseFactory.getConfiguration().migrateAtStart) {
+                        if (liquibaseFactory.getConfiguration().validateOnMigrate) {
+                            try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                                liquibase.validate();
+                            }
+                        }
+                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                            liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+                        }
+                    }
+                } catch (UnsatisfiedResolutionException e) {
+                    //ignore, the DS is not configured
                 }
             }
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
-    }
-
-    /**
-     * Drop all database objects
-     * 
-     * @param container the bean container
-     * @param qualifier the bean qualifier
-     * @throws LiquibaseException if the database actions fails
-     */
-    private void dropAll(BeanContainer container, AnnotationLiteral<? extends Annotation> qualifier) throws Exception {
-        LiquibaseFactory liquibaseFactory = container.instance(LiquibaseFactory.class, qualifier);
-        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-            liquibase.dropAll();
-        }
-    }
-
-    /**
-     * Migrate the database objects
-     * 
-     * @param container the bean container
-     * @param qualifier the bean qualifier
-     * @throws LiquibaseException if the database actions fails
-     */
-    private void migrate(BeanContainer container, AnnotationLiteral<? extends Annotation> qualifier) throws Exception {
-        LiquibaseFactory liquibaseFactory = container.instance(LiquibaseFactory.class, qualifier);
-        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-            liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
-        }
-    }
-
-    /**
-     * Validate the database objects
-     *
-     * @param container the bean container
-     * @param qualifier the bean qualifier
-     * @throws LiquibaseException if the database actions fails
-     */
-    private void validate(BeanContainer container, AnnotationLiteral<? extends Annotation> qualifier) throws Exception {
-        LiquibaseFactory liquibaseFactory = container.instance(LiquibaseFactory.class, qualifier);
-        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-            liquibase.validate();
+        } catch (Exception e) {
+            throw new IllegalStateException("Error starting Liquibase", e);
         }
     }
 }

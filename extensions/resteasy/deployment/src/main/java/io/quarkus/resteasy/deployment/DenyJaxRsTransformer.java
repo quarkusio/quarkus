@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.deployment;
 
-import static io.quarkus.resteasy.deployment.SecurityTransformerUtils.DENY_ALL;
-import static io.quarkus.resteasy.deployment.SecurityTransformerUtils.hasSecurityAnnotation;
+import static io.quarkus.security.spi.SecurityTransformerUtils.DENY_ALL;
+import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;

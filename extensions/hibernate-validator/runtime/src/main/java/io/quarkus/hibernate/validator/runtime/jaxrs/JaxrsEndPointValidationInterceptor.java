@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Priority;
+import javax.inject.Inject;
 import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
@@ -13,7 +14,6 @@ import javax.interceptor.InvocationContext;
 import javax.validation.ConstraintViolationException;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.logging.Logger;
 import org.jboss.resteasy.util.MediaTypeHelper;
 
 import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidationInterceptor;
@@ -23,7 +23,10 @@ import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidati
 @Priority(Interceptor.Priority.PLATFORM_AFTER + 800)
 public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidationInterceptor {
 
-    private static final Logger LOGGER = Logger.getLogger(JaxrsEndPointValidationInterceptor.class);
+    private static final List<MediaType> JSON_MEDIA_TYPE_LIST = Collections.singletonList(MediaType.APPLICATION_JSON_TYPE);
+
+    @Inject
+    ResteasyConfigSupport resteasyConfigSupport;
 
     @AroundInvoke
     @Override
@@ -45,6 +48,10 @@ public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidation
         MediaType[] producedMediaTypes = MediaTypeHelper.getProduces(method.getDeclaringClass(), method);
 
         if (producedMediaTypes == null) {
+            if (resteasyConfigSupport.isJsonDefault()) {
+                return JSON_MEDIA_TYPE_LIST;
+            }
+
             return Collections.emptyList();
         }
 

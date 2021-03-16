@@ -17,17 +17,62 @@ public class UserTagTest {
 
         Template tag = engine.parse("{#if showImage}{it.name}{#else}nope{/if}");
         engine.putTemplate("my-tag-id", tag);
-        Template template1 = engine.parse("{#myTag order showImage=true /}");
-        Template template2 = engine.parse("{#myTag order /}");
-        Template template3 = engine.parse("{#myTag showImage=false /}");
-        Template template4 = engine.parse("{#each this}{#myTag showImage=false /}{/each}");
 
         Map<String, Object> order = new HashMap<>();
         order.put("name", "Herbert");
-        assertEquals("Herbert", template1.render(Collections.singletonMap("order", order)));
-        assertEquals("nope", template2.render(Collections.singletonMap("order", order)));
-        assertEquals("nope", template3.render(Collections.singletonMap("order", order)));
-        assertEquals("nope", template4.render(Collections.singletonMap("order", order)));
+        assertEquals("Herbert",
+                engine.parse("{#myTag order showImage=true /}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope", engine.parse("{#myTag order /}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope", engine.parse("{#myTag showImage=false /}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope",
+                engine.parse("{#each this}{#myTag showImage=false /}{/each}").render(Collections.singletonMap("order", order)));
+        assertEquals("Herbert",
+                engine.parse("{#each this}{#myTag it showImage=true /}{/each}").render(Collections.singletonList(order)));
+    }
+
+    @Test
+    public void testUserTagWithNestedContent() {
+        Engine engine = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
+                .build();
+
+        Template tag = engine.parse("{#if showImage}<b>{nested-content}</b>{#else}nope{/if}");
+        engine.putTemplate("my-tag-id", tag);
+
+        Map<String, Object> order = new HashMap<>();
+        order.put("name", "Herbert");
+        assertEquals("<b>Herbert</b>",
+                engine.parse("{#myTag showImage=true}{order.name}{/}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope", engine.parse("{#myTag}{order.name}{/}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope",
+                engine.parse("{#myTag showImage=false}{order.name}{/}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope",
+                engine.parse("{#each this}{#myTag showImage=false}{it.name}{/}{/each}")
+                        .render(Collections.singletonMap("order", order)));
+        assertEquals("<b>Herbert</b>",
+                engine.parse("{#each this}{#myTag showImage=true}{it.name}{/}{/each}")
+                        .render(Collections.singletonList(order)));
+    }
+
+    @Test
+    public void testUserTagWithRichNestedContent() {
+        Engine engine = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag2", "my-tag-id2"))
+                .build();
+
+        Template tag = engine.parse("{#if showImage}<b>{nested-content}</b>{#else}nope{/if}");
+        engine.putTemplate("my-tag-id", tag);
+
+        Template tag2 = engine.parse("{#if showImage2}<i>{nested-content}</i>{#else}nope2{/if}");
+        engine.putTemplate("my-tag-id2", tag2);
+
+        Map<String, Object> order = new HashMap<>();
+        order.put("name", "Herbert");
+        assertEquals("<b><i>Herbert</i></b>",
+                engine.parse("{#myTag showImage=true}{#myTag2 showImage2=true}{order.name}{/myTag2}{/myTag}")
+                        .render(Collections.singletonMap("order", order)));
+
     }
 
 }

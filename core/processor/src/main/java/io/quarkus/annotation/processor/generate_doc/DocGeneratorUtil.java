@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ public class DocGeneratorUtil {
     private static final String CORE = "core";
     private static final String CONFIG = "Config";
     private static final String CONFIGURATION = "Configuration";
+    public static final String LEVEL_HACK_URL = "https://docs.jboss.org/jbossas/javadoc/7.1.2.Final/org/jboss/logmanager/Level.html";
     private static String CONFIG_GROUP_DOC_PREFIX = "config-group-";
     static final String VERTX_JAVA_DOC_SITE = "https://vertx.io/docs/apidocs/";
     static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/javase/8/docs/api/";
@@ -30,6 +32,8 @@ public class DocGeneratorUtil {
     private static final Map<String, String> PRIMITIVE_DEFAULT_VALUES = new HashMap<>();
     private static final Map<String, String> EXTENSION_JAVA_DOC_LINK = new HashMap<>();
     private static Pattern PACKAGE_PATTERN = Pattern.compile("^(\\w+)\\.(\\w+)\\..*$");
+    private static final String HYPHEN = "-";
+    private static final Pattern PATTERN = Pattern.compile("([-_]+)");
 
     static {
         PRIMITIVE_DEFAULT_VALUES.put("int", "0");
@@ -58,8 +62,6 @@ public class DocGeneratorUtil {
      * Retrieve a default value of a primitive type.
      * If type is not a primitive, returns false
      *
-     * @param primitiveType
-     * @return
      */
     static String getPrimitiveDefaultValue(String primitiveType) {
         return PRIMITIVE_DEFAULT_VALUES.get(primitiveType);
@@ -77,6 +79,12 @@ public class DocGeneratorUtil {
      * Get javadoc link of a given type value
      */
     static String getJavaDocSiteLink(String type) {
+        if (type.equals(Level.class.getName())) {
+            //hack, we don't want to link to the JUL version, but the jboss logging version
+            //this seems like a one off use case so for now it is just hacked in here
+            //if there are other use cases we should do something more generic
+            return LEVEL_HACK_URL;
+        }
         Matcher packageMatcher = PACKAGE_PATTERN.matcher(type);
 
         if (!packageMatcher.find()) {
@@ -235,8 +243,29 @@ public class DocGeneratorUtil {
         return join(lowerCase(camelHumpsIterator(orig)));
     }
 
+    /**
+     * This needs to be consistent with io.quarkus.runtime.configuration.HyphenateEnumConverter.
+     */
     static String hyphenateEnumValue(String orig) {
-        return orig.replace('_', '-').toLowerCase(Locale.ROOT);
+        StringBuffer target = new StringBuffer();
+        String hyphenate = hyphenate(orig);
+        Matcher matcher = PATTERN.matcher(hyphenate);
+        while (matcher.find()) {
+            matcher.appendReplacement(target, HYPHEN);
+        }
+        matcher.appendTail(target);
+        return target.toString();
+    }
+
+    static String normalizeDurationValue(String value) {
+        if (!value.isEmpty() && Character.isDigit(value.charAt(value.length() - 1))) {
+            try {
+                value = Integer.parseInt(value) + "S";
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        value = value.toUpperCase(Locale.ROOT);
+        return value;
     }
 
     static String joinAcceptedValues(List<String> acceptedValues) {
@@ -275,28 +304,29 @@ public class DocGeneratorUtil {
             extensionNameBuilder.append(configRoot);
         } else {
             String extensionName = matcher.group(1);
-            final String subgroup = matcher.group(2);
             extensionNameBuilder.append(Constants.QUARKUS);
             extensionNameBuilder.append(Constants.DASH);
 
             if (Constants.DEPLOYMENT.equals(extensionName) || Constants.RUNTIME.equals(extensionName)) {
                 extensionNameBuilder.append(CORE);
-            } else if (subgroup != null && !Constants.DEPLOYMENT.equals(subgroup)
-                    && !Constants.RUNTIME.equals(subgroup) && !Constants.COMMON.equals(subgroup)
-                    && subgroup.matches(Constants.DIGIT_OR_LOWERCASE)) {
-                extensionNameBuilder.append(extensionName);
-                extensionNameBuilder.append(Constants.DASH);
-                extensionNameBuilder.append(subgroup);
-
-                final String qualifier = matcher.group(3);
-                if (qualifier != null && !Constants.DEPLOYMENT.equals(qualifier)
-                        && !Constants.RUNTIME.equals(qualifier) && !Constants.COMMON.equals(qualifier)
-                        && qualifier.matches(Constants.DIGIT_OR_LOWERCASE)) {
-                    extensionNameBuilder.append(Constants.DASH);
-                    extensionNameBuilder.append(qualifier);
-                }
             } else {
                 extensionNameBuilder.append(extensionName);
+                for (int i = 2; i <= matcher.groupCount(); i++) {
+                    String subgroup = matcher.group(i);
+                    if (Constants.DEPLOYMENT.equals(subgroup)
+                            || Constants.RUNTIME.equals(subgroup)
+                            || Constants.COMMON.equals(subgroup)
+                            || !subgroup.matches(Constants.DIGIT_OR_LOWERCASE)) {
+                        break;
+                    }
+                    if (i > 3 && Constants.CONFIG.equals(subgroup)) {
+                        // this is a bit dark magic but we have config packages as valid extension names
+                        // and config packages where the configuration is stored
+                        break;
+                    }
+                    extensionNameBuilder.append(Constants.DASH);
+                    extensionNameBuilder.append(matcher.group(i));
+                }
             }
         }
 
@@ -423,7 +453,7 @@ public class DocGeneratorUtil {
 
             ConfigDocSection configDocSection = configDocItem.getConfigDocSection();
             if (configDocSection.equals(section)) {
-                configDocSection.addConfigDocItems(section.getConfigDocItems());
+                appendConfigItemsIntoExistingOnes(configDocSection.getConfigDocItems(), section.getConfigDocItems());
                 return true;
             } else {
                 boolean configSectionMerged = mergeSectionIntoPreviousExistingConfigItems(section,

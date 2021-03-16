@@ -1,5 +1,7 @@
 package io.quarkus.mongodb.panache.reactive;
 
+import static io.quarkus.mongodb.panache.reactive.runtime.JavaReactiveMongoOperations.INSTANCE;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -7,7 +9,7 @@ import java.util.stream.Stream;
 
 import org.bson.Document;
 
-import io.quarkus.mongodb.panache.reactive.runtime.ReactiveMongoOperations;
+import io.quarkus.mongodb.panache.PanacheUpdate;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
 import io.quarkus.panache.common.Parameters;
@@ -26,10 +28,8 @@ import io.smallrye.mutiny.Uni;
  * @param <Id> The ID type of the entity
  * @see ReactivePanacheMongoRepository
  */
+@SuppressWarnings("unchecked")
 public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
-
-    // Operations
-
     /**
      * Persist the given entity in the database.
      * This will set it's ID field if not already set.
@@ -39,8 +39,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public default Uni<Void> persist(Entity entity) {
-        return ReactiveMongoOperations.persist(entity);
+    default Uni<Void> persist(Entity entity) {
+        return INSTANCE.persist(entity);
     }
 
     /**
@@ -51,8 +51,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #update(Stream)
      * @see #update(Object, Object...)
      */
-    public default Uni<Void> update(Entity entity) {
-        return ReactiveMongoOperations.update(entity);
+    default Uni<Void> update(Entity entity) {
+        return INSTANCE.update(entity);
     }
 
     /**
@@ -63,8 +63,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Object, Object...)
      */
-    public default Uni<Void> persistOrUpdate(Entity entity) {
-        return ReactiveMongoOperations.persistOrUpdate(entity);
+    default Uni<Void> persistOrUpdate(Entity entity) {
+        return INSTANCE.persistOrUpdate(entity);
     }
 
     /**
@@ -76,8 +76,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #delete(String, Parameters)
      * @see #deleteAll()
      */
-    public default Uni<Void> delete(Entity entity) {
-        return ReactiveMongoOperations.delete(entity);
+    default Uni<Void> delete(Entity entity) {
+        return INSTANCE.delete(entity);
     }
 
     // Queries
@@ -89,8 +89,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return the entity found, or <code>null</code> if not found.
      */
     @GenerateBridge
-    public default Uni<Entity> findById(Id id) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Entity> findById(Id id) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -100,8 +100,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
      */
     @GenerateBridge
-    public default Uni<Optional<Entity>> findByIdOptional(Object id) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Optional<Entity>> findByIdOptional(Object id) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -117,8 +117,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Object...)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> find(String query, Object... params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> find(String query, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -135,8 +135,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Sort, Object...)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> find(String query, Sort sort, Object... params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> find(String query, Sort sort, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -152,8 +152,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Map)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> find(String query, Map<String, Object> params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> find(String query, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -170,8 +170,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Sort, Map)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> find(String query, Sort sort, Map<String, Object> params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> find(String query, Sort sort, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -187,8 +187,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Parameters)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> find(String query, Parameters params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> find(String query, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -205,8 +205,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Sort, Parameters)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> find(String query, Sort sort, Parameters params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> find(String query, Sort sort, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -214,15 +214,15 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link Document} query
      * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> find(Document query) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> find(Document query) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -231,15 +231,15 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param query a {@link Document} query
      * @param sort the {@link Document} sort
      * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @see #find(Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> find(Document query, Document sort) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> find(Document query, Document sort) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -251,8 +251,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #streamAll()
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> findAll() {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> findAll() {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -265,8 +265,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #streamAll(Sort)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> findAll(Sort sort) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactivePanacheQuery<Entity> findAll(Sort sort) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -283,8 +283,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Object...)
      */
     @GenerateBridge
-    public default Uni<List<Entity>> list(String query, Object... params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> list(String query, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -302,8 +302,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Sort, Object...)
      */
     @GenerateBridge
-    public default Uni<List<Entity>> list(String query, Sort sort, Object... params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> list(String query, Sort sort, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -320,8 +320,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Map)
      */
     @GenerateBridge
-    public default Uni<List<Entity>> list(String query, Map<String, Object> params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> list(String query, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -339,8 +339,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Sort, Map)
      */
     @GenerateBridge
-    public default Uni<List<Entity>> list(String query, Sort sort, Map<String, Object> params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> list(String query, Sort sort, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -357,8 +357,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Parameters)
      */
     @GenerateBridge
-    public default Uni<List<Entity>> list(String query, Parameters params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> list(String query, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -376,8 +376,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #stream(String, Sort, Parameters)
      */
     @GenerateBridge
-    public default Uni<List<Entity>> list(String query, Sort sort, Parameters params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> list(String query, Sort sort, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -385,16 +385,16 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * This method is a shortcut for <code>find(query).list()</code>.
      *
      * @param query a {@link Document} query
-     * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link List} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> list(Document query) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> list(Document query) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -403,16 +403,16 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link Document} query
      * @param sort the {@link Document} sort
-     * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link List} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default ReactivePanacheQuery<Entity> list(Document query, Document sort) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> list(Document query, Document sort) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -425,8 +425,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #streamAll()
      */
     @GenerateBridge
-    public default Uni<List<Entity>> listAll() {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> listAll() {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -440,8 +440,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #streamAll(Sort)
      */
     @GenerateBridge
-    public default Uni<List<Entity>> listAll(Sort sort) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<List<Entity>> listAll(Sort sort) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -450,7 +450,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params optional sequence of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
+     * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Map)
      * @see #stream(String, Parameters)
@@ -458,8 +458,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #list(String, Object...)
      */
     @GenerateBridge
-    public default Multi<Entity> stream(String query, Object... params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> stream(String query, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -469,7 +469,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
+     * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Object...)
      * @see #stream(String, Sort, Map)
      * @see #stream(String, Sort, Parameters)
@@ -477,8 +477,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #list(String, Sort, Object...)
      */
     @GenerateBridge
-    public default Multi<Entity> stream(String query, Sort sort, Object... params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> stream(String query, Sort sort, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -487,7 +487,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Map} of named parameters
-     * @return a {@link Stream} containing all results, without paging
+     * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Sort, Map)
      * @see #stream(String, Object...)
      * @see #stream(String, Parameters)
@@ -495,8 +495,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #list(String, Map)
      */
     @GenerateBridge
-    public default Multi<Entity> stream(String query, Map<String, Object> params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> stream(String query, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -506,7 +506,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
+     * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Map)
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Sort, Parameters)
@@ -514,8 +514,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #list(String, Sort, Map)
      */
     @GenerateBridge
-    public default Multi<Entity> stream(String query, Sort sort, Map<String, Object> params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> stream(String query, Sort sort, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -524,7 +524,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
-     * @return a {@link Stream} containing all results, without paging
+     * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Sort, Parameters)
      * @see #stream(String, Object...)
      * @see #stream(String, Map)
@@ -532,8 +532,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #list(String, Parameters)
      */
     @GenerateBridge
-    public default Multi<Entity> stream(String query, Parameters params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> stream(String query, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -543,7 +543,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
+     * @return a {@link Multi} containing all results, without paging
      * @see #stream(String, Parameters)
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Sort, Map)
@@ -551,8 +551,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #list(String, Sort, Parameters)
      */
     @GenerateBridge
-    public default Multi<Entity> stream(String query, Sort sort, Parameters params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> stream(String query, Sort sort, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -560,16 +560,17 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * This method is a shortcut for <code>find(query).stream()</code>.
      *
      * @param query a {@link Document} query
-     * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link Multi} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default Multi<Entity> stream(Document query) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> stream(Document query) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -578,44 +579,45 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link Document} query
      * @param sort the {@link Document} sort
-     * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link Multi} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default Multi<Entity> stream(Document query, Document sort) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> stream(Document query, Document sort) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Find all entities of this type.
      * This method is a shortcut for <code>findAll().stream()</code>.
      *
-     * @return a {@link Stream} containing all results, without paging
+     * @return a {@link Multi} containing all results, without paging
      * @see #streamAll(Sort)
      * @see #findAll()
      * @see #listAll()
      */
     @GenerateBridge
-    public default Multi<Entity> streamAll(Sort sort) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> streamAll(Sort sort) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Find all entities of this type, in the given order.
      * This method is a shortcut for <code>findAll(sort).stream()</code>.
      *
-     * @return a {@link Stream} containing all results, without paging
+     * @return a {@link Multi} containing all results, without paging
      * @see #streamAll()
      * @see #findAll(Sort)
      * @see #listAll(Sort)
      */
     @GenerateBridge
-    public default Multi<Entity> streamAll() {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Multi<Entity> streamAll() {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -627,8 +629,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #count(String, Parameters)
      */
     @GenerateBridge
-    public default Uni<Long> count() {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> count() {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -642,8 +644,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #count(String, Parameters)
      */
     @GenerateBridge
-    public default Uni<Long> count(String query, Object... params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> count(String query, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -657,8 +659,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #count(String, Parameters)
      */
     @GenerateBridge
-    public default Uni<Long> count(String query, Map<String, Object> params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> count(String query, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -672,8 +674,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #count(String, Map)
      */
     @GenerateBridge
-    public default Uni<Long> count(String query, Parameters params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> count(String query, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -686,8 +688,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #count(String, Map)
      */
     @GenerateBridge
-    public default Uni<Long> count(Document query) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> count(Document query) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -699,8 +701,19 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #delete(String, Parameters)
      */
     @GenerateBridge
-    public default Uni<Long> deleteAll() {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> deleteAll() {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Delete an entity of this type by ID.
+     *
+     * @param id the ID of the entity to delete.
+     * @return false if the entity was not deleted (not found).
+     */
+    @GenerateBridge
+    default Uni<Boolean> deleteById(Id id) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -714,8 +727,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #delete(String, Parameters)
      */
     @GenerateBridge
-    public default Uni<Long> delete(String query, Object... params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> delete(String query, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -729,8 +742,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #delete(String, Parameters)
      */
     @GenerateBridge
-    public default Uni<Long> delete(String query, Map<String, Object> params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> delete(String query, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -744,8 +757,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #delete(String, Map)
      */
     @GenerateBridge
-    public default Uni<Long> delete(String query, Parameters params) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> delete(String query, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -758,8 +771,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #count(String, Map)
      */
     @GenerateBridge
-    public default Uni<Long> delete(Document query) {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default Uni<Long> delete(Document query) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
@@ -770,8 +783,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object,Object...)
      */
-    public default Uni<Void> persist(Iterable<Entity> entities) {
-        return ReactiveMongoOperations.persist(entities);
+    default Uni<Void> persist(Iterable<Entity> entities) {
+        return INSTANCE.persist(entities);
     }
 
     /**
@@ -782,8 +795,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persist(Iterable)
      * @see #persist(Object,Object...)
      */
-    public default Uni<Void> persist(Stream<Entity> entities) {
-        return ReactiveMongoOperations.persist(entities);
+    default Uni<Void> persist(Stream<Entity> entities) {
+        return INSTANCE.persist(entities);
     }
 
     /**
@@ -794,8 +807,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Iterable)
      */
-    public default Uni<Void> persist(Entity firstEntity, @SuppressWarnings("unchecked") Entity... entities) {
-        return ReactiveMongoOperations.persist(firstEntity, entities);
+    default Uni<Void> persist(Entity firstEntity, Entity... entities) {
+        return INSTANCE.persist(firstEntity, entities);
     }
 
     /**
@@ -806,8 +819,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #update(Stream)
      * @see #update(Object,Object...)
      */
-    public default Uni<Void> update(Iterable<Entity> entities) {
-        return ReactiveMongoOperations.update(entities);
+    default Uni<Void> update(Iterable<Entity> entities) {
+        return INSTANCE.update(entities);
     }
 
     /**
@@ -818,8 +831,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #update(Iterable)
      * @see #update(Object,Object...)
      */
-    public default Uni<Void> update(Stream<Entity> entities) {
-        return ReactiveMongoOperations.update(entities);
+    default Uni<Void> update(Stream<Entity> entities) {
+        return INSTANCE.update(entities);
     }
 
     /**
@@ -830,8 +843,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #update(Stream)
      * @see #update(Iterable)
      */
-    public default Uni<Void> update(Entity firstEntity, @SuppressWarnings("unchecked") Entity... entities) {
-        return ReactiveMongoOperations.update(firstEntity, entities);
+    default Uni<Void> update(Entity firstEntity, Entity... entities) {
+        return INSTANCE.update(firstEntity, entities);
     }
 
     /**
@@ -842,8 +855,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Object,Object...)
      */
-    public default Uni<Void> persistOrUpdate(Iterable<Entity> entities) {
-        return ReactiveMongoOperations.persistOrUpdate(entities);
+    default Uni<Void> persistOrUpdate(Iterable<Entity> entities) {
+        return INSTANCE.persistOrUpdate(entities);
     }
 
     /**
@@ -854,8 +867,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persistOrUpdate(Iterable)
      * @see #persistOrUpdate(Object,Object...)
      */
-    public default Uni<Void> persistOrUpdate(Stream<Entity> entities) {
-        return ReactiveMongoOperations.persistOrUpdate(entities);
+    default Uni<Void> persistOrUpdate(Stream<Entity> entities) {
+        return INSTANCE.persistOrUpdate(entities);
     }
 
     /**
@@ -866,24 +879,72 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #update(Stream)
      * @see #update(Iterable)
      */
-    public default Uni<Void> persistOrUpdate(Entity firstEntity,
-            @SuppressWarnings("unchecked") Entity... entities) {
-        return ReactiveMongoOperations.persistOrUpdate(firstEntity, entities);
+    default Uni<Void> persistOrUpdate(Entity firstEntity, Entity... entities) {
+        return INSTANCE.persistOrUpdate(firstEntity, entities);
+    }
+
+    /**
+     * Update all entities of this type by the given update document, with optional indexed parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params optional sequence of indexed parameters
+     * @return a new {@link ReactivePanacheUpdate} instance for the given update document
+     * @see #update(String, Map)
+     * @see #update(String, Parameters)
+     */
+    @GenerateBridge
+    default ReactivePanacheUpdate update(String update, Object... params) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update document, with named parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params {@link Map} of named parameters
+     * @return a new {@link ReactivePanacheUpdate} instance for the given update document
+     * @see #update(String, Object...)
+     * @see #update(String, Parameters)
+     *
+     */
+    @GenerateBridge
+    default ReactivePanacheUpdate update(String update, Map<String, Object> params) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update document, with named parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params {@link Parameters} of named parameters
+     * @return a new {@link ReactivePanacheUpdate} instance for the given update document
+     * @see #update(String, Object...)
+     * @see #update(String, Map)
+     */
+    @GenerateBridge
+    default ReactivePanacheUpdate update(String update, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Allow to access the underlying Mongo Collection
      */
     @GenerateBridge
-    public default ReactiveMongoCollection<Entity> mongoCollection() {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactiveMongoCollection<Entity> mongoCollection() {
+        throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Allow to access the underlying Mongo Database.
      */
     @GenerateBridge
-    public default ReactiveMongoDatabase mongoDatabase() {
-        throw ReactiveMongoOperations.implementationInjectionMissing();
+    default ReactiveMongoDatabase mongoDatabase() {
+        throw INSTANCE.implementationInjectionMissing();
     }
 }

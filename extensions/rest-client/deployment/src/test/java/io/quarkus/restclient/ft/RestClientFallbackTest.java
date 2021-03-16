@@ -51,7 +51,7 @@ public class RestClientFallbackTest {
     public static class TestEndpoint {
 
         @GET
-        String get() {
+        public String get() {
             throw new WebApplicationException(404);
         }
 

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Validation with Hibernate Validator
 
@@ -19,7 +19,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 
 == Architecture
 
@@ -42,18 +42,36 @@ The solution is located in the `validation-quickstart` {quickstarts-tree-url}/va
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=validation-quickstart \
     -DclassName="org.acme.validation.BookResource" \
     -Dpath="/books" \
-    -Dextensions="resteasy-jsonb, hibernate-validator"
+    -Dextensions="resteasy,resteasy-jackson,hibernate-validator"
 cd validation-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and Hibernate Validator/Bean Validation extensions.
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson and Hibernate Validator/Bean Validation extensions.
+
+If you already have your Quarkus project configured, you can add the `hibernate-validator` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="hibernate-validator"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-validator</artifactId>
+</dependency>
+----
 
 == Accessing the Validator
 
@@ -104,8 +122,6 @@ Add the following method:
 ----
 @Path("/manual-validation")
 @POST
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public Result tryMeManualValidation(Book book) {
     Set<ConstraintViolation<Book>> violations = validator.validate(book);
     if (violations.isEmpty()) {
@@ -215,8 +231,6 @@ Calling the service in your rest end point triggers the `Book` validation automa
 
 @Path("/service-method-validation")
 @POST
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public Result tryMeServiceMethodValidation(Book book) {
     try {
         bookService.validateBook(book);
@@ -255,7 +269,7 @@ Then, open your browser to http://localhost:8080/:
 
 image:validation-guide-screenshot.png[alt=Application]
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also build the native executable using `./mvnw package -Pnative`.
 
 == Going further
@@ -345,3 +359,77 @@ provided the supported locales have been properly specified in the `application.
 quarkus.locales=en-US,es-ES,fr-FR
 ----
 
+=== Validation groups for REST endpoint or service method validation
+
+It's sometimes necessary to enable different validation constraints
+for the same class when it's passed to a different method.
+
+For example, a `Book` may need to have a `null` identifier when passed to the `put` method
+(because the identifier will be generated),
+but a non-`null` identifier when passed to the `post` method
+(because the method needs the identifier to know what to update).
+
+To address this, you can take advantage of validation groups.
+Validation groups are markers that you put on your constraints in order to enable or disable them at will.
+
+First, define the `Put` and `Post` groups, which are just Java interfaces.
+
+[source, java]
+----
+public interface ValidationGroups {
+    interface Put extends Default { // <1>
+    }
+    interface Post extends Default { // <1>
+    }
+}
+----
+<1> Make the custom groups extend the `Default` group.
+This means that whenever these groups are enabled, the `Default` group is also enabled.
+This is useful if you have constraints that you want validated in both the `Put` and `Post` method:
+you can simply use the default group on those constraints, like on the `title` property below.
+
+Then add the relevant constraints to `Book`, assigning the right group to each constraint:
+
+[source, java]
+----
+public class Book {
+
+    @Null(groups = ValidationGroups.Put.class)
+    @NotNull(groups = ValidationGroups.Post.class)
+    public Long id;
+
+    @NotBlank
+    public String title;
+
+}
+----
+
+Finally, add a `@ConvertGroup` annotation next to your `@Valid` annotation in your validated method.
+
+[source, java]
+----
+@Path("/")
+@PUT
+@Consumes(MediaType.APPLICATION_JSON)
+public void put(@Valid @ConvertGroup(to = ValidationGroups.Put.class) Book book) { // <1>
+    // ...
+}
+
+@Path("/")
+@POST
+@Consumes(MediaType.APPLICATION_JSON)
+public void post(@Valid @ConvertGroup(to = ValidationGroups.Post.class) Book book) { // <2>
+    // ...
+}
+----
+<1> Enable the `Put` group, meaning only constraints assigned to the `Put` (and `Default`) groups
+will be validated for the `book` parameter of the `put` method.
+In this case, it means `Book.id` must be `null` and `Book.title` must not be blank.
+<2> Enable the `Post` group, meaning only constraints assigned to the `Post` (and `Default`) groups
+will be validated for the `book` parameter of the `post` method.
+In this case, it means `Book.id` must not be `null` and `Book.title` must not be blank.
+
+[[configuration-reference]]
+== Hibernate Validator Configuration Reference
+
+include::{generated-dir}/config/quarkus-hibernate-validator.adoc[leveloffset=+1, opts=optional]

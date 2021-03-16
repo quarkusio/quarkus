@@ -37,6 +37,8 @@ public class BasicExecutableOutputOutcomeTest extends ExecutableOutputOutcomeTes
         addToExpectedLib(directRtDep);
 
         final TsArtifact appJar = TsArtifact.jar("app")
+                .addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties())
                 .addDependency(ext1)
                 .addDependency(ext2)
                 .addDependency(compileDep)

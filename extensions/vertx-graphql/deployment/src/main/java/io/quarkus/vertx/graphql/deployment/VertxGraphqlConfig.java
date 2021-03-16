@@ -18,7 +18,7 @@ public final class VertxGraphqlConfig {
          * If GraphQL UI should be included every time. By default this is only included when the application is running
          * in dev mode.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         boolean alwaysInclude;
 
         /**
@@ -26,7 +26,7 @@ public final class VertxGraphqlConfig {
          * <p>
          * The value `/` is not allowed as it blocks the application from serving anything else.
          */
-        @ConfigItem(defaultValue = "/graphql-ui")
+        @ConfigItem(defaultValue = "graphql-ui")
         String path;
     }
 }

@@ -8,6 +8,7 @@ import javax.persistence.EntityNotFoundException;
 import javax.persistence.PersistenceException;
 import javax.sql.DataSource;
 
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
@@ -15,6 +16,7 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.bytecode.internal.SessionFactoryObserverForBytecodeEnhancer;
 import org.hibernate.bytecode.spi.BytecodeProvider;
+import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.jpa.AvailableSettings;
@@ -28,26 +30,29 @@ import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
+import io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver;
 
-public final class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryBuilder {
+public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryBuilder {
 
-    private final PrevalidatedQuarkusMetadata metadata;
-    private final String persistenceUnitName;
-    private final StandardServiceRegistry standardServiceRegistry;
+    protected final PrevalidatedQuarkusMetadata metadata;
+    protected final String persistenceUnitName;
+    protected final StandardServiceRegistry standardServiceRegistry;
     private final RuntimeSettings runtimeSettings;
     private final Object validatorFactory;
     private final Object cdiBeanManager;
+    protected final MultiTenancyStrategy multiTenancyStrategy;
 
     public FastBootEntityManagerFactoryBuilder(
             PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager) {
+            Object cdiBeanManager, MultiTenancyStrategy strategy) {
         this.metadata = metadata;
         this.persistenceUnitName = persistenceUnitName;
         this.standardServiceRegistry = standardServiceRegistry;
         this.runtimeSettings = runtimeSettings;
         this.validatorFactory = validatorFactory;
         this.cdiBeanManager = cdiBeanManager;
+        this.multiTenancyStrategy = strategy;
     }
 
     @Override
@@ -64,8 +69,8 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
     public EntityManagerFactory build() {
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-            populate(optionsBuilder, standardServiceRegistry);
-            return new SessionFactoryImpl(metadata.getOriginalMetadata(), optionsBuilder.buildOptions());
+            populate(persistenceUnitName, optionsBuilder, standardServiceRegistry, multiTenancyStrategy);
+            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(), HQLQueryPlan::new);
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }
@@ -89,7 +94,7 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
         cancel();
     }
 
-    private PersistenceException persistenceException(String message, Exception cause) {
+    protected PersistenceException persistenceException(String message, Exception cause) {
         // Provide a comprehensible message if there is an issue with SSL support
         Throwable t = cause;
         while (t != null) {
@@ -114,7 +119,8 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
         return "[PersistenceUnit: " + persistenceUnitName + "] ";
     }
 
-    protected void populate(SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr) {
+    protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr,
+            MultiTenancyStrategy strategy) {
 
         // will use user override value or default to false if not supplied to follow
         // JPA spec.
@@ -156,6 +162,12 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
         //(On start is useful especially in Quarkus as we won't do any more enhancement after this point)
         BytecodeProvider bytecodeProvider = ssr.getService(BytecodeProvider.class);
         options.addSessionFactoryObservers(new SessionFactoryObserverForBytecodeEnhancer(bytecodeProvider));
+
+        if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
+            options.applyMultiTenancyStrategy(strategy);
+            options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
+        }
+
     }
 
     private static class ServiceRegistryCloser implements SessionFactoryObserver {

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Building applications with Maven
 
@@ -12,7 +12,7 @@ include::./attributes.adoc[]
 
 With Maven, you can scaffold a new project with:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=my-groupId \
@@ -41,7 +41,7 @@ The following table lists the attributes you can pass to the `create` command:
 | The artifact id of the created project. Not passing it triggers the interactive mode.
 
 | `projectVersion`
-| `1.0-SNAPSHOT`
+| `1.0.0-SNAPSHOT`
 | The version of the created project
 
 | `platformGroupId`
@@ -85,14 +85,14 @@ Instructions to build the image and run the container are written in those Docke
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:list-extensions
 ----
 
 You can enable an extension using:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="hibernate-validator"
 ----
@@ -120,7 +120,7 @@ $ ./mvnw quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 
 You can install all extensions which match a globbing pattern :
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="hibernate-*"
 ----
@@ -130,7 +130,7 @@ You can install all extensions which match a globbing pattern :
 Quarkus comes with a built-in development mode.
 Run your application with:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -149,39 +149,72 @@ with compilation or deployment an error page will let you know.
 
 Hit `CTRL+C` to stop the application.
 
+[NOTE]
+====
+By default, `quarkus:dev` sets the debug host to `localhost` (for security reasons). If you need to change this, for example to enable debugging on all hosts, you can use the `-DdebugHost` option like so:
+
+[source,bash]
+----
+./mvnw compile quarkus:dev -DdebugHost=0.0.0.0
+----
+====
+
 === Remote Development Mode
 
-It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as Openshift)
+It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as OpenShift)
 and have changes made to your local files become immediately visible.
 
 This allows you to develop in the same environment you will actually run your app in, and with access to the same services.
 
 WARNING: Do not use this in production. This should only be used in a development environment. You should not run production application in dev mode.
 
-To do this you must have the `quarkus-undertow-websockets` extension installed:
+To do this you must build a mutable application, using the `mutable-jar` format. Set the following properties in `application.properties`:
 
-[source,shell]
+[source,properties]
 ----
-./mvnw quarkus:add-extension -Dextensions="undertow-websockets"
+quarkus.package.type=mutable-jar <1>
+quarkus.live-reload.password=changeit <2>
+quarkus.live-reload.url=http://my.cluster.host.com:8080 <3>
 ----
+<1> This tells Quarkus to use the mutable-jar format. Mutable applications also include the deployment time parts of Quarkus,
+so they take up a bit more disk space. If run normally they start just as fast and use the same memory as an immutable application,
+however they can also be started in dev mode.
+<2> The password that is used to secure communication between the remote side and the local side.
+<3> The URL that your app is going to be running in dev mode at. This is only needed on the local side, so you
+may want to leave it out of the properties file and specify it as a system property on the command line.
 
-You must also have the following config properties set:
+Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
+on bare metal you can just set this via the `export QUARKUS_LAUNCH_DEVMODE=true` command, if you are running using
+docker start the image with `-e QUARKUS_LAUNCH_DEVMODE=true`. When the application starts you should now see the following
+line in the logs: `Profile dev activated. Live Coding activated`.
 
-- `quarkus.live-reload.password`
-- `quarkus.live-reload.url`
+NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
+that is generated with a new Quarkus application is all you need. If you are using bare metal launch the Quarkus runner
+jar, do not attempt to run normal devmode.
 
-These can be set via `application.properties`, or any other way (e.g. system properties, environment vars etc). The
-password must be set on both the local and remote processes, while the url only needs to be set on the local host.
+Now you need to connect your local agent to the remote host, using the `remote-dev` command:
 
-Start Quarkus in dev mode on the remote host. Now you need to connect your local agent to the remote host:
-
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:remote-dev -Dquarkus.live-reload.url=http://my-remote-host:8080
 ----
 
 Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
-app.
+app. This is done via a HTTP based long polling transport, that will synchronize your local workspace and the remote
+application via HTTP calls.
+
+If you do not want to use the HTTP feature then you can simply run the `remote-dev` command without specifying the URL.
+In this mode the command will continuously rebuild the local application, so you can use an external tool such as odo or
+rsync to sync to the remote application.
+
+All the config options are shown below:
+
+include::{generated-dir}/config/quarkus-live-reload-live-reload-config.adoc[opts=optional, leveloffset=+1]
+
+NOTE: It is recommended you use SSL when using remote dev mode, however even if you are using an unencrypted connection
+your password is never sent directly over the wire. For the initial connection request the password is hashed with the
+initial state data, and subsequent requests hash it with a random session id generated by the server and any body contents
+for POST requests, and the path for DELETE requests, as well as an incrementing counter to prevent replay attacks.
 
 === Configuring Development Mode
 
@@ -200,7 +233,7 @@ and `javac`:
 <plugin>
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-maven-plugin</artifactId>
-  <version>${quarkus.version}</version>
+  <version>${quarkus-plugin.version}</version>
 
   <configuration>
     <source>${maven.compiler.source}</source>
@@ -235,7 +268,7 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 
 [TIP]
 ====
-You can also run a Quarkus application in debug mode with a suspended JVM using `./mvnw compile quarkus:dev -Ddebug` which is a shorthand for `./mvnw compile quarkus:dev -Ddebug=true`.
+You can also run a Quarkus application in debug mode with a suspended JVM using `./mvnw compile quarkus:dev -Dsuspend` which is a shorthand for `./mvnw compile quarkus:dev -Dsuspend=true`.
 
 Then, attach your debugger to `localhost:5005`.
 ====
@@ -293,16 +326,16 @@ To be able to use it, the following plugin configuration has to be added to the 
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-                <version>${quarkus.version}</version>
+                <version>${quarkus-plugin.version}</version>
             </plugin>
 ----
 
 Now you should be able to execute `./mvnw quarkus-bootstrap:build-tree` on your project and see something like:
 
-[source,shell,subs=attributes+]
+[source,text,subs=attributes+]
 ----
 [INFO] --- quarkus-bootstrap-maven-plugin:{quarkus-version}:build-tree (default-cli) @ getting-started ---
-[INFO] org.acme:getting-started:jar:1.0-SNAPSHOT
+[INFO] org.acme:getting-started:jar:1.0.0-SNAPSHOT
 [INFO] └─ io.quarkus:quarkus-resteasy-deployment:jar:{quarkus-version} (compile)
 [INFO]    ├─ io.quarkus:quarkus-resteasy-server-common-deployment:jar:{quarkus-version} (compile)
 [INFO]    │  ├─ io.quarkus:quarkus-core-deployment:jar:{quarkus-version} (compile)
@@ -316,7 +349,7 @@ Now you should be able to execute `./mvnw quarkus-bootstrap:build-tree` on your 
 
 Native executables make Quarkus applications ideal for containers and serverless workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
+Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version} (Make sure to use a Java 11 version of GraalVM).
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
 
 Create a native executable using: `./mvnw package -Pnative`.
@@ -326,7 +359,7 @@ To run Integration Tests on the native executable, make sure to have the proper 
 
 [source,shell]
 ----
-./mvnw verify -Pnative
+$ ./mvnw verify -Pnative
 ...
 [quarkus-quickstart-runner:50955]     universe:     391.96 ms
 [quarkus-quickstart-runner:50955]      (parse):     904.37 ms
@@ -360,7 +393,7 @@ Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/gettin
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw package -Dnative -Dquarkus.native.container-build=true
 ----
@@ -393,8 +426,8 @@ If you have not used <<project-creation,project scaffolding>>, add the following
     <dependencies>
         <dependency> <1>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom</artifactId>
-            <version>${quarkus.version}</version>
+            <artifactId>quarkus-universe-bom</artifactId>
+            <version>${quarkus.platform.version}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -406,27 +439,41 @@ If you have not used <<project-creation,project scaffolding>>, add the following
         <plugin> <2>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus.version}</version>
+            <version>${quarkus-plugin.version}</version>
+            <extensions>true</extensions>
             <executions>
                 <execution>
                     <goals>
                         <goal>build</goal>
+                        <goal>generate-code</goal>
+                        <goal>generate-code-tests</goal>
                     </goals>
                 </execution>
             </executions>
+        </plugin>
+        <plugin> <3>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire-plugin.version}</version>
+            <configuration>
+                <systemPropertyVariables>
+                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                    <maven.home>${maven.home}</maven.home>
+                </systemPropertyVariables>
+            </configuration>
         </plugin>
     </plugins>
 </build>
 
 <profiles>
-    <profile> <3>
+    <profile> <4>
         <id>native</id>
-        <properties> <4>
+        <properties> <5>
             <quarkus.package.type>native</quarkus.package.type>
         </properties>
         <build>
             <plugins>
-                <plugin> <5>
+                <plugin> <6>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${surefire-plugin.version}</version>
@@ -437,9 +484,11 @@ If you have not used <<project-creation,project scaffolding>>, add the following
                                 <goal>verify</goal>
                             </goals>
                             <configuration>
-                                <systemProperties>
+                                <systemPropertyVariables>
                                     <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                </systemProperties>
+                                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                    <maven.home>${maven.home}</maven.home>
+                                </systemPropertyVariables>
                             </configuration>
                         </execution>
                     </executions>
@@ -452,23 +501,70 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 
 <1> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
 <2> Use the Quarkus Maven plugin that will hook into the build process.
-<3> Use a specific `native` profile for native executable building.
-<4> Enable the `native` package type. The build will therefore produce a native executable.
-<5> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
+<3> Add system properties to `maven-surefire-plugin`. +
+`maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
+<4> Use a specific `native` profile for native executable building.
+<5> Enable the `native` package type. The build will therefore produce a native executable.
+<6> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
+
+=== Using fast-jar
+
+`fast-jar` is now the default quarkus package type. The result of `./mvnw package` command is a new directory under `target` named `quarkus-app`.
+
+You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
+
+WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
+might not function correctly.
+
+TIP: The `fast-jar` packaging results in creating an artifact that starts a little faster and consumes slightly less memory than a legacy Quarkus jar
+because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
+on the classpath that the legacy jar necessitates, when loading a class or resource.
 
 [[uber-jar-maven]]
 === Uber-Jar Creation
 
-Quarkus Maven plugin supports the generation of Uber-Jars by specifying a `quarkus.package.uber-jar=true` configuration option in your `application.properties`.
+Quarkus Maven plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type=uber-jar` configuration option in your `application.properties`
+(or `<quarkus.package.type>uber-jar</quarkus.package.type>` in your `pom.xml`).
 
 The original jar will still be present in the `target` directory but it will be renamed to contain the `.original` suffix.
 
 When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `quarkus.package.ignored-entries` configuration
-option, this takes a comma seperated list of entries to ignore.
+option, this takes a comma separated list of entries to ignore.
 
 Uber-Jar creation by default excludes link:https://docs.oracle.com/javase/tutorial/deployment/jar/intro.html[signature files] that might be present in the dependencies of the application.
 
 Uber-Jar's final name is configurable via a Maven's build settings `finalName` option.
+
+[[multi-module-maven]]
+=== Working with multi-module projects
+
+By default, Quarkus will not discover CDI beans inside another module.
+
+The best way to enable CDI bean discovery for a module in a multi-module project would be to include the `jandex-maven-plugin`,
+unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will indexed automatically.
+
+[source,xml]
+----
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.jboss.jandex</groupId>
+      <artifactId>jandex-maven-plugin</artifactId>
+      <version>1.0.7</version>
+      <executions>
+        <execution>
+          <id>make-index</id>
+          <goals>
+            <goal>jandex</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
+----
+
+More information on this topic can be found on the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
 
 [[configuration-reference]]
 == Configuring the Project Output

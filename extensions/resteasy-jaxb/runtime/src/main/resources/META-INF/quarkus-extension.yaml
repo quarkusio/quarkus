@@ -1,15 +1,12 @@
 ---
-name: "RESTEasy JAX-B"
+name: "RESTEasy JAXB"
 metadata:
   keywords:
   - "resteasy-jaxb"
-  - "jaxrs-json"
-  - "resteasy-json"
   - "resteasy"
   - "jaxrs"
-  - "json"
+  - "xml"
   - "jaxb"
-  - "jax-b"
   categories:
   - "web"
   - "serialization"

@@ -25,6 +25,7 @@ public class LiquibaseExtensionLoadChangeLogTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("db/xml/changeLog.xml")
                     .addAsResource("db/xml/create-tables.xml")
+                    .addAsResource("db/xml/create-views.xml")
                     .addAsResource("db/xml/test/test.xml")
                     .addAsResource("load-change-log-config.properties", "application.properties"));
 
@@ -36,7 +37,8 @@ public class LiquibaseExtensionLoadChangeLogTest {
             assertEquals("db/xml/changeLog.xml", changelog.getFilePath());
             assertNotNull(changelog.getChangeSets());
             assertEquals("db/xml/create-tables.xml", changelog.getChangeSets().get(0).getFilePath());
-            assertEquals("db/xml/test/test.xml", changelog.getChangeSets().get(1).getFilePath());
+            assertEquals("db/xml/create-views.xml", changelog.getChangeSets().get(1).getFilePath());
+            assertEquals("db/xml/test/test.xml", changelog.getChangeSets().get(2).getFilePath());
         }
     }
 

@@ -1,17 +1,14 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using the MongoDB Client
 include::./attributes.adoc[]
-:extension-status: preview
 
 MongoDB is a well known NoSQL Database that is widely used.
 
 In this guide, we see how you can get your REST services to use the MongoDB database.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 
@@ -20,7 +17,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * MongoDB installed or Docker installed
 
 == Architecture
@@ -44,20 +41,37 @@ The solution is located in the `mongodb-quickstart` {quickstarts-tree-url}/mongo
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=mongodb-quickstart \
     -DclassName="org.acme.mongodb.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb,mongodb-client,resteasy-mutiny,context-propagation"
+    -Dextensions="resteasy,resteasy-jackson,mongodb-client,resteasy-mutiny,context-propagation"
 cd mongodb-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B, Mutiny, Context Propagation and MongoDB Client extensions.
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson, Mutiny, Context Propagation and MongoDB Client extensions.
 After this, the quarkus-mongodb-client extension has been added to your `pom.xml`.
 
+If you already have your Quarkus project configured, you can add the `mongodb-client` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="mongodb-client"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mongodb-client</artifactId>
+</dependency>
+----
 
 == Creating your first JSON REST service
 
@@ -75,6 +89,7 @@ public class Fruit {
 
     private String name;
     private String description;
+    private String id;
 
     public Fruit() {
     }
@@ -114,6 +129,14 @@ public class Fruit {
     @Override
     public int hashCode() {
         return Objects.hash(this.name);
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getId() {
+        return id;
     }
 }
 ----
@@ -177,8 +200,6 @@ Now, edit the `org.acme.mongodb.FruitResource` class as follows:
 [source,java]
 ----
 @Path("/fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     @Inject FruitService fruitService;
@@ -236,13 +257,21 @@ Notice there's an extra bit in the key (the `users` and `inventory` segments).
 The syntax is as follows: `quarkus.mongodb.[optional name.][mongo connection property]`.
 If the name is omitted, it configures the default client.
 
+[NOTE]
+====
+The use of multiple MongoDB clients enables multi-tenancy for MongoDB by allowing to connect to multiple MongoDB clusters. +
+If you want to connect to multiple databases inside the same cluster,
+multiple clients are **not** necessary as a single client is able to access all databases in the same cluster
+(like a JDBC connection is able to access to multiple schemas inside the same database).
+====
+
 === Named Mongo client Injection
 
-When using multiple clients, each `MongoClient`, you can select the client to inject using the `io.quarkus.mongodb.runtime.MongoClientName` qualifier.
+When using multiple clients, each `MongoClient`, you can select the client to inject using the `io.quarkus.mongodb.MongoClientName` qualifier.
 Using the above properties to configure three different clients, you can also inject each one as follows:
 
 [source,java,indent=0]
---
+----
 @Inject
 MongoClient defaultMongoClient;
 
@@ -253,13 +282,18 @@ MongoClient mongoClient1;
 @Inject
 @MongoClientName("inventory")
 ReactiveMongoClient mongoClient2;
---
+----
+
+[NOTE]
+====
+The old `io.quarkus.mongodb.runtime.MongoClientName` has been deprecated. It still works, but will soon be removed, therefore users are encouraged to not use it.
+====
 
 == Running a MongoDB Database
 As by default, `MongoClient` is configured to access a local MongoDB database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!
 
 If you want to use Docker to run a MongoDB database, you can use the following command to launch one:
-[source,shell]
+[source,bash]
 ----
 docker run -ti --rm -p 27017:27017 mongo:4.0
 ----
@@ -328,7 +362,8 @@ public class ReactiveFruitService {
         Document document = new Document()
                 .append("name", fruit.getName())
                 .append("description", fruit.getDescription());
-        return getCollection().insertOne(document);
+        return getCollection().insertOne(document)
+                .onItem().ignore().andContinueWithNull();
     }
 
     private ReactiveMongoCollection<Document> getCollection() {
@@ -536,25 +571,30 @@ a discriminator field inside the document. It can be useful when working with ab
 
 Quarkus will automatically register all the classes annotated with `@BsonDiscriminator` with the POJO codec.
 
+The POJO Codec have enhanced generic support via `PropertyCodecProvider`,
+Quarkus will automatically register any `PropertyCodecProvider` with the POJO Codec.
+When building native executables and using generic types, you might need to register the type arguments for reflection.
+
 == Simplifying MongoDB with Panache
 
 The link:mongodb-panache[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in link:hibernate-orm-panache.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
 == Connection Health Check
 
-If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb` will automatically add a readiness health check
+If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb-client` will automatically add a readiness health check
 to validate the connection to the cluster.
 
-So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be disabled by setting the `quarkus.mongodb.health.enabled` property to `false` in your `application.properties`.
 
 == Metrics
 
-If you are using the `quarkus-smallrye-metrics` extension, `quarkus-mongodb` can provide metrics about the connection pools.
+If you are using the `quarkus-micrometer` or `quarkus-smallrye-metrics` extension, `quarkus-mongodb-client` can provide metrics about the connection pools.
 This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enabled` property to `true` in your `application.properties`.
 
-So when you access the `/metrics` endpoint of your application you will have information about the connection pool status in the `vendor` scope.
+So when you access the `/q/metrics` endpoint of your application you will have information about the connection pool status.
+When using link:microprofile-metrics[SmallRye Metrics], connection pool metrics will be available under the `vendor` scope.
 
 
 == The legacy client
@@ -586,7 +626,7 @@ quarkus.mongodb.tls-insecure=true # only if TLS certificate cannot be validated
 
 You can then build a native executable with the usual command `./mvnw package -Pnative`.
 
-Running it is as simple as executing `./target/mongodb-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/mongodb-quickstart-1.0.0-SNAPSHOT-runner`.
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
 
@@ -595,6 +635,13 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 Currently, Quarkus doesn't support the `mongodb+srv` protocol in native mode.
 
 link:https://docs.mongodb.com/manual/core/security-client-side-encryption/[Client-Side Field Level Encryption] is also not supported in native mode.
+====
+
+[TIP]
+====
+If you encounter the following error when running your application in native mode: +
+`Failed to encode 'MyObject'. Encoding 'myVariable' errored with: Can't find a codec for class org.acme.MyVariable.` +
+This means that the `org.acme.MyVariable` class is not known to GraalVM, the remedy is to add the `@RegisterForReflection` annotation to your `MyVariable class`.
 ====
 
 == Conclusion

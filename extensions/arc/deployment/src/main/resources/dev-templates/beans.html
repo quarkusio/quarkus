@@ -1,0 +1,61 @@
+{#include main}
+  {#style}
+   .annotation {
+     color: gray;
+     font-style: italic;
+   }
+   span.larger-badge {
+     font-size: 0.9em;
+   }
+   span.app-class {
+     cursor:pointer;
+     color:blue;
+     text-decoration:underline;
+   }
+
+  {/style}
+
+  {#script}
+    $(document).ready(function(){
+      if (!ideKnown()) {
+        return;
+      }
+      $(".class-candidate").each(function() {
+        var className = $(this).text();
+        if (appClassLang(className)) {
+          $(this).addClass("app-class");
+        }
+      });
+
+      $(".app-class").on("click", function() {
+        openInIDE($(this).text());
+      });
+    });
+
+  {/script}
+
+  {#title}Beans{/title}
+  {#body}
+  <table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Bean</th>
+      <th scope="col">Kind</th>
+    </tr>
+   </thead>
+   <tbody>
+    {#for bean in info:devBeanInfos.beans}
+    <tr>
+      <td>{count}.</td>
+      <td>
+       {#display-bean bean/}
+      </td>
+      <td>
+       {#bean-declaration bean/}
+      </td>
+    {/for}
+   </tbody>
+  </table>
+  {/body}
+{/include}

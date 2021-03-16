@@ -72,18 +72,21 @@ public class StartupAnnotationTest {
     @Test
     public void testStartup() {
         // StartMe, SingletonStartMe, ProducerStartMe, DependentStartMe
-        assertEquals(11, LOG.size(), "Unexpected number of log messages: " + LOG);
+        assertEquals(14, LOG.size(), "Unexpected number of log messages: " + LOG);
         assertEquals("startMe_c", LOG.get(0));
         assertEquals("startMe_c", LOG.get(1));
         assertEquals("startMe_pc", LOG.get(2));
         assertEquals("singleton_c", LOG.get(3));
         assertEquals("singleton_pc", LOG.get(4));
         assertEquals("producer_pc", LOG.get(5));
-        assertEquals("producer", LOG.get(6));
+        assertEquals("produce_long", LOG.get(6));
         assertEquals("producer_pd", LOG.get(7));
-        assertEquals("dependent_c", LOG.get(8));
-        assertEquals("dependent_pc", LOG.get(9));
-        assertEquals("dependent_pd", LOG.get(10));
+        assertEquals("producer_pc", LOG.get(8));
+        assertEquals("produce_string", LOG.get(9));
+        assertEquals("producer_pd", LOG.get(10));
+        assertEquals("dependent_c", LOG.get(11));
+        assertEquals("dependent_pc", LOG.get(12));
+        assertEquals("dependent_pd", LOG.get(13));
     }
 
     // This component should be started first
@@ -154,8 +157,15 @@ public class StartupAnnotationTest {
         @Startup(Integer.MAX_VALUE - 1)
         @Produces
         String produceString() {
-            LOG.add("producer");
+            LOG.add("produce_string");
             return "ok";
+        }
+
+        @Startup(Integer.MAX_VALUE - 2)
+        @Produces
+        Long produceLong() {
+            LOG.add("produce_long");
+            return 1l;
         }
 
         @PostConstruct

@@ -6,7 +6,8 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.vertx.core.http.HttpMethod;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigGroup
 public class CORSConfig {
@@ -20,6 +21,7 @@ public class CORSConfig {
      * default: returns any requested origin as valid
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> origins;
 
     /**
@@ -31,7 +33,8 @@ public class CORSConfig {
      * default: returns any requested method as valid
      */
     @ConfigItem
-    public Optional<List<HttpMethod>> methods;
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<List<String>> methods;
 
     /**
      * HTTP headers allowed for CORS
@@ -42,6 +45,7 @@ public class CORSConfig {
      * default: returns any requested header as valid
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> headers;
 
     /**
@@ -52,6 +56,7 @@ public class CORSConfig {
      * default: empty
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> exposedHeaders;
 
     /**
@@ -61,6 +66,17 @@ public class CORSConfig {
     @ConfigItem
     public Optional<Duration> accessControlMaxAge;
 
+    /**
+     * The `Access-Control-Allow-Credentials` header is used to tell the
+     * browsers to expose the response to front-end JavaScript code when
+     * the request’s credentials mode Request.credentials is “include”.
+     *
+     * The value of this header will default to `true` if `quarkus.http.cors.origins` property is set and
+     * there is a match with the precise `Origin` header and that header is not '*'.
+     */
+    @ConfigItem
+    public Optional<Boolean> accessControlAllowCredentials;
+
     @Override
     public String toString() {
         return "CORSConfig{" +
@@ -69,6 +85,7 @@ public class CORSConfig {
                 ", headers=" + headers +
                 ", exposedHeaders=" + exposedHeaders +
                 ", accessControlMaxAge=" + accessControlMaxAge +
+                ", accessControlAllowCredentials=" + accessControlAllowCredentials +
                 '}';
     }
 }

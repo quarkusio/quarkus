@@ -1,0 +1,25 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Amazon IAM Client
+:extension-status: preview
+
+include::./attributes.adoc[]
+
+Amazon Identity and Access Management (IAM) enables users to manage access to AWS services and resources securely.
+
+You can find more information about IAM at https://aws.amazon.com/iam/[the Amazon IAM website].
+
+NOTE: The IAM extension is based on https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/welcome.html[AWS Java SDK 2.x].
+It's a major rewrite of the 1.x code base that offers two programming models (Blocking & Async).
+
+include::./status-include.adoc[]
+
+The Quarkus extension supports two programming models:
+
+* Blocking access using URL Connection HTTP client (by default) or the Apache HTTP Client
+* https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/basics-async.html[Asynchronous programming] based on JDK's `CompletableFuture` objects and the Netty HTTP client.
+
+include::{generated-dir}/config/quarkus-amazon-iam.adoc[opts=optional, leveloffset=+1]

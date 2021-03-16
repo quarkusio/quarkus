@@ -6,7 +6,6 @@
     <artifactId>quarkus-integration-tests-parent</artifactId>
     <groupId>io.quarkus</groupId>
     <version>999-SNAPSHOT</version>
-    <relativePath>../</relativePath>
   </parent>
 
   <artifactId>quarkus-integration-test-kubernetes-parent</artifactId>
@@ -14,8 +13,8 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>invoker</module>
-    <module>standard</module>
+    <module>maven-invoker-way</module>
+    <module>quarkus-standard-way</module>
   </modules>
 
 </project>

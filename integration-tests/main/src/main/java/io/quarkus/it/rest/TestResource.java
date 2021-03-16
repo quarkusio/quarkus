@@ -40,6 +40,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.reactivex.Single;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Path("/test")
 public class TestResource {
@@ -153,9 +155,43 @@ public class TestResource {
     }
 
     @GET
+    @Path("/uni")
+    public Uni<String> uni() {
+        return Uni.createFrom().item("Hello from Uni");
+    }
+
+    @GET
+    @Path("/multi")
+    public Multi<String> multi() {
+        return Multi.createFrom().items("Hello", "from", "Multi");
+    }
+
+    @GET
+    @Path("/uniType")
+    public Uni<ComponentType> uniType() {
+        return Uni.createFrom().item(this::createComponent);
+    }
+
+    @GET
+    @Path("/multiType")
+    public Multi<ComponentType> multiType() {
+        return Multi.createFrom().items(createComponent(), createComponent());
+    }
+
+    @GET
+    @Path("/compType")
+    public ComponentType getComponentType() {
+        return createComponent();
+    }
+
+    @GET
     @Path("/complex")
     @Produces("application/json")
     public List<ComponentType> complex() {
+        return Collections.singletonList(createComponent());
+    }
+
+    private ComponentType createComponent() {
         ComponentType ret = new ComponentType();
         ret.setValue("component value");
         CollectionType ct = new CollectionType();
@@ -164,7 +200,7 @@ public class TestResource {
         SubComponent subComponent = new SubComponent();
         subComponent.getData().add("sub component list value");
         ret.setSubComponent(subComponent);
-        return Collections.singletonList(ret);
+        return ret;
     }
 
     @GET
@@ -282,6 +318,13 @@ public class TestResource {
 
             return fromJsonEntity;
         }
+    }
+
+    @GET
+    @Path("/echo/{echo}")
+    @Produces("application/json")
+    public String echo(@PathParam("echo") String echo) {
+        return echo;
     }
 
     @GET

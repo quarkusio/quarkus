@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building Quarkus apps with Quarkus Command Line Interface (CLI)
 
@@ -24,24 +24,32 @@ binary there.
 Then in your shell profile (for Bash shell edit '~/.bash_profile'), export the 'QUARKUS_HOME' 
 folder and add that to your 'PATH':
 
-[source,shell]
+[source,bash]
+----
 export QUARKUS_HOME=/path/to/quarkus-cli
 export PATH="$PATH:$QUARKUS_HOME"
+----
 
 Reload your terminal or do:
 
-[source,shell]
+[source,bash]
+----
 source ~/.bash_profile
+----
 
 Now you can run the Quarkus CLI:
 
 [source,shell]
+----
 $ quarkus --help
+----
 
 This will display the help information with all the available commands.
 
 [source,shell]
+----
 $ quarkus -i
+----
 
 This will start the Quarkus CLI in interactive mode.
 
@@ -54,7 +62,9 @@ As with the native CLI we recommend that you copy the binary to a specific folde
 The jar file requires Java 8 or newer to run. To start the CLI:
 
 [source,shell]
+----
 $ java -jar quarkus-cli.jar
+----
 
 The jar file CLI accepts all the same options and commands as the native binary.
 
@@ -67,7 +77,9 @@ Note: In the examples below switch out 'quarkus' with 'java -jar quarkus-cli.jar
 To create a new project we use the create-project command:
 
 [source,shell]
+----
 $ quarkus create-project hello-world
+----
 
 This will create a folder called 'hello-world' in your current working directory using default
 groupId, artifactId and version values 
@@ -77,25 +89,33 @@ To specify the groupId, artifactId and version values,
 use the '--groupid', '--artifactid' and '--version' options:
 
 [source,shell]
+----
 $ quarkus create-project --groupid=com.foo --artifactId=bar --version=1.0  hello-world
+----
 
 
 Use the help option to display all the possible options:
 
 [source,shell]
+----
 $ quarkus create-project --help
+----
 
 == Dealing with extensions
 
 The Quarkus CLI can obtain a list of the available extensions with:
 
 [source,shell]
+----
 $ quarkus list-extensions
+----
 
 To more easily get an overview and only display the extension names:
 
 [source,shell]
+----
 $ quarkus list-extensions -n
+----
 
 
 == Adding extension(s)
@@ -104,7 +124,9 @@ The Quarkus CLI can add Quarkus extensions to your project with the 'add-extensi
 command:
 
 [source,shell]
+----
 $ quarkus add-extension --extension=hibernate-validator /path/to/my/project
+----
 
 The argument path either needs to be the base folder for the project or a direct path to the 
 build file.
@@ -114,7 +136,9 @@ build file.
 To start dev mode from the Quarkus CLI do:
 
 [source,shell]
+----
 $ quarkus dev /path/to/my/project
+----
 
 As with 'add-extension' the argument path needs to be the base folder for the project or a 
 direct path to the build file.

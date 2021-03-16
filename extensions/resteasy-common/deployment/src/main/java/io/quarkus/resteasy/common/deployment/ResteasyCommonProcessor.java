@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -23,6 +24,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.AnnotationValue.Kind;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -38,9 +40,13 @@ import org.jboss.resteasy.plugins.providers.StringTextStar;
 import org.jboss.resteasy.plugins.providers.sse.SseConstants;
 import org.jboss.resteasy.spi.InjectorFactory;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -49,6 +55,9 @@ import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
+import io.quarkus.resteasy.common.runtime.providers.ServerFormUrlEncodedProvider;
+import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -57,6 +66,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
 
 public class ResteasyCommonProcessor {
+
     private static final Logger LOGGER = Logger.getLogger(ResteasyCommonProcessor.class.getName());
 
     private static final ProviderDiscoverer[] PROVIDER_DISCOVERERS = {
@@ -68,6 +78,20 @@ public class ResteasyCommonProcessor {
             new ProviderDiscoverer(ResteasyDotNames.POST, true, true),
             new ProviderDiscoverer(ResteasyDotNames.PUT, true, false)
     };
+
+    private static final DotName QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER = DotName
+            .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusObjectMapperContextResolver");
+    private static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
+    private static final DotName QUARKUS_JACKSON_SERIALIZER = DotName
+            .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusJacksonSerializer");
+
+    private static final DotName QUARKUS_JSONB_CONTEXT_RESOLVER = DotName
+            .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbContextResolver");
+    private static final DotName JSONB = DotName.createSimple("javax.json.bind.Jsonb");
+    private static final DotName QUARKUS_JSONB_SERIALIZER = DotName
+            .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbSerializer");
+
+    private static final String[] WILDCARD_MEDIA_TYPE_ARRAY = { MediaType.WILDCARD };
 
     private ResteasyCommonConfig resteasyCommonConfig;
 
@@ -97,6 +121,12 @@ public class ResteasyCommonProcessor {
     }
 
     @BuildStep
+    ResteasyConfigBuildItem resteasyConfig(ResteasyJsonConfig resteasyJsonConfig, Capabilities capabilities) {
+        return new ResteasyConfigBuildItem(resteasyJsonConfig.jsonDefault &&
+                (capabilities.isPresent(Capability.REST_JACKSON) || capabilities.isPresent(Capability.REST_JSONB)));
+    }
+
+    @BuildStep
     void setupGzipProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         // If GZIP support is enabled, enable it
         if (resteasyCommonConfig.gzip.enabled) {
@@ -110,6 +140,7 @@ public class ResteasyCommonProcessor {
     @BuildStep
     ResteasyInjectionReadyBuildItem setupResteasyInjection(List<ProxyUnwrapperBuildItem> proxyUnwrappers,
             BeanContainerBuildItem beanContainerBuildItem,
+            Capabilities capabilities,
             ResteasyInjectorFactoryRecorder recorder) {
         List<Function<Object, Object>> unwrappers = new ArrayList<>();
         for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
@@ -123,22 +154,29 @@ public class ResteasyCommonProcessor {
     JaxrsProvidersToRegisterBuildItem setupProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             CombinedIndexBuildItem indexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems, Capabilities capabilities) throws Exception {
+            List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems,
+            List<RestClientBuildItem> restClients,
+            ResteasyConfigBuildItem resteasyConfig,
+            Capabilities capabilities) throws Exception {
 
         Set<String> contributedProviders = new HashSet<>();
         for (ResteasyJaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems) {
             contributedProviders.add(contributedProviderBuildItem.getName());
         }
 
+        Set<String> annotatedProviders = new HashSet<>();
         for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PROVIDER)) {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
-                contributedProviders.add(i.target().asClass().name().toString());
+                annotatedProviders.add(i.target().asClass().name().toString());
             }
             checkProperConfigAccessInProvider(i);
+            checkProperConstructorInProvider(i);
         }
-
-        Set<String> availableProviders = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/" + Providers.class.getName());
+        contributedProviders.addAll(annotatedProviders);
+        Set<String> availableProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/" + Providers.class.getName()));
+        // this one is added manually in RESTEasy's ResteasyDeploymentImpl
+        availableProviders.add(ServerFormUrlEncodedProvider.class.getName());
 
         MediaTypeMap<String> categorizedReaders = new MediaTypeMap<>();
         MediaTypeMap<String> categorizedWriters = new MediaTypeMap<>();
@@ -151,17 +189,29 @@ public class ResteasyCommonProcessor {
         // add the other providers detected
         Set<String> providersToRegister = new HashSet<>(otherProviders);
 
-        if (!capabilities.isCapabilityPresent(Capabilities.RESTEASY_JSON_EXTENSION)) {
+        if (!capabilities.isPresent(Capability.RESTEASY_JSON)) {
 
             boolean needJsonSupport = restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.CONSUMES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.PRODUCES)
-                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_SSE_ELEMENT_TYPE);
+                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_SSE_ELEMENT_TYPE)
+                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_PART_TYPE);
             if (needJsonSupport) {
                 LOGGER.warn(
                         "Quarkus detected the need of REST JSON support but you have not provided the necessary JSON " +
                                 "extension for this. You can visit https://quarkus.io/guides/rest-json for more " +
                                 "information on how to set one.");
             }
+        }
+        if (!capabilities.isPresent(Capability.RESTEASY_MUTINY)) {
+            String needsMutinyClasses = mutinySupportNeeded(indexBuildItem);
+            if (needsMutinyClasses != null) {
+                LOGGER.warn(
+                        "Quarkus detected the need for Mutiny reactive programming support, however the quarkus-resteasy-mutiny extension "
+                                + "was not present. Reactive REST endpoints in your application that return Uni or Multi " +
+                                "will not function as you expect until you add this extension. Endpoints that need Mutiny are: "
+                                + needsMutinyClasses);
+            }
+
         }
 
         // we add a couple of default providers
@@ -172,8 +222,9 @@ public class ResteasyCommonProcessor {
         IndexView beansIndex = beanArchiveIndexBuildItem.getIndex();
 
         // find the providers declared in our services
-        boolean useBuiltinProviders = collectDeclaredProviders(providersToRegister, categorizedReaders, categorizedWriters,
-                categorizedContextResolvers, index, beansIndex);
+        boolean useBuiltinProviders = collectDeclaredProviders(restClients, resteasyConfig,
+                providersToRegister, categorizedReaders, categorizedWriters, categorizedContextResolvers,
+                index, beansIndex);
 
         if (useBuiltinProviders) {
             providersToRegister = new HashSet<>(contributedProviders);
@@ -188,7 +239,97 @@ public class ResteasyCommonProcessor {
                     "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
         }
 
-        return new JaxrsProvidersToRegisterBuildItem(providersToRegister, contributedProviders, useBuiltinProviders);
+        return new JaxrsProvidersToRegisterBuildItem(
+                providersToRegister, contributedProviders, annotatedProviders, useBuiltinProviders);
+    }
+
+    private String mutinySupportNeeded(CombinedIndexBuildItem indexBuildItem) {
+        Set<DotName> mutinyTypes = new HashSet<>(Arrays.asList(DotName.createSimple("io.smallrye.mutiny.Uni"),
+                DotName.createSimple("io.smallrye.mutiny.Multi"),
+                DotName.createSimple("io.smallrye.mutiny.GroupedMulti")));
+        List<MethodInfo> methods = new ArrayList<>();
+        for (DotName annotation : ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS) {
+            for (AnnotationInstance instance : indexBuildItem.getIndex().getAnnotations(annotation)) {
+                MethodInfo methodInfo = instance.target().asMethod();
+                Type type = methodInfo.returnType();
+                if (mutinyTypes.contains(type.name())) {
+                    methods.add(methodInfo);
+                }
+            }
+        }
+        if (methods.isEmpty()) {
+            return null;
+        }
+        return methods.stream().map(new Function<MethodInfo, String>() {
+            @Override
+            public String apply(MethodInfo methodInfo) {
+                return methodInfo.declaringClass().toString() + "{" + methodInfo.toString() + "}";
+            }
+        }).collect(Collectors.joining(", "));
+
+    }
+
+    @BuildStep
+    void registerJsonContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
+            Capabilities capabilities,
+            ResteasyJsonConfig resteasyJsonConfig,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<UnremovableBeanBuildItem> unremovable) {
+
+        if (capabilities.isPresent(Capability.REST_JACKSON)) {
+            registerJsonContextResolver(OBJECT_MAPPER, QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER, combinedIndexBuildItem,
+                    jaxrsProvider, additionalBean, unremovable);
+            if (resteasyJsonConfig.jsonDefault) {
+                jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(QUARKUS_JACKSON_SERIALIZER.toString()));
+            }
+        }
+
+        if (capabilities.isPresent(Capability.REST_JSONB)) {
+            registerJsonContextResolver(JSONB, QUARKUS_JSONB_CONTEXT_RESOLVER, combinedIndexBuildItem, jaxrsProvider,
+                    additionalBean, unremovable);
+            if (resteasyJsonConfig.jsonDefault) {
+                jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(QUARKUS_JSONB_SERIALIZER.toString()));
+            }
+        }
+    }
+
+    private void registerJsonContextResolver(
+            DotName jsonImplementation,
+            DotName jsonContextResolver,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<UnremovableBeanBuildItem> unremovable) {
+
+        IndexView index = combinedIndexBuildItem.getIndex();
+
+        jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(jsonContextResolver.toString()));
+
+        // this needs to be registered manually since the runtime module is not indexed by Jandex
+        additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(jsonContextResolver.toString()));
+        Set<String> userSuppliedProducers = getUserSuppliedJsonProducerBeans(index, jsonImplementation);
+        if (!userSuppliedProducers.isEmpty()) {
+            unremovable.produce(
+                    new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(userSuppliedProducers)));
+        }
+    }
+
+    /*
+     * We need to find all the user supplied producers and mark them as unremovable since there are no actual injection points
+     * for ObjectMapper/Jsonb.
+     */
+    private Set<String> getUserSuppliedJsonProducerBeans(IndexView index, DotName jsonImplementation) {
+        Set<String> result = new HashSet<>();
+        for (AnnotationInstance annotation : index.getAnnotations(DotNames.PRODUCES)) {
+            if (annotation.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            if (jsonImplementation.equals(annotation.target().asMethod().returnType().name())) {
+                result.add(annotation.target().asMethod().declaringClass().name().toString());
+            }
+        }
+        return result;
     }
 
     private void checkProperConfigAccessInProvider(AnnotationInstance instance) {
@@ -211,6 +352,16 @@ public class ResteasyCommonProcessor {
                             + " into a JAX-RS provider may lead to unexpected results. To ensure proper results, please change the type of the field to "
                             + ParameterizedType.create(ResteasyDotNames.CDI_INSTANCE, new Type[] { fieldType }, null)
                             + ". Offending field is '" + field.name() + "' of class '" + field.declaringClass() + "'");
+        }
+    }
+
+    private void checkProperConstructorInProvider(AnnotationInstance i) {
+        ClassInfo targetClass = i.target().asClass();
+        if (!targetClass.hasNoArgsConstructor()
+                || targetClass.methods().stream().filter(m -> m.name().equals("<init>")).count() > 1) {
+            LOGGER.warn(
+                    "Classes annotated with @Provider should have a single, no-argument constructor, otherwise dependency injection won't work properly. Offending class is "
+                            + targetClass);
         }
     }
 
@@ -239,7 +390,8 @@ public class ResteasyCommonProcessor {
             Set<String> otherProviders) {
         for (String availableProvider : availableProviders) {
             try {
-                Class<?> providerClass = Class.forName(availableProvider);
+                Class<?> providerClass = Class.forName(availableProvider, false,
+                        Thread.currentThread().getContextClassLoader());
                 if (MessageBodyReader.class.isAssignableFrom(providerClass)
                         || MessageBodyWriter.class.isAssignableFrom(providerClass)) {
                     if (MessageBodyReader.class.isAssignableFrom(providerClass)) {
@@ -281,33 +433,71 @@ public class ResteasyCommonProcessor {
         }
     }
 
-    private static boolean collectDeclaredProviders(Set<String> providersToRegister,
+    private static boolean collectDeclaredProviders(List<RestClientBuildItem> restClients,
+            ResteasyConfigBuildItem resteasyConfig,
+            Set<String> providersToRegister,
             MediaTypeMap<String> categorizedReaders, MediaTypeMap<String> categorizedWriters,
-            MediaTypeMap<String> categorizedContextResolvers, IndexView... indexes) {
+            MediaTypeMap<String> categorizedContextResolvers,
+            IndexView... indexes) {
+        Set<String> restClientNames = restClients.stream()
+                .map(RestClientBuildItem::getInterfaceName)
+                .collect(Collectors.toSet());
 
         for (IndexView index : indexes) {
             for (ProviderDiscoverer providerDiscoverer : PROVIDER_DISCOVERERS) {
                 Collection<AnnotationInstance> getMethods = index.getAnnotations(providerDiscoverer.getMethodAnnotation());
                 for (AnnotationInstance getMethod : getMethods) {
                     MethodInfo methodTarget = getMethod.target().asMethod();
-                    if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
-                            methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
-                        return true;
+                    boolean isRestClient = restClientNames.contains(methodTarget.declaringClass().name().toString());
+
+                    if (isRestClient) {
+                        // when dealing with a REST client, we need to collect @Consumes as writers and @Produces as readers
+                        if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
+                                methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll(),
+                                resteasyConfig.isJsonDefault())) {
+                            return true;
+                        }
+                        if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
+                                methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll(),
+                                resteasyConfig.isJsonDefault())) {
+                            return true;
+                        }
+                    } else {
+                        // for JAX-RS resources, we do the opposite
+                        if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
+                                methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll(),
+                                resteasyConfig.isJsonDefault())) {
+                            return true;
+                        }
+                        if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
+                                methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll(),
+                                resteasyConfig.isJsonDefault())) {
+                            return true;
+                        }
                     }
-                    if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
-                            methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
-                        return true;
-                    }
+
                     if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
                             categorizedContextResolvers, methodTarget, ResteasyDotNames.CONSUMES,
-                            providerDiscoverer.noConsumesDefaultsToAll())) {
+                            providerDiscoverer.noConsumesDefaultsToAll(), resteasyConfig.isJsonDefault())) {
                         return true;
                     }
                     if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
                             categorizedContextResolvers, methodTarget, ResteasyDotNames.PRODUCES,
-                            providerDiscoverer.noProducesDefaultsToAll())) {
+                            providerDiscoverer.noProducesDefaultsToAll(), resteasyConfig.isJsonDefault())) {
                         return true;
                     }
+                }
+            }
+
+            // handle @PartType: we don't know if it's used for writing or reading so we register both
+            for (AnnotationInstance partTypeAnnotation : index.getAnnotations(ResteasyDotNames.RESTEASY_PART_TYPE)) {
+                try {
+                    MediaType partTypeMediaType = MediaType.valueOf(partTypeAnnotation.value().asString());
+                    providersToRegister.addAll(categorizedReaders.getPossible(partTypeMediaType));
+                    providersToRegister.addAll(categorizedWriters.getPossible(partTypeMediaType));
+                } catch (IllegalArgumentException e) {
+                    // Let's not throw an error, there's a good chance RESTEasy will do it for us
+                    // and if not, this might be valid.
                 }
             }
         }
@@ -316,24 +506,37 @@ public class ResteasyCommonProcessor {
 
     private static boolean collectDeclaredProvidersForMethodAndMediaTypeAnnotation(Set<String> providersToRegister,
             MediaTypeMap<String> categorizedProviders, MethodInfo methodTarget, DotName mediaTypeAnnotation,
-            boolean defaultsToAll) {
-        AnnotationInstance mediaTypeAnnotationInstance = methodTarget.annotation(mediaTypeAnnotation);
-        if (mediaTypeAnnotationInstance == null) {
-            // let's consider the class
-            Collection<AnnotationInstance> classAnnotations = methodTarget.declaringClass().classAnnotations();
-            for (AnnotationInstance classAnnotation : classAnnotations) {
-                if (mediaTypeAnnotation.equals(classAnnotation.name())) {
-                    if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
-                            classAnnotation, methodTarget)) {
-                        return true;
-                    }
-                    return false;
+            boolean includeDefaults, boolean jsonDefault) {
+        AnnotationInstance mediaTypeMethodAnnotationInstance = methodTarget.annotation(mediaTypeAnnotation);
+        if (mediaTypeMethodAnnotationInstance == null) {
+            // no media types defined on the method, let's consider the class annotations
+            AnnotationInstance mediaTypeClassAnnotationInstance = methodTarget.declaringClass()
+                    .classAnnotation(mediaTypeAnnotation);
+            if (mediaTypeClassAnnotationInstance != null) {
+                if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
+                        mediaTypeClassAnnotationInstance.value().asStringArray(), methodTarget)) {
+                    return true;
                 }
+                return false;
             }
-            return defaultsToAll;
+            // we couldn't find any annotations neither on the method nor on the class, stick to the default
+            if (!includeDefaults) {
+                return false;
+            }
+            if (jsonDefault) {
+                collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
+                        new String[] { MediaType.APPLICATION_JSON }, methodTarget);
+                return false;
+            } else {
+                return true;
+            }
+        }
+        String[] mediaTypes = WILDCARD_MEDIA_TYPE_ARRAY;
+        if (mediaTypeMethodAnnotationInstance.value() != null) {
+            mediaTypes = mediaTypeMethodAnnotationInstance.value().asStringArray();
         }
         if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
-                mediaTypeAnnotationInstance, methodTarget)) {
+                mediaTypes, methodTarget)) {
             return true;
         }
 
@@ -342,9 +545,9 @@ public class ResteasyCommonProcessor {
 
     private static boolean collectDeclaredProvidersForMediaTypeAnnotationInstance(Set<String> providersToRegister,
             MediaTypeMap<String> categorizedProviders,
-            AnnotationInstance mediaTypeAnnotationInstance,
+            String[] mediaTypes,
             MethodInfo targetMethod) {
-        for (String media : mediaTypeAnnotationInstance.value().asStringArray()) {
+        for (String media : mediaTypes) {
             MediaType mediaType = MediaType.valueOf(media);
             if (MediaType.WILDCARD_TYPE.equals(mediaType)) {
                 // exit early if we have the wildcard type
@@ -447,5 +650,10 @@ public class ResteasyCommonProcessor {
         public boolean noProducesDefaultsToAll() {
             return noProducesDefaultsToAll;
         }
+    }
+
+    private enum NoMediaTypesDefault {
+        ALL,
+        JSON;
     }
 }

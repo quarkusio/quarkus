@@ -1,0 +1,131 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "23:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 3
+    labels:
+      - area/dependencies
+    allow:
+      - dependency-name: org.jboss:jboss-parent
+      - dependency-name: org.apache.activemq:*
+      - dependency-name: org.flywaydb:flyway-core
+      - dependency-name: org.liquibase:liquibase-core
+      - dependency-name: org.freemarker:freemarker
+      - dependency-name: org.eclipse.jgit:*
+      - dependency-name: io.fabric8:kubernetes-client-bom
+      - dependency-name: org.apache.httpcomponents:*
+      - dependency-name: org.quartz-scheduler:quartz
+      - dependency-name: com.cronutils:cron-utils
+      - dependency-name: org.eclipse:yasson
+      - dependency-name: org.yaml:snakeyaml
+      - dependency-name: com.google.guava:guava
+      - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
+      # Quarkus
+      - dependency-name: io.quarkus.gizmo:gizmo
+      - dependency-name: io.quarkus.http:*
+      # Elytron
+      - dependency-name: org.wildfly.security:wildfly-elytron
+      - dependency-name: org.wildfly.security:wildfly-elytron-*
+      # JDBC Drivers
+      - dependency-name: org.postgresql:postgresql
+      - dependency-name: org.mariadb.jdbc:mariadb-java-client
+      - dependency-name: mysql:mysql-connector-java
+      - dependency-name: org.apache.derby:derbyclient
+      # Kafka
+      - dependency-name: org.apache.kafka:*
+      - dependency-name: org.apache.zookeeper:zookeeper
+      # Debezium
+      - dependency-name: io.debezium:debezium-core
+      # Scala
+      - dependency-name: org.scala-lang:*
+      - dependency-name: net.alchim31.maven:scala-maven-plugin
+      # SmallRye
+      - dependency-name: io.smallrye:smallrye-jwt
+      - dependency-name: io.smallrye:smallrye-health
+      - dependency-name: io.smallrye:smallrye-metrics
+      - dependency-name: io.smallrye:smallrye-open-api
+      - dependency-name: io.smallrye:smallrye-opentracing
+      - dependency-name: io.smallrye:smallrye-fault-tolerance
+      - dependency-name: io.smallrye:smallrye-context-propagation
+      - dependency-name: io.smallrye.common:smallrye-common-bom
+      - dependency-name: io.smallrye.config:smallrye-config
+      - dependency-name: io.smallrye.reactive:mutiny
+      - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
+      # Swagger-UI
+      - dependency-name: org.webjars:swagger-ui
+      # Tika
+      - dependency-name: org.apache.tika:tika-parsers
+      # RX Java 2
+      - dependency-name: io.reactivex.rxjava2:rxjava
+      # Test dependencies
+      - dependency-name: io.rest-assured:*
+      - dependency-name: org.junit:junit-bom
+      - dependency-name: org.junit.jupiter:*
+      - dependency-name: org.assertj:assertj-core
+      - dependency-name: org.testcontainers:*
+      - dependency-name: org.mockito:*
+      - dependency-name: org.awaitility:awaitility
+      - dependency-name: com.thoughtworks.xstream:xstream
+      - dependency-name: org.jacoco:*
+      # Maven plugins
+      - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
+      - dependency-name: net.revelc.code:impsort-maven-plugin
+      # Narayana
+      - dependency-name: org.jboss.narayana.jta:narayana-jta
+      - dependency-name: org.jboss.narayana.jts:narayana-jts-integration
+      - dependency-name: org.jboss.narayana.stm:stm
+      # Agroal
+      - dependency-name: io.agroal:*
+      #Jandex
+      - dependency-name: org.jboss:jandex
+      - dependency-name: org.jboss.jandex:jandex-maven-plugin
+      #Neo4j
+      - dependency-name: org.neo4j.driver:neo4j-java-driver
+      #WireMock
+      - dependency-name: com.github.tomakehurst:wiremock-jre8
+      - dependency-name: uk.co.automatictester:wiremock-maven-plugin
+      #Picocli
+      - dependency-name: info.picocli:*
+      # Caffeine
+      - dependency-name: com.github.ben-manes.caffeine:caffeine
+      # Jackson
+      - dependency-name: com.fasterxml.jackson:jackson-bom
+      # AWS
+      - dependency-name: software.amazon.awssdk:*
+      - dependency-name: com.amazon.alexa:*
+      - dependency-name: com.amazonaws:*
+      # Apache Commons
+      - dependency-name: commons-io:commons-io
+      - dependency-name: org.apache.commons:commons-lang3
+      # Micrometer
+      - dependency-name: io.micrometer:micrometer-bom
+      # BouncyCastle
+      - dependency-name: org.bouncycastle:*
+      # Logstash
+      - dependency-name: biz.paluch.logging:logstash-gelf
+      - dependency-name: io.sentry:*
+    rebase-strategy: disabled
+  - package-ecosystem: gradle
+    directory: "/integration-tests/gradle"
+    schedule:
+      interval: daily
+      time: "21:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 3
+    labels:
+      - area/dependencies
+    rebase-strategy: disabled
+  - package-ecosystem: gradle
+    directory: "/devtools/gradle"
+    schedule:
+      interval: daily
+      time: "21:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 3
+    labels:
+      - area/dependencies
+    rebase-strategy: disabled

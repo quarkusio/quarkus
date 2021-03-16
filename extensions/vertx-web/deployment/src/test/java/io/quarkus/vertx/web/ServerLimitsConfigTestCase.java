@@ -32,7 +32,7 @@ public class ServerLimitsConfigTestCase {
                 .header("MAX-HEADER-SIZE", sb.toString())
                 .when()
                 .get("/test").then()
-                .statusCode(400);
+                .statusCode(431);
     }
 
     @Test

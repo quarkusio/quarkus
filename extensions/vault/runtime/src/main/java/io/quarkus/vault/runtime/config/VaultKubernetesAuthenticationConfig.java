@@ -1,6 +1,7 @@
 package io.quarkus.vault.runtime.config;
 
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_KUBERNETES_JWT_TOKEN_PATH;
+import static io.quarkus.vault.runtime.config.VaultBootstrapConfig.DEFAULT_KUBERNETES_AUTH_MOUNT_PATH;
+import static io.quarkus.vault.runtime.config.VaultBootstrapConfig.DEFAULT_KUBERNETES_JWT_TOKEN_PATH;
 
 import java.util.Optional;
 
@@ -24,4 +25,10 @@ public class VaultKubernetesAuthenticationConfig {
      */
     @ConfigItem(defaultValue = DEFAULT_KUBERNETES_JWT_TOKEN_PATH)
     public String jwtTokenPath;
+
+    /**
+     * Allows configure Kubernetes authentication mount path.
+     */
+    @ConfigItem(defaultValue = DEFAULT_KUBERNETES_AUTH_MOUNT_PATH)
+    public String authMountPath;
 }

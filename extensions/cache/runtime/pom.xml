@@ -8,7 +8,6 @@
         <artifactId>quarkus-cache-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-cache</artifactId>
@@ -23,6 +22,16 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-caffeine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

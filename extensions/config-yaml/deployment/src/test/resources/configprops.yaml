@@ -1,0 +1,37 @@
+sql:
+  max_pool_size: 100
+  max_idle_time_seconds: 200
+  name: defaultName
+  user: defaultUser
+  password: defaultPassword
+  type: DEFAULT_TYPE
+  inputs:
+    - name: my_connection_1
+      type: MSSQL
+      min_pool_size: 1
+      max_pool_size: 100
+      user: systemuser
+      password: secret
+    - name: my_connection_2
+      type: POSTGRES
+      max_pool_size: 10
+      max_idle_time_seconds: 20
+      user: otheruser
+      password: secret
+  outputs:
+    - name: out_connection_1
+      type: MSSQL
+      max_pool_size: 100
+      min_pool_size: 1
+      create_increment: 5
+      max_idle_time_seconds: 200
+      user: someuser
+      password: asecret
+    - name: out_connection_2
+      type: POSTGRES
+      max_pool_size: 200
+      min_pool_size: 1
+      create_increment: 5
+      max_idle_time_seconds: 300
+      user: someuser
+      password: asecret

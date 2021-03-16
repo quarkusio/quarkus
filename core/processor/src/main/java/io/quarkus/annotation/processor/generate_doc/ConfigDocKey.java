@@ -22,6 +22,8 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     private boolean list;
     private boolean passThroughMap;
     private boolean withinAConfigGroup;
+    // if a key is "quarkus.kubernetes.part-of", then the value of this would be "kubernetes"
+    private String topLevelGrouping;
 
     public ConfigDocKey() {
     }
@@ -56,6 +58,10 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
 
     public void setKey(String key) {
         this.key = key;
+    }
+
+    public void setTopLevelGrouping(String topLevelGrouping) {
+        this.topLevelGrouping = topLevelGrouping;
     }
 
     public String getConfigDoc() {
@@ -164,6 +170,10 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
         this.withinAConfigGroup = withinAConfigGroup;
     }
 
+    public String getTopLevelGrouping() {
+        return topLevelGrouping;
+    }
+
     @Override
     public void accept(Writer writer, DocFormatter docFormatter) throws IOException {
         docFormatter.format(writer, this);
@@ -193,13 +203,14 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 Objects.equals(javaDocSiteLink, that.javaDocSiteLink) &&
                 Objects.equals(docMapKey, that.docMapKey) &&
                 configPhase == that.configPhase &&
-                Objects.equals(acceptedValues, that.acceptedValues);
+                Objects.equals(acceptedValues, that.acceptedValues) &&
+                Objects.equals(topLevelGrouping, that.topLevelGrouping);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(type, key, configDoc, withinAMap, defaultValue, javaDocSiteLink, docMapKey, configPhase,
-                acceptedValues, optional, list, passThroughMap, withinAConfigGroup);
+                acceptedValues, optional, list, passThroughMap, withinAConfigGroup, topLevelGrouping);
     }
 
     @Override
@@ -218,6 +229,7 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 ", list=" + list +
                 ", passThroughMap=" + passThroughMap +
                 ", withinAConfigGroup=" + withinAConfigGroup +
+                ", topLevelGrouping='" + topLevelGrouping + '\'' +
                 '}';
     }
 }

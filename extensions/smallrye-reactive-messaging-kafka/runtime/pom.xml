@@ -36,7 +36,11 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-kafka-client</artifactId>
             <exclusions>
-                <exclusion>
+               <exclusion>
+	                <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+               </exclusion>
+               <exclusion>
                     <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
                 </exclusion>
@@ -68,6 +72,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

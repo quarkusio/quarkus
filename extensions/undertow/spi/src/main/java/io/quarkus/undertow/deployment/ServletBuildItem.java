@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -20,6 +21,7 @@ public final class ServletBuildItem extends MultiBuildItem {
     private final List<String> mappings;
     private final InstanceFactory<? extends Servlet> instanceFactory;
     private final Map<String, String> initParams;
+    private final MultipartConfigElement multipartConfig;
 
     private ServletBuildItem(Builder builder) {
         this.name = builder.name;
@@ -29,7 +31,7 @@ public final class ServletBuildItem extends MultiBuildItem {
         this.mappings = Collections.unmodifiableList(new ArrayList<>(builder.mappings));
         this.instanceFactory = builder.instanceFactory;
         this.initParams = Collections.unmodifiableMap(new HashMap<>(builder.initParams));
-
+        this.multipartConfig = builder.multipartConfig;
     }
 
     public String getName() {
@@ -60,6 +62,10 @@ public final class ServletBuildItem extends MultiBuildItem {
         return instanceFactory;
     }
 
+    public MultipartConfigElement getMultipartConfig() {
+        return multipartConfig;
+    }
+
     public static Builder builder(String name, String servletClass) {
         return new Builder(name, servletClass);
     }
@@ -72,6 +78,7 @@ public final class ServletBuildItem extends MultiBuildItem {
         private List<String> mappings = new ArrayList<>();
         private InstanceFactory<? extends Servlet> instanceFactory;
         private Map<String, String> initParams = new HashMap<>();
+        private MultipartConfigElement multipartConfig;
 
         Builder(String name, String servletClass) {
             this.name = name;
@@ -133,6 +140,15 @@ public final class ServletBuildItem extends MultiBuildItem {
 
         public Builder addInitParam(String key, String value) {
             initParams.put(key, value);
+            return this;
+        }
+
+        public MultipartConfigElement getMultipartConfig() {
+            return multipartConfig;
+        }
+
+        public Builder setMultipartConfig(MultipartConfigElement multipartConfig) {
+            this.multipartConfig = multipartConfig;
             return this;
         }
 

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Application Initialization and Termination
 
@@ -10,8 +10,10 @@ include::./attributes.adoc[]
 You often need to execute custom actions when the application starts and clean up everything when the application stops.
 This guide explains how to:
 
-* be notified when the application starts
-* be notified when the application stops
+* Write a Quarkus application with a main method
+* Write command mode applications that run a task and then terminate
+* Be notified when the application starts
+* Be notified when the application stops
 
 == Prerequisites
 
@@ -20,9 +22,7 @@ To complete this guide, you need:
 * less than 10 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
-
-
+* Apache Maven {maven-version}
 
 == Solution
 
@@ -37,7 +37,7 @@ The solution is located in the `lifecycle-quickstart` {quickstarts-tree-url}/lif
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -55,6 +55,84 @@ It generates:
 * the application configuration file
 * an `org.acme.lifecycle.GreetingResource` resource
 * an associated test
+
+== The main method
+
+By default Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
+shutdown to be initiated. Let's provide our own main method:
+[source,java]
+----
+package om.acme;
+
+import io.quarkus.runtime.annotations.QuarkusMain;
+import io.quarkus.runtime.Quarkus;
+
+@QuarkusMain  <1>
+public class Main {
+
+    public static void main(String ... args) {
+        System.out.println("Running main method");
+        Quarkus.run(args); <2>
+    }
+}
+----
+<1> This annotation tells Quarkus to use this as the main method, unless it is overridden in the config
+<2> This launches Quarkus
+
+This main class will bootstrap Quarkus and run it until it stops. This is no different to the automatically
+generated main class, but has the advantage that you can just launch it directly from the IDE without needing
+to run a Maven or Gradle command.
+
+WARNING: It is not recommenced to do any business logic in this main method, as Quarkus has not been set up yet,
+and Quarkus may run in a different ClassLoader. If you want to perform logic on startup use an `io.quarkus.runtime.QuarkusApplication`
+as described below.
+
+If we want to actually perform business logic on startup (or write applications that complete a task and then exit)
+we need to supply a `io.quarkus.runtime.QuarkusApplication` class to the run method. After Quarkus has been started
+the `run` method of the application will be invoked. When this method returns the Quarkus application will exit.
+
+If you want to perform logic on startup you should call `Quarkus.waitForExit()`, this method will wait until a shutdown
+is requested (either from an external signal like when you press `Ctrl+C` or because a thread has called `Quarkus.asyncExit()`).
+
+An example of what this looks like is below:
+
+[source,java]
+----
+package com.acme;
+
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.annotations.QuarkusMain;
+
+@QuarkusMain
+public class Main {
+    public static void main(String... args) {
+        Quarkus.run(MyApp.class, args);
+    }
+
+    public static class MyApp implements QuarkusApplication {
+
+        @Override
+        public int run(String... args) throws Exception {
+            System.out.println("Do startup logic here");
+            Quarkus.waitForExit();
+            return 0;
+        }
+    }
+}
+----
+
+=== Injecting the command line arguments
+
+It is possible to inject the arguments that were passed in on the command line:
+
+[source,java]
+----
+@Inject
+@CommandLineArguments
+String[] args;
+----
+
 
 == Listening for startup and shutdown events
 
@@ -102,6 +180,7 @@ See link:writing-extensions#bootstrap-three-phases[Three Phases of Bootstrap and
 
 NOTE: In CDI applications, an event with qualifier `@Initialized(ApplicationScoped.class)` is fired when the application context is initialized. See https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#application_context[the spec, window="_blank"] for more info.
 
+[[startup_annotation]]
 === Using `@Startup` to initialize a CDI bean at application startup
 
 A bean represented by a class, producer method or field annotated with `@Startup` is initialized at application startup:
@@ -135,7 +214,7 @@ TIP: If a class is annotated with `@Startup` but with no scope annotation then `
 Run the application with: `./mvnw compile quarkus:dev`, the logged message is printed.
 When the application is stopped, the second log message is printed.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable using `./mvnw clean package -Pnative`.
 
 == Launch Modes

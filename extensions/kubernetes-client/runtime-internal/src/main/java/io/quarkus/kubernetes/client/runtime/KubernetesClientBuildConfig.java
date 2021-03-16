@@ -13,8 +13,8 @@ public class KubernetesClientBuildConfig {
     /**
      * Whether or not the client should trust a self signed certificate if so presented by the API server
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean trustCerts;
+    @ConfigItem
+    public Optional<Boolean> trustCerts = Optional.empty();
 
     /**
      * URL of the Kubernetes API server
@@ -87,6 +87,12 @@ public class KubernetesClientBuildConfig {
      */
     @ConfigItem
     public Optional<String> password;
+
+    /**
+     * Kubernetes oauth token
+     */
+    @ConfigItem
+    public Optional<String> token;
 
     /**
      * Watch reconnect interval

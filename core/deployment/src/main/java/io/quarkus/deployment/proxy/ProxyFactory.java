@@ -34,6 +34,7 @@ public class ProxyFactory<T> {
 
     private boolean classDefined = false;
     private final Object lock = new Object();
+    private Constructor<?> constructor;
 
     public ProxyFactory(ProxyConfiguration<T> configuration) {
         Objects.requireNonNull(configuration.getAnchorClass(), "anchorClass must be set");
@@ -99,6 +100,9 @@ public class ProxyFactory<T> {
                 continue;
             }
             seen.add(key);
+            if (methodInfo.getName().equals("finalize") && methodInfo.getParameterCount() == 0) {
+                continue;
+            }
             if (!Modifier.isStatic(methodInfo.getModifiers()) &&
                     !Modifier.isFinal(methodInfo.getModifiers()) &&
                     !methodInfo.getName().equals("<init>")) {
@@ -114,6 +118,11 @@ public class ProxyFactory<T> {
         synchronized (lock) {
             if (!classDefined) {
                 doDefineClass();
+                try {
+                    constructor = loadClass().getConstructor(InvocationHandler.class);
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
                 classDefined = true;
             }
         }
@@ -192,8 +201,9 @@ public class ProxyFactory<T> {
     public T newInstance(InvocationHandler handler) throws IllegalAccessException, InstantiationException {
         synchronized (lock) {
             try {
-                return defineClass().getConstructor(InvocationHandler.class).newInstance(handler);
-            } catch (NoSuchMethodException | InvocationTargetException e) {
+                defineClass();
+                return (T) constructor.newInstance(handler);
+            } catch (InvocationTargetException e) {
                 // if this happens, we have not created the proxy correctly
                 throw new IllegalStateException(e);
             }

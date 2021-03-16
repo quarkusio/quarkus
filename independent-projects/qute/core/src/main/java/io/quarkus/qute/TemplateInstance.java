@@ -1,8 +1,9 @@
 package io.quarkus.qute;
 
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-import org.reactivestreams.Publisher;
 
 /**
  * Represents an instance of {@link Template}.
@@ -15,6 +16,16 @@ public interface TemplateInstance {
      * Attribute key - the timeout for {@link #render()} in milliseconds.
      */
     String TIMEOUT = "timeout";
+
+    /**
+     * Attribute key - all template variants found.
+     */
+    String VARIANTS = "variants";
+
+    /**
+     * Attribute key - a selected variant.
+     */
+    String SELECTED_VARIANT = "selectedVariant";
 
     /**
      * Set the the root data object. Invocation of this method removes any data set previously by
@@ -65,12 +76,25 @@ public interface TemplateInstance {
     CompletionStage<String> renderAsync();
 
     /**
-     * Each subscription triggers rendering.
+     * Create a new {@link Multi} that can be used to consume chunks of the rendered template. In particular, each item
+     * represents a part of the rendered template.
+     * <p>
+     * This operation does not trigger rendering. Instead, each subscription triggers a new rendering of the template.
      * 
-     * @return a publisher that can be used to consume chunks of the rendered template
-     * @throws UnsupportedOperationException If no {@link PublisherFactory} service provider is found
+     * @return a new Multi
+     * @see Multi#subscribe()
      */
-    Publisher<String> publisher();
+    Multi<String> createMulti();
+
+    /**
+     * Create a new {@link Uni} that can be used to consume the rendered template.
+     * <p>
+     * This operation does not trigger rendering. Instead, each subscription triggers a new rendering of the template.
+     * 
+     * @return a new Uni
+     * @see Uni#subscribe()
+     */
+    Uni<String> createUni();
 
     /**
      * Triggers rendering.

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Quarkus Extension for Spring Web API
 
@@ -21,7 +21,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 
 
 == Solution
@@ -37,7 +37,7 @@ The solution is located in the `spring-web-quickstart` {quickstarts-tree-url}/sp
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -49,6 +49,24 @@ cd spring-web-quickstart
 ----
 
 This command generates a Maven project with a REST endpoint and imports the `spring-web` extension.
+
+If you already have your Quarkus project configured, you can add the `spring-web` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="spring-web"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-web</artifactId>
+</dependency>
+----
 
 == GreetingController
 
@@ -178,6 +196,185 @@ public class GreetingControllerTest {
 
 It should be noted that when using the Spring Web support in Quarkus, link:https://github.com/FasterXML/jackson[Jackson] is automatically added to the classpath and properly setup.
 
+== Adding OpenAPI and Swagger-UI
+
+You can add support for link:https://www.openapis.org/[OpenAPI] and link:https://swagger.io/tools/swagger-ui/[Swagger-UI] by using the `quarkus-smallrye-openapi` extension.
+
+Add the extension by running this command:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="io.quarkus:quarkus-smallrye-openapi"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-openapi</artifactId>
+</dependency>
+----
+
+This is enough to generate a basic OpenAPI schema document from your REST Endpoints:
+
+[source,bash]
+----
+curl http://localhost:8080/q/openapi
+----
+
+You will see the generated OpenAPI schema document:
+
+[source, yaml]
+----
+---
+openapi: 3.0.1
+info:
+  title: Generated API
+  version: "1.0"
+paths:
+  /greeting:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /greeting/{name}:
+    get:
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Greeting'
+components:
+  schemas:
+    Greeting:
+      type: object
+      properties:
+        message:
+          type: string
+----
+
+Also see link:openapi-swaggerui[the OpenAPI Guide]
+
+=== Adding MicroProfile OpenAPI Annotations
+
+You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema,
+example, adding the following to the class level of the `GreetingController`:
+
+[source, java]
+----
+@OpenAPIDefinition(
+    info = @Info(
+        title="Greeting API",
+        version = "1.0.1",
+        contact = @Contact(
+            name = "Greeting API Support",
+            url = "http://exampleurl.com/contact",
+            email = "techsupport@example.com"),
+        license = @License(
+            name = "Apache 2.0",
+            url = "https://www.apache.org/licenses/LICENSE-2.0.html"))
+)
+----
+
+And describe your endpoints like this:
+
+[source, java]
+----
+@Tag(name = "Hello", description = "Just say hello")
+@GetMapping(produces=MediaType.TEXT_PLAIN_VALUE)
+public String hello() {
+    return "hello";
+}
+
+@GetMapping(value = "/{name}", produces=MediaType.APPLICATION_JSON_VALUE)
+@Tag(name = "Hello to someone", description = "Just say hello to someone")
+public Greeting hello(@PathVariable(name = "name") String name) {
+    return new Greeting("hello " + name);
+}
+----
+
+will generate this OpenAPI schema:
+
+[source, yaml]
+----
+---
+openapi: 3.0.1
+info:
+  title: Greeting API
+  contact:
+    name: Greeting API Support
+    url: http://exampleurl.com/contact
+    email: techsupport@example.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.1
+tags:
+- name: Hello
+  description: Just say hello
+- name: Hello to someone
+  description: Just say hello to someone
+paths:
+  /greeting:
+    get:
+      tags:
+      - Hello
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /greeting/{name}:
+    get:
+      tags:
+      - Hello to someone
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Greeting'
+components:
+  schemas:
+    Greeting:
+      type: object
+      properties:
+        message:
+          type: string
+----
+
+=== Using Swagger UI
+
+Swagger UI is included by default when running in `Dev` or `Test` mode, and can optionally added to `Prod` mode.
+See link:openapi-swaggerui#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
+
+Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
+
+image:spring-web-guide-screenshot01.png[alt=Swagger UI]
+
 == Supported Spring Web functionalities
 
 Quarkus currently supports a subset of the functionalities that Spring Web provides. More specifically Quarkus supports the REST related features of Spring Web
@@ -246,7 +443,7 @@ For this to function however, users need to add the `quarkus-undertow` dependenc
 The following method return types are supported:
 
 * `org.springframework.http.ResponseEntity`
-* `java.util.Map` 
+* `java.util.Map`
 
 Other return types mentioned in the Spring `https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html[ExceptionHandler javadoc]` are not supported.
 
@@ -256,7 +453,7 @@ The following parameter types are supported, in arbitrary order:
 
 * An exception argument: declared as a general `Exception` or as a more specific exception. This also serves as a mapping hint if the annotation itself does not narrow the exception types through its `value()`.
 * Request and/or response objects (typically from the Servlet API). You may choose any specific request/response type, e.g. `ServletRequest` / `HttpServletRequest`. To use Servlet API, the `quarkus-undertow` dependency needs to be added.
- 
+
 Other parameter types mentioned in the Spring `https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html[ExceptionHandler javadoc]` are not supported.
 
 == Important Technical Note
@@ -273,7 +470,7 @@ The following table shows how Spring Web annotations can be converted to JAX-RS 
 |===
 |Spring |JAX-RS |Comments
 
-|@RequestController
+|@RestController
 |
 |There is no equivalent in JAX-RS. Annotating a class with @Path suffices
 
@@ -320,6 +517,9 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 
 * link:spring-di[Quarkus - Extension for Spring DI]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
 * link:spring-security[Quarkus - Extension for Spring Security]
-* link:spring-spring-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
-
+* link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
+* link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
+* link:spring-cache[Quarkus - Extension for Spring Cache]
+* link:spring-scheduled[Quarkus - Extension for Spring Scheduled]

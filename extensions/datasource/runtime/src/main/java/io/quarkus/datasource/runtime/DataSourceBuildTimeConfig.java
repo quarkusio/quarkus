@@ -16,4 +16,10 @@ public class DataSourceBuildTimeConfig {
     @ConvertWith(DatabaseKindConverter.class)
     public Optional<String> dbKind = Optional.empty();
 
+    /**
+     * Configuration for DevServices. DevServices allows Quarkus to automatically start a database in dev and test mode.
+     */
+    @ConfigItem
+    public DevServicesBuildTimeConfig devservices;
+
 }

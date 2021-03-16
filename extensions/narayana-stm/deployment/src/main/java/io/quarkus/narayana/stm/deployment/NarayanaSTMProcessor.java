@@ -20,6 +20,7 @@ import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
 import com.arjuna.ats.txoj.Lock;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -37,16 +38,10 @@ class NarayanaSTMProcessor {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
-    @Inject
-    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass;
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-
     // register classes in need of reflection
     @BuildStep
     ReflectiveClassBuildItem registerFeature(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.NARAYANA_STM));
+        feature.produce(new FeatureBuildItem(Feature.NARAYANA_STM));
 
         return new ReflectiveClassBuildItem(true, false,
                 ShadowNoFileLockStore.class.getName(),
@@ -71,7 +66,9 @@ class NarayanaSTMProcessor {
 
     // register STM dynamic proxies
     @BuildStep
-    NativeImageProxyDefinitionBuildItem stmProxies() {
+    NativeImageProxyDefinitionBuildItem stmProxies(
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         final DotName TRANSACTIONAL = DotName.createSimple(Transactional.class.getName());
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<String> proxies = new ArrayList<>();
@@ -86,7 +83,10 @@ class NarayanaSTMProcessor {
 
                 for (ClassInfo ci : index.getAllKnownImplementors(name)) {
                     reflectiveHierarchyClass.produce(
-                            new ReflectiveHierarchyBuildItem(Type.create(ci.name(), Type.Kind.CLASS)));
+                            new ReflectiveHierarchyBuildItem.Builder()
+                                    .type(Type.create(ci.name(), Type.Kind.CLASS))
+                                    .source(getClass().getSimpleName() + " > " + ci.name())
+                                    .build());
                 }
             }
         }

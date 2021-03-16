@@ -13,9 +13,11 @@ import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.mailer.MailTemplate;
+import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.api.ResourcePath;
-import io.quarkus.qute.api.VariantTemplate;
 
 @Singleton
 public class MailTemplateProducer {
@@ -26,7 +28,7 @@ public class MailTemplateProducer {
     MutinyMailerImpl mailer;
 
     @Any
-    Instance<VariantTemplate> template;
+    Instance<Template> template;
 
     @Produces
     MailTemplate getDefault(InjectionPoint injectionPoint) {
@@ -74,5 +76,13 @@ public class MailTemplateProducer {
                 return new MailTemplateInstanceImpl(mailer, template.select(new ResourcePath.Literal(name)).get().instance());
             }
         };
+    }
+
+    /**
+     * Called by MailTemplateInstanceAdaptor
+     */
+    public static MailTemplate.MailTemplateInstance getMailTemplateInstance(TemplateInstance instance) {
+        MutinyMailerImpl mailerImpl = Arc.container().instance(MutinyMailerImpl.class).get();
+        return new MailTemplateInstanceImpl(mailerImpl, instance);
     }
 }

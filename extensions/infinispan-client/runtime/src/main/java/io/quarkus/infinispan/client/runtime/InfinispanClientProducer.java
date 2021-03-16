@@ -10,6 +10,7 @@ import java.util.Set;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
@@ -24,8 +25,8 @@ import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.marshall.Marshaller;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.counter.api.CounterManager;
 import org.infinispan.protostream.BaseMarshaller;
@@ -50,11 +51,8 @@ public class InfinispanClientProducer {
 
     private volatile Properties properties;
     private volatile RemoteCacheManager cacheManager;
-    private volatile InfinispanClientRuntimeConfig infinispanClientRuntimeConfig;
-
-    public void setRuntimeConfig(InfinispanClientRuntimeConfig infinispanClientConfigRuntime) {
-        this.infinispanClientRuntimeConfig = infinispanClientConfigRuntime;
-    }
+    @Inject
+    private Instance<InfinispanClientRuntimeConfig> infinispanClientRuntimeConfig;
 
     private void initialize() {
         log.debug("Initializing CacheManager");
@@ -109,7 +107,8 @@ public class InfinispanClientProducer {
         // If you are changing this method, you will most likely have to change builderFromProperties as well
         String marshallerClassName = (String) properties.get(ConfigurationProperties.MARSHALLER);
         if (marshallerClassName != null) {
-            Class<?> marshallerClass = Class.forName(marshallerClassName);
+            Class<?> marshallerClass = Class.forName(marshallerClassName, false,
+                    Thread.currentThread().getContextClassLoader());
             properties.put(ConfigurationProperties.MARSHALLER, Util.getInstance(marshallerClass));
         } else {
             // Default to proto stream marshaller if one is not provided
@@ -163,32 +162,52 @@ public class InfinispanClientProducer {
             }
             builder.marshaller((Marshaller) marshallerInstance);
         }
+        InfinispanClientRuntimeConfig infinispanClientRuntimeConfig = this.infinispanClientRuntimeConfig.get();
 
-        if (infinispanClientRuntimeConfig != null) {
+        if (infinispanClientRuntimeConfig.serverList.isPresent()) {
+            properties.put(ConfigurationProperties.SERVER_LIST, infinispanClientRuntimeConfig.serverList.get());
+        }
 
-            infinispanClientRuntimeConfig.serverList
-                    .ifPresent(v -> properties.put(ConfigurationProperties.SERVER_LIST, v));
+        if (infinispanClientRuntimeConfig.clientIntelligence.isPresent()) {
+            properties.put(ConfigurationProperties.CLIENT_INTELLIGENCE, infinispanClientRuntimeConfig.clientIntelligence.get());
+        }
 
-            infinispanClientRuntimeConfig.clientIntelligence
-                    .ifPresent(v -> properties.put(ConfigurationProperties.CLIENT_INTELLIGENCE, v));
+        if (infinispanClientRuntimeConfig.useAuth.isPresent()) {
+            properties.put(ConfigurationProperties.USE_AUTH, infinispanClientRuntimeConfig.useAuth.get());
+        }
+        if (infinispanClientRuntimeConfig.authUsername.isPresent()) {
+            properties.put(ConfigurationProperties.AUTH_USERNAME, infinispanClientRuntimeConfig.authUsername.get());
+        }
+        if (infinispanClientRuntimeConfig.authPassword.isPresent()) {
+            properties.put(ConfigurationProperties.AUTH_PASSWORD, infinispanClientRuntimeConfig.authPassword.get());
+        }
+        if (infinispanClientRuntimeConfig.authRealm.isPresent()) {
+            properties.put(ConfigurationProperties.AUTH_REALM, infinispanClientRuntimeConfig.authRealm.get());
+        }
+        if (infinispanClientRuntimeConfig.authServerName.isPresent()) {
+            properties.put(ConfigurationProperties.AUTH_SERVER_NAME, infinispanClientRuntimeConfig.authServerName.get());
+        }
+        if (infinispanClientRuntimeConfig.authClientSubject.isPresent()) {
+            properties.put(ConfigurationProperties.AUTH_CLIENT_SUBJECT, infinispanClientRuntimeConfig.authClientSubject.get());
+        }
+        if (infinispanClientRuntimeConfig.authCallbackHandler.isPresent()) {
+            properties.put(ConfigurationProperties.AUTH_CALLBACK_HANDLER,
+                    infinispanClientRuntimeConfig.authCallbackHandler.get());
+        }
 
-            infinispanClientRuntimeConfig.useAuth
-                    .ifPresent(v -> properties.put(ConfigurationProperties.USE_AUTH, v));
-            infinispanClientRuntimeConfig.authUsername
-                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_USERNAME, v));
-            infinispanClientRuntimeConfig.authPassword
-                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_PASSWORD, v));
-            infinispanClientRuntimeConfig.authRealm
-                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_REALM, v));
-            infinispanClientRuntimeConfig.authServerName
-                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_SERVER_NAME, v));
-            infinispanClientRuntimeConfig.authClientSubject
-                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_CLIENT_SUBJECT, v));
-            infinispanClientRuntimeConfig.authCallbackHandler
-                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_CALLBACK_HANDLER, v));
+        if (infinispanClientRuntimeConfig.saslMechanism.isPresent()) {
+            properties.put(ConfigurationProperties.SASL_MECHANISM, infinispanClientRuntimeConfig.saslMechanism.get());
+        }
 
-            infinispanClientRuntimeConfig.saslMechanism
-                    .ifPresent(v -> properties.put(ConfigurationProperties.SASL_MECHANISM, v));
+        if (infinispanClientRuntimeConfig.trustStore.isPresent()) {
+            properties.put(ConfigurationProperties.TRUST_STORE_FILE_NAME, infinispanClientRuntimeConfig.trustStore.get());
+        }
+        if (infinispanClientRuntimeConfig.trustStorePassword.isPresent()) {
+            properties.put(ConfigurationProperties.TRUST_STORE_PASSWORD,
+                    infinispanClientRuntimeConfig.trustStorePassword.get());
+        }
+        if (infinispanClientRuntimeConfig.trustStoreType.isPresent()) {
+            properties.put(ConfigurationProperties.TRUST_STORE_TYPE, infinispanClientRuntimeConfig.trustStoreType.get());
         }
 
         builder.withProperties(properties);
@@ -203,10 +222,10 @@ public class InfinispanClientProducer {
         Set<SerializationContextInitializer> initializers = (Set) properties
                 .get(InfinispanClientProducer.PROTOBUF_INITIALIZERS);
         if (initializers != null) {
-            initializers.forEach(sci -> {
-                sci.registerSchema(serializationContext);
-                sci.registerMarshallers(serializationContext);
-            });
+            for (SerializationContextInitializer initializer : initializers) {
+                initializer.registerSchema(serializationContext);
+                initializer.registerMarshallers(serializationContext);
+            }
         }
 
         FileDescriptorSource fileDescriptorSource = null;
@@ -291,10 +310,10 @@ public class InfinispanClientProducer {
     }
 
     /**
-     * Retrieves the deprecated {@link Remote} annotation instance from the set
+     * Retrieves the deprecated {@link io.quarkus.infinispan.client.Remote} annotation instance from the set
      *
      * @param annotationSet the annotation set.
-     * @return the {@link Remote} annotation instance or {@code null} if not found.
+     * @return the {@link io.quarkus.infinispan.client.Remote} annotation instance or {@code null} if not found.
      */
     private io.quarkus.infinispan.client.Remote getRemoteAnnotation(Set<Annotation> annotationSet) {
         for (Annotation annotation : annotationSet) {

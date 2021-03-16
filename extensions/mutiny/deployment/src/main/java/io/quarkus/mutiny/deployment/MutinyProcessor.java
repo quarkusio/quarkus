@@ -1,29 +1,32 @@
 package io.quarkus.mutiny.deployment;
 
-import org.jboss.jandex.DotName;
+import java.util.concurrent.ExecutorService;
 
-import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.mutiny.converters.MultiConverter;
-import io.quarkus.mutiny.converters.UniConverter;
-import io.smallrye.reactive.converters.ReactiveTypeConverter;
+import io.quarkus.mutiny.runtime.MutinyInfrastructure;
 
 public class MutinyProcessor {
 
     @BuildStep
     public FeatureBuildItem registerFeature() {
-        return new FeatureBuildItem(FeatureBuildItem.MUTINY);
+        return new FeatureBuildItem(Feature.MUTINY);
     }
 
-    private static final DotName REACTIVE_TYPE_CONVERTER = DotName.createSimple(ReactiveTypeConverter.class.getName());
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void initExecutor(ExecutorBuildItem executorBuildItem, MutinyInfrastructure recorder) {
+        ExecutorService executor = executorBuildItem.getExecutorProxy();
+        recorder.configureMutinyInfrastructure(executor);
+    }
 
     @BuildStep
-    public void registerReactiveConverters(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
-        serviceProvider.produce(new ServiceProviderBuildItem(REACTIVE_TYPE_CONVERTER.toString(),
-                UniConverter.class.getName()));
-        serviceProvider.produce(new ServiceProviderBuildItem(REACTIVE_TYPE_CONVERTER.toString(),
-                MultiConverter.class.getName()));
+    @Record(ExecutionTime.STATIC_INIT)
+    public void configureDroppedExceptionHandlerAndThreadBlockingChecker(MutinyInfrastructure recorder) {
+        recorder.configureDroppedExceptionHandlerAndThreadBlockingChecker();
     }
 }

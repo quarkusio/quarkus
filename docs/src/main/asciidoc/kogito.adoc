@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Kogito to add business automation capabilities to an application
 
@@ -25,7 +25,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE (Eclipse is preferred with the BPMN modeller plugin)
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * Docker
 
 === Install modelling plugins in your IDE
@@ -40,6 +40,10 @@ install from Market place Eclipse BPMN2 Modeller plugin (with jBPM Runtime Exten
 * VSCode
 
 Download and install the VSCode Extension from https://github.com/kiegroup/kogito-tooling/releases[Kogito Tooling release page] to edit and model process definitions from VSCode IDE.
+
+* Online
+
+To avoid any modeler installation you can use directly use https://bpmn.new[BPMN.new] to design and model your process through your favorite web browser.
 
 == Architecture
 
@@ -76,18 +80,37 @@ The solution is located in the `kogito-quickstart` {quickstarts-tree-url}/kogito
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kogito-quickstart \
-    -Dextensions="kogito"
+    -Dextensions="kogito" \
+    -DnoExamples
 cd kogito-quickstart
 ----
 
 This command generates a Maven project, importing the `kogito` extension
 that comes with all needed dependencies and configuration to equip your application
 with business automation.
+
+If you already have your Quarkus project configured, you can add the `kogito` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="kogito"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>kogito-quarkus</artifactId>
+</dependency>
+----
 
 == Writing the application
 
@@ -220,7 +243,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/kogito-quickstart-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 === Running in Native Mode
@@ -410,5 +433,5 @@ Once the dependency is added to the project, decision tables in `xls` or `xlsx` 
 
 == References
 
-* https://kogito.kie.org[Kogito website]
-* https://github.com/kiegroup/kogito-runtimes/wiki[Kogito wiki]
+* https://kogito.kie.org[Kogito Website]
+* https://docs.jboss.org/kogito/release/latest/html_single[Kogito Documentation]

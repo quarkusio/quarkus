@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,24 +35,24 @@ import io.dekorate.deps.openshift.api.model.Build;
 import io.dekorate.deps.openshift.api.model.BuildConfig;
 import io.dekorate.deps.openshift.api.model.ImageStream;
 import io.dekorate.deps.openshift.client.OpenShiftClient;
-import io.dekorate.s2i.util.S2iUtils;
 import io.dekorate.utils.Clients;
-import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.ImageUtil;
+import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.container.spi.ContainerImageResultBuildItem;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -69,14 +68,24 @@ import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 
 public class S2iProcessor {
 
-    private static final String S2I = "s2i";
+    public static final String S2I = "s2i";
     private static final String OPENSHIFT = "openshift";
     private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
     private static final String RUNNING = "Running";
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep
+    public AvailableContainerImageExtensionBuildItem availability() {
+        return new AvailableContainerImageExtensionBuildItem(S2I);
+    }
+
+    @BuildStep(onlyIf = S2iBuild.class)
+    public CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_S2I);
+    }
+
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iRequirementsJvm(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -89,15 +98,13 @@ public class S2iProcessor {
         final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
         String outputJarFileName = jarBuildItem.getPath().getFileName().toString();
         String classpath = appDeps.stream()
-                .map(d -> String.valueOf(d.getArtifact().getGroupId() + "." + d.getArtifact().getPath().getFileName()))
-                .map(s -> Paths.get(s2iConfig.jarDirectory).resolve("lib").resolve(s).toAbsolutePath()
-                        .toString())
-                .collect(Collectors.joining(File.pathSeparator));
+                .map(d -> d.getArtifact().getGroupId() + "." + d.getArtifact().getPath().getFileName())
+                .map(s -> concatUnixPaths(s2iConfig.jarDirectory, "lib", s))
+                .collect(Collectors.joining(":"));
 
         String jarFileName = s2iConfig.jarFileName.orElse(outputJarFileName);
-        String pathToJar = Paths.get(s2iConfig.jarDirectory).resolve(jarFileName)
-                .toAbsolutePath()
-                .toString();
+        String jarDirectory = s2iConfig.jarDirectory;
+        String pathToJar = concatUnixPaths(jarDirectory, jarFileName);
 
         List<String> args = new ArrayList<>();
         args.addAll(Arrays.asList("-jar", pathToJar, "-cp", classpath));
@@ -105,13 +112,14 @@ public class S2iProcessor {
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseJvmImage));
         Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(s2iConfig.baseJvmImage);
+
         baseImage.ifPresent(b -> {
-            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getJarEnvVar(), pathToJar));
-            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getJarLibEnvVar(),
-                    Paths.get(pathToJar).resolveSibling("lib").toAbsolutePath().toString()));
-            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getClasspathEnvVar(), classpath));
-            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getJvmOptionsEnvVar(),
-                    s2iConfig.jvmArguments.stream().collect(Collectors.joining("  "))));
+            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, OPENSHIFT));
+            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarLibEnvVar(),
+                    concatUnixPaths(jarDirectory, "lib"), OPENSHIFT));
+            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getClasspathEnvVar(), classpath, OPENSHIFT));
+            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
+                    String.join(" ", s2iConfig.jvmArguments), OPENSHIFT));
         });
 
         if (!baseImage.isPresent()) {
@@ -119,7 +127,7 @@ public class S2iProcessor {
         }
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
     public void s2iRequirementsNative(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -143,25 +151,25 @@ public class S2iProcessor {
             nativeBinaryFileName = s2iConfig.nativeBinaryFileName.orElse(outputNativeBinaryFileName);
         }
 
-        String pathToNativeBinary = Paths.get(s2iConfig.nativeBinaryDirectory).resolve(nativeBinaryFileName)
-                .toAbsolutePath()
-                .toString();
+        String pathToNativeBinary = concatUnixPaths(s2iConfig.nativeBinaryDirectory, nativeBinaryFileName);
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseNativeImage));
         Optional<S2iBaseNativeImage> baseImage = S2iBaseNativeImage.findMatching(s2iConfig.baseNativeImage);
+        List<String> nativeArguments = s2iConfig.nativeArguments.orElse(Collections.emptyList());
         baseImage.ifPresent(b -> {
-            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getHomeDirEnvVar(), s2iConfig.nativeBinaryDirectory));
-            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getOptsEnvVar(),
-                    s2iConfig.nativeArguments.stream().collect(Collectors.joining(" "))));
+            envProducer.produce(
+                    KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), s2iConfig.nativeBinaryDirectory, OPENSHIFT));
+            envProducer.produce(
+                    KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(), String.join(" ", nativeArguments),
+                            OPENSHIFT));
         });
 
         if (!baseImage.isPresent()) {
-            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary,
-                    s2iConfig.nativeArguments.toArray(new String[s2iConfig.nativeArguments.size()])));
+            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary, nativeArguments.toArray(new String[0])));
         }
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iBuildFromJar(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClient,
             ContainerImageInfoBuildItem containerImage,
@@ -170,7 +178,6 @@ public class S2iProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer,
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
@@ -179,24 +186,27 @@ public class S2iProcessor {
             return;
         }
 
+        Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
+                .stream()
+                .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
+                .findFirst();
+
+        if (!openshiftYml.isPresent()) {
+            LOG.warn(
+                    "No Openshift manifests were generated (most likely due to the fact that the service is not an HTTP service) so no s2i process will be taking place");
+            return;
+        }
+
         String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
         LOG.info("Performing s2i binary build with jar on server: " + kubernetesClient.getClient().getMasterUrl()
                 + " in namespace:" + namespace + ".");
-        String image = containerImage.getImage();
 
-        GeneratedFileSystemResourceBuildItem openshiftYml = generatedResources
-                .stream()
-                .filter(r -> r.getName().endsWith("kubernetes/openshift.yml"))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Could not find kubernetes/openshift.yml"));
-
-        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), jar.getPath(),
+        createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(), jar.getPath(),
                 out.getOutputDirectory().resolve("lib"));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
-        containerImageResultProducer.produce(
-                new ContainerImageResultBuildItem(S2I, null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
     public void s2iBuildFromNative(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClient,
             ContainerImageInfoBuildItem containerImage,
@@ -205,7 +215,6 @@ public class S2iProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer,
             NativeImageBuildItem nativeImage) {
 
         if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
@@ -217,17 +226,20 @@ public class S2iProcessor {
         LOG.info("Performing s2i binary build with native image on server: " + kubernetesClient.getClient().getMasterUrl()
                 + " in namespace:" + namespace + ".");
 
-        String image = containerImage.getImage();
-
-        GeneratedFileSystemResourceBuildItem openshiftYml = generatedResources
+        Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
                 .stream()
-                .filter(r -> r.getName().endsWith("kubernetes/openshift.yml"))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Could not find kubernetes/openshift.yml"));
+                .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
+                .findFirst();
 
-        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), nativeImage.getPath());
+        if (!openshiftYml.isPresent()) {
+            LOG.warn(
+                    "No Openshift manifests were generated (most likely due to the fact that the service is not an HTTP service) so no s2i process will be taking place");
+            return;
+        }
+
+        createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(),
+                nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
-        containerImageResultProducer
-                .produce(new ContainerImageResultBuildItem(S2I, null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
     }
 
     public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,
@@ -238,7 +250,7 @@ public class S2iProcessor {
 
         File tar;
         try {
-            File original = Packaging.packageFile(output, additional);
+            File original = PackageUtil.packageFile(output, additional);
             //Let's rename the archive and give it a more descriptive name, as it may appear in the logs.
             tar = Files.createTempFile("quarkus-", "-s2i").toFile();
             Files.move(original.toPath(), tar.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -267,7 +279,7 @@ public class S2iProcessor {
      * Apply the s2i resources and wait until ImageStreamTags are created.
      *
      * @param client the client instance
-     * @param the resources to apply
+     * @param buildResources resources to apply
      */
     private static void applyS2iResources(OpenShiftClient client, List<HasMetadata> buildResources) {
         // Apply build resource requirements
@@ -298,7 +310,7 @@ public class S2iProcessor {
                 client.resource(i).createOrReplace();
                 LOG.info("Applied: " + i.getKind() + " " + i.getMetadata().getName());
             }
-            S2iUtils.waitForImageStreamTags(buildResources, 2, TimeUnit.MINUTES);
+            S2iUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
 
         } catch (KubernetesClientException e) {
             KubernetesClientErrorHanlder.handle(e);
@@ -314,7 +326,7 @@ public class S2iProcessor {
     /**
      * Performs the binary build of the specified {@link BuildConfig} with the given
      * binary input.
-     * 
+     *
      * @param client The openshift client instance
      * @param buildConfig The build config
      * @param binaryFile The binary file
@@ -391,5 +403,23 @@ public class S2iProcessor {
             KubernetesClientErrorHanlder.handle((KubernetesClientException) t);
         }
         return new RuntimeException("Execution of s2i build failed. See s2i output for more details", t);
+    }
+
+    // visible for test
+    static String concatUnixPaths(String... elements) {
+        StringBuilder result = new StringBuilder();
+        for (String element : elements) {
+            if (element.endsWith("/")) {
+                element = element.substring(0, element.length() - 1);
+            }
+            if (element.isEmpty()) {
+                continue;
+            }
+            if (!element.startsWith("/") && result.length() > 0) {
+                result.append('/');
+            }
+            result.append(element);
+        }
+        return result.toString();
     }
 }

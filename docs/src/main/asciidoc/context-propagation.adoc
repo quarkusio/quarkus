@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Context Propagation in Quarkus
 
@@ -30,7 +30,7 @@ the `quarkus-smallrye-context-propagation` extension to enable context propagati
 In other words, add the following dependencies to your `pom.xml`:
 
 [source,xml]
---
+----
 <dependencies>
     <!-- Mutiny and RestEasy support extensions if not already included -->
     <dependency>
@@ -47,7 +47,7 @@ In other words, add the following dependencies to your `pom.xml`:
         <artifactId>quarkus-smallrye-context-propagation</artifactId>
     </dependency>
 </dependencies>
---
+----
 
 With this, you will get context propagation for ArC, RESTEasy and transactions, if you are using them.
 
@@ -64,7 +64,7 @@ link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transact
 them to the client, you can do it like this:
 
 [source,java]
---
+----
     // Get the prices stream
     @Inject
     @Channel("prices") Publisher<Double> prices;
@@ -89,7 +89,7 @@ them to the client, you can do it like this:
                     // the transaction is committed once the stream completes
                 });
     }
---
+----
 
 Notice that thanks to Mutiny support for context propagation, this works out of the box.
 The 3 items are persisted using the same transaction and this transaction is committed when the stream completes.
@@ -101,10 +101,10 @@ you need manual context propagation. You can do that by injecting a `ThreadConte
 or `ManagedExecutor` that will propagate every context. For example, here we use the link:vertx[Vert.x Web Client]
 to get the list of Star Wars people, then store them in the database using
 link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
-them to the client as JSON using link:rest-json[JSON-B or Jackson]:
+them to the client as JSON using link:rest-json[Jackson or JSON-B]:
 
 [source,java]
---
+----
     @Inject ThreadContext threadContext;
     @Inject ManagedExecutor managedExecutor;
     @Inject Vertx vertx;
@@ -112,12 +112,11 @@ them to the client as JSON using link:rest-json[JSON-B or Jackson]:
     @Transactional
     @GET
     @Path("/people")
-    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<List<Person>> people() throws SystemException {
         // Create a REST client to the Star Wars API
         WebClient client = WebClient.create(vertx,
                          new WebClientOptions()
-                          .setDefaultHost("swapi.co")
+                          .setDefaultHost("swapi.dev")
                           .setDefaultPort(443)
                           .setSsl(true));
         // get the list of Star Wars people, with context capture
@@ -136,7 +135,7 @@ them to the client as JSON using link:rest-json[JSON-B or Jackson]:
                     return persons;
                 }, managedExecutor);
     }
---
+----
 
 Using `ThreadContext` or `ManagedExecutor` you can wrap most useful functional types and `CompletionStage`
 in order to get context propagated.
@@ -148,12 +147,10 @@ The injected `ManagedExecutor` uses the Quarkus thread pool.
 
 == Adding support for RxJava2
 
-If you use Reactive Streams Operators (the `quarkus-smallrye-reactive-streams-operators` module),
-you get support for link:https://github.com/ReactiveX/RxJava[RxJava2] context propagation automatically, but if you don't, you
-may want to include the following modules to get RxJava2 support:
+You need to include the following modules to get RxJava2 support:
 
 [source,xml]
---
+----
 <dependencies>
     <!-- Automatic context propagation for RxJava2 -->
     <dependency>
@@ -174,4 +171,22 @@ may want to include the following modules to get RxJava2 support:
         <artifactId>resteasy-rxjava2</artifactId>
     </dependency>
 </dependencies>
---
+----
+
+== Context Propagation for CDI
+
+In terms of CDI, `@RequestScoped`, `@ApplicationScoped` and `@Singleton` beans get propagated and are available in other threads.
+`@Dependent` beans as well as any custom scoped beans cannot be automatically propagated via CDI Context Propagation.
+
+
+`@ApplicationScoped` and `@Singleton` beans are always active scopes and as such are easy to deal with - context propagation tasks can work with those beans so long as the CDI container is running.
+However, `@RequestScoped` beans are a different story. They are only active for a short period of time which can be bound either to HTTP request or some other request/task when manually activated/deactivated.
+In this case user must be aware that once the original thread gets to an end of a request, it will terminate the context, calling `@PreDestroy` on those beans and then clearing them from the context.
+Subsequent attempts to access those beans from other threads can result in unexpected behaviour.
+It is therefore recommended to make sure all tasks using request scoped beans via context propagation are performed in such a manner that they don't outlive the original request duration.
+
+
+[NOTE]
+====
+Due to the above described behavior, it is recommended to avoid using `@PreDestroy` on `@RequestScoped` beans when working with Context Propagation in CDI.
+====

@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import java.util.Collection;
 import java.util.List;
 import javax.enterprise.inject.spi.DeploymentException;
 
@@ -22,19 +23,6 @@ public interface BeanDeploymentValidator extends BuildExtension {
     default void validate(ValidationContext context) {
     }
 
-    /**
-     * This method is deprecated and is not used internally.
-     * 
-     * @param target
-     * @param rule
-     * @return {@code true} if the given validation rule should be skipped for the specified target
-     * @deprecated This method will be removed at some point post Quarkus 1.4
-     */
-    @Deprecated
-    default boolean skipValidation(InjectionTargetInfo target, ValidationRule rule) {
-        return false;
-    }
-
     interface ValidationContext extends BuildContext {
 
         void addDeploymentProblem(Throwable t);
@@ -53,20 +41,8 @@ public interface BeanDeploymentValidator extends BuildExtension {
          */
         BeanStream removedBeans();
 
-    }
-
-    @Deprecated
-    enum ValidationRule {
-
-        NO_ARGS_CONSTRUCTOR;
-
-        boolean skipFor(List<BeanDeploymentValidator> validators, InjectionTargetInfo target) {
-            for (BeanDeploymentValidator validator : validators) {
-                if (validator.skipValidation(target, this)) {
-                    return true;
-                }
-            }
-            return false;
+        default Collection<InjectionPointInfo> getInjectionPoints() {
+            return get(BuildExtension.Key.INJECTION_POINTS);
         }
 
     }

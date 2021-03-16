@@ -3,14 +3,16 @@ package io.quarkus.netty.deployment;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.Level;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -22,16 +24,16 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
+import io.quarkus.netty.runtime.EmptyByteBufStub;
 import io.quarkus.netty.runtime.NettyRecorder;
 
 class NettyProcessor {
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
@@ -54,11 +56,26 @@ class NettyProcessor {
     }
 
     @BuildStep
-    NativeImageConfigBuildItem build() {
+    public SystemPropertyBuildItem setNettyMachineId() {
+        // we set the io.netty.machineId system property so to prevent potential
+        // slowness when generating/inferring the default machine id in io.netty.channel.DefaultChannelId
+        // implementation, which iterates over the NetworkInterfaces to determine the "best" machine id
+
+        // borrowed from io.netty.util.internal.MacAddressUtil.EUI64_MAC_ADDRESS_LENGTH
+        final int EUI64_MAC_ADDRESS_LENGTH = 8;
+        final byte[] machineIdBytes = new byte[EUI64_MAC_ADDRESS_LENGTH];
+        new Random().nextBytes(machineIdBytes);
+        final String nettyMachineId = io.netty.util.internal.MacAddressUtil.formatAddress(machineIdBytes);
+        return new SystemPropertyBuildItem("io.netty.machineId", nettyMachineId);
+    }
+
+    @BuildStep
+    NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioServerSocketChannel"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioDatagramChannel"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "sun.nio.ch.SelectorImpl"));
 
@@ -148,13 +165,12 @@ class NettyProcessor {
         recorder.eagerlyInitChannelId();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void createExecutors(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerEventLoopBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
             NettyRecorder recorder) {
-        //TODO: configuration
         Supplier<Object> boss;
         Supplier<Object> main;
         if (loopSupplierBuildItem.isPresent()) {
@@ -165,16 +181,23 @@ class NettyProcessor {
             main = recorder.createEventLoop(0);
         }
 
+        // IMPLEMENTATION NOTE:
+        // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next() 
+        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method 
+        // is not generated and the invocation upon the client proxy results in an AbstractMethodError 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
                 .supplier(boss)
-                .scope(ApplicationScoped.class)
+                .scope(Singleton.class)
                 .addQualifier(BossEventLoopGroup.class)
+                .unremovable()
+                .setRuntimeInit()
                 .done());
-
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
                 .supplier(main)
-                .scope(ApplicationScoped.class)
+                .scope(Singleton.class)
                 .addQualifier(MainEventLoopGroup.class)
+                .unremovable()
+                .setRuntimeInit()
                 .done());
     }
 
@@ -195,6 +218,37 @@ class NettyProcessor {
     public List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields() {
         return Arrays.asList(
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
-                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"));
+                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"),
+
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField", "producerIndex"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField", "producerLimit"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField", "consumerIndex"),
+
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+                        "producerIndex"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+                        "producerLimit"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+                        "consumerIndex"));
+    }
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem runtimeInitBcryptUtil() {
+        // this holds a direct allocated byte buffer that needs to be initialised at run time
+        return new RuntimeInitializedClassBuildItem(EmptyByteBufStub.class.getName());
+    }
+
+    //if debug logging is enabled netty logs lots of exceptions
+    //see https://github.com/quarkusio/quarkus/issues/5213
+    @BuildStep
+    LogCleanupFilterBuildItem cleanup() {
+        return new LogCleanupFilterBuildItem(PlatformDependent.class.getName() + "0", Level.TRACE, "direct buffer constructor",
+                "jdk.internal.misc.Unsafe", "sun.misc.Unsafe");
     }
 }

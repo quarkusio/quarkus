@@ -6,7 +6,7 @@
   ~ (the "License"); you may not use this file except in compliance with the
   ~ License.  You may obtain a copy of the License at:
   ~
-  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~ https://www.apache.org/licenses/LICENSE-2.0
   ~
   ~ Unless required by applicable law or agreed to in writing, software
   ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -24,7 +24,6 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-integration-test-reactive-mysql-client</artifactId>
@@ -33,6 +32,7 @@
 
     <properties>
         <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
+        <mariadb.image>mariadb:10.4</mariadb.image>
     </properties>
 
     <dependencies>
@@ -44,6 +44,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-mysql-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -54,6 +58,47 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-mysql-client-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -80,7 +125,6 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${project.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -97,7 +141,7 @@
             <id>test-mariadb</id>
             <activation>
                 <property>
-                    <name>test-mariadb</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -119,60 +163,10 @@
         </profile>
 
         <profile>
-            <id>native-image</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemProperties>
-                                        <native.image.path>
-                                            ${project.build.directory}/${project.build.finalName}-runner
-                                        </native.image.path>
-                                    </systemProperties>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
-                        <executions>
-                            <execution>
-                                <id>native-image</id>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <cleanupServer>true</cleanupServer>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <graalvmHome>${graalvmHome}</graalvmHome>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>docker-mariadb</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>
@@ -186,7 +180,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>mariadb:10.4</name>
+                                    <name>${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
                                     <run>
                                         <network>
@@ -209,15 +203,12 @@
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>direct</mode>
-                                                <ports>
-                                                    <port>3306</port>
-                                                </ports>
-                                            </tcp>
-                                            <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
-                                            <time>40000</time>
+                                            <!-- good docs found at: http://dmp.fabric8.io/#start-wait -->
+                                            <time>20000</time>
+                                            <!-- wait until MySQL is actually up by checking if mysqladmin can ping the server with specified username/password -->
+                                            <exec>
+                                                <postStart>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test</postStart>
+                                            </exec>
                                         </wait>
                                         <volumes>
                                             <bind>
@@ -246,6 +237,22 @@
                                 <goals>
                                     <goal>stop</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-prune</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${docker-prune.location}</executable>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

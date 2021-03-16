@@ -43,7 +43,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         } else {
             priority = ObserverMethod.DEFAULT_PRIORITY;
         }
-        return create(declaringBean.getDeployment(), declaringBean.getTarget().get().asClass().name(), declaringBean,
+        return create(null, declaringBean.getDeployment(), declaringBean.getTarget().get().asClass().name(), declaringBean,
                 observerMethod, injection,
                 eventParameter,
                 observerMethod.parameters().get(eventParameter.position()),
@@ -53,7 +53,7 @@ public class ObserverInfo implements InjectionTargetInfo {
                 buildContext, jtaCapabilities, null);
     }
 
-    static ObserverInfo create(BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean,
+    static ObserverInfo create(String id, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean,
             MethodInfo observerMethod, Injection injection,
             MethodParameterInfo eventParameter, Type observedType, Set<AnnotationInstance> qualifiers, Reception reception,
             TransactionPhase transactionPhase, boolean isAsync, int priority,
@@ -99,13 +99,14 @@ public class ObserverInfo implements InjectionTargetInfo {
             } else {
                 info = beanClass.toString();
             }
-            LOGGER.warnf("The observer %s#%s makes use of '%s' transactional observers but no " +
+            LOGGER.warnf("The observer %s makes use of %s transactional observers but no " +
                     "JTA capabilities were detected.", info, transactionPhase);
         }
-        return new ObserverInfo(beanDeployment, beanClass, declaringBean, observerMethod, injection, eventParameter, isAsync,
-                priority,
-                reception, transactionPhase, observedType, qualifiers, notify);
+        return new ObserverInfo(id, beanDeployment, beanClass, declaringBean, observerMethod, injection, eventParameter,
+                isAsync, priority, reception, transactionPhase, observedType, qualifiers, notify);
     }
+
+    private final String id;
 
     private final BeanDeployment beanDeployment;
 
@@ -137,11 +138,12 @@ public class ObserverInfo implements InjectionTargetInfo {
 
     private final Consumer<MethodCreator> notify;
 
-    ObserverInfo(BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean, MethodInfo observerMethod,
+    ObserverInfo(String id, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean, MethodInfo observerMethod,
             Injection injection,
             MethodParameterInfo eventParameter,
             boolean isAsync, int priority, Reception reception, TransactionPhase transactionPhase,
             Type observedType, Set<AnnotationInstance> qualifiers, Consumer<MethodCreator> notify) {
+        this.id = id;
         this.beanDeployment = beanDeployment;
         this.beanClass = beanClass;
         this.declaringBean = declaringBean;
@@ -168,13 +170,23 @@ public class ObserverInfo implements InjectionTargetInfo {
         return this;
     }
 
+    /**
+     * A unique identifier should be used for multiple synthetic observer methods with the same
+     * attributes (including the bean class).
+     * 
+     * @return the optional identifier
+     */
+    public String getId() {
+        return id;
+    }
+
     BeanDeployment getBeanDeployment() {
         return beanDeployment;
     }
 
     /**
      * 
-     * @return the class of the declaring bean or
+     * @return the class of the declaring bean or the class provided by the configurator for synthetic observers
      */
     public DotName getBeanClass() {
         return beanClass;
@@ -281,7 +293,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         return qualifiers;
     }
 
-    int getPriority() {
+    public int getPriority() {
         return priority;
     }
 
@@ -310,6 +322,15 @@ public class ObserverInfo implements InjectionTargetInfo {
             }
         }
         return -1;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("ObserverInfo [beanClass=").append(beanClass).append(", priority=").append(priority).append(", isAsync=")
+                .append(isAsync).append(", reception=").append(reception).append(", transactionPhase=").append(transactionPhase)
+                .append(", observedType=").append(observedType).append(", qualifiers=").append(qualifiers).append("]");
+        return builder.toString();
     }
 
     private static class ObserverTransformationContext extends AnnotationsTransformationContext<Set<AnnotationInstance>>

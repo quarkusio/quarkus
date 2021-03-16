@@ -1,10 +1,13 @@
 package io.quarkus.it.keycloak;
 
 import static io.quarkus.it.keycloak.KeycloakRealmResourceManager.getAccessToken;
+import static io.quarkus.it.keycloak.KeycloakRealmResourceManager.getRefreshToken;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
@@ -58,6 +61,17 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testBasicAuth() {
+        byte[] basicAuthBytes = "alice:password".getBytes(StandardCharsets.UTF_8);
+        RestAssured.given()
+                .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(basicAuthBytes))
+                .when().get("/api/users/me")
+                .then()
+                .statusCode(200)
+                .body("userName", equalTo("alice"));
+    }
+
+    @Test
     public void testSecureAccessSuccessPreferredUsername() {
         for (String username : Arrays.asList("alice", "jdoe", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username))
@@ -78,6 +92,30 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testAccessAdminResourceCustomHeaderNoBearerScheme() {
+        RestAssured.given().header("X-Forwarded-Authorization", getAccessToken("admin"))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testAccessAdminResourceCustomHeaderBearerScheme() {
+        RestAssured.given().header("X-Forwarded-Authorization", getAccessToken("admin"))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testAccessAdminResourceWithRefreshToken() {
+        RestAssured.given().auth().oauth2(getRefreshToken("admin"))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void testPermissionHttpInformationProvider() {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))
                 .when().get("/api/permission/http-cip")
@@ -95,13 +133,21 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testDeniedNoBearerToken() {
+    public void testVerificationFailedNoBearerToken() {
         RestAssured.given()
                 .when().get("/api/users/me").then()
                 .statusCode(401);
     }
 
+    @Test
+    public void testVerificationFailedInvalidToken() {
+        RestAssured.given().auth().oauth2("123")
+                .when().get("/api/users/me").then()
+                .statusCode(401);
+    }
+
     //see https://github.com/quarkusio/quarkus/issues/5809
+    @Test
     @RepeatedTest(20)
     public void testOidcAndVertxHandler() {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))
@@ -119,6 +165,6 @@ public class BearerTokenAuthorizationTest {
                 .pollDelay(3, TimeUnit.SECONDS)
                 .atMost(5, TimeUnit.SECONDS).until(
                         () -> RestAssured.given().auth().oauth2(token).when()
-                                .get("/api/users/me").thenReturn().statusCode() == 403);
+                                .get("/api/users/me").thenReturn().statusCode() == 401);
     }
 }

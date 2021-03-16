@@ -1,6 +1,7 @@
 package io.quarkus.qute.generator;
 
 import io.quarkus.qute.TemplateData;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +28,16 @@ public class MyService {
         return null;
     }
 
+    public boolean hasName() {
+        return name != null;
+    }
+
     public boolean isActive() {
         return true;
+    }
+
+    public boolean hasItems() {
+        return false;
     }
 
     public List<String> getList(int limit, String dummy) {
@@ -43,6 +52,14 @@ public class MyService {
                 .limit(limit).collect(Collectors.toList());
     }
 
+    public List<String> getList(String name) {
+        return Collections.emptyList();
+    }
+
+    public List<String> getListVarargs(String... names) {
+        return Arrays.asList(names);
+    }
+
     public CompletionStage<String> getTestName() {
         return CompletableFuture.completedFuture("oof");
     }
@@ -53,6 +70,17 @@ public class MyService {
 
     public static List<String> getDummy(MyService service, int limit, String dummy) {
         return Collections.emptyList();
+    }
+
+    public static List<String> getDummy(MyService service, int limit, long dummy) {
+        return Collections.singletonList("dummy");
+    }
+
+    public static List<String> getDummyVarargs(MyService service, int limit, String... dummies) {
+        if (dummies.length == 0) {
+            return Collections.singletonList("" + limit);
+        }
+        return dummies.length > limit ? Collections.emptyList() : Arrays.asList(dummies);
     }
 
 }

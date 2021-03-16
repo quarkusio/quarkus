@@ -13,7 +13,7 @@
 
     <artifactId>quarkus-amazon-lambda-xray</artifactId>
     <name>Quarkus - Amazon Lambda Xray - Runtime</name>
-    <description>Allows X-Ray to run with Quarkus Lambda support</description>
+    <description>Allow X-Ray to run with Quarkus Lambda support</description>
 
     <dependencies>
         <dependency>
@@ -31,6 +31,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

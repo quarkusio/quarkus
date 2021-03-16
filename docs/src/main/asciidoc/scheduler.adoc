@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Scheduling Periodic Tasks
 
@@ -19,7 +19,7 @@ To complete this guide, you need:
 * less than 10 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 
 == Architecture
 
@@ -41,7 +41,7 @@ The solution is located in the `scheduler-quickstart` {quickstarts-tree-url}/sch
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -63,6 +63,25 @@ It generates:
 
 The Maven project also imports the Quarkus scheduler extension.
 
+If you already have your Quarkus project configured, you can add the `scheduler` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="scheduler"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-scheduler</artifactId>
+</dependency>
+----
+
+[#standard-scheduling]
 == Creating a scheduled job
 
 In the `org.acme.scheduler` package, create the `CounterBean` class, with the following content:
@@ -115,7 +134,7 @@ it should be invoked as soon as possible. The invocation of the scheduled method
 == Updating the application configuration file
 
 Edit the `application.properties` file and add the `cron.expr` configuration:
-[source,shell]
+[source,properties]
 ----
 # By default, the syntax used for cron expressions is based on Quartz - http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html
 # You can change the syntax using the following property:
@@ -191,7 +210,7 @@ After a few seconds, re-run `curl localhost:8080/count` to verify the counter ha
 Observe the console to verify that the message `Cron expression configured in application.properties` has been displayed indicating
 that the cron job using an expression configured in `application.properties` has been triggered.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
 [[scheduler-configuration-reference]]

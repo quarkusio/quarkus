@@ -1,9 +1,12 @@
 package io.quarkus.arc.test.beanmanager;
 
+import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,19 +28,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Default;
 import javax.enterprise.inject.spi.Annotated;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InterceptionType;
+import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Inject;
+import javax.inject.Qualifier;
+import javax.inject.Singleton;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
@@ -49,8 +58,8 @@ public class BeanManagerTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Legacy.class, AlternativeLegacy.class, Fool.class,
-            DummyInterceptor.class, DummyBinding.class,
-            LowPriorityInterceptor.class, WithInjectionPointMetadata.class);
+            DummyInterceptor.class, DummyBinding.class, LowPriorityInterceptor.class, WithInjectionPointMetadata.class,
+            High.class, Observers.class);
 
     @Test
     public void testGetBeans() {
@@ -156,6 +165,54 @@ public class BeanManagerTest {
         assertEquals(2, interceptors.size());
         assertEquals(DummyInterceptor.class, interceptors.get(0).getBeanClass());
         assertEquals(LowPriorityInterceptor.class, interceptors.get(1).getBeanClass());
+    }
+
+    @Test
+    public void testIsQualifier() {
+        BeanManager beanManager = Arc.container().beanManager();
+        assertTrue(beanManager.isQualifier(Default.class));
+        assertTrue(beanManager.isQualifier(High.class));
+        assertFalse(beanManager.isQualifier(ApplicationScoped.class));
+    }
+
+    @Test
+    public void testIsInterceptorBinding() {
+        BeanManager beanManager = Arc.container().beanManager();
+        assertTrue(beanManager.isInterceptorBinding(DummyBinding.class));
+        assertFalse(beanManager.isInterceptorBinding(Default.class));
+    }
+
+    @Test
+    public void testIsScope() {
+        BeanManager beanManager = Arc.container().beanManager();
+        assertTrue(beanManager.isScope(Singleton.class));
+        assertTrue(beanManager.isNormalScope(RequestScoped.class));
+        assertFalse(beanManager.isNormalScope(Dependent.class));
+    }
+
+    @Test
+    public void testResolveObservers() {
+        BeanManager beanManager = Arc.container().beanManager();
+        Set<ObserverMethod<? super Long>> observers = beanManager.resolveObserverMethods(Long.valueOf(1),
+                new AnnotationLiteral<High>() {
+                });
+        assertEquals(1, observers.size());
+        assertEquals(Number.class, observers.iterator().next().getObservedType());
+    }
+
+    @ApplicationScoped
+    static class Observers {
+
+        void observe(@Observes @High Number number) {
+        }
+    }
+
+    @Target({ TYPE, METHOD, PARAMETER, FIELD })
+    @Retention(RUNTIME)
+    @Documented
+    @Qualifier
+    public @interface High {
+
     }
 
     @Dependent

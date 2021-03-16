@@ -17,20 +17,10 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>processor</module>
-        <module>devmode</module>
         <module>builder</module>
         <module>test-extension</module>
         <module>devmode-spi</module>
+        <module>launcher</module>
+        <module>class-change-agent</module>
     </modules>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

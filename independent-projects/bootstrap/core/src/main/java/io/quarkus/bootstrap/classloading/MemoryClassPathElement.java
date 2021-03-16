@@ -7,9 +7,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,7 +24,26 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
     }
 
     public void reset(Map<String, byte[]> resources) {
-        this.resources = resources;
+        Map<String, byte[]> newResources = new HashMap<>(resources);
+        //we can't delete .class files from the loader
+        //gizmo may not generate the same function names on restart
+        //so if we delete them already loaded classes may have problems, as functions they reference
+        //may have been removed
+        //see https://github.com/quarkusio/quarkus/issues/8301
+        for (Map.Entry<String, byte[]> e : this.resources.entrySet()) {
+            if (newResources.containsKey(e.getKey())) {
+                continue;
+            }
+            if (e.getKey().endsWith(".class")) {
+                newResources.put(e.getKey(), e.getValue());
+            }
+        }
+        this.resources = newResources;
+    }
+
+    @Override
+    public Path getRoot() {
+        return null;
     }
 
     @Override
@@ -57,6 +78,11 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
             @Override
             public byte[] getData() {
                 return res;
+            }
+
+            @Override
+            public boolean isDirectory() {
+                return false;
             }
         };
     }

@@ -23,9 +23,15 @@ public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
 
     static {
         Map<String, String> map = new HashMap<>();
-        map.put(TEST_URL_KEY, TEST_URL_VALUE);
-        map.put(TEST_URL_SSL_KEY, TEST_URL_SSL_VALUE);
+        map.put(TEST_URL_KEY, sanitizeURL(TEST_URL_VALUE));
+        map.put(TEST_URL_SSL_KEY, sanitizeURL(TEST_URL_SSL_VALUE));
+        map.put("%dev." + TEST_URL_KEY, sanitizeURL(
+                "http://${quarkus.http.host:localhost}:${quarkus.http.test-port:8080}${quarkus.servlet.context-path:}"));
         entries = Collections.unmodifiableMap(map);
+    }
+
+    private static String sanitizeURL(String url) {
+        return url.replace("0.0.0.0", "localhost");
     }
 
     public Iterable<ConfigSource> getConfigSources(final ClassLoader forClassLoader) {

@@ -35,9 +35,9 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     private String uri;
     private String absoluteURI;
 
-    ForwardedServerRequestWrapper(HttpServerRequest request, boolean allowForwarded) {
+    ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions) {
         delegate = request;
-        forwardedParser = new ForwardedParser(delegate, allowForwarded);
+        forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions);
     }
 
     void changeTo(HttpMethod method, String uri) {
@@ -137,7 +137,7 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public String uri() {
         if (!modified) {
-            return delegate.uri();
+            return forwardedParser.uri();
         }
         return uri;
     }

@@ -21,6 +21,14 @@ public interface ValueResolver extends Resolver, WithPriority {
         return true;
     }
 
+    /**
+     * 
+     * @return a new builder
+     */
+    static ValueResolverBuilder builder() {
+        return new ValueResolverBuilder();
+    }
+
     // Utility methods
 
     static boolean matchClass(EvalContext ctx, Class<?> clazz) {

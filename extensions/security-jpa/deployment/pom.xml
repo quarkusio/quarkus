@@ -44,11 +44,6 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-deployment</artifactId>
             <scope>test</scope>
         </dependency>
@@ -82,7 +77,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <!-- JDBC driver dependencies -->

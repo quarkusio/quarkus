@@ -18,8 +18,8 @@ public class NoConfigTest {
 
     @Test
     public void shouldUseDefaultConfig() {
-        RestAssured.when().get("/swagger-ui").then().statusCode(200).body(containsString("/openapi"));
-        RestAssured.when().get("/swagger-ui/index.html").then().statusCode(200).body(containsString("/openapi"));
+        RestAssured.when().get("/q/swagger-ui").then().statusCode(200).body(containsString("/openapi"));
+        RestAssured.when().get("/q/swagger-ui/index.html").then().statusCode(200).body(containsString("/openapi"));
 
     }
 }

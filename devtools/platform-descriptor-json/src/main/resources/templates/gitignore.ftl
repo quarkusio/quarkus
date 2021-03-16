@@ -15,6 +15,7 @@ nb-configuration.xml
 
 # Visual Studio Code
 .vscode
+.factorypath
 
 # OSX
 .DS_Store
@@ -26,4 +27,8 @@ nb-configuration.xml
 # patch
 *.orig
 *.rej
+
+# Local environment
+.env
+
 ${additional_gitignore_entries}

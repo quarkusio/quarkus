@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - MicroProfile Metrics
 
@@ -21,6 +21,9 @@ Apart from application-specific metrics, which are described in this guide, you 
 exposed by various Quarkus extensions. These are described in the guide for each particular extension that supports
 built-in metrics.
 
+IMPORTANT: link:micrometer[Micrometer] is the recommended approach to metrics for Quarkus.
+Use the MicroProfile Metrics extension when it's required to retain MicroProfile specification compatibility.
+
 == Prerequisites
 
 To complete this guide, you need:
@@ -28,7 +31,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 
 == Architecture
 In this example, we build a very simple microservice which offers one REST endpoint and that endpoint serves
@@ -48,16 +51,36 @@ The solution is located in the `microprofile-metrics-quickstart` {quickstarts-tr
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-metrics-quickstart \
-    -Dextensions="metrics"
+    -DclassName="org.acme.microprofile.metrics.PrimeNumberResource" \
+    -Dpath="/" \
+    -Dextensions="resteasy,smallrye-metrics"
 cd microprofile-metrics-quickstart
 ----
 
 This command generates a Maven project, importing the `smallrye-metrics` extension which is an implementation of the MicroProfile Metrics specification used in Quarkus.
+
+If you already have your Quarkus project configured, you can add the `smallrye-metrics` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="smallrye-metrics"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-metrics</artifactId>
+</dependency>
+----
 
 == Writing the application
 
@@ -86,6 +109,7 @@ import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 @Path("/")
 public class PrimeNumberChecker {
@@ -94,7 +118,7 @@ public class PrimeNumberChecker {
 
     @GET
     @Path("/{number}")
-    @Produces("text/plain")
+    @Produces(MediaType.TEXT_PLAIN)
     @Counted(name = "performedChecks", description = "How many primality checks have been performed.")
     @Timed(name = "checksTimer", description = "A measure of how long it takes to perform the primality test.", unit = MetricUnits.MILLISECONDS)
     public String checkIfPrime(@PathParam long number) {
@@ -136,22 +160,29 @@ To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`
 === Generate some values for the metrics
 First, ask the endpoint whether some numbers are prime numbers.
 
- curl localhost:8080/350
+[source,bash]
+----
+curl localhost:8080/350
+----
 
 The application will respond that 350 is not a prime number because it can be divided by 2.
 
 Now for some large prime number so that the test takes a bit more time:
 
- curl localhost:8080/629521085409773
+[source,bash]
+----
+curl localhost:8080/629521085409773
+----
 
 The application will respond that 629521085409773 is a prime number.
 If you want, try some more calls with numbers of your choice.
 
 === Review the generated metrics
-To view the metrics, execute `curl -H"Accept: application/json" localhost:8080/metrics/application`
+To view the metrics, execute `curl -H"Accept: application/json" localhost:8080/q/metrics/application`
 You will receive a response such as:
 
-```
+[source,json]
+----
 {
   "org.acme.microprofile.metrics.PrimeNumberChecker.checksTimer" : {
     "p50": 217.231273,
@@ -173,7 +204,7 @@ You will receive a response such as:
   "org.acme.microprofile.metrics.PrimeNumberChecker.performedChecks" : 2,
   "org.acme.microprofile.metrics.PrimeNumberChecker.highestPrimeNumberSoFar" : 629521085409773
 }
-```
+----
 
 Let's explain the meaning of each metric:
 

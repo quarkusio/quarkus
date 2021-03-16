@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.opentracing.deployment;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -20,7 +23,6 @@ import io.opentracing.util.GlobalTracerTestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
-import io.restassured.response.Response;
 
 public class TracingTest {
 
@@ -41,7 +43,7 @@ public class TracingTest {
     }
 
     @BeforeEach
-    public void after() {
+    public void before() {
         mockTracer.reset();
     }
 
@@ -104,9 +106,10 @@ public class TracingTest {
     public void testContextPropagationInFaultTolerance() {
         try {
             RestAssured.defaultParser = Parser.TEXT;
-            Response response = RestAssured.when().get("/faultTolerance");
-            response.then().statusCode(200);
-            Assertions.assertEquals("fallback", response.body().asString());
+            RestAssured.when().get("/faultTolerance")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("fallback"));
             Awaitility.await().atMost(5, TimeUnit.SECONDS)
                     .until(() -> mockTracer.finishedSpans().size() == 5);
             List<MockSpan> spans = mockTracer.finishedSpans();
@@ -115,13 +118,47 @@ public class TracingTest {
             for (MockSpan mockSpan : spans) {
                 Assertions.assertEquals(spans.get(0).context().traceId(), mockSpan.context().traceId());
             }
-            Assertions.assertEquals("ft", mockTracer.finishedSpans().get(0).operationName());
-            Assertions.assertEquals("ft", mockTracer.finishedSpans().get(1).operationName());
-            Assertions.assertEquals("ft", mockTracer.finishedSpans().get(2).operationName());
-            Assertions.assertEquals("io.quarkus.smallrye.opentracing.deployment.Service.fallback",
-                    mockTracer.finishedSpans().get(3).operationName());
-            Assertions.assertEquals("io.quarkus.smallrye.opentracing.deployment.Service.faultTolerance",
-                    mockTracer.finishedSpans().get(4).operationName());
+
+            // if timeout occurs, subsequent retries/fallback can be interleaved with the execution that timed out,
+            // resulting in varying span order
+            Assertions.assertEquals(3, countSpansWithOperationName(spans, "ft"));
+            Assertions.assertEquals(1, countSpansWithOperationName(spans, "fallback"));
+            Assertions.assertEquals(1, countSpansWithOperationName(spans,
+                    "GET:io.quarkus.smallrye.opentracing.deployment.TestResource.faultTolerance"));
+        } finally {
+            RestAssured.reset();
+        }
+    }
+
+    private long countSpansWithOperationName(List<MockSpan> spans, String operationName) {
+        return spans.stream().filter(span -> span.operationName().equals(operationName)).count();
+    }
+
+    @Test
+    public void testJPA() {
+        try {
+            RestAssured.defaultParser = Parser.JSON;
+            RestAssured.when().get("/jpa")
+                    .then()
+                    .statusCode(200)
+                    .body("", hasSize(3))
+                    .body("name[0]", equalTo("Apple"))
+                    .body("name[1]", equalTo("Banana"))
+                    .body("name[2]", equalTo("Cherry"));
+            List<MockSpan> spans = mockTracer.finishedSpans();
+
+            Assertions.assertEquals(3, spans.size());
+            for (MockSpan mockSpan : spans) {
+                Assertions.assertEquals(spans.get(0).context().traceId(), mockSpan.context().traceId());
+            }
+            MockSpan firstSpan = mockTracer.finishedSpans().get(0);
+            Assertions.assertEquals("Query", firstSpan.operationName());
+            Assertions.assertTrue(firstSpan.tags().containsKey("db.statement"));
+            Assertions.assertTrue(firstSpan.tags().get("db.statement").toString().contains("known_fruits"));
+            Assertions.assertEquals("io.quarkus.smallrye.opentracing.deployment.Service.getFruits",
+                    mockTracer.finishedSpans().get(1).operationName());
+            Assertions.assertEquals("GET:io.quarkus.smallrye.opentracing.deployment.TestResource.jpa",
+                    mockTracer.finishedSpans().get(2).operationName());
         } finally {
             RestAssured.reset();
         }

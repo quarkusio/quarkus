@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Container Images
 
@@ -9,14 +9,14 @@ include::./attributes.adoc[]
 
 Quarkus provides extensions for building (and pushing) container images. Currently it supports:
 
-- <<#jib,JIB>>
+- <<#jib,Jib>>
 - <<#docker,Docker>>
 - <<#s2i,S2I>>
 
 == Container Image extensions
 
 [#jib]
-=== JIB
+=== Jib
 
 The extension `quarkus-container-image-jib` is powered by https://github.com/GoogleContainerTools/jib[Jib] for performing container image builds.
 The major benefit of using Jib with Quarkus is that all the dependencies (everything found under `target/lib`) are cached in a different layer than the actual application making rebuilds really fast and small (when it comes to pushing).
@@ -25,7 +25,7 @@ when all that is needed is the ability to push to a container image registry.
 
 To use this feature, add the following extension to your project:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="container-image-jib"
 ----
@@ -34,6 +34,13 @@ NOTE: In situations where all that is needed to build a container image and no p
 it with the Docker daemon. This means that although Docker isn't used to build the image, it is nevertheless necessary. Also note that using this mode, the built container image *will*
 show up when executing `docker images`.
 
+==== Including extra files
+
+There are cases when additional files (other than ones produced by the Quarkus build) need to be added to a container image.
+To support these cases, Quarkus copies any file under `src/main/jib` into the built container image (which is essentially the same
+idea that the Jib Maven and Gradle plugins support).
+For example, the presence of `src/main/jib/foo/bar` would result in  `/foo/bar` being added into the container filesystem.
+
 [#docker]
 === Docker
 
@@ -41,7 +48,7 @@ The extension `quarkus-container-image-docker` is using the Docker binary and th
 
 To use this feature, add the following extension to your project.
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="container-image-docker"
 ----
@@ -52,7 +59,7 @@ To use this feature, add the following extension to your project.
 The extension `quarkus-container-image-s2i` is using S2I binary builds in order to perform container builds inside the OpenShift cluster.
 The idea behind the binary build is that you just upload the artifact and its dependencies to the cluster and during the build they will be merged to a builder image (defaults to `fabric8/s2i-java`).
 
-The benefit of this approach, is that it can be combined with OpenShift's `DeploymentConfig` that makes it easy to rollout changes to the cluster.
+The benefit of this approach, is that it can be combined with OpenShift's `DeploymentConfig` that makes it easy to roll out changes to the cluster.
 
 To use this feature, add the following extension to your project.
 
@@ -68,21 +75,32 @@ The creation of such objects is being taken care of by the Quarkus Kubernetes ex
 
 To build a container image for your project, `quarkus.container-image.build=true` needs to be set using any of the ways that Quarkus supports.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.container-image.build=true
 ----
 
 == Pushing
 
-To build a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.
+To push a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.container-image.push=true
 ----
 
 NOTE: If no registry is set (using `quarkus.container-image.registry`) then `docker.io` will be used as the default.
+
+== Selecting among multiple extensions
+
+It does not make sense to use multiple extension as part of the same build. When multiple container image extensions are present, an error will be raised to inform the user. The user can either remove the uneeded extensions or select one using `application.properties`.
+
+For example, if both `container-image-docker` and `container-image-s2i` are present and the user needs to use `container-image-docker`:
+
+[source,properties]
+----
+quarkus.container-image.builder=docker
+----
 
 == Customizing
 
@@ -92,7 +110,23 @@ The following properties can be used to customize the container image build proc
 
 include::{generated-dir}/config/quarkus-container-image.adoc[opts=optional, leveloffset=+1]
 
-=== JIB Options
+==== Using CI Environments
+
+Various CI environments provide a ready to use container-image registry which can be combined with the container-image Quarkus extensions in order to
+effortlessly create and push a Quarkus application to said registry.
+
+For example, https://gitlab.com/[GitLab] provides such a registry and in the provided CI environment,
+makes available the `CI_REGISTRY_IMAGE` environment variable
+(see GitLab's https://docs.gitlab.com/ee/ci/variables/[documentation]) for more information), which can be used in Quarkus like so:
+
+[source,properties]
+----
+quarkus.container-image.image=${CI_REGISTRY_IMAGE}
+----
+
+NOTE: See link:config.adoc#combine-property-env-var[this] for more information on how to combine properties with environment variables.
+
+=== Jib Options
 
 In addition to the generic container image options, the `container-image-jib` also provides the following options:
 

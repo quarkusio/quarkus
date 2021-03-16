@@ -3,6 +3,7 @@ package io.quarkus.spring.security.deployment;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,9 +13,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
-import io.quarkus.spring.security.deployment.roles.FromBeanHasRoleValueProducer;
-import io.quarkus.spring.security.deployment.roles.HasRoleValueProducer;
-import io.quarkus.spring.security.deployment.roles.StaticHasRoleValueProducer;
+import io.quarkus.spring.security.runtime.interceptor.SpringSecurityRecorder;
 
 final class HasRoleValueUtil {
 
@@ -24,11 +23,14 @@ final class HasRoleValueUtil {
     private HasRoleValueUtil() {
     }
 
-    static HasRoleValueProducer getHasRoleValueProducer(String hasRoleValue, MethodInfo methodInfo, IndexView index,
+    static Supplier<String[]> getHasRoleValueProducer(String hasRoleValue, MethodInfo methodInfo,
+            IndexView index,
             Map<String, DotName> springBeansNameToDotName,
-            Map<String, ClassInfo> springBeansNameToClassInfo, Set<String> beansReferencedInPreAuthorized) {
+            Map<String, ClassInfo> springBeansNameToClassInfo,
+            Set<String> beansReferencedInPreAuthorized,
+            SpringSecurityRecorder recorder) {
         if (hasRoleValue.startsWith("'") && hasRoleValue.endsWith("'")) {
-            return new StaticHasRoleValueProducer(hasRoleValue.replace("'", ""));
+            return recorder.staticHasRole(hasRoleValue.replace("'", ""));
         } else if (hasRoleValue.startsWith("@")) {
             Matcher beanFieldMatcher = BEAN_FIELD_PATTERN.matcher(hasRoleValue);
             if (!beanFieldMatcher.find()) {
@@ -41,6 +43,7 @@ final class HasRoleValueUtil {
 
             String fieldName = beanFieldMatcher.group(2);
             FieldInfo fieldInfo = beanClassInfo.field(fieldName);
+            //TODO: detect normal scoped beans and throw an exception, as it will read the field from the proxy
             if ((fieldInfo == null) || !Modifier.isPublic(fieldInfo.flags())
                     || !DotNames.STRING.equals(fieldInfo.type().name())) {
                 throw new IllegalArgumentException("Bean named '" + beanName + "' found in expression '" + hasRoleValue
@@ -51,7 +54,7 @@ final class HasRoleValueUtil {
 
             beansReferencedInPreAuthorized.add(fieldInfo.declaringClass().name().toString());
 
-            return new FromBeanHasRoleValueProducer(beanName, fieldInfo);
+            return recorder.fromBeanField(fieldInfo.declaringClass().name().toString(), fieldName);
         } else {
             throw SpringSecurityProcessorUtil.createGenericMalformedException(methodInfo, hasRoleValue);
         }

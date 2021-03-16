@@ -13,3 +13,4 @@ metadata:
   - "web"
   - "serialization"
   status: "stable"
+  codestart: "resteasy-jackson"

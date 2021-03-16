@@ -7,6 +7,8 @@
     <persistence-unit name="templatePU" transaction-type="JTA">
 
         <properties>
+            <property name="hibernate.archive.autodetection" value="class, hbm"/>
+
             <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
             <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
         </properties>

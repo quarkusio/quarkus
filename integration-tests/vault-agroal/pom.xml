@@ -8,7 +8,6 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-integration-test-vault-agroal</artifactId>
@@ -40,6 +39,21 @@
             <artifactId>quarkus-jdbc-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -58,7 +72,7 @@
             <id>test-vault</id>
             <activation>
                 <property>
-                    <name>test-vault</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -73,11 +87,6 @@
                                 </goals>
                                 <configuration>
                                     <skip>false</skip>
-                                    <trimStackTrace>false</trimStackTrace>
-                                    <systemPropertyVariables>
-                                        <java.util.logging.manager>org.jboss.logmanager.LogManager
-                                        </java.util.logging.manager>
-                                    </systemPropertyVariables>
                                 </configuration>
                             </execution>
                         </executions>

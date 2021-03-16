@@ -1,6 +1,7 @@
 package io.quarkus.deployment.builditem;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.runtime.StartupEvent;
 
 /**
@@ -11,6 +12,10 @@ import io.quarkus.runtime.StartupEvent;
 public final class ServiceStartBuildItem extends MultiBuildItem {
 
     private final String name;
+
+    public ServiceStartBuildItem(Feature feature) {
+        this(feature.getName());
+    }
 
     public ServiceStartBuildItem(String name) {
         this.name = name;

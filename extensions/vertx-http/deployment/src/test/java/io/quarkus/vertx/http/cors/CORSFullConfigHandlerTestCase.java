@@ -31,6 +31,7 @@ public class CORSFullConfigHandlerTestCase {
                 .header("Access-Control-Allow-Methods", "GET")
                 .header("Access-Control-Expose-Headers", "Content-Disposition")
                 .header("Access-Control-Allow-Headers", "X-Custom")
+                .header("Access-Control-Allow-Credentials", "false")
                 .header("Access-Control-Max-Age", "86400");
 
         given().header("Origin", "http://www.quarkus.io")
@@ -40,6 +41,7 @@ public class CORSFullConfigHandlerTestCase {
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", "http://www.quarkus.io")
                 .header("Access-Control-Allow-Methods", "PUT,POST")
+                .header("Access-Control-Allow-Credentials", "false")
                 .header("Access-Control-Expose-Headers", "Content-Disposition");
     }
 
@@ -56,6 +58,7 @@ public class CORSFullConfigHandlerTestCase {
                 .header("Access-Control-Allow-Origin", "http://custom.origin.quarkus")
                 .header("Access-Control-Allow-Methods", "GET") // Should not return DELETE
                 .header("Access-Control-Expose-Headers", "Content-Disposition")
+                .header("Access-Control-Allow-Credentials", "false")
                 .header("Access-Control-Allow-Headers", "X-Custom");// Should not return X-Custom2
     }
 

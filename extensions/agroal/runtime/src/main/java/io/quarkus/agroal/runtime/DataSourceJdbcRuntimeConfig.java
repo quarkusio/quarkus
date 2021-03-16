@@ -1,6 +1,7 @@
 package io.quarkus.agroal.runtime;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -28,7 +29,7 @@ public class DataSourceJdbcRuntimeConfig {
     /**
      * The datasource pool minimum size
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     public int minSize = 0;
 
     /**
@@ -96,4 +97,18 @@ public class DataSourceJdbcRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> validationQuerySql = Optional.empty();
+
+    /**
+     * Disable pooling to prevent reuse of Connections. Use this with when an external pool manages the life-cycle
+     * of Connections.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean poolingEnabled = true;
+
+    /**
+     * Other unspecified properties to be passed to the JDBC driver when creating new connections.
+     */
+    @ConfigItem
+    public Map<String, String> additionalJdbcProperties;
+
 }

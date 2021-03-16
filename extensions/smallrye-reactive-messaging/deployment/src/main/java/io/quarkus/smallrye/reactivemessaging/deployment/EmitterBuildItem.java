@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
 
 public final class EmitterBuildItem extends MultiBuildItem {
 
@@ -8,22 +9,14 @@ public final class EmitterBuildItem extends MultiBuildItem {
      * Creates a new instance of {@link EmitterBuildItem} setting the overflow strategy.
      *
      * @param name the name of the stream
+     * @param isMutinyEmitter if the emitter is a {@link io.smallrye.reactive.messaging.MutinyEmitter}
      * @param overflow the overflow strategy
      * @param bufferSize the buffer size, if overflow is set to {@code BUFFER}
      * @return the new {@link EmitterBuildItem}
      */
-    static EmitterBuildItem of(String name, String overflow, int bufferSize) {
-        return new EmitterBuildItem(name, overflow, bufferSize);
-    }
-
-    /**
-     * Creates a new instance of {@link EmitterBuildItem} using the default overflow strategy.
-     *
-     * @param name the name of the stream
-     * @return the new {@link EmitterBuildItem}
-     */
-    static EmitterBuildItem of(String name) {
-        return new EmitterBuildItem(name, null, -1);
+    static EmitterBuildItem of(String name, boolean isMutinyEmitter, String overflow, int bufferSize, boolean hasBroadcast,
+            int awaitSubscribers) {
+        return new EmitterBuildItem(name, isMutinyEmitter, overflow, bufferSize, hasBroadcast, awaitSubscribers);
     }
 
     /**
@@ -43,22 +36,35 @@ public final class EmitterBuildItem extends MultiBuildItem {
      */
     private final int bufferSize;
 
-    public EmitterBuildItem(String name, String overflow, int bufferSize) {
+    /**
+     * Whether the emitter uses the {@link io.smallrye.reactive.messaging.annotations.Broadcast} annotation.
+     */
+    private final boolean hasBroadcast;
+
+    /**
+     * Whether the emitter is a {@link io.smallrye.reactive.messaging.MutinyEmitter} or a regular (non-mutiny) emitter.
+     */
+    private final boolean isMutinyEmitter;
+
+    /**
+     * If the emitter uses the {@link io.smallrye.reactive.messaging.annotations.Broadcast} annotation, indicates the
+     * number of subscribers to be expected before subscribing upstream.
+     */
+    private final int awaitSubscribers;
+
+    public EmitterBuildItem(String name, boolean isMutinyEmitter, String overflow, int bufferSize, boolean hasBroadcast,
+            int awaitSubscribers) {
         this.name = name;
         this.overflow = overflow;
+        this.isMutinyEmitter = isMutinyEmitter;
         this.bufferSize = bufferSize;
+        this.hasBroadcast = hasBroadcast;
+        this.awaitSubscribers = hasBroadcast ? awaitSubscribers : -1;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getOverflow() {
-        return overflow;
-    }
-
-    public int getBufferSize() {
-        return bufferSize;
+    public EmitterConfiguration getEmitterConfig() {
+        return new EmitterConfiguration(name, isMutinyEmitter, OnOverflowLiteral.create(overflow, bufferSize),
+                hasBroadcast ? new BroadcastLiteral(awaitSubscribers) : null);
     }
 
 }

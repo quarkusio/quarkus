@@ -7,11 +7,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -22,7 +20,7 @@ import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.EnumMarshaller;
@@ -34,18 +32,19 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -54,14 +53,13 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
-import io.quarkus.infinispan.client.runtime.InfinispanClientRuntimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanRecorder;
 
 class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);
 
     private static final String META_INF = "META-INF";
-    private static final String HOTROD_CLIENT_PROPERTIES = META_INF + File.separator + "/hotrod-client.properties";
+    private static final String HOTROD_CLIENT_PROPERTIES = META_INF + File.separator + "hotrod-client.properties";
     private static final String PROTO_EXTENSION = ".proto";
 
     /**
@@ -69,7 +67,7 @@ class InfinispanClientProcessor {
      */
     InfinispanClientBuildTimeConfig infinispanClient;
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     InfinispanPropertiesBuildItem setup(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment,
@@ -78,15 +76,15 @@ class InfinispanClientProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
-            ApplicationIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
+            CombinedIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
+        feature.produce(new FeatureBuildItem(Feature.INFINISPAN_CLIENT));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
         systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
         hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(HOTROD_CLIENT_PROPERTIES));
 
         // Enable SSL support by default
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.INFINISPAN_CLIENT));
 
         InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
         Properties properties;
@@ -114,40 +112,42 @@ class InfinispanClientProcessor {
 
         InfinispanClientProducer.replaceProperties(properties);
 
-        Index index = applicationIndexBuildItem.getIndex();
+        IndexView index = applicationIndexBuildItem.getIndex();
 
         // This is always non null
         Object marshaller = properties.get(ConfigurationProperties.MARSHALLER);
 
         if (marshaller instanceof ProtoStreamMarshaller) {
-            ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-            // If we have properties file we may have to care about
-            Path metaPath = applicationArchive.getChildPath(META_INF);
+            for (ApplicationArchive applicationArchive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+                // If we have properties file we may have to care about
+                Path metaPath = applicationArchive.getChildPath(META_INF);
 
-            if (metaPath != null) {
-                try (Stream<Path> dirElements = Files.list(metaPath)) {
-                    Iterator<Path> protoFiles = dirElements
-                            .filter(Files::isRegularFile)
-                            .filter(p -> p.toString().endsWith(PROTO_EXTENSION))
-                            .iterator();
-                    // We monitor the entire meta inf directory if properties are available
-                    if (protoFiles.hasNext()) {
-                        // Quarkus doesn't currently support hot deployment watching directories
-                        //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
-                    }
+                if (metaPath != null) {
+                    try (Stream<Path> dirElements = Files.list(metaPath)) {
+                        Iterator<Path> protoFiles = dirElements
+                                .filter(Files::isRegularFile)
+                                .filter(p -> p.toString().endsWith(PROTO_EXTENSION))
+                                .iterator();
+                        // We monitor the entire meta inf directory if properties are available
+                        if (protoFiles.hasNext()) {
+                            // Quarkus doesn't currently support hot deployment watching directories
+                            //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
+                        }
 
-                    while (protoFiles.hasNext()) {
-                        Path path = protoFiles.next();
-                        byte[] bytes = Files.readAllBytes(path);
-                        // This uses the default file encoding - should we enforce UTF-8?
-                        properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),
-                                new String(bytes, StandardCharsets.UTF_8));
+                        while (protoFiles.hasNext()) {
+                            Path path = protoFiles.next();
+                            System.out.println("  " + path.toAbsolutePath());
+                            byte[] bytes = Files.readAllBytes(path);
+                            // This uses the default file encoding - should we enforce UTF-8?
+                            properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),
+                                    new String(bytes, StandardCharsets.UTF_8));
+                        }
                     }
                 }
             }
 
             InfinispanClientProducer.handleProtoStreamRequirements(properties);
-            Set<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
+            Collection<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
                     SerializationContextInitializer.class.getName()));
             Set<SerializationContextInitializer> initializers = new HashSet<>(initializerClasses.size());
             for (ClassInfo ci : initializerClasses) {
@@ -168,7 +168,7 @@ class InfinispanClientProcessor {
         }
 
         // Add any user project listeners to allow reflection in native code
-        List<AnnotationInstance> listenerInstances = index.getAnnotations(
+        Collection<AnnotationInstance> listenerInstances = index.getAnnotations(
                 DotName.createSimple(ClientListener.class.getName()));
         for (AnnotationInstance instance : listenerInstances) {
             AnnotationTarget target = instance.target();
@@ -224,23 +224,9 @@ class InfinispanClientProcessor {
         return new BeanContainerListenerBuildItem(recorder.configureInfinispan(properties));
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
-    void configureRuntimeProperties(InfinispanRecorder recorder,
-            InfinispanClientRuntimeConfig infinispanClientRuntimeConfig) {
-        recorder.configureRuntimeProperties(infinispanClientRuntimeConfig);
-    }
-
-    private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(
-                    DotName.createSimple(BaseMarshaller.class.getName()),
-                    DotName.createSimple(EnumMarshaller.class.getName()),
-                    DotName.createSimple(MessageMarshaller.class.getName()),
-                    DotName.createSimple(RawProtobufMarshaller.class.getName()),
-                    DotName.createSimple(FileDescriptorSource.class.getName()))));
-
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
-        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypesExclusion(UNREMOVABLE_BEANS));
+        return UnremovableBeanBuildItem.beanTypes(BaseMarshaller.class, EnumMarshaller.class, MessageMarshaller.class,
+                RawProtobufMarshaller.class, FileDescriptorSource.class);
     }
 }

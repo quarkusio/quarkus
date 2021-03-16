@@ -16,6 +16,7 @@ import io.quarkus.runtime.util.StringUtil;
 public @interface ConfigProperties {
 
     String UNSET_PREFIX = "<< unset >>";
+    boolean DEFAULT_FAIL_ON_MISMATCHING_MEMBER = true;
 
     /**
      * If the default is used, the class name will be used to determine the proper prefix
@@ -49,6 +50,11 @@ public @interface ConfigProperties {
      */
     NamingStrategy namingStrategy() default NamingStrategy.FROM_CONFIG;
 
+    /**
+     * Whether or not to fail when a non-public field of a class doesn't have a corresponding setter
+     */
+    boolean failOnMismatchingMember() default DEFAULT_FAIL_ON_MISMATCHING_MEMBER;
+
     enum NamingStrategy {
         FROM_CONFIG {
             @Override
@@ -71,4 +77,5 @@ public @interface ConfigProperties {
 
         public abstract String getName(String name);
     }
+
 }

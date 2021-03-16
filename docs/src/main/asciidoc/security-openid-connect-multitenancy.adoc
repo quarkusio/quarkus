@@ -1,18 +1,20 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Supporting Multi-Tenancy in OpenID Connect Applications 
+= Quarkus - Using OpenID Connect Multi-Tenancy
 
 include::./attributes.adoc[]
-:extension-status: preview
+:toc:
 
 This guide demonstrates how your OpenID Connect application can support multi-tenancy so that you can serve multiple tenants from a single application. Tenants can be distinct realms or security domains within the same OpenID Provider or even distinct OpenID Providers.
 
 When serving multiple customers from the same application (e.g.: SaaS), each customer is a tenant. By enabling multi-tenancy support to your applications you are allowed to also support distinct authentication policies for each tenant even though if that means authenticating against different OpenID Providers, such as Keycloak and Google.
 
-include::./status-include.adoc[]
+Please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide if you need to authorize a tenant using Bearer Token Authorization.
+
+Please read the link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize a tenant using OpenId Connect Authorization Code Flow.
 
 == Prerequisites
 
@@ -21,7 +23,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * https://stedolan.github.io/jq/[jq tool]
 * Docker
 
@@ -40,19 +42,38 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-openid-connect-multi-tenancy` {quickstarts-tree-url}/security-openid-connect-multi-tenancy[directory].
+The solution is located in the `security-openid-connect-multi-tenancy-quickstart` {quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart[directory].
 
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-openid-connect-multi-tenancy \
-    -Dextensions="oidc, resteasy-jsonb"
-cd security-openid-connect-multi-tenancy
+    -DprojectArtifactId=security-openid-connect-multi-tenancy-quickstart \
+    -Dextensions="oidc,resteasy-jackson" \
+    -DnoExamples
+cd security-openid-connect-multi-tenancy-quickstart
+----
+
+If you already have your Quarkus project configured, you can add the `oidc` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="oidc"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
 ----
 
 == Writing the application
@@ -100,7 +121,7 @@ public class HomeResource {
 
 ----
 
-In order to resolve the tenant from incoming requests and map it to a specific `quarkus-oidc` configuration, you need to create an implementation for the `io.quarkus.oidc.TenantResolver` interface.
+In order to resolve the tenant from incoming requests and map it to a specific `quarkus-oidc` tenant configuration in application.properties, you need to create an implementation for the `io.quarkus.oidc.TenantResolver` interface.
 
 [source,java]
 ----
@@ -120,7 +141,7 @@ public class CustomTenantResolver implements TenantResolver {
         String[] parts = path.split("/");
 
         if (parts.length == 0) {
-            // resolve to default tenant config
+            // resolve to default tenant configuration
             return null;
         }
 
@@ -129,7 +150,25 @@ public class CustomTenantResolver implements TenantResolver {
 }
 ----
 
-From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, `null` is returned to indicate that the default configuration should be used.
+From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, `null` is returned to indicate that the default tenant configuration should be used.
+
+[NOTE]
+===
+If you also use link:hibernate-orm#multitenancy[Hibernate ORM multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same and must be extracted from the Vert.x `RoutingContext` then you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver as a `RoutingContext` attribute, for example:
+
+[source,java]
+----
+public class CustomTenantResolver implements TenantResolver {
+
+    @Override
+    public String resolve(RoutingContext context) {
+        String tenantId = extractTenantId(context);
+        context.put("tenantId", tenantId);
+        return tenantId;
+    }
+}
+----
+===
 
 == Configuring the application
 
@@ -150,7 +189,7 @@ quarkus.http.auth.permission.authenticated.paths=/*
 quarkus.http.auth.permission.authenticated.policy=authenticated
 ----
 
-The first configuration is the configuration that should be used when the tenant can not be inferred from the request. This configuration is using a Keycloak instance to authenticate users.
+The first configuration is the default tenant configuration that should be used when the tenant can not be inferred from the request. This configuration is using a Keycloak instance to authenticate users.
 
 The second configuration is the configuration that will be used when an incoming request is mapped to the tenant `tenant-a`.
 
@@ -165,7 +204,7 @@ In order to set-up the `tenant-a` configuration to use Google OpenID Provider, y
 Once you create the project and have your project's `client_id` and `client_secret`, you can try to configure a tenant as follows:
 
 [source, properties]
----
+----
 # Tenant configuration using Google OpenID Provider
 quarkus.oidc.tenant-b.auth-server-url=https://accounts.google.com
 quarkus.oidc.tenant-b.application-type=web-app
@@ -173,7 +212,7 @@ quarkus.oidc.tenant-b.client-id={GOOGLE_CLIENT_ID}
 quarkus.oidc.tenant-b.credentials.secret={GOOGLE_CLIENT_SECRET}
 quarkus.oidc.tenant-b.token.issuer=https://accounts.google.com
 quarkus.oidc.tenant-b.authentication.scopes=email,profile,openid
----
+----
 
 == Starting and Configuring the Keycloak Server
 
@@ -190,8 +229,8 @@ Log in as the `admin` user to access the Keycloak Administration Console. Userna
 
 Now, follow the steps below to import the realms for the two tenants:
 
-* Import the {quickstarts-tree-url}/security-openid-connect-multi-tenancy/config/default-tenant-realm.json[default-tenant-realm.json] to create the default realm
-* Import the {quickstarts-tree-url}/security-openid-connect-multi-tenancy/config/tenant-a-realm.json[tenant-a-realm.json] to create the realm for the tenant `tenant-a`.
+* Import the {quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart/config/default-tenant-realm.json[default-tenant-realm.json] to create the default realm
+* Import the {quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart/config/tenant-a-realm.json[tenant-a-realm.json] to create the realm for the tenant `tenant-a`.
 
 For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
@@ -216,7 +255,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/security-openid-connect-multi-tenancy-quickstart-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 === Running in Native Mode
@@ -239,7 +278,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 [source,bash]
 ----
-./target/security-openid-connect-web-authentication-quickstart-runner
+./target/security-openid-connect-multi-tenancy-quickstart-runner
 ----
 
 == Testing the Application
@@ -293,7 +332,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         String[] parts = path.split("/");
 
         if (parts.length == 0) {
-            // resolve to default tenant config
+            // resolve to default tenant configuration
             return null;
         }
 
@@ -313,12 +352,72 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
             return config;
         }
+
+        // resolve to default tenant configuration
         return null;
     }
 }
 ----
 
 The `OidcTenantConfig` returned from this method is the same used to parse the `oidc` namespace configuration from the `application.properties`. You can populate it using any of the settings supported by the `quarkus-oidc` extension.
+
+== Tenant Resolution for OIDC 'web-app' applications
+
+Several options are available for selecting the tenant configuration which should be used to secure the current HTTP request for both `service` and `web-app` OIDC applications, such as:
+
+- Check URL paths, for example, a `tenant-service` configuration has to be used for the "/service" paths, while a `tenant-manage` configuration - for the "/management" paths
+- Check HTTP headers, for example, with a URL path always being '/service', a header such as "Realm: service" or "Realm: management" can help selecting between the `tenant-service` and `tenant-manage` configurations
+- Check URL query parameters - it can work similarly to the way the headers are used to select the tenant configuration
+
+All these options can be easily implemented with the custom `TenantResolver` and `TenantConfigResolver` implementations for the OIDC `service` applications.
+
+However, due to an HTTP redirect required to complete the code authentication flow for the OIDC `web-app` applications, a custom HTTP cookie may be needed to select the same tenant configuration before and after this redirect request because:
+
+- URL path may not be the same after the redirect request if a single redirect URL has been registered in the OIDC Provider - the original request path can be restored but after the the tenant configuration is resolved
+- HTTP headers used during the original request are not available after the redirect
+- Custom URL query parameters are restored after the redirect but after the tenant configuration is resolved
+
+One option to ensure the information for resolving the tenant configurations for `web-app` applications is available before and after the redirect is to use a cookie, for example:
+
+[source,java]
+----
+package org.acme.quickstart.oidc;
+
+import java.util.List;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.oidc.TenantResolver;
+import io.vertx.core.http.Cookie;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomTenantResolver implements TenantResolver {
+
+    @Override
+    public String resolve(RoutingContext context) {
+        List<String> tenantIdQuery = context.queryParam("tenantId");
+        if (!tenantIdQuery.isEmpty()) {
+            String tenantId = tenantIdQuery.get(0);
+            context.addCookie(Cookie.cookie("tenant", tenantId));
+            return tenantId;
+        } else if (context.cookieMap().containsKey("tenant")) {
+            return context.getCookie("tenant").getValue();
+        }
+
+        return null;
+    }
+}
+----
+
+[[disable-tenant]]
+== Disabling Tenant Configurations
+
+Custom `TenantResolver` and `TenantConfigResolver` implementations may return `null` if no tenant can be inferred from the current request and a fallback to the default tenant configuration is required.
+
+If it is expected that the custom resolvers will always infer a tenant then the default tenant configuration is not needed. One can disable it with the `quarkus.oidc.tenant-enabled=false` setting.
+
+Note that tenant specific configurations can also be disabled, for example: `quarkus.oidc.tenant-a.tenant-enabled=false`.
 
 == Configuration Reference
 
@@ -330,3 +429,4 @@ include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * https://developers.google.com/identity/protocols/OpenIDConnect[Google OpenID Connect]
+* link:security[Quarkus Security]

@@ -22,6 +22,7 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.TestClassLoader;
@@ -134,6 +135,39 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(new TestJavaBeanSubclass("A string", 99, "PUT"));
         }, new TestJavaBeanSubclass("A string", 99, "PUT"));
+    }
+
+    @Test
+    public void testValidationFails() throws Exception {
+        Assertions.assertThrows(RuntimeException.class, () -> {
+            runTest(generator -> {
+                TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+                ValidationFails validationFails = new ValidationFails();
+                validationFails.setName("Stuart Douglas");
+                recorder.object(validationFails);
+            });
+        });
+    }
+
+    @Test
+    public void testRelaxedValidationSucceeds() throws Exception {
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            ValidationFails validationFails = new ValidationFails();
+            validationFails.setName("Stuart Douglas");
+            recorder.relaxedObject(validationFails);
+        }, new ValidationFails("Stuart Douglas"));
+    }
+
+    @Test
+    public void testIgnoredProperties() throws Exception {
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            IgnoredProperties ignoredProperties = new IgnoredProperties();
+            ignoredProperties.setNotIgnored("Shows up");
+            ignoredProperties.setIgnoredField("Does not show up");
+            recorder.ignoredProperties(ignoredProperties);
+        }, new IgnoredProperties("Shows up", null));
     }
 
     @Test
@@ -250,6 +284,16 @@ public class BytecodeRecorderTestCase {
     }
 
     @Test
+    public void testRecordableConstructor() throws Exception {
+        runTest(generator -> {
+            TestConstructorBean bean = new TestConstructorBean("John", "Citizen");
+            bean.setAge(30);
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(bean);
+        }, new TestConstructorBean("John", "Citizen").setAge(30));
+    }
+
+    @Test
     public void testRecordingProxyToStringNotNull() {
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
         BytecodeRecorderImpl generator = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);
@@ -270,6 +314,11 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.object(emptyOptional);
         }, emptyOptional);
+        Optional<TestJavaBean> optionalWithCustomClass = Optional.of(new TestJavaBean());
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.object(optionalWithCustomClass);
+        }, optionalWithCustomClass);
         URL url = new URL("https://quarkus.io");
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);

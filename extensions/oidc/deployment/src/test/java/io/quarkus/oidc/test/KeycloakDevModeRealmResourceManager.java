@@ -26,25 +26,23 @@ public class KeycloakDevModeRealmResourceManager implements QuarkusTestResourceL
 
     @Override
     public Map<String, String> start() {
-        if (System.getProperty("keycloak.not.required") == null) {
-            try {
+        try {
 
-                RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
+            RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
 
-                realm.getClients().add(createClient("client-dev-mode"));
-                realm.getUsers().add(createUser("alice-dev-mode", "user"));
+            realm.getClients().add(createClient("client-dev-mode"));
+            realm.getUsers().add(createUser("alice-dev-mode", "user"));
 
-                RestAssured
-                        .given()
-                        .auth().oauth2(getAdminAccessToken())
-                        .contentType("application/json")
-                        .body(JsonSerialization.writeValueAsBytes(realm))
-                        .when()
-                        .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
-                        .statusCode(201);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            RestAssured
+                    .given()
+                    .auth().oauth2(getAdminAccessToken())
+                    .contentType("application/json")
+                    .body(JsonSerialization.writeValueAsBytes(realm))
+                    .when()
+                    .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
+                    .statusCode(201);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return Collections.emptyMap();
     }
@@ -114,12 +112,10 @@ public class KeycloakDevModeRealmResourceManager implements QuarkusTestResourceL
 
     @Override
     public void stop() {
-        if (System.getProperty("keycloak.not.required") == null) {
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .when()
-                    .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).thenReturn().prettyPrint();
-        }
+        RestAssured
+                .given()
+                .auth().oauth2(getAdminAccessToken())
+                .when()
+                .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).thenReturn().prettyPrint();
     }
 }

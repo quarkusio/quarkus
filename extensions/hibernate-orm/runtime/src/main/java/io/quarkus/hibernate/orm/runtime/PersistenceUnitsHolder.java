@@ -6,16 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.persistence.PersistenceException;
-
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.service.spi.ServiceContributor;
 
 import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
-import io.quarkus.hibernate.orm.runtime.boot.LightPersistenceXmlDescriptor;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
+import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
 public final class PersistenceUnitsHolder {
@@ -29,59 +26,51 @@ public final class PersistenceUnitsHolder {
      * Initialize JPA for use in Quarkus. In a native image. This must be called
      * from within a static init method.
      *
-     * In general the <code>parsedPersistenceXmlDescriptors</code> will be provided
-     * by calling {@link #loadOriginalXMLParsedDescriptors()} In Quarkus this is
-     * done in Quarkus's JPA ResourceProcessor.
-     *
      * The scanner may be null to use the default scanner, or a custom scanner can be
      * used to stop Hibernate scanning. It is expected that the scanner will be
      * provided by Quarkus via its hold of Jandex info.
-     *
-     * @param parsedPersistenceXmlDescriptors
+     * 
+     * @param puDefinitions
      * @param scanner
      */
-    static void initializeJpa(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
+    static void initializeJpa(List<QuarkusPersistenceUnitDefinition> puDefinitions,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
-            Collection<Class<? extends ServiceContributor>> additionalServiceContributors) {
-        final List<PersistenceUnitDescriptor> units = convertPersistenceUnits(parsedPersistenceXmlDescriptors);
-        final Map<String, RecordedState> metadata = constructMetadataAdvance(units, scanner, additionalIntegrators,
-                additionalServiceContributors);
+            PreGeneratedProxies preGeneratedProxies) {
+        final List<PersistenceUnitDescriptor> units = convertPersistenceUnits(puDefinitions);
+        final Map<String, RecordedState> metadata = constructMetadataAdvance(puDefinitions, scanner, additionalIntegrators,
+                preGeneratedProxies);
 
         persistenceUnits = new PersistenceUnits(units, metadata);
     }
 
-    static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+    public static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
         checkJPAInitialization();
         return persistenceUnits.units;
     }
 
-    static RecordedState getRecordedState(String persistenceUnitName) {
+    public static RecordedState popRecordedState(String persistenceUnitName) {
         checkJPAInitialization();
         Object key = persistenceUnitName;
         if (persistenceUnitName == null) {
             key = NO_NAME_TOKEN;
         }
-        return persistenceUnits.recordedStates.get(key);
+        return persistenceUnits.recordedStates.remove(key);
     }
 
     private static List<PersistenceUnitDescriptor> convertPersistenceUnits(
-            final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
-        try {
-            return parsedPersistenceXmlDescriptors.stream().map(LightPersistenceXmlDescriptor::new)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            throw new PersistenceException("Unable to locate persistence units", e);
-        }
+            final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors) {
+        return parsedPersistenceXmlDescriptors.stream().map(QuarkusPersistenceUnitDefinition::getActualHibernateDescriptor)
+                .collect(Collectors.toList());
     }
 
     private static Map<String, RecordedState> constructMetadataAdvance(
-            final List<PersistenceUnitDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner,
+            final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators,
-            Collection<Class<? extends ServiceContributor>> additionalServiceContributors) {
+            PreGeneratedProxies proxyClassDefinitions) {
         Map<String, RecordedState> recordedStates = new HashMap<>();
 
-        for (PersistenceUnitDescriptor unit : parsedPersistenceXmlDescriptors) {
-            RecordedState m = createMetadata(unit, scanner, additionalIntegrators);
+        for (QuarkusPersistenceUnitDefinition unit : parsedPersistenceXmlDescriptors) {
+            RecordedState m = createMetadata(unit, scanner, additionalIntegrators, proxyClassDefinitions);
             Object previous = recordedStates.put(unitName(unit), m);
             if (previous != null) {
                 throw new IllegalStateException("Duplicate persistence unit name: " + unit.getName());
@@ -97,7 +86,7 @@ public final class PersistenceUnitsHolder {
         }
     }
 
-    private static String unitName(PersistenceUnitDescriptor unit) {
+    private static String unitName(QuarkusPersistenceUnitDefinition unit) {
         String name = unit.getName();
         if (name == null) {
             return NO_NAME_TOKEN;
@@ -105,9 +94,10 @@ public final class PersistenceUnitsHolder {
         return name;
     }
 
-    private static RecordedState createMetadata(PersistenceUnitDescriptor unit, Scanner scanner,
-            Collection<Class<? extends Integrator>> additionalIntegrators) {
-        FastBootMetadataBuilder fastBootMetadataBuilder = new FastBootMetadataBuilder(unit, scanner, additionalIntegrators);
+    public static RecordedState createMetadata(QuarkusPersistenceUnitDefinition unit, Scanner scanner,
+            Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies proxyDefinitions) {
+        FastBootMetadataBuilder fastBootMetadataBuilder = new FastBootMetadataBuilder(unit, scanner, additionalIntegrators,
+                proxyDefinitions);
         return fastBootMetadataBuilder.build();
     }
 

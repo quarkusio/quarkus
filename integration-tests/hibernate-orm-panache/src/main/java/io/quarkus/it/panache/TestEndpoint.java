@@ -1,8 +1,10 @@
 package io.quarkus.it.panache;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -40,6 +42,10 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
  */
 @Path("test")
 public class TestEndpoint {
+
+    // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
+    @Inject
+    MockablePersonRepository mockablePersonRepository;
 
     @GET
     @Path("model")
@@ -149,6 +155,25 @@ public class TestEndpoint {
         Assertions.assertEquals(person, Person.find("name", "stef").firstResult());
         Assertions.assertEquals(person, Person.find("name", "stef").singleResult());
 
+        //named query
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        Assertions.assertEquals(1, Person.find("#Person.getByName", Parameters.with("name", "stef")).count());
+        Assertions.assertThrows(PanacheQueryException.class, () -> Person.find("#Person.namedQueryNotFound").list());
+        NamedQueryEntity.find("#NamedQueryMappedSuperClass.getAll").list();
+        NamedQueryEntity.find("#NamedQueryEntity.getAll").list();
+        NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll1").list();
+        NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll2").list();
+
+        //empty query
+        persons = Person.find("").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        persons = Person.find(null).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         Person byId = Person.findById(person.id);
         Assertions.assertEquals(person, byId);
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
@@ -200,6 +225,10 @@ public class TestEndpoint {
         testPaging(Person.findAll());
         testPaging(Person.find("ORDER BY name"));
 
+        // range
+        testRange(Person.findAll());
+        testRange(Person.find("ORDER BY name"));
+
         try {
             Person.findAll().singleResult();
             Assertions.fail("singleResult should have thrown");
@@ -213,6 +242,14 @@ public class TestEndpoint {
         Assertions.assertEquals(7, Person.deleteAll());
 
         testUpdate();
+
+        //delete by id
+        Person toRemove = new Person();
+        toRemove.name = "testDeleteById";
+        toRemove.uniqueName = "testDeleteByIdUnique";
+        toRemove.persist();
+        assertTrue(Person.deleteById(toRemove.id));
+        Person.deleteById(666L); //not existing
 
         // persistAndFlush
         Person person1 = new Person();
@@ -387,7 +424,7 @@ public class TestEndpoint {
         person3.persist();
 
         Sort sort1 = Sort.by("name", "status");
-        List<Person> order1 = Arrays.asList(person3, person1, person2);
+        List<Person> order1 = Arrays.asList(person3, person2, person1);
 
         List<Person> list = Person.findAll(sort1).list();
         Assertions.assertEquals(order1, list);
@@ -399,7 +436,7 @@ public class TestEndpoint {
         Assertions.assertEquals(order1, list);
 
         Sort sort2 = Sort.descending("name", "status");
-        List<Person> order2 = Arrays.asList(person2, person1);
+        List<Person> order2 = Arrays.asList(person1, person2);
 
         list = Person.find("name", sort2, "stef").list();
         Assertions.assertEquals(order2, list);
@@ -459,8 +496,8 @@ public class TestEndpoint {
         person1.name = "stef1";
         Person person2 = new Person();
         person2.name = "stef2";
-        Assertions.assertFalse(person1.isPersistent());
-        Assertions.assertFalse(person2.isPersistent());
+        assertFalse(person1.isPersistent());
+        assertFalse(person2.isPersistent());
         switch (persistTest) {
             case Iterable:
                 Person.persist(Arrays.asList(person1, person2));
@@ -472,8 +509,8 @@ public class TestEndpoint {
                 Person.persist(person1, person2);
                 break;
         }
-        Assertions.assertTrue(person1.isPersistent());
-        Assertions.assertTrue(person2.isPersistent());
+        assertTrue(person1.isPersistent());
+        assertTrue(person2.isPersistent());
     }
 
     @Inject
@@ -482,6 +519,10 @@ public class TestEndpoint {
     DogDao dogDao;
     @Inject
     AddressDao addressDao;
+    @Inject
+    NamedQueryRepository namedQueryRepository;
+    @Inject
+    NamedQueryWith2QueriesRepository namedQueryWith2QueriesRepository;
 
     @GET
     @Path("model-dao")
@@ -499,11 +540,11 @@ public class TestEndpoint {
         } catch (NoResultException x) {
         }
 
-        Assertions.assertFalse(personDao.findAll().singleResultOptional().isPresent());
+        assertFalse(personDao.findAll().singleResultOptional().isPresent());
 
         Assertions.assertNull(personDao.findAll().firstResult());
 
-        Assertions.assertFalse(personDao.findAll().firstResultOptional().isPresent());
+        assertFalse(personDao.findAll().firstResultOptional().isPresent());
 
         Person person = makeSavedPersonDao();
         Assertions.assertNotNull(person.id);
@@ -586,6 +627,24 @@ public class TestEndpoint {
         Assertions.assertEquals(person, personDao.find("name", "stef").singleResult());
         Assertions.assertEquals(person, personDao.find("name", "stef").singleResultOptional().get());
 
+        // named query
+        persons = personDao.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        Assertions.assertThrows(PanacheQueryException.class, () -> personDao.find("#Person.namedQueryNotFound").list());
+        namedQueryRepository.find("#NamedQueryMappedSuperClass.getAll").list();
+        namedQueryRepository.find("#NamedQueryEntity.getAll").list();
+        namedQueryWith2QueriesRepository.find("#NamedQueryWith2QueriesEntity.getAll1").list();
+        namedQueryWith2QueriesRepository.find("#NamedQueryWith2QueriesEntity.getAll2").list();
+
+        //empty query
+        persons = personDao.find("").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        persons = personDao.find(null).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         Person byId = personDao.findById(person.id);
         Assertions.assertEquals(person, byId);
 
@@ -633,6 +692,10 @@ public class TestEndpoint {
         testPaging(personDao.findAll());
         testPaging(personDao.find("ORDER BY name"));
 
+        //range
+        testRange(personDao.findAll());
+        testRange(personDao.find("ORDER BY name"));
+
         try {
             personDao.findAll().singleResult();
             Assertions.fail("singleResult should have thrown");
@@ -644,6 +707,14 @@ public class TestEndpoint {
         Assertions.assertEquals(7, personDao.deleteAll());
 
         testUpdateDAO();
+
+        //delete by id
+        Person toRemove = new Person();
+        toRemove.name = "testDeleteById";
+        toRemove.uniqueName = "testDeleteByIdUnique";
+        personDao.persist(toRemove);
+        assertTrue(personDao.deleteById(toRemove.id));
+        personDao.deleteById(666L);//not existing
 
         //flush
         Person person1 = new Person();
@@ -680,7 +751,7 @@ public class TestEndpoint {
         personDao.persist(person3);
 
         Sort sort1 = Sort.by("name", "status");
-        List<Person> order1 = Arrays.asList(person3, person1, person2);
+        List<Person> order1 = Arrays.asList(person3, person2, person1);
 
         List<Person> list = personDao.findAll(sort1).list();
         Assertions.assertEquals(order1, list);
@@ -692,7 +763,7 @@ public class TestEndpoint {
         Assertions.assertEquals(order1, list);
 
         Sort sort2 = Sort.descending("name", "status");
-        List<Person> order2 = Arrays.asList(person2, person1);
+        List<Person> order2 = Arrays.asList(person1, person2);
 
         list = personDao.find("name", sort2, "stef").list();
         Assertions.assertEquals(order2, list);
@@ -735,8 +806,8 @@ public class TestEndpoint {
         person1.name = "stef1";
         Person person2 = new Person();
         person2.name = "stef2";
-        Assertions.assertFalse(person1.isPersistent());
-        Assertions.assertFalse(person2.isPersistent());
+        assertFalse(person1.isPersistent());
+        assertFalse(person2.isPersistent());
         switch (persistTest) {
             case Iterable:
                 personDao.persist(Arrays.asList(person1, person2));
@@ -748,8 +819,8 @@ public class TestEndpoint {
                 personDao.persist(person1, person2);
                 break;
         }
-        Assertions.assertTrue(person1.isPersistent());
-        Assertions.assertTrue(person2.isPersistent());
+        assertTrue(person1.isPersistent());
+        assertTrue(person2.isPersistent());
     }
 
     private Person makeSavedPersonDao(String suffix) {
@@ -776,6 +847,24 @@ public class TestEndpoint {
     }
 
     private void testPaging(PanacheQuery<Person> query) {
+        // No paging allowed until a page is setup
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.firstPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.previousPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.nextPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.lastPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.hasNextPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.hasPreviousPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.page(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.pageCount(),
+                "UnsupportedOperationException should have thrown");
+
         // ints
         List<Person> persons = query.page(0, 3).list();
         Assertions.assertEquals(3, persons.size());
@@ -827,8 +916,8 @@ public class TestEndpoint {
         Assertions.assertEquals("stef0", persons.get(0).name);
         Assertions.assertEquals("stef1", persons.get(1).name);
         Assertions.assertEquals("stef2", persons.get(2).name);
-        Assertions.assertTrue(query.hasNextPage());
-        Assertions.assertFalse(query.hasPreviousPage());
+        assertTrue(query.hasNextPage());
+        assertFalse(query.hasPreviousPage());
 
         persons = query.nextPage().list();
         Assertions.assertEquals(1, query.page().index);
@@ -837,20 +926,63 @@ public class TestEndpoint {
         Assertions.assertEquals("stef3", persons.get(0).name);
         Assertions.assertEquals("stef4", persons.get(1).name);
         Assertions.assertEquals("stef5", persons.get(2).name);
-        Assertions.assertTrue(query.hasNextPage());
-        Assertions.assertTrue(query.hasPreviousPage());
+        assertTrue(query.hasNextPage());
+        assertTrue(query.hasPreviousPage());
 
         persons = query.nextPage().list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals("stef6", persons.get(0).name);
-        Assertions.assertFalse(query.hasNextPage());
-        Assertions.assertTrue(query.hasPreviousPage());
+        assertFalse(query.hasNextPage());
+        assertTrue(query.hasPreviousPage());
 
         persons = query.nextPage().list();
         Assertions.assertEquals(0, persons.size());
 
         Assertions.assertEquals(7, query.count());
         Assertions.assertEquals(3, query.pageCount());
+
+        // mix page with range
+        persons = query.page(0, 3).range(0, 1).list();
+        Assertions.assertEquals(2, persons.size());
+        Assertions.assertEquals("stef0", persons.get(0).name);
+        Assertions.assertEquals("stef1", persons.get(1).name);
+    }
+
+    private void testRange(PanacheQuery<Person> query) {
+        List<Person> persons = query.range(0, 2).list();
+        Assertions.assertEquals(3, persons.size());
+        Assertions.assertEquals("stef0", persons.get(0).name);
+        Assertions.assertEquals("stef1", persons.get(1).name);
+        Assertions.assertEquals("stef2", persons.get(2).name);
+
+        persons = query.range(3, 5).list();
+        Assertions.assertEquals(3, persons.size());
+        Assertions.assertEquals("stef3", persons.get(0).name);
+        Assertions.assertEquals("stef4", persons.get(1).name);
+        Assertions.assertEquals("stef5", persons.get(2).name);
+
+        persons = query.range(6, 8).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals("stef6", persons.get(0).name);
+
+        persons = query.range(8, 12).list();
+        Assertions.assertEquals(0, persons.size());
+
+        // mix range with page
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).nextPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).previousPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).pageCount());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).lastPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).firstPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).hasPreviousPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).hasNextPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).page());
+        // this is valid as we switch from range to page
+        persons = query.range(0, 2).page(0, 3).list();
+        Assertions.assertEquals(3, persons.size());
+        Assertions.assertEquals("stef0", persons.get(0).name);
+        Assertions.assertEquals("stef1", persons.get(1).name);
+        Assertions.assertEquals("stef2", persons.get(2).name);
     }
 
     @GET
@@ -922,7 +1054,7 @@ public class TestEndpoint {
     public String testModel1() {
         Assertions.assertEquals(0, Person.count());
 
-        Person person = makeSavedPerson();
+        Person person = makeSavedPerson("");
         SelfDirtinessTracker trackingPerson = (SelfDirtinessTracker) person;
 
         String[] dirtyAttributes = trackingPerson.$$_hibernate_getDirtyAttributes();
@@ -947,6 +1079,39 @@ public class TestEndpoint {
         Assertions.assertEquals("1", person.name);
 
         person.name = "2";
+        return "OK";
+    }
+
+    @GET
+    @Path("projection")
+    @Transactional
+    public String testProjection() {
+        Assertions.assertEquals(1, Person.count());
+
+        PersonName person = Person.findAll().project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name", "2").project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = ?1", "2").project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = :name", Parameters.with("name", "2")).project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        PanacheQuery<PersonName> query = Person.findAll().project(PersonName.class).page(0, 2);
+        Assertions.assertEquals(1, query.list().size());
+        query.nextPage();
+        Assertions.assertEquals(0, query.list().size());
+
+        Assertions.assertEquals(1, Person.findAll().project(PersonName.class).count());
+
+        Person owner = makeSavedPerson();
+        DogDto dogDto = Dog.findAll().project(DogDto.class).firstResult();
+        Assertions.assertEquals("stef", dogDto.ownerName);
+        owner.delete();
+
         return "OK";
     }
 
@@ -1055,9 +1220,50 @@ public class TestEndpoint {
     }
 
     private void ensureFieldSanitized(String fieldName) throws Exception {
-        Field f = JAXBEntity.class.getField(fieldName);
+        Field f = JAXBEntity.class.getDeclaredField(fieldName);
         assertNull(f.getAnnotation(XmlAttribute.class));
         assertNotNull(f.getAnnotation(XmlTransient.class));
+    }
+
+    @GET
+    @Path("composite")
+    @Transactional
+    public String testCompositeKey() {
+        ObjectWithCompositeId obj = new ObjectWithCompositeId();
+        obj.part1 = "part1";
+        obj.part2 = "part2";
+        obj.description = "description";
+        obj.persist();
+
+        ObjectWithCompositeId.ObjectKey key = new ObjectWithCompositeId.ObjectKey("part1", "part2");
+        ObjectWithCompositeId result = ObjectWithCompositeId.findById(key);
+        assertNotNull(result);
+
+        boolean deleted = ObjectWithCompositeId.deleteById(key);
+        assertTrue(deleted);
+
+        ObjectWithCompositeId.ObjectKey notExistingKey = new ObjectWithCompositeId.ObjectKey("notexist1", "notexist2");
+        deleted = ObjectWithCompositeId.deleteById(key);
+        assertFalse(deleted);
+
+        ObjectWithEmbeddableId.ObjectKey embeddedKey = new ObjectWithEmbeddableId.ObjectKey("part1", "part2");
+        ObjectWithEmbeddableId embeddable = new ObjectWithEmbeddableId();
+        embeddable.key = embeddedKey;
+        embeddable.description = "description";
+        embeddable.persist();
+
+        ObjectWithEmbeddableId embeddableResult = ObjectWithEmbeddableId.findById(embeddedKey);
+        assertNotNull(embeddableResult);
+
+        deleted = ObjectWithEmbeddableId.deleteById(embeddedKey);
+        assertTrue(deleted);
+
+        ObjectWithEmbeddableId.ObjectKey notExistingEmbeddedKey = new ObjectWithEmbeddableId.ObjectKey("notexist1",
+                "notexist2");
+        deleted = ObjectWithEmbeddableId.deleteById(embeddedKey);
+        assertFalse(deleted);
+
+        return "OK";
     }
 
     @GET
@@ -1067,6 +1273,97 @@ public class TestEndpoint {
         Bug7721Entity entity = new Bug7721Entity();
         entity.persist();
         entity.delete();
+        return "OK";
+    }
+
+    @GET
+    @Path("8254")
+    @Transactional
+    public String testBug8254() {
+        CatOwner owner = new CatOwner("8254");
+        owner.persist();
+        new Cat(owner).persist();
+        new Cat(owner).persist();
+        new Cat(owner).persist();
+
+        // This used to fail with an invalid query "SELECT COUNT(*) SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1"
+        // Should now result in a valid query "SELECT COUNT(DISTINCT cat.owner) FROM Cat cat WHERE cat.owner = ?1"
+        assertEquals(1L, CatOwner.find("SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1", owner).count());
+
+        // This used to fail with an invalid query "SELECT COUNT(*) SELECT cat.owner FROM Cat cat WHERE cat.owner = ?1"
+        // Should now result in a valid query "SELECT COUNT(cat.owner) FROM Cat cat WHERE cat.owner = ?1"
+        assertEquals(3L, CatOwner.find("SELECT cat.owner FROM Cat cat WHERE cat.owner = ?1", owner).count());
+
+        // This used to fail with an invalid query "SELECT COUNT(*) SELECT cat FROM Cat cat WHERE cat.owner = ?1"
+        // Should now result in a valid query "SELECT COUNT(cat) FROM Cat cat WHERE cat.owner = ?1"
+        assertEquals(3L, Cat.find("SELECT cat FROM Cat cat WHERE cat.owner = ?1", owner).count());
+
+        // This didn't use to fail. Make sure it still doesn't.
+        assertEquals(3L, Cat.find("FROM Cat WHERE owner = ?1", owner).count());
+        assertEquals(3L, Cat.find("owner", owner).count());
+        assertEquals(1L, CatOwner.find("name = ?1", "8254").count());
+
+        return "OK";
+    }
+
+    @GET
+    @Path("9025")
+    @Transactional
+    public String testBug9025() {
+        Fruit apple = new Fruit("apple", "red");
+        Fruit orange = new Fruit("orange", "orange");
+        Fruit banana = new Fruit("banana", "yellow");
+
+        Fruit.persist(apple, orange, banana);
+
+        PanacheQuery<Fruit> query = Fruit.find(
+                "select name, color from Fruit").page(Page.ofSize(1));
+
+        List<Fruit> results = query.list();
+
+        int pageCount = query.pageCount();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("9036")
+    @Transactional
+    public String testBug9036() {
+        Person.deleteAll();
+
+        Person emptyPerson = new Person();
+        emptyPerson.persist();
+
+        Person deadPerson = new Person();
+        deadPerson.name = "Stef";
+        deadPerson.status = Status.DECEASED;
+        deadPerson.persist();
+
+        Person livePerson = new Person();
+        livePerson.name = "Stef";
+        livePerson.status = Status.LIVING;
+        livePerson.persist();
+
+        assertEquals(3, Person.count());
+        assertEquals(3, Person.listAll().size());
+
+        // should be filtered
+        PanacheQuery<Person> query = Person.findAll(Sort.by("id")).filter("Person.isAlive").filter("Person.hasName",
+                Parameters.with("name", "Stef"));
+        assertEquals(1, query.count());
+        assertEquals(1, query.list().size());
+        assertEquals(livePerson, query.list().get(0));
+        assertEquals(1, query.stream().count());
+        assertEquals(livePerson, query.firstResult());
+        assertEquals(livePerson, query.singleResult());
+
+        // these should be unaffected
+        assertEquals(3, Person.count());
+        assertEquals(3, Person.listAll().size());
+
+        Person.deleteAll();
+
         return "OK";
     }
 }

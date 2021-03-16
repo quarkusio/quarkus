@@ -2,7 +2,6 @@ package io.quarkus.mongodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import javax.inject.Inject;
 
@@ -47,8 +46,9 @@ public class MongoMetricsTest extends MongoTestBase {
 
     @Test
     void testMetricsInitialization() {
-        assertNull(getGaugeValueOrNull("mongodb.connection-pool.size", getTags()));
-        assertNull(getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags()));
+        // Clients are created eagerly, this metric should always be initialized to zero once connected
+        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.size", getTags()));
+        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags()));
 
         // Just need to execute something so that an connection is opened
         String name = client.listDatabaseNames().first();
@@ -63,7 +63,6 @@ public class MongoMetricsTest extends MongoTestBase {
         // doing this here instead of in another method in order to avoid messing with the initialization stats
         assertThat(Arc.container().instance(MongoClient.class).get()).isNotNull();
         assertThat(Arc.container().instance(ReactiveMongoClient.class).get()).isNull();
-        assertThat(Arc.container().instance(io.quarkus.mongodb.ReactiveMongoClient.class).get()).isNull();
     }
 
     private Long getGaugeValueOrNull(String metricName, Tag[] tags) {
@@ -78,7 +77,7 @@ public class MongoMetricsTest extends MongoTestBase {
 
     private Tag[] getTags() {
         return new Tag[] {
-                new Tag("host", "localhost"),
+                new Tag("host", "127.0.0.1"),
                 new Tag("port", "27018"),
         };
     }

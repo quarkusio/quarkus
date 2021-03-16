@@ -9,6 +9,7 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.comp
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeExtensionDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deriveConfigRootName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.normalizeDurationValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigInteger;
@@ -353,5 +354,17 @@ public class DocGeneratorUtilTest {
         simpleClassName = "RootNameBuildTimeConfiguration";
         actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_TIME);
         assertEquals("quarkus.root-name", actual);
+    }
+
+    @Test
+    public void normalizeDurationValueTest() {
+        assertEquals("", normalizeDurationValue(""));
+        assertEquals("1S", normalizeDurationValue("1"));
+        assertEquals("1S", normalizeDurationValue("1S"));
+        assertEquals("1S", normalizeDurationValue("1s"));
+
+        // values are not validated here
+        assertEquals("1_000", normalizeDurationValue("1_000"));
+        assertEquals("FOO", normalizeDurationValue("foo"));
     }
 }

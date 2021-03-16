@@ -7,13 +7,13 @@ By default, the tests of this module are disabled.
 To run the tests in a standard JVM with Neo4j started as a Docker container, you can run the following command:
 
 ```
-mvn clean install -Dtest-neo4j -Ddocker
+mvn clean install -Dtest-containers -Dstart-containers
 ```
 
 To also test as a native image, add `-Dnative`:
 
 ```
-mvn clean install -Dtest-neo4j -Ddocker -Dnative
+mvn clean install -Dtest-containers -Dstart-containers -Dnative
 ```
 
 Alternatively you can connect to your own Neo4j instance or cluster.
@@ -38,26 +38,14 @@ Neo4j's Bolt transport is encrypted by default.
 That means, your image will need to have SSL native enabled.
 Have a look at [Using SSL with Native Executables](https://quarkus.io/guides/native-and-ssl-guide) to understand the overhead of this.
 
-The Quarkus maven plugin must be configured like this:
+The Quarkus project must be configured like this:
 
 ```
-<plugin>
-    <groupId>${project.groupId}</groupId>
-    <artifactId>quarkus-maven-plugin</artifactId>
-    <executions>
-        <execution>
-            <id>native-image</id>
-            <goals>
-                <goal>native-image</goal>
-            </goals>
-            <configuration>
-                <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                <enableHttpsUrlHandler>true</enableHttpsUrlHandler>
-                <enableAllSecurityServices>true</enableAllSecurityServices>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
+<properties>
+    <quarkus.package.type>native</quarkus.package.type>
+    <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
+    <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
+</properties>
 ```
 
 That's exactly the way the example project here is configured.

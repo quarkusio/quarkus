@@ -1,40 +1,29 @@
 package io.quarkus.vault.test.client;
 
-import io.quarkus.vault.runtime.VaultManager;
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.arc.Arc;
+import io.quarkus.runtime.TlsConfig;
+import io.quarkus.vault.runtime.VaultConfigHolder;
+import io.quarkus.vault.runtime.client.VertxVaultClient;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRandomBody;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.test.client.dto.VaultAppRoleRoleId;
 import io.quarkus.vault.test.client.dto.VaultAppRoleSecretId;
-import io.quarkus.vault.test.client.dto.VaultHealth;
-import io.quarkus.vault.test.client.dto.VaultInit;
-import io.quarkus.vault.test.client.dto.VaultInitBody;
-import io.quarkus.vault.test.client.dto.VaultSealStatus;
 import io.quarkus.vault.test.client.dto.VaultTransitHash;
 import io.quarkus.vault.test.client.dto.VaultTransitHashBody;
 import io.quarkus.vault.test.client.dto.VaultTransitRandom;
 
-public class TestVaultClient extends OkHttpVaultClient {
+public class TestVaultClient extends VertxVaultClient {
+
+    private static VaultConfigHolder getConfigHolder() {
+        return Arc.container().instance(VaultConfigHolder.class).get();
+    }
 
     public TestVaultClient() {
-        this(VaultManager.getInstance().getServerConfig());
+        this(getConfigHolder());
     }
 
-    public TestVaultClient(VaultRuntimeConfig serverConfig) {
-        super(serverConfig);
-    }
-
-    public VaultInit init(int secretShares, int secretThreshold) {
-        VaultInitBody body = new VaultInitBody(secretShares, secretThreshold);
-        return put("sys/init", null, body, VaultInit.class);
-    }
-
-    public VaultHealth getHealth() {
-        return get("sys/health", null, VaultHealth.class);
-    }
-
-    public VaultSealStatus getSealStatus() {
-        return get("sys/seal-status", null, VaultSealStatus.class);
+    public TestVaultClient(VaultConfigHolder configHolder) {
+        super(configHolder, new TlsConfig());
+        init();
     }
 
     public VaultAppRoleSecretId generateAppRoleSecretId(String token, String roleName) {

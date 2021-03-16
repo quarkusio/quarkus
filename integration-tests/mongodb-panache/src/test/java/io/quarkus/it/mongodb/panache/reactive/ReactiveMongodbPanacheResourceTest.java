@@ -205,7 +205,7 @@ class ReactiveMongodbPanacheResourceTest {
                 nbEvent.increment();
             });
             source.open();
-            await().atMost(Duration.ofSeconds(1)).until(() -> nbEvent.count() == 3);
+            await().atMost(Duration.ofSeconds(10)).until(() -> nbEvent.count() == 3);
         }
 
         //delete all
@@ -277,6 +277,23 @@ class ReactiveMongodbPanacheResourceTest {
         list = get(endpoint + "?sort=firstname").as(LIST_OF_PERSON_TYPE_REF);
         assertEquals(4, list.size());
 
+        //with project
+        list = get(endpoint + "/search/Doe").as(LIST_OF_PERSON_TYPE_REF);
+        Assertions.assertEquals(1, list.size());
+        Assertions.assertNotNull(list.get(0).lastname);
+        //expected the firstname field to be null as we project on lastname only
+        Assertions.assertNull(list.get(0).firstname);
+
+        //rename the Doe
+        RestAssured
+                .given()
+                .queryParam("previousName", "Doe").queryParam("newName", "Dupont")
+                .header("Content-Type", "application/json")
+                .when().post(endpoint + "/rename")
+                .then().statusCode(200);
+        list = get(endpoint + "/search/Dupont").as(LIST_OF_PERSON_TYPE_REF);
+        Assertions.assertEquals(1, list.size());
+
         //count
         Long count = get(endpoint + "/count").as(Long.class);
         assertEquals(4, count);
@@ -333,5 +350,15 @@ class ReactiveMongodbPanacheResourceTest {
         public int count() {
             return cpt;
         }
+    }
+
+    @Test
+    public void testMoreEntityFunctionalities() {
+        get("/test/reactive/entity").then().statusCode(200);
+    }
+
+    @Test
+    public void testMoreRepositoryFunctionalities() {
+        get("/test/reactive/repository").then().statusCode(200);
     }
 }

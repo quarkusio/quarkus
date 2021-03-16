@@ -150,10 +150,10 @@ public class TokenUtils {
             pk = generateKeyPair(2048).getPrivate();
         }
 
-        JwtSignatureBuilder jws = claims.jws().signatureKeyId(kid);
+        JwtSignatureBuilder jws = claims.jws().keyId(kid);
 
         if (invalidClaims.contains(InvalidClaims.ALG)) {
-            jws.signatureAlgorithm(SignatureAlgorithm.HS256);
+            jws.algorithm(SignatureAlgorithm.HS256);
             SecretKey sk = KeyGenerator.getInstance("HMACSHA256").generateKey();
             return jws.sign(sk);
         } else {

@@ -1,0 +1,438 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Micrometer Metrics
+
+include::./attributes.adoc[]
+
+This guide demonstrates how your Quarkus application can utilize the Micrometer
+metrics library for runtime and application metrics.
+
+Apart from application-specific metrics, which are described in this guide, you may also utilize built-in metrics
+exposed by various Quarkus extensions. These are described in the guide for each particular extension that supports
+built-in metrics.
+
+IMPORTANT: Micrometer is the recommended approach to metrics for Quarkus.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+
+== Architecture
+
+In this example, we build a very simple microservice which offers one REST endpoint and that determines
+if a number is prime.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `micrometer-quickstart` {quickstarts-tree-url}/micrometer-quickstart[directory].
+
+== Creating the Maven Project
+
+Micrometer defines a core library and a set of additional libraries that support different monitoring systems.
+Quarkus Micrometer extensions are structured similarly: `quarkus-micrometer` provides core micrometer support and
+runtime integration and other supporting Quarkus and Quarkiverse extensions bring in additional dependencies
+and requirements to support specific monitoring systems.
+
+For this example, we'll use the Prometheus registry.
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=micrometer-quickstart \
+    -DclassName="org.acme.micrometer.PrimeNumberResource" \
+    -Dpath="/" \
+    -Dextensions="resteasy,micrometer-registry-prometheus"
+cd micrometer-quickstart
+----
+
+This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
+This extension will load the core `micrometer` extension as well as additional library dependencies required to support
+prometheus.
+
+If you already have your Quarkus project configured, you can add the `micrometer-registry-prometheus` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="micrometer-registry-prometheus"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
+</dependency>
+----
+
+== Writing the application
+
+The application consists of a single class that implements an algorithm for checking whether a number is prime.
+This algorithm is exposed over a REST interface. With the Micrometer extension enabled, metrics for all http
+server requests are collected automatically.
+
+We do want to add a few other metrics to demonstrate how those types work:
+
+* A counter will be incremented for every prime number discovered
+* A gauge will store the highest prime number discovered
+* A timer will record the time spent testing if ia number is prime.
+
+[source,java]
+----
+package org.acme.micrometer;
+
+import io.micrometer.core.instrument.MeterRegistry;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.function.Supplier;
+
+@Path("/")
+public class PrimeNumberResource {
+
+    private final LongAccumulator highestPrime = new LongAccumulator(Long::max, 0);
+    private final MeterRegistry registry;
+
+    PrimeNumberResource(MeterRegistry registry) {
+        this.registry = registry;
+
+        // Create a gauge that uses the highestPrimeNumberSoFar method
+        // to obtain the highest observed prime number
+        registry.gauge("prime.number.max", this,
+                PrimeNumberResource::highestObservedPrimeNumber);
+    }
+
+    @GET
+    @Path("/{number}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String checkIfPrime(@PathParam("number") long number) {
+        if (number < 1) {
+            return "Only natural numbers can be prime numbers.";
+        }
+        if (number == 1) {
+            return "1 is not prime.";
+        }
+        if (number == 2) {
+            return "2 is prime.";
+        }
+        if (number % 2 == 0) {
+            return number + " is not prime, it is divisible by 2.";
+        }
+
+        Supplier<String> supplier = () -> {
+            for (int i = 3; i < Math.floor(Math.sqrt(number)) + 1; i = i + 2) {
+                if (number % i == 0) {
+                    return number + " is not prime, is divisible by " + i + ".";
+                }
+            }
+            highestPrime.accumulate(number);
+            return number + " is prime.";
+        };
+
+        return registry.timer("prime.number.test").wrap(supplier).get();
+    }
+
+    /**
+     * This method is called by the registered {@code highest.prime.number} gauge.
+     * @return the highest observed prime value
+     */
+    long highestObservedPrimeNumber() {
+        return highestPrime.get();
+    }
+}
+----
+
+== Running and using the application
+
+To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`
+
+=== Generate some values for the metrics
+
+First, ask the endpoint whether some numbers are prime numbers.
+
+[source,bash]
+----
+curl localhost:8080/350
+----
+
+The application will respond that 350 is not a prime number because it can be divided by 2.
+
+Now for some large prime number so that the test takes a bit more time:
+
+[source,bash]
+----
+curl localhost:8080/629521085409773
+----
+
+The application will respond that 629521085409773 is a prime number.
+If you want, try some more calls with numbers of your choice.
+
+=== Review the generated metrics
+
+To view the metrics, execute `curl localhost:8080/q/metrics/`
+
+Prometheus-formatted metrics will be returned in plain text in no particular order.
+
+The application above has only one custom gauge that measures the time
+spent determining whether or not a number is prime. The Micrometer extension
+enables additional system, jvm, and http metrics. A subset of the collected metrics
+are shown below.
+
+[source,text]
+----
+# HELP http_server_requests_seconds
+# TYPE http_server_requests_seconds summary
+http_server_requests_seconds_count{method="GET",outcome="SUCCESS",status="200",uri="/{number}",} 4.0
+http_server_requests_seconds_sum{method="GET",outcome="SUCCESS",status="200",uri="/{number}",} 0.041501773
+# HELP http_server_requests_seconds_max
+# TYPE http_server_requests_seconds_max gauge
+http_server_requests_seconds_max{method="GET",outcome="SUCCESS",status="200",uri="/{number}",} 0.038066359
+# HELP jvm_threads_peak_threads The peak live thread count since the Java virtual machine started or peak was reset
+# TYPE jvm_threads_peak_threads gauge
+jvm_threads_peak_threads 56.0
+# HELP http_server_connections_seconds_max
+# TYPE http_server_connections_seconds_max gauge
+http_server_connections_seconds_max 0.102580737
+# HELP http_server_connections_seconds
+# TYPE http_server_connections_seconds summary
+http_server_connections_seconds_active_count 5.0
+http_server_connections_seconds_duration_sum 0.175032815
+# HELP system_load_average_1m The sum of the number of runnable entities queued to available processors and the number of runnable entities running on the available processors averaged over a period of time
+# TYPE system_load_average_1m gauge
+system_load_average_1m 2.4638671875
+# HELP http_server_bytes_written_max
+# TYPE http_server_bytes_written_max gauge
+http_server_bytes_written_max 39.0
+# HELP http_server_bytes_written
+# TYPE http_server_bytes_written summary
+http_server_bytes_written_count 4.0
+http_server_bytes_written_sum 99.0
+# HELP jvm_classes_loaded_classes The number of classes that are currently loaded in the Java virtual machine
+# TYPE jvm_classes_loaded_classes gauge
+jvm_classes_loaded_classes 9341.0
+# HELP prime_number_max
+# TYPE prime_number_max gauge
+prime_number_max 887.0
+# HELP jvm_info JVM version info
+# TYPE jvm_info gauge
+jvm_info{runtime="OpenJDK Runtime Environment",vendor="Oracle Corporation",version="13.0.2+8",} 1.0
+# HELP jvm_classes_unloaded_classes_total The total number of classes unloaded since the Java virtual machine has started execution
+# TYPE jvm_classes_unloaded_classes_total counter
+jvm_classes_unloaded_classes_total 28.0
+# HELP prime_number_test_seconds
+# TYPE prime_number_test_seconds summary
+prime_number_test_seconds_count 3.0
+prime_number_test_seconds_sum 1.94771E-4
+# HELP prime_number_test_seconds_max
+# TYPE prime_number_test_seconds_max gauge
+prime_number_test_seconds_max 1.76162E-4
+# HELP http_server_bytes_read
+# TYPE http_server_bytes_read summary
+http_server_bytes_read_count 4.0
+http_server_bytes_read_sum 0.0
+# HELP http_server_bytes_read_max
+# TYPE http_server_bytes_read_max gauge
+http_server_bytes_read_max 0.0
+# HELP jvm_threads_states_threads The current number of threads having NEW state
+# TYPE jvm_threads_states_threads gauge
+jvm_threads_states_threads{state="runnable",} 37.0
+jvm_threads_states_threads{state="blocked",} 0.0
+jvm_threads_states_threads{state="waiting",} 15.0
+jvm_threads_states_threads{state="timed-waiting",} 4.0
+jvm_threads_states_threads{state="new",} 0.0
+jvm_threads_states_threads{state="terminated",} 0.0
+# HELP jvm_buffer_memory_used_bytes An estimate of the memory that the Java virtual machine is using for this buffer pool
+# TYPE jvm_buffer_memory_used_bytes gauge
+jvm_buffer_memory_used_bytes{id="mapped",} 0.0
+jvm_buffer_memory_used_bytes{id="direct",} 149521.0
+# HELP jvm_memory_committed_bytes The amount of memory in bytes that is committed for the Java virtual machine to use
+# TYPE jvm_memory_committed_bytes gauge
+jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'profiled nmethods'",} 1.1403264E7
+jvm_memory_committed_bytes{area="heap",id="G1 Survivor Space",} 4194304.0
+jvm_memory_committed_bytes{area="heap",id="G1 Old Gen",} 9.2274688E7
+jvm_memory_committed_bytes{area="nonheap",id="Metaspace",} 4.9803264E7
+jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-nmethods'",} 2555904.0
+jvm_memory_committed_bytes{area="heap",id="G1 Eden Space",} 6.9206016E7
+jvm_memory_committed_bytes{area="nonheap",id="Compressed Class Space",} 6815744.0
+jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'",} 2555904.0
+----
+
+Note that metrics appear lazily, you often won't see any data for your endpoint until
+something tries to access it, etc.
+
+== Using MeterFilter to configure metrics
+
+Micrometer uses `MeterFilter` instances to customize the metrics emitted by `MeterRegistry` instances.
+The Micrometer extension will detect `MeterFilter` CDI beans and use them when initializing `MeterRegistry`
+instances.
+
+[source,java]
+----
+@Singleton
+public class CustomConfiguration {
+
+    @ConfigProperty(name = "deployment.env")
+    String deploymentEnv;
+
+    /** Define common tags that apply only to a Prometheus Registry */
+    @Produces
+    @Singleton
+    @MeterFilterConstraint(applyTo = PrometheusMeterRegistry.class)
+    public MeterFilter configurePrometheusRegistries() {
+        return MeterFilter.commonTags(Arrays.asList(
+                Tag.of("registry", "prometheus")));
+    }
+
+    /** Define common tags that apply globally */
+    @Produces
+    @Singleton
+    public MeterFilter configureAllRegistries() {
+        return MeterFilter.commonTags(Arrays.asList(
+                Tag.of("env", deploymentEnv)));
+    }
+
+    /** Enable histogram buckets for a specific timer */
+    @Produces
+    @Singleton
+    public MeterFilter enableHistogram() {
+        return new MeterFilter() {
+            @Override
+            public DistributionStatisticConfig configure(Meter.Id id, DistributionStatisticConfig config) {
+                if(id.getName().startsWith("myservice")) {
+                    return DistributionStatisticConfig.builder()
+                        .percentiles(0.5, 0.95)     // median and 95th percentile, not aggregable
+                        .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
+                        .build()
+                        .merge(config);
+                }
+                return config;
+            }
+        };
+    }
+}
+----
+
+In this example, a singleton CDI bean will produce two different `MeterFilter` beans. One will be applied only to
+Prometheus `MeterRegistry` instances (using the `@MeterFilterConstraint` qualifier), and another will be applied
+to all `MeterRegistry` instances. An application configuration property is also injected and used as a tag value.
+
+== Using other Registry implementations
+
+If you aren't using Prometheus, you have a few options. Some Micrometer registry implementations
+have been wrapped in
+https://github.com/quarkiverse/quarkiverse-micrometer-registry[Quarkiverse extensions].
+To use the Micrometer StackDriver MeterRegistry, for example, you would use the
+`quarkus-micrometer-registry-stackdriver` extension:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkiverse</groupId>
+    <artifactId>quarkus-micrometer-registry-stackdriver</artifactId>
+</dependency>
+----
+
+If the Micrometer registry you would like to use does not yet have an associated extension,
+use the `quarkus-micrometer` extension and bring in the packaged MeterRegistry dependency directly:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-micrometer</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.acme</groupId>
+    <artifactId>custom-micrometer-registry</artifactId>
+</dependency>
+----
+
+You will then need to specify your own provider to configure and initialize the
+MeterRegistry, as discussed in the next section.
+
+== Creating a customized MeterRegistry
+
+Use a custom `@Produces` method to create and configure a customized `MeterRegistry` if you need to.
+
+The following example customizes the line format used for StatsD:
+
+[source,java]
+----
+@Produces
+@Singleton
+public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, Clock clock) {
+    // define what to do with lines
+    Consumer<String> lineLogger = line -> logger.info(line);
+
+    // inject a configuration object, and then customize the line builder
+    return StatsdMeterRegistry.builder(statsdConfig)
+          .clock(clock)
+          .lineSink(lineLogger)
+          .build();
+}
+----
+
+This example corresponds to the following instructions in the Micrometer documentation:
+https://micrometer.io/docs/registry/statsD#_customizing_the_metrics_sink
+
+Note that the method returns the specific type of `MeterRegistry` as a `@Singleton`. Use MicroProfile Config
+to inject any configuration attributes you need to configure the registry. Most Micrometer registry extensions,
+like `quarkus-micrometer-registry-statsd`, define a producer for registry-specific configuration objects
+that are integrated with the Quarkus configuration model.
+
+== Support for the MicroProfile Metrics API
+
+If you use the MicroProfile Metrics API in your application, the Micrometer extension will create an adaptive
+layer to map those metrics into the Micrometer registry. Note that naming conventions between the two
+systems will change, but you can use MeterFilters to remap names or tags to what your dashboards require.
+
+[source,java]
+----
+@Produces
+@Singleton
+public MeterFilter renameApplicationMeters() {
+    final String targetMetric = PrimeResource.class.getName() + ".highestPrimeNumberSoFar";
+
+    return MeterFilter() {
+        @Override
+        public Meter.Id map(Meter.Id id) {
+            // rename the specified metric (remove package), and drop the scope tag
+            // you could also use this to prepend a scope tag (application, base, vendor, if present) to the metric name
+            if (id.getName().equals(targetMetric)) {
+                List<Tag> tags = id.getTags().stream().filter(x -> !"scope".equals(x.getKey()))
+                        .collect(Collectors.toList());
+                return id.withName("highestPrimeNumberSoFar").replaceTags(tags);
+            }
+            return id;
+        }
+    };
+}
+----
+
+NOTE: The MP Metrics API compatibility layer will be moved to a different extension in the future.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-micrometer.adoc[opts=optional, leveloffset=+1]

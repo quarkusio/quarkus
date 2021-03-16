@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig.HibernateOrmConfigCache;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitCache;
 
 public class HibernateConfigUtil {
 
@@ -14,11 +14,11 @@ public class HibernateConfigUtil {
     private final static String MEMORY_OBJECT_COUNT = ".memory.object-count";
     private static final String HIBERNATE_CACHE_PREFIX = "hibernate.cache.";
 
-    public static Map<String, String> getCacheConfigEntries(HibernateOrmConfig config) {
+    public static Map<String, String> getCacheConfigEntries(HibernateOrmConfigPersistenceUnit config) {
         Map<String, String> cacheRegionsConfigEntries = new HashMap<>();
-        for (Map.Entry<String, HibernateOrmConfigCache> regionEntry : config.cache.entrySet()) {
+        for (Map.Entry<String, HibernateOrmConfigPersistenceUnitCache> regionEntry : config.cache.entrySet()) {
             String regionName = regionEntry.getKey();
-            HibernateOrmConfigCache cacheConfig = regionEntry.getValue();
+            HibernateOrmConfigPersistenceUnitCache cacheConfig = regionEntry.getValue();
 
             if (cacheConfig.expiration.maxIdle.isPresent()) {
                 cacheRegionsConfigEntries.put(getCacheConfigKey(regionName, EXPIRATION_MAX_IDLE),

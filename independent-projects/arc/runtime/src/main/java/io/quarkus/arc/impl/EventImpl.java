@@ -191,9 +191,9 @@ class EventImpl<T> implements Event<T> {
                 exception = new CompletionException(handledExceptions.get(0));
             } else {
                 exception = new CompletionException(null);
-            }
-            for (Throwable handledException : handledExceptions) {
-                exception.addSuppressed(handledException);
+                for (Throwable handledException : handledExceptions) {
+                    exception.addSuppressed(handledException);
+                }
             }
             throw exception;
         }
@@ -462,7 +462,7 @@ class EventImpl<T> implements Event<T> {
          * Indicates whether the given status code passed in during {@link Synchronization#beforeCompletion()} or
          * {@link Synchronization#afterCompletion(int)}
          * matches this status.
-         * 
+         *
          * @param status the given status code
          * @return true if the status code matches
          */

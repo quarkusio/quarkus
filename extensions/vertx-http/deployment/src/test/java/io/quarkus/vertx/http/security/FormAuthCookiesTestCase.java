@@ -33,9 +33,12 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.security.test.utils.TestIdentityController;
+import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
@@ -149,6 +152,7 @@ public class FormAuthCookiesTestCase {
     URL url;
 
     @Test
+    @Disabled("The logic in this test case relies too heavily on the current system time and can result in spurious failures on slow systems. See https://github.com/quarkusio/quarkus/issues/10106")
     public void testCredentialCookieRotation() throws IOException, InterruptedException {
 
         final CookieStore cookieStore = new BasicCookieStore();

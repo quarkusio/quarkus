@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Centralized log management (Graylog, Logstash, Fluentd)
 
@@ -19,21 +19,39 @@ By default, it is disabled, if you enable it but still use another handler (by d
 
 == Example application
 
-The following examples will all be based on the same example application that you can create with the following steps:
+The following examples will all be based on the same example application that you can create with the following steps.
 
-- Create an application with the `quarkus-logging-gelf` extension. You can use the following Maven command to create it:
+Create an application with the `quarkus-logging-gelf` extension. You can use the following Maven command to create it:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=gelf-logging \
     -DclassName="org.acme.quickstart.GelfLoggingResource" \
     -Dpath="/gelf-logging" \
-    -Dextensions="logging-gelf"
+    -Dextensions="resteasy,logging-gelf"
 ----
 
-- For demonstration purposes, we create an endpoint that does nothing but log a sentence. You don't need to do this inside your application.
+If you already have your Quarkus project configured, you can add the `logging-gelf` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="logging-gelf"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-logging-gelf</artifactId>
+</dependency>
+----
+
+For demonstration purposes, we create an endpoint that does nothing but log a sentence. You don't need to do this inside your application.
 
 [source,java]
 ----
@@ -56,7 +74,7 @@ public class GelfLoggingResource {
 }
 ----
 
-- Configure the GELF log handler to send logs to an external UDP endpoint on the port 12201:
+Configure the GELF log handler to send logs to an external UDP endpoint on the port 12201:
 
 [source,properties]
 ----
@@ -118,7 +136,7 @@ You can do it from the Graylog web console (System -> Input -> Select GELF UDP) 
 
 This curl example will create a new Input of type GELF UDP, it uses the default login from Graylog (admin/admin).
 
-[source,shell]
+[source,bash]
 ----
 curl -H "Content-Type: application/json" -H "Authorization: Basic YWRtaW46YWRtaW4=" -H "X-Requested-By: curl" -X POST -v -d \
 '{"title":"udp input","configuration":{"recv_buffer_size":262144,"bind_address":"0.0.0.0","port":12201,"decompress_size_limit":8388608},"type":"org.graylog2.inputs.gelf.udp.GELFUDPInput","global":true}' \
@@ -209,7 +227,7 @@ Launch your application, you should see your logs arriving inside the Elastic St
 First, you need to create a Fluentd image with the needed plugins: elasticsearch and input-gelf.
 You can use the following Dockerfile that should be created inside a `fluentd` directory.
 
-[source]
+[source,dockerfile]
 ----
 FROM fluent/fluentd:v1.3-debian
 RUN ["gem", "install", "fluent-plugin-elasticsearch", "--version", "3.7.0"]
@@ -297,7 +315,7 @@ As opposed to the GELF input, the Syslog input will not render multiline logs in
 First, you need to create a Fluentd image with the elasticsearch plugin.
 You can use the following Dockerfile that should be created inside a `fluentd` directory.
 
-[source]
+[source,dockerfile]
 ----
 FROM fluent/fluentd:v1.3-debian
 RUN ["gem", "install", "fluent-plugin-elasticsearch", "--version", "3.7.0"]

@@ -1,18 +1,19 @@
 package io.quarkus.funqy.deployment.bindings;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.amazon.lambda.deployment.LambdaObjectMapperInitializedBuildItem;
 import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.builder.BuildException;
+import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -25,52 +26,39 @@ import io.quarkus.runtime.LaunchMode;
 
 public class FunqyLambdaBuildStep {
 
+    public static final String FUNQY_AMAZON_LAMBDA = "funqy-amazon-lambda";
+
+    public static final class RuntimeComplete extends SimpleBuildItem {
+    }
+
     @BuildStep()
     @Record(STATIC_INIT)
     public void init(List<FunctionBuildItem> functions,
             FunqyLambdaBindingRecorder recorder,
+            BuildProducer<FeatureBuildItem> feature,
             Optional<FunctionInitializedBuildItem> hasFunctions,
             LambdaObjectMapperInitializedBuildItem mapperDependency,
-            BeanContainerBuildItem beanContainer,
-            FunqyConfig knative) throws Exception {
+            BeanContainerBuildItem beanContainer) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
+        feature.produce(new FeatureBuildItem(FUNQY_AMAZON_LAMBDA));
+        recorder.init(beanContainer.getValue());
+    }
 
-        String function = null;
-        if (knative.export.isPresent()) {
-            function = knative.export.get();
-            boolean found = false;
-            for (FunctionBuildItem funq : functions) {
-                String matchName = funq.getFunctionName() == null ? funq.getMethodName() : funq.getFunctionName();
-                if (function.equals(matchName)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                throw new BuildException("Cannot find function specified by quarkus.funqy.knative.export ",
-                        Collections.emptyList());
-
-            }
-
-        } else if (functions.size() == 1) {
-            function = functions.get(0).getFunctionName();
-            if (function == null) {
-                function = functions.get(0).getMethodName();
-            }
-        } else {
-            throw new BuildException("Too many functions in deployment, use quarkus.funqy.knative.export to narrow it",
-                    Collections.emptyList());
-        }
-        recorder.init(beanContainer.getValue(), function);
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    public RuntimeComplete choose(FunqyConfig config, FunqyLambdaBindingRecorder recorder) {
+        recorder.chooseInvoker(config);
+        return new RuntimeComplete();
     }
 
     /**
      * This should only run when building a native image
      */
     @BuildStep(onlyIf = NativeBuild.class)
-    @Record(value = ExecutionTime.RUNTIME_INIT)
-    void startPoolLoop(FunqyLambdaBindingRecorder recorder,
+    @Record(RUNTIME_INIT)
+    public void startPoolLoop(FunqyLambdaBindingRecorder recorder,
+            RuntimeComplete ignored,
             ShutdownContextBuildItem shutdownContextBuildItem,
             List<ServiceStartBuildItem> orderServicesFirst // try to order this after service recorders
     ) {
@@ -78,8 +66,9 @@ public class FunqyLambdaBuildStep {
     }
 
     @BuildStep
-    @Record(value = ExecutionTime.RUNTIME_INIT)
-    void enableNativeEventLoop(LambdaBuildTimeConfig config,
+    @Record(RUNTIME_INIT)
+    public void enableNativeEventLoop(LambdaBuildTimeConfig config,
+            RuntimeComplete ignored,
             FunqyLambdaBindingRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
             ShutdownContextBuildItem shutdownContextBuildItem,
@@ -89,5 +78,4 @@ public class FunqyLambdaBuildStep {
             recorder.startPollLoop(shutdownContextBuildItem);
         }
     }
-
 }

@@ -6,12 +6,11 @@
         <artifactId>quarkus-rest-client-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-deployment</artifactId>
-    <name>Quarkus - REST client - Deployment</name>
+    <name>Quarkus - REST Client - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -43,7 +42,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

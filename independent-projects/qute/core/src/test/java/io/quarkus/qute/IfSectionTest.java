@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.qute.IfSectionHelper.Operator;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ public class IfSectionTest {
     }
 
     @Test
-    public void tesIfOperator() {
+    public void testIfOperator() {
         Engine engine = Engine.builder().addDefaults().build();
 
         Map<String, Object> data = new HashMap<>();
@@ -43,7 +44,7 @@ public class IfSectionTest {
         assertEquals("OK", engine.parse("{#if one >= one}OK{/if}").render(data));
         assertEquals("OK", engine.parse("{#if one >= 0}OK{/if}").render(data));
         assertEquals("OK", engine.parse("{#if one == one}OK{/if}").render(data));
-        assertEquals("OK", engine.parse("{#if one}NOK{#else if name eq foo}OK{/if}").render(data));
+        assertEquals("OK", engine.parse("{#if one is 2}NOK{#else if name eq foo}OK{/if}").render(data));
         assertEquals("OK", engine.parse("{#if name is foo}OK{/if}").render(data));
         assertEquals("OK", engine.parse("{#if two is 2}OK{/if}").render(data));
         assertEquals("OK", engine.parse("{#if name != null}OK{/if}").render(data));
@@ -75,6 +76,37 @@ public class IfSectionTest {
         assertEquals("OK", engine.parse("{#if (foo || false || true) && (true)}OK{/if}").render());
         assertEquals("NOK", engine.parse("{#if foo || false}OK{#else}NOK{/if}").render());
         assertEquals("OK", engine.parse("{#if false || (foo || (false || true))}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if (true && false)}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && true}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if true && false}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if false && true}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true and (true or false)}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if true and (true == false)}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && (false == false)}OK{#else}NOK{/if}").render());
+
+        Map<String, String> foo = new HashMap<>();
+        foo.put("bar", "something");
+        assertEquals("NOK",
+                engine.parse("{#if foo.bar != 'something' && foo.bar != 'other'}OK{#else}NOK{/if}").data("foo", foo).render());
+        assertEquals("OK",
+                engine.parse("{#if foo.bar != 'nothing' && foo.bar != 'other'}OK{#else}NOK{/if}").data("foo", foo).render());
+        assertEquals("OK",
+                engine.parse("{#if foo.bar == 'something' || foo.bar != 'other'}OK{#else}NOK{/if}").data("foo", foo).render());
+        assertEquals("OK", engine.parse("{#if (foo.bar == 'something') || (foo.bar == 'other')}OK{#else}NOK{/if}")
+                .data("foo", foo).render());
+
+        Map<String, String> qual = new HashMap<>();
+        Template template = engine.parse(
+                "{#if qual.name != 'javax.inject.Named' \n"
+                        + "          && qual.name != 'javax.enterprise.inject.Any'\n"
+                        + "          && qual.name != 'javax.enterprise.inject.Default'}{qual.name}{/if}");
+        qual.put("name", "org.acme.MyQual");
+        assertEquals("org.acme.MyQual", template
+                .data("qual", qual).render());
+        qual.put("name", "javax.enterprise.inject.Any");
+        assertEquals("", template
+                .data("qual", qual).render());
+
     }
 
     @Test
@@ -114,6 +146,54 @@ public class IfSectionTest {
         assertEquals(Arrays.asList("name", Operator.EQ, "'foo'"), params.get(0));
         assertEquals(Operator.AND, params.get(1));
         assertEquals("true", params.get(2));
+    }
+
+    @Test
+    public void testFalsy() {
+        Engine engine = Engine.builder().addDefaults().build();
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "foo");
+        data.put("nameEmpty", "");
+        data.put("boolTrue", true);
+        data.put("boolFalse", false);
+        data.put("intTwo", Integer.valueOf(2));
+        data.put("intZero", Integer.valueOf(0));
+        data.put("list", Collections.singleton("foo"));
+        data.put("setEmpty", Collections.emptySet());
+        data.put("mapEmpty", Collections.emptyMap());
+        data.put("array", new String[] { "foo" });
+        data.put("arrayEmpty", new String[] {});
+
+        assertEquals("1", engine.parse("{#if name}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if nameEmpty}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if boolTrue}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if boolFalse}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if intTwo}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if intZero}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if list}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if setEmpty}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if mapEmpty}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if array}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if arrayEmpty}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if !arrayEmpty}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if arrayEmpty || name}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if arrayEmpty && name}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if array && intTwo}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if (array && intZero) || true}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if nonExistent}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if !nonExistent}1{#else}0{/if}").render(data));
+    }
+
+    @Test
+    public void testStandaloneLines() {
+        Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
+        assertEquals("BAZ\n",
+                engine.parse("{#if false}\n"
+                        + "FOO\n"
+                        + "{#else}\n"
+                        + "BAZ\n"
+                        + "{/if}").render());
     }
 
     private void assertParserError(String template, String message, int line) {

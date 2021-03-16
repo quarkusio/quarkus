@@ -11,9 +11,15 @@
     </parent>
 
     <artifactId>quarkus-container-image-docker</artifactId>
-    <name>Quarkus - Container - Image - Docker</name>
+    <name>Quarkus - Container Image - Docker</name>
     <description>Build container images of your application using Docker</description>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>

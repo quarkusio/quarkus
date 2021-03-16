@@ -2,6 +2,7 @@ package io.quarkus.amazon.lambda.xray;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -10,6 +11,7 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 public class XrayBuildStep {
     @BuildStep(onlyIf = NativeBuild.class)
     public void process(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized,
             BuildProducer<NativeImageResourceBuildItem> resource) {
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("com.amazonaws.xray.AWSXRay"));
@@ -32,6 +34,7 @@ public class XrayBuildStep {
                 "com.amazonaws.xray.handlers.config.AWSOperationHandler",
                 "com.amazonaws.xray.handlers.config.AWSOperationHandlerRequestDescriptor",
                 "com.amazonaws.xray.handlers.config.AWSOperationHandlerResponseDescriptor",
+                "com.amazonaws.xray.entities.ThrowableDescription",
                 "com.amazonaws.xray.entities.SubsegmentImpl",
                 "com.amazonaws.xray.entities.EntityImpl",
                 "com.amazonaws.xray.entities.TraceID",
@@ -43,5 +46,11 @@ public class XrayBuildStep {
                 "com/amazonaws/xray/interceptors/DefaultOperationParameterWhitelist.json",
                 "com/amazonaws/xray/strategy/sampling/DefaultSamplingRules.json",
                 "com/amazonaws/xray/sdk.properties"));
+
+        //Register Apache client 
+        proxyDefinition.produce(
+                new NativeImageProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
+                        "org.apache.http.pool.ConnPoolControl",
+                        "com.amazonaws.http.conn.Wrapped"));
     }
 }

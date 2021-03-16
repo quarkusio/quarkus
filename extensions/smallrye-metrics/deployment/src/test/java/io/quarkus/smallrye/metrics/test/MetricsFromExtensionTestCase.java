@@ -78,9 +78,8 @@ public class MetricsFromExtensionTestCase {
     @Test
     public void testVendorRegistryType() {
         String[] metricNames = RestAssured.when().get("/get-counters").then().extract().as(String[].class);
-        assertThat(metricNames, Matchers.arrayContainingInAnyOrder(
-                "io.quarkus.smallrye.metrics.test.MetricResource.countMePlease",
-                "io.quarkus.smallrye.metrics.test.MetricResource.countMePlease2"));
+        assertThat(metricNames, Matchers.hasItemInArray("io.quarkus.smallrye.metrics.test.MetricResource.countMePlease"));
+        assertThat(metricNames, Matchers.hasItemInArray("io.quarkus.smallrye.metrics.test.MetricResource.countMePlease2"));
     }
 
     @Test

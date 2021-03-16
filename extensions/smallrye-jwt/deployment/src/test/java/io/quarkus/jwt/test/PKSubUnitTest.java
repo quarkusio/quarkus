@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.smallrye.jwt.runtime.auth.PublicKeyProxy;
 import io.quarkus.smallrye.jwt.runtime.auth.PublicKeySubstitution;
-import io.smallrye.jwt.KeyUtils;
+import io.smallrye.jwt.util.KeyUtils;
 
 public class PKSubUnitTest {
     @Test

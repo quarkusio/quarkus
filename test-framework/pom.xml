@@ -13,19 +13,30 @@
     <artifactId>quarkus-test-framework</artifactId>
     <name>Quarkus - Test Framework</name>
     <packaging>pom</packaging>
+
+    <properties>
+        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
+    </properties>
+
     <modules>
         <module>artemis</module>
         <module>common</module>
         <module>h2</module>
         <module>derby</module>
         <module>kubernetes-client</module>
+        <module>openshift-client</module>
         <module>junit5-internal</module>
         <module>junit5</module>
+        <module>junit5-mockito</module>
         <module>amazon-lambda</module>
         <module>arquillian</module>
+        <module>devmode-test-utils</module>
+        <module>devtools</module>
         <module>maven</module>
         <module>vault</module>
         <module>ldap</module>
+        <module>security</module>
+        <module>jacoco</module>
     </modules>
 
 </project>

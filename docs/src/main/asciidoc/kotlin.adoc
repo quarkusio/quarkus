@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Kotlin
 
@@ -21,7 +21,7 @@ To complete this guide, you need:
 * less than 10 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 
 NB: For Gradle project setup please see below, and for further reference consult the guide in the link:gradle-tooling[Gradle setup page].
 
@@ -29,20 +29,20 @@ NB: For Gradle project setup please see below, and for further reference consult
 
 First, we need a new Kotlin project. This can be done using the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-kotlin-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="kotlin,resteasy-jsonb"
+    -Dextensions="resteasy,kotlin,resteasy-jackson"
 cd rest-kotlin-quickstart
 ----
 
 When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly
 configured to work with Kotlin. Furthermore  the `org.acme.rest.GreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
-The addition of `resteasy-jsonb` in the extension list results in importing the RESTEasy/JAX-RS and JSON-B extensions.
+The addition of `resteasy-jackson` in the extension list results in importing the RESTEasy/JAX-RS and Jackson extensions.
 
 `GreetingResource.kt` looks like this:
 
@@ -81,14 +81,12 @@ We also update the `GreetingResource.kt` like so:
 ----
 import javax.ws.rs.GET
 import javax.ws.rs.Path
-import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
 @Path("/greeting")
 class GreetingResource {
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     fun hello() = Greeting("hello")
 }
 ----
@@ -192,123 +190,199 @@ Similar to the Maven configuration, when using Gradle, the following modificatio
 ----
 plugins {
     id 'java'
-    id 'io.quarkus' version '{quarkus-version}' // <1>
+    id 'io.quarkus' 
 
-    id "org.jetbrains.kotlin.jvm" version "{kotlin-version}" // <2>
-    id "org.jetbrains.kotlin.plugin.allopen" version "{kotlin-version}" // <2>
+    id "org.jetbrains.kotlin.jvm" version "{kotlin-version}" // <1>
+    id "org.jetbrains.kotlin.plugin.allopen" version "{kotlin-version}" // <1>
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
-
-group = '...' // set your group
-version = '1.0.0-SNAPSHOT'
 
 dependencies { 
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:{kotlin-version}'
 
-    // <3>
-    implementation enforcedPlatform('io.quarkus:quarkus-bom:{quarkus-version}')
+   implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+ 
     implementation 'io.quarkus:quarkus-resteasy'
-    implementation 'io.quarkus:quarkus-resteasy-jsonb'
+    implementation 'io.quarkus:quarkus-resteasy-jackson'
     implementation 'io.quarkus:quarkus-kotlin'
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'
 }
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+group = '...' // set your group
+version = '1.0.0-SNAPSHOT'
 
-test {
-    useJUnitPlatform()
-    exclude '**/Native*'
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
-buildNative {
-    enableHttpUrlHandler = true
-}
-
-allOpen { // <4>
+allOpen { // <2>
     annotation("javax.ws.rs.Path")
     annotation("javax.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
+
+compileKotlin {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
+    kotlinOptions.javaParameters = true
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
+}
 ----
 
-<1> The Quarkus plugin needs to be applied.
-<2> The Kotlin plugin version needs to be specified.
-<3> We include the Quarkus BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax]
-<4> The all-open configuration required, as per Maven guide above
+<1> The Kotlin plugin version needs to be specified.
+<2> The all-open configuration required, as per Maven guide above
 
 or, if you use the Gradle Kotlin DSL:
 
 [source,kotlin,subs=attributes+]
 ----
-import io.quarkus.gradle.tasks.QuarkusNative
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+    kotlin("jvm") version "{kotlin-version}" // <1>
+    kotlin("plugin.allopen") version "{kotlin-version}"
+    id("io.quarkus")
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+val quarkusPlatformGroupId: String by project
+val quarkusPlatformArtifactId: String by project
+val quarkusPlatformVersion: String by project
 
 group = "..."
 version = "1.0.0-SNAPSHOT"
 
-plugins {
-    java
-    id("io.quarkus") version "{quarkus-version}" // <1>
-
-    kotlin("jvm") version "{kotlin-version}" // <2>
-    id("org.jetbrains.kotlin.plugin.allopen") version "{kotlin-version}" // <2>
-}
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    // <3>
-    implementation(enforcedPlatform("io.quarkus:quarkus-bom:${quarkusVersion}"))
+    implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
+
     implementation("io.quarkus:quarkus-kotlin")
     implementation("io.quarkus:quarkus-resteasy")
-    implementation("io.quarkus:quarkus-resteasy-jsonb")
+    implementation("io.quarkus:quarkus-resteasy-jackson")
 
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")
 }
 
-tasks {
-    named<QuarkusNative>("buildNative") {
-        setEnableHttpUrlHandler(true)
-    }
+group = '...' // set your group
+version = "1.0.0-SNAPSHOT"
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
-allOpen { // <4>
+allOpen { // <2>
     annotation("javax.ws.rs.Path")
     annotation("javax.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
+    kotlinOptions.javaParameters = true
 }
 
-val compileKotlin: KotlinCompile by tasks
-compileKotlin.kotlinOptions {
-    jvmTarget = "1.8"
-}
-
-val compileTestKotlin: KotlinCompile by tasks
-compileTestKotlin.kotlinOptions {
-    jvmTarget = "1.8"
-}
 ----
 
-<1> The Quarkus plugin needs to be applied.
-<2> The Kotlin plugin version needs to be specified.
-<3> We include the Quarkus BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax]
-<4> The all-open configuration required, as per Maven guide above
+<1> The Kotlin plugin version needs to be specified.
+<2> The all-open configuration required, as per Maven guide above
+
+
+
+== Live reload
+
+Quarkus provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
+code and immediately see their changes reflected.
+
+To see this feature in action, first execute: `./mvnw compile quarkus:dev`
+
+When executing an HTTP GET request against `http://localhost:8080/greeting`, you see a JSON message with the value `hello` as its `message` field.
+
+Now using your favorite editor or IDE, update `GreetingResource.kt` and change the `hello` method to the following:
+
+[source,kotlin]
+----
+fun hello() = Greeting("hi")
+----
+
+When you now execute an HTTP GET request against `http://localhost:8080/greeting`, you should see a JSON message with the value `hi` as its `message` field.
+
+One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other. We hope to alleviate this limitation in the future.
+
+== Packaging the application
+
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file. You can also build the native executable using `./mvnw package -Pnative`, or `./gradlew buildNative`.
+
+== Kotlin and Jackson
+
+If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or the `quarkus-resteasy-jackson` extension) have been added to the project,
+then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see link:rest-json#jackson[this] guide for more details).
+
+When using Kotlin data classes with `native-image` you may experience serialization errors that do not occur with the `JVM` version, despite the Kotlin Jackson Module being registered. This is especially so if you have a more complex JSON hierarchy, where an issue on a lower node causes a serialization failure. The error message displayed is a catch-all and typically displays an issue with the root object, which may not necessarily be the case.
+
+[source]
+----
+com.fasterxml.jackson.databind.exc.InvalidDefinitionException: Cannot construct instance of `Address` (no Creators, like default construct, exist): cannot deserialize from Object value (no delegate- or property-based Creator)
+----
+
+To ensure full-compability with `native-image`, it is recommended to apply the Jackson `@field:JsonProperty("fieldName")` annotation, and set a nullable default, as illustrated below. You can automate the generation of Kotlin data classes for your sample JSON using Intellij plugins (such as JSON to Kotlin Class), and easily enable the Jackson annotation and select nullable parameters as part of the auto-code generation.
+
+[source,kotlin]
+----
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class Response(
+	@field:JsonProperty("chart")
+	val chart: ChartData? = null
+)
+
+data class ChartData(
+	@field:JsonProperty("result")
+	val result: List<ResultItem?>? = null,
+
+	@field:JsonProperty("error")
+	val error: Any? = null
+)
+
+data class ResultItem(
+	@field:JsonProperty("meta")
+	val meta: Meta? = null,
+
+	@field:JsonProperty("indicators")
+	val indicators: IndicatorItems? = null,
+
+	@field:JsonProperty("timestamp")
+	val timestamp: List<Int?>? = null
+)
+
+...
+----
+
+
+== Kotlin coroutines and Mutiny
+
+Kotlin coroutines provide a imperative programming model that actually gets executed in an asynchronous, reactive manner.
+To simplify the interoperation between Mutiny and Kotlin there is the module `io.smallrye.reactive:mutiny-kotlin`, described link:https://smallrye.io/smallrye-mutiny/guides/kotlin[here].
 
 == CDI @Inject with Kotlin
 
@@ -362,32 +436,3 @@ class GreetingResource {
 <1> Kotlin requires a @field: xxx qualifier as it has no @Target on the annotation definition. Add @field: xxx in this example. @Default is used as the qualifier, explicitly specifying the use of the default bean.
 
 
-
-== Live reload
-
-Quarkus provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
-code and immediately see their changes reflected.
-
-To see this feature in action, first execute: `./mvnw compile quarkus:dev`
-
-When executing an HTTP GET request against `http://localhost:8080/greeting`, you see a JSON message with the value `hello` as its `message` field.
-
-Now using your favorite editor or IDE, update `GreetingResource.kt` and change the `hello` method to the following:
-
-[source,kotlin]
-----
-fun hello() = Greeting("hi")
-----
-
-When you now execute an HTTP GET request against `http://localhost:8080/greeting`, you should see a JSON message with the value `hi` as its `message` field.
-
-One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other. We hope to alleviate this limitation in the future.
-
-== Packaging the application
-
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file. You can also build the native executable using `./mvnw package -Pnative`, or `./gradlew buildNative`.
-
-== Kotlin and Jackson
-
-If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or the `quarkus-resteasy-extension`) have been added to project,
-then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see link:rest-json#Jackson[this] guide for more details).

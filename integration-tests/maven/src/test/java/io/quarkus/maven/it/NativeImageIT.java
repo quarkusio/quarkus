@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 @EnableForNative
 public class NativeImageIT extends MojoTestBase {
@@ -37,7 +38,7 @@ public class NativeImageIT extends MojoTestBase {
         // trigger mvn package -Pnative -Dquarkus.ssl.native=true
         final String[] mvnArgs = new String[] { "package", "-DskipTests", "-Pnative", "-Dquarkus.ssl.native=true" };
         final MavenProcessInvocationResult result = running.execute(Arrays.asList(mvnArgs), Collections.emptyMap());
-        await().atMost(5, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(10, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         final String processLog = running.log();
         try {
             assertThat(processLog).containsIgnoringCase("BUILD SUCCESS");
@@ -59,7 +60,7 @@ public class NativeImageIT extends MojoTestBase {
         final Process nativeImageRunWithAdditionalLibPath = runNativeImage(nativeImageRunner,
                 new String[] { "-Djava.library.path=" + tmpDir.toString() });
         try {
-            final String response = getHttpResponse("/hello/javaLibraryPath");
+            final String response = DevModeTestUtils.getHttpResponse("/hello/javaLibraryPath");
             Assertions.assertTrue(response.contains(tmpDir.toString()),
                     "Response " + response + " for java.library.path was expected to contain the " + tmpDir + ", but didn't");
         } finally {

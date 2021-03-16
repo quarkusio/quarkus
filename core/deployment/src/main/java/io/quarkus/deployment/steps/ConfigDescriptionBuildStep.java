@@ -1,10 +1,9 @@
 package io.quarkus.deployment.steps;
 
-import java.io.InputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
@@ -17,6 +16,7 @@ import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.configuration.matching.ConfigPatternMap;
 import io.quarkus.deployment.configuration.matching.Container;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.util.ClassPathUtils;
 
 public class ConfigDescriptionBuildStep {
 
@@ -24,13 +24,13 @@ public class ConfigDescriptionBuildStep {
     List<ConfigDescriptionBuildItem> createConfigDescriptions(
             ConfigurationBuildItem config) throws Exception {
         Properties javadoc = new Properties();
-        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader()
-                .getResources("META-INF/quarkus-javadoc.properties");
-        while (resources.hasMoreElements()) {
-            try (InputStream in = resources.nextElement().openStream()) {
+        ClassPathUtils.consumeAsStreams("META-INF/quarkus-javadoc.properties", in -> {
+            try {
                 javadoc.load(in);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-        }
+        });
         List<ConfigDescriptionBuildItem> ret = new ArrayList<>();
         processConfig(config.getReadResult().getBuildTimePatternMap(), ret, javadoc);
         processConfig(config.getReadResult().getBuildTimeRunTimePatternMap(), ret, javadoc);

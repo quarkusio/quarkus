@@ -1,0 +1,35 @@
+{#include main}
+  {#style}
+   .annotation {
+     color: gray;
+     font-style: italic;
+   }
+   span.larger-badge {
+     font-size: 0.9em;
+   }
+  {/style}
+  {#title}Removed Beans{/title}
+  {#body}
+  <table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Bean</th>
+      <th scope="col">Kind</th>
+    </tr>
+   </thead>
+   <tbody>
+    {#for bean in info:devBeanInfos.removedBeans}
+    <tr>
+      <td>{count}.</td>
+      <td>
+       {#display-bean bean/}
+      </td>
+      <td>
+       {#bean-declaration bean/}
+      </td>
+    {/for}
+   </tbody>
+  </table>
+ {/body}
+{/include}

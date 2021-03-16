@@ -1,25 +1,32 @@
-# kv engine default (v1 in non dev mode)
-path "secret/foo" {
-  capabilities = ["read"]
-}
-
-# vault config source kv engine v1
-path "secret/config" {
-  capabilities = ["read"]
-}
-
-# vault config source kv engine v1 with multi paths
-path "secret/multi/*" {
-  capabilities = ["read"]
-}
-
-# kv engine v2
-path "secret-v2/data/foo" {
+# kv engine default (v2)
+path "secret/data/foo" {
   capabilities = ["read"]
 }
 
 # vault config source kv engine v2
-path "secret-v2/data/config" {
+path "secret/data/config" {
+  capabilities = ["read"]
+}
+
+# vault config source kv engine v2 with multi paths
+path "secret/data/multi/*" {
+  capabilities = ["read"]
+}
+
+path "secret/metadata/hello/*" {
+  capabilities = ["list"]
+}
+path "secret-v1/hello/*" {
+  capabilities = ["list"]
+}
+
+# kv engine v1
+path "secret-v1/foo" {
+  capabilities = ["read"]
+}
+
+# vault config source kv engine v1
+path "secret-v1/config" {
   capabilities = ["read"]
 }
 
@@ -30,7 +37,7 @@ path "database/creds/mydbrole" {
 
 # transit
 path "transit/*" {
-  capabilities = [ "create", "read", "update" ]
+  capabilities = [ "create", "read", "update", "delete", "list" ]
 }
 #path "transit/encrypt/my-key" {
 #  capabilities = [ "read", "update" ]
@@ -42,10 +49,22 @@ path "transit/*" {
 #  capabilities = [ "read", "update" ]
 #}
 
-path "secret/crud" {
+path "secret/data/crud" {
   capabilities = ["read", "create", "update", "delete"]
 }
 
-path "secret-v2/data/crud" {
+path "secret-v1/crud" {
   capabilities = ["read", "create", "update", "delete"]
+}
+
+path "totp/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
+}
+
+path "sys/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
+}
+
+path "auth/kubernetes/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
 }

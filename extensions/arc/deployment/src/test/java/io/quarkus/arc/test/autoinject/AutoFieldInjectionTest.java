@@ -5,6 +5,7 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
@@ -17,7 +18,6 @@ import javax.inject.Qualifier;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -34,9 +34,9 @@ public class AutoFieldInjectionTest {
     Client bean;
 
     @Test
-    public void testConfigWasInjected() {
-        Assertions.assertEquals("ok", bean.foo);
-        Assertions.assertEquals(1l, bean.bar);
+    public void testInjectionWorks() {
+        assertEquals("ok", bean.foo);
+        assertEquals(1l, bean.bar);
     }
 
     @Dependent

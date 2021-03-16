@@ -6,7 +6,6 @@
         <artifactId>quarkus-jaeger-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,25 +17,40 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
         </dependency>
-       <dependency>
+        <dependency>
             <groupId>io.jaegertracing</groupId>
             <artifactId>jaeger-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.jaegertracing</groupId>
             <artifactId>jaeger-thrift</artifactId>
+            <exclusions>
+                <!-- jaeger-thrift 3.43.3 pulls in a banned version of annotation-api. Remove once we move to jaeger 1.x-->
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- transitive dependency from jaeger-thrift, consider removing once we move to jaeger 1.x -->
+        <dependency>
+            <groupId>jakarta.activation</groupId>
+            <artifactId>jakarta.activation-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-metrics</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.microprofile.metrics</groupId>
-            <artifactId>microprofile-metrics-api</artifactId>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -32,6 +33,7 @@ import org.jboss.resteasy.spi.ResteasyAsynchronousResponse;
 import org.jboss.resteasy.spi.RunnableWithException;
 
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.runtime.BlockingOperationControl;
 import io.vertx.core.Context;
 import io.vertx.ext.web.RoutingContext;
 
@@ -56,6 +58,7 @@ public final class VertxHttpRequest extends BaseHttpRequest {
     private final Context context;
     private final ManagedContext requestContext;
     private final ManagedContext.ContextState requestContextState;
+    private final Executor executor;
 
     public VertxHttpRequest(Context context,
             RoutingContext routingContext,
@@ -64,8 +67,11 @@ public final class VertxHttpRequest extends BaseHttpRequest {
             String httpMethod,
             LazyHostSupplier remoteHost,
             SynchronousDispatcher dispatcher,
-            VertxHttpResponse response, ManagedContext requestContext) {
+            VertxHttpResponse response,
+            ManagedContext requestContext,
+            Executor executor) {
         super(uri);
+        this.executor = executor;
         this.context = context;
         this.response = response;
         this.httpHeaders = httpHeaders;
@@ -309,7 +315,16 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                     done = true;
                     requestContext.activate(requestContextState);
                     requestContext.terminate();
-                    vertxFlush();
+                    if (BlockingOperationControl.isBlockingAllowed()) {
+                        vertxFlush();
+                    } else {
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                vertxFlush();
+                            }
+                        });
+                    }
                 }
             }
 

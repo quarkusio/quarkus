@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -24,7 +25,7 @@ public class NestedClassConfigPropertiesTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class, DummyProperties.NestedDummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.nested.ages=1,2,3,4\ndummy.unused=whatever\ndummy.nested.unused=whatever2"),
+                            "dummy.name=quarkus\ndummy.nested.rock-of-ages=1,2,3,4\ndummy.unused=whatever\ndummy.nested.unused=whatever2"),
                             "application.properties"));
 
     @Inject
@@ -70,6 +71,7 @@ public class NestedClassConfigPropertiesTest {
 
         public static class NestedDummyProperties {
 
+            @ConfigProperty(name = "rock-of-ages")
             public Set<Integer> ages;
         }
     }

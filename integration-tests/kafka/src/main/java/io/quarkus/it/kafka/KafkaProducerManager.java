@@ -3,7 +3,10 @@ package io.quarkus.it.kafka;
 import java.util.Properties;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Event;
+import javax.inject.Inject;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -24,12 +27,21 @@ public class KafkaProducerManager {
         return new KafkaProducer<Integer, String>(props);
     }
 
+    @Inject
+    Event<Producer<?, ?>> producerEvent;
+
     private int count;
     private Producer<Integer, String> producer;
 
     @PostConstruct
     public void create() {
         producer = createProducer();
+        producerEvent.fire(producer);
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        producerEvent.fire(producer);
     }
 
     public void send(String message) {

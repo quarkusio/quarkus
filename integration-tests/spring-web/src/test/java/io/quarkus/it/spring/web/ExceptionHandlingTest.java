@@ -163,4 +163,12 @@ public class ExceptionHandlingTest {
                 .contentType("application/xml")
                 .body(is("bad state"));
     }
+
+    @Test
+    public void testResponseStatusException() {
+        RestAssured.when().get("/exception/responseStatusException").then()
+                .statusCode(509)
+                .contentType("text/plain")
+                .body(containsString("bandwidth exceeded"));
+    }
 }

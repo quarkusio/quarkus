@@ -21,16 +21,4 @@ public class VerticleTest {
         String s = get("/vertx-test/verticles/bare-classname").asString();
         assertThat(s).isEqualTo("OK-bare-classname");
     }
-
-    @Test
-    public void testRxVerticle() {
-        String s = get("/vertx-test/verticles/rx").asString();
-        assertThat(s).isEqualTo("OK-rx");
-    }
-
-    @Test
-    public void testRxWithClassNameVerticle() {
-        String s = get("/vertx-test/verticles/rx-classname").asString();
-        assertThat(s).isEqualTo("OK-rx-classname");
-    }
 }

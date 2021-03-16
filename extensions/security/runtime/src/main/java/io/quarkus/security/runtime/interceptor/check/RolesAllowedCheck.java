@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -51,12 +50,9 @@ public class RolesAllowedCheck implements SecurityCheck {
 
     @Override
     public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
-        Set<String> roles = identity.getRoles();
-        if (roles != null) {
-            for (String role : allowedRoles) {
-                if (roles.contains(role)) {
-                    return;
-                }
+        for (String role : allowedRoles) {
+            if (identity.hasRole(role) || ("**".equals(role) && !identity.isAnonymous())) {
+                return;
             }
         }
         if (identity.isAnonymous()) {

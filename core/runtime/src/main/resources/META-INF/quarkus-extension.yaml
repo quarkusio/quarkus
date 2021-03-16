@@ -1,3 +1,4 @@
 ---
 name: "Quarkus - Core"
-metadata: {}
+metadata:
+  unlisted: true

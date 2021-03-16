@@ -1,11 +1,7 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -15,16 +11,12 @@ public class WithSectionHelper implements SectionHelper {
 
     private static final String OBJECT = "object";
     private static final String WITH = "with";
-    private static final String AS = "as";
-    private static final String ALIAS = "alias";
 
     private final Expression object;
     private final SectionBlock main;
-    private final String alias;
 
     WithSectionHelper(SectionInitContext context) {
         this.object = context.getExpression(OBJECT);
-        this.alias = context.getParameter(ALIAS);
         this.main = context.getBlocks().get(0);
     }
 
@@ -32,22 +24,7 @@ public class WithSectionHelper implements SectionHelper {
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         return context.resolutionContext().evaluate(object)
                 .thenCompose(with -> {
-                    Object data;
-                    if (alias != null) {
-                        data = new Mapper() {
-                            @Override
-                            public Object get(String key) {
-                                if (alias.equals(key)) {
-                                    return with;
-                                }
-                                return Result.NOT_FOUND;
-                            }
-                        };
-                    } else {
-                        data = with;
-                    }
-                    ResolutionContext child = context.resolutionContext().createChild(data, null);
-                    return context.execute(main, child);
+                    return context.execute(main, context.resolutionContext().createChild(with, null));
                 });
     }
 
@@ -60,8 +37,7 @@ public class WithSectionHelper implements SectionHelper {
 
         @Override
         public ParametersInfo getParameters() {
-            return ParametersInfo.builder().addParameter(OBJECT).addParameter(AS, Parameter.EMPTY)
-                    .addParameter(new Parameter(ALIAS, null, true)).build();
+            return ParametersInfo.builder().addParameter(OBJECT).build();
         }
 
         @Override
@@ -70,24 +46,16 @@ public class WithSectionHelper implements SectionHelper {
         }
 
         @Override
-        public Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
+        public Scope initializeBlock(Scope previousScope, BlockInfo block) {
             if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
                 String object = block.getParameters().get(OBJECT);
                 if (object == null) {
                     throw new IllegalStateException("Object param not present");
                 }
-                Expression objectExpr = block.addExpression(OBJECT, object);
-                if (!objectExpr.hasNamespace() && block.hasParameter(ALIAS)) {
-                    // Only validate expressions if alias param is set
-                    String alias = block.getParameters().get(ALIAS);
-                    Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);
-                    typeInfos.put(alias, objectExpr.collectTypeInfo());
-                    return typeInfos;
-                } else {
-                    return outerNameTypeInfos;
-                }
+                block.addExpression(OBJECT, object);
+                return previousScope;
             } else {
-                return Collections.emptyMap();
+                return previousScope;
             }
         }
 

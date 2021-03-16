@@ -1,15 +1,15 @@
 package io.quarkus.qute;
 
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import org.reactivestreams.Publisher;
 
 class TemplateImpl implements Template {
 
@@ -31,7 +31,7 @@ class TemplateImpl implements Template {
     }
 
     @Override
-    public Set<Expression> getExpressions() {
+    public List<Expression> getExpressions() {
         return root.getExpressions();
     }
 
@@ -56,7 +56,9 @@ class TemplateImpl implements Template {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(e);
-            } catch (ExecutionException | TimeoutException e) {
+            } catch (TimeoutException e) {
+                throw new IllegalStateException(e);
+            } catch (ExecutionException e) {
                 if (e.getCause() instanceof RuntimeException) {
                     throw (RuntimeException) e.getCause();
                 } else {
@@ -66,12 +68,20 @@ class TemplateImpl implements Template {
         }
 
         @Override
-        public Publisher<String> publisher() {
-            PublisherFactory factory = engine.getPublisherFactory();
-            if (factory == null) {
-                throw new UnsupportedOperationException();
-            }
-            return factory.createPublisher(this);
+        public Multi<String> createMulti() {
+            return Multi.createFrom().emitter(emitter -> consume(emitter::emit)
+                    .whenComplete((r, f) -> {
+                        if (f == null) {
+                            emitter.complete();
+                        } else {
+                            emitter.fail(f);
+                        }
+                    }));
+        }
+
+        @Override
+        public Uni<String> createUni() {
+            return Uni.createFrom().completionStage(this::renderAsync);
         }
 
         @Override
@@ -85,27 +95,31 @@ class TemplateImpl implements Template {
             return renderData(data(), resultConsumer);
         }
 
-    }
+        private CompletionStage<Void> renderData(Object data, Consumer<String> consumer) {
+            CompletableFuture<Void> result = new CompletableFuture<>();
+            DataNamespaceResolver dataResolver = new DataNamespaceResolver();
+            List<NamespaceResolver> namespaceResolvers = ImmutableList.<NamespaceResolver> builder()
+                    .addAll(engine.getNamespaceResolvers()).add(dataResolver).build();
+            ResolutionContext rootContext = new ResolutionContextImpl(data, namespaceResolvers,
+                    engine.getEvaluator(), null, this);
+            dataResolver.rootContext = rootContext;
+            // Async resolution
+            root.resolve(rootContext).whenComplete((r, t) -> {
+                if (t != null) {
+                    result.completeExceptionally(t);
+                } else {
+                    // Sync processing of the result tree - build the output
+                    try {
+                        r.process(consumer);
+                        result.complete(null);
+                    } catch (Throwable e) {
+                        result.completeExceptionally(e);
+                    }
+                }
+            });
+            return result;
+        }
 
-    private CompletionStage<Void> renderData(Object data, Consumer<String> consumer) {
-        CompletableFuture<Void> result = new CompletableFuture<>();
-        DataNamespaceResolver dataResolver = new DataNamespaceResolver();
-        List<NamespaceResolver> namespaceResolvers = ImmutableList.<NamespaceResolver> builder()
-                .addAll(engine.getNamespaceResolvers()).add(dataResolver).build();
-        ResolutionContext rootContext = new ResolutionContextImpl(null, data, namespaceResolvers,
-                engine.getEvaluator(), null);
-        dataResolver.rootContext = rootContext;
-        // Async resolution
-        root.resolve(rootContext).whenComplete((r, t) -> {
-            if (t != null) {
-                result.completeExceptionally(t);
-            } else {
-                // Sync processing of the result tree - build the output
-                r.process(consumer);
-                result.complete(null);
-            }
-        });
-        return result;
     }
 
     static class DataNamespaceResolver implements NamespaceResolver {

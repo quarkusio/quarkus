@@ -1,0 +1,13 @@
+---
+foo:
+  bar: foo
+baz: bar
+bar:
+  foo:
+    bar:
+      foo: bar
+      baz: foo
+hello:
+  world
+list:
+  - baz

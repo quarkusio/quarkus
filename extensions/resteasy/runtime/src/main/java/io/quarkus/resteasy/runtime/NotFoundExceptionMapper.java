@@ -1,28 +1,27 @@
 package io.quarkus.resteasy.runtime;
 
+import static io.quarkus.runtime.TemplateHtmlBuilder.adjustRoot;
 import static org.jboss.resteasy.util.HttpHeaderNames.ACCEPT;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Proxy;
-import java.net.JarURLConnection;
-import java.net.URL;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,6 +46,9 @@ import org.jboss.resteasy.spi.Registry;
 import org.jboss.resteasy.spi.ResourceInvoker;
 
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.vertx.http.runtime.devmode.AdditionalRouteDescription;
+import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
 @Provider
 @Priority(Priorities.USER + 1)
@@ -58,12 +60,15 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private final static Variant JSON_VARIANT = new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null);
     private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
     private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
+    private final static ResourceDescriptionComparator RESOURCE_DESCRIPTION_COMPARATOR = new ResourceDescriptionComparator();
+    private final static MethodDescriptionComparator METHOD_DESCRIPTION_COMPARATOR = new MethodDescriptionComparator();
 
     private volatile static String httpRoot = "";
-    private volatile static List<String> servletMappings = Collections.EMPTY_LIST;
-    private volatile static Set<java.nio.file.Path> staticResouceRoots = Collections.EMPTY_SET;
-    private volatile static List<String> additionalEndpoints = Collections.EMPTY_LIST;
-    private volatile static Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.EMPTY_MAP;
+    private volatile static List<String> servletMappings = Collections.emptyList();
+    private volatile static Set<java.nio.file.Path> staticResouceRoots = Collections.emptySet();
+    private volatile static List<AdditionalRouteDescription> additionalEndpoints = Collections.emptyList();
+    private volatile static Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.emptyMap();
+    private volatile static List<RouteDescription> reactiveRoutes = Collections.emptyList();
 
     private static final Logger LOG = Logger.getLogger(NotFoundExceptionMapper.class);
 
@@ -120,7 +125,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
         public static List<ResourceDescription> fromBoundResourceInvokers(
                 Set<Map.Entry<String, List<ResourceInvoker>>> bound) {
-            Map<String, ResourceDescription> descriptions = new HashMap<>();
+            Map<String, ResourceDescription> descriptionMap = new HashMap<>();
 
             for (Map.Entry<String, List<ResourceInvoker>> entry : bound) {
                 for (ResourceInvoker invoker : entry.getValue()) {
@@ -147,8 +152,10 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                         continue;
                     }
 
-                    if (!descriptions.containsKey(basePath)) {
-                        descriptions.put(basePath, new ResourceDescription(basePath));
+                    ResourceDescription description = descriptionMap.get(basePath);
+                    if (description == null) {
+                        description = new ResourceDescription(basePath);
+                        descriptionMap.put(basePath, description);
                     }
 
                     String subPath = "";
@@ -167,11 +174,24 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                         }
                     }
 
-                    descriptions.get(basePath).addMethod(basePath + subPath, method);
+                    String fullPath = basePath;
+                    if (!subPath.isEmpty()) {
+                        if (basePath.endsWith("/")) {
+                            fullPath += subPath;
+                        } else {
+                            fullPath = basePath + "/" + subPath;
+                        }
+                    }
+                    description.addMethod(fullPath, method);
                 }
             }
 
-            return new LinkedList<>(descriptions.values());
+            List<ResourceDescription> descriptions = new ArrayList<>(descriptionMap.values());
+            descriptions.sort(RESOURCE_DESCRIPTION_COMPARATOR);
+            for (ResourceDescription description : descriptions) {
+                description.calls.sort(METHOD_DESCRIPTION_COMPARATOR);
+            }
+            return descriptions;
         }
     }
 
@@ -231,7 +251,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "Resources overview");
             sb.resourcesStart("REST resources");
             for (ResourceDescription resource : descriptions) {
-                sb.resourcePath(adjustRoot(resource.basePath));
+                sb.resourcePath(adjustRoot(httpRoot, resource.basePath));
                 for (MethodDescription method : resource.calls) {
                     sb.method(method.method, method.fullPath);
                     if (method.consumes != null) {
@@ -252,8 +272,26 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             if (!servletMappings.isEmpty()) {
                 sb.resourcesStart("Servlet mappings");
                 for (String servletMapping : servletMappings) {
-                    sb.servletMapping(adjustRoot(servletMapping));
+                    sb.servletMapping(adjustRoot(httpRoot, servletMapping));
                 }
+                sb.resourcesEnd();
+            }
+
+            if (!reactiveRoutes.isEmpty()) {
+                sb.resourcesStart("Reactive Routes");
+                sb.resourceStart();
+                for (RouteDescription route : reactiveRoutes) {
+                    sb.method(route.getHttpMethod(), route.getPath() != null ? route.getPath() : "/*");
+                    sb.listItem(route.getJavaMethod());
+                    if (route.getConsumes() != null) {
+                        sb.consumes(route.getConsumes());
+                    }
+                    if (route.getProduces() != null) {
+                        sb.produces(route.getProduces());
+                    }
+                    sb.methodEnd();
+                }
+                sb.resourceEnd();
                 sb.resourcesEnd();
             }
 
@@ -262,7 +300,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 if (!resources.isEmpty()) {
                     sb.resourcesStart("Static resources");
                     for (String staticResource : resources) {
-                        sb.staticResourcePath(adjustRoot(staticResource));
+                        sb.staticResourcePath(adjustRoot(httpRoot, staticResource));
                     }
                     sb.resourcesEnd();
                 }
@@ -270,8 +308,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
             if (!additionalEndpoints.isEmpty()) {
                 sb.resourcesStart("Additional endpoints");
-                for (String additionalEndpoint : additionalEndpoints) {
-                    sb.staticResourcePath(adjustRoot(additionalEndpoint));
+                for (AdditionalRouteDescription additionalEndpoint : additionalEndpoints) {
+                    sb.staticResourcePath(additionalEndpoint.getUri(),
+                            additionalEndpoint.getDescription());
                 }
                 sb.resourcesEnd();
             }
@@ -308,28 +347,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             }
         }
         try {
-            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(META_INF_RESOURCES);
-            while (resources.hasMoreElements()) {
-                URL url = resources.nextElement();
-                if (url.getProtocol().equals("jar")) {
-                    JarURLConnection jar = (JarURLConnection) url.openConnection();
-                    jar.setUseCaches(false);
-                    try (JarFile jarFile = jar.getJarFile()) {
-                        Enumeration<JarEntry> entries = jarFile.entries();
-                        while (entries.hasMoreElements()) {
-                            JarEntry entry = entries.nextElement();
-                            if (entry.getName().startsWith(META_INF_RESOURCES_SLASH)) {
-                                String sub = entry.getName().substring(META_INF_RESOURCES_SLASH.length());
-                                if (!sub.isEmpty()) {
-                                    if (!entry.getName().endsWith("/")) {
-                                        knownFiles.add(sub);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            ClassPathUtils.consumeAsPaths(META_INF_RESOURCES, p -> {
+                collectKnownPaths(p, knownFiles);
+            });
         } catch (IOException e) {
             LOG.error("Failed to read static resources", e);
         }
@@ -339,30 +359,26 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 .collect(Collectors.toList());
     }
 
-    private boolean isHtmlFileName(String fileName) {
-        return fileName.endsWith(".html") || fileName.endsWith(".htm");
+    private void collectKnownPaths(java.nio.file.Path resource, Set<String> knownPaths) {
+        try {
+            Files.walkFileTree(resource, new SimpleFileVisitor<java.nio.file.Path>() {
+                @Override
+                public FileVisitResult visitFile(java.nio.file.Path p, BasicFileAttributes attrs)
+                        throws IOException {
+                    String file = resource.relativize(p).toString();
+                    // Windows has a backslash
+                    file = file.replace('\\', '/');
+                    knownPaths.add(file);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
-    private String adjustRoot(String basePath) {
-        //httpRoot can optionally end with a slash
-        //also some templates want the returned path to start with a / and some don't
-        //to make this work we check if the basePath starts with a / or not, and make sure we
-        //the return value follows the same pattern
-
-        if (httpRoot.equals("/")) {
-            //leave it alone
-            return basePath;
-        }
-        if (basePath.startsWith("/")) {
-            if (!httpRoot.endsWith("/")) {
-                return httpRoot + basePath;
-            }
-            return httpRoot.substring(0, httpRoot.length() - 1) + basePath;
-        }
-        if (httpRoot.endsWith("/")) {
-            return httpRoot.substring(1) + basePath;
-        }
-        return httpRoot.substring(1) + "/" + basePath;
+    private boolean isHtmlFileName(String fileName) {
+        return fileName.endsWith(".html") || fileName.endsWith(".htm");
     }
 
     private static Variant selectVariant(HttpHeaders headers) {
@@ -389,7 +405,27 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         NotFoundExceptionMapper.nonJaxRsClassNameToMethodPaths = nonJaxRsPaths;
     }
 
-    public static void setAdditionalEndpoints(List<String> additionalEndpoints) {
+    public static void setAdditionalEndpoints(List<AdditionalRouteDescription> additionalEndpoints) {
         NotFoundExceptionMapper.additionalEndpoints = additionalEndpoints;
+    }
+
+    public static void setReactiveRoutes(List<RouteDescription> reactiveRoutes) {
+        NotFoundExceptionMapper.reactiveRoutes = reactiveRoutes;
+    }
+
+    private static class ResourceDescriptionComparator implements Comparator<ResourceDescription> {
+        @Override
+        public int compare(
+                NotFoundExceptionMapper.ResourceDescription d1, NotFoundExceptionMapper.ResourceDescription d2) {
+            return d1.basePath.compareTo(d2.basePath);
+        }
+    }
+
+    private static class MethodDescriptionComparator implements Comparator<MethodDescription> {
+        @Override
+        public int compare(MethodDescription m1, MethodDescription m2) {
+            int fullPathComparison = m1.fullPath.compareTo(m2.fullPath);
+            return fullPathComparison == 0 ? m1.method.compareTo(m2.method) : fullPathComparison;
+        }
     }
 }

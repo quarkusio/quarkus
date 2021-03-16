@@ -6,23 +6,33 @@
   <artifactId>${artifactId}</artifactId>
   <version>${version}</version>
   <properties>
-    <surefire-plugin.version>2.22.0</surefire-plugin.version>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <quarkus.version>999-SNAPSHOT</quarkus.version>
-    <azure.functions.maven.plugin.version>1.3.2</azure.functions.maven.plugin.version>
+    <compiler-plugin.version>3.8.1</compiler-plugin.version>
+    <maven.compiler.parameters>true</maven.compiler.parameters>
+    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <quarkus-plugin.version>999-SNAPSHOT</quarkus-plugin.version>
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+    <quarkus.platform.version>999-SNAPSHOT</quarkus.platform.version>
+    <resources-plugin.version>3.1.0</resources-plugin.version>
+    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+
+    <azure.functions.maven.plugin.version>1.9.1</azure.functions.maven.plugin.version>
     <functionAppName>${appName}</functionAppName>
     <functionAppRegion>${appRegion}</functionAppRegion>
     <functionResourceGroup>${resourceGroup}</functionResourceGroup>
     <function>${function}</function>
     <stagingDirectory>${project.build.directory}/azure-functions/${functionAppName}</stagingDirectory>
+    <quarkus.package.type>uber-jar</quarkus.package.type>
   </properties>
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-bom</artifactId>
-        <version>${quarkus.version}</version>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>${quarkus.platform.artifact-id}</artifactId>
+        <version>${quarkus.platform.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -33,24 +43,25 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy</artifactId>
-      <version>${quarkus.version}</version>
     </dependency>
     <!-- remove if not using servlets -->
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-undertow</artifactId>
-      <version>${quarkus.version}</version>
     </dependency>
     <!-- remove if not using vertx web -->
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-vertx-web</artifactId>
-      <version>${quarkus.version}</version>
+    </dependency>
+    <!-- remove if not using funqy -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-funqy-http</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-azure-functions-http</artifactId>
-      <version>${quarkus.version}</version>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -68,10 +79,7 @@
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus.version}</version>
-        <configuration>
-          <uberJar>true</uberJar>
-        </configuration>
+        <version>${quarkus-plugin.version}</version>
         <executions>
           <execution>
             <goals>
@@ -81,12 +89,17 @@
         </executions>
       </plugin>
       <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${compiler-plugin.version}</version>
+      </plugin>
+      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
         <configuration>
-          <systemProperties>
+          <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-          </systemProperties>
+            <maven.home>${maven.home}</maven.home>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <!-- we only use azure plugin to deploy to Azure.
@@ -99,19 +112,19 @@
           <resourceGroup>${functionResourceGroup}</resourceGroup>
           <appName>${functionAppName}</appName>
           <region>${functionAppRegion}</region>
+          <runtime>
+            <!-- runtime os, could be windows, linux or docker-->
+            <os>windows</os>
+            <javaVersion>11</javaVersion>
+            <!-- for docker function, please set the following parameters -->
+            <!-- <image>[hub-user/]repo-name[:tag]</image> -->
+            <!-- <serverId></serverId> -->
+            <!-- <registryUrl></registryUrl>  -->
+          </runtime>
           <appSettings>
-            <!-- Run Azure Function from package file by default -->
-            <property>
-              <name>WEBSITE_RUN_FROM_PACKAGE</name>
-              <value>1</value>
-            </property>
             <property>
               <name>FUNCTIONS_EXTENSION_VERSION</name>
-              <value>~2</value>
-            </property>
-            <property>
-              <name>FUNCTIONS_WORKER_RUNTIME</name>
-              <value>java</value>
+              <value>~3</value>
             </property>
           </appSettings>
         </configuration>
@@ -119,7 +132,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>${resources-plugin.version}</version>
         <executions>
           <!-- add azure required json files
                to Azure staging directory -->
@@ -164,24 +177,23 @@
               </resources>
             </configuration>
           </execution>
-          <!-- copy the uber-jar into Azure staging directory -->
+        </executions>
+      </plugin>
+      <!-- azure plugin wants a specific name for the jar so need to copy runner jar and rename it -->
+      <plugin>
+        <groupId>com.coderplus.maven.plugins</groupId>
+        <artifactId>copy-rename-maven-plugin</artifactId>
+        <version>1.0.1</version>
+        <executions>
           <execution>
-            <id>copy-uberjar</id>
-            <phase>install</phase>
+            <id>rename-file</id>
+            <phase>package</phase>
             <goals>
-              <goal>copy-resources</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <overwrite>true</overwrite>
-              <outputDirectory>${stagingDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${project.build.directory}</directory>
-                  <includes>
-                    <include>${project.artifactId}-${project.version}-runner.jar</include>
-                  </includes>
-                </resource>
-              </resources>
+              <sourceFile>${project.build.directory}/${project.artifactId}-${project.version}-runner.jar</sourceFile>
+              <destinationFile>${stagingDirectory}/${project.artifactId}-${project.version}.jar</destinationFile>
             </configuration>
           </execution>
         </executions>

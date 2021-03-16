@@ -11,21 +11,24 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.cli.common.ExitCode;
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments;
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation;
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity;
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation;
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler;
 import org.jetbrains.kotlin.config.Services;
 
-import io.quarkus.dev.CompilationProvider;
+import io.quarkus.deployment.dev.CompilationProvider;
 
 public class KotlinCompilationProvider implements CompilationProvider {
 
     private static final Logger log = Logger.getLogger(KotlinCompilationProvider.class);
 
-    // see: https://github.com/JetBrains/kotlin/blob/v1.3.61/libraries/tools/kotlin-maven-plugin/src/main/java/org/jetbrains/kotlin/maven/KotlinCompileMojoBase.java#L181
+    // see: https://github.com/JetBrains/kotlin/blob/v1.3.72/libraries/tools/kotlin-maven-plugin/src/main/java/org/jetbrains/kotlin/maven/KotlinCompileMojoBase.java#L181
     private final static Pattern OPTION_PATTERN = Pattern.compile("([^:]+):([^=]+)=(.*)");
     private static final String KOTLIN_PACKAGE = "org.jetbrains.kotlin";
 
@@ -75,7 +78,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
                 compilerArguments);
 
         if (exitCode != ExitCode.OK && exitCode != ExitCode.COMPILATION_ERROR) {
-            throw new RuntimeException("Unable to invoke Kotlin compiler");
+            throw new RuntimeException("Unable to invoke Kotlin compiler. " + String.join("\n", messageCollector.getErrors()));
         }
 
         if (messageCollector.hasErrors()) {
@@ -102,7 +105,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
             return !errors.isEmpty();
         }
 
-        @Override
+        //kotlin 1.3 version
         public void report(CompilerMessageSeverity severity, String s, CompilerMessageLocation location) {
             if (severity.isError()) {
                 if ((location != null) && (location.getLineContent() != null)) {
@@ -117,6 +120,20 @@ public class KotlinCompilationProvider implements CompilationProvider {
 
         public List<String> getErrors() {
             return errors;
+        }
+
+        @Override
+        public void report(@NotNull CompilerMessageSeverity severity, @NotNull String s,
+                @Nullable CompilerMessageSourceLocation location) {
+            if (severity.isError()) {
+                if ((location != null) && (location.getLineContent() != null)) {
+                    errors.add(String.format("%s%n%s:%d:%d%nReason: %s", location.getLineContent(), location.getPath(),
+                            location.getLine(),
+                            location.getColumn(), s));
+                } else {
+                    errors.add(s);
+                }
+            }
         }
     }
 }

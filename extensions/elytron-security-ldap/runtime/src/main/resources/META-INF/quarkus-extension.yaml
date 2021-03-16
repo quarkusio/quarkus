@@ -1,0 +1,10 @@
+---
+name: "Elytron Security LDAP Realm"
+metadata:
+  keywords:
+  - "security"
+  - "ldap"
+  guide: "https://quarkus.io/guides/security-ldap"
+  categories:
+  - "security"
+  status: "preview"

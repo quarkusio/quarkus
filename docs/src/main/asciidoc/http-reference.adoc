@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - HTTP Reference
 
@@ -29,6 +29,29 @@ was chosen as it is the standard location for resources in `jar` files as define
 Quarkus can be used without Servlet following this convention allows existing code that places its resources in this
 location to function correctly.
 
+=== WebJar Locator Support
+
+If you are using webjars, like the following JQuery one
+[source, xml]
+----
+<dependency>
+    <groupId>org.webjars</groupId>
+    <artifactId>jquery</artifactId>
+    <version>3.1.1</version>
+</dependency>
+----
+and rather write `/webjars/jquery/jquery.min.js` instead of `/webjars/jquery/3.1.1/jquery.min.js`
+in your HTML files, you can add the `quarkus-webjars-locator` extension to your project.
+To use it, add the following to your project's dependencies:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-webjars-locator</artifactId>
+</dependency>
+----
+
 == Configuring the Context path
 
 By default Quarkus will serve content from under the root context. If you want to change this you can use the
@@ -44,6 +67,7 @@ will be served relative to `{quarkus.http.root-path}/{quarkus.servlet.context-pa
 If REST Assured is used for testing and `quarkus.http.root-path` is set then Quarkus will automatically configure the
 base URL for use in Quarkus tests, so test URL's should not include the root path.
 
+[[ssl]]
 == Supporting secure connections with SSL
 
 In order to have Quarkus support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
@@ -78,7 +102,7 @@ As with the certificate/key file combination, Quarkus will first try to resolve 
 
 Add the following property to your `application.properties`:
 
-[source,shell]
+[source,bash]
 ----
 quarkus.http.ssl.certificate.key-store-file=/path/to/keystore
 ----
@@ -132,6 +156,19 @@ If you want to disable HTTP/2 you can set:
 quarkus.http.http2=false
 ----
 
+== Listening on a Random Port
+
+If you don't want to specify a port you can set `quarkus.http.port=0` or `quarkus.http.test-port=0`. A random open port
+will be picked by the OS, and a log message printed in the console. When the port is bound the `quarkus.http.port` system
+property will be set to the actual port that was selected, so you can use this to get the actual port number from inside
+the application. If you are in a test you can inject the URL normally and this will be configured with the actual port,
+and REST Assured will also be configured appropriately.
+
+WARNING: As this sets a system property you can access `quarkus.http.port` via MicroProfile Config, however if you use
+injection the injected value may not always be correct. This port allocation is one of the last things to happen in
+Quarkus startup, so if your object that is being injected is created eagerly before the port has opened the injected
+value will not be correct.
+
 == CORS filter
 
 link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that
@@ -152,15 +189,17 @@ following properties will be applied before passing the request on to its actual
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.http.cors.origins||The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not
-set.
-|quarkus.http.cors.methods||The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
-not set.
-|quarkus.http.cors.headers||The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
-not set.
-|quarkus.http.cors.exposed-headers||The comma-separated list of HTTP headers exposed in CORS.
+|quarkus.http.cors.origins|*|The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not set or set to '*'.
+|quarkus.http.cors.methods|*|The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
+not set or set to '*'.
+|quarkus.http.cors.headers|*|The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
+not set or set to '*'.
+|quarkus.http.cors.exposed-headers|*|The comma-separated list of HTTP headers exposed in CORS. The filter allows any headers to be exposed if this is
+not set or set to '*'.
 |quarkus.http.cors.access-control-max-age||The duration (see note below) indicating how long the results of a pre-flight request can be cached.
 This value will be returned in a `Access-Control-Max-Age` response header.
+|quarkus.http.cors.access-control-allow-credentials||Boolean value to tell the browsers to expose the response to front-end JavaScript code
+when the request’s credentials mode Request.credentials is “include”
 |===
 
 
@@ -176,27 +215,53 @@ quarkus.http.cors.methods=GET,PUT,POST
 quarkus.http.cors.headers=X-Custom
 quarkus.http.cors.exposed-headers=Content-Disposition
 quarkus.http.cors.access-control-max-age=24H
+quarkus.http.cors.access-control-allow-credentials=true
 ----
 
 == HTTP Limits Configuration
 
-The following properties are supported.
+include::{generated-dir}/config/quarkus-vertx-http-config-group-server-limits-config.adoc[leveloffset=+1, opts=optional]
 
-[cols="<m,<m,<2",options="header"]
+== Configuring HTTP Access Logs
+
+You can add HTTP request logging by configuring it in `application.properties`. There are two options for logging,
+either logging to the standard JBoss logging output, or logging to a dedicated file.
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-config.adoc[opts=optional, leveloffset=+1]
+
+[frame="topbot",options="header"]
 |===
-|Property Name|Default|Description
-|quarkus.http.limits.max-body-size| `unlimited` |The maximum size of request body.
-|quarkus.http.limits.max-header-size|`2OK`|The maximum length of all headers.
+|Attribute                                                                    |Short Form|Long Form
+|Remote IP address                                                            | `%a`     | `%{REMOTE_IP}`
+|Local IP address                                                             | `%A`     | `%{LOCAL_IP}`
+|Bytes sent, excluding HTTP headers, or '-' if no bytes were sent             | `%b`     |
+|Bytes sent, excluding HTTP headers                                           | `%B`     | `%{BYTES_SENT}`
+|Remote host name                                                             | `%h`     | `%{REMOTE_HOST}`
+|Request protocol                                                             | `%H`     | `%{PROTOCOL}`
+|Request method                                                               | `%m`     | `%{METHOD}`
+|Local port                                                                   | `%p`     | `%{LOCAL_PORT}`
+|Query string (prepended with a '?' if it exists, otherwise an empty string)  | `%q`     | `%{QUERY_STRING}`
+|First line of the request                                                    | `%r`     | `%{REQUEST_LINE}`
+|HTTP status code of the response                                             | `%s`     | `%{RESPONSE_CODE}`
+|Date and time, in Common Log Format format                                   | `%t`     | `%{DATE_TIME}`
+|Remote user that was authenticated                                           | `%u`     | `%{REMOTE_USER}`
+|Requested URL path                                                           | `%U`     | `%{REQUEST_URL}`
+|Request relative path                                                        | `%R`     | `%{RELATIVE_PATH}`
+|Local server name                                                            | `%v`     | `%{LOCAL_SERVER_NAME}`
+|Time taken to process the request, in millis                                 | `%D`     | `%{RESPONSE_TIME}`
+|Time taken to process the request, in seconds                                | `%T`     |
+|Time taken to process the request, in micros                                 |          | `%{RESPONSE_TIME_MICROS}`
+|Time taken to process the request, in nanos                                  |          | `%{RESPONSE_TIME_NANOS}`
+|Current request thread name                                                  | `%I`     | `%{THREAD_NAME}`
+|SSL cypher                                                                   |          | `%{SSL_CIPHER}`
+|SSL client certificate                                                       |          | `%{SSL_CLIENT_CERT}`
+|SSL session id                                                               |          | `%{SSL_SESSION_ID}`
+|All request headers                                                          |          | `%{ALL_REQUEST_HEADERS}`
+|Cookie value                                                                 |          | `%{c,cookie_name}`
+|Query parameter                                                              |          | `%{q,query_param_name}`
+|Request header                                                               |          | `%{i,request_header_name}`
+|Response header                                                              |          | `%{o,response_header_name}`
 |===
-
-[NOTE]
-====
-The following config options will recognize sizes expressed as strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`.
-If no unit suffix is given, bytes are assumed.
-
-* `quarkus.http.limits.max-body-size`,
-* `quarkus.http.limits.max-header-size`
-====
 
 == Servlet Config
 
@@ -216,35 +281,6 @@ You can make use of the Undertow predicate language using an `undertow-handlers.
 in the `META-INF` directory of your application jar. This file contains handlers defined using the
 link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
 
-=== Configuring HTTP Access Logs
-
-You can add HTTP request logging by configuring the `AccessHandler` in the `undertow-handlers.conf` file.
-
-The simplest possible configuration can be a standard Apache `common` Log Format:
-
-[source]
-----
-access-log('common')
-----
-
-This will log every request using the standard Quarkus logging infrastructure under the `io.undertow.accesslog` category.
-
-You can customize the category like this:
-
-
-[source]
-----
-access-log(format='common', category='my.own.category')
-----
-
-Finally the logging format can be customized:
-
-[source]
-----
-access-log(format='%h %l %u %t "%r" %s %b %D "%{i,Referer}" "%{i,User-Agent}" "%{i,X-Request-ID}"', category='my.own.category')
-----
-
 === web.xml
 
 If you are using a `web.xml` file as your configuration file, you can place it in the `src/main/resources/META-INF` directory.
-

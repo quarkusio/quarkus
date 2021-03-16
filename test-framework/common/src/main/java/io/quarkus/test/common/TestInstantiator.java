@@ -4,7 +4,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
+import org.jboss.logging.Logger;
+
 public class TestInstantiator {
+
+    private static final Logger log = Logger.getLogger(TestInstantiator.class);
 
     public static Object instantiateTest(Class<?> testClass, ClassLoader classLoader) {
 
@@ -27,6 +31,7 @@ public class TestInstantiator {
             //            Bean<?> bean = bm.resolve(nonSubClasses);
             //            return bm.getReference(bean, testClass, bm.createCreationalContext(bean));
         } catch (Exception e) {
+            log.warn("Failed to initialize test as a CDI bean, falling back to direct initialization", e);
             try {
                 Constructor<?> ctor = testClass.getDeclaredConstructor();
                 ctor.setAccessible(true);

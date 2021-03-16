@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -26,7 +25,7 @@ import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 
 import io.quarkus.mailer.Mail;
-import io.reactivex.Flowable;
+import io.smallrye.mutiny.Multi;
 import io.vertx.ext.mail.MailConfig;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.mail.MailClient;
@@ -60,7 +59,7 @@ class MailerImplTest {
     @BeforeEach
     void init() {
         mailer = new MutinyMailerImpl();
-        mailer.configure(Optional.of(FROM), Optional.empty(), false);
+        mailer.mailerSupport = new MailerSupport(FROM, null, false);
         mailer.vertx = vertx;
         mailer.client = MailClient.createShared(mailer.vertx,
                 new MailConfig().setPort(wiser.getServer().getPort()));
@@ -230,7 +229,7 @@ class MailerImplTest {
         };
 
         mailer.send(Mail.withText(TO, "Test", "testAttachmentAsStream")
-                .addAttachment("my-file.txt", Flowable.fromIterable(iterable), TEXT_CONTENT_TYPE))
+                .addAttachment("my-file.txt", Multi.createFrom().iterable(iterable), TEXT_CONTENT_TYPE))
                 .await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
@@ -261,7 +260,7 @@ class MailerImplTest {
         };
 
         legacyMailer.send(Mail.withText(TO, "Test", "testAttachmentAsStream")
-                .addAttachment("my-file.txt", Flowable.fromIterable(iterable), TEXT_CONTENT_TYPE))
+                .addAttachment("my-file.txt", Multi.createFrom().iterable(iterable), TEXT_CONTENT_TYPE))
                 .toCompletableFuture().join();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);

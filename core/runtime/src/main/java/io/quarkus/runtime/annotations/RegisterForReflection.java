@@ -23,6 +23,13 @@ public @interface RegisterForReflection {
     boolean fields() default true;
 
     /**
+     * If nested classes/interfaces should be ignored/registered
+     *
+     * This is useful when it's necessary to register inner (especially private) classes for Reflection.
+     */
+    boolean ignoreNested() default true;
+
+    /**
      * Alternative classes that should actually be registered for reflection instead of the current class.
      *
      * This allows for classes in 3rd party libraries to be registered without modification or writing an
@@ -30,4 +37,10 @@ public @interface RegisterForReflection {
      * generally just be placed on an empty class that is not otherwise used.
      */
     Class<?>[] targets() default {};
+
+    /**
+     * This allows for classes to be registered for reflection via class names. This is useful when it's necessary to
+     * register private classes for Reflection.
+     */
+    String[] classNames() default {};
 }

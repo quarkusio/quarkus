@@ -1,23 +1,20 @@
 package io.quarkus.maven;
 
-import java.io.IOException;
+import static java.util.stream.Collectors.toSet;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import io.quarkus.cli.commands.AddExtensions;
-import io.quarkus.cli.commands.QuarkusCommandOutcome;
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.generators.BuildTool;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.MessageWriter;
+import io.quarkus.devtools.commands.AddExtensions;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.QuarkusProject;
 
 /**
  * Allow adding an extension to an existing pom.xml file.
@@ -26,7 +23,7 @@ import io.quarkus.platform.tools.MessageWriter;
  * parameters.
  */
 @Mojo(name = "add-extension")
-public class AddExtensionMojo extends BuildFileMojoBase {
+public class AddExtensionMojo extends QuarkusProjectMojoBase {
 
     /**
      * The list of extensions to be added.
@@ -49,29 +46,21 @@ public class AddExtensionMojo extends BuildFileMojoBase {
     }
 
     @Override
-    public void doExecute(BuildFile buildFile, QuarkusPlatformDescriptor platformDescr, MessageWriter log)
+    public void doExecute(final QuarkusProject quarkusProject, final MessageWriter log)
             throws MojoExecutionException {
-
-        if (buildFile == null) {
-            try {
-                buildFile = BuildTool.MAVEN.createBuildFile(new FileProjectWriter(project.getBasedir()));
-            } catch (IOException e) {
-                throw new MojoExecutionException("Failed to initialize the project's build descriptor", e);
-            }
-        }
         Set<String> ext = new HashSet<>();
         if (extensions != null && !extensions.isEmpty()) {
             ext.addAll(extensions);
         } else {
             // Parse the "extension" just in case it contains several comma-separated values
             // https://github.com/quarkusio/quarkus/issues/2393
-            ext.addAll(Arrays.stream(extension.split(",")).map(s -> s.trim()).collect(Collectors.toSet()));
+            ext.addAll(Arrays.stream(extension.split(",")).map(String::trim).collect(toSet()));
         }
 
         try {
-            final QuarkusCommandOutcome outcome = new AddExtensions(buildFile, platformDescr)
-                    .extensions(ext.stream().map(String::trim).collect(Collectors.toSet()))
-                    .execute();
+            AddExtensions addExtensions = new AddExtensions(quarkusProject)
+                    .extensions(ext.stream().map(String::trim).collect(toSet()));
+            final QuarkusCommandOutcome outcome = addExtensions.execute();
             if (!outcome.isSuccess()) {
                 throw new MojoExecutionException("Unable to add extensions");
             }

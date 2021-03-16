@@ -15,12 +15,12 @@
         <quarkus.platform.artifact-id>${bom_artifactId}</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>${bom_groupId}</quarkus.platform.group-id>
         <quarkus.platform.version>${bom_version}</quarkus.platform.version>
-        <quarkus-plugin.version>${plugin_version}</quarkus-plugin.version>
+        <quarkus-plugin.version>${maven_plugin_version}</quarkus-plugin.version>
         <compiler-plugin.version>${compiler_plugin_version}</compiler-plugin.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
         <kotlin.version>${kotlin_version}</kotlin.version>
     </properties>
-
+    ${maven_repositories}${maven_plugin_repositories}
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -52,7 +52,7 @@
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
+            <artifactId>kotlin-extensions</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -62,12 +62,14 @@
         <testSourceDirectory>src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
-                <groupId>${plugin_groupId}</groupId>
-                <artifactId>${plugin_artifactId}</artifactId>
+                <groupId>${maven_plugin_groupId}</groupId>
+                <artifactId>${maven_plugin_artifactId}</artifactId>
                 <version>${quarkus-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
                             <goal>build</goal>
                         </goals>
                     </execution>
@@ -82,9 +84,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
                 <configuration>
-                    <systemProperties>
+                    <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    </systemProperties>
+                        <maven.home>${maven.home}</maven.home>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -107,6 +110,7 @@
                 </executions>
                 <configuration>
                     <javaParameters>true</javaParameters>
+                    <jvmTarget>1.8</jvmTarget>
                     <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>
@@ -155,9 +159,11 @@
                                     <goal>verify</goal>
                                 </goals>
                                 <configuration>
-                                    <systemProperties>
+                                    <systemPropertyVariables>
                                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                    </systemProperties>
+                                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                        <maven.home>${maven.home}</maven.home>
+                                    </systemPropertyVariables>
                                 </configuration>
                             </execution>
                         </executions>

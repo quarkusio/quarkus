@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Neo4j
 :neo4j_version: 4.0.0
@@ -18,7 +18,7 @@ Cypher is used to for both querying the graph and creating or updating nodes and
 As a declarative language it used to tell the database what to do and not how to do it.
 
 NOTE: Learn more about Cypher in the https://neo4j.com/docs/cypher-manual/current/[Neo4j Cypher manual].
-      Cypher is not only availabe in Neo4j, but for example coming to https://github.com/opencypher/morpheus[Apache Spark].
+      Cypher is not only available in Neo4j, but for example coming to https://github.com/opencypher/morpheus[Apache Spark].
       A spec called http://www.opencypher.org[OpenCypher] is available, too.
 
 Clients communicate over the so called Bolt protocol with the database.
@@ -91,7 +91,7 @@ To complete this guide, you need:
 
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * an IDE
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * Access to a Neo4j Database
 * Optional Docker for your system
 
@@ -99,7 +99,7 @@ To complete this guide, you need:
 
 The easiest way to start a Neo4j instance is a locally installed Docker environment.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 docker run --publish=7474:7474 --publish=7687:7687 -e 'NEO4J_AUTH=neo4j/secret' neo4j:{neo4j_version}
 ----
@@ -122,12 +122,13 @@ It contains a very simple UI to use the JAX-RS resources created here, too.
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=neo4j-quickstart \
-    -Dextensions="neo4j,resteasy-jsonb"
+    -DclassName="org.acme.datasource.GreetingResource" \
+    -Dextensions="resteasy,neo4j,resteasy-jackson"
 cd neo4j-quickstart
 ----
 
@@ -141,10 +142,10 @@ It generates:
 * an associated test
 
 The Neo4j extension has been added already to your `pom.xml`.
-In addition, we added `resteasy-jsonb`, which allows us to expose `Fruit` instances over HTTP in the JSON format via JAX-RS resources.
+In addition, we added `resteasy-jackson`, which allows us to expose `Fruit` instances over HTTP in the JSON format via JAX-RS resources.
 If you have an already created project, the `neo4j` extension can be added to an existing Quarkus project with the `add-extension` command:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="neo4j"
 ----
@@ -163,7 +164,7 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 
 The Neo4j driver can be configured with standard Quarkus properties:
 
-[source]
+[source,properties]
 .src/main/resources/application.properties
 ----
 quarkus.neo4j.uri = bolt://localhost:7687
@@ -200,16 +201,11 @@ Add a `FruitResource` skeleton like this and `@Inject` a `org.neo4j.driver.Drive
 package org.acme.neo4j;
 
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.neo4j.driver.Driver;
 
 @Path("fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     @Inject
@@ -247,14 +243,14 @@ public CompletionStage<Response> get() {
 
 Now start Quarkus in `dev` mode with:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
 
 and retrieve the endpoint like this
 
-[source, shell]
+[source,bash]
 ----
 curl localhost:8080/fruits
 ----
@@ -291,7 +287,7 @@ The node is returned, a `Fruit` entity created and then mapped to a `201` create
 
 A curl request against this path may look like this:
 
-[source, shell]
+[source,bash]
 ----
 curl -v -X "POST" "http://localhost:8080/fruits" \
      -H 'Content-Type: application/json; charset=utf-8' \
@@ -340,7 +336,7 @@ public CompletionStage<Response> getSingle(@PathParam("id") Long id) {
 
 A request may look like this:
 
-[source, shell]
+[source,bash]
 ----
 curl localhost:8080/fruits/42
 ----
@@ -374,7 +370,7 @@ public CompletionStage<Response> delete(@PathParam("id") Long id) {
 
 A request may look like this
 
-[source, shell]
+[source,bash]
 ----
 curl -X DELETE localhost:8080/fruits/42
 ----
@@ -389,7 +385,7 @@ The Cypher manual linked in the introduction will help you with modelling your q
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -jar target/neo4j-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.
@@ -399,9 +395,14 @@ Depending on your system, that will take some time.
 If you are using the `quarkus-smallrye-health` extension, `quarkus-neo4j` will automatically add a readiness health check
 to validate the connection to Neo4j.
 
-So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be disabled by setting the `quarkus.neo4j.health.enabled` property to `false` in your `application.properties`.
+
+=== Driver metrics
+
+If you are using a metrics extension and specify the config property `quarkus.neo4j.pool.metrics-enabled=true`, the Neo4j extension will
+expose several metrics related to the Neo4j connection pool.
 
 === Explore Cypher and the Graph
 

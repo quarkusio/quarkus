@@ -57,7 +57,7 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
         }
 
         return new RawBeanInfo(input.simpleName(),
-                input.name().prefix().toString(),
+                input.name().prefix() == null ? "" : input.name().prefix().toString(),
                 annotations,
                 superClassInfo);
     }

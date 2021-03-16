@@ -5,9 +5,9 @@ import java.io.Writer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.runner.bootstrap.BootstrapDebug;
 
 public class GeneratedBeanGizmoAdaptor implements ClassOutput {
 

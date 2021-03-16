@@ -1,10 +1,10 @@
 package io.quarkus.funqy.runtime.bindings.http;
 
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -16,11 +16,12 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.runtime.FunctionConstructor;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
+import io.quarkus.funqy.runtime.query.QueryObjectMapper;
+import io.quarkus.funqy.runtime.query.QueryReader;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -28,21 +29,25 @@ import io.vertx.ext.web.RoutingContext;
  */
 @Recorder
 public class FunqyHttpBindingRecorder {
-    private static String contextPath;
     private static ObjectMapper objectMapper;
+    private static QueryObjectMapper queryMapper;
 
-    public void init(String rootPath) {
-        contextPath = rootPath;
+    public void init() {
         objectMapper = getObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        queryMapper = new QueryObjectMapper();
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
-                ObjectReader reader = objectMapper.readerFor(invoker.getInputType());
+                JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
+                ObjectReader reader = objectMapper.readerFor(javaInputType);
+                QueryReader queryReader = queryMapper.readerFor(invoker.getInputType());
                 invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
+                invoker.getBindingContext().put(QueryReader.class.getName(), queryReader);
             }
             if (invoker.hasOutput()) {
-                ObjectWriter writer = objectMapper.writerFor(invoker.getOutputType());
+                JavaType javaOutputType = objectMapper.constructType(invoker.getOutputType());
+                ObjectWriter writer = objectMapper.writerFor(javaOutputType);
                 invoker.getBindingContext().put(ObjectWriter.class.getName(), writer);
             }
         }
@@ -56,7 +61,8 @@ public class FunqyHttpBindingRecorder {
         return new ObjectMapper();
     }
 
-    public Consumer<Route> start(Supplier<Vertx> vertx,
+    public Handler<RoutingContext> start(String contextPath,
+            Supplier<Vertx> vertx,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
             Executor executor) {
@@ -70,20 +76,6 @@ public class FunqyHttpBindingRecorder {
         });
         FunctionConstructor.CONTAINER = beanContainer;
 
-        Handler<RoutingContext> handler = vertxRequestHandler(vertx, beanContainer, executor);
-
-        return new Consumer<Route>() {
-
-            @Override
-            public void accept(Route route) {
-                route.handler(handler);
-            }
-        };
-    }
-
-    public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx,
-            BeanContainer beanContainer, Executor executor) {
         return new VertxRequestHandler(vertx.get(), beanContainer, contextPath, executor);
     }
-
 }

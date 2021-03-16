@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
@@ -39,6 +41,60 @@ public class BasicTests {
         final BuildResult result = chain.createExecutionBuilder("my-app.jar").execute();
         assertTrue(ran.get());
         assertNotNull(result.consume(DummyItem.class));
+    }
+
+    @Test
+    public void testFailure() throws ChainBuildException, BuildException {
+        final BuildChainBuilder builder = BuildChain.builder();
+        BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                throw new NoClassDefFoundError();
+            }
+        });
+        stepBuilder.produces(DummyItem.class);
+        stepBuilder.build();
+        builder.addFinal(DummyItem.class);
+        BuildChain chain = builder.build();
+        Assertions.assertThrows(BuildException.class, new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                chain.createExecutionBuilder("my-app.jar").execute();
+            }
+        });
+    }
+
+    @Test
+    public void testFailure2() throws ChainBuildException, BuildException {
+        final BuildChainBuilder builder = BuildChain.builder();
+        BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                throw new NoClassDefFoundError();
+            }
+        });
+
+        final AtomicBoolean ran = new AtomicBoolean();
+        stepBuilder.produces(DummyItem.class);
+        stepBuilder.build();
+        stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                ran.set(true);
+            }
+        });
+        stepBuilder.consumes(DummyItem.class);
+        stepBuilder.produces(DummyItem2.class);
+        stepBuilder.build();
+        builder.addFinal(DummyItem2.class);
+        BuildChain chain = builder.build();
+        Assertions.assertFalse(ran.get());
+        Assertions.assertThrows(BuildException.class, new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                chain.createExecutionBuilder("my-app.jar").execute();
+            }
+        });
     }
 
     @Test

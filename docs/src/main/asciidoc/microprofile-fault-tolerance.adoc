@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Fault Tolerance
 
@@ -21,7 +21,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 
 == The Scenario
 
@@ -44,19 +44,37 @@ The solution is located in the `microprofile-fault-tolerance-quickstart` {quicks
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-fault-tolerance-quickstart \
     -DclassName="org.acme.microprofile.faulttolerance.CoffeeResource" \
     -Dpath="/coffee" \
-    -Dextensions="smallrye-fault-tolerance, resteasy-jsonb"
+    -Dextensions="resteasy,smallrye-fault-tolerance,resteasy-jackson"
 cd microprofile-fault-tolerance-quickstart
 ----
 
 This command generates a Maven structure, importing the extensions for RESTEasy/JAX-RS
-and Smallrye Fault Tolerance, which is an implementation of the MicroProfile Fault Tolerance spec that Quarkus uses.
+and SmallRye Fault Tolerance, which is an implementation of the MicroProfile Fault Tolerance spec that Quarkus uses.
+
+If you already have your Quarkus project configured, you can add the `smallrye-fault-tolerance` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+</dependency>
+----
 
 == Preparing an Application: REST Endpoint and CDI Bean
 
@@ -145,19 +163,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.jboss.logging.Logger;
 
 @Path("/coffee")
-@Produces(MediaType.APPLICATION_JSON)
 public class CoffeeResource {
 
     private static final Logger LOGGER = Logger.getLogger(CoffeeResource.class);
 
     @Inject
-    private CoffeeRepositoryService coffeeRepository;
+    CoffeeRepositoryService coffeeRepository;
 
     private AtomicLong counter = new AtomicLong(0);
 
@@ -186,7 +201,7 @@ in the `CoffeeResource#coffees()` endpoint method in about 50 % of requests.
 
 Why not check that our application works? Run the Quarkus development server with:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -373,7 +388,7 @@ public class CoffeeRepositoryService {
 }
 ----
 
-And inject the code bellow into the `CoffeeResource` endpoint:
+And inject the code below into the `CoffeeResource` endpoint:
 
 [source,java]
 ----
@@ -429,6 +444,39 @@ To test this out, do the following:
 5. Give it 5 seconds during which circuit breaker should close and you should be able to make two successful requests
    again.
 
+== Runtime configuration
+
+You can override the annotations parameters at runtime inside your `application.properties` file.
+
+If we take the retry example that we already saw:
+
+[source,java]
+----
+package org.acme;
+
+import org.eclipse.microprofile.faulttolerance.Retry;
+...
+
+public class CoffeeResource {
+    ...
+    @GET
+    @Retry(maxRetries = 4)
+    public List<Coffee> coffees() {
+        ...
+    }
+    ...
+}
+----
+
+We can override the `maxRetries` parameter with 6 retries instead of 4 by the following configuration item:
+[source,properties]
+----
+org.acme.CoffeeResource/coffees/Retry/maxRetries=6
+----
+
+NOTE: The format is `fully-qualified-class-name/method-name/annotation-name/property-name=value`.
+You can also configure a property for all the annotation via `annotation-name/property-name=value`.
+
 == Conclusion
 
 MicroProfile Fault Tolerance allows to improve resiliency of your application, without having an impact on the complexity
@@ -438,7 +486,7 @@ All that is needed to enable the fault tolerance features in Quarkus is:
 
 * adding the `smallrye-fault-tolerance` Quarkus extension to your project using the `quarkus-maven-plugin`:
 +
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
 ----

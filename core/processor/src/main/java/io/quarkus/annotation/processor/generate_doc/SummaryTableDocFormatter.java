@@ -39,7 +39,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
         }
 
         for (ConfigDocItem configDocItem : configDocItems) {
-            if (configDocItem.isConfigSection()
+            if (configDocItem.isConfigSection() && configDocItem.getConfigDocSection().isShowSection()
                     && configDocItem.getConfigDocSection().getAnchorPrefix() != null) {
                 anchorPrefix = configDocItem.getConfigDocSection().getAnchorPrefix() + "_";
             }
@@ -90,12 +90,15 @@ final class SummaryTableDocFormatter implements DocFormatter {
 
     @Override
     public void format(Writer writer, ConfigDocSection configDocSection) throws IOException {
-        String anchor = anchorPrefix + getAnchor(configDocSection.getName());
-        String sectionTitle = String.format(SECTION_TITLE, anchor, anchor, configDocSection.getSectionDetailsTitle());
-        final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, sectionTitle,
-                configDocSection.isOptional() ? "This configuration section is optional" : Constants.EMPTY);
+        if (configDocSection.isShowSection()) {
+            String anchor = anchorPrefix
+                    + getAnchor(configDocSection.getName() + Constants.DASH + configDocSection.getSectionDetailsTitle());
+            String sectionTitle = String.format(SECTION_TITLE, anchor, anchor, configDocSection.getSectionDetailsTitle());
+            final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, sectionTitle,
+                    configDocSection.isOptional() ? "This configuration section is optional" : Constants.EMPTY);
 
-        writer.append(sectionRow);
+            writer.append(sectionRow);
+        }
 
         for (ConfigDocItem configDocItem : configDocSection.getConfigDocItems()) {
             configDocItem.accept(writer, this);

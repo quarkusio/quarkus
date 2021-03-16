@@ -6,17 +6,17 @@
         <artifactId>quarkus-resteasy-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-common</artifactId>
     <name>Quarkus - RESTEasy - Common - Runtime</name>
-    <description>REST framework implementing JAX-RS and more</description>
+    <description>Components common to the RESTEasy server and the REST Client</description>
     <dependencies>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -26,18 +26,6 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-core</artifactId>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-context-propagation</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.smallrye</groupId>
-                    <artifactId>smallrye-context-propagation</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
@@ -45,6 +33,40 @@
         <dependency>
             <groupId>com.sun.activation</groupId>
             <artifactId>jakarta.activation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.json.bind</groupId>
+            <artifactId>jakarta.json.bind-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-json-binding-provider</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -59,6 +81,7 @@
                         <excludedArtifact>javax.activation:javax.activation-api</excludedArtifact>
                         <excludedArtifact>javax.activation:activation</excludedArtifact>
                         <excludedArtifact>jakarta.ws.rs:jakarta.ws.rs-api</excludedArtifact>
+                        <excludedArtifact>org.jboss.resteasy:resteasy-context-propagation</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>
             </plugin>

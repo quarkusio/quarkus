@@ -11,11 +11,12 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.it.arc.UnusedBean;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestExtension;
 
-@QuarkusTest
+@ExtendWith(QuarkusTestExtension.class)
 class BeanOnlyInTestCase {
 
     @Inject

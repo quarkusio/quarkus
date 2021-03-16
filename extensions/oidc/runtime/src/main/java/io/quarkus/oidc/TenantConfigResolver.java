@@ -1,6 +1,5 @@
 package io.quarkus.oidc;
 
-import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.vertx.ext.web.RoutingContext;
 
 /**

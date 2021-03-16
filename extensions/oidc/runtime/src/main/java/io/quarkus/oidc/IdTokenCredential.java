@@ -1,9 +1,8 @@
 package io.quarkus.oidc;
 
-import io.quarkus.oidc.runtime.ContextAwareTokenCredential;
 import io.vertx.ext.web.RoutingContext;
 
-public class IdTokenCredential extends ContextAwareTokenCredential {
+public class IdTokenCredential extends OidcTokenCredential {
 
     public IdTokenCredential() {
         this(null, null);

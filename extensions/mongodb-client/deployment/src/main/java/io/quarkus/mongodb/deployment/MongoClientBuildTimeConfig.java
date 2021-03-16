@@ -13,8 +13,14 @@ public class MongoClientBuildTimeConfig {
     public boolean healthEnabled;
 
     /**
-     * Whether or not metrics are published in case the smallrye-metrics extension is present.
+     * Whether or not metrics are published in case a metrics extension is present.
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
+
+    /**
+     * If set to true, the default clients will always be created even if there are no injection points that use them
+     */
+    @ConfigItem(name = "force-default-clients")
+    public boolean forceDefaultClients;
 }

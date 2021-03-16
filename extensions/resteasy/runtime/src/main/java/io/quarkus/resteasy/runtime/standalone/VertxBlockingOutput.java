@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage;
 import org.jboss.logging.Logger;
 
 import io.netty.buffer.ByteBuf;
+import io.quarkus.vertx.core.runtime.VertxBufferImpl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -106,16 +107,8 @@ public class VertxBlockingOutput implements VertxOutput {
         } else {
             request.response().write(buffer, handler(ret));
         }
-        return ret.handle((v, t) -> {
-            if (t != null) {
-                if (data != null && data.refCnt() > 0) {
-                    data.release();
-                }
-                rethrow(new IOException("Failed to write", t));
-            }
-
-            return v;
-        });
+        //no need to free 'data', the write will handle this
+        return ret;
     }
 
     private <T extends Throwable> void rethrow(Throwable x) throws T {

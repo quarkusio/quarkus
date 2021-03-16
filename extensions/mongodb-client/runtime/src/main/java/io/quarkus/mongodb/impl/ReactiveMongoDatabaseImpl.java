@@ -88,12 +88,12 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public Uni<Void> drop() {
-        return Wrappers.toEmptyUni(database.drop());
+        return Wrappers.toUni(database.drop());
     }
 
     @Override
     public Uni<Void> drop(ClientSession clientSession) {
-        return Wrappers.toEmptyUni(database.drop(clientSession));
+        return Wrappers.toUni(database.drop(clientSession));
     }
 
     @Override
@@ -157,47 +157,47 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public Uni<Void> createCollection(String collectionName) {
-        return Wrappers.toEmptyUni(database.createCollection(collectionName));
+        return Wrappers.toUni(database.createCollection(collectionName));
     }
 
     @Override
     public Uni<Void> createCollection(String collectionName, CreateCollectionOptions options) {
-        return Wrappers.toEmptyUni(database.createCollection(collectionName, options));
+        return Wrappers.toUni(database.createCollection(collectionName, options));
     }
 
     @Override
     public Uni<Void> createCollection(ClientSession clientSession, String collectionName) {
-        return Wrappers.toEmptyUni(database.createCollection(clientSession, collectionName));
+        return Wrappers.toUni(database.createCollection(clientSession, collectionName));
     }
 
     @Override
     public Uni<Void> createCollection(ClientSession clientSession, String collectionName,
             CreateCollectionOptions options) {
-        return Wrappers.toEmptyUni(database.createCollection(clientSession, collectionName, options));
+        return Wrappers.toUni(database.createCollection(clientSession, collectionName, options));
     }
 
     @Override
     public Uni<Void> createView(String viewName, String viewOn, List<? extends Bson> pipeline) {
-        return Wrappers.toEmptyUni(database.createView(viewName, viewOn, pipeline));
+        return Wrappers.toUni(database.createView(viewName, viewOn, pipeline));
     }
 
     @Override
     public Uni<Void> createView(String viewName, String viewOn, List<? extends Bson> pipeline,
             CreateViewOptions createViewOptions) {
-        return Wrappers.toEmptyUni(database.createView(viewName, viewOn, pipeline, createViewOptions));
+        return Wrappers.toUni(database.createView(viewName, viewOn, pipeline, createViewOptions));
     }
 
     @Override
     public Uni<Void> createView(ClientSession clientSession, String viewName, String viewOn,
             List<? extends Bson> pipeline) {
-        return Wrappers.toEmptyUni(database.createView(clientSession, viewName, viewOn, pipeline));
+        return Wrappers.toUni(database.createView(clientSession, viewName, viewOn, pipeline));
     }
 
     @Override
     public Uni<Void> createView(ClientSession clientSession, String viewName, String viewOn,
             List<? extends Bson> pipeline, CreateViewOptions createViewOptions) {
         return Wrappers
-                .toEmptyUni(database.createView(clientSession, viewName, viewOn, pipeline, createViewOptions));
+                .toUni(database.createView(clientSession, viewName, viewOn, pipeline, createViewOptions));
     }
 
     @Override
@@ -332,5 +332,10 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
     public <T> Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, Class<T> clazz,
             AggregateOptions options) {
         return Wrappers.toMulti(apply(options, database.aggregate(clientSession, pipeline, clazz)));
+    }
+
+    @Override
+    public MongoDatabase unwrap() {
+        return database;
     }
 }

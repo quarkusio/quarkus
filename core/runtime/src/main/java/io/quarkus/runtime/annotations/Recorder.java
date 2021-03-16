@@ -16,6 +16,21 @@ import java.lang.annotation.Target;
  * recorded, and bytecode will be written out to be executed at runtime to make the same
  * sequence of invocations with the same parameters on the actual recorder objects.
  *
+ * Recorders can only have objects of the following types passed in:
+ *
+ * There are some limitations on what can be recorded. Only the following objects are allowed as parameters to
+ * recording proxies:
+ * <p>
+ * - primitives
+ * - String
+ * - Class
+ * - Objects returned from a previous recorder invocation
+ * - Objects with a no-arg constructor and getter/setters for all properties (or public fields)
+ * - Objects with a constructor annotated with @RecordableConstructor with parameter names that match field names
+ * - Any arbitrary object via the
+ * {@link io.quarkus.deployment.recording.RecorderContext#registerSubstitution(Class, Class, Class)} mechanism
+ * - arrays, lists and maps of the above
+ *
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

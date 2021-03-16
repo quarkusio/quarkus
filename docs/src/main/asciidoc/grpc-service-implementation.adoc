@@ -1,0 +1,277 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Implementing a gRPC Service
+
+include::./attributes.adoc[]
+
+gRPC service implementations exposed as beans are automatically registered and served by quarkus-grpc.
+
+IMPORTANT: Implementing a gRPC service requires the gRPC classes to be generated.
+Place your `proto` files in `src/main/proto` and run `mvn compile`.
+
+== Implementation base
+
+The generation has created 2 implementation bases:
+
+1. One using the default gRPC API
+2. One using the Mutiny API
+
+The first classname is structured as follows: `${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
+The second classname is structured as follows: `Mutiny${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
+
+For example, if you use `Greeter` as service name as in:
+
+[source]
+----
+service Greeter {
+    rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+----
+
+The regular implementation base is: `GreeterGrpc.GreeterImplBase`.
+The second implementation base is: `MutinyGreeterGrpc.GreeterImplBase`.
+
+Note that these classes are not interfaces but regular classes.
+When extending them, you need to override the service methods defined in the service definition.
+
+== Implementing a service with the default gRPC API
+
+To implement a gRPC service using the default gRPC API, create a class extending the default implementation base.
+Then, override the methods defined in the service interface.
+Finally, implement the service as a CDI bean using the `@Singleton` annotation:
+
+[source, java]
+----
+import javax.inject.Singleton;
+
+@Singleton
+public class HelloService extends GreeterGrpc.GreeterImplBase {
+
+    @Override
+    public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+        String name = request.getName();
+        String message = "Hello " + name;
+        responseObserver.onNext(HelloReply.newBuilder().setMessage(message).build());
+        responseObserver.onCompleted();
+    }
+}
+----
+
+== Implementing a service with the Mutiny API
+
+To implement a gRPC service using the Mutiny gRPC API, create a class extending the Mutiny implementation base.
+Then, override the methods defined in the service interface.
+These methods are using Mutiny types.
+Finally, implement the service as a CDI bean using the `@Singleton` annotation:
+
+[source, java]
+----
+import javax.inject.Singleton;
+
+@Singleton
+public class ReactiveHelloService extends MutinyGreeterGrpc.GreeterImplBase {
+
+    @Override
+    public Uni<HelloReply> sayHello(HelloRequest request) {
+        return Uni.createFrom().item(() ->
+                HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()
+        );
+    }
+}
+----
+
+== Blocking service implementation
+
+By default, all the methods from a gRPC service run on the event loop.
+As a consequence, you must **not** block.
+If your service logic must block, annotate the method with `io.smallrye.common.annotation.Blocking`:
+
+[source, java]
+----
+@Override
+@Blocking
+public Uni<HelloReply> sayHelloBlocking(HelloRequest request) {
+    // Do something blocking before returning the Uni
+}
+----
+
+== Handling streams
+
+gRPC allows receiving and returning streams:
+
+[source]
+----
+service Streaming {
+    rpc Source(Empty) returns (stream Item) {} // Returns a stream
+    rpc Sink(stream Item) returns (Empty) {}   // Reads a stream
+    rpc Pipe(stream Item) returns (stream Item) {}  // Reads a streams and return a streams
+}
+----
+
+Using Mutiny, you can implement these as follows:
+
+[source, java]
+----
+@Singleton
+public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
+
+    @Override
+    public Multi<Item> source(Empty request) {
+        // Just returns a stream emitting an item every 2ms and stopping after 10 items.
+        return Multi.createFrom().ticks().every(Duration.ofMillis(2))
+                .transform().byTakingFirstItems(10)
+                .map(l -> Item.newBuilder().setValue(Long.toString(l)).build());
+    }
+
+    @Override
+    public Uni<Empty> sink(Multi<Item> request) {
+        // Reads the incoming streams, consume all the items.
+        return request
+                .map(Item::getValue)
+                .map(Long::parseLong)
+                .collectItems().last()
+                .map(l -> Empty.newBuilder().build());
+    }
+
+    @Override
+    public Multi<Item> pipe(Multi<Item> request) {
+        // Reads the incoming stream, compute a sum and return the cumulative results
+        // in the outbound stream.
+        return request
+                .map(Item::getValue)
+                .map(Long::parseLong)
+                .onItem().scan(() -> 0L, Long::sum)
+                .onItem().transform(l -> Item.newBuilder().setValue(Long.toString(l)).build());
+    }
+}
+----
+
+== Health check
+For the implemented services, Quarkus gRPC exposes health information in the following format:
+[source,protobuf]
+----
+syntax = "proto3";
+
+package grpc.health.v1;
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+  }
+  ServingStatus status = 1;
+}
+
+service Health {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+
+  rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
+}
+----
+
+Clients can specify the fully qualified service name to get the health status of a specific service
+or skip specifying the service name to get the general status of the gRPC server.
+
+For more details, check out the
+https://github.com/grpc/grpc/blob/v1.28.1/doc/health-checking.md[gRPC documentation]
+
+Additionally, if Quarkus SmallRye Health is added to the application, a readiness check for
+the state of the gRPC services will be added to the MicroProfile Health endpoint response, that is `/q/health`.
+
+== Reflection Service
+
+Quarkus gRPC Server implements the https://github.com/grpc/grpc/blob/master/doc/server-reflection.md[reflection service].
+This service allows tools like https://github.com/fullstorydev/grpcurl[grpcurl] or https://github.com/gusaul/grpcox[grpcox] to interact with your services.
+
+The reflection service is enabled by default in _dev_ mode.
+In test or production mode, you need to enable it explicitly by setting `quarkus.grpc.server.enable-reflection-service` to `true`.
+
+== Scaling
+By default, quarkus-grpc starts a single gRPC server running on a single event loop.
+
+If you wish to scale your server, you can set the number of server instances by setting `quarkus.grpc.server.instances`.
+
+== Server configuration
+
+include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-server-configuration.adoc[opts=optional, leveloffset=+1]
+
+== Example of configuration
+
+=== Enabling TLS
+
+To enable TLS, use the following configuration.
+
+Note that all paths in the configuration may either specify a resource on the classpath
+(typically from `src/main/resources` or its subfolder) or an external file.
+
+[source,properties]
+----
+quarkus.grpc.server.ssl.certificate=tls/server.pem
+quarkus.grpc.server.ssl.key=tls/server.key
+----
+
+NOTE: When SSL/TLS is configured, `plain-text` is automatically disabled.
+
+=== TLS with Mutual Auth
+
+To use TLS with mutual authentication, use the following configuration:
+
+[source,properties]
+----
+quarkus.grpc.server.ssl.certificate=tls/server.pem
+quarkus.grpc.server.ssl.key=tls/server.key
+quarkus.grpc.server.ssl.trust-store=tls/ca.jks
+quarkus.grpc.server.ssl.trust-store-password=*****
+quarkus.grpc.server.ssl.client-auth=REQUIRED
+----
+
+== Server Interceptors
+
+You can implement a gRPC server interceptor by implementing an `@ApplicationScoped` bean implementing `io.grpc.ServerInterceptor`:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyInterceptor implements ServerInterceptor {
+
+    @Override
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
+            Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
+        // ...
+    }
+}
+----
+
+TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html[ServerInterceptor JavaDoc] to properly implement your interceptor.
+
+When you have multiple server interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
+
+source, java]
+----
+@ApplicationScoped
+public class MyInterceptor implements ServerInterceptor, Prioritized {
+
+    @Override
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
+            Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
+        // ...
+    }
+
+    @Override
+    public int getPriority() {
+        return 10;
+    }
+}
+----
+
+Interceptors with the highest priority are called first.
+The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
+

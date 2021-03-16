@@ -109,8 +109,43 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean outOfOrder;
 
     /**
+     * Ignore missing migrations when reading the history table. When set to true migrations from older versions present in the
+     * history table but absent in the configured locations will be ignored (and logged as a warning), when false (the default)
+     * the validation step will fail.
+     */
+    @ConfigItem
+    public boolean ignoreMissingMigrations;
+
+    /**
+     * Ignore future migrations when reading the history table. When set to true migrations from newer versions present in the
+     * history table but absent in the configured locations will be ignored (and logged as a warning), when false (the default)
+     * the validation step will fail.
+     */
+    @ConfigItem
+    public boolean ignoreFutureMigrations;
+
+    /**
      * Sets the placeholders to replace in SQL migration scripts.
      */
     @ConfigItem
     public Map<String, String> placeholders = Collections.emptyMap();
+
+    /**
+     * Whether Flyway should attempt to create the schemas specified in the schemas property
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean createSchemas;
+
+    /**
+     * Prefix of every placeholder (default: ${ )
+     */
+    @ConfigItem
+    public Optional<String> placeholderPrefix = Optional.empty();
+
+    /**
+     * Suffix of every placeholder (default: } )
+     */
+    @ConfigItem
+    public Optional<String> placeholderSuffix = Optional.empty();
+
 }

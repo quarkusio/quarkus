@@ -43,7 +43,7 @@ public class TikaContent {
      * Return the content of the embedded documents
      *
      * @return the list of the embedded documents, will be empty
-     *         if the current document has no embedded content or it has been appended to the master content
+     *         if the current document has no embedded content or it has been appended to the main content
      */
     public List<TikaContent> getEmbeddedContent() {
         return embeddedContent;

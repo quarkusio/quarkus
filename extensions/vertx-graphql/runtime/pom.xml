@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-vertx-graphql</artifactId>
     <name>Quarkus - Quarkus - Vert.x GraphQL - Runtime</name>
+    <description>Query the API using GraphQL</description>
 
     <dependencies>
         <dependency>

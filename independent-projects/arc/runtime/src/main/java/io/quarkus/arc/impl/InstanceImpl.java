@@ -6,6 +6,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.WithCaching;
 import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
@@ -30,6 +31,12 @@ import javax.inject.Provider;
  */
 public class InstanceImpl<T> implements InjectableInstance<T> {
 
+    static <T> InstanceImpl<T> of(Type requiredType, Set<Annotation> requiredQualifiers) {
+        return new InstanceImpl<>(null, null, requiredType, requiredQualifiers,
+                new CreationalContextImpl<>(null),
+                Collections.emptySet(), null, -1);
+    }
+
     private static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[] {};
 
     private final CreationalContextImpl<?> creationalContext;
@@ -45,12 +52,14 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     private final Member javaMember;
     private final int position;
 
+    private final LazyValue<T> cachedGetResult;
+
     InstanceImpl(InjectableBean<?> targetBean, Type type, Set<Annotation> qualifiers,
             CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
         this(targetBean, type, getRequiredType(type), qualifiers, creationalContext, annotations, javaMember, position);
     }
 
-    InstanceImpl(InstanceImpl<?> parent, Type requiredType, Set<Annotation> requiredQualifiers) {
+    private InstanceImpl(InstanceImpl<?> parent, Type requiredType, Set<Annotation> requiredQualifiers) {
         this(parent.targetBean, parent.injectionPointType, requiredType, requiredQualifiers, parent.creationalContext,
                 parent.annotations, parent.javaMember, parent.position);
     }
@@ -71,6 +80,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         this.annotations = annotations;
         this.javaMember = javaMember;
         this.position = position;
+        this.cachedGetResult = isGetCached(annotations) ? new LazyValue<>(this::getInternal) : null;
     }
 
     @Override
@@ -80,7 +90,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     @Override
     public T get() {
-        return getBeanInstance(bean());
+        return cachedGetResult != null ? cachedGetResult.get() : getInternal();
     }
 
     @Override
@@ -135,15 +145,27 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         return getHandle(bean());
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Iterable<InstanceHandle<T>> handles() {
-        return (Iterable<InstanceHandle<T>>) beans().stream().map(this::getHandle).iterator();
+        return new Iterable<InstanceHandle<T>>() {
+            @Override
+            public Iterator<InstanceHandle<T>> iterator() {
+                return new InstanceHandlesIterator<T>(beans());
+            }
+        };
     }
 
     @SuppressWarnings("unchecked")
     private <H> InstanceHandle<H> getHandle(InjectableBean<H> bean) {
-        return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl<H>) creationalContext, true, this::destroy);
+        InjectionPoint prev = InjectionPointProvider
+                .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean, annotations,
+                        javaMember, position));
+        try {
+            return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl<H>) creationalContext, false,
+                    this::destroy);
+        } finally {
+            InjectionPointProvider.set(prev);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -160,6 +182,18 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     public boolean hasDependentInstances() {
         return creationalContext.hasDependentInstances();
+    }
+
+    @Override
+    public void clearCache() {
+        if (cachedGetResult.isSet()) {
+            creationalContext.release();
+            cachedGetResult.clear();
+        }
+    }
+
+    private T getInternal() {
+        return getBeanInstance(bean());
     }
 
     void destroy() {
@@ -214,6 +248,27 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     }
 
+    private class InstanceHandlesIterator<H> implements Iterator<InstanceHandle<H>> {
+
+        final Iterator<InjectableBean<?>> delegate;
+
+        InstanceHandlesIterator(Collection<InjectableBean<?>> beans) {
+            this.delegate = beans.iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return delegate.hasNext();
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public InstanceHandle<H> next() {
+            return getHandle((InjectableBean<H>) delegate.next());
+        }
+
+    }
+
     private static Type getRequiredType(Type type) {
         if (type instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) type;
@@ -222,6 +277,15 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             }
         }
         throw new IllegalArgumentException("Not a valid type: " + type);
+    }
+
+    private boolean isGetCached(Set<Annotation> annotations) {
+        for (Annotation annotation : annotations) {
+            if (annotation.annotationType().equals(WithCaching.class)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

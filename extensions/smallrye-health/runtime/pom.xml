@@ -6,7 +6,6 @@
         <artifactId>quarkus-smallrye-health-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,16 +17,10 @@
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-health</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.inject</groupId>
-                    <artifactId>javax.inject</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
-            <groupId>jakarta.inject</groupId>
-            <artifactId>jakarta.inject-api</artifactId>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-health-provided-checks</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

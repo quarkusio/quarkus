@@ -18,8 +18,8 @@ public class ForwardedHeaderTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ForwardedHandlerInitializer.class)
-                    .addAsResource(new StringAsset("quarkus.http.proxy-address-forwarding=true\n" +
-                            "quarkus.http.allow-forwarded=true"),
+                    .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +
+                            "quarkus.http.proxy.allow-forwarded=true"),
                             "application.properties"));
 
     @Test

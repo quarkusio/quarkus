@@ -1,14 +1,17 @@
 package io.quarkus.kubernetes.deployment;
 
-public class Constants {
+public final class Constants {
 
-    static final String KUBERNETES = "kubernetes";
-    static final String DEPLOYMENT = "Deployment";
+    public static final String KUBERNETES = "kubernetes";
+    public static final String MINIKUBE = "minikube";
+    public static final String DEPLOYMENT = "Deployment";
     static final String DOCKER = "docker";
 
-    static final String OPENSHIFT = "openshift";
+    public static final String OPENSHIFT = "openshift";
+    public static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
+    public static final String ROUTE = "Route";
+    public static final String ROUTE_API_GROUP = "route.openshift.io/v1";
     static final String OPENSHIFT_APP_RUNTIME = "app.openshift.io/runtime";
-    static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
     static final String S2I = "s2i";
     static final String DEFAULT_S2I_IMAGE_NAME = "s2i-java"; //refers to the Dekorate default image.
 
@@ -25,5 +28,14 @@ public class Constants {
     static final String QUARKUS_ANNOTATIONS_VCS_URL = "app.quarkus.io/vcs-url";
     static final String QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP = "app.quarkus.io/build-timestamp";
 
-    static final String OPENSHIFT_ANNOTATIONS_VCS_URL = "app.openshift.io/vcs-url";
+    public static final String HTTP_PORT = "http";
+    public static final int DEFAULT_HTTP_PORT = 8080;
+
+    public static final int MIN_PORT_NUMBER = 1;
+    public static final int MAX_PORT_NUMBER = 65535;
+    public static final int MIN_NODE_PORT_VALUE = 30000;
+    public static final int MAX_NODE_PORT_VALUE = 31999;
+
+    private Constants() {
+    }
 }

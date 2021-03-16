@@ -1,9 +1,11 @@
 package io.quarkus.agroal.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 
@@ -38,7 +40,7 @@ public class DefaultDataSourceConfigTest {
 
     private static void testDataSource(AgroalDataSource dataSource, String username, int minSize, int maxSize,
             int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
-            Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql) throws SQLException {
+            Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql) {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
                 .connectionFactoryConfiguration();
@@ -59,7 +61,10 @@ public class DefaultDataSourceConfigTest {
         assertTrue(agroalConnectionFactoryConfiguration.trackJdbcResources());
         assertTrue(dataSource.getConfiguration().metricsEnabled());
         assertEquals(newConnectionSql, agroalConnectionFactoryConfiguration.initialSql());
-        try (Connection connection = dataSource.getConnection()) {
-        }
+        assertThat(agroalConnectionFactoryConfiguration.jdbcProperties())
+                .contains(
+                        entry("extraProperty1", "extraProperty1Value"),
+                        entry("extraProperty2", "extraProperty2Value"));
+        assertThatCode(() -> dataSource.getConnection().close()).doesNotThrowAnyException();
     }
 }

@@ -6,13 +6,14 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import io.quarkus.cli.commands.ListExtensions;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.gradle.GradleBuildFileFromConnector;
+import io.quarkus.devtools.commands.ListExtensions;
+import io.quarkus.devtools.project.QuarkusProject;
 
 public class QuarkusListExtensions extends QuarkusPlatformTask {
 
     private boolean all = true;
+    private boolean installed = false;
+    private boolean fromCli = false;
 
     private String format = "concise";
 
@@ -26,6 +27,26 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     @Option(description = "List all extensions or just the installable.", option = "all")
     public void setAll(boolean all) {
         this.all = all;
+    }
+
+    @Input
+    public boolean isFromCli() {
+        return fromCli;
+    }
+
+    @Option(description = "List only installed extensions.", option = "fromCli")
+    public void setFromCli(boolean fromCli) {
+        this.fromCli = fromCli;
+    }
+
+    @Input
+    public boolean isInstalled() {
+        return installed;
+    }
+
+    @Option(description = "List only installed extensions.", option = "installed")
+    public void setInstalled(boolean installed) {
+        this.installed = installed;
     }
 
     @Optional
@@ -57,12 +78,14 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     @TaskAction
     public void listExtensions() {
         try {
-            new ListExtensions(new GradleBuildFileFromConnector(new FileProjectWriter(getProject().getProjectDir())),
-                    platformDescriptor())
-                            .all(isAll())
-                            .format(getFormat())
-                            .search(getSearchPattern())
-                            .execute();
+            final QuarkusProject quarkusProject = getQuarkusProject(installed);
+            ListExtensions listExtensions = new ListExtensions(quarkusProject)
+                    .all(isFromCli() ? false : isAll())
+                    .fromCli(isFromCli())
+                    .format(getFormat())
+                    .installed(isInstalled())
+                    .search(getSearchPattern());
+            listExtensions.execute();
         } catch (Exception e) {
             throw new GradleException("Unable to list extensions", e);
         }

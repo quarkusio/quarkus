@@ -1,8 +1,9 @@
 package io.quarkus.liquibase;
 
+import java.util.Map;
+
 import javax.sql.DataSource;
 
-import io.agroal.api.AgroalDataSource;
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -13,37 +14,20 @@ import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.ResourceAccessor;
 
-/**
- * The quarkus liquibase factory
- */
 public class LiquibaseFactory {
 
-    /**
-     * The datasource
-     */
-    private DataSource dataSource;
+    private final DataSource dataSource;
 
-    /**
-     * The liquibase configuration
-     */
-    private LiquibaseConfig config;
+    private final String dataSourceName;
 
-    /**
-     * The default constructor
-     *
-     * @param config the liquibase configuration
-     * @param datasource the datasource for this liquibase bean
-     */
-    public LiquibaseFactory(LiquibaseConfig config, AgroalDataSource datasource) {
-        this.dataSource = datasource;
+    private final LiquibaseConfig config;
+
+    public LiquibaseFactory(LiquibaseConfig config, DataSource datasource, String dataSourceName) {
         this.config = config;
+        this.dataSource = datasource;
+        this.dataSourceName = dataSourceName;
     }
 
-    /**
-     * Creates the liquibase instance.
-     * 
-     * @return the liquibase.
-     */
     public Liquibase createLiquibase() {
         try {
             ResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
@@ -65,18 +49,19 @@ public class LiquibaseFactory {
                     database.setDefaultSchemaName(config.defaultSchemaName.get());
                 }
             }
-            return new Liquibase(config.changeLog, resourceAccessor, database);
+            Liquibase liquibase = new Liquibase(config.changeLog, resourceAccessor, database);
+
+            for (Map.Entry<String, String> entry : config.changeLogParameters.entrySet()) {
+                liquibase.getChangeLogParameters().set(entry.getKey(), entry.getValue());
+            }
+
+            return liquibase;
 
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
     }
 
-    /**
-     * Gets the liquibase configuration
-     *
-     * @return the liquibase configuration
-     */
     public LiquibaseConfig getConfiguration() {
         return config;
     }
@@ -97,5 +82,9 @@ public class LiquibaseFactory {
      */
     public Contexts createContexts() {
         return new Contexts(config.contexts);
+    }
+
+    public String getDataSourceName() {
+        return dataSourceName;
     }
 }

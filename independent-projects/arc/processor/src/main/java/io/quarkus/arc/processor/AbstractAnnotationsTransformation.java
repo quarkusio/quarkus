@@ -46,7 +46,7 @@ abstract class AbstractAnnotationsTransformation<T extends AnnotationsTransforma
     }
 
     public T add(Class<? extends Annotation> annotationType, AnnotationValue... values) {
-        add(DotNames.create(annotationType.getName()), values);
+        add(DotName.createSimple(annotationType.getName()), values);
         return self();
     }
 

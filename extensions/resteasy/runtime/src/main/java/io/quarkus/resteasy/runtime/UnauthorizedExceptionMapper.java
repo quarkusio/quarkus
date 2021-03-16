@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.runtime;
 
-import java.util.concurrent.ExecutionException;
-
 import javax.annotation.Priority;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.Priorities;
@@ -43,18 +41,16 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
         if (context != null) {
             HttpAuthenticator authenticator = context.get(HttpAuthenticator.class.getName());
             if (authenticator != null) {
-                try {
-                    ChallengeData challengeData = authenticator.getChallenge(context)
-                            .toCompletableFuture()
-                            .get();
+                ChallengeData challengeData = authenticator.getChallenge(context)
+                        .await().indefinitely();
+                if (challengeData != null) {
                     Response.ResponseBuilder status = Response.status(challengeData.status);
                     if (challengeData.headerName != null) {
                         status.header(challengeData.headerName.toString(), challengeData.headerContent);
                     }
                     return status.build();
-                } catch (InterruptedException | ExecutionException e) {
-                    log.error("Failed to read challenge data for unauthorized response", e);
-                    return Response.status(401).entity("Not authorized").build();
+                } else {
+                    return Response.status(401).build();
                 }
             }
         }

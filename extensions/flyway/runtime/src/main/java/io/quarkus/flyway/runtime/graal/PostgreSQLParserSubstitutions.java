@@ -18,7 +18,7 @@ import com.oracle.svm.core.annotate.TargetClass;
  * This substitution removes de PosgreSQL COPY statement support in Flyway to allow native image compilation
  * when the PostgreSQL Driver is not in the classpath.
  */
-@TargetClass(className = "org.flywaydb.core.internal.database.postgresql.PostgreSQLParser", onlyWith = PostgreSQLParserSubstitutions.Selector.class)
+@TargetClass(className = "org.flywaydb.core.internal.database.postgresql.PostgreSQLParser", onlyWith = PostgreSQLParserSubstitutions.IsPostgreSQLDriverAbsent.class)
 public final class PostgreSQLParserSubstitutions {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
@@ -43,7 +43,7 @@ public final class PostgreSQLParserSubstitutions {
                 sql, delimiter, canExecuteInTransaction);
     }
 
-    static final class Selector implements BooleanSupplier {
+    static final class IsPostgreSQLDriverAbsent implements BooleanSupplier {
 
         @Override
         public boolean getAsBoolean() {

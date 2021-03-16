@@ -4,6 +4,8 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class SmallRyeHealthRecorder {
@@ -17,4 +19,13 @@ public class SmallRyeHealthRecorder {
         }
     }
 
+    public Handler<RoutingContext> uiHandler(String healthUiFinalDestination, String healthUiPath,
+            SmallRyeHealthRuntimeConfig runtimeConfig) {
+
+        if (runtimeConfig.enable) {
+            return new SmallRyeHealthStaticHandler(healthUiFinalDestination, healthUiPath);
+        } else {
+            return new SmallRyeHealthNotFoundHandler();
+        }
+    }
 }

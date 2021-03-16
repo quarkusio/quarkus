@@ -13,8 +13,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CacheResult;
-import io.quarkus.cache.runtime.CacheRepository;
 import io.quarkus.cache.runtime.caffeine.CaffeineCache;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -29,11 +29,11 @@ public class CacheConfigTest {
     private static final String CACHE_NAME = "test-cache";
 
     @Inject
-    CacheRepository cacheRepository;
+    CacheManager cacheManager;
 
     @Test
     public void testConfig() {
-        CaffeineCache cache = (CaffeineCache) cacheRepository.getCache(CACHE_NAME);
+        CaffeineCache cache = (CaffeineCache) cacheManager.getCache(CACHE_NAME).get();
         assertEquals(10, cache.getInitialCapacity());
         assertEquals(100L, cache.getMaximumSize());
         assertEquals(Duration.ofSeconds(30L), cache.getExpireAfterWrite());

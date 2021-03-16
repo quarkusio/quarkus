@@ -6,12 +6,11 @@
         <artifactId>quarkus-rest-client-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client</artifactId>
-    <name>Quarkus - REST client - Runtime</name>
+    <name>Quarkus - REST Client - Runtime</name>
     <description>Call REST services</description>
 
     <dependencies>
@@ -64,6 +63,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

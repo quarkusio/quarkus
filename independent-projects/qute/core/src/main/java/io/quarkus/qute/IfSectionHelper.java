@@ -1,5 +1,7 @@
 package io.quarkus.qute;
 
+import static io.quarkus.qute.Booleans.isFalsy;
+
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
@@ -11,7 +13,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -40,10 +41,20 @@ public class IfSectionHelper implements SectionHelper {
 
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-        return resolveCondition(context, blocks.iterator());
+        if (blocks.size() == 1) {
+            IfBlock block = blocks.get(0);
+            return block.condition.evaluate(context).thenCompose(r -> {
+                if (isFalsy(r)) {
+                    return ResultNode.NOOP;
+                } else {
+                    return context.execute(block.block, context.resolutionContext());
+                }
+            });
+        }
+        return resolveBlocks(context, blocks.iterator());
     }
 
-    private CompletionStage<ResultNode> resolveCondition(SectionResolutionContext context,
+    private CompletionStage<ResultNode> resolveBlocks(SectionResolutionContext context,
             Iterator<IfBlock> blocks) {
         IfBlock block = blocks.next();
         if (block.condition.isEmpty()) {
@@ -51,13 +62,13 @@ public class IfSectionHelper implements SectionHelper {
             return context.execute(block.block, context.resolutionContext());
         }
         return block.condition.evaluate(context).thenCompose(r -> {
-            if (Boolean.TRUE.equals(r)) {
-                return context.execute(block.block, context.resolutionContext());
-            } else {
+            if (isFalsy(r)) {
                 if (blocks.hasNext()) {
-                    return resolveCondition(context, blocks);
+                    return resolveBlocks(context, blocks);
                 }
-                return CompletableFuture.completedFuture(ResultNode.NOOP);
+                return ResultNode.NOOP;
+            } else {
+                return context.execute(block.block, context.resolutionContext());
             }
         });
     }
@@ -88,7 +99,7 @@ public class IfSectionHelper implements SectionHelper {
         }
 
         @Override
-        public Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
+        public Scope initializeBlock(Scope previousScope, BlockInfo block) {
             List<Object> params = null;
             if (MAIN_BLOCK_NAME.equals(block.getLabel())) {
                 params = parseParams(new ArrayList<>(block.getParameters().values()), block);
@@ -101,7 +112,7 @@ public class IfSectionHelper implements SectionHelper {
             }
             addExpressions(params, block);
             // {#if} never changes the scope
-            return Collections.emptyMap();
+            return previousScope;
         }
 
         @SuppressWarnings("unchecked")
@@ -180,6 +191,11 @@ public class IfSectionHelper implements SectionHelper {
             return operator;
         }
 
+        @Override
+        public String toString() {
+            return "OperandCondition [operator=" + operator + ", expression=" + expression.toOriginalString() + "]";
+        }
+
     }
 
     static class CompositeCondition implements Condition {
@@ -218,7 +234,7 @@ public class IfSectionHelper implements SectionHelper {
                         } else {
                             Object val;
                             if (next.isLogicalComplement()) {
-                                r = Boolean.TRUE.equals(r) ? Boolean.FALSE : Boolean.TRUE;
+                                r = Booleans.isFalsy(r) ? Boolean.TRUE : Boolean.FALSE;
                             }
                             if (operator == null || !operator.isBinary()) {
                                 val = r;
@@ -232,7 +248,7 @@ public class IfSectionHelper implements SectionHelper {
                                         localValue = null;
                                     }
                                     val = operator.evaluate(localValue, r);
-                                } catch (Exception e) {
+                                } catch (Throwable e) {
                                     result.completeExceptionally(e);
                                     throw e;
                                 }
@@ -259,6 +275,11 @@ public class IfSectionHelper implements SectionHelper {
         @Override
         public boolean isEmpty() {
             return conditions.isEmpty();
+        }
+
+        @Override
+        public String toString() {
+            return "CompositeCondition [conditions=" + conditions.size() + ", operator=" + operator + "]";
         }
 
     }
@@ -300,7 +321,7 @@ public class IfSectionHelper implements SectionHelper {
                     return compare(op1, op2);
                 case AND:
                 case OR:
-                    return Boolean.TRUE.equals(op2);
+                    return !isFalsy(op2);
                 default:
                     throw new TemplateException("Not a binary operator: " + this);
             }
@@ -338,9 +359,9 @@ public class IfSectionHelper implements SectionHelper {
         Boolean evaluate(Object op1) {
             switch (this) {
                 case AND:
-                    return Boolean.TRUE.equals(op1) ? null : Boolean.FALSE;
+                    return isFalsy(op1) ? Boolean.FALSE : null;
                 case OR:
-                    return Boolean.TRUE.equals(op1) ? Boolean.TRUE : null;
+                    return isFalsy(op1) ? null : Boolean.TRUE;
                 default:
                     throw new TemplateException("Not a short-circuiting operator: " + this);
             }

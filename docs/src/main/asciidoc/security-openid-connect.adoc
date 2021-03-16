@@ -1,20 +1,22 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect Adapter to Protect JAX-RS Applications
+= Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization
 
 include::./attributes.adoc[]
-:extension-status: preview
+:toc:
 
-This guide demonstrates how your Quarkus application can use an OpenID Connect Adapter to protect your JAX-RS applications using bearer token authorization, where these tokens are issued by OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
+This guide demonstrates how to use Quarkus OpenID Connect Extension to protect your JAX-RS applications using Bearer Token Authorization where Bearer Tokens are issued by OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
 
-Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a bearer token representing a subject and his access context, where the token provides valuable information to determine the subject of the call as well whether or not a HTTP resource can be accessed.
+Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token which provides valuable information to determine the subject of the call as well as whether or not an HTTP resource can be accessed.
 
-We are going to give you a guideline on how to use OpenId Connect and OAuth 2.0 in your JAX-RS applications using the Quarkus OpenID Connect Extension.
+Please read the link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize the users using OpenId Connect Authorization Code Flow.
 
-include::./status-include.adoc[]
+If you use Keycloak and Bearer tokens then also see the link:security-keycloak-authorization[Using Keycloak to Centralize Authorization] guide.
+
+Please read the link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
 
 == Prerequisites
 
@@ -23,7 +25,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * https://stedolan.github.io/jq/[jq tool]
 * Docker
 
@@ -55,17 +57,36 @@ The solution is located in the `security-openid-connect-quickstart` {quickstarts
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-openid-connect-quickstart \
-    -Dextensions="oidc, resteasy-jsonb"
+    -Dextensions="resteasy,oidc,resteasy-jackson" \
+    -DnoExamples
 cd security-openid-connect-quickstart
 ----
 
 This command generates a Maven project, importing the `keycloak` extension
 which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
+
+If you already have your Quarkus project configured, you can add the `oidc` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="oidc"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+----
 
 == Writing the application
 
@@ -79,8 +100,6 @@ import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -94,7 +113,6 @@ public class UsersResource {
     @GET
     @Path("/me")
     @RolesAllowed("user")
-    @Produces(MediaType.APPLICATION_JSON)
     @NoCache
     public User me() {
         return new User(securityIdentity);
@@ -139,6 +157,41 @@ public class AdminResource {
 }
 ----
 
+Injection of the `SecurityIdentity` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
+
+=== Accessing JWT claims
+
+If you need to access `JsonWebToken` claims, you may simply inject the token itself:
+
+[source,java]
+----
+package org.acme.security.openid.connect;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import javax.inject.Inject;
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/api/admin")
+public class AdminResource {
+
+    @Inject
+    JsonWebToken jwt;
+
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String admin() {
+        return "Access for subject " + jwt.getSubject() + " is granted";
+    }
+}
+----
+
+Injection of the `JsonWebToken` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
+
 == Configuring the application
 
 The OpenID Connect extension allows you to define the adapter configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
@@ -174,6 +227,9 @@ Log in as the `admin` user to access the Keycloak Administration Console. Userna
 
 Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
+NOTE: If you want to use the Keycloak Admin Client to configure your server from your application you need to include the
+`quarkus-keycloak-admin-client` extension.
+
 == Running and Using the Application
 
 === Running in Developer Mode
@@ -195,10 +251,10 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/security-openid-connect-quickstart-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-=== Runing in Native Mode
+=== Running in Native Mode
 
 This same demo can be compiled into native code: no modifications required.
 
@@ -273,8 +329,85 @@ export access_token=$(\
  )
 ----
 
+[[user-info]]
+== User Info
+
+Set `quarkus.oidc.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
+A request will be sent to the OpenId Provider UserInfo endpoint and  an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created.
+`io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
+
+== Token Claims And SecurityIdentity Roles
+
+SecurityIdentity roles can be mapped from the verified JWT access tokens as follows:
+
+* If `quarkus.oidc.roles.role-claim-path` property is set and a matching array or string claim is found then the roles are extracted from this claim.
+  For example, `customroles`, `customroles/array`, `scope`, `"http://namespace-qualified-custom-claim"/roles`, `"http://namespace-qualified-roles"`, etc.
+* If `groups` claim is available then its value is used
+* If `realm_access/roles` or `resource_access/client_id/roles` (where `client_id` is the value of the `quarkus.oidc.client-id` property) claim is available then its value is used.
+  This check supports the tokens issued by Keycloak
+
+If the token is opaque (binary) then a `scope` property from the remote token introspection response will be used.
+
+If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
+
+Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
+
+[[single-page-applications]]
+== Single Page Applications
+
+Single Page Application (SPA) typically uses `XMLHttpRequest`(XHR) and the Java Script utility code provided by the OpenId Connect provider to acquire a bearer token and use it
+to access Quarkus `service` applications.
+
+For example, here is how you can use `keycloak.js` to authenticate the users and refresh the expired tokens from the SPA:
+
+[source,html]
+----
+<html>
+<head>
+    <title>keycloak-spa</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="http://localhost:8180/auth/js/keycloak.js"></script>
+    <script>
+        var keycloak = new Keycloak();
+        keycloak.init({onLoad: 'login-required'}).success(function () {
+            console.log('User is now authenticated.');
+        }).error(function () {
+            window.location.reload();
+        });
+        function makeAjaxRequest() {
+            axios.get("/api/hello", {
+                headers: {
+                    'Authorization': 'Bearer ' + keycloak.token
+                }
+            })
+            .then( function (response) {
+                console.log("Response: ", response.status);
+            }).catch(function (error) {
+                console.log('refreshing');
+                keycloak.updateToken(5).then(function () {
+                    console.log('Token refreshed');
+                }).catch(function () {
+                    console.log('Failed to refresh token');
+                    window.location.reload();
+                });
+            });
+    }
+    </script>
+</head>
+<body>
+    <button onclick="makeAjaxRequest()">Request</button>
+</body>
+</html>
+----
+
+== Token Propagation
+
+Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
+* link:security[Quarkus Security]

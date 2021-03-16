@@ -12,6 +12,7 @@
             <acceptor name="activemq">tcp://localhost:61616</acceptor>
         </acceptors>
 
+        <max-disk-usage>-1</max-disk-usage>
         <security-enabled>false</security-enabled>
 
         <addresses>
@@ -21,6 +22,5 @@
                 </anycast>
             </address>
         </addresses>
-        <max-disk-usage>100</max-disk-usage>
     </core>
 </configuration>

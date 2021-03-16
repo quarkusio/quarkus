@@ -37,6 +37,13 @@ public class CertificateConfig {
     public Optional<String> keyStoreFileType;
 
     /**
+     * An optional parameter to specify a provider of the key store file. If not given, the provider is automatically detected
+     * based on the key store file type.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreProvider;
+
+    /**
      * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
      */
     @ConfigItem(defaultValue = "password")
@@ -54,6 +61,13 @@ public class CertificateConfig {
      */
     @ConfigItem
     public Optional<String> trustStoreFileType;
+
+    /**
+     * An optional parameter to specify a provider of the trust store file. If not given, the provider is automatically detected
+     * based on the trust store file type.
+     */
+    @ConfigItem
+    public Optional<String> trustStoreProvider;
 
     /**
      * A parameter to specify the password of the trust store file.

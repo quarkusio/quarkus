@@ -1,0 +1,433 @@
+---
+# The format of this file is documented here:
+# https://github.com/quarkusio/quarkus-bot#triage-issues
+triage:
+  rules:
+    - labels: [area/amazon-lambda]
+      title: "lambda"
+      notify: [patriot1burke, matejvasek]
+      directories:
+        - extensions/amazon-lambda
+        - integration-tests/amazon-lambda
+    - labels: [area/persistence]
+      title: "db2"
+      notify: [mswatosh]
+      directories:
+        - extensions/reactive-db2-client/
+        - extensions/jdbc/jdbc-db2/
+    - labels: [area/funqy]
+      titleBody: "funqy"
+      notify: [patriot1burke, matejvasek]
+      directories:
+        - extensions/funqy/
+    - labels: [area/devmode]
+      title: "dev mode"
+    - labels: [area/gradle]
+      title: "gradle"
+      notify: [quarkusio/devtools, glefloch]
+      directories:
+        - devtools/gradle/
+        - integration-tests/gradle/
+    - labels: [area/maven]
+      title: "maven"
+      notify: [quarkusio/devtools]
+      directories:
+        - devtools/maven/
+        - integration-tests/maven/
+        - independent-projects/bootstrap/maven-plugin/
+        - integration-tests/maven/
+        - test-framework/maven/
+    - labels: [area/jbang]
+      titleBody: "jbang"
+      notify: [quarkusio/devtools, maxandersen]
+      directories:
+        - "**/*JBang*"
+        - "**/*jbang*"
+    - labels: [area/codestarts]
+      title: "codestart"
+      notify: [quarkusio/devtools, ia3andy]
+      directories:
+        - independent-projects/tools/codestarts/
+        - devtools/platform-descriptor-json/src/main/resources/bundled-codestarts/
+        - devtools/platform-descriptor-json/src/main/resources/codestarts/
+        - devtools/platform-descriptor-json/src/main/resources/templates/
+    - labels: [area/hibernate-reactive, area/persistence]
+      title: "hibernate.reactive"
+      notify: [DavideD, gavinking, Sanne]
+      directories:
+        - extensions/hibernate-reactive
+    - labels: [area/hibernate-orm, area/persistence]
+      expression: |
+              matches("hibernate", title)
+              && !matches("hibernate.validator", title)
+              && !matches("hibernate.search", title)
+              && !matches("hibernate.reactive", title)
+      notify: [gsmet, Sanne, yrodiere]
+      directories:
+        - extensions/hibernate-orm/
+        - integration-tests/common-jpa-entities/
+        - integration-tests/jpa-derby/
+        - integration-tests/jpa-h2/
+        - integration-tests/jpa-mariadb/
+        - integration-tests/jpa-mssql/
+        - integration-tests/jpa-mysql/
+        - integration-tests/jpa-postgresql/
+        - integration-tests/jpa-without-entity/
+        - integration-tests/jpa/
+        - integration-tests/infinispan-cache-jpa/
+    - labels: [area/hibernate-search]
+      title: "hibernate.search"
+      notify: [gsmet, yrodiere]
+      directories:
+        - extensions/hibernate-search-orm-elasticsearch/
+        - integration-tests/hibernate-search-orm-elasticsearch/
+        - extensions/elasticsearch-rest-client/
+        - extensions/elasticsearch-rest-client-common/
+    - labels: [area/elasticsearch]
+      title: "elasticsearch"
+      notify: [gsmet, yrodiere, loicmathieu]
+      directories:
+        - extensions/elasticsearch
+        - integration-tests/elasticsearch
+    - labels: [area/hibernate-validator]
+      title: "hibernate.validator"
+      notify: [gsmet, yrodiere]
+      directories:
+        - extensions/hibernate-validator/
+        - integration-tests/hibernate-validator/
+    - labels: [area/jaeger]
+      title: "jaeger"
+      notify: [kenfinnigan]
+      directories:
+        - extensions/jaeger/
+    - labels: [area/kotlin]
+      titleBody: "kotlin"
+      notify: [evanchooly]
+      directories:
+        - extensions/kotlin/
+        - integration-tests/kotlin/
+    - labels: [area/mongodb]
+      title: "mongo"
+      notify: [loicmathieu, evanchooly]
+      directories:
+        - extensions/mongodb-client/
+        - integration-tests/mongodb-client/
+        - integration-tests/mongodb-panache/
+        - extensions/panache/mongodb-panache/
+    - labels: [area/openapi, area/smallrye]
+      title: "openapi"
+      notify: [EricWittmann, MikeEdgar, phillip-kruger]
+      directories:
+        - extensions/smallrye-openapi
+    - labels: [area/graphql, area/smallrye]
+      title: "graphql"
+      notify: [phillip-kruger, jmartisk]
+      directories:
+        - extensions/smallrye-graphql/
+        - extensions/vertx-graphql/
+        - integration-tests/vertx-graphql/
+    - labels: [area/tracing, area/smallrye]
+      title: "(trace|tracing|telemetry)"
+      notify: [kenfinnigan, Ladicek]
+      directories:
+        - extensions/smallrye-opentracing/
+    - labels: [area/security, area/smallrye]
+      title: "jwt"
+      notify: [sberyozkin]
+    - labels: [area/security]
+      title: "security"
+      notify: [sberyozkin]
+    - labels: [area/metrics, area/smallrye]
+      title: "metrics"
+      notify: [jmartisk]
+      directories:
+        - extensions/smallrye-metrics
+    - labels: [area/metrics]
+      title: "micrometer"
+      notify: [ebullient]
+      directories:
+        - extensions/micrometer
+    - labels: [area/health, area/smallrye]
+      title: "health"
+      notify: [jmartisk, xstefank]
+      directories:
+        - extensions/smallrye-health/
+    - labels: [area/fault-tolerance, area/smallrye]
+      title: "fault.tolerance"
+      notify: [Ladicek]
+      directories:
+        - extensions/smallrye-fault-tolerance/
+    - labels: [area/mutiny, area/smallrye]
+      title: "mutiny"
+      notify: [cescoffier, jponge]
+      directories:
+        - extensions/mutiny/
+        - extensions/rest-client-mutiny/
+        - extensions/resteasy-mutiny-common/
+        - extensions/resteasy-mutiny/
+    - labels: [area/panache]
+      title: "panache"
+      notify: [FroMage, loicmathieu]
+      directories:
+        - extensions/panache/
+        - integration-tests/hibernate-orm-panache/
+    - labels: [area/qute]
+      title: "qute"
+      notify: [mkouba]
+      directories:
+        - extensions/qute/
+        - extensions/resteasy-qute/
+    - labels: [area/reactive-messaging, area/smallrye]
+      title: "reactive.messaging"
+      notify: [cescoffier, kenfinnigan, phillip-kruger]
+      directories:
+        - extensions/smallrye-reactive-messaging
+    - labels: [area/rest-client]
+      title: "rest.client"
+      notify: [phillip-kruger]
+      directories:
+        - extensions/rest-client/
+    - labels: [area/smallrye]
+      title: "smallrye"
+      notify: [phillip-kruger, jmartisk, radcortez, Ladicek]
+      directories:
+        - extensions/smallrye-
+    - labels: [area/spring]
+      title: "spring"
+      notify: [geoand]
+      directories:
+        - extensions/spring-
+        - integration-tests/spring-
+    - labels: [env/windows]
+      titleBody: "windows"
+    - labels: [area/kubernetes]
+      titleBody: "kubernetes"
+      notify: [geoand]
+      directories:
+        - extensions/kubernetes/
+        - extensions/kubernetes-client/
+        - integration-tests/kubernetes/
+        - integration-tests/kubernetes-client/
+    - labels: [area/kubernetes]
+      titleBody: "minikube"
+      notify: [geoand]
+    - labels: [area/kubernetes]
+      titleBody: "openshift"
+      notify: [geoand]
+    - labels: [area/kubernetes]
+      titleBody: "knative"
+      notify: [geoand]
+    - labels: [area/container-image]
+      titleBody: "jib"
+      notify: [geoand]
+    - labels: [area/kafka]
+      notify: [cescoffier]
+      title: "kafka"
+      directories:
+        - extensions/kafka-client/
+        - integration-tests/kafka/
+    - labels: [area/kafka-streams]
+      title: "k(afka)?(\\s|-)?stream"
+      notify: [gunnarmorling, rquinio]
+      directories:
+        - extensions/kafka-streams
+        - integration-tests/kafka-streams/
+    - labels: [area/infinispan]
+      title: "infinispan"
+      notify: [karesti, wburns]
+      directories:
+        - extensions/infinispan-client/
+        - integration-tests/infinispan-cache-jpa/
+        - integration-tests/infinispan-client/
+    - labels: [area/grpc]
+      title: "grpc"
+      notify: [michalszynkiewicz, cescoffier]
+      directories:
+        - extensions/grpc-common
+        - extensions/grpc
+    - labels: [area/scheduler]
+      title: "schedule(r)?"
+      notify: [mkouba]
+      directories:
+        - extensions/scheduler/
+    - labels: [area/scheduler]
+      title: "quartz"
+      notify: [mkouba, machi1990]
+      directories:
+        - extensions/quartz/
+        - integration-tests/quartz/
+    - labels: [area/redis]
+      title: "redis"
+      notify: [machi1990, gsmet, cescoffier]
+      directories:
+        - extensions/redis-client/
+        - integration-tests/redis-client/
+    - labels: [area/arc]
+      title: "\\b(arc|cdi|injection)\\b"
+      notify: [mkouba, manovotn]
+      directories:
+        - extensions/arc/
+        - independent-projects/arc/
+    - labels: [area/google-cloud-functions]
+      title: "google.cloud"
+      notify: [loicmathieu]
+      directories:
+        - extensions/google-cloud-functions
+        - integration-tests/google-cloud-functions
+    - labels: [area/mandrel]
+      titleBody: "mandrel"
+      notify: [galderz, zakkak]
+    - labels: [area/artemis]
+      directories:
+        - extensions/artemis-core/
+        - extensions/artemis-jms/
+        - integration-tests/artemis-core/
+        - integration-tests/artemis-jms/
+    - labels: [area/cache]
+      title: "cache"
+      notify: [gwenneg]
+      directories:
+        - extensions/cache/
+        - integration-tests/cache/
+    - labels: [area/cli]
+      directories:
+        - devtools/cli/
+    - labels: [area/config]
+      directories:
+        - extensions/config-yaml/
+        - core/deployment/src/main/java/io/quarkus/deployment/configuration/
+        - core/runtime/src/main/java/io/quarkus/runtime/configuration/
+    - labels: [area/core]
+      directories:
+        - core/
+    - labels: [area/dependencies]
+      directories:
+        - .github/dependabot.yml
+        - bom/
+        - build-parent/
+    - labels: [area/devtools]
+      directories:
+        - devtools/
+        - independent-projects/bootstrap/
+        - independent-projects/tools/
+    - labels: [area/documentation]
+      directories:
+        - docs/
+    - labels: [area/infra-automation]
+      directories:
+        - .github/
+    - labels: [area/jaxb]
+      title: "jaxb"
+      notify: [gsmet]
+      directories:
+        - extensions/jaxb/
+    - labels: [area/logging]
+      directories:
+        - extensions/logging-gelf/
+        - extensions/logging-json/
+        - extensions/logging-sentry/
+        - integration-tests/logging-gelf/
+        - core/runtime/src/main/java/io/quarkus/runtime/logging/
+        - core/deployment/src/main/java/io/quarkus/logging/
+    - labels: [area/narayana]
+      directories:
+        - extensions/narayana-jta/
+        - extensions/narayana-stm/
+        - integration-tests/narayana-jta/
+        - integration-tests/narayana-stm/
+    - labels: [area/neo4j]
+      title: "neo4j"
+      notify: [michael-simons]
+      directories:
+        - extensions/neo4j/
+        - integration-tests/neo4j/
+    - labels: [area/oidc]
+      title: "oidc"
+      notify: [sberyozkin, pedroigor]
+      directories:
+        - extensions/oidc/
+        - integration-tests/oidc/
+        - integration-tests/oidc-code-flow/
+    - labels: [area/platform]
+      directories:
+        - independent-projects/tools/
+    - labels: [area/reactive]
+      directories:
+        - extensions/reactive-mysql-client/
+        - extensions/reactive-pg-client/
+        - extensions/reactive-streams-operators/
+        - integration-tests/reactive-mysql-client/
+        - integration-tests/reactive-pg-client/
+    - labels: [area/resteasy]
+      directories:
+        - extensions/resteasy/
+        - extensions/resteasy-common/
+        - extensions/resteasy-jackson/
+        - extensions/resteasy-jsonb/
+        - extensions/resteasy-jaxb/
+        - extensions/resteasy-multipart/
+        - extensions/resteasy-server-common/
+        - integration-tests/resteasy-jackson/
+        - integration-tests/elytron-resteasy/
+        - integration-tests/virtual-http-resteasy/
+    - labels: [area/resteasy-reactive]
+      title: resteasy.reactive
+      notify: [geoand, FroMage, stuartwdouglas]
+      directories:
+        - extensions/resteasy-reactive/
+    - labels: [area/scala]
+      directories:
+        - extensions/scala/
+        - integration-tests/scala/
+    - labels: [area/vault]
+      title: vault
+      notify: [vsevel]
+      directories:
+        - extensions/vault/
+        - integration-tests/vault
+    - labels: [area/vertx]
+      directories:
+        - extensions/vertx
+        - integration-tests/vertx
+    - labels: [area/tika]
+      title: tika
+      notify: [sberyozkin]
+      directories:
+        - extensions/tika/
+        - integration-tests/tika/
+    - labels: [area/testing]
+      directories:
+        - test-framework/
+    - labels: [area/undertow]
+      directories:
+        - extensions/undertow/
+        - integration-tests/elytron-undertow/
+    - labels: [area/websockets]
+      directories:
+        - extensions/websockets/
+    - labels: [area/swagger-ui]
+      title: "swagger"
+      notify: [phillip-kruger]
+      directories:
+        - extensions/swagger-ui/
+    - labels: [area/security]
+      directories:
+        - extensions/security/
+        - extensions/elytron
+        - extensions/vertx-keycloak/
+        - integration-tests/elytron
+    - labels: [area/flyway]
+      title: "flyway"
+      notify: [cristhiank, geoand, gastaldi, gsmet]
+      directories:
+        - extensions/flyway/
+        - integration-tests/flyway/
+    - labels: [area/liquibase]
+      title: "liquibase"
+      notify: [andrejpetras, geoand, gsmet]
+      directories:
+        - extensions/liquibase/
+        - integration-tests/liquibase/
+    - labels: [kind/extension-proposal]
+      title: quarkiverse
+      notify: [gastaldi, gsmet, aloubyansky]

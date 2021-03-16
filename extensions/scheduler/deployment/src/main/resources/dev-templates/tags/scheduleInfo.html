@@ -1,0 +1,10 @@
+{#if it.cron}
+  <code>{it.cron}</code>
+{#else}
+  Every <code>{it.every}</code>
+{/if}
+{#if it.delay > 0}
+  (with delay {it.delay} {it.delayUnit.toString.toLowerCase})
+{#else if !schedule.delayed.empty}
+  (delayed for {it.delayed})
+{/if}

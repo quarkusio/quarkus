@@ -1,9 +1,9 @@
 package io.quarkus.vertx.http.runtime.security;
 
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -17,7 +17,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public interface HttpSecurityPolicy {
 
-    CompletionStage<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+    Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext);
 
     /**
@@ -66,7 +66,7 @@ public interface HttpSecurityPolicy {
      */
     interface AuthorizationRequestContext {
 
-        CompletionStage<CheckResult> runBlocking(RoutingContext context, SecurityIdentity identity,
+        Uni<CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identity,
                 BiFunction<RoutingContext, SecurityIdentity, CheckResult> function);
 
     }

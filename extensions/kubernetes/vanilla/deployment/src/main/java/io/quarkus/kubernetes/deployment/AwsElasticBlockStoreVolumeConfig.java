@@ -1,7 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -19,7 +19,7 @@ public class AwsElasticBlockStoreVolumeConfig {
      * The partition.
      */
     @ConfigItem
-    Optional<Integer> partition;
+    OptionalInt partition;
 
     /**
      * Filesystem type.
@@ -30,7 +30,7 @@ public class AwsElasticBlockStoreVolumeConfig {
     /**
      * Wether the volumeName is read only or not.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean readOnly;
 
 }

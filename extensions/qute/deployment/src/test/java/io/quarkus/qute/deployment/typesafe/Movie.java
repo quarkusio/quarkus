@@ -7,6 +7,8 @@ public class Movie {
 
     public final Boolean alwaysTrue;
 
+    public final boolean alwaysFalsePrimitive = false;
+
     public final List<String> mainCharacters;
 
     public Movie(String... mainCharacters) {
@@ -24,6 +26,10 @@ public class Movie {
 
     public Long findServices(String name, Long age) {
         return 11l;
+    }
+
+    public String findNames(long limit, String... names) {
+        return "ok";
     }
 
 }

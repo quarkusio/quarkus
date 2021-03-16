@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-container-image-s2i-deployment</artifactId>
-    <name>Quarkus - Container - Image - S2i - Deployment</name>
+    <name>Quarkus - Container Image - S2I - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -52,6 +52,12 @@
                     <artifactId>tools</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -1,29 +1,34 @@
 package io.quarkus.hibernate.orm.runtime.customized;
 
-import java.util.Map;
-
-import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.bytecode.spi.BasicProxyFactory;
 import org.hibernate.bytecode.spi.ProxyFactoryFactory;
-import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.proxy.ProxyFactory;
 
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
-import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
-public final class QuarkusRuntimeProxyFactoryFactory implements StandardServiceInitiator<ProxyFactoryFactory> {
+/**
+ * This ProxyFactoryFactory is responsible to loading proxies which have been
+ * defined in advance.
+ * N.B. during the Quarkus application build, the service registry will use a different implementation:
+ * 
+ * @see io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator
+ */
+public class QuarkusRuntimeProxyFactoryFactory implements ProxyFactoryFactory {
 
     private final ProxyDefinitions proxyClassDefinitions;
 
-    public QuarkusRuntimeProxyFactoryFactory(RecordedState rs) {
-        proxyClassDefinitions = rs.getProxyClassDefinitions();
+    public QuarkusRuntimeProxyFactoryFactory(ProxyDefinitions proxyClassDefinitions) {
+        this.proxyClassDefinitions = proxyClassDefinitions;
     }
 
     @Override
-    public ProxyFactoryFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        return new QuarkusProxyFactoryFactory(proxyClassDefinitions);
+    public ProxyFactory buildProxyFactory(SessionFactoryImplementor sessionFactory) {
+        return new QuarkusProxyFactory(proxyClassDefinitions);
     }
 
     @Override
-    public Class<ProxyFactoryFactory> getServiceInitiated() {
-        return ProxyFactoryFactory.class;
+    public BasicProxyFactory buildBasicProxyFactory(Class superClass, Class[] interfaces) {
+        return null;
     }
 }

@@ -34,6 +34,38 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+        </dependency>
+
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-logging-gelf-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -66,10 +98,10 @@
 
     <profiles>
         <profile>
-        <id>test-gelf</id>
+            <id>test-gelf</id>
             <activation>
                 <property>
-                    <name>test-gelf</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -89,6 +121,138 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>docker-gelf</id>
+            <activation>
+                <property>
+                    <name>start-containers</name>
+                </property>
+            </activation>
+            <properties>
+                <elasticsearch.hosts>localhost:9200</elasticsearch.hosts>
+                <elasticsearch.protocol>http</elasticsearch.protocol>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <configuration>
+                            <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
+                            <images>
+                                <image>
+                                    <name>docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.3</name>
+                                    <alias>elasticsearch</alias>
+                                    <run>
+                                        <network>
+                                            <mode>custom</mode>
+                                            <name>elk</name>
+                                            <alias>elasticsearch</alias>
+                                        </network>
+                                        <cpus>2</cpus>
+                                        <cpuShares>2048</cpuShares>
+                                        <ports>
+                                            <port>9200:9200</port>
+                                        </ports>
+                                        <env>
+                                            <discovery.type>single-node</discovery.type>
+                                        </env>
+                                        <log>
+                                            <prefix>Elasticsearch: </prefix>
+                                            <date>default</date>
+                                            <color>cyan</color>
+                                        </log>
+                                        <wait>
+                                            <http>
+                                                <url>http://localhost:9200</url>
+                                                <method>GET</method>
+                                                <status>200</status>
+                                            </http>
+                                            <time>30000</time>
+                                        </wait>
+                                    </run>
+                                </image>
+                                <image>
+                                    <name>docker.elastic.co/logstash/logstash-oss:7.9.3</name>
+                                    <alias>logstash</alias>
+                                    <run>
+                                        <network>
+                                            <mode>custom</mode>
+                                            <name>elk</name>
+                                            <alias>logstash</alias>
+                                        </network>
+                                        <cpus>2</cpus>
+                                        <cpuShares>2048</cpuShares>
+                                        <ports>
+                                            <port>12201:12201/udp</port>
+                                            <port>5000:5000</port>
+                                            <port>9600:9600</port>
+                                        </ports>
+                                        <log>
+                                            <prefix>Logstash: </prefix>
+                                            <date>default</date>
+                                            <color>cyan</color>
+                                        </log>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline</volume>
+                                            </bind>
+                                        </volumes>
+                                        <wait>
+                                            <http>
+                                                <url>http://localhost:9600</url>
+                                                <method>GET</method>
+                                                <status>200</status>
+                                            </http>
+                                            <!-- Starting the pipeline can be long as it needs to communicate with Elasticsearch -->
+                                            <time>45000</time>
+                                        </wait>
+                                        <dependsOn>
+                                            <container>elasticsearch</container>
+                                        </dependsOn>
+                                    </run>
+                                </image>
+                            </images>
+                            <allContainers>true</allContainers>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docker-start</id>
+                                <phase>process-test-classes</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>docker-stop</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-prune</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${basedir}/../../.github/docker-prune.sh</executable>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>native-image</id>
             <activation>
@@ -96,48 +260,11 @@
                     <name>native</name>
                 </property>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemProperties>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                    </systemProperties>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>native-image</id>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
-                                    <cleanupServer>true</cleanupServer>
-                                    <enableHttpsUrlHandler>true</enableHttpsUrlHandler>
-                                    <enableServer>false</enableServer>
-                                    <dumpProxies>false</dumpProxies>
-                                    <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableAllSecurityServices>true</enableAllSecurityServices>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <!-- add some custom config, the rest comes from parent -->
+            <properties>
+                <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
+                <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
+            </properties>
         </profile>
     </profiles>
 

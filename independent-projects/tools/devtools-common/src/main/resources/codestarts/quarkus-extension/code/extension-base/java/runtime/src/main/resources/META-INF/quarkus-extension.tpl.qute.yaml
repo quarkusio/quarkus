@@ -1,0 +1,9 @@
+name: {namespace.name}{extension.name}
+#description: {namespace.name}{extension.name} ...
+metadata:
+#  keywords:
+#    - {extension.id}
+#  guide: ...
+#  categories:
+#    - "miscellaneous"
+#  status: "preview"

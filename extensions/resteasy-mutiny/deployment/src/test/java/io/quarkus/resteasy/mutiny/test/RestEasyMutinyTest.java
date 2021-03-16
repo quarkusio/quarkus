@@ -71,4 +71,31 @@ public class RestEasyMutinyTest {
         Assertions.assertEquals(response.getStatus(), 500);
     }
 
+    @Test
+    public void testHttpResponseTeaPot() {
+        Response response = client.target(url.toExternalForm() + "/response/tea-pot").request().get();
+        Assertions.assertEquals(418, response.getStatus());
+    }
+
+    @Test
+    public void testHttpResponseNoContent() {
+        Response response = client.target(url.toExternalForm() + "/response/no-content").request().get();
+        Assertions.assertEquals(204, response.getStatus());
+    }
+
+    @Test
+    public void testHttpResponseAcceptedWithBody() {
+        Response response = client.target(url.toExternalForm() + "/response/accepted").request().get();
+        Assertions.assertEquals(202, response.getStatus());
+        Assertions.assertEquals("Hello", response.readEntity(String.class));
+    }
+
+    @Test
+    public void testHttpResponseConditional() {
+        Response response = client.target(url.toExternalForm() + "/response/conditional/true").request().get();
+        Assertions.assertEquals(202, response.getStatus());
+        response = client.target(url.toExternalForm() + "/response/conditional/false").request().get();
+        Assertions.assertEquals(204, response.getStatus());
+    }
+
 }

@@ -1,0 +1,61 @@
+name: Quarkus CI Fork Maven Cache
+
+on:
+  push:
+    branches:
+      - 'main'
+    # paths-ignore should match ci-actions.yml
+    paths-ignore:
+      - '.gitignore'
+      - '.dockerignore'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
+      - 'docs/src/main/asciidoc/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.yml'
+      - '.github/*.java'
+      - '.github/*.conf'
+  schedule:
+    # first day of month at 12:10am
+    - cron: '10 0 1 * *'
+
+env:
+  LANG: en_US.UTF-8
+jobs:
+  build-jdk11:
+    name: "Quick JDK 11 Build"
+    runs-on: ubuntu-latest
+    # Skip in main repo
+    if: github.repository != 'quarkusio/quarkus'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ci-fork-mvn-cache.yml
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 11
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+        shell: bash
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          # refresh cache every month to avoid unlimited growth
+          key: q2maven-${{ steps.get-date.outputs.date }}
+      - name: Build
+        run: |
+          mvn -T1C -e -B --settings .github/mvn-settings.xml -Dquickly-ci -Dtcks clean install
+      - name: Delete Local Artifacts From Cache
+        shell: bash
+        run: rm -r ~/.m2/repository/io/quarkus

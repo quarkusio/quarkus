@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.enterprise.context.NormalScope;
 
 /**
  * Custom context configurator.
@@ -38,6 +39,7 @@ public final class ContextConfigurator {
         this.scopeAnnotation = Objects.requireNonNull(scopeAnnotation);
         this.params = new HashMap<>();
         this.configuratorConsumer = configuratorConsumer;
+        this.isNormal = scopeAnnotation.isAnnotationPresent(NormalScope.class);
     }
 
     public ContextConfigurator param(String name, Class<?> value) {
@@ -70,8 +72,28 @@ public final class ContextConfigurator {
         return this;
     }
 
+    /**
+     * By default, the context is considered normal if the scope annotion is annotated with {@link NormalScope}.
+     * <p>
+     * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
+     * implementation of {@link InjectableContext#isNormal()}.
+     * 
+     * @return self
+     */
     public ContextConfigurator normal() {
-        this.isNormal = true;
+        return normal(true);
+    }
+
+    /**
+     * By default, the context is considered normal if the scope annotion is annotated with {@link NormalScope}.
+     * <p>
+     * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
+     * implementation of {@link InjectableContext#isNormal()}.
+     * 
+     * @return self
+     */
+    public ContextConfigurator normal(boolean value) {
+        this.isNormal = value;
         return this;
     }
 

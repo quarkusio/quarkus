@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Software Transactional Memory in Quarkus
 
@@ -89,7 +89,7 @@ include::./status-include.adoc[]
 To use the extension include it as a dependency in your application pom:
 
 [source,xml]
---
+----
 <dependencies>
     <!-- STM extension -->
     <dependency>
@@ -98,11 +98,11 @@ To use the extension include it as a dependency in your application pom:
       <version>${quarkus.version}</version>
     </dependency>
 </dependencies>
---
+----
 
 == Defining STM-aware classes
 
-In order for the STM subsytem to have knowledge about which classes are to be managed within the context
+In order for the STM subsystem to have knowledge about which classes are to be managed within the context
 of transactional memory it is necessary to provide a minimal level of instrumentation. This occurs by
 categorising STM-aware and STM-unaware classes through an interface boundary; specifically all STM-aware objects
 must be instances of classes which inherit from interfaces that themselves have been annotated to identify them
@@ -113,13 +113,13 @@ The specific annotation that STM-aware application interfaces must use is `org.j
 For example:
 
 [source,java]
---
+----
 @Transactional
 public interface FlightService {
     int getNumberOfBookings();
     void makeBooking(String details);
 }
---
+----
 
 Classes which implement this interface are able to use additional annotations from Narayana to tell the STM
 subsystem about things such as whether a method will modify the state of the object, or what state variables
@@ -128,7 +128,7 @@ if a transaction aborts. As mentioned earlier, if those annotations are not pres
 guarantee safety, such as assuming all methods will modify state.
 
 [source,java]
---
+----
 public class FlightServiceImpl implements FlightService {
     @ReadLock
     public int getNumberOfBookings() { ... }
@@ -137,7 +137,7 @@ public class FlightServiceImpl implements FlightService {
     @NotState
     private int timesCalled;
 }
---
+----
 
 For example, by using the `@ReadLock` annotation on the `getNumberOfBookings` method, we are able to tell the
 STM subsystem that no state modifications will occur in this object when it is used in the transactional
@@ -165,7 +165,7 @@ the object through the original reference will not allow the STM subsystem to tr
 concurrency control.
 
 [source,java]
---
+----
     import org.jboss.stm.Container;
 
     ...
@@ -173,14 +173,14 @@ concurrency control.
     Container<FlightService> container = new Container<>(); <1>
     FlightServiceImpl instance = new FlightServiceImpl(); <2>
     FlightService flightServiceProxy = container.create(instance); <3>
---
+----
 
 <1> You need to tell each Container about the type of objects for which it will be responsible. In this example
     it will be instances that implement the FlightService interface.
 <2> Then you create an instance that implements `FlightService`. You should not use it directly at this stage because
     access to it is not being managed by the STM subsystem.
 <3> To obtain a managed instance, pass the original object to the STM `container` which then returns a reference
-    through which you will be able perform transactional operations. This reference can be used safely from multiple threads.
+    through which you will be able to perform transactional operations. This reference can be used safely from multiple threads.
 
 == Defining transaction boundaries
 
@@ -203,7 +203,7 @@ transaction acts as the parent of this newly created transaction.
 The application can programmatically start a transaction before accessing the methods of STM objects:
 
 [source,java]
---
+----
 AtomicAction aa = new AtomicAction(); <1>
 
 aa.begin(); <2>
@@ -218,7 +218,7 @@ aa.begin(); <2>
         aa.abort(); <6>
     }
 }
---
+----
 
 <1> An object for manually controlling transaction boundaries (AtomicAction and many other useful
     classes are included in the extension).

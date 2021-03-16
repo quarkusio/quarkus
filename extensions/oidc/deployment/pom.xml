@@ -6,7 +6,6 @@
         <artifactId>quarkus-oidc-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -33,6 +32,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-common-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -74,7 +77,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson</artifactId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -102,12 +105,7 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <systemPropertyVariables>
-                        <keycloak.not.required/>
-                    </systemPropertyVariables>
-                    <includes>
-                        <include>ServicePublicKeyTestCase.java</include>
-                    </includes>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>
@@ -117,7 +115,7 @@
             <id>test-keycloak</id>
             <activation>
                 <property>
-                    <name>test-keycloak</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -126,9 +124,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <excludes>
-                                <exclude>ServicePublicKeyTestCase.java</exclude>
-                            </excludes>
                             <systemPropertyVariables>
                                 <keycloak.url>${keycloak.url}</keycloak.url>
                             </systemPropertyVariables>
@@ -142,7 +137,7 @@
             <id>docker-keycloak</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>
@@ -198,6 +193,22 @@
                                 <goals>
                                     <goal>stop</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-prune</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${docker-prune.location}</executable>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

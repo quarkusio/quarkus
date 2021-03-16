@@ -6,10 +6,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
 public class StartupContext implements Closeable {
+
+    public static final String RAW_COMMAND_LINE_ARGS = StartupContext.class.getName() + ".raw-command-line-args";
 
     private static final Logger LOG = Logger.getLogger(StartupContext.class);
 
@@ -30,9 +33,20 @@ public class StartupContext implements Closeable {
             lastShutdownTasks.add(runnable);
         }
     };
+    private String[] commandLineArgs;
+    private String currentBuildStepName;
 
     public StartupContext() {
         values.put(ShutdownContext.class.getName(), shutdownContext);
+        values.put(RAW_COMMAND_LINE_ARGS, new Supplier<String[]>() {
+            @Override
+            public String[] get() {
+                if (commandLineArgs == null) {
+                    throw new RuntimeException("Command line arguments not available during static init");
+                }
+                return commandLineArgs;
+            }
+        });
     }
 
     public void putValue(String name, Object value) {
@@ -71,5 +85,20 @@ public class StartupContext implements Closeable {
                 LOG.error("Running a shutdown task failed", e);
             }
         }
+    }
+
+    @SuppressWarnings("unused")
+    public void setCommandLineArguments(String[] commandLineArguments) {
+        this.commandLineArgs = commandLineArguments;
+    }
+
+    @SuppressWarnings("unused")
+    public String getCurrentBuildStepName() {
+        return currentBuildStepName;
+    }
+
+    @SuppressWarnings("unused")
+    public void setCurrentBuildStepName(String currentBuildStepName) {
+        this.currentBuildStepName = currentBuildStepName;
     }
 }

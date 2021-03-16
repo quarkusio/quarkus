@@ -1,7 +1,21 @@
 package io.quarkus.bootstrap.app;
 
+import java.util.function.Consumer;
+
 public interface StartupAction {
+
     RunningQuarkusApplication run(String... args) throws Exception;
 
     ClassLoader getClassLoader();
+
+    /**
+     * Runs the application by running the main method of the main class. As this is a blocking method a new
+     * thread is created to run this task.
+     *
+     * Before this method is called an appropriate exit handler will likely need to
+     * be set in {@link io.quarkus.runtime.ApplicationLifecycleManager#setDefaultExitCodeHandler(Consumer)}
+     * of the JVM will exit when the app stops.
+     */
+    RunningQuarkusApplication runMainClass(String... args) throws Exception;
+
 }

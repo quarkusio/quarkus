@@ -36,7 +36,7 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                 Map.Entry<String, String> req = null;
                 while (req == null) {
                     req = LambdaClient.REQUEST_QUEUE.poll(100, TimeUnit.MILLISECONDS);
-                    if (undertow == null || undertow.getWorker().isShutdown()) {
+                    if (undertow == null || undertow.getWorker() == null || undertow.getWorker().isShutdown()) {
                         return;
                     }
                 }
@@ -117,8 +117,9 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
 
     @Override
     public void stop() {
+        if (undertow == null)
+            return;
         undertow.stop();
         undertow = null;
-
     }
 }

@@ -1,8 +1,11 @@
 package io.quarkus.funqy.runtime;
 
-public interface FunqyServerResponse {
-    Object getOutput();
+import io.smallrye.mutiny.Uni;
 
-    void setOutput(Object out);
+public interface FunqyServerResponse {
+
+    Uni<?> getOutput();
+
+    void setOutput(Uni<?> out);
 
 }

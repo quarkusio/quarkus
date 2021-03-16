@@ -6,7 +6,6 @@
     <artifactId>quarkus-smallrye-openapi-parent</artifactId>
     <groupId>io.quarkus</groupId>
     <version>999-SNAPSHOT</version>
-    <relativePath>../</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -17,13 +16,7 @@
   <dependencies>
     <dependency>
       <groupId>io.smallrye</groupId>
-      <artifactId>smallrye-open-api</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-io</groupId>
-          <artifactId>commons-io</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>smallrye-open-api-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>

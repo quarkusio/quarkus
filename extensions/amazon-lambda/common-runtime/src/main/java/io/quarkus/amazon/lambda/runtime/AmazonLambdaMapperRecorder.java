@@ -2,7 +2,6 @@ package io.quarkus.amazon.lambda.runtime;
 
 import org.jboss.logging.Logger;
 
-import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -30,7 +29,7 @@ public class AmazonLambdaMapperRecorder {
 
     public void initContextReaders() {
         cognitoIdReader = objectMapper.readerFor(CognitoIdentity.class);
-        clientCtxReader = objectMapper.readerFor(ClientContext.class);
+        clientCtxReader = objectMapper.readerFor(ClientContextImpl.class);
 
     }
 

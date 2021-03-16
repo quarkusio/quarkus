@@ -1,11 +1,19 @@
 package io.quarkus.quartz.runtime;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class QuartzRuntimeConfig {
+
+    /**
+     * The name of the Quartz instance.
+     */
+    @ConfigItem(defaultValue = "QuarkusQuartzScheduler")
+    public String instanceName;
 
     /**
      * The size of scheduler thread pool. This will initialize the number of worker threads in the pool.
@@ -23,8 +31,23 @@ public class QuartzRuntimeConfig {
      * By default, the scheduler is not started unless a {@link io.quarkus.scheduler.Scheduled} business method is found.
      * If set to true the scheduler will be started even if no scheduled business methods are found. This is necessary for
      * "pure" programmatic scheduling.
+     *
+     * @deprecated use quarkus.quartz.start-mode=forced instead.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean forceStart;
+    @Deprecated
+    @ConfigItem
+    public Optional<Boolean> forceStart;
 
+    /**
+     * Scheduler can be started in different modes: normal, forced or halted.
+     * By default, the scheduler is not started unless a {@link io.quarkus.scheduler.Scheduled} business method
+     * is found.
+     * If set to "forced", scheduler will be started even if no scheduled business methods are found.
+     * This is necessary for "pure" programmatic scheduling.
+     * Additionally, setting it to "halted" will behave just like forced mode but the scheduler will not start
+     * triggering jobs until an explicit start is called from the main scheduler.
+     * This is useful to programmatically register listeners before scheduler starts performing some work.
+     */
+    @ConfigItem(defaultValue = "normal")
+    public QuartzStartMode startMode;
 }

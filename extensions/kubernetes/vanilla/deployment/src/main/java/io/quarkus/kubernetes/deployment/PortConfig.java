@@ -2,6 +2,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.Protocol;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -14,13 +15,13 @@ public class PortConfig {
      * The port number. Refers to the container port.
      */
     @ConfigItem
-    Optional<Integer> containerPort;
+    OptionalInt containerPort;
 
     /**
      * The host port.
      */
     @ConfigItem
-    Optional<Integer> hostPort;
+    OptionalInt hostPort;
 
     /**
      * The application path (refers to web application path).

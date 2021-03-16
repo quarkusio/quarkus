@@ -14,6 +14,6 @@ public class ApplicationInfoTestCase {
     public void testConfigPropertiesProperlyInjected() {
         RestAssured
                 .when().get("/application-info")
-                .then().body(is("main-integration-test/1.0"));
+                .then().body(is("main-integration-test/1.0/test"));
     }
 }

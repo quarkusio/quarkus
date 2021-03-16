@@ -27,6 +27,9 @@ public class ArtemisTestResource implements QuarkusTestResourceLifecycleManager 
 
     @Override
     public void stop() {
+        if (embedded == null) {
+            return;
+        }
         try {
             embedded.stop();
         } catch (Exception e) {

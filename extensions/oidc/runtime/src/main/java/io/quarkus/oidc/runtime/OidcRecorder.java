@@ -1,190 +1,284 @@
 package io.quarkus.oidc.runtime;
 
+import java.net.ConnectException;
+import java.net.URI;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OIDCException;
-import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials.Secret;
+import io.quarkus.oidc.OidcConfigurationMetadata;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
+import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
-import io.vertx.ext.auth.PubSecKeyOptions;
-import io.vertx.ext.auth.oauth2.OAuth2Auth;
-import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
-import io.vertx.ext.auth.oauth2.impl.OAuth2AuthProviderImpl;
-import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
-import io.vertx.ext.jwt.JWTOptions;
+import io.vertx.core.net.ProxyOptions;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 @Recorder
 public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
+    private static final String DEFAULT_TENANT_ID = "Default";
+    private static final Duration CONNECTION_BACKOFF_DURATION = Duration.ofSeconds(2);
 
-    public void setup(OidcConfig config, Supplier<Vertx> vertx, BeanContainer beanContainer) {
+    private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
+
+    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
         final Vertx vertxValue = vertx.get();
-        Map<String, TenantConfigContext> tenantsConfig = new HashMap<>();
 
+        String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
+        TenantConfigContext defaultTenantContext = createStaticTenantContext(vertxValue, config.defaultTenant, tlsConfig,
+                defaultTenantId);
+
+        Map<String, TenantConfigContext> staticTenantsConfig = new HashMap<>();
         for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {
-            if (config.defaultTenant.getTenantId().isPresent()
-                    && tenant.getKey().equals(config.defaultTenant.getTenantId().get())) {
-                throw new OIDCException("tenant-id '" + tenant.getKey() + "' duplicates the default tenant-id");
-            }
-            if (tenant.getValue().getTenantId().isPresent() && !tenant.getKey().equals(tenant.getValue().getTenantId().get())) {
-                throw new OIDCException("Configuration has 2 different tenant-id values: '"
-                        + tenant.getKey() + "' and '" + tenant.getValue().getTenantId().get() + "'");
-            }
-            tenantsConfig.put(tenant.getKey(), createTenantContext(vertxValue, tenant.getValue(), tenant.getKey()));
+            OidcCommonUtils.verifyConfigurationId(defaultTenantId, tenant.getKey(), tenant.getValue().getTenantId());
+            staticTenantsConfig.put(tenant.getKey(),
+                    createStaticTenantContext(vertxValue, tenant.getValue(), tlsConfig, tenant.getKey()));
         }
 
-        DefaultTenantConfigResolver resolver = beanContainer.instance(DefaultTenantConfigResolver.class);
-
-        resolver.setDefaultTenant(createTenantContext(vertxValue, config.defaultTenant, "Default"));
-        resolver.setTenantsConfig(tenantsConfig);
-        resolver.setTenantConfigContextFactory(new Function<OidcTenantConfig, TenantConfigContext>() {
+        return new Supplier<TenantConfigBean>() {
             @Override
-            public TenantConfigContext apply(OidcTenantConfig config) {
-                // OidcTenantConfig resolved by TenantConfigResolver must have its optional tenantId
-                // initialized which is also enforced by DefaultTenantConfigResolver
-                return createTenantContext(vertxValue, config, config.getTenantId().get());
+            public TenantConfigBean get() {
+                return new TenantConfigBean(staticTenantsConfig, dynamicTenantsConfig, defaultTenantContext,
+                        new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
+                            @Override
+                            public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
+                                return createDynamicTenantContext(vertxValue, config, tlsConfig, config.getTenantId().get())
+                                        .plug(u -> {
+                                            if (!BlockingOperationControl.isBlockingAllowed()) {
+                                                return u.runSubscriptionOn(ExecutorRecorder.getCurrent());
+                                            }
+                                            return u;
+                                        });
+                            }
+                        },
+                        ExecutorRecorder.getCurrent());
             }
-        });
+        };
     }
 
-    private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, String tenantId) {
+    private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,
+            OidcTenantConfig oidcConfig, TlsConfig tlsConfig, String tenantId) {
+
+        if (!dynamicTenantsConfig.containsKey(tenantId)) {
+            return createTenantContext(vertx, oidcConfig, tlsConfig, tenantId).onItem().transform(
+                    new Function<TenantConfigContext, TenantConfigContext>() {
+                        @Override
+                        public TenantConfigContext apply(TenantConfigContext t) {
+                            dynamicTenantsConfig.putIfAbsent(tenantId, t);
+                            return t;
+                        }
+                    });
+        } else {
+            return Uni.createFrom().item(dynamicTenantsConfig.get(tenantId));
+        }
+    }
+
+    private TenantConfigContext createStaticTenantContext(Vertx vertx,
+            OidcTenantConfig oidcConfig, TlsConfig tlsConfig, String tenantId) {
+
+        return createTenantContext(vertx, oidcConfig, tlsConfig, tenantId).await().indefinitely();
+    }
+
+    private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, TlsConfig tlsConfig,
+            String tenantId) {
+        if (!oidcConfig.tenantId.isPresent()) {
+            oidcConfig.tenantId = Optional.of(tenantId);
+        }
         if (!oidcConfig.tenantEnabled) {
-            LOG.debugf("%s tenant configuration is disabled", tenantId);
-            return null;
-        }
-
-        OAuth2ClientOptions options = new OAuth2ClientOptions();
-
-        if (oidcConfig.getClientId().isPresent()) {
-            options.setClientID(oidcConfig.getClientId().get());
-        }
-
-        if (oidcConfig.getToken().issuer.isPresent()) {
-            options.setValidateIssuer(false);
-        }
-
-        if (oidcConfig.getToken().getExpirationGrace().isPresent()) {
-            JWTOptions jwtOptions = new JWTOptions();
-            jwtOptions.setLeeway(oidcConfig.getToken().getExpirationGrace().get());
-            options.setJWTOptions(jwtOptions);
+            LOG.debugf("'%s' tenant configuration is disabled", tenantId);
+            Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null), oidcConfig));
         }
 
         if (oidcConfig.getPublicKey().isPresent()) {
-            if (oidcConfig.applicationType == ApplicationType.WEB_APP) {
-                throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
+            return Uni.createFrom().item(createTenantContextFromPublicKey(oidcConfig));
+        }
+
+        OidcCommonUtils.verifyCommonConfiguration(oidcConfig, true);
+
+        if (!oidcConfig.discoveryEnabled) {
+            if (oidcConfig.applicationType != ApplicationType.SERVICE) {
+                if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
+                    throw new OIDCException("'web-app' applications must have 'authorization-path' and 'token-path' properties "
+                            + "set when the discovery is disabled.");
+                }
             }
-            LOG.info("'public-key' property for the local token verification is set,"
-                    + " no connection to the OIDC server will be created");
-            options.addPubSecKey(new PubSecKeyOptions()
-                    .setAlgorithm("RS256")
-                    .setPublicKey(oidcConfig.getPublicKey().get()));
-
-            return new TenantConfigContext(new OAuth2AuthProviderImpl(vertx, options), oidcConfig);
+            // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
+            if (!oidcConfig.jwksPath.isPresent() && !oidcConfig.introspectionPath.isPresent()) {
+                throw new OIDCException(
+                        "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.");
+            }
         }
 
-        if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
-            throw new ConfigurationException(
-                    "Both 'auth-server-url' and 'client-id' or alterntively 'public-key' must be configured"
-                            + " when the quarkus-oidc extension is enabled");
+        if (ApplicationType.SERVICE.equals(oidcConfig.applicationType)) {
+            if (oidcConfig.token.refreshExpired) {
+                throw new ConfigurationException(
+                        "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
+                                + " application types");
+            }
+            if (oidcConfig.logout.path.isPresent()) {
+                throw new ConfigurationException(
+                        "The 'logout.path' property can only be enabled for " + ApplicationType.WEB_APP
+                                + " application types");
+            }
+            if (oidcConfig.roles.source.isPresent() && oidcConfig.roles.source.get() == Source.idtoken) {
+                throw new ConfigurationException(
+                        "The 'roles.source' property can only be set to 'idtoken' for " + ApplicationType.WEB_APP
+                                + " application types");
+            }
         }
 
-        // Base IDP server URL
-        options.setSite(oidcConfig.getAuthServerUrl().get());
-        // RFC7662 introspection service address
-        if (oidcConfig.getIntrospectionPath().isPresent()) {
-            options.setIntrospectionPath(oidcConfig.getIntrospectionPath().get());
+        if (oidcConfig.tokenStateManager.strategy != Strategy.KEEP_ALL_TOKENS) {
+
+            if (oidcConfig.authentication.userInfoRequired || oidcConfig.roles.source.orElse(null) == Source.userinfo) {
+                throw new ConfigurationException(
+                        "UserInfo is required but DefaultTokenStateManager is configured to not keep the access token");
+            }
+            if (oidcConfig.roles.source.orElse(null) == Source.accesstoken) {
+                throw new ConfigurationException(
+                        "Access token is required to check the roles but DefaultTokenStateManager is configured to not keep the access token");
+            }
         }
 
-        // RFC7662 JWKS service address
-        if (oidcConfig.getJwksPath().isPresent()) {
-            options.setJwkPath(oidcConfig.getJwksPath().get());
-        }
+        return createOidcProvider(oidcConfig, tlsConfig, vertx)
+                .onItem().transform(p -> new TenantConfigContext(p, oidcConfig));
+    }
 
-        Credentials creds = oidcConfig.getCredentials();
-        if (creds.secret.isPresent() && (creds.clientSecret.value.isPresent() || creds.clientSecret.method.isPresent())) {
-            throw new ConfigurationException(
-                    "'credentials.secret' and 'credentials.client-secret' properties are mutually exclusive");
+    private static TenantConfigContext createTenantContextFromPublicKey(OidcTenantConfig oidcConfig) {
+        if (oidcConfig.applicationType != ApplicationType.SERVICE) {
+            throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
         }
-        // TODO: The workaround to support client_secret_post is added below and have to be removed once
-        // it is supported again in VertX OAuth2.
-        if (creds.secret.isPresent()
-                || creds.clientSecret.value.isPresent()
-                        && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC) {
-            // If it is set for client_secret_post as well then VertX OAuth2 will only use client_secret_basic
-            options.setClientSecret(creds.secret.orElseGet(() -> creds.clientSecret.value.get()));
-        } else {
-            // Avoid the client_secret set in CodeAuthenticationMechanism when client_secret_post is enabled
-            // from being reset to null in VertX OAuth2
-            options.setClientSecretParameterName(null);
-        }
+        LOG.debug("'public-key' property for the local token verification is set,"
+                + " no connection to the OIDC server will be created");
 
-        final long connectionDelayInSecs = oidcConfig.getConnectionDelay().isPresent()
-                ? oidcConfig.getConnectionDelay().get().toMillis() / 1000
-                : 0;
-        final long connectionRetryCount = connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
-        if (connectionRetryCount > 1) {
-            LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
-        }
+        return new TenantConfigContext(new OidcProvider(oidcConfig.publicKey.get(), oidcConfig), oidcConfig);
+    }
 
-        OAuth2Auth auth = null;
-        for (long i = 0; i < connectionRetryCount; i++) {
-            try {
-                CompletableFuture<OAuth2Auth> cf = new CompletableFuture<>();
-                KeycloakAuth.discover(vertx, options, new Handler<AsyncResult<OAuth2Auth>>() {
+    public void setSecurityEventObserved(boolean isSecurityEventObserved) {
+        DefaultTenantConfigResolver bean = Arc.container().instance(DefaultTenantConfigResolver.class).get();
+        bean.setSecurityEventObserved(isSecurityEventObserved);
+    }
+
+    public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
+        return OidcCommonUtils.toProxyOptions(proxyConfig);
+    }
+
+    protected static OIDCException toOidcException(Throwable cause, String authServerUrl) {
+        final String message = OidcCommonUtils.formatConnectionErrorMessage(authServerUrl);
+        return new OIDCException(message, cause);
+    }
+
+    protected static Uni<OidcProvider> createOidcProvider(OidcTenantConfig oidcConfig, TlsConfig tlsConfig, Vertx vertx) {
+        return createOidcClientUni(oidcConfig, tlsConfig, vertx).onItem()
+                .transformToUni(new Function<OidcProviderClient, Uni<? extends OidcProvider>>() {
                     @Override
-                    public void handle(AsyncResult<OAuth2Auth> event) {
-                        if (event.failed()) {
-                            cf.completeExceptionally(toOidcException(event.cause()));
+                    public Uni<OidcProvider> apply(OidcProviderClient client) {
+                        if (client.getMetadata().getJsonWebKeySetUri() != null) {
+                            return client.getJsonWebKeySet().onItem()
+                                    .transform(new Function<JsonWebKeyCache, OidcProvider>() {
+
+                                        @Override
+                                        public OidcProvider apply(JsonWebKeyCache jwks) {
+                                            return new OidcProvider(client, oidcConfig, jwks);
+                                        }
+
+                                    });
                         } else {
-                            cf.complete(event.result());
+                            return Uni.createFrom().item(new OidcProvider(client, oidcConfig, null));
                         }
                     }
                 });
-
-                auth = cf.join();
-                break;
-            } catch (Throwable throwable) {
-                while (throwable instanceof CompletionException && throwable.getCause() != null) {
-                    throwable = throwable.getCause();
-                }
-                if (throwable instanceof OIDCException) {
-                    if (i + 1 < connectionRetryCount) {
-                        try {
-                            Thread.sleep(2000);
-                        } catch (InterruptedException iex) {
-                            // continue connecting
-                        }
-                    } else {
-                        throw (OIDCException) throwable;
-                    }
-                } else {
-                    throw new OIDCException(throwable);
-                }
-            }
-        }
-
-        return new TenantConfigContext(auth, oidcConfig);
     }
 
-    protected static OIDCException toOidcException(Throwable cause) {
-        final String message = "OIDC server is not available at the 'quarkus.oidc.auth-server-url' URL. "
-                + "Please make sure it is correct. Note it has to end with a realm value if you work with Keycloak, for example:"
-                + " 'https://localhost:8180/auth/realms/quarkus'";
-        return new OIDCException(message, cause);
+    protected static Uni<OidcProviderClient> createOidcClientUni(OidcTenantConfig oidcConfig,
+            TlsConfig tlsConfig, Vertx vertx) {
+
+        String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
+
+        WebClientOptions options = new WebClientOptions();
+
+        URI authServerUri = URI.create(authServerUriString); // create uri for parse exception
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
+
+        WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+
+        Uni<OidcConfigurationMetadata> metadataUni = null;
+        if (!oidcConfig.discoveryEnabled) {
+            String tokenUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.tokenPath);
+            String introspectionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(),
+                    oidcConfig.introspectionPath);
+            String authorizationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(),
+                    oidcConfig.authorizationPath);
+            String jwksUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.jwksPath);
+            String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.userInfoPath);
+            String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.endSessionPath);
+            metadataUni = Uni.createFrom().item(new OidcConfigurationMetadata(tokenUri,
+                    introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
+                    oidcConfig.token.issuer.orElse(null)));
+        } else {
+            final long connectionRetryCount = OidcCommonUtils.getConnectionRetryCount(oidcConfig);
+            final long expireInDelay = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
+            if (connectionRetryCount > 1) {
+                LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
+            }
+            metadataUni = discoverMetadata(client, authServerUri.toString(), oidcConfig).onFailure(ConnectException.class)
+                    .retry()
+                    .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
+                    .expireIn(expireInDelay);
+        }
+        return metadataUni.onItemOrFailure()
+                .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClient>>() {
+
+                    @Override
+                    public Uni<OidcProviderClient> apply(OidcConfigurationMetadata metadata, Throwable t) {
+                        if (t != null) {
+                            return Uni.createFrom().failure(toOidcException(t, authServerUri.toString()));
+                        }
+                        if (metadata == null) {
+                            return Uni.createFrom().failure(new ConfigurationException(
+                                    "OpenId Connect Provider configuration metadata is not configured and can not be discovered"));
+                        }
+                        if (oidcConfig.logout.path.isPresent()) {
+                            if (!oidcConfig.endSessionPath.isPresent() && metadata.getEndSessionUri() == null) {
+                                return Uni.createFrom().failure(new ConfigurationException(
+                                        "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
+                            }
+                        }
+                        return Uni.createFrom().item(new OidcProviderClient(client, metadata, oidcConfig));
+                    }
+                });
+    }
+
+    private static Uni<OidcConfigurationMetadata> discoverMetadata(WebClient client, String authServerUrl,
+            OidcTenantConfig oidcConfig) {
+        final String discoveryUrl = authServerUrl + "/.well-known/openid-configuration";
+        return client.getAbs(discoveryUrl).send().onItem().transform(resp -> {
+            if (resp.statusCode() == 200) {
+                return new OidcConfigurationMetadata(resp.bodyAsJsonObject());
+            } else {
+                return null;
+            }
+        });
     }
 
 }

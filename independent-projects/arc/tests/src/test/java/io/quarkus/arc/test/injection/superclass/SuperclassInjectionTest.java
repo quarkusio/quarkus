@@ -49,6 +49,13 @@ public class SuperclassInjectionTest {
         assertEquals(5, ids.size(), () -> "Wrong number of ids: " + ids);
     }
 
+    @Test
+    public void testFieldSameName() {
+        CombineHarvester combineHarvester = Arc.container().instance(CombineHarvester.class).get();
+        assertNotNull(combineHarvester.getCombineHead());
+        assertNotNull(combineHarvester.getSuperHead());
+    }
+
     @Dependent
     public static class Head {
 
@@ -72,14 +79,28 @@ public class SuperclassInjectionTest {
     @ApplicationScoped
     static class CombineHarvester extends SuperHarvester {
 
+        @Inject
+        Head sameName;
+
+        Head getCombineHead() {
+            return sameName;
+        }
+
     }
 
     public static class SuperHarvester {
+
+        @Inject
+        Head sameName;
 
         private Head head1;
 
         @Inject
         Head head2;
+
+        Head getSuperHead() {
+            return sameName;
+        }
 
         @Inject
         void setHead(Head head) {

@@ -3,9 +3,12 @@ package io.quarkus.undertow.test;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.security.test.utils.TestIdentityController;
+import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -41,13 +44,20 @@ public class ServletWebXmlSecurityTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SecuredServlet.class)
+                    .addClasses(SecuredServlet.class, TestIdentityProvider.class, TestIdentityController.class)
                     .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));
+
+    @BeforeAll
+    public static void setup() {
+        TestIdentityController.resetRoles().add("admin", "admin", "admin");
+    }
 
     @Test
     public void testWebXmlSecurityConstraints() {
         RestAssured.when().get("/secure/servlet").then()
                 .statusCode(401);
+        RestAssured.given().auth().basic("admin", "admin").when().get("/secure/servlet").then()
+                .statusCode(200);
     }
 
 }

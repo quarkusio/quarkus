@@ -1,1 +1,7 @@
-
+// for rendering the final website the attributes are set by
+// https://github.com/quarkusio/quarkusio.github.io/blob/develop/_guides/pom.xml
+// they are duplicated here to ease the preview when editing in the IDE
+:idprefix:
+:idseparator: -
+:icons: font
+:imagesdir: ./images

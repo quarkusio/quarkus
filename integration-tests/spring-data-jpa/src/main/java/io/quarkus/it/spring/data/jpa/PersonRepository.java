@@ -8,7 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Demonstrates the ability to add fragments and some of the derived method capabilities
@@ -39,5 +41,15 @@ public interface PersonRepository extends CrudRepository<Person, Long>, PersonFr
 
     List<Person> findTop3ByActive(boolean active, Sort sort);
 
-    List<Person> findPeopleByAddressZipCode(String zipCode);
+    List<Person> findPeopleBySomeAddressZipCode(String zipCode);
+
+    List<Person> findBySomeAddressId(Long addressId);
+
+    List<Person> findBySomeAddressStreetNumber(String streetName);
+
+    long deleteByAge(Integer age);
+
+    @Query(value = "SELECT p FROM Person p JOIN p.likedSongs s WHERE s.id = :songId")
+    List<Person> findPersonByLikedSong(@Param("songId") Long songId);
+
 }

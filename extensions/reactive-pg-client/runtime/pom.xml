@@ -8,7 +8,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-reactive-pg-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-reactive-pg-client</artifactId>
@@ -29,12 +28,22 @@
             <artifactId>vertx-pg-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-axle-pg-client</artifactId>
+            <groupId>com.ongres.scram</groupId>
+            <artifactId>client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-credentials</artifactId>
+        </dependency>
+        <!-- Add the health extension as optional as we will produce the health check only if it's included -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

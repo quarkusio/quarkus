@@ -1,17 +1,21 @@
 package io.quarkus.quartz.runtime;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class QuartzRecorder {
 
-    public void initialize(QuartzRuntimeConfig runTimeConfig, QuartzBuildTimeConfig buildTimeConfig, BeanContainer container,
-            Optional<String> driverDialect) {
-        QuartzSupport support = container.instance(QuartzSupport.class);
-        support.initialize(runTimeConfig, buildTimeConfig, driverDialect);
+    public Supplier<QuartzSupport> quartzSupportSupplier(QuartzRuntimeConfig runtimeConfig,
+            QuartzBuildTimeConfig buildTimeConfig, Optional<String> driverDialect) {
+        return new Supplier<QuartzSupport>() {
+            @Override
+            public QuartzSupport get() {
+                return new QuartzSupport(runtimeConfig, buildTimeConfig, driverDialect);
+            }
+        };
     }
 
 }

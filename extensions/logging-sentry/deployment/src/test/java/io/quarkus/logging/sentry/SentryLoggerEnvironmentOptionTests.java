@@ -1,16 +1,17 @@
 package io.quarkus.logging.sentry;
 
 import static io.quarkus.logging.sentry.SentryLoggerTest.getSentryHandler;
-import static io.sentry.jvmti.ResetFrameCache.resetFrameCache;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.AfterAll;
+import java.util.logging.Handler;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.sentry.HubAdapter;
 import io.sentry.Sentry;
-import io.sentry.jul.SentryHandler;
+import io.sentry.SentryOptions;
 
 public class SentryLoggerEnvironmentOptionTests {
 
@@ -21,15 +22,11 @@ public class SentryLoggerEnvironmentOptionTests {
 
     @Test
     public void sentryLoggerEnvironmentOptionTest() {
-        final SentryHandler sentryHandler = getSentryHandler();
+        final Handler sentryHandler = getSentryHandler();
+        final SentryOptions options = HubAdapter.getInstance().getOptions();
         assertThat(sentryHandler).isNotNull();
-        assertThat(Sentry.getStoredClient()).isNotNull();
-        assertThat(Sentry.getStoredClient().getEnvironment()).isEqualTo("test-environment");
-        assertThat(Sentry.isInitialized()).isTrue();
+        assertThat(options.getEnvironment()).isEqualTo("test-environment");
+        assertThat(Sentry.isEnabled()).isTrue();
     }
 
-    @AfterAll
-    public static void reset() {
-        resetFrameCache();
-    }
 }

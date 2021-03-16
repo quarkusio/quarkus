@@ -46,6 +46,8 @@ public class FaultToleranceTest {
     @Inject
     CircuitBreakerBean circuitbreaker;
     @Inject
+    CircuitBreakerBean.Observer circuitBreakerObserver;
+    @Inject
     AsynchronousBean asynchronous;
 
     @Test
@@ -95,6 +97,7 @@ public class FaultToleranceTest {
         assertThrows(RuntimeException.class, () -> circuitbreaker.breakCircuit());
         assertThrows(RuntimeException.class, () -> circuitbreaker.breakCircuit());
         assertThrows(CircuitBreakerOpenException.class, () -> circuitbreaker.breakCircuit());
+        assertTrue(circuitBreakerObserver.isOpen());
     }
 
     @Test

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Infinispan Client
 
@@ -10,8 +10,8 @@ include::./attributes.adoc[]
 Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension
 provides functionality to allow the client that can connect to said server when running in Quarkus.
 
-More information can be found about Infinispan at https://infinispan.org and the client/server at
-https://infinispan.org/docs/dev/user_guide/user_guide.html#client_server
+Check out the https://infinispan.org/documentation[Infinispan documentation] to find out more about the Infinispan project,
+in particular the https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html[Hot Rod Java client guide].
 
 == Configuration
 
@@ -19,17 +19,18 @@ Once you have your Quarkus project configured you can add the `infinispan-client
 to your project by running the following from the command line in your project base directory.
 
 [source]
+----
 ./mvnw quarkus:add-extension -Dextensions="infinispan-client"
+----
 
 This will add the following to your pom.xml
 
 [source,xml]
 ----
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-infinispan-client</artifactId>
-        <scope>provided</scope>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-infinispan-client</artifactId>
+</dependency>
 ----
 
 The Infinispan client is configurable in the `application.properties` file that can be
@@ -71,12 +72,14 @@ public class Book {
    private final String description;
    private final int publicationYear;
    private final Set<Author> authors;
+   private final BigDecimal price;
 
-   public Book(String title, String description, int publicationYear, Set<Author> authors) {
+   public Book(String title, String description, int publicationYear, Set<Author> authors, BigDecimal price) {
       this.title = Objects.requireNonNull(title);
       this.description = Objects.requireNonNull(description);
       this.publicationYear = publicationYear;
       this.authors = Objects.requireNonNull(authors);
+      this.price = price;
    }
    // Getter/Setter/equals/hashCode/toString omitted
 }
@@ -143,6 +146,24 @@ Here is an example of how the preceding classes should be changed:
         return authors;
     }
 ----
+
+.BigDecimalAdapter.java
+[source,java]
+----
+@ProtoAdapter(BigDecimal.class)
+public class BigDecimalAdapter {
+    @ProtoFactory
+    BigDecimal create(Double value) {
+        return BigDecimal.valueOf(value);
+    }
+
+    @ProtoField(number = 1, type = Type.DOUBLE, defaultValue = "0")
+    Double value(BigDecimal value) {
+        return value.doubleValue();
+    }
+}
+----
+
 If your classes have only mutable fields, then the `ProtoFactory` annotation
 is not required, assuming your class has a no arg constructor.
 
@@ -152,7 +173,7 @@ on it to specify configuration settings
 .BookContextInitializer.java
 [source,java]
 ----
-@AutoProtoSchemaBuilder(includeClasses = { Book.class, Author.class }, schemaPackageName = "book_sample")
+@AutoProtoSchemaBuilder(includeClasses = { Book.class, Author.class, BigDecimalAdapter.class }, schemaPackageName = "book_sample")
 interface BookContextInitializer extends SerializationContextInitializer {
 }
 ----
@@ -184,8 +205,8 @@ message Book {
   required string title = 1;
   required string description = 2;
   required int32 publicationYear = 3; // no native Date type available in Protobuf
-
   repeated Author authors = 4;
+  requited double price = 5; // no native BigDecimal type available in Protobuf
 }
 
 message Author {
@@ -210,6 +231,8 @@ message Author {
             "  required int32 publicationYear = 3; // no native Date type available in Protobuf\n" +
             "\n" +
             "  repeated Author authors = 4;\n" +
+            "\n" +
+            "  required double price = 5; // no native BigDecimal type available in Protobuf\n" +
             "}\n" +
             "\n" +
             "message Author {\n" +
@@ -278,6 +301,7 @@ public class BookMarshaller implements MessageMarshaller<Book> {
       writer.writeString("description", book.getDescription());
       writer.writeInt("publicationYear", book.getPublicationYear());
       writer.writeCollection("authors", book.getAuthors(), Author.class);
+      writer.writeDouble("price", book.getPrice().doubleValue());
    }
 
    @Override
@@ -286,7 +310,8 @@ public class BookMarshaller implements MessageMarshaller<Book> {
       String description = reader.readString("description");
       int publicationYear = reader.readInt("publicationYear");
       Set<Author> authors = reader.readCollection("authors", new HashSet<>(), Author.class);
-      return new Book(title, description, publicationYear, authors);
+      BigDecimal price = BigDecimal.valueOf(reader.readDouble("price"));
+      return new Book(title, description, publicationYear, authors, price);
    }
 }
 ----
@@ -347,7 +372,7 @@ Either method of Serialization above will automatically register the schema with
 startup, meaning that you will automatically gain the ability to query objects stored in the
 remote Infinispan Server.
 
-You can read more about this at https://infinispan.org/docs/stable/titles/developing/developing.html#query_dsl.
+You can read more about https://infinispan.org/docs/stable/titles/developing/developing.html#creating_ickle_queries-querying[querying] in the Infinispan documentation.
 
 You can use either the Query DSL or the Ickle Query language with the Quarkus Infinispan client
 extension.
@@ -367,6 +392,8 @@ and you get it with no fuss. You can then use counters as you would normally.
 CounterManager counterManager;
 ----
 
+You can read more about https://infinispan.org/docs/stable/titles/developing/developing.html#clustered_counters[clustered counters] in the Infinispan documentation.
+
 == Near Caching
 
 Near caching is disabled by default, but you can enable it by setting the profile config property
@@ -379,8 +406,7 @@ a regular expression so that only a subset of caches have near caching applied t
 Encryption at this point requires additional steps to get working.
 
 The first step is to configure the `hotrod-client.properties` file to point to your truststore
-and/or keystore. This is further detailed at
-https://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
+and/or keystore. This is further detailed https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_encryption[here].
 
 The Infinispan Client extension enables SSL by default. You can read more about this
 at link:native-and-ssl[Using SSL With Native Executables].
@@ -411,7 +437,7 @@ the Quarkus Infinispan Client extension.
 
 |===
 
-The guide for configuring these can be found at https://infinispan.org/docs/dev/user_guide/user_guide.html#authentication.
+The guide for configuring these can be found https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_authentication[here].
 However you need to configure these through the `hotrod-client.properties` file if using Dependency Injection.
 
 == Additional Features

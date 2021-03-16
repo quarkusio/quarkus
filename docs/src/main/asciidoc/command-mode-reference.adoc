@@ -1,0 +1,122 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Command Mode Applications
+
+include::./attributes.adoc[]
+
+This reference covers how to write applications that run and then exit.
+
+== Writing Command Mode Applications
+
+There are two different approaches that can be used to implement applications
+that exit.
+
+. Implement `QuarkusApplication` and have Quarkus run this method automatically
+. Implement `QuarkusApplication` and a Java main method, and use the Java main method to launch Quarkus
+
+In this document the `QuarkusApplication` instance is referred to as the application main,
+and a class with a Java main method is the Java main.
+
+The simplest possible command mode application with access to Quarkus API's might appear as follows:
+
+[source,java]
+----
+import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.annotations.QuarkusMain;
+
+@QuarkusMain    // <.>
+public class HelloWorldMain implements QuarkusApplication {
+  @Override
+  public int run(String... args) throws Exception {   // <.>
+    System.out.println("Hello World");
+    return 10;
+ }
+}
+----
+<.> The `@QuarkusMain` annotation tells Quarkus that this is the main entry point.
+<.> The `run` method is invoked once Quarkus starts, and the application stops when it finishes.
+
+=== Contexts
+
+To get access to your application beans and services, be aware that
+a `@QuarkusMain` instance is an application scoped bean by default. It has access to singletons, application and dependent scoped beans. If you want to interact with beans that requires a request scope put a `@ActivateRequestContext` on your `run()` method.
+
+This let `run()` have access to methods like `listAll()` and `query*` methods on a Panache Entity. Without it you will eventually get a `ContextNotActiveException` when accessing such classes/beans.
+
+=== Main method
+If we want to use a Java main to run the application main it would look like:
+
+[source,java]
+----
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.QuarkusMain;
+
+@QuarkusMain
+public class JavaMain {
+
+    public static void main(String... args) {
+        Quarkus.run(HelloWorldMain.class, args);
+    }
+}
+----
+
+This is effectively the same as running the `HelloWorldMain` application main directly, but has the advantage it can
+be run from the IDE.
+
+NOTE: If a class that implements `QuarkusApplication` and has a Java main then the Java main will be run.
+
+WARNING: It is recommended that a Java main perform very little logic, and just
+launch the application main. In development mode the Java main will run in a
+different ClassLoader to the main application, so may not behave as you would
+expect.
+
+==== Multiple Main Methods
+
+It is possible to have multiple main methods in an application, and select between them at build time.
+The `@QuarkusMain` annotation takes an optional 'name' parameter, and this can be used to select the
+main to run using the `quarkus.package.main-class` build time configuration option. If you don't want
+to use annotations this can also be used to specify the fully qualified name of a main class.
+
+By default the `@QuarkusMain` with no name (i.e. the empty string) will be used, and if it is not present
+and `quarkus.package.main-class` is not specified then Quarkus will automatically generate a main class
+that just runs the application.
+
+NOTE: The `name` of `@QuarkusMain` must be unique (including the default of the empty string). If you
+have multiple `@QuarkusMain` annotations in your application the build will fail if the names are not
+unique.
+
+=== The command mode lifecycle
+
+When running a command mode application the basic lifecycle is as follows:
+
+. Start Quarkus
+. Run the `QuarkusApplication` main method
+. Shut down Quarkus and exit the JVM after the main method returns
+
+Shutdown is always initiated by the application main thread returning. If you want to run some logic on startup,
+and then run like a normal application (i.e. not exit) then you should call `Quarkus.waitForExit` from the main
+thread (A non-command mode application is essentially just running an application that just calls `waitForExit`).
+
+If you want to shut down a running application and you are not in the main thread then you should call `Quarkus.asyncExit`
+in order to unblock the main thread and initiate the shutdown process.
+
+=== Dev mode
+
+Also for command mode applications the dev mode is supported. When running `mvn compile quarkus:dev`, the command mode application is executed and on press of the Enter key, is restarted.
+
+As command mode applications will often require arguments to be passed on the commandline, this is also possible in dev mode via:
+
+----
+mvn compile quarkus:dev -Dquarkus.args='--help'
+----
+
+The same can be achieved with Gradle:
+
+----
+./gradlew quarkusDev --quarkus-args='--help'
+----
+
+

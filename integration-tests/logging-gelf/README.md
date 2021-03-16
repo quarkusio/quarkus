@@ -1,8 +1,10 @@
 # JAX-RS example using Graylog central log management
 
-## Running the tests
+By default, the test of this module is enabled for ELK using `mvn clean test -Dstart-containers -Dtest-containers`.
 
-By default, the tests of this module are disabled.
+If you want to launch central logging stack by yourself, you can use the following instructions.
+
+## Testing with Graylog
 
 To run them, you first need to start a Graylog server and it's needed dependencies.
 

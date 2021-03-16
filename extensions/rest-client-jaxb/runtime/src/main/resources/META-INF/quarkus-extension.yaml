@@ -1,0 +1,13 @@
+---
+name: "REST Client JAXB"
+metadata:
+  keywords:
+  - "rest-client-jaxb"
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "jaxb"
+  categories:
+  - "web"
+  - "serialization"
+  status: "stable"

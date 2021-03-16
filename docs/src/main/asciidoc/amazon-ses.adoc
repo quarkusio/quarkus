@@ -1,0 +1,274 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Amazon SES Client
+:extension-status: preview
+
+include::./attributes.adoc[]
+
+Amazon Simple Email Service (SES) is a flexible and highly-scalable email sending and receiving service.
+Using SES, you can send emails with any type of correspondence. You can find more information about SES at https://aws.amazon.com/ses/[the Amazon SES website].
+
+NOTE: The SES extension is based on https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/welcome.html[AWS Java SDK 2.x].
+It's a major rewrite of the 1.x code base that offers two programming models (Blocking & Async).
+
+include::./status-include.adoc[]
+
+The Quarkus extension supports two programming models:
+
+* Blocking access using URL Connection HTTP client (by default) or the Apache HTTP Client
+* https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/basics-async.html[Asynchronous programming] based on JDK's `CompletableFuture` objects and the Netty HTTP client.
+
+In this guide, we see how you can get your REST services to use SES locally and on AWS.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* an IDE
+* Apache Maven {maven-version}
+* An AWS Account to access the SES service
+* Docker for your system to run SES locally for testing purposes
+
+== Set up SES locally
+
+The easiest way to start working with SES is to run a local instance as a container.
+However, local instance of SES is only mocks the SES APIs without the actual email sending capabilities. You can still use it for this guide to verify an API communication or integration test purposes.
+
+[source,bash,subs="verbatim,attributes"]
+----
+docker run --rm --name local-ses -p 8012:4579 -e SERVICES=ses -e START_WEB=0 -d localstack/localstack:0.11.1
+----
+This starts a SES instance that is accessible on port `8012`.
+
+Create an AWS profile for your local instance using AWS CLI:
+[source,shell,subs="verbatim,attributes"]
+----
+$ aws configure --profile localstack
+AWS Access Key ID [None]: test-key
+AWS Secret Access Key [None]: test-secret
+Default region name [None]: us-east-1
+Default output format [None]:
+----
+
+== Using SES on your AWS account
+
+Amazon applies certain restrictions to new Amazon SES accounts, mainly to prevent fraud and abuse. All new accounts are in the Amazon SES *sandbox*.
+All the features of the Amazon SES are still available while in sandbox, but a following restrictions applies:
+- You can send mail to verified email addresses and domains or to the https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-simulator.html[Amazon SES mailbox simulator]
+- You can only send mail from verified email addresses and domains
+- You can send a maximum of 1 message per second.
+
+Going production, you'd need to get your account of the sandbox following the https://docs.aws.amazon.com/ses/latest/DeveloperGuide/request-production-access.html[Amazon procedure].
+
+=== Set up AWS SES
+
+We assume you are going to use AWS SES sandbox for the sake of this guide. But before sending any email, you must verify sender and recipient email addresses using AWS CLI.
+You can use your personal email or any temporary email service available if you wish.
+
+[source,bash,subs="verbatim,attributes"]
+----
+aws ses verify-email-identity --email-address <sender@email.address>
+aws ses verify-email-identity --email-address <recipient@email.address>
+----
+Now, you need to open a mailboxes of those email addresses in order to follow confirmation procedure. Once email is approved you can use it in your application.
+
+If you are using local SES you still need to verify email addresses, otherwise your send email in order to let local SES accepting your request.
+However, no emails to be send as it only mocks the service APIs.
+
+[source,bash,subs="verbatim,attributes"]
+----
+aws ses verify-email-identity --email-address <sender@email.address> --profile localstack --endpoint-url=http://localhost:8012
+aws ses verify-email-identity --email-address <recipient@email.address> --profile localstack --endpoint-url=http://localhost:8012
+----
+
+== Solution
+The application built here allows sending text emails to the recipients that are verified on AWS SES.
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `amazon-ses-quickstart` {quickstarts-tree-url}/amazon-ses-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=amazon-ses-quickstart \
+    -DclassName="org.acme.ses.QuarkusSesSyncResource" \
+    -Dpath="/sync" \
+    -Dextensions="resteasy,resteasy-jackson,amazon-ses,resteasy-mutiny"
+cd amazon-ses-quickstart
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Mutiny and Amazon SES Client extensions.
+After this, the `amazon-ses` extension has been added to your `pom.xml` as well as the Mutiny support for RESTEasy.
+
+== Creating JSON REST service
+
+Lets create a `org.acme.ses.QuarkusSesSyncResource` that will provide an API to send emails using the synchronous client.
+
+[source,java]
+----
+package org.acme.ses;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import org.acme.ses.model.Email;
+import software.amazon.awssdk.services.ses.SesClient;
+
+@Path("/sync")
+@Produces(MediaType.TEXT_PLAIN)
+@Consumes(MediaType.APPLICATION_JSON)
+public class QuarkusSesSyncResource {
+
+    @Inject
+    SesClient ses;
+
+    @POST
+    @Path("/email")
+    public String encrypt(Email data) {
+        return ses.sendEmail(req -> req
+            .source(data.getFrom())
+            .destination(d -> d.toAddresses(data.getTo()))
+            .message(msg -> msg
+                .subject(sub -> sub.data(data.getSubject()))
+                .body(b -> b.text(txt -> txt.data(data.getBody()))))).messageId();
+    }
+}
+----
+
+== Configuring SES clients
+
+Both SES clients (sync and async) are configurable via the `application.properties` file that can be provided in the `src/main/resources` directory.
+Additionally, you need to add to the classpath a proper implementation of the sync client. By default the extension uses the URL connection HTTP client, so
+you need to add a URL connection client dependency to the `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>url-connection-client</artifactId>
+</dependency>
+----
+
+If you want to use Apache HTTP client instead, configure it as follows:
+[source,properties]
+----
+quarkus.ses.sync-client.type=apache
+----
+
+And add the following dependency to the application `pom.xml`:
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>apache-client</artifactId>
+</dependency>
+----
+
+If you're going to use a local SES instance, configure it as follows:
+
+[source,properties]
+----
+quarkus.ses.endpoint-override=http://localhost:8012
+
+quarkus.ses.aws.region=us-east-1
+quarkus.ses.aws.credentials.type=static
+quarkus.ses.aws.credentials.static-provider.access-key-id=test-key
+quarkus.ses.aws.credentials.static-provider.secret-access-key=test-secret
+----
+
+- `quarkus.ses.aws.region` - It's required by the client, but since you're using a local SES instance use `us-east-1` as it's a default region of localstack's SES.
+- `quarkus.ses.aws.credentials.type` - Set `static` credentials provider with any values for `access-key-id` and `secret-access-key`
+- `quarkus.ses.endpoint-override` - Override the SES client to use a local instance instead of an AWS service
+
+If you want to work with an AWS account, you can simply remove or comment out all Amazon SES related properties. By default, the SES client extension
+will use the `default` credentials provider chain that looks for credentials in this order:
+
+include::./amazon-credentials.adoc[]
+
+And the region from your AWS CLI profile will be used.
+
+== Next steps
+
+=== Packaging
+
+Packaging your application is as simple as `./mvnw clean package`.
+It can be run with `java -jar target/quarkus-app/quarkus-run.jar`.
+
+With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
+Depending on your system, that will take some time.
+
+=== Going asynchronous
+
+Thanks to the AWS SDK v2.x used by the Quarkus extension, you can use the asynchronous programming model out of the box.
+
+Create a `org.acme.ses.QuarkusSesAsyncResource` REST resource that will be similar to our `QuarkusSesSyncResource` but using an asynchronous programming model.
+
+[source,java]
+----
+package org.acme.ses;
+
+import io.smallrye.mutiny.Uni;
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import org.acme.ses.model.Email;
+import software.amazon.awssdk.services.ses.SesAsyncClient;
+import software.amazon.awssdk.services.ses.model.SendEmailResponse;
+
+@Path("/async")
+@Produces(MediaType.TEXT_PLAIN)
+@Consumes(MediaType.APPLICATION_JSON)
+public class QuarkusSesAsyncResource {
+
+    @Inject
+    SesAsyncClient ses;
+
+    @POST
+    @Path("/email")
+    public Uni<String> encrypt(Email data) {
+        return Uni.createFrom()
+            .completionStage(
+                ses.sendEmail(req -> req
+                    .source(data.getFrom())
+                    .destination(d -> d.toAddresses(data.getTo()))
+                    .message(msg -> msg
+                        .subject(sub -> sub.data(data.getSubject()))
+                        .body(b -> b.text(txt -> txt.data(data.getBody()))))))
+            .onItem().apply(SendEmailResponse::messageId);
+    }
+}
+----
+We create `Uni` instances from the `CompletionStage` objects returned by the asynchronous SES client, and then transform the emitted item.
+
+And we need to add the Netty HTTP client dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>netty-nio-client</artifactId>
+</dependency>
+----
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-amazon-ses.adoc[opts=optional, leveloffset=+1]

@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.TeeOutputStream;
@@ -20,8 +19,9 @@ import org.apache.maven.shared.invoker.InvokerLogger;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamHandler;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
-import org.jutils.jprocesses.JProcesses;
-import org.jutils.jprocesses.model.ProcessInfo;
+
+import io.quarkus.maven.it.MojoTestBase;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 /**
  * Implementation of verifier using a forked process that is still running while verifying. The process is stop when
@@ -38,7 +38,7 @@ public class RunningInvoker extends MavenProcessInvoker {
     public RunningInvoker(File basedir, boolean debug) {
         this.debug = debug;
         setWorkingDirectory(basedir);
-        String repo = System.getProperty("maven.repo");
+        String repo = System.getProperty("maven.repo.local");
         if (repo == null) {
             repo = new File(System.getProperty("user.home"), ".m2/repository").getAbsolutePath();
         }
@@ -89,16 +89,10 @@ public class RunningInvoker extends MavenProcessInvoker {
             return;
         }
         result.destroy();
-        List<ProcessInfo> list = JProcesses.getProcessList().stream().filter(pi ->
+
         // Kill all process using the live reload and the live reload process.
         // This might be too much
-        pi.getCommand().contains("quarkus:dev")
-                || pi.getCommand().contains("quarkus:remote-dev")
-                || pi.getCommand().contains(getWorkingDirectory().getAbsolutePath()))
-                .collect(Collectors.toList());
-
-        list.stream()
-                .forEach(i -> JProcesses.killProcess(Integer.valueOf(i.getPid())));
+        DevModeTestUtils.killProcesses("quarkus:dev", "quarkus:remote-dev", getWorkingDirectory().getAbsolutePath());
     }
 
     public MavenProcessInvocationResult execute(List<String> goals, Map<String, String> envVars)
@@ -137,6 +131,7 @@ public class RunningInvoker extends MavenProcessInvoker {
 
     @Override
     public InvocationResult execute(InvocationRequest request) throws MavenInvocationException {
+        MojoTestBase.passUserSettings(request);
         return super.execute(request);
     }
 

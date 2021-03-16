@@ -7,7 +7,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.Subclass;
-import io.quarkus.arc.impl.SubclassMethodMetadata;
+import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -26,6 +26,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,50 +63,54 @@ public class SubclassGenerator extends AbstractGenerator {
 
     protected static final String FIELD_NAME_PREDESTROYS = "preDestroys";
     protected static final String FIELD_NAME_METADATA = "metadata";
-    protected static final FieldDescriptor FIELD_METADATA_METHOD = FieldDescriptor.of(SubclassMethodMetadata.class, "method",
+    protected static final FieldDescriptor FIELD_METADATA_METHOD = FieldDescriptor.of(InterceptedMethodMetadata.class, "method",
             Method.class);
-    protected static final FieldDescriptor FIELD_METADATA_CHAIN = FieldDescriptor.of(SubclassMethodMetadata.class, "chain",
+    protected static final FieldDescriptor FIELD_METADATA_CHAIN = FieldDescriptor.of(InterceptedMethodMetadata.class, "chain",
             List.class);
-    protected static final FieldDescriptor FIELD_METADATA_BINDINGS = FieldDescriptor.of(SubclassMethodMetadata.class,
+    protected static final FieldDescriptor FIELD_METADATA_BINDINGS = FieldDescriptor.of(InterceptedMethodMetadata.class,
             "bindings", Set.class);
 
     private final Predicate<DotName> applicationClassPredicate;
+    private final ReflectionRegistration reflectionRegistration;
+    private final Set<String> existingClasses;
 
     static String generatedName(DotName providerTypeName, String baseName) {
-        return DotNames.packageName(providerTypeName).replace('.', '/') + "/" + baseName + SUBCLASS_SUFFIX;
+        String packageName = DotNames.internalPackageNameWithTrailingSlash(providerTypeName);
+        return packageName + baseName + SUBCLASS_SUFFIX;
     }
 
     private final AnnotationLiteralProcessor annotationLiterals;
 
-    /**
-     *
-     * @param annotationLiterals
-     * @param applicationClassPredicate
-     * @param generateSources
-     */
     public SubclassGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
-            boolean generateSources) {
+            boolean generateSources, ReflectionRegistration reflectionRegistration,
+            Set<String> existingClasses) {
         super(generateSources);
         this.applicationClassPredicate = applicationClassPredicate;
         this.annotationLiterals = annotationLiterals;
+        this.reflectionRegistration = reflectionRegistration;
+        this.existingClasses = existingClasses;
     }
 
     /**
      *
      * @param bean
      * @param beanClassName Fully qualified class name
+     * @param existingClasses
      * @return a java file
      */
-    Collection<Resource> generate(BeanInfo bean, String beanClassName, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generate(BeanInfo bean, String beanClassName) {
 
         ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
                 generateSources);
 
         Type providerType = bean.getProviderType();
-        ClassInfo providerClass = getClassByName(bean.getDeployment().getIndex(), providerType.name());
+        ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
         String generatedName = generatedName(providerType.name(), baseName);
+        if (existingClasses.contains(generatedName)) {
+            return Collections.emptyList();
+        }
 
         // Foo_Subclass extends Foo implements Subclass
         ClassCreator subclass = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -304,8 +309,9 @@ public class SubclassGenerator extends AbstractGenerator {
             ResultHandle bindingsHandle = bindings.computeIfAbsent(
                     interceptedMethod.bindings.stream().map(BindingKey::new).collect(Collectors.toList()), bindingsFun);
 
-            //Now create SubclassMethodMetadata for the given intercepted method
-            ResultHandle methodMetadataHandle = constructor.newInstance(MethodDescriptors.SUBCLASS_METHOD_METADATA_CONSTRUCTOR,
+            // Now create metadata for the given intercepted method
+            ResultHandle methodMetadataHandle = constructor.newInstance(
+                    MethodDescriptors.INTERCEPTED_METHOD_METADATA_CONSTRUCTOR,
                     chainHandle, methodHandle, bindingsHandle);
             // metadata.put("m1", new SubclassMethodMetadata(...))
             constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, metadataHandle, methodIdHandle, methodMetadataHandle);

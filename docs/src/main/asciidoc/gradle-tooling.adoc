@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building Quarkus apps with Gradle
 
@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 
 CAUTION: Quarkus Gradle support is considered preview.
 You can use Gradle to create Quarkus projects as outlined in our guides. If you go beyond there will be cases where
-the Gradle tasks https://github.com/quarkusio/quarkus/issues/5101[does not behave as expected].
+the Gradle tasks https://github.com/quarkusio/quarkus/issues/10189[does not behave as expected].
 This is just a caution, and we recommend if you like Gradle you try it out and give us feedback.
 
 [[project-creation]]
@@ -17,14 +17,14 @@ This is just a caution, and we recommend if you like Gradle you try it out and g
 
 The easiest way to scaffold a Gradle project, is currently to use the Quarkus Maven plugin like so:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=my-groupId \
     -DprojectArtifactId=my-artifactId \
     -DprojectVersion=my-version \
     -DclassName="org.my.group.MyResource" \
-    -Dextensions="resteasy-jsonb" \
+    -Dextensions="resteasy,resteasy-jackson" \
     -DbuildTool=gradle
 ----
 
@@ -55,7 +55,7 @@ The following table lists the attributes you can pass to the `create` command:
 | The artifact id of the created project. Not passing it triggers the interactive mode.
 
 | `projectVersion`
-| `1.0-SNAPSHOT`
+| `1.0.0-SNAPSHOT`
 | The version of the created project
 
 | `className`
@@ -120,14 +120,14 @@ It is not possible to use a custom test configuration profile in native mode for
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew listExtensions
 ----
 
 You can enable an extension using:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew addExtension --extensions="hibernate-validator"
 ----
@@ -141,7 +141,7 @@ If no extension is found or if more than one extensions match, you will see a re
 
 [source,shell]
 ----
-./gradlew addExtension --extensions="jdbc,agroal,non-exist-ent"
+$ ./gradlew addExtension --extensions="jdbc,agroal,non-exist-ent"
 [...]
 ❌ Multiple extensions matching 'jdbc'
      * io.quarkus:quarkus-jdbc-h2
@@ -155,7 +155,7 @@ If no extension is found or if more than one extensions match, you will see a re
 
 You can install all extensions which match a globbing pattern:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew addExtension --extensions="hibernate*"
 ----
@@ -165,7 +165,7 @@ You can install all extensions which match a globbing pattern:
 Quarkus comes with a built-in development mode.
 Run your application with:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew quarkusDev
 ----
@@ -191,6 +191,77 @@ quarkusDev {
     workingDir = rootProject.projectDir
 }
 ----
+
+[TIP]
+====
+By default, the `quarkusDev` task uses `compileJava` compiler options. These can be overridden by setting the `compilerArgs` property in the task.
+====
+
+[NOTE]
+====
+By default, `quarkusDev` sets the debug host to `localhost` (for security reasons). If you need to change this, for example to enable debugging on all hosts, you can use the `-DdebugHost` option like so:
+
+[source,bash]
+----
+./gradlew quarkusDev -DdebugHost=0.0.0.0
+----
+====
+The plugin also exposes a `quarkusDev` configuration. Using this configuration to declare a dependency will restrict the usage of that dependency to development mode.
+The `quarkusDev` configuration can be used as following:
+
+[source,groovy]
+----
+dependencies {
+    quarkusDev 'io.quarkus:quarkus-jdbc-h2'
+}
+----
+
+=== Remote Development Mode
+
+It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as OpenShift)
+and have changes made to your local files become immediately visible.
+
+This allows you to develop in the same environment you will actually run your app in, and with access to the same services.
+
+WARNING: Do not use this in production. This should only be used in a development environment. You should not run production applications in dev mode.
+
+To do this you must build a mutable application, using the `mutable-jar` format. Set the following properties in `application.properties`:
+
+[source,properties]
+----
+quarkus.package.type=mutable-jar <1>
+quarkus.live-reload.password=changeit <2>
+quarkus.live-reload.url=http://my.cluster.host.com:8080 <3>
+----
+<1> This tells Quarkus to use the mutable-jar format. Mutable applications also include the deployment time parts of Quarkus,
+so they take up a bit more disk space. If run normally they start just as fast and use the same memory as an immutable application,
+however they can also be started in dev mode.
+<2> The password that is used to secure communication between the remote side and the local side.
+<3> The URL that your app is going to be running in dev mode at. This is only needed on the local side, so you
+may want to leave it out of the properties file and specify it as a system property on the command line.
+
+Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
+on bare metal you can just set this via the `export QUARKUS_LAUNCH_DEVMODE=true` command, if you are running using
+docker start the image with `-e QUARKUS_LAUNCH_DEVMODE=true`. When the application starts you should now see the following
+line in the logs: `Profile dev activated. Live Coding activated`.
+
+NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
+that is generated with a new Quarkus application is all you need. If you are using bare metal launch the Quarkus runner
+jar, do not attempt to run normal devmode.
+
+Now you need to connect your local agent to the remote host, using the `remote-dev` command:
+
+[source,bash]
+----
+./gradlew quarkusRemoteDev -Dquarkus.live-reload.url=http://my-remote-host:8080
+----
+
+Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
+app.
+
+All the config options are shown below:
+
+include::{generated-dir}/config/quarkus-live-reload-live-reload-config.adoc[opts=optional, leveloffset=+1]
 
 == Debugging
 
@@ -259,30 +330,61 @@ Open the project directory in VS Code. If you have installed the Java Extension 
 
 Native executables make Quarkus applications ideal for containers and serverless workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
+Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version} (Make sure to use a Java 11 version of GraalVM).
 
-Create a native executable using: `./gradlew buildNative`.
+Create a native executable using: `./gradlew build -Dquarkus.package.type=native`.
 A native executable will be present in `build/`.
+
+[WARNING]
+====
+The `buildNative` task has been deprecated in favor of
+`build -Dquarkus.package.type=native`.
+====
+
+Native related properties can either be added in `application.properties` file, as command line arguments or in the `quarkusBuild` task.
+Configuring the `quarkusBuild` task can be done as following:
+
+[source,groovy,subs=attributes+]
+----
+quarkusBuild {
+    nativeArgs {
+        containerBuild = true <1>
+        buildImage = "quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}" <2>
+    }
+}
+----
+
+or if you are using the Gradle Kotlin DSL:
+
+[source,kotlin,subs=attributes+]
+----
+tasks.quarkusBuild {
+    nativeArgs {
+        "container-build" to true <1>
+        "buildImage" to "quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}" <2>
+        "quarkus.native.java-home" to "/opt/java-11/"
+    }
+}
+----
+
+<1> Set `quarkus.native.containerBuild` property to `true`
+<2> Set `quarkus.native.buildImage` property to `quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}`
+
+[WARNING]
+====
+When using the Gradle Groovy DSL, property keys must follow lower camel case notation.
+e.g. `container-build` is not valid, and should be replaced by `containerBuild`.
+This limitation does not apply to the Gradle Kotlin DSL.
+====
 
 === Build a container friendly executable
 
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-[source,shell]
+[source,bash]
 ----
-./gradlew buildNative
-----
-
-==== Customize the build native task
-
-There are situations where it may be required to alter the default values of the `buildNative` task (whose implementation can be found link:https://github.com/quarkusio/quarkus/blob/master/devtools/gradle/src/main/java/io/quarkus/gradle/tasks/QuarkusNative.java[here]).
-
-The easiest way to supply custom configuration is via the command line. For example to use docker to build the native image, simply add the `--docker-build=true` flag like so:
-
-[source,shell]
-----
-./gradlew buildNative --docker-build=true
+./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
 ----
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
@@ -300,64 +402,75 @@ The list of the available Docker images can be found on https://quay.io/reposito
 Be aware that a given Quarkus version might not be compatible with all the images available.
 ====
 
-Another way of customizing the native build image build process is to configure the task inside the Gradle build script. If for example it is required to set the `enableHttpUrlHandler`, it can be done like so:
-
-[source,groovy]
-----
-buildNative {
-    enableHttpUrlHandler = true
-}
-----
-
-or, if you use the Gradle Kotlin DSL:
-
-[source,kotlin,subs=attributes+]
-----
-tasks {
-    named<QuarkusNative>("buildNative") {
-        setEnableHttpUrlHandler(true)
-    }
-}
-----
-
-
-The native executable would then be produced by executing:
-
-[source,shell]
-----
-./gradlew buildNative
-----
-
-
 == Running native tests
 
 Run the native tests using:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew testNative
 ----
 
-This task depends on `buildNative`, so it will generate the native image before running the tests.
+This task depends on `quarkusBuild`, so it will generate the native image before running the tests.
+
+[NOTE]
+====
+By default, the `native-test` source set is based on `main` and `test` source sets. It is possible to add an extra source set. For example, if your integration tests are located in an `integrationTest` source set, you can specify it as:
+
+[source,groovy]
+----
+quarkus {
+    sourceSets {
+        extraNativeTest = sourceSets.integrationTest
+    }
+}
+----
+
+====
+
+== Using fast-jar
+
+`fast-jar` is now the default quarkus package type. The result of `./gradlew build` command is a new directory under `build` named `quarkus-app`.
+
+You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
+
+WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
+might not function correctly.
+
+TIP: The `fast-jar` packaging results in creating an artifact that starts a little faster and consumes slightly less memory than a legacy Quarkus jar
+because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
+on the classpath that the legacy jar necessitates, when loading a class or resource.
 
 == Building Uber-Jars
 
-Quarkus Gradle plugin supports the generation of Uber-Jars by specifying an `--uber-jar` argument as follows:
+Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type` argument as follows:
 
-[source,shell]
+[source,bash]
 ----
-./gradlew quarkusBuild --uber-jar
+./gradlew quarkusBuild -Dquarkus.package.type=uber-jar
 ----
 
 When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `--ignored-entry` argument:
 
-[source,shell]
+[source,bash]
 ----
-./gradlew quarkusBuild --uber-jar --ignored-entry=META-INF/file1.txt
+./gradlew quarkusBuild -Dquarkus.package.type=uber-jar --ignored-entry=META-INF/file1.txt
 ----
 
 The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.
 
+[[multi-module-gradle]]
+=== Working with multi-module projects
+
+By default, Quarkus will not discover CDI beans inside another module.
+
+The best way to enable CDI bean discovery for a module in a multi-module project would be to include a `META-INF/beans.xml` file,
+unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will indexed automatically.
+
+Alternatively, there is some unofficial link:https://plugins.gradle.org/search?term=jandex[Gradle Jandex plugins] that can be used instead of the `META-INF/beans.xml` file.
+
+More information on this topic can be found on the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
+
 == Building with `./gradlew build`
 
-Starting from 1.1.0.Final, `./gradlew build` will no longer build the native image. Use the `buildNative` task explicitly as explained above if needed.
+Starting from 1.1.0.Final, `./gradlew build` will no longer build the native image. Add `-Dquarkus.package.type=native` build argument explicitly as explained above if needed.

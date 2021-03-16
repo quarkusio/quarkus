@@ -1,0 +1,18 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPattern": "/v1/kv/config/consul-test",
+    "headers" : {
+      "Authorization" : {
+        "equalTo" : "Bearer sometoken"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "bodyFileName": "consul-test.json"
+  }
+}

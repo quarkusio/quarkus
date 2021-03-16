@@ -5,8 +5,6 @@ import static io.quarkus.runtime.util.StringUtil.join;
 import static io.quarkus.runtime.util.StringUtil.lowerCase;
 import static io.quarkus.runtime.util.StringUtil.withoutSuffix;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
@@ -15,29 +13,19 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
 
-    private static final DotName CONFIG_PROPERTIES_ANNOTATION = DotName.createSimple(ConfigProperties.class.getName());
-
     private final ClassInfo classInfo;
     private final String prefix;
     private final ConfigProperties.NamingStrategy namingStrategy;
-
-    public ConfigPropertiesMetadataBuildItem(AnnotationInstance annotation, ConfigProperties.NamingStrategy defaultStrategy) {
-        if (!CONFIG_PROPERTIES_ANNOTATION.equals(annotation.name())) {
-            throw new IllegalArgumentException(annotation + " is not an instance of " + ConfigProperties.class.getSimpleName());
-        }
-
-        this.classInfo = annotation.target().asClass();
-        this.prefix = extractPrefix(annotation);
-        AnnotationValue namingStrategyValue = annotation.value("namingStrategy");
-        this.namingStrategy = namingStrategyValue == null ? defaultStrategy
-                : ConfigProperties.NamingStrategy.valueOf(namingStrategyValue.asEnum());
-    }
+    private final boolean failOnMismatchingMember;
+    private final boolean needsQualifier;
 
     public ConfigPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
-            ConfigProperties.NamingStrategy namingStrategy) {
+            ConfigProperties.NamingStrategy namingStrategy, boolean failOnMismatchingMember, boolean needsQualifier) {
         this.classInfo = classInfo;
         this.prefix = sanitisePrefix(prefix);
         this.namingStrategy = namingStrategy;
+        this.failOnMismatchingMember = failOnMismatchingMember;
+        this.needsQualifier = needsQualifier;
     }
 
     public ClassInfo getClassInfo() {
@@ -52,9 +40,12 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
         return namingStrategy;
     }
 
-    private String extractPrefix(AnnotationInstance annotationInstance) {
-        AnnotationValue value = annotationInstance.value("prefix");
-        return sanitisePrefix(value == null ? null : value.asString());
+    public boolean isFailOnMismatchingMember() {
+        return failOnMismatchingMember;
+    }
+
+    public boolean isNeedsQualifier() {
+        return needsQualifier;
     }
 
     private String sanitisePrefix(String prefix) {
@@ -65,7 +56,7 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
     }
 
     private boolean isPrefixUnset(String prefix) {
-        return prefix == null || "".equals(prefix.trim()) || ConfigProperties.UNSET_PREFIX.equals(prefix.trim());
+        return prefix == null || prefix.trim().isEmpty() || ConfigProperties.UNSET_PREFIX.equals(prefix.trim());
     }
 
     private String getPrefixFromClassName(DotName className) {

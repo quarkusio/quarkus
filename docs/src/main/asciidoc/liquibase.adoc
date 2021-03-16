@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Liquibase
 
@@ -134,19 +134,16 @@ The Liquibase properties are prefixed exactly the same way as the named datasour
 quarkus.datasource.db-kind=h2
 quarkus.datasource.username=username-default
 quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:default
-quarkus.datasource.jdbc.min-size=3
 quarkus.datasource.jdbc.max-size=13
 
 quarkus.datasource.users.db-kind=h2
 quarkus.datasource.users.username=username1
 quarkus.datasource.users.jdbc.url=jdbc:h2:tcp://localhost/mem:users
-quarkus.datasource.users.jdbc.min-size=1
 quarkus.datasource.users.jdbc.max-size=11
 
 quarkus.datasource.inventory.db-kind=h2
 quarkus.datasource.inventory.username=username2
 quarkus.datasource.inventory.jdbc.url=jdbc:h2:tcp://localhost/mem:inventory
-quarkus.datasource.inventory.jdbc.min-size=2
 quarkus.datasource.inventory.jdbc.max-size=12
 
 # Liquibase configuration for the default datasource

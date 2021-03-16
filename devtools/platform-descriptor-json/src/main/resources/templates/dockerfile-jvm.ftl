@@ -1,29 +1,36 @@
 ####
 # This Dockerfile is used in order to build a container that runs the Quarkus application in JVM mode
 #
-# Before building the docker image run:
+# Before building the container image run:
 #
-# mvn package
+# mvn package -Dquarkus.package.type=fast-jar 
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.jvm -t quarkus/${project_artifactId}-jvm .
+# docker build -f src/main/docker/Dockerfile.fast-jar -t quarkus/${project_artifactId}-fast-jar .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/${project_artifactId}-jvm
+# docker run -i --rm -p 8080:8080 quarkus/${project_artifactId}-fast-jar
+#
+# If you want to include the debug port into your docker image
+# you will have to expose the debug port (default 5005) like this :  EXPOSE 8080 5050
+# 
+# Then run the container using : 
+#
+# docker run -i --rm -p 8080:8080 -p 5005:5005 -e JAVA_ENABLE_DEBUG="true" quarkus/${project_artifactId}-fast-jar
 #
 ###
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
 
-ARG JAVA_PACKAGE=java-1.8.0-openjdk-headless
-ARG RUN_JAVA_VERSION=1.3.5
+ARG JAVA_PACKAGE=java-11-openjdk-headless
+ARG RUN_JAVA_VERSION=1.3.8
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 
 # Install java and the run-java script
 # Also set up permissions for user `1001`
-RUN microdnf install openssl curl ca-certificates ${JAVA_PACKAGE} \
+RUN microdnf install curl ca-certificates ${JAVA_PACKAGE} \
     && microdnf update \
     && microdnf clean all \
     && mkdir /deployments \
@@ -38,8 +45,11 @@ RUN microdnf install openssl curl ca-certificates ${JAVA_PACKAGE} \
 # Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
 ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 
-COPY ${build_dir}/lib/* /deployments/lib/
-COPY ${build_dir}/*-runner.jar /deployments/app.jar
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY --chown=1001 ${build_dir}/quarkus-app/lib/ /deployments/lib/
+COPY --chown=1001 ${build_dir}/quarkus-app/*.jar /deployments/
+COPY --chown=1001 ${build_dir}/quarkus-app/app/ /deployments/app/
+COPY --chown=1001 ${build_dir}/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 USER 1001

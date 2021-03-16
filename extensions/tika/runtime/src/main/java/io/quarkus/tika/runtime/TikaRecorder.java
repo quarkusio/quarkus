@@ -47,9 +47,7 @@ public class TikaRecorder {
         // Load tika-config.xml resource
         InputStream is;
         if (config.tikaConfigPath.isPresent()) {
-            is = TikaRecorder.class.getResourceAsStream(
-                    config.tikaConfigPath.get().startsWith("/") ? config.tikaConfigPath.get()
-                            : "/" + config.tikaConfigPath.get());
+            is = Thread.currentThread().getContextClassLoader().getResourceAsStream(config.tikaConfigPath.get());
             if (is == null) {
                 final String errorMessage = "tika-config.xml can not be found at " + config.tikaConfigPath.get();
                 throw new TikaParseException(errorMessage);

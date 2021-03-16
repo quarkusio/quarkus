@@ -1,10 +1,14 @@
 package io.quarkus.jdbc.derby.deployment;
 
-import io.quarkus.agroal.deployment.JdbcDriverBuildItem;
+import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -16,7 +20,7 @@ public class JDBCDerbyProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.JDBC_DERBY);
+        return new FeatureBuildItem(Feature.JDBC_DERBY);
     }
 
     @BuildStep
@@ -27,9 +31,14 @@ public class JDBCDerbyProcessor {
     }
 
     @BuildStep
+    DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
+        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.DERBY);
+    }
+
+    @BuildStep
     void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             Capabilities capabilities) {
-        if (capabilities.isCapabilityPresent(Capabilities.AGROAL)) {
+        if (capabilities.isPresent(Capability.AGROAL)) {
             additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(DerbyAgroalConnectionConfigurer.class)
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
                     .setUnremovable()
@@ -45,4 +54,8 @@ public class JDBCDerbyProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, org.apache.derby.jdbc.ClientDriver.class.getName()));
     }
 
+    @BuildStep
+    void registerDefaultDbType(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+        dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DERBY));
+    }
 }

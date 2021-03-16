@@ -7,8 +7,11 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -40,13 +43,17 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     static final String COMPONENTS_PROVIDER_SUFFIX = "_ComponentsProvider";
     static final String SETUP_PACKAGE = Arc.class.getPackage().getName() + ".setup";
     static final String ADD_OBSERVERS = "addObservers";
+    static final String ADD_REMOVED_BEANS = "addRemovedBeans";
     static final String ADD_BEANS = "addBeans";
 
-    protected final AnnotationLiteralProcessor annotationLiterals;
+    private final AnnotationLiteralProcessor annotationLiterals;
+    private final boolean detectUnusedFalsePositives;
 
-    public ComponentsProviderGenerator(AnnotationLiteralProcessor annotationLiterals, boolean generateSources) {
+    public ComponentsProviderGenerator(AnnotationLiteralProcessor annotationLiterals, boolean generateSources,
+            boolean detectUnusedFalsePositives) {
         super(generateSources);
         this.annotationLiterals = annotationLiterals;
+        this.detectUnusedFalsePositives = detectUnusedFalsePositives;
     }
 
     /**
@@ -81,7 +88,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         processBeans(componentsProvider, getComponents, beanIdToBeanHandle, beanToInjections, beanToGeneratedName,
                 beanDeployment);
 
-        // Break observers processing into multiple ddObservers() methods
+        // Break observers processing into multiple addObservers() methods
         ResultHandle observersHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
         processObservers(componentsProvider, getComponents, beanDeployment, beanIdToBeanHandle, observersHandle,
                 observerToGeneratedName);
@@ -111,10 +118,29 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 MethodDescriptor.ofMethod(Map.class, "values", Collection.class),
                 beanIdToBeanHandle);
 
+        // Break removed beans processing into multiple addRemovedBeans() methods
+        ResultHandle removedBeansHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+        if (detectUnusedFalsePositives) {
+            processRemovedBeans(componentsProvider, getComponents, removedBeansHandle, beanDeployment, classOutput);
+        }
+
+        // Qualifier non-binding members
+        ResultHandle qualifiersNonbindingMembers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+        for (Entry<DotName, Set<String>> entry : beanDeployment.getQualifierNonbindingMembers().entrySet()) {
+            ResultHandle nonbindingMembers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            for (String member : entry.getValue()) {
+                getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, nonbindingMembers,
+                        getComponents.load(member));
+            }
+            getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, qualifiersNonbindingMembers,
+                    getComponents.load(entry.getKey().toString()), nonbindingMembers);
+        }
+
         ResultHandle componentsHandle = getComponents.newInstance(
                 MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class,
-                        Map.class),
-                beansHandle, observersHandle, contextsHandle, transitiveBindingsHandle);
+                        Map.class, Collection.class, Map.class),
+                beansHandle, observersHandle, contextsHandle, transitiveBindingsHandle, removedBeansHandle,
+                qualifiersNonbindingMembers);
         getComponents.returnValue(componentsHandle);
 
         // Finally write the bytecode
@@ -134,7 +160,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             Map<BeanInfo, String> beanToGeneratedName, BeanDeployment beanDeployment) {
 
         Set<BeanInfo> processed = new HashSet<>();
-        BeanAdder beanAdder = new BeanAdder(componentsProvider, getComponents, processed);
+        BeanAdder beanAdder = new BeanAdder(componentsProvider, getComponents, processed, beanIdToBeanHandle,
+                beanToGeneratedName);
 
         // - iterate over beanToInjections entries and process beans for which all dependencies are already present in the map
         // - when a bean is processed the map entry is removed
@@ -176,12 +203,12 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         // Finally process beans and interceptors that are not dependencies
         for (BeanInfo bean : beanDeployment.getBeans()) {
             if (!processed.contains(bean)) {
-                beanAdder.addBean(bean, beanIdToBeanHandle, beanToGeneratedName);
+                beanAdder.addComponent(bean);
             }
         }
         for (BeanInfo interceptor : beanDeployment.getInterceptors()) {
             if (!processed.contains(interceptor)) {
-                beanAdder.addBean(interceptor, beanIdToBeanHandle, beanToGeneratedName);
+                beanAdder.addComponent(interceptor);
             }
         }
 
@@ -191,9 +218,20 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
     private void processObservers(ClassCreator componentsProvider, MethodCreator getComponents, BeanDeployment beanDeployment,
             ResultHandle beanIdToBeanHandle, ResultHandle observersHandle, Map<ObserverInfo, String> observerToGeneratedName) {
-        try (ObserverAdder observerAdder = new ObserverAdder(componentsProvider, getComponents)) {
+        try (ObserverAdder observerAdder = new ObserverAdder(componentsProvider, getComponents, observerToGeneratedName,
+                beanIdToBeanHandle, observersHandle)) {
             for (ObserverInfo observer : beanDeployment.getObservers()) {
-                observerAdder.addObserver(observer, beanIdToBeanHandle, observersHandle, observerToGeneratedName);
+                observerAdder.addComponent(observer);
+            }
+        }
+    }
+
+    private void processRemovedBeans(ClassCreator componentsProvider, MethodCreator getComponents,
+            ResultHandle removedBeansHandle, BeanDeployment beanDeployment, ClassOutput classOutput) {
+        try (RemovedBeanAdder removedBeanAdder = new RemovedBeanAdder(componentsProvider, getComponents, removedBeansHandle,
+                classOutput)) {
+            for (BeanInfo remnovedBean : beanDeployment.getRemovedBeans()) {
+                removedBeanAdder.addComponent(remnovedBean);
             }
         }
     }
@@ -247,7 +285,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             BeanInfo bean = entry.getKey();
             if (filter.test(bean)) {
                 iterator.remove();
-                beanAdder.addBean(bean, beanIdToBeanHandle, beanToGeneratedName);
+                beanAdder.addComponent(bean);
                 processed.add(bean);
                 stuck = false;
             }
@@ -265,50 +303,40 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         return false;
     }
 
-    static class ObserverAdder implements AutoCloseable {
+    static class ObserverAdder extends ComponentAdder<ObserverInfo> {
 
-        private static final int GROUP_LIMIT = 30;
-        private int group;
-        private int observersAdded;
-        private MethodCreator addObserversMethod;
-        private final MethodCreator getComponentsMethod;
-        private final ClassCreator componentsProvider;
+        private final Map<ObserverInfo, String> observerToGeneratedName;
+        private final ResultHandle beanIdToBeanHandle;
+        private final ResultHandle observersHandle;
 
-        public ObserverAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod) {
-            this.group = 1;
-            this.getComponentsMethod = getComponentsMethod;
-            this.componentsProvider = componentsProvider;
+        ObserverAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod,
+                Map<ObserverInfo, String> observerToGeneratedName, ResultHandle beanIdToBeanHandle,
+                ResultHandle observersHandle) {
+            super(getComponentsMethod, componentsProvider);
+            this.observerToGeneratedName = observerToGeneratedName;
+            this.beanIdToBeanHandle = beanIdToBeanHandle;
+            this.observersHandle = observersHandle;
         }
 
-        public void close() {
-            if (addObserversMethod != null) {
-                addObserversMethod.returnValue(null);
-            }
+        @Override
+        MethodCreator newAddMethod() {
+            return componentsProvider
+                    .getMethodCreator(ADD_OBSERVERS + group++, void.class, Map.class, List.class)
+                    .setModifiers(ACC_PRIVATE);
         }
 
-        void addObserver(ObserverInfo observer, ResultHandle beanIdToBeanHandle, ResultHandle observersHandle,
-                Map<ObserverInfo, String> observerToGeneratedName) {
+        @Override
+        void invokeAddMethod() {
+            getComponentsMethod.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(componentsProvider.getClassName(),
+                            addMethod.getMethodDescriptor().getName(), void.class, Map.class, List.class),
+                    getComponentsMethod.getThis(), beanIdToBeanHandle, observersHandle);
+        }
 
-            if (addObserversMethod == null || observersAdded >= GROUP_LIMIT) {
-                if (addObserversMethod != null) {
-                    addObserversMethod.returnValue(null);
-                }
-                observersAdded = 0;
-                // First add next addObservers(map) method
-                addObserversMethod = componentsProvider
-                        .getMethodCreator(ADD_OBSERVERS + group++, void.class, Map.class, List.class)
-                        .setModifiers(ACC_PRIVATE);
-                // Invoke addObservers(map) inside the getComponents() method
-                getComponentsMethod.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(componentsProvider.getClassName(),
-                                addObserversMethod.getMethodDescriptor().getName(), void.class, Map.class, List.class),
-                        getComponentsMethod.getThis(), beanIdToBeanHandle, observersHandle);
-            }
-            observersAdded++;
-
-            // Append to the addObservers() method body
-            beanIdToBeanHandle = addObserversMethod.getMethodParam(0);
-            observersHandle = addObserversMethod.getMethodParam(1);
+        @Override
+        void addComponentInternal(ObserverInfo observer) {
+            ResultHandle beanIdToBeanHandle = addMethod.getMethodParam(0);
+            ResultHandle observersHandle = addMethod.getMethodParam(1);
 
             String observerType = observerToGeneratedName.get(observer);
             List<ResultHandle> params = new ArrayList<>();
@@ -319,67 +347,168 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                         .filter(ip -> !BuiltinBean.resolvesTo(ip))
                         .collect(toList());
                 // First param - declaring bean
-                params.add(addObserversMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                        beanIdToBeanHandle, addObserversMethod.load(observer.getDeclaringBean().getIdentifier())));
+                params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                        beanIdToBeanHandle, addMethod.load(observer.getDeclaringBean().getIdentifier())));
                 paramTypes.add(Type.getDescriptor(Supplier.class));
                 for (InjectionPointInfo injectionPoint : injectionPoints) {
-                    params.add(addObserversMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                            beanIdToBeanHandle, addObserversMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
+                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                            beanIdToBeanHandle, addMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
                     paramTypes.add(Type.getDescriptor(Supplier.class));
                 }
             }
-            ResultHandle observerInstance = addObserversMethod.newInstance(
+            ResultHandle observerInstance = addMethod.newInstance(
                     MethodDescriptor.ofConstructor(observerType, paramTypes.toArray(new String[0])),
                     params.toArray(new ResultHandle[0]));
-            addObserversMethod.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, observersHandle, observerInstance);
+            addMethod.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, observersHandle, observerInstance);
         }
 
     }
 
-    static class BeanAdder implements AutoCloseable {
+    class RemovedBeanAdder extends ComponentAdder<BeanInfo> {
 
-        private static final int GROUP_LIMIT = 30;
-        private int group;
-        private int beansWritten;
-        private MethodCreator addBeansMethod;
-        private final MethodCreator getComponentsMethod;
-        private final ClassCreator componentsProvider;
-        private final Set<BeanInfo> processedBeans;
+        private final ResultHandle removedBeansHandle;
+        private final ClassOutput classOutput;
+        private ResultHandle tccl;
 
-        public BeanAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod, Set<BeanInfo> processed) {
-            this.group = 1;
-            this.getComponentsMethod = getComponentsMethod;
-            this.componentsProvider = componentsProvider;
-            this.processedBeans = processed;
+        public RemovedBeanAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod,
+                ResultHandle removedBeansHandle, ClassOutput classOutput) {
+            super(getComponentsMethod, componentsProvider);
+            this.removedBeansHandle = removedBeansHandle;
+            this.classOutput = classOutput;
         }
 
-        public void close() {
-            if (addBeansMethod != null) {
-                addBeansMethod.returnValue(null);
-            }
+        @Override
+        MethodCreator newAddMethod() {
+            MethodCreator addMethod = componentsProvider.getMethodCreator(ADD_REMOVED_BEANS + group++, void.class, List.class)
+                    .setModifiers(ACC_PRIVATE);
+            // Get the TCCL - we will use it later
+            ResultHandle currentThread = addMethod
+                    .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
+            tccl = addMethod.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
+            return addMethod;
         }
 
-        void addBean(BeanInfo bean, ResultHandle beanIdToBeanHandle,
-                Map<BeanInfo, String> beanToGeneratedName) {
+        @Override
+        void invokeAddMethod() {
+            getComponentsMethod.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(componentsProvider.getClassName(),
+                            addMethod.getMethodDescriptor().getName(), void.class, List.class),
+                    getComponentsMethod.getThis(), removedBeansHandle);
+        }
 
-            if (addBeansMethod == null || beansWritten >= GROUP_LIMIT) {
-                if (addBeansMethod != null) {
-                    addBeansMethod.returnValue(null);
+        @Override
+        void addComponentInternal(BeanInfo removedBean) {
+
+            ResultHandle removedBeansHandle = addMethod.getMethodParam(0);
+
+            // Bean types
+            ResultHandle typesHandle = addMethod.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            for (org.jboss.jandex.Type type : removedBean.getTypes()) {
+                if (DotNames.OBJECT.equals(type.name())) {
+                    // Skip java.lang.Object
+                    continue;
                 }
-                beansWritten = 0;
-                // First add next addBeans(map) method
-                addBeansMethod = componentsProvider.getMethodCreator(ADD_BEANS + group++, void.class, Map.class)
-                        .setModifiers(ACC_PRIVATE);
-                // Invoke addBeans(map) inside the getComponents() method
-                getComponentsMethod.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(componentsProvider.getClassName(),
-                                addBeansMethod.getMethodDescriptor().getName(), void.class, Map.class),
-                        getComponentsMethod.getThis(), beanIdToBeanHandle);
+                ResultHandle typeHandle;
+                try {
+                    typeHandle = Types.getTypeHandle(addMethod, type, tccl);
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalStateException(
+                            "Unable to construct the type handle for " + removedBean + ": " + e.getMessage());
+                }
+                addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, typesHandle, typeHandle);
             }
-            beansWritten++;
 
-            // Append to the addBeans() method body
-            beanIdToBeanHandle = addBeansMethod.getMethodParam(0);
+            // Qualifiers
+            ResultHandle qualifiersHandle;
+            if (!removedBean.getQualifiers().isEmpty() && !removedBean.hasDefaultQualifiers()) {
+
+                qualifiersHandle = addMethod.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+
+                for (AnnotationInstance qualifierAnnotation : removedBean.getQualifiers()) {
+                    if (DotNames.ANY.equals(qualifierAnnotation.name())) {
+                        // Skip @Any
+                        continue;
+                    }
+                    BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
+                    if (qualifier != null) {
+                        addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
+                                qualifier.getLiteralInstance(addMethod));
+                    } else {
+                        // Create annotation literal first
+                        ClassInfo qualifierClass = removedBean.getDeployment().getQualifier(qualifierAnnotation.name());
+                        addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
+                                annotationLiterals.process(addMethod, classOutput,
+                                        qualifierClass, qualifierAnnotation,
+                                        Types.getPackageName(componentsProvider.getClassName())));
+                    }
+                }
+                qualifiersHandle = addMethod
+                        .invokeStaticMethod(MethodDescriptors.COLLECTIONS_UNMODIFIABLE_SET, qualifiersHandle);
+            } else {
+                qualifiersHandle = addMethod.loadNull();
+            }
+
+            InjectableBean.Kind kind;
+            String description = null;
+            if (removedBean.isClassBean()) {
+                kind = null;
+                description = removedBean.getTarget().get().toString();
+            } else if (removedBean.isProducerField()) {
+                kind = InjectableBean.Kind.PRODUCER_FIELD;
+                description = removedBean.getTarget().get().asField().declaringClass().name() + "#"
+                        + removedBean.getTarget().get().asField().name();
+            } else if (removedBean.isProducerMethod()) {
+                kind = InjectableBean.Kind.PRODUCER_METHOD;
+                description = removedBean.getTarget().get().asMethod().declaringClass().name() + "#"
+                        + removedBean.getTarget().get().asMethod().name() + "()";
+            } else {
+                // Interceptors are never removed
+                kind = InjectableBean.Kind.SYNTHETIC;
+            }
+
+            ResultHandle kindHandle = kind != null ? addMethod.readStaticField(
+                    FieldDescriptor.of(InjectableBean.Kind.class, kind.toString(), InjectableBean.Kind.class))
+                    : addMethod.loadNull();
+            ResultHandle removedBeanHandle = addMethod.newInstance(MethodDescriptors.REMOVED_BEAN_IMPL,
+                    kindHandle, description != null ? addMethod.load(description) : addMethod.loadNull(),
+                    typesHandle,
+                    qualifiersHandle);
+            addMethod.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, removedBeansHandle, removedBeanHandle);
+        }
+
+    }
+
+    static class BeanAdder extends ComponentAdder<BeanInfo> {
+
+        private final Set<BeanInfo> processedBeans;
+        private final ResultHandle beanIdToBeanHandle;
+        private final Map<BeanInfo, String> beanToGeneratedName;
+
+        public BeanAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod, Set<BeanInfo> processed,
+                ResultHandle beanIdToBeanHandle, Map<BeanInfo, String> beanToGeneratedName) {
+            super(getComponentsMethod, componentsProvider);
+            this.processedBeans = processed;
+            this.beanIdToBeanHandle = beanIdToBeanHandle;
+            this.beanToGeneratedName = beanToGeneratedName;
+        }
+
+        @Override
+        MethodCreator newAddMethod() {
+            return componentsProvider.getMethodCreator(ADD_BEANS + group++, void.class, Map.class)
+                    .setModifiers(ACC_PRIVATE);
+        }
+
+        @Override
+        void invokeAddMethod() {
+            getComponentsMethod.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(componentsProvider.getClassName(),
+                            addMethod.getMethodDescriptor().getName(), void.class, Map.class),
+                    getComponentsMethod.getThis(), beanIdToBeanHandle);
+        }
+
+        @Override
+        void addComponentInternal(BeanInfo bean) {
+            ResultHandle beanIdToBeanHandle = addMethod.getMethodParam(0);
             String beanType = beanToGeneratedName.get(bean);
             if (beanType == null) {
                 throw new IllegalStateException("No bean type found for: " + bean);
@@ -396,19 +525,19 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                             "Declaring bean of a producer bean is not available - most probably an unsupported circular dependency use case \n - declaring bean: "
                                     + bean.getDeclaringBean() + "\n - producer bean: " + bean);
                 }
-                params.add(addBeansMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                        beanIdToBeanHandle, addBeansMethod.load(bean.getDeclaringBean().getIdentifier())));
+                params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                        beanIdToBeanHandle, addMethod.load(bean.getDeclaringBean().getIdentifier())));
                 paramTypes.add(Type.getDescriptor(Supplier.class));
             }
             for (InjectionPointInfo injectionPoint : injectionPoints) {
                 if (processedBeans.contains(injectionPoint.getResolvedBean())) {
-                    params.add(addBeansMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                            beanIdToBeanHandle, addBeansMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
+                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                            beanIdToBeanHandle, addMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
                 } else {
                     // Dependency was not processed yet - use MapValueSupplier
-                    params.add(addBeansMethod.newInstance(
+                    params.add(addMethod.newInstance(
                             MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
-                            beanIdToBeanHandle, addBeansMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
+                            beanIdToBeanHandle, addMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
                 }
                 paramTypes.add(Type.getDescriptor(Supplier.class));
             }
@@ -417,34 +546,81 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     if (BuiltinBean.resolvesTo(injectionPoint)) {
                         continue;
                     }
-                    params.add(addBeansMethod.newInstance(
+                    params.add(addMethod.newInstance(
                             MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
-                            beanIdToBeanHandle, addBeansMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
+                            beanIdToBeanHandle, addMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
                     paramTypes.add(Type.getDescriptor(Supplier.class));
                 }
             }
             for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
                 if (processedBeans.contains(interceptor)) {
-                    params.add(addBeansMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                            beanIdToBeanHandle, addBeansMethod.load(interceptor.getIdentifier())));
+                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                            beanIdToBeanHandle, addMethod.load(interceptor.getIdentifier())));
                 } else {
                     // Bound interceptor was not processed yet - use MapValueSupplier
-                    params.add(addBeansMethod.newInstance(
+                    params.add(addMethod.newInstance(
                             MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
-                            beanIdToBeanHandle, addBeansMethod.load(interceptor.getIdentifier())));
+                            beanIdToBeanHandle, addMethod.load(interceptor.getIdentifier())));
                 }
                 paramTypes.add(Type.getDescriptor(Supplier.class));
             }
 
             // Foo_Bean bean = new Foo_Bean(bean3)
-            ResultHandle beanInstance = addBeansMethod.newInstance(
+            ResultHandle beanInstance = addMethod.newInstance(
                     MethodDescriptor.ofConstructor(beanType, paramTypes.toArray(new String[0])),
                     params.toArray(new ResultHandle[0]));
             // beans.put(id, bean)
-            final ResultHandle beanIdHandle = addBeansMethod.load(bean.getIdentifier());
-            addBeansMethod.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, beanIdToBeanHandle, beanIdHandle,
+            final ResultHandle beanIdHandle = addMethod.load(bean.getIdentifier());
+            addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, beanIdToBeanHandle, beanIdHandle,
                     beanInstance);
         }
+
+    }
+
+    static abstract class ComponentAdder<T extends InjectionTargetInfo> implements AutoCloseable {
+
+        private static final int GROUP_LIMIT = 30;
+        protected int group;
+        private int componentsAdded;
+        protected MethodCreator addMethod;
+        protected final MethodCreator getComponentsMethod;
+        protected final ClassCreator componentsProvider;
+
+        public ComponentAdder(MethodCreator getComponentsMethod, ClassCreator componentsProvider) {
+            this.group = 1;
+            this.getComponentsMethod = getComponentsMethod;
+            this.componentsProvider = componentsProvider;
+        }
+
+        public void close() {
+            if (addMethod != null) {
+                addMethod.returnValue(null);
+            }
+        }
+
+        void addComponent(T component) {
+
+            if (addMethod == null || componentsAdded >= GROUP_LIMIT) {
+                if (addMethod != null) {
+                    addMethod.returnValue(null);
+                }
+                componentsAdded = 0;
+                // First add next addX() method
+                addMethod = newAddMethod();
+                // Invoke addX() inside the getComponents() method
+                invokeAddMethod();
+            }
+            componentsAdded++;
+
+            // Append component to the addX() method body
+            addComponentInternal(component);
+        }
+
+        abstract MethodCreator newAddMethod();
+
+        abstract void invokeAddMethod();
+
+        abstract void addComponentInternal(T component);
 
     }
 

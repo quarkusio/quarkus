@@ -1,0 +1,12 @@
+[
+
+  {
+    "LockIndex": 0,
+    "Key": "config/consul-test",
+    "Flags": 0,
+    "Value": "Z3JlZXRpbmcubWVzc2FnZT1IZWxsbyBmcm9tIENvbnN1bA==",
+    "CreateIndex": 92,
+    "ModifyIndex": 218
+  }
+
+]

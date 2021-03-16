@@ -12,10 +12,10 @@ import org.jboss.logging.Logger;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -32,8 +32,8 @@ public class AmazonLambdaRecorder {
     private static Class<? extends RequestHandler<?, ?>> handlerClass;
     private static Class<? extends RequestStreamHandler> streamHandlerClass;
     private static BeanContainer beanContainer;
-    private static ObjectReader objectReader;
-    private static ObjectWriter objectWriter;
+    private static LambdaInputReader objectReader;
+    private static LambdaOutputWriter objectWriter;
 
     public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler, BeanContainer container) {
         streamHandlerClass = handler;
@@ -45,8 +45,12 @@ public class AmazonLambdaRecorder {
         beanContainer = container;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
         Method handlerMethod = discoverHandlerMethod(handlerClass);
-        objectReader = objectMapper.readerFor(handlerMethod.getParameterTypes()[0]);
-        objectWriter = objectMapper.writerFor(handlerMethod.getReturnType());
+        if (handlerMethod.getParameterTypes()[0].equals(S3Event.class)) {
+            objectReader = new S3EventInputReader(objectMapper);
+        } else {
+            objectReader = new JacksonInputReader(objectMapper.readerFor(handlerMethod.getParameterTypes()[0]));
+        }
+        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(handlerMethod.getReturnType()));
     }
 
     /**
@@ -80,8 +84,11 @@ public class AmazonLambdaRecorder {
                 }
             }
         }
-        if (method == null) {
+        if (method == null && methods.length > 0) {
             method = methods[0];
+        }
+        if (method == null) {
+            throw new RuntimeException("Unable to find a method which handles request on handler class " + handlerClass);
         }
         return method;
     }
@@ -140,7 +147,7 @@ public class AmazonLambdaRecorder {
     @SuppressWarnings("rawtypes")
     public void startPollLoop(ShutdownContext context) {
         AbstractLambdaPollLoop loop = new AbstractLambdaPollLoop(AmazonLambdaMapperRecorder.objectMapper,
-                AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.cognitoIdReader) {
+                AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.clientCtxReader) {
 
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
@@ -149,12 +156,12 @@ public class AmazonLambdaRecorder {
             }
 
             @Override
-            protected ObjectReader getInputReader() {
+            protected LambdaInputReader getInputReader() {
                 return objectReader;
             }
 
             @Override
-            protected ObjectWriter getOutputWriter() {
+            protected LambdaOutputWriter getOutputWriter() {
                 return objectWriter;
             }
 

@@ -1,0 +1,13 @@
+---
+name: "Google Cloud Functions"
+metadata:
+  keywords:
+  - "google cloud"
+  - "gcloud"
+  - "gcp"
+  - "function"
+  categories:
+  - "cloud"
+  guide: "https://quarkus.io/guides/gcp-functions"
+  status: "experimental"
+  codestart: google-cloud-functions

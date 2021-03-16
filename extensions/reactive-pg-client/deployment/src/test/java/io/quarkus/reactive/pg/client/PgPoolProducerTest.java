@@ -21,18 +21,10 @@ public class PgPoolProducerTest {
             .withConfigurationResource("application-default-datasource.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(BeanUsingBarePgClient.class)
-                    .addClass(BeanUsingMutinyPgClient.class)
-                    .addClasses(BeanUsingAxlePgClient.class)
-                    .addClasses(BeanUsingRXPgClient.class));
+                    .addClass(BeanUsingMutinyPgClient.class));
 
     @Inject
     BeanUsingBarePgClient beanUsingBare;
-
-    @Inject
-    BeanUsingAxlePgClient beanUsingAxle;
-
-    @Inject
-    BeanUsingRXPgClient beanUsingRx;
 
     @Inject
     BeanUsingMutinyPgClient beanUsingMutiny;
@@ -41,8 +33,6 @@ public class PgPoolProducerTest {
     public void testVertxInjection() {
         beanUsingBare.verify()
                 .thenCompose(v -> beanUsingMutiny.verify())
-                .thenCompose(v -> beanUsingAxle.verify())
-                .thenCompose(v -> beanUsingRx.verify())
                 .toCompletableFuture()
                 .join();
     }
@@ -55,9 +45,7 @@ public class PgPoolProducerTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            pgClient.query("SELECT 1", ar -> {
-                cf.complete(null);
-            });
+            pgClient.query("SELECT 1").execute(ar -> cf.complete(null));
             return cf;
         }
     }
@@ -69,39 +57,10 @@ public class PgPoolProducerTest {
         io.vertx.mutiny.pgclient.PgPool pgClient;
 
         public CompletionStage<Void> verify() {
-            return pgClient.query("SELECT 1")
+            return pgClient.query("SELECT 1").execute()
                     .onItem().ignore().andContinueWithNull()
                     .onFailure().recoverWithItem(() -> null)
                     .subscribeAsCompletionStage();
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingAxlePgClient {
-
-        @Inject
-        io.vertx.axle.pgclient.PgPool pgClient;
-
-        public CompletionStage<Void> verify() {
-            return pgClient.query("SELECT 1")
-                    .<Void> thenApply(rs -> null)
-                    .exceptionally(t -> null);
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingRXPgClient {
-
-        @Inject
-        io.vertx.reactivex.pgclient.PgPool pgClient;
-
-        public CompletionStage<Void> verify() {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            pgClient.rxQuery("SELECT 1")
-                    .ignoreElement()
-                    .onErrorComplete()
-                    .subscribe(() -> cf.complete(null));
-            return cf;
         }
     }
 }

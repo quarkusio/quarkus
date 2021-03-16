@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -145,6 +146,28 @@ public class LoopSectionTest {
         } catch (TemplateException expected) {
             assertTrue(expected.getMessage().contains("[items] resolved to [java.lang.Boolean]"), expected.getMessage());
         }
+    }
+
+    @Test
+    void testScope() {
+        final HashMap<String, Object> dep1 = new HashMap<>();
+        dep1.put("version", "1.0");
+        final HashMap<String, Object> data = new HashMap<>();
+        data.put("dependencies", Arrays.asList(dep1, new HashMap<>()));
+        data.put("version", "hellllllo");
+        Engine engine = Engine.builder().addDefaults().build();
+        String result = engine.parse("{#for dep in dependencies}{#if dep.version}<version>{dep.version}</version>{/if}{/for}")
+                .render(data);
+        assertFalse(result.contains("hellllllo"), result);
+        result = engine.parse("{#for dep in dependencies}{#if dep.version}<version>{version}</version>{/if}{/for}")
+                .render(data);
+        assertTrue(result.contains("hellllllo"), result);
+        result = engine.parse("{#each dependencies}{#if it.version}<version>{it.version}</version>{/if}{/each}")
+                .render(data);
+        assertFalse(result.contains("hellllllo"), result);
+        result = engine.parse("{#each dependencies}{#if it.version}<version>{version}</version>{/if}{/each}")
+                .render(data);
+        assertTrue(result.contains("hellllllo"), result);
     }
 
 }

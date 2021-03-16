@@ -18,7 +18,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.util.JavaVersionUtil;
 
 public class IdeProcessor {
@@ -60,8 +62,12 @@ public class IdeProcessor {
     }
 
     @BuildStep
-    public EffectiveIdeBuildItem effectiveIde(IdeConfig ideConfig, IdeFileBuildItem ideFile,
+    public EffectiveIdeBuildItem effectiveIde(LaunchModeBuildItem launchModeBuildItem, IdeConfig ideConfig,
+            IdeFileBuildItem ideFile,
             IdeRunningProcessBuildItem ideRunningProcess) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return null;
+        }
         Ide result = null;
         if (ideConfig.target == IdeConfig.Target.auto) {
 
@@ -108,7 +114,11 @@ public class IdeProcessor {
     }
 
     @BuildStep
-    public IdeFileBuildItem detectIdeFiles(BuildSystemTargetBuildItem buildSystemTarget) {
+    public IdeFileBuildItem detectIdeFiles(LaunchModeBuildItem launchModeBuildItem,
+            BuildSystemTargetBuildItem buildSystemTarget) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return null;
+        }
         Set<Ide> result = new HashSet<>(2);
         Path projectRoot = buildSystemTarget.getOutputDirectory().getParent();
         IDE_MARKER_FILES.forEach((file, ides) -> {
@@ -120,7 +130,10 @@ public class IdeProcessor {
     }
 
     @BuildStep
-    public IdeRunningProcessBuildItem detectRunningIdeProcesses() {
+    public IdeRunningProcessBuildItem detectRunningIdeProcesses(LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return null;
+        }
         Set<Ide> result = new HashSet<>(4);
         List<ProcessInfo> processInfos = ProcessUtil.runningProcesses();
         for (ProcessInfo processInfo : processInfos) {

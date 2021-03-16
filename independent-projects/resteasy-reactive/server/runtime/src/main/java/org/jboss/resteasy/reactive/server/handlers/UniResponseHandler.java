@@ -23,7 +23,7 @@ public class UniResponseHandler implements ServerRestHandler {
             }, new Consumer<Throwable>() {
                 @Override
                 public void accept(Throwable t) {
-                    requestContext.resume(t);
+                    requestContext.resume(t, true);
                 }
             });
         }

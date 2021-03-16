@@ -43,6 +43,22 @@ public class CustomExceptionMappersTest {
     }
 
     @Test
+    public void testResourceWithExceptionMapperAndUniResponse() {
+        RestAssured.get("/first/uni?name=IllegalState")
+                .then().statusCode(409);
+        RestAssured.get("/first/uni?name=IllegalArgument")
+                .then().statusCode(409);
+        RestAssured.get("/first/uni?name=My")
+                .then().statusCode(410).body(Matchers.equalTo("/first/uni->uni"));
+        RestAssured.get("/first/uni?name=MyOther")
+                .then().statusCode(411);
+        RestAssured.get("/first/uni?name=Uni")
+                .then().statusCode(412).body(Matchers.equalTo("/first/uni->uni"));
+        RestAssured.get("/first/uni?name=Other")
+                .then().statusCode(500);
+    }
+
+    @Test
     public void testResourceWithoutExceptionMapper() {
         RestAssured.get("/second")
                 .then().statusCode(500);

@@ -51,6 +51,11 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         resume((Executor) null);
     }
 
+    public synchronized void resume(Throwable throwable, boolean keepTarget) {
+        handleException(throwable, keepTarget);
+        resume((Executor) null);
+    }
+
     public synchronized void resume(Executor executor) {
         if (running) {
             this.executor = executor;

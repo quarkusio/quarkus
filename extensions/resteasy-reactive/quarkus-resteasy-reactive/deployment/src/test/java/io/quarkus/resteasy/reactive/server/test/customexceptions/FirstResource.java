@@ -36,6 +36,25 @@ public class FirstResource {
         throw new RuntimeException();
     }
 
+    @GET
+    @Path("uni")
+    @Produces("text/plain")
+    public Uni<String> uni(@RestQuery String name) {
+        Exception e = new RuntimeException();
+        if (name.startsWith("IllegalArgument")) {
+            e = new IllegalArgumentException();
+        } else if (name.startsWith("IllegalState")) {
+            e = new IllegalStateException("IllegalState");
+        } else if (name.startsWith("MyOther")) {
+            e = new MyOtherException();
+        } else if (name.startsWith("My")) {
+            e = new MyException();
+        } else if (name.startsWith("Uni")) {
+            e = new UniException();
+        }
+        return Uni.createFrom().failure(e);
+    }
+
     @ServerExceptionMapper({ IllegalStateException.class, IllegalArgumentException.class })
     public Response handleIllegal() {
         return Response.status(409).build();

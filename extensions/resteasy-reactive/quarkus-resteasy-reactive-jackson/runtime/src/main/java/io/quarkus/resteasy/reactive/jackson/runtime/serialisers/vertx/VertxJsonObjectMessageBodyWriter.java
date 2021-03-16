@@ -16,7 +16,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import io.vertx.core.json.JsonObject;
 
-public class VertxJsonObjectMessageBodyWriter implements ServerMessageBodyWriter<JsonObject> {
+public class VertxJsonObjectMessageBodyWriter extends VertxJsonObjectBasicMessageBodyWriter
+        implements ServerMessageBodyWriter<JsonObject> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
@@ -24,17 +25,8 @@ public class VertxJsonObjectMessageBodyWriter implements ServerMessageBodyWriter
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return isWriteable(type);
-    }
-
-    private boolean isWriteable(Class<?> type) {
-        return JsonObject.class.isAssignableFrom(type);
-    }
-
-    @Override
     public void writeResponse(JsonObject o, Type genericType, ServerRequestContext context)
-            throws WebApplicationException, IOException {
+            throws WebApplicationException {
         context.serverResponse().end(o.encode());
     }
 

@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     <name>Quarkus - RESTEasy Reactive - Jackson - Runtime</name>
-    <description>Jackson integration for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.</description>
+    <description>Jackson serialization support for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it</description>
 
     <dependencies>
         <dependency>
@@ -20,11 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonp</artifactId>
+            <artifactId>quarkus-resteasy-reactive-jackson-common</artifactId>
         </dependency>
     </dependencies>
 

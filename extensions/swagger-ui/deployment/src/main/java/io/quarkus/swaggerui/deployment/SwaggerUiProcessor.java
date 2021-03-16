@@ -89,6 +89,13 @@ public class SwaggerUiProcessor {
                         "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
             }
 
+            if (openapi.path.equalsIgnoreCase(swaggerUiConfig.path)) {
+                throw new ConfigurationError(
+                        "quarkus.smallrye-openapi.path and quarkus.swagger-ui.path was set to the same value, this is not allowed as the paths needs to be unique ["
+                                + openapi.path + "].");
+
+            }
+
             String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path);
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path);
 

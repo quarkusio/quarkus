@@ -9,18 +9,16 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @QuarkusTest
-@QuarkusTestResource(KeycloakTestResource.class)
+@QuarkusTestResource(OidcWiremockTestResource.class)
 public class BearerOpaqueTokenAuthorizationTest {
 
     @Test
     public void testSecureAccessSuccessPreferredUsername() {
-        for (String username : Arrays.asList("alice", "jdoe", "admin")) {
+        for (String username : Arrays.asList("alice", "admin")) {
             RestAssured.given()
                     .header("Authorization", "Bearer " + username)
                     .when().get("/opaque/api/users/preferredUserName")

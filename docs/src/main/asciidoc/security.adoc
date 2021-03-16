@@ -42,7 +42,9 @@ Quarkus provides Mutual TLS authentication so that you can authenticate users ba
 
 Please see link:security-built-in-authentication#mutual-tls[Mutual TLS Authentication] for more information.
 
-=== OpenId Connect
+=== OpenId Connect, JWT, OAuth2
+
+==== OpenId Connect
 
 `quarkus-oidc` extension provides a reactive, interoperable, multi-tenant enabled OpenId Connect adapter which supports `Bearer Token` and `Authorization Code Flow` authentication mechanisms.
 
@@ -75,7 +77,7 @@ If you use Keycloak and Bearer tokens then also see the link:security-keycloak-a
 If you need to configure Keycloak programmatically then consider using https://www.keycloak.org/docs/latest/server_development/#admin-rest-api[Keycloak Admin REST API] with the help of the `quarkus-keycloak-admin-client` extension.
 ====
 
-=== OpenId Connect Client and Filters
+==== OpenId Connect Client and Filters
 
 `quarkus-oidc-client` extension provides `OidcClient` for acquiring and refreshing access tokens from OpenId Connect and OAuth2 providers which support `client-credentials`, `password` and `refresh_token` token grants.
 
@@ -86,7 +88,7 @@ If you need to configure Keycloak programmatically then consider using https://w
 See the link:security-openid-connect-client[Using OpenID Connect and OAuth2 Client] guide for more information.
 
 [[smallrye-jwt]]
-=== SmallRye JWT
+==== SmallRye JWT
 
 `quarkus-smallrye-jwt` provides Microprofile JWT 1.1.1 implementation and many more options to verify signed and encrypted `JWT` tokens and represent them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 
@@ -96,11 +98,80 @@ Additionally it provides `JWT Generation API` for creating `signed`, `inner-sign
 
 See the link:security-jwt[Using SmallRye JWT] guide for more information.
 
-=== OAuth2
+==== OAuth2
 
 `quarkus-elytron-security-oauth2` provides an alternative to `quarkus-oidc` Bearer Token Authentication Mechanism. It is based on `Elytron` and is primarily meant for introspecting the opaque tokens remotely.
 
 See the link:security-oauth2[Using OAuth2] guide for more information.
+
+==== Choosing between OpenId Connect, SmallRye JWT and OAuth2 extensions
+
+`quarkus-oidc` extension requires an OpenId Connect provider such as Keycloak which can be used to verify the Bearer tokens or authenticate the end users with the Authorization Code flow. In both cases `quarkus-oidc` requires a connection to this OpenId Connect provider.
+
+`quarkus-oidc` is the only option when the user authentication via Authorization Code flow or supporting multiple tenants is required. It can also request a UserInfo using both Authorization Code Flow and Bearer access tokens.
+
+When the Bearer tokens have to be verified then `quarkus-oidc`, `quarkus-smallrye-jwt` and `quarkus-elytron-security-oauth2` can be used.
+
+If you have Bearer tokens in a JWT format then all these 3 extensions can be used. Both `quarkus-oidc` and `quarkus-smallrye-jwt` support refreshing the JsonWebKey (JWK) set when the OpenId Connect provider rotates the keys, therefore `quarkus-oidc` or `quarkus-smallrye-jwt` should be used for verifying JWT tokens if the remote token introspection has to be avoided or not supported by the providers.
+
+`quarkus-smallrye-jwt` does not support the remote introspection of the opaque tokens or even JWT tokens - it always relies on the locally available keys - possibly fetched from the OpenId Connect provider. So if you need to introspect the JWT tokens remotely then both `quarkus-oidc` and `quarkus-elytron-security-oauth2` will work. Both extensions also support the verification of the opaque/binary tokens via the remote introspection.
+
+`quarkus-oidc` and `quarkus-smallrye-jwt` can have both JWT and opaque tokens injected into the endpoint code - the injected JWT tokens may offer a richer information about the user. All extensions can have the tokens injected as `Principal`.
+
+`quarkus-smallrye-jwt` supports more key formats than `quarkus-oidc`. The latter will only use the JWK-formatted keys which are part of a JWK set. The former - can also work with PEM keys.
+
+`quarkus-smallrye-jwt` can handle locally not only signed but also inner-signed-and-encrypted or only encrypted tokens. In fact `quarkus-oidc` and `quarkus-elytron-security-oauth2` can verify such tokens too but only by treating them as opaque tokens and verifying them via the remote introspection.
+
+`quarkus-elytron-security-oauth2` is the best choice if you need a light weight library for the remote introspection of either opaque or JWT tokens.
+
+Note that a choice of using the opaque versus JWT token format is often driven by the architectural considerations. Opaque tokens are usually much shorter than JWT tokens but they require maintaining most of the token associated state in the provider database - the opaque tokens are effectively the database pointers. JWT tokens are significantly longer than the opaque tokens - but the providers are effectively delegating storing most of the token associated state to the client by storing it as the token claims and either signing and/or encrypting them.
+
+Below is a summary of the options.
+
+|===
+| | quarkus-oidc| quarkus-smallrye-jwt | quarkus-elytron-security-oauth2
+
+|Bearer JWT verification is required
+|Local Verification or Introspection
+|Local Verification
+|Introspection
+|Bearer Opaque Token verification is required
+|Introspection
+|No
+|Introspection
+|Refreshing JsonWebKey set for verifying JWT tokens
+|Yes
+|Yes
+|No
+|Represent token as Principal
+|Yes
+|Yes
+|Yes
+|Inject JWT as MP JWT JsonWebToken
+|Yes
+|Yes
+|No
+|Authorization Code Flow
+|Yes
+|No
+|No
+|Multi-tenancy
+|Yes
+|No
+|No
+|UserInfo support
+|Yes
+|No
+|No
+|Pem Key format support
+|No
+|Yes
+|No
+|InnerSigned/Encrypted or Encrypted tokens
+|Introspection
+|Local Verification
+|Introspection
+|===
 
 === LDAP
 

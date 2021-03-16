@@ -410,6 +410,11 @@ If IdToken does not provide enough information about the currently authenticated
 
 A request will be sent to the OpenId Provider UserInfo endpoint using the access token returned with the authorization code grant response and an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created. `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
 
+[[config-metadata]]
+== Configuration Metadata
+
+The discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenId Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
+
 == Token Claims And SecurityIdentity Roles
 
 The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the link:security-openid-connect#token-claims-and-securityidentity-roles[bearer tokens] with the only difference being is that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.

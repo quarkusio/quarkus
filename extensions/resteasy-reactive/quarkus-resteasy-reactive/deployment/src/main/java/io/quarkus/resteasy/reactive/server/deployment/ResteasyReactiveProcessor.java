@@ -77,6 +77,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -244,6 +245,7 @@ public class ResteasyReactiveProcessor {
             ExceptionMappersBuildItem exceptionMappersBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             ContextResolversBuildItem contextResolversBuildItem,
+            List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
             List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig)
             throws NoSuchMethodException {
 
@@ -367,7 +369,15 @@ public class ResteasyReactiveProcessor {
                             return false;
                         }
                     })
-                    .setInitConverters(initConverters);
+                    .setInitConverters(initConverters)
+                    .setApplicationClassPredicate(s -> {
+                        for (ApplicationClassPredicateBuildItem i : applicationClassPredicateBuildItems) {
+                            if (i.test(s)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
 
             if (!serverDefaultProducesHandlers.isEmpty()) {
                 List<DefaultProducesHandler> handlers = new ArrayList<>(serverDefaultProducesHandlers.size());

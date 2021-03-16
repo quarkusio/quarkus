@@ -54,6 +54,8 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
+import io.undertow.httpcore.UndertowOptionMap;
+import io.undertow.httpcore.UndertowOptions;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.NotificationReceiver;
 import io.undertow.security.api.SecurityNotification;
@@ -371,23 +373,34 @@ public class UndertowDeploymentRecorder {
         UndertowBufferAllocator allocator = new UndertowBufferAllocator(
                 servletRuntimeConfig.directBuffers.orElse(DEFAULT_DIRECT_BUFFERS), (int) servletRuntimeConfig.bufferSize
                         .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
+
+        UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
+        undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters);
+        UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
+
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
                 if (!event.request().isEnded()) {
                     event.request().pause();
                 }
+
                 //we handle auth failure directly
                 event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+
                 VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event,
                         event.getBody());
                 exchange.setPushHandler(VertxHttpRecorder.getRootHandler());
+
                 Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
                 Duration readTimeout = httpConfiguration.readTimeout;
                 exchange.setReadTimeout(readTimeout.toMillis());
+
+                exchange.setUndertowOptions(undertowOptionMap);
+
                 //we eagerly dispatch to the exector, as Undertow needs to be blocking anyway
                 //its actually possible to be on a different IO thread at this point which confuses Undertow
                 //see https://github.com/quarkusio/quarkus/issues/7782

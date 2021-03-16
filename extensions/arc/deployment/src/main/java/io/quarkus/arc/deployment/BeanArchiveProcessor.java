@@ -1,10 +1,6 @@
 package io.quarkus.arc.deployment;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -25,6 +21,7 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ExcludeDependencyBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.index.IndexDependencyConfig;
@@ -38,12 +35,12 @@ public class BeanArchiveProcessor {
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
             List<AdditionalBeanBuildItem> additionalBeans, List<GeneratedBeanBuildItem> generatedBeans,
             LiveReloadBuildItem liveReloadBuildItem, BuildProducer<GeneratedClassBuildItem> generatedClass,
-            CustomScopeAnnotationsBuildItem customScopes)
+            CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems)
             throws Exception {
 
         // First build an index from application archives
         IndexView applicationIndex = buildApplicationIndex(config, applicationArchivesBuildItem,
-                additionalBeanDefiningAnnotations, customScopes);
+                additionalBeanDefiningAnnotations, customScopes, excludeDependencyBuildItems);
 
         // Then build additional index for beans added by extensions
         Indexer additionalBeanIndexer = new Indexer();
@@ -84,7 +81,7 @@ public class BeanArchiveProcessor {
 
     private IndexView buildApplicationIndex(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
-            CustomScopeAnnotationsBuildItem customScopes) {
+            CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems) {
 
         Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
@@ -115,7 +112,7 @@ public class BeanArchiveProcessor {
         List<IndexView> indexes = new ArrayList<>();
 
         for (ApplicationArchive archive : applicationArchivesBuildItem.getApplicationArchives()) {
-            if (isApplicationArchiveExcluded(config, archive)) {
+            if (isApplicationArchiveExcluded(config, excludeDependencyBuildItems, archive)) {
                 continue;
             }
             IndexView index = archive.getIndex();
@@ -130,20 +127,39 @@ public class BeanArchiveProcessor {
         return CompositeIndex.create(indexes);
     }
 
-    private boolean isApplicationArchiveExcluded(ArcConfig config, ApplicationArchive archive) {
+    private boolean isApplicationArchiveExcluded(ArcConfig config, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
+            ApplicationArchive archive) {
         if (archive.getArtifactKey() != null) {
             AppArtifactKey key = archive.getArtifactKey();
             for (IndexDependencyConfig excludeDependency : config.excludeDependency.values()) {
-                if (Objects.equal(key.getArtifactId(), excludeDependency.artifactId)
-                        && Objects.equal(key.getGroupId(), excludeDependency.groupId)) {
-                    if (excludeDependency.classifier.isPresent()) {
-                        return Objects.equal(key.getClassifier(), excludeDependency.classifier.get());
-                    } else {
-                        return true;
-                    }
+                if (archiveMatches(key, excludeDependency.groupId, excludeDependency.artifactId,
+                        excludeDependency.classifier)) {
+                    return true;
+                }
+            }
+
+            for (ExcludeDependencyBuildItem excludeDependencyBuildItem : excludeDependencyBuildItems) {
+                if (archiveMatches(key, excludeDependencyBuildItem.getGroupId(), excludeDependencyBuildItem.getArtifactId(),
+                        excludeDependencyBuildItem.getClassifier())) {
+                    return true;
                 }
             }
         }
+
+        return false;
+    }
+
+    public static boolean archiveMatches(AppArtifactKey key, String groupId, String artifactId, Optional<String> classifier) {
+
+        if (Objects.equal(key.getArtifactId(), artifactId)
+                && Objects.equal(key.getGroupId(), groupId)) {
+            if (classifier.isPresent() && Objects.equal(key.getClassifier(), classifier.get())) {
+                return true;
+            } else if (!classifier.isPresent() && "".equals(key.getClassifier())) {
+                return true;
+            }
+        }
+
         return false;
     }
 

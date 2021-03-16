@@ -155,7 +155,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
                 log.error("Exception in SSE server handling, impossible to send it to client", t);
             } else {
                 // we can go through the abort chain
-                requestContext.resume(t);
+                requestContext.resume(t, true);
             }
         }
     }

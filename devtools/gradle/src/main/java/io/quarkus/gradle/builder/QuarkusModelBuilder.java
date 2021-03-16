@@ -119,7 +119,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                 project.getVersion().toString());
 
         return new QuarkusModelImpl(
-                new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject(), mode)),
+                new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject(), mode, appArtifactCoords)),
                 new LinkedList<>(appDependencies.values()),
                 extensionDependencies,
                 deploymentDeps.stream().map(QuarkusModelBuilder::toEnforcedPlatformDependency)
@@ -194,7 +194,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         return platformProps;
     }
 
-    public Set<WorkspaceModule> getWorkspace(Project project, LaunchMode mode) {
+    public Set<WorkspaceModule> getWorkspace(Project project, LaunchMode mode, ArtifactCoords mainModuleCoord) {
         Set<WorkspaceModule> modules = new HashSet<>();
         for (Project subproject : project.getAllprojects()) {
             final Convention convention = subproject.getConvention();
@@ -202,18 +202,30 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
             if (javaConvention == null || !javaConvention.getSourceSets().getNames().contains(SourceSet.MAIN_SOURCE_SET_NAME)) {
                 continue;
             }
-            modules.add(getWorkspaceModule(subproject, mode));
+            if (subproject.getName().equals(mainModuleCoord.getArtifactId())
+                    && subproject.getGroup().equals(mainModuleCoord.getGroupId())) {
+                modules.add(getWorkspaceModule(subproject, mode, true));
+            } else {
+                modules.add(getWorkspaceModule(subproject, mode, false));
+            }
+
         }
         return modules;
     }
 
-    private WorkspaceModule getWorkspaceModule(Project project, LaunchMode mode) {
+    private WorkspaceModule getWorkspaceModule(Project project, LaunchMode mode, boolean isMainModule) {
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
                 project.getVersion().toString());
         final SourceSet mainSourceSet = QuarkusGradleUtils.getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
         final SourceSetImpl modelSourceSet = convert(mainSourceSet);
-        return new WorkspaceModuleImpl(appArtifactCoords, project.getProjectDir().getAbsoluteFile(),
+        WorkspaceModuleImpl workspaceModule = new WorkspaceModuleImpl(appArtifactCoords,
+                project.getProjectDir().getAbsoluteFile(),
                 project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), modelSourceSet);
+        if (isMainModule && mode == LaunchMode.TEST) {
+            final SourceSet testSourceSet = QuarkusGradleUtils.getSourceSet(project, SourceSet.TEST_SOURCE_SET_NAME);
+            workspaceModule.getSourceSet().getSourceDirectories().addAll(testSourceSet.getOutput().getClassesDirs().getFiles());
+        }
+        return workspaceModule;
     }
 
     private List<org.gradle.api.artifacts.Dependency> getEnforcedPlatforms(Project project) {

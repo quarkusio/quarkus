@@ -68,10 +68,12 @@ public class QuarkusPluginTest {
 
         final QuarkusPluginExtension extension = project.getExtensions().getByType(QuarkusPluginExtension.class);
 
-        final Set<File> outputSourceDirs = extension.outputSourcesDir();
-        assertThat(outputSourceDirs).hasSize(2);
+        final Set<File> outputSourceDirs = extension.combinedOutputSourceDirs();
+        assertThat(outputSourceDirs).hasSize(4);
         assertThat(outputSourceDirs).contains(new File(project.getBuildDir(), "classes/java/main"),
-                new File(project.getBuildDir(), "classes/scala/main"));
+                new File(project.getBuildDir(), "classes/java/test"),
+                new File(project.getBuildDir(), "classes/scala/main"),
+                new File(project.getBuildDir(), "classes/scala/test"));
 
     }
 }

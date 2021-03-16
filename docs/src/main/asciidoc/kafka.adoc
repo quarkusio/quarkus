@@ -857,6 +857,7 @@ Some properties have aliases which can be configured globally:
 kafka.bootstrap.servers=...
 ----
 
+.Incoming Attributes of the 'smallrye-kafka' connector
 [cols="25, 30, 15, 20",options="header"]
 |===
 |Attribute (_alias_) | Description | Mandatory | Default
@@ -915,12 +916,7 @@ Type: _string_ | true |
 
 Type: _int_ | false | `1`
 
-| *group.id* | A unique string that identifies the consumer group the application belongs to.
-
-If not set, defaults to the application name as set by the `quarkus.application.name` configuration property.
-
-If that is not set either, a unique, generated id is used.
-It is recommended to always define a `group.id`, the automatic generation is only a convenient feature for development.
+| *group.id* | A unique string that identifies the consumer group the application belongs to. If not set, a unique, generated id is used
 
 Type: _string_ | false |
 
@@ -988,6 +984,10 @@ Type: _string_ | false |
 
 Type: _string_ | false |
 
+| *graceful-shutdown* | Whether or not a graceful shutdown should be attempted when the application terminates.
+
+Type: _boolean_ | false | `true`
+
 |===
 
 === Outgoing channel configuration (writing to Kafka)
@@ -1007,6 +1007,7 @@ Some properties have aliases which can be configured globally:
 kafka.bootstrap.servers=...
 ----
 
+.Outgoing Attributes of the 'smallrye-kafka' connector
 [cols="25, 30, 15, 20",options="header"]
 |===
 |Attribute (_alias_) | Description | Mandatory | Default

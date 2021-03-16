@@ -26,7 +26,25 @@ public class MySQLDevServicesProcessor {
                                 .withUsername(username.orElse("quarkus"))
                                 .withDatabaseName(datasourceName.orElse("default"));
                 container.start();
-                return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
+
+                StringBuilder additionalArgs = new StringBuilder();
+                for (Map.Entry<String, String> i : additionalProperties.entrySet()) {
+                    if (additionalArgs.length() > 0) {
+                        additionalArgs.append("&");
+                    }
+                    additionalArgs.append(i.getKey());
+                    additionalArgs.append("=");
+                    additionalArgs.append(i.getValue());
+                }
+                String jdbcUrl = container.getJdbcUrl();
+                if (additionalArgs.length() > 0) {
+                    if (jdbcUrl.contains("?")) {
+                        jdbcUrl = jdbcUrl + "&" + additionalArgs.toString();
+                    } else {
+                        jdbcUrl = jdbcUrl + "?" + additionalArgs.toString();
+                    }
+                }
+                return new RunningDevServicesDatasource(jdbcUrl, container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override

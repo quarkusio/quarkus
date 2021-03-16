@@ -1,85 +1,37 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.serialisers;
 
-import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageBodyWriterUtil.setContentTypeIfNecessary;
+import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageServerBodyWriterUtil.setContentTypeIfNecessary;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 
-public class JacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
+public class JacksonMessageBodyWriter extends JacksonBasicMessageBodyWriter implements ServerMessageBodyWriter<Object> {// extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private static final String JSON_VIEW_NAME = JsonView.class.getName();
     private static final String CUSTOM_SERIALIZATION = CustomSerialization.class.getName();
 
-    private final ObjectMapper originalMapper;
-    private final ObjectWriter defaultWriter;
-    private final ConcurrentMap<Method, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
-
     @Inject
     public JacksonMessageBodyWriter(ObjectMapper mapper) {
-        this.originalMapper = mapper;
-        // we don't want the ObjectWriter to close the stream automatically, as we want to handle closing manually at the proper points
-        JsonFactory jsonFactory = mapper.getFactory();
-        if (needsNewFactory(jsonFactory)) {
-            jsonFactory = jsonFactory.copy();
-            setNecessaryJsonFactoryConfig(jsonFactory);
-            this.defaultWriter = mapper.writer().with(jsonFactory);
-        } else {
-            this.defaultWriter = mapper.writer();
-        }
-    }
-
-    private boolean needsNewFactory(JsonFactory jsonFactory) {
-        return jsonFactory.isEnabled(Feature.AUTO_CLOSE_TARGET) || jsonFactory.isEnabled(Feature.FLUSH_PASSED_TO_STREAM);
-    }
-
-    private static void setNecessaryJsonFactoryConfig(JsonFactory jsonFactory) {
-        jsonFactory.configure(Feature.AUTO_CLOSE_TARGET, false);
-        jsonFactory.configure(Feature.FLUSH_PASSED_TO_STREAM, false);
-    }
-
-    @Override
-    public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        setContentTypeIfNecessary(httpHeaders);
-        if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
-            entityStream.write(((String) o).getBytes());
-        } else {
-            if (annotations != null) {
-                for (Annotation annotation : annotations) {
-                    if (JsonView.class.equals(annotation.annotationType())) {
-                        if (handleJsonView(((JsonView) annotation), o, entityStream)) {
-                            return;
-                        }
-                    }
-                }
-            }
-            entityStream.write(defaultWriter.writeValueAsBytes(o));
-        }
+        super(mapper);
     }
 
     @Override
@@ -111,6 +63,12 @@ public class JacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteab
         }
         // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
         stream.close();
+    }
+
+    @Override
+    public final boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
+        return true;
     }
 
     // TODO: this can definitely be made faster if necessary by optimizing the use of the map and also by moving the creation of the

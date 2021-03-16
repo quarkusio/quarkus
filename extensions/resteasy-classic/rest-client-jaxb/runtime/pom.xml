@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-rest-client-jaxb</artifactId>
     <name>Quarkus - REST Client - JAXB - Runtime</name>
-    <description>Enable XML serialization for the REST Client</description>
+    <description>XML serialization support for the REST Client</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

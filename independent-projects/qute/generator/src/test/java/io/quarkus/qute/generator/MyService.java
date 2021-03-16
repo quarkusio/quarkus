@@ -83,4 +83,20 @@ public class MyService {
         return dummies.length > limit ? Collections.emptyList() : Arrays.asList(dummies);
     }
 
+    public static List<String> getDummyMatchAnyLike(MyService service, String name, int limit) {
+        return Collections.emptyList();
+    }
+
+    public static List<String> getDummyNamespaceLike(String name, int... limit) {
+        return Collections.emptyList();
+    }
+
+    public static List<String> getDummyNamespaceRegexLike(String name, String names) {
+        return Collections.emptyList();
+    }
+
+    public static String quark() {
+        return "ok";
+    }
+
 }

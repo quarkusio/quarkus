@@ -1242,11 +1242,9 @@ A template extension method:
 
 * must not be `private`
 * must be static, 
-* must not return `void`,
-* must accept at least one parameter, unless the namespace is specified.
- 
-The class of the first parameter is used to match the base object unless the namespace is specified. 
-In such case, the namespace is used to match an expression.
+* must not return `void`.
+
+If there is no namespace defined the class of the first parameter that is not annotated with `@TemplateAttribute` is used to match the base object. Otherwise the namespace is used to match an expression.
 
 The method name is used to match the property name by default. 
 However, it is possible to specify the matching name with `TemplateExtension#matchName()`.
@@ -1289,9 +1287,11 @@ This template extension method makes it possible to render the following templat
 
 ==== Method Parameters
 
-An extension method may accept multiple parameters.
-If no namespace is specified the first parameter is always used to pass the base object, i.e. `org.acme.Item` in the first example.
-Other parameters are resolved when rendering the template and passed to the extension method.
+An extension method may declare parameters.
+If no namespace is specified then the first parameter that is not annotated with `@TemplateAttribute` is used to pass the base object, i.e. `org.acme.Item` in the first example.
+If matching any name or using a regular expression then a string method parameter needs to be used to pass the property name.
+Parameters annotated with `@TemplateAttribute` are obtained via `TemplateInstance#getAttribute()`.
+All other parameters are resolved when rendering the template and passed to the extension method.
 
 .Multiple Parameters Example
 [source,java]

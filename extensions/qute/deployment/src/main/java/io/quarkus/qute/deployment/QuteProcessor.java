@@ -752,8 +752,7 @@ public class QuteProcessor {
         for (Entry<MethodInfo, AnnotationInstance> entry : methods.entrySet()) {
             MethodInfo method = entry.getKey();
             AnnotationValue namespaceValue = entry.getValue().value(ExtensionMethodGenerator.NAMESPACE);
-            ExtensionMethodGenerator.validate(method, method.parameters(),
-                    namespaceValue != null ? namespaceValue.asString() : null);
+            ExtensionMethodGenerator.validate(method, namespaceValue != null ? namespaceValue.asString() : null);
             produceExtensionMethod(index, extensionMethods, method, entry.getValue());
             LOGGER.debugf("Found template extension method %s declared on %s", method,
                     method.declaringClass().name());

@@ -30,7 +30,9 @@ public class RebuildHandler extends DevConsolePostHandler {
                 properties.set(i.getKey(), i.getValue());
             }
             for (Map.Entry<String, String> i : form.entries()) {
-                properties.set(i.getKey(), i.getValue());
+                if (!i.getValue().isEmpty()) {
+                    properties.set(i.getKey(), i.getValue());
+                }
             }
             QuarkusBootstrap quarkusBootstrap = existing.clonedBuilder()
                     .setMode(QuarkusBootstrap.Mode.PROD)

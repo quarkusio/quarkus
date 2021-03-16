@@ -24,25 +24,9 @@ public class MSSQLDevServicesProcessor {
                 JdbcDatabaseContainer container = new MSSQLServerContainer(
                         imageName.orElse(MSSQLServerContainer.IMAGE + ":" + MSSQLServerContainer.DEFAULT_TAG))
                                 .withPassword(password.orElse("Quarkuspassword1"));
+                additionalProperties.forEach(container::withUrlParam);
                 container.start();
-                StringBuilder additionalArgs = new StringBuilder();
-                for (Map.Entry<String, String> i : additionalProperties.entrySet()) {
-                    if (additionalArgs.length() > 0) {
-                        additionalArgs.append("&");
-                    }
-                    additionalArgs.append(i.getKey());
-                    additionalArgs.append("=");
-                    additionalArgs.append(i.getValue());
-                }
-                String jdbcUrl = container.getJdbcUrl();
-                if (additionalArgs.length() > 0) {
-                    if (jdbcUrl.contains("?")) {
-                        jdbcUrl = jdbcUrl + "&" + additionalArgs.toString();
-                    } else {
-                        jdbcUrl = jdbcUrl + "?" + additionalArgs.toString();
-                    }
-                }
-                return new RunningDevServicesDatasource(jdbcUrl, container.getUsername(),
+                return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override

@@ -2,8 +2,8 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.List;
 
-import io.dekorate.deps.kubernetes.api.model.ContainerFluent;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
+import io.fabric8.kubernetes.api.model.ContainerFluent;
 
 public class RemoveCommandDecorator extends ApplicationContainerDecorator<ContainerFluent<?>> {
 

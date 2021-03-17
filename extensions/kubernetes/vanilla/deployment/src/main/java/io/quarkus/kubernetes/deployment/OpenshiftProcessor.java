@@ -87,8 +87,10 @@ public class OpenshiftProcessor {
             List<KubernetesPortBuildItem> ports) {
 
         List<ConfiguratorBuildItem> result = new ArrayList<>();
-        result.addAll(KubernetesCommonHelper.createPlatformConfigurators(config));
-        result.addAll(KubernetesCommonHelper.createGlobalConfigurators(ports));
+
+        KubernetesCommonHelper.combinePorts(ports, config).entrySet().forEach(e -> {
+            result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(e.getValue())));
+        });
         result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator(config.route)));
 
         if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)

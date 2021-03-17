@@ -1,11 +1,11 @@
 package io.quarkus.kubernetes.deployment;
 
-import io.dekorate.deps.kubernetes.api.model.ObjectMeta;
-import io.dekorate.deps.kubernetes.api.model.PodSpecBuilder;
 import io.dekorate.kubernetes.config.Container;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 
 /**
  * Copied from dekorate in order to fix some issues

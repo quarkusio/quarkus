@@ -101,7 +101,8 @@ public class OpenshiftWithS2iTest {
             assertThat(h).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
-                        assertThat(p.getPort()).isEqualTo(8080);
+                        assertThat(p.getPort()).isEqualTo(80);
+                        assertThat(p.getTargetPort().getIntVal()).isEqualTo(8080);
                     });
                 });
             });

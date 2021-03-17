@@ -12,13 +12,13 @@ import java.util.stream.StreamSupport;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.dekorate.deps.kubernetes.api.model.HasMetadata;
-import io.dekorate.deps.kubernetes.api.model.KubernetesListBuilder;
-import io.dekorate.deps.kubernetes.api.model.ObjectReference;
-import io.dekorate.deps.openshift.api.model.ImageStreamTag;
-import io.dekorate.deps.openshift.api.model.SourceBuildStrategyFluent;
-import io.dekorate.deps.openshift.client.OpenShiftClient;
 import io.dekorate.kubernetes.decorator.Decorator;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
+import io.fabric8.kubernetes.api.model.ObjectReference;
+import io.fabric8.openshift.api.model.ImageStreamTag;
+import io.fabric8.openshift.api.model.SourceBuildStrategyFluent;
+import io.fabric8.openshift.client.OpenShiftClient;
 
 /**
  * This class is copied from Dekorate, with the difference that the {@code waitForImageStreamTags} method

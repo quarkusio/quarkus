@@ -4,23 +4,12 @@ import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
 
 import java.util.Optional;
 
-import io.dekorate.AbstractKubernetesHandler;
+import io.dekorate.AbstractKubernetesManifestGenerator;
 import io.dekorate.BuildServiceFactories;
-import io.dekorate.Configurators;
-import io.dekorate.Handler;
-import io.dekorate.HandlerFactory;
-import io.dekorate.Resources;
+import io.dekorate.ConfigurationRegistry;
+import io.dekorate.ResourceRegistry;
 import io.dekorate.WithProject;
 import io.dekorate.config.ConfigurationSupplier;
-import io.dekorate.deps.kubernetes.api.model.KubernetesListBuilder;
-import io.dekorate.deps.kubernetes.api.model.LabelSelector;
-import io.dekorate.deps.kubernetes.api.model.LabelSelectorBuilder;
-import io.dekorate.deps.kubernetes.api.model.PodSpec;
-import io.dekorate.deps.kubernetes.api.model.PodSpecBuilder;
-import io.dekorate.deps.kubernetes.api.model.PodTemplateSpec;
-import io.dekorate.deps.kubernetes.api.model.PodTemplateSpecBuilder;
-import io.dekorate.deps.kubernetes.api.model.apps.Deployment;
-import io.dekorate.deps.kubernetes.api.model.apps.DeploymentBuilder;
 import io.dekorate.kubernetes.config.Configuration;
 import io.dekorate.kubernetes.config.Container;
 import io.dekorate.kubernetes.config.EditableKubernetesConfig;
@@ -40,31 +29,37 @@ import io.dekorate.project.Project;
 import io.dekorate.utils.Images;
 import io.dekorate.utils.Labels;
 import io.dekorate.utils.Strings;
+import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelector;
+import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
+import io.fabric8.kubernetes.api.model.PodSpec;
+import io.fabric8.kubernetes.api.model.PodSpecBuilder;
+import io.fabric8.kubernetes.api.model.PodTemplateSpec;
+import io.fabric8.kubernetes.api.model.PodTemplateSpecBuilder;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 
 // copied from KubernetesHandler
 // TODO: update dekorate to make KubernetesHandler extendable
-public class MinikubeHandler extends AbstractKubernetesHandler<KubernetesConfig> implements HandlerFactory, WithProject {
+public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerator<KubernetesConfig> implements WithProject {
 
     private static final String DEFAULT_REGISTRY = "docker.io";
 
     private static final String IF_NOT_PRESENT = "IfNotPresent";
     private static final String KUBERNETES_NAMESPACE = "KUBERNETES_NAMESPACE";
     private static final String METADATA_NAMESPACE = "metadata.namespace";
+    private static final String MINIKUBE = "minikube";
 
-    private final Configurators configurators;
+    private final ConfigurationRegistry configurationRegistry;
 
-    public MinikubeHandler() {
-        this(new Resources(), new Configurators());
-    }
-
-    public MinikubeHandler(Resources resources, Configurators configurators) {
-        super(resources);
-        this.configurators = configurators;
+    public MinikubeManifestGenerator(ResourceRegistry resourceRegistry, ConfigurationRegistry configurationRegistry) {
+        super(resourceRegistry);
+        this.configurationRegistry = configurationRegistry;
     }
 
     @Override
-    public Handler create(Resources resources, Configurators configurators) {
-        return new MinikubeHandler(resources, configurators);
+    public String getKey() {
+        return MINIKUBE;
     }
 
     @Override
@@ -72,10 +67,10 @@ public class MinikubeHandler extends AbstractKubernetesHandler<KubernetesConfig>
         return 210;
     }
 
-    public void handle(KubernetesConfig config) {
-        ImageConfiguration imageConfig = getImageConfiguration(getProject(), config, configurators);
+    public void generate(KubernetesConfig config) {
+        ImageConfiguration imageConfig = getImageConfiguration(getProject(), config, configurationRegistry);
 
-        Optional<Deployment> existingDeployment = resources.groups().getOrDefault(MINIKUBE, new KubernetesListBuilder())
+        Optional<Deployment> existingDeployment = resourceRegistry.groups().getOrDefault(MINIKUBE, new KubernetesListBuilder())
                 .buildItems().stream()
                 .filter(i -> i instanceof Deployment)
                 .map(i -> (Deployment) i)
@@ -83,17 +78,17 @@ public class MinikubeHandler extends AbstractKubernetesHandler<KubernetesConfig>
                 .findAny();
 
         if (!existingDeployment.isPresent()) {
-            resources.add(MINIKUBE, createDeployment(config, imageConfig));
+            resourceRegistry.add(MINIKUBE, createDeployment(config, imageConfig));
         }
 
         addDecorators(MINIKUBE, config);
 
         if (config.isHeadless()) {
-            resources.decorate(MINIKUBE, new ApplyHeadlessDecorator(config.getName()));
+            resourceRegistry.decorate(MINIKUBE, new ApplyHeadlessDecorator(config.getName()));
         }
 
         if (config.getReplicas() != 1) {
-            resources.decorate(MINIKUBE, new ApplyReplicasDecorator(config.getName(), config.getReplicas()));
+            resourceRegistry.decorate(MINIKUBE, new ApplyReplicasDecorator(config.getName(), config.getReplicas()));
         }
 
         String image = Strings.isNotNullOrEmpty(imageConfig.getImage())
@@ -103,10 +98,10 @@ public class MinikubeHandler extends AbstractKubernetesHandler<KubernetesConfig>
                         : imageConfig.getRegistry(),
                         imageConfig.getGroup(), imageConfig.getName(), imageConfig.getVersion());
 
-        resources.decorate(MINIKUBE, new ApplyImageDecorator(config.getName(), image));
+        resourceRegistry.decorate(MINIKUBE, new ApplyImageDecorator(config.getName(), image));
     }
 
-    public boolean canHandle(Class<? extends Configuration> type) {
+    public boolean accepts(Class<? extends Configuration> type) {
         return type.equals(KubernetesConfig.class) ||
                 type.equals(EditableKubernetesConfig.class);
     }
@@ -116,14 +111,14 @@ public class MinikubeHandler extends AbstractKubernetesHandler<KubernetesConfig>
         super.addDecorators(group, config);
 
         for (Container container : config.getInitContainers()) {
-            resources.decorate(group, new AddInitContainerDecorator(config.getName(), container));
+            resourceRegistry.decorate(group, new AddInitContainerDecorator(config.getName(), container));
         }
 
         if (config.getPorts().length > 0) {
-            resources.decorate(group, new AddServiceResourceDecorator(config));
+            resourceRegistry.decorate(group, new AddServiceResourceDecorator(config));
         }
 
-        resources.decorate(group, new AddIngressDecorator(config, Labels.createLabelsAsMap(config, "Ingress")));
+        resourceRegistry.decorate(group, new AddIngressDecorator(config, Labels.createLabelsAsMap(config, "Ingress")));
     }
 
     /**
@@ -210,8 +205,9 @@ public class MinikubeHandler extends AbstractKubernetesHandler<KubernetesConfig>
     }
 
     private static ImageConfiguration getImageConfiguration(Project project, KubernetesConfig appConfig,
-            Configurators configurators) {
-        return configurators.getImageConfig(BuildServiceFactories.supplierMatches(project)).map(i -> merge(appConfig, i))
+            ConfigurationRegistry configurationRegistry) {
+        return configurationRegistry.getImageConfig(BuildServiceFactories.supplierMatches(project))
+                .map(i -> merge(appConfig, i))
                 .orElse(ImageConfiguration.from(appConfig));
     }
 

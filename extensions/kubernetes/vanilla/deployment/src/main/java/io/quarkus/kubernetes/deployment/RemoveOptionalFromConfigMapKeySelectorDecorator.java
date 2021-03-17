@@ -1,9 +1,9 @@
 package io.quarkus.kubernetes.deployment;
 
-import io.dekorate.deps.kubernetes.api.model.ConfigMapKeySelectorFluent;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
+import io.fabric8.kubernetes.api.model.ConfigMapKeySelectorFluent;
 
 public class RemoveOptionalFromConfigMapKeySelectorDecorator extends ApplicationContainerDecorator<ConfigMapKeySelectorFluent> {
 

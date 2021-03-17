@@ -73,7 +73,8 @@ public class OpenshiftWithApplicationPropertiesTest {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "test-it"));
                     assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
-                        assertThat(p.getPort()).isEqualTo(9090);
+                        assertThat(p.getPort()).isEqualTo(80);
+                        assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });
                 });
             });

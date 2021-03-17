@@ -152,7 +152,7 @@
         <aws-alexa-sdk.version>2.37.1</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.4.0</azure-functions-java-library.version>
         <kotlin.version>1.4.31</kotlin.version>
-        <dekorate.version>0.14.2</dekorate.version>
+        <dekorate.version>2.1.1</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
         <awaitility.version>4.0.3</awaitility.version>

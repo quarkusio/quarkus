@@ -1,13 +1,13 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import io.dekorate.deps.kubernetes.api.model.HTTPGetActionFluent;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
+import io.fabric8.kubernetes.api.model.HTTPGetActionFluent;
 
 public class ApplyHttpGetActionPortDecorator extends ApplicationContainerDecorator<HTTPGetActionFluent<?>> {
 

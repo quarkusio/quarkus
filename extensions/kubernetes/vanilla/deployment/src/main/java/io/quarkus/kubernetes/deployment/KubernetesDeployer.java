@@ -21,14 +21,14 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
-import io.dekorate.deps.kubernetes.api.model.HasMetadata;
-import io.dekorate.deps.kubernetes.api.model.KubernetesList;
-import io.dekorate.deps.kubernetes.client.KubernetesClient;
-import io.dekorate.deps.kubernetes.client.KubernetesClientException;
-import io.dekorate.deps.openshift.api.model.Route;
-import io.dekorate.deps.openshift.client.OpenShiftClient;
 import io.dekorate.utils.Clients;
 import io.dekorate.utils.Serialization;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.KubernetesList;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.client.OpenShiftClient;
 import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;

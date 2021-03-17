@@ -17,11 +17,11 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.jsoup.helper.StringUtil;
 
 import io.dekorate.DekorateException;
-import io.dekorate.deps.commons.compress.archivers.tar.TarArchiveEntry;
-import io.dekorate.deps.commons.compress.archivers.tar.TarArchiveOutputStream;
 
 public class PackageUtil {
 

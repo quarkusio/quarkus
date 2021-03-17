@@ -80,8 +80,9 @@ public class VanillaKubernetesProcessor {
     @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config, List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
-        result.addAll(KubernetesCommonHelper.createPlatformConfigurators(config));
-        result.addAll(KubernetesCommonHelper.createGlobalConfigurators(ports));
+        KubernetesCommonHelper.combinePorts(ports, config).entrySet().forEach(e -> {
+            result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(e.getValue())));
+        });
         result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator((config.ingress))));
         return result;
 

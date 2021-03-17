@@ -85,3 +85,7 @@
 #logstreamViewLogButtonIcon:hover {
     color: #3366ac !important;
 }
+
+.clickable-app-class:hover {
+    cursor:pointer;
+}

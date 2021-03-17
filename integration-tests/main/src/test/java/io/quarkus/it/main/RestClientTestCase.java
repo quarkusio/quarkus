@@ -173,4 +173,10 @@ public class RestClientTestCase {
                         + "data: 75056-2\n\n"
                         + "data: 75056-2\n\n"));
     }
+
+    @Test
+    public void testFaultTolerance() {
+        RestAssured.when().get("/client/fault-tolerance").then()
+                .body(is("Hello fallback!"));
+    }
 }

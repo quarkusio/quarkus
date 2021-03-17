@@ -42,6 +42,10 @@ public class ClientResource {
     RestClientBaseUriConfigKeyInterface restClientBaseUriConfigKeyInterface;
 
     @Inject
+    @RestClient
+    RestClientWithFaultToleranceInterface restClientWithFaultToleranceInterface;
+
+    @Inject
     @ConfigProperty(name = "loopback/mp-rest/url", defaultValue = "http://localhost:8080/loopback")
     Provider<String> loopbackEndpoint;
 
@@ -212,5 +216,11 @@ public class ClientResource {
                 emitter.complete();
             }
         });
+    }
+
+    @GET
+    @Path("/fault-tolerance")
+    public String faultTolerance() {
+        return restClientWithFaultToleranceInterface.echo();
     }
 }

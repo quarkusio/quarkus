@@ -44,6 +44,7 @@ public class ConstantsTest {
         assertMatch(HibernateOrmProcessor.PERSISTENCE_UNIT_REPEATABLE_CONTAINER, PersistenceUnit.List.class);
         assertMatch(HibernateOrmProcessor.JPA_ENTITY, javax.persistence.Entity.class);
         assertMatch(HibernateOrmProcessor.MAPPED_SUPERCLASS, javax.persistence.MappedSuperclass.class);
+        assertMatch(HibernateOrmProcessor.PROXY, org.hibernate.annotations.Proxy.class);
     }
 
     @Test

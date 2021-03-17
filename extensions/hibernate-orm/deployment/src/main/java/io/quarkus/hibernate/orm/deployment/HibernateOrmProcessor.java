@@ -37,7 +37,6 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
 
 import org.hibernate.MultiTenancyStrategy;
-import org.hibernate.annotations.Proxy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.cfg.AvailableSettings;
@@ -150,6 +149,7 @@ public final class HibernateOrmProcessor {
             .createSimple("io.quarkus.hibernate.orm.PersistenceUnit$List");
     public static final DotName JPA_ENTITY = DotName.createSimple("javax.persistence.Entity");
     public static final DotName MAPPED_SUPERCLASS = DotName.createSimple("javax.persistence.MappedSuperclass");
+    public static final DotName PROXY = DotName.createSimple("org.hibernate.annotations.Proxy");
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 
@@ -1220,7 +1220,7 @@ public final class HibernateOrmProcessor {
         //create a map of entity to proxy type
         PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
         Map<String, String> proxyAnnotations = new HashMap<>();
-        for (AnnotationInstance i : combinedIndex.getAnnotations(DotName.createSimple(Proxy.class.getName()))) {
+        for (AnnotationInstance i : combinedIndex.getAnnotations(PROXY)) {
             AnnotationValue proxyClass = i.value("proxyClass");
             if (proxyClass == null) {
                 continue;

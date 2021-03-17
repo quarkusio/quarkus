@@ -4,21 +4,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.hibernate.annotations.AnyMetaDef;
-import org.hibernate.annotations.AnyMetaDefs;
-import org.hibernate.annotations.FetchProfile;
-import org.hibernate.annotations.FetchProfiles;
-import org.hibernate.annotations.FilterDef;
-import org.hibernate.annotations.FilterDefs;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.GenericGenerators;
-import org.hibernate.annotations.ListIndexBase;
-import org.hibernate.annotations.NamedNativeQueries;
-import org.hibernate.annotations.NamedNativeQuery;
-import org.hibernate.annotations.NamedQueries;
-import org.hibernate.annotations.NamedQuery;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 import org.jboss.jandex.DotName;
 
 public final class HibernateOrmAnnotations {
@@ -27,20 +12,20 @@ public final class HibernateOrmAnnotations {
     }
 
     public static final List<DotName> PACKAGE_ANNOTATIONS = Collections.unmodifiableList(Arrays.asList(
-            DotName.createSimple(AnyMetaDef.class.getName()),
-            DotName.createSimple(AnyMetaDefs.class.getName()),
-            DotName.createSimple(FetchProfile.class.getName()),
-            DotName.createSimple(FetchProfile.FetchOverride.class.getName()),
-            DotName.createSimple(FetchProfiles.class.getName()),
-            DotName.createSimple(FilterDef.class.getName()),
-            DotName.createSimple(FilterDefs.class.getName()),
-            DotName.createSimple(GenericGenerator.class.getName()),
-            DotName.createSimple(GenericGenerators.class.getName()),
-            DotName.createSimple(ListIndexBase.class.getName()),
-            DotName.createSimple(NamedNativeQueries.class.getName()),
-            DotName.createSimple(NamedNativeQuery.class.getName()),
-            DotName.createSimple(NamedQueries.class.getName()),
-            DotName.createSimple(NamedQuery.class.getName()),
-            DotName.createSimple(TypeDef.class.getName()),
-            DotName.createSimple(TypeDefs.class.getName())));
+            DotName.createSimple("org.hibernate.annotations.AnyMetaDef"),
+            DotName.createSimple("org.hibernate.annotations.AnyMetaDefs"),
+            DotName.createSimple("org.hibernate.annotations.FetchProfile"),
+            DotName.createSimple("org.hibernate.annotations.FetchProfile$FetchOverride"),
+            DotName.createSimple("org.hibernate.annotations.FetchProfiles"),
+            DotName.createSimple("org.hibernate.annotations.FilterDef"),
+            DotName.createSimple("org.hibernate.annotations.FilterDefs"),
+            DotName.createSimple("org.hibernate.annotations.GenericGenerator"),
+            DotName.createSimple("org.hibernate.annotations.GenericGenerators"),
+            DotName.createSimple("org.hibernate.annotations.ListIndexBase"),
+            DotName.createSimple("org.hibernate.annotations.NamedNativeQueries"),
+            DotName.createSimple("org.hibernate.annotations.NamedNativeQuery"),
+            DotName.createSimple("org.hibernate.annotations.NamedQueries"),
+            DotName.createSimple("org.hibernate.annotations.NamedQuery"),
+            DotName.createSimple("org.hibernate.annotations.TypeDef"),
+            DotName.createSimple("org.hibernate.annotations.TypeDefs")));
 }

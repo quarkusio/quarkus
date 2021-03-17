@@ -25,6 +25,7 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
     @Override
     public EntityManagerFactory build() {
         final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
+        optionsBuilder.enableCollectionInDefaultFetchGroup(true);
         populate(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry,
                 multiTenancyStrategy);
         SessionFactoryOptions options = optionsBuilder.buildOptions();

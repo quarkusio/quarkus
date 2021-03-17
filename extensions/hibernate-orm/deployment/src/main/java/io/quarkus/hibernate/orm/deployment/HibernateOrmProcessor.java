@@ -197,7 +197,7 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     AdditionalIndexedClassesBuildItem addPersistenceUnitAnnotationToIndex() {
-        return new AdditionalIndexedClassesBuildItem(PersistenceUnit.class.getName());
+        return new AdditionalIndexedClassesBuildItem(PERSISTENCE_UNIT.toString());
     }
 
     // We do our own enhancement during the compilation phase, so disable any

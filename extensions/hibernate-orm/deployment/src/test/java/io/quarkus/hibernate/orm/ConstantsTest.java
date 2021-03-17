@@ -2,8 +2,13 @@ package io.quarkus.hibernate.orm;
 
 import java.util.Collection;
 
+import javax.persistence.ElementCollection;
+import javax.persistence.Embeddable;
+import javax.persistence.Embedded;
+import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.MappedSuperclass;
 import javax.persistence.metamodel.StaticMetamodel;
 
 import org.hibernate.Session;
@@ -15,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmCdiProcessor;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
 import io.quarkus.hibernate.orm.deployment.HibernateUserTypeProcessor;
+import io.quarkus.hibernate.orm.deployment.JpaJandexScavenger;
 
 public class ConstantsTest {
 
@@ -44,6 +50,15 @@ public class ConstantsTest {
         assertMatch(HibernateOrmCdiProcessor.PERSISTENCE_UNIT_QUALIFIER, PersistenceUnit.class);
         assertMatch(HibernateOrmCdiProcessor.JPA_PERSISTENCE_UNIT, javax.persistence.PersistenceUnit.class);
         assertMatch(HibernateOrmCdiProcessor.JPA_PERSISTENCE_CONTEXT, javax.persistence.PersistenceContext.class);
+    }
+
+    @Test
+    public void testJpaJandexScavenger() {
+        assertMatch(JpaJandexScavenger.JPA_ENTITY, Entity.class);
+        assertMatch(JpaJandexScavenger.EMBEDDABLE, Embeddable.class);
+        assertMatch(JpaJandexScavenger.EMBEDDED_ANNOTATIONS, Embedded.class, ElementCollection.class);
+        assertMatch(JpaJandexScavenger.MAPPED_SUPERCLASS, MappedSuperclass.class);
+        assertMatch(JpaJandexScavenger.ENUM, Enum.class);
     }
 
     private void assertMatch(final DotName dotName, final Class<?> clazz) {

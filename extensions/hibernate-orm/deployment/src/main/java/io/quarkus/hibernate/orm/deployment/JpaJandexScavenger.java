@@ -9,12 +9,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import javax.persistence.ElementCollection;
-import javax.persistence.Embeddable;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.MappedSuperclass;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -38,16 +32,16 @@ import io.quarkus.deployment.configuration.ConfigurationError;
  * @author Emmanuel Bernard emmanuel@hibernate.org
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
-final class JpaJandexScavenger {
+public final class JpaJandexScavenger {
 
-    private static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());
-    private static final DotName EMBEDDABLE = DotName.createSimple(Embeddable.class.getName());
-    private static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(
-            DotName.createSimple(Embedded.class.getName()),
-            DotName.createSimple(ElementCollection.class.getName()));
-    private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
+    public static final DotName JPA_ENTITY = DotName.createSimple("javax.persistence.Entity");
+    public static final DotName EMBEDDABLE = DotName.createSimple("javax.persistence.Embeddable");
+    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(
+            DotName.createSimple("javax.persistence.Embedded"),
+            DotName.createSimple("javax.persistence.ElementCollection"));
+    public static final DotName MAPPED_SUPERCLASS = DotName.createSimple("javax.persistence.MappedSuperclass");
 
-    private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
+    public static final DotName ENUM = DotName.createSimple("java.lang.Enum");
 
     private final List<PersistenceXmlDescriptorBuildItem> explicitDescriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -96,7 +90,7 @@ final class JpaJandexScavenger {
         domainObjectCollector.registerAllForReflection(reflectiveClass);
 
         if (!enumTypeCollector.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Enum.class.getName()));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.lang.Enum"));
             for (String className : enumTypeCollector) {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, className));
             }

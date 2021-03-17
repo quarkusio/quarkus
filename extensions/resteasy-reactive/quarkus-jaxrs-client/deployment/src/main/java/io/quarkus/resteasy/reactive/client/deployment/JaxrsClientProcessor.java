@@ -96,7 +96,9 @@ import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuil
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
+import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
+import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 public class JaxrsClientProcessor {
@@ -132,6 +134,8 @@ public class JaxrsClientProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
+            List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
+            List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
             List<JaxrsClientEnricherBuildItem> enricherBuildItems,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -147,7 +151,8 @@ public class JaxrsClientProcessor {
         Serialisers serialisers = recorder.createSerializers();
 
         SerializersUtil.setupSerializers(recorder, reflectiveClassBuildItemBuildProducer, messageBodyReaderBuildItems,
-                messageBodyWriterBuildItems, beanContainerBuildItem, applicationResultBuildItem, serialisers,
+                messageBodyWriterBuildItems, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
+                beanContainerBuildItem, applicationResultBuildItem, serialisers,
                 RuntimeType.CLIENT);
 
         if (!resourceScanningResultBuildItem.isPresent()

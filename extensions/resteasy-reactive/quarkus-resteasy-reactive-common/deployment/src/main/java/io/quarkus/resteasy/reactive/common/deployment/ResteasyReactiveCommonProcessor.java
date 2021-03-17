@@ -49,13 +49,18 @@ import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
+import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
+import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.ReaderInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 
 public class ResteasyReactiveCommonProcessor {
+
+    private static final int LEGACY_READER_PRIORITY = Priorities.USER * 2; // readers are compared by decreased priority
+    private static final int LEGACY_WRITER_PRIORITY = Priorities.USER / 2; // writers are compared by increased priority
 
     @BuildStep
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
@@ -296,6 +301,31 @@ public class ResteasyReactiveCommonProcessor {
     void registerRuntimeDelegateImpl(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         serviceProviders.produce(new ServiceProviderBuildItem(RuntimeDelegate.class.getName(),
                 RuntimeDelegateImpl.class.getName()));
+    }
+
+    /*
+     * There are some MessageBodyReaders and MessageBodyWriters that are brought in transitively
+     * by the inclusion of the extension like the 'quarkus-keycloak-admin-client'.
+     * We need to make sure that these providers are not selected over the ones that our Quarkus extensions provide.
+     * To do that, we first need to make them built-in (as the spec mandates that non-build-in providers are choosen
+     * over built-in ones) and then we also need to change their priority
+     */
+    @BuildStep
+    void deprioritizeLegacyProviders(BuildProducer<MessageBodyReaderOverrideBuildItem> readers,
+            BuildProducer<MessageBodyWriterOverrideBuildItem> writers) {
+        readers.produce(new MessageBodyReaderOverrideBuildItem(
+                "org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider", LEGACY_READER_PRIORITY, true));
+        readers.produce(new MessageBodyReaderOverrideBuildItem("com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider",
+                LEGACY_READER_PRIORITY, true));
+        readers.produce(new MessageBodyReaderOverrideBuildItem("com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider",
+                LEGACY_READER_PRIORITY, true));
+
+        writers.produce(new MessageBodyWriterOverrideBuildItem(
+                "org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider", LEGACY_WRITER_PRIORITY, true));
+        writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider",
+                LEGACY_WRITER_PRIORITY, true));
+        writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider",
+                LEGACY_WRITER_PRIORITY, true));
     }
 
     /**

@@ -1,6 +1,5 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
-import io.quarkus.micrometer.runtime.binder.HttpRequestMetric;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;

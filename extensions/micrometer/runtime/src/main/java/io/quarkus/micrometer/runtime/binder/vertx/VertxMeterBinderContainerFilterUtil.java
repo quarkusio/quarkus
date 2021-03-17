@@ -8,7 +8,6 @@ import javax.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.micrometer.runtime.binder.HttpRequestMetric;
 import io.vertx.ext.web.RoutingContext;
 
 final class VertxMeterBinderContainerFilterUtil {

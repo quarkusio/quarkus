@@ -29,6 +29,8 @@ public final class Descriptors {
     public static final MethodDescriptor GET_NAME = MethodDescriptor.ofMethod(EvalContext.class, "getName", String.class);
     public static final MethodDescriptor GET_BASE = MethodDescriptor.ofMethod(EvalContext.class, "getBase", Object.class);
     public static final MethodDescriptor GET_PARAMS = MethodDescriptor.ofMethod(EvalContext.class, "getParams", List.class);
+    public static final MethodDescriptor GET_ATTRIBUTE = MethodDescriptor.ofMethod(EvalContext.class, "getAttribute",
+            Object.class, String.class);
     public static final MethodDescriptor EVALUATE = MethodDescriptor.ofMethod(EvalContext.class, "evaluate",
             CompletionStage.class, Expression.class);
     static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);

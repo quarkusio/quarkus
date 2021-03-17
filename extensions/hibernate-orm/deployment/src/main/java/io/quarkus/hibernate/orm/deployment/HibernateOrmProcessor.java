@@ -31,11 +31,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
 import javax.persistence.AttributeConverter;
-import javax.persistence.Entity;
-import javax.persistence.MappedSuperclass;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
-import javax.persistence.metamodel.StaticMetamodel;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
 
@@ -128,7 +125,6 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStati
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
-import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -152,15 +148,17 @@ public final class HibernateOrmProcessor {
 
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
-    private static final DotName TENANT_CONNECTION_RESOLVER = DotName.createSimple(TenantConnectionResolver.class.getName());
-    private static final DotName TENANT_RESOLVER = DotName.createSimple(TenantResolver.class.getName());
+    public static final DotName TENANT_CONNECTION_RESOLVER = DotName
+            .createSimple("io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver");
+    public static final DotName TENANT_RESOLVER = DotName
+            .createSimple("io.quarkus.hibernate.orm.runtime.tenant.TenantResolver");
 
-    private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
-    private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
-    private static final DotName PERSISTENCE_UNIT_REPEATABLE_CONTAINER = DotName
-            .createSimple(PersistenceUnit.List.class.getName());
-    private static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());
-    private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
+    public static final DotName STATIC_METAMODEL = DotName.createSimple("javax.persistence.metamodel.StaticMetamodel");
+    public static final DotName PERSISTENCE_UNIT = DotName.createSimple("io.quarkus.hibernate.orm.PersistenceUnit");
+    public static final DotName PERSISTENCE_UNIT_REPEATABLE_CONTAINER = DotName
+            .createSimple("io.quarkus.hibernate.orm.PersistenceUnit$List");
+    public static final DotName JPA_ENTITY = DotName.createSimple("javax.persistence.Entity");
+    public static final DotName MAPPED_SUPERCLASS = DotName.createSimple("javax.persistence.MappedSuperclass");
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 

@@ -6,8 +6,6 @@ import java.util.function.Supplier;
 
 import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -33,19 +31,19 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 public class HibernateOrmCdiProcessor {
 
-    private static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(
-            DotName.createSimple(EntityManagerFactory.class.getName()),
-            DotName.createSimple(SessionFactory.class.getName()));
-    private static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(
-            DotName.createSimple(EntityManager.class.getName()),
-            DotName.createSimple(Session.class.getName()));
+    public static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(
+            DotName.createSimple("javax.persistence.EntityManagerFactory"),
+            DotName.createSimple("org.hibernate.SessionFactory"));
+    public static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(
+            DotName.createSimple("javax.persistence.EntityManager"),
+            DotName.createSimple("org.hibernate.Session"));
 
-    private static final DotName PERSISTENCE_UNIT_QUALIFIER = DotName.createSimple(PersistenceUnit.class.getName());
+    public static final DotName PERSISTENCE_UNIT_QUALIFIER = DotName.createSimple("io.quarkus.hibernate.orm.PersistenceUnit");
 
-    private static final DotName JPA_PERSISTENCE_UNIT = DotName.createSimple(javax.persistence.PersistenceUnit.class.getName());
+    public static final DotName JPA_PERSISTENCE_UNIT = DotName.createSimple("javax.persistence.PersistenceUnit");
 
-    private static final DotName JPA_PERSISTENCE_CONTEXT = DotName
-            .createSimple(javax.persistence.PersistenceContext.class.getName());
+    public static final DotName JPA_PERSISTENCE_CONTEXT = DotName
+            .createSimple("javax.persistence.PersistenceContext");
 
     @BuildStep
     AnnotationsTransformerBuildItem convertJpaResourceAnnotationsToQualifier(

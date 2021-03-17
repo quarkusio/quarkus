@@ -164,8 +164,6 @@ public final class HibernateOrmProcessor {
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 
-    private static final String PROXY_CACHE = HibernateOrmProcessor.class.getName() + ".proxyCache";
-
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.HIBERNATE_ORM);

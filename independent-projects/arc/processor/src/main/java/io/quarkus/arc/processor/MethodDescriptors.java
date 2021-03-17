@@ -79,12 +79,30 @@ public final class MethodDescriptors {
     public static final MethodDescriptor OBJECT_EQUALS = MethodDescriptor.ofMethod(Object.class, "equals", boolean.class,
             Object.class);
 
+    /**
+     * No longer used - will be deleted
+     * 
+     * @deprecated
+     */
+    @Deprecated
     public static final MethodDescriptor OBJECT_HASH_CODE = MethodDescriptor.ofMethod(Object.class, "hashCode", int.class);
 
+    /**
+     * No longer used - will be deleted
+     * 
+     * @deprecated
+     */
+    @Deprecated
     public static final MethodDescriptor OBJECT_TO_STRING = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
 
     public static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
 
+    /**
+     * No longer used - will be deleted
+     * 
+     * @deprecated
+     */
+    @Deprecated
     public static final MethodDescriptor OBJECTS_REFERENCE_EQUALS = MethodDescriptor.ofMethod(Objects.class, "referenceEquals",
             boolean.class, Object.class, Object.class);
 

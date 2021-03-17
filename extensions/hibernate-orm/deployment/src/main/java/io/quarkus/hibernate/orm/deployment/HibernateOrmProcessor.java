@@ -45,7 +45,6 @@ import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
-import org.hibernate.proxy.HibernateProxy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
@@ -152,6 +151,7 @@ public final class HibernateOrmProcessor {
     public static final DotName PROXY = DotName.createSimple("org.hibernate.annotations.Proxy");
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
+    public static final String HIBERNATE_PROXY_INTERFACENAME = "org.hibernate.proxy.HibernateProxy";
 
     @BuildStep
     CapabilityBuildItem capability() {
@@ -1234,8 +1234,8 @@ public final class HibernateOrmProcessor {
                         && !isModified(managedClassOrPackageName, changedClasses, combinedIndex)) {
                     result = proxyCache.cache.get(managedClassOrPackageName);
                 } else {
-                    Set<Class<?>> proxyInterfaces = new HashSet<>();
-                    proxyInterfaces.add(HibernateProxy.class); //always added
+                    Set<String> proxyInterfaceNames = new TreeSet<>();
+                    proxyInterfaceNames.add(HIBERNATE_PROXY_INTERFACENAME); //always added
                     String proxy = proxyAnnotations.get(managedClassOrPackageName);
                     if (proxy == null) {
                         if (!proxyHelper.isProxiable(managedClassOrPackageName)) {
@@ -1243,9 +1243,9 @@ public final class HibernateOrmProcessor {
                             continue;
                         }
                     } else {
-                        proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
+                        proxyInterfaceNames.add(proxy);
                     }
-                    Class<?> mappedClass = proxyHelper.uninitializedClass(managedClassOrPackageName);
+                    final String mappedClass = managedClassOrPackageName;
                     for (ClassInfo subclass : combinedIndex
                             .getAllKnownSubclasses(DotName.createSimple(managedClassOrPackageName))) {
                         String subclassName = subclass.name().toString();
@@ -1255,13 +1255,11 @@ public final class HibernateOrmProcessor {
                         }
                         proxy = proxyAnnotations.get(subclassName);
                         if (proxy != null) {
-                            proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
+                            proxyInterfaceNames.add(proxy);
                         }
                     }
-                    DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(mappedClass,
-                            toArray(proxyInterfaces));
-                    result = new CachedProxy(unloaded,
-                            proxyInterfaces.stream().map(Class::getName).collect(Collectors.toSet()));
+                    DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(mappedClass, proxyInterfaceNames);
+                    result = new CachedProxy(unloaded, proxyInterfaceNames);
                     proxyCache.cache.put(managedClassOrPackageName, result);
                 }
                 for (Entry<TypeDescription, byte[]> i : result.proxyDef.getAllTypes().entrySet()) {

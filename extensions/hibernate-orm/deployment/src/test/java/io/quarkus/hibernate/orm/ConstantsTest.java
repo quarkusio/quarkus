@@ -19,6 +19,7 @@ import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.SQLServer2012Dialect;
+import org.hibernate.proxy.HibernateProxy;
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ public class ConstantsTest {
         assertMatch(HibernateOrmProcessor.JPA_ENTITY, javax.persistence.Entity.class);
         assertMatch(HibernateOrmProcessor.MAPPED_SUPERCLASS, javax.persistence.MappedSuperclass.class);
         assertMatch(HibernateOrmProcessor.PROXY, org.hibernate.annotations.Proxy.class);
+        Assertions.assertEquals(HibernateProxy.class.getName(), HibernateOrmProcessor.HIBERNATE_PROXY_INTERFACENAME);
     }
 
     @Test

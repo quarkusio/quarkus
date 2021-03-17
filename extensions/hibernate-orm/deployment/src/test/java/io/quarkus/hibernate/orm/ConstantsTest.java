@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
@@ -13,14 +14,23 @@ import javax.persistence.metamodel.StaticMetamodel;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.dialect.DB297Dialect;
+import org.hibernate.dialect.DerbyTenSevenDialect;
+import org.hibernate.dialect.MariaDB103Dialect;
+import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.dialect.SQLServer2012Dialect;
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.hibernate.orm.deployment.Dialects;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmCdiProcessor;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
 import io.quarkus.hibernate.orm.deployment.HibernateUserTypeProcessor;
 import io.quarkus.hibernate.orm.deployment.JpaJandexScavenger;
+import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
+import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 
 public class ConstantsTest {
 
@@ -59,6 +69,23 @@ public class ConstantsTest {
         assertMatch(JpaJandexScavenger.EMBEDDED_ANNOTATIONS, Embedded.class, ElementCollection.class);
         assertMatch(JpaJandexScavenger.MAPPED_SUPERCLASS, MappedSuperclass.class);
         assertMatch(JpaJandexScavenger.ENUM, Enum.class);
+    }
+
+    @Test
+    public void testDialectNames() {
+        assertDialectMatch(DatabaseKind.DB2, DB297Dialect.class);
+        assertDialectMatch(DatabaseKind.POSTGRESQL, QuarkusPostgreSQL10Dialect.class);
+        assertDialectMatch(DatabaseKind.H2, QuarkusH2Dialect.class);
+        assertDialectMatch(DatabaseKind.MARIADB, MariaDB103Dialect.class);
+        assertDialectMatch(DatabaseKind.MYSQL, MySQL8Dialect.class);
+        assertDialectMatch(DatabaseKind.DERBY, DerbyTenSevenDialect.class);
+        assertDialectMatch(DatabaseKind.MSSQL, SQLServer2012Dialect.class);
+    }
+
+    private void assertDialectMatch(String dbName, Class<?> dialectClass) {
+        final Optional<String> guessDialect = Dialects.guessDialect(dbName);
+        Assertions.assertTrue(guessDialect.isPresent());
+        Assertions.assertEquals(dialectClass.getName(), guessDialect.get());
     }
 
     private void assertMatch(final DotName dotName, final Class<?> clazz) {

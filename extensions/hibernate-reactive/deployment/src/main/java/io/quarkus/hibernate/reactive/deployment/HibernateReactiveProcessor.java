@@ -43,6 +43,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.hibernate.orm.deployment.Dialects;
 import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
@@ -213,7 +214,7 @@ public final class HibernateReactiveProcessor {
         //we have no persistence.xml so we will create a default one
         Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
         if (!dialect.isPresent()) {
-            dialect = HibernateOrmProcessor.guessDialect(dbKind);
+            dialect = Dialects.guessDialect(dbKind);
         }
 
         String dialectClassName = dialect.get();

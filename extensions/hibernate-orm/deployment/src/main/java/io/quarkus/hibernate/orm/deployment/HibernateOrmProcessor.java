@@ -42,12 +42,6 @@ import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
-import org.hibernate.dialect.DB297Dialect;
-import org.hibernate.dialect.DerbyTenSevenDialect;
-import org.hibernate.dialect.MariaDB103Dialect;
-import org.hibernate.dialect.MySQL8Dialect;
-import org.hibernate.dialect.Oracle12cDialect;
-import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
@@ -76,7 +70,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -119,8 +112,6 @@ import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
-import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
-import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
@@ -773,7 +764,7 @@ public final class HibernateOrmProcessor {
 
         Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
         if (!dialect.isPresent()) {
-            dialect = guessDialect(jdbcDataSource.getDbKind());
+            dialect = Dialects.guessDialect(jdbcDataSource.getDbKind());
         }
 
         if (!dialect.isPresent()) {
@@ -933,40 +924,6 @@ public final class HibernateOrmProcessor {
                         getMultiTenancyStrategy(persistenceUnitConfig.multitenant),
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         false, false));
-    }
-
-    public static Optional<String> guessDialect(String resolvedDbKind) {
-        // For now select the latest dialect from the driver
-        // later, we can keep doing that but also avoid DCE
-        // of all the dialects we want in so that people can override them
-        if (DatabaseKind.isDB2(resolvedDbKind)) {
-            return Optional.of(DB297Dialect.class.getName());
-        }
-        if (DatabaseKind.isPostgreSQL(resolvedDbKind)) {
-            return Optional.of(QuarkusPostgreSQL10Dialect.class.getName());
-        }
-        if (DatabaseKind.isH2(resolvedDbKind)) {
-            return Optional.of(QuarkusH2Dialect.class.getName());
-        }
-        if (DatabaseKind.isMariaDB(resolvedDbKind)) {
-            return Optional.of(MariaDB103Dialect.class.getName());
-        }
-        if (DatabaseKind.isMySQL(resolvedDbKind)) {
-            return Optional.of(MySQL8Dialect.class.getName());
-        }
-        if (DatabaseKind.isOracle(resolvedDbKind)) {
-            return Optional.of(Oracle12cDialect.class.getName());
-        }
-        if (DatabaseKind.isDerby(resolvedDbKind)) {
-            return Optional.of(DerbyTenSevenDialect.class.getName());
-        }
-        if (DatabaseKind.isMsSQL(resolvedDbKind)) {
-            return Optional.of(SQLServer2012Dialect.class.getName());
-        }
-
-        String error = "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind
-                + "'. Add an explicit '" + HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property.";
-        throw new ConfigurationError(error);
     }
 
     private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {

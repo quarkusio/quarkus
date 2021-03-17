@@ -66,4 +66,19 @@ public class SmallRyeConfigTest {
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("any"));
     }
+
+    @Test
+    void externalConfig() {
+        given()
+                .get("/config/{name}", "config.dir.property")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("1234"));
+
+        given()
+                .get("/config/{name}", "config.dir.property.yaml")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("1234"));
+    }
 }

@@ -92,9 +92,8 @@ public final class ConfigUtils {
         });
 
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        final ApplicationPropertiesConfigSource.InFileSystem inFileSystem = new ApplicationPropertiesConfigSource.InFileSystem();
-        final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
-        builder.withSources(inFileSystem, inJar);
+        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem().getConfigSources(classLoader));
+        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath().getConfigSources(classLoader));
         builder.addDefaultInterceptors();
         if (runTime) {
             builder.addDefaultSources();

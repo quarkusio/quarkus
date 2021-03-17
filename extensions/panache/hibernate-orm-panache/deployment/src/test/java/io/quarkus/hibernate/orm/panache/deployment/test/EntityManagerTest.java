@@ -14,7 +14,7 @@ public class EntityManagerTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application.properties")
+                    .addAsResource("application-test.properties", "application.properties")
                     .addClasses(MyEntity.class));
 
     @Test

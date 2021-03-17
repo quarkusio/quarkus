@@ -1,5 +1,6 @@
 package io.quarkus.scheduler.test.devconsole;
 
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.event.Observes;
@@ -11,20 +12,31 @@ import io.vertx.ext.web.RoutingContext;
 
 public class NeverRunTask {
 
-    private static volatile boolean run;
+    private static final LinkedBlockingDeque<String> queue = new LinkedBlockingDeque<>();
 
     public void setup(@Observes Router router) {
-        router.route("/status").handler(new Handler<RoutingContext>() {
+        router.route("/status").blockingHandler(new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                event.response().end(Boolean.toString(run));
+                try {
+                    event.response().end(queue.poll(10, TimeUnit.SECONDS));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    event.fail(e);
+                }
+            }
+        });
+        router.route("/empty").handler(new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                event.response().end(Boolean.toString(queue.isEmpty()));
             }
         });
     }
 
     @Scheduled(every = "2h", delay = 2, delayUnit = TimeUnit.HOURS)
     public void run() {
-        run = true;
+        queue.add("task ran");
     }
 
 }

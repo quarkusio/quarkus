@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.Objects;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -11,8 +13,9 @@ public final class AdditionalJpaModelBuildItem extends MultiBuildItem {
 
     private final String className;
 
-    public AdditionalJpaModelBuildItem(Class<?> klass) {
-        this.className = klass.getName();
+    public AdditionalJpaModelBuildItem(String className) {
+        Objects.requireNonNull(className);
+        this.className = className;
     }
 
     public String getClassName() {

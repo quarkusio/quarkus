@@ -23,7 +23,8 @@ public class LiquibaseFunctionalityTest {
                                 + "json-create-tables-1,json-test-1,"
                                 + "sql-create-tables-1,sql-test-1,"
                                 + "yaml-create-tables-1,yaml-test-1,"
-                                + "00000000000000,00000000000001,00000000000002"));
+                                + "00000000000000,00000000000001,00000000000002,"
+                                + "1613578374533-1,1613578374533-2,1613578374533-3"));
     }
 
 }

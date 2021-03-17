@@ -98,4 +98,11 @@ public class SseResource {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));
     }
 
+    @Path("json/multi2")
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public Multi<Message> multiDefaultElementType() {
+        return Multi.createFrom().items(new Message("hello"), new Message("stef"));
+    }
+
 }

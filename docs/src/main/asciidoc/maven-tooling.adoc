@@ -183,10 +183,18 @@ however they can also be started in dev mode.
 <3> The URL that your app is going to be running in dev mode at. This is only needed on the local side, so you
 may want to leave it out of the properties file and specify it as a system property on the command line.
 
+The `mutable-jar` is then built in the same way that a regular Quarkus jar is built, i.e. by issuing:
+
+[source,bash]
+----
+./mvnw package
+----
+
 Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
-on bare metal you can just set this via the `export QUARKUS_LAUNCH_DEVMODE=true` command, if you are running using
-docker start the image with `-e QUARKUS_LAUNCH_DEVMODE=true`. When the application starts you should now see the following
-line in the logs: `Profile dev activated. Live Coding activated`.
+on bare metal you can set it via the `export QUARKUS_LAUNCH_DEVMODE=true` command and then run the application with the proper `java -jar ...` command to run the application.
+
+If you plan on running the application via Docker, then you'll need to add `-e QUARKUS_LAUNCH_DEVMODE=true` to the `docker run` command.
+When the application starts you should now see the following line in the logs: `Profile dev activated. Live Coding activated`.
 
 NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
 that is generated with a new Quarkus application is all you need. If you are using bare metal launch the Quarkus runner

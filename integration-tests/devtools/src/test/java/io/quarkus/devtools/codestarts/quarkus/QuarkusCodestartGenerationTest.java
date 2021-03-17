@@ -320,6 +320,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/picocli/GoodbyeCommand.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/picocli/HelloCommand.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/picocli/GreetingService.java");
+
+        assertThat(projectDir.resolve("README.md"))
+                .satisfies(checkContains("./mvnw compile quarkus:dev -Dquarkus.args='hello --first-name=Quarky"));
     }
 
     @Test
@@ -341,6 +344,25 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/kotlin/org/acme/picocli/GoodbyeCommand.kt");
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/kotlin/org/acme/picocli/HelloCommand.kt");
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/kotlin/org/acme/picocli/GreetingService.kt");
+    }
+
+    @Test
+    void generateMavenPicocliGradle(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-picocli"))
+                .buildTool(BuildTool.GRADLE)
+                .addData(getGenerationTestInputData())
+                .build();
+        final Path projectDir = testDirPath.resolve("maven-picocli-gradle");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkGradle(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE);
+        checkConfigProperties(projectDir);
+
+        assertThat(projectDir.resolve("README.md"))
+                .satisfies(checkContains("./gradlew quarkusDev --quarkus-args='hello --first-name=Quarky'"));
     }
 
     @Test

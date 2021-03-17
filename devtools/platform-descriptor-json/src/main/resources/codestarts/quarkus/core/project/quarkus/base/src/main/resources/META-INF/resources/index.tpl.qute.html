@@ -149,11 +149,11 @@
                 <li>Go give it a star on <a href="https://github.com/quarkusio/quarkus">GitHub</a>.</li>
             </ul>
         </div>
-        {#if selected-extensions}
+        {#if input.selected-extensions}
         <div class="right-section">
             <h3>Selected extensions guides</h3>
             <ul>
-                {#for ext in selected-extensions}
+                {#for ext in input.selected-extensions}
                 {#if ext.guide}
                 <li title="{ext.description}"><a href="{ext.guide}" target="_blank">{ext.name} guide</a></li>
                 {/if}

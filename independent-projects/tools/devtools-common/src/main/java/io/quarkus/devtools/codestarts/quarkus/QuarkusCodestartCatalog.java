@@ -37,6 +37,9 @@ import java.util.stream.Stream;
 public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<QuarkusCodestartProjectInput> {
 
     public static final String QUARKUS_CODESTARTS_DIR = "codestarts/quarkus";
+    public static final String INPUT_SELECTED_EXTENSIONS_KEY = "selected-extensions";
+    public static final String INPUT_SELECTED_EXTENSIONS_GA_KEY = "selected-extensions-ga";
+    public static final String INPUT_SELECTED_EXAMPLES_KEY = "selected-examples";
     private final Map<String, Extension> extensionsMapping;
 
     public enum Tag implements DataKey {
@@ -101,8 +104,6 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         projectInput.getSelection().addNames(getToolingCodestarts(projectInput));
         projectInput.getSelection().addNames(projectInput.getOverrideExamples());
 
-        projectInput.getData().putAll(generateSelectedExtensionsData(projectInput));
-
         // Filter out examples if noExamples
         final List<Codestart> projectCodestarts = super.select(projectInput).stream()
                 .filter(c -> !isExample(c) || !projectInput.noExamples())
@@ -143,7 +144,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                     "Only one extension with singleton example can be selected at a time (you can always use 'noExamples' if needed)");
         }
 
-        projectInput.getData().putAll(generateSelectedExamplesData(projectCodestarts));
+        projectInput.getData().putAll(generateSelectionData(projectInput, projectCodestarts));
 
         return projectCodestarts;
     }
@@ -184,29 +185,28 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return codestarts;
     }
 
-    private Map<String, Object> generateSelectedExamplesData(List<Codestart> projectCodestarts) {
+    private Map<String, Object> generateSelectionData(QuarkusCodestartProjectInput projectInput,
+            List<Codestart> projectCodestarts) {
         Map<String, Object> data = new HashMap<>();
-        data.put("selected-examples", projectCodestarts.stream().filter(QuarkusCodestartCatalog::isExample).map(c -> {
-            Map<String, Object> eData = new HashMap<>();
-            eData.put("name", c.getName());
-            eData.put("tags", c.getTags());
-            eData.putAll(c.getMetadata());
-            return eData;
-        }).collect(Collectors.toList()));
-        return data;
-    }
-
-    private Map<String, Object> generateSelectedExtensionsData(QuarkusCodestartProjectInput projectInput) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("selected-extensions-ga",
+        final Map<String, Object> inputData = new HashMap<>();
+        inputData.put(INPUT_SELECTED_EXAMPLES_KEY,
+                projectCodestarts.stream().filter(QuarkusCodestartCatalog::isExample).map(c -> {
+                    Map<String, Object> eData = new HashMap<>();
+                    eData.put("name", c.getName());
+                    eData.put("tags", c.getTags());
+                    eData.putAll(c.getMetadata());
+                    return eData;
+                }).collect(Collectors.toList()));
+        inputData.put(INPUT_SELECTED_EXTENSIONS_GA_KEY,
                 getSelectedExtensionsAsStream(projectInput).map(Extension::managementKey).collect(Collectors.toSet()));
-        data.put("selected-extensions", getSelectedExtensionsAsStream(projectInput).map(e -> {
+        inputData.put(INPUT_SELECTED_EXTENSIONS_KEY, getSelectedExtensionsAsStream(projectInput).map(e -> {
             Map<String, Object> eData = new HashMap<>();
             eData.put("name", e.getName());
             eData.put("description", e.getDescription());
             eData.put("guide", getGuide(e));
             return eData;
         }).collect(Collectors.toList()));
+        data.put("input", inputData);
         return data;
     }
 

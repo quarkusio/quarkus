@@ -103,6 +103,11 @@ public class SseTestCase {
         testJsonMulti("sse/json/multi");
     }
 
+    @Test
+    public void testJsonMultiFromMultiWithDefaultElementType() {
+        testJsonMulti("sse/json/multi2");
+    }
+
     private void testJsonMulti(String path) {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);

@@ -113,6 +113,9 @@ code{
     color: white;
 }
 
+.full-filter-name:hover {
+cursor:pointer;
+}
 {/style}
 {#script}
 function setGaugeValue(gauge, value) {
@@ -138,6 +141,23 @@ $(document).ready(function(){
         setGaugeValue($(this), $(this).attr("data-score"));
     });
 });
+
+function getFilterName(){
+    var index= $(".full-filter-name").indexOf("::");
+    var filter_name= $(".full-filter-name").substring(index+2);
+    return filter_name;
+}
+
+$(document).ready(function(){
+    if (!ideKnown()) {
+        return;
+    }
+
+    getFilterName().on("click", function() {
+        openInIDE($(this).text());
+    });
+});
+
 
 {/script}
 
@@ -215,7 +235,7 @@ $(document).ready(function(){
                         <div id="filter{count}" class="col-10 offset-2 filterbox collapse">
                             <samp class="text-wrap">
                                 {#for requestFilters in endpoint.requestFilterEntries}
-                                    {requestFilters.getName}<br/>
+                                    <span class="full-filter-name"> {requestFilters.getName}</span><br/>
                                 {/for}
                             </samp>
                             

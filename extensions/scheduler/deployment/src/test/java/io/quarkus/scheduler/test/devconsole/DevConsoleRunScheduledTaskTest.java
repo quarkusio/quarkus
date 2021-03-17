@@ -18,10 +18,10 @@ public class DevConsoleRunScheduledTaskTest {
     @Test
     public void testInvokeScheduledTask() {
         RestAssured.with()
-                .get("status")
+                .get("empty")
                 .then()
                 .statusCode(200)
-                .body(Matchers.equalTo("false"));
+                .body(Matchers.equalTo("true"));
         RestAssured.with().formParam("name", "io.quarkus.scheduler.test.devconsole.NeverRunTask#run")
                 .redirects().follow(false)
                 .post("q/dev/io.quarkus.quarkus-scheduler/schedules")
@@ -31,7 +31,7 @@ public class DevConsoleRunScheduledTaskTest {
                 .get("status")
                 .then()
                 .statusCode(200)
-                .body(Matchers.equalTo("true"));
+                .body(Matchers.equalTo("task ran"));
     }
 
 }

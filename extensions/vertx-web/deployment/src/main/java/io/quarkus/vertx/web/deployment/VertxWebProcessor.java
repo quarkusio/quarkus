@@ -63,7 +63,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -231,14 +231,19 @@ class VertxWebProcessor {
             BuildProducer<RouteDescriptionBuildItem> descriptions,
             Capabilities capabilities,
             Optional<BeanValidationAnnotationsBuildItem> beanValidationAnnotations,
-            ApplicationIndexBuildItem applicationIndex) {
+            List<ApplicationClassPredicateBuildItem> predicates) {
 
         Predicate<String> appClassPredicate = new Predicate<String>() {
             @Override
             public boolean test(String name) {
                 int idx = name.lastIndexOf(HANDLER_SUFFIX);
                 String className = idx != -1 ? name.substring(0, idx) : name;
-                return applicationIndex.getIndex().getClassByName(DotName.createSimple(className.replace("/", "."))) != null;
+                for (ApplicationClassPredicateBuildItem i : predicates) {
+                    if (i.test(className)) {
+                        return true;
+                    }
+                }
+                return false;
             }
         };
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, appClassPredicate);

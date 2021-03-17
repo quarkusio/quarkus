@@ -5,9 +5,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
@@ -21,9 +18,9 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 public final class HibernateUserTypeProcessor {
     private static final String TYPE_VALUE = "type";
     private static final String TYPE_CLASS_VALUE = "typeClass";
-    private static final DotName TYPE = DotName.createSimple(Type.class.getName());
-    private static final DotName TYPE_DEFINITION = DotName.createSimple(TypeDef.class.getName());
-    private static final DotName TYPE_DEFINITIONS = DotName.createSimple(TypeDefs.class.getName());
+    public static final DotName TYPE = DotName.createSimple("org.hibernate.annotations.Type");
+    public static final DotName TYPE_DEFINITION = DotName.createSimple("org.hibernate.annotations.TypeDef");
+    public static final DotName TYPE_DEFINITIONS = DotName.createSimple("org.hibernate.annotations.TypeDefs");
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, CombinedIndexBuildItem combinedIndexBuildItem) {

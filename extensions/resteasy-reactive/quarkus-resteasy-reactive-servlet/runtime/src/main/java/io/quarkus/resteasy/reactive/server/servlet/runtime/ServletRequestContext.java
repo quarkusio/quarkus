@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -43,8 +44,10 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ResponseCommitListener;
+import io.vertx.core.Context;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -56,6 +59,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     final RoutingContext context;
     final HttpServletRequest request;
     final HttpServletResponse response;
+    private final Executor executor;
     AsyncContext asyncContext;
     ServletWriteListener writeListener;
     byte[] asyncWriteData;
@@ -71,6 +75,13 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         this.request = request;
         this.response = response;
         this.context = context;
+        Context internalContext = ((HttpServerRequestInternal) this.context.request()).context();
+        this.executor = new Executor() {
+            @Override
+            public void execute(Runnable runnable) {
+                internalContext.runOnContext(x -> runnable.run());
+            }
+        };
         exchange.addResponseCommitListener(this);
     }
 
@@ -137,6 +148,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     @Override
     protected EventLoop getEventLoop() {
         return ((ConnectionBase) context.request().connection()).channel().eventLoop();
+    }
+
+    @Override
+    protected Executor getContextExecutor() {
+        return executor;
     }
 
     @Override

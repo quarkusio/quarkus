@@ -73,6 +73,17 @@ public final class {{className}} {
     {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
     public static abstract class {{serviceName}}ImplBase implements io.grpc.BindableService {
 
+        private String compression;
+        /**
+        * Set whether the server will try to use a compressed response.
+        *
+        * @param compression the compression, e.g {@code gzip}
+        */
+        public {{serviceName}}ImplBase withCompression(String compression) {
+        this.compression = compression;
+        return this;
+        }
+
 
         {{#unaryUnaryMethods}}
         {{{methodHeader}}}
@@ -111,7 +122,7 @@ public final class {{className}} {
                                     new MethodHandlers<
                                             {{inputType}},
                                             {{outputType}}>(
-                                            this, METHODID_{{methodNameUpperUnderscore}})))
+                                            this, METHODID_{{methodNameUpperUnderscore}}, compression)))
                     {{/methods}}
                     .build();
         }
@@ -128,10 +139,12 @@ public final class {{className}} {
             io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
         private final {{serviceName}}ImplBase serviceImpl;
         private final int methodId;
+        private final String compression;
 
-        MethodHandlers({{serviceName}}ImplBase serviceImpl, int methodId) {
+        MethodHandlers({{serviceName}}ImplBase serviceImpl, int methodId, String compression) {
             this.serviceImpl = serviceImpl;
             this.methodId = methodId;
+            this.compression = compression;
         }
 
         @java.lang.Override
@@ -143,6 +156,7 @@ public final class {{className}} {
                 case METHODID_{{methodNameUpperUnderscore}}:
                     io.quarkus.grpc.runtime.ServerCalls.{{mutinyCallsMethodName}}(({{inputType}}) request,
                             (io.grpc.stub.StreamObserver<{{outputType}}>) responseObserver,
+                            compression,
                             serviceImpl::{{methodName}});
                     break;
                 {{/isManyInput}}

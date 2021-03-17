@@ -7,6 +7,7 @@ import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -21,15 +22,17 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.StreamPriority;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
-public abstract class AbstractRequestWrapper implements HttpServerRequest {
+public abstract class AbstractRequestWrapper
+        implements HttpServerRequest, HttpServerRequestInternal {
 
-    protected final HttpServerRequest delegate;
+    protected final HttpServerRequestInternal delegate;
 
     protected AbstractRequestWrapper(HttpServerRequest request) {
-        delegate = request;
+        delegate = (HttpServerRequestInternal) request;
     }
 
     @Override
@@ -288,4 +291,13 @@ public abstract class AbstractRequestWrapper implements HttpServerRequest {
         return delegate.toWebSocket();
     }
 
+    @Override
+    public Context context() {
+        return delegate.context();
+    }
+
+    @Override
+    public Object metric() {
+        return delegate.metric();
+    }
 }

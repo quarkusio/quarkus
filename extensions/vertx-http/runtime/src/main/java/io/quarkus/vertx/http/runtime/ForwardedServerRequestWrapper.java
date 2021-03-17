@@ -7,6 +7,7 @@ import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -21,12 +22,13 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.StreamPriority;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
-class ForwardedServerRequestWrapper implements HttpServerRequest {
+class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequestInternal {
 
-    private final HttpServerRequest delegate;
+    private final HttpServerRequestInternal delegate;
     private final ForwardedParser forwardedParser;
 
     private boolean modified;
@@ -38,7 +40,7 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     private String absoluteURI;
 
     ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions) {
-        delegate = request;
+        delegate = (HttpServerRequestInternal) request;
         forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions);
     }
 
@@ -351,5 +353,15 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public Future<ServerWebSocket> toWebSocket() {
         return delegate.toWebSocket();
+    }
+
+    @Override
+    public Context context() {
+        return delegate.context();
+    }
+
+    @Override
+    public Object metric() {
+        return delegate.metric();
     }
 }

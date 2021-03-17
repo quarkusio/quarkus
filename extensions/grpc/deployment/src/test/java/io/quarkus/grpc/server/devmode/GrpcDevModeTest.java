@@ -15,6 +15,7 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -32,6 +33,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Subscribers;
 
+@Disabled("Tests are failing since Vert.x 4.0.3 - https://github.com/quarkusio/quarkus/issues/15753")
 public class GrpcDevModeTest {
     @RegisterExtension
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()

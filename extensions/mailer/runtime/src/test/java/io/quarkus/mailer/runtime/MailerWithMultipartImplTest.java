@@ -26,7 +26,10 @@ import io.vertx.ext.mail.MailConfig;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.mail.MailClient;
 
-class MailerImplTest {
+/**
+ * Same as {@link MailerImplTest} but force all mail to be sent as multipart.
+ */
+class MailerWithMultipartImplTest {
 
     private static final String FROM = "test@test.org";
     private static final String TO = "foo@quarkus.io";
@@ -57,7 +60,7 @@ class MailerImplTest {
         mailer.mailerSupport = new MailerSupport(FROM, null, false);
         mailer.vertx = vertx;
         mailer.client = MailClient.createShared(mailer.vertx,
-                new MailConfig().setPort(wiser.getServer().getPort()));
+                new MailConfig().setPort(wiser.getServer().getPort()).setMultiPartOnly(true));
 
         wiser.getMessages().clear();
     }
@@ -70,8 +73,8 @@ class MailerImplTest {
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains(uuid);
         MimeMessage msg = actual.getMimeMessage();
-        String content = (String) actual.getMimeMessage().getContent();
-        assertThat(content).isEqualTo(uuid + "\r\n");
+        List<String> types = getContentTypesFromMimeMultipart((MimeMultipart) actual.getMimeMessage().getContent());
+        assertThat(types).containsExactly(TEXT_CONTENT_TYPE);
         assertThat(msg.getSubject()).isEqualTo("Test");
         assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
         assertThat(msg.getAllRecipients()).hasSize(1).contains(new InternetAddress(TO));
@@ -85,10 +88,10 @@ class MailerImplTest {
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("<h1>" + content + "</h1>");
         List<String> types = Collections.singletonList(actual.getMimeMessage().getContentType());
-        assertThat(types).containsExactly("text/html");
+        assertThat(types).hasSize(1).allSatisfy(s -> assertThat(s).contains("multipart/mixed"));
         MimeMessage msg = actual.getMimeMessage();
         assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getContentType()).startsWith("text/html");
+        assertThat(msg.getContentType()).startsWith("multipart/mixed");
         assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
         assertThat(msg.getAllRecipients()).hasSize(1).contains(new InternetAddress(TO));
     }

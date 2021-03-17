@@ -289,14 +289,27 @@ public class LoggingSetupRecorder {
                     handlerName));
         }
         namedHandlers.put(handlerName, handler);
+        InitialConfigurator.DELAYED_HANDLER.addLoggingCloseTask(new Runnable() {
+            @Override
+            public void run() {
+                handler.close();
+            }
+        });
     }
 
     private static void addNamedHandlersToCategory(CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
             Logger categoryLogger,
             ErrorManager errorManager) {
         for (String categoryNamedHandler : categoryConfig.handlers.get()) {
-            if (namedHandlers.get(categoryNamedHandler) != null) {
-                categoryLogger.addHandler(namedHandlers.get(categoryNamedHandler));
+            Handler handler = namedHandlers.get(categoryNamedHandler);
+            if (handler != null) {
+                categoryLogger.addHandler(handler);
+                InitialConfigurator.DELAYED_HANDLER.addLoggingCloseTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        categoryLogger.removeHandler(handler);
+                    }
+                });
             } else {
                 errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
                         categoryNamedHandler), null, ErrorManager.GENERIC_FAILURE);

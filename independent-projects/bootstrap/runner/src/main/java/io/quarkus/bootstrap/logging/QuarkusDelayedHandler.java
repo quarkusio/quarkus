@@ -17,7 +17,9 @@
 package io.quarkus.bootstrap.logging;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -36,6 +38,7 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 public class QuarkusDelayedHandler extends ExtHandler {
 
     private final Deque<ExtLogRecord> logRecords = new ArrayDeque<>();
+    private final List<Runnable> logCloseTasks = new ArrayList<>();
 
     private final int queueLimit;
     private volatile boolean buildTimeLoggingActivated = false;
@@ -135,6 +138,10 @@ public class QuarkusDelayedHandler extends ExtHandler {
         return result;
     }
 
+    public void addLoggingCloseTask(Runnable runnable) {
+        logCloseTasks.add(runnable);
+    }
+
     public synchronized Handler[] setBuildTimeHandlers(final Handler[] newHandlers) throws SecurityException {
         final Handler[] result = super.setHandlers(newHandlers);
         buildTimeLoggingActivated = true;
@@ -177,6 +184,9 @@ public class QuarkusDelayedHandler extends ExtHandler {
     @Override
     public Handler[] clearHandlers() throws SecurityException {
         activated = false;
+        for (Runnable i : logCloseTasks) {
+            i.run();
+        }
         return super.clearHandlers();
     }
 

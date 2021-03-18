@@ -52,7 +52,7 @@ class NettyProcessor {
     public SystemPropertyBuildItem limitArenaSize() {
         //in native mode we limit the size of the epoll array
         //if the array overflows the selector just moves the overflow to a map
-        return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", "1");
+        return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", "3");
     }
 
     @BuildStep
@@ -83,7 +83,7 @@ class NettyProcessor {
                 //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
-                .addNativeImageSystemProperty("io.netty.allocator.maxOrder", "1")
+                .addNativeImageSystemProperty("io.netty.allocator.maxOrder", "3")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")

@@ -228,7 +228,7 @@ public class QuarkusDevModeTest
                 FileUtil.deleteDirectory(deploymentDir);
             }
         }
-        rootLogger.removeHandler(inMemoryLogHandler);
+        inMemoryLogHandler.clearRecords();
     }
 
     private DevModeContext exportArchive(Path deploymentDir, Path testSourceDir, Path testSourcesParentDir) {

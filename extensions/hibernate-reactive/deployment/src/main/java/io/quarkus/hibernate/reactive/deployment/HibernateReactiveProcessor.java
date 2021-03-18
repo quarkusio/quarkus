@@ -64,6 +64,13 @@ import io.quarkus.runtime.LaunchMode;
 public final class HibernateReactiveProcessor {
 
     private static final String HIBERNATE_REACTIVE = "Hibernate Reactive";
+    static final String[] REFLECTIVE_CONSTRUCTORS_NEEDED = {
+            "org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister",
+            "org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister",
+            "org.hibernate.reactive.persister.entity.impl.ReactiveUnionSubclassEntityPersister",
+            "org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister",
+            "org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister",
+    };
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -92,11 +99,7 @@ public final class HibernateReactiveProcessor {
 
     @BuildStep
     void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        String[] classes = {
-                "org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister",
-                "org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister"
-        };
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, classes));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, REFLECTIVE_CONSTRUCTORS_NEEDED));
     }
 
     @BuildStep

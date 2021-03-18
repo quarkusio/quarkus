@@ -4,6 +4,7 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -15,14 +16,14 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 
 public class BuildDependencyGraphVisitor {
 
-    private final Set<AppArtifactKey> appDeps;
+    private final Set<AppArtifactKey> allRuntimeDeps;
     private final StringBuilder buf;
     private final Consumer<String> buildTreeConsumer;
     private final List<Boolean> depth;
 
-    private DependencyNode deploymentNode;
-    private DependencyNode runtimeNode;
-    private Artifact runtimeArtifact;
+    private DependencyNode currentDeployment;
+    private DependencyNode currentRuntime;
+    private Artifact runtimeArtifactToFind;
 
     /**
      * Nodes that are only present in the deployment class loader
@@ -30,8 +31,8 @@ public class BuildDependencyGraphVisitor {
     private final List<DependencyNode> deploymentDepNodes = new ArrayList<>();
     private final List<ArtifactRequest> requests = new ArrayList<>();
 
-    public BuildDependencyGraphVisitor(Set<AppArtifactKey> appDeps, Consumer<String> buildTreeConsumer) {
-        this.appDeps = appDeps;
+    public BuildDependencyGraphVisitor(Set<AppArtifactKey> allRuntimeDeps, Consumer<String> buildTreeConsumer) {
+        this.allRuntimeDeps = allRuntimeDeps;
         this.buildTreeConsumer = buildTreeConsumer;
         if (buildTreeConsumer == null) {
             buf = null;
@@ -52,35 +53,25 @@ public class BuildDependencyGraphVisitor {
 
     public void visit(DependencyNode node) {
         if (depth != null) {
-            buf.setLength(0);
-            if (!depth.isEmpty()) {
-                for (int i = 0; i < depth.size() - 1; ++i) {
-                    if (depth.get(i)) {
-                        //buf.append("|  ");
-                        buf.append('\u2502').append("  ");
-                    } else {
-                        buf.append("   ");
-                    }
-                }
-                if (depth.get(depth.size() - 1)) {
-                    //buf.append("|- ");
-                    buf.append('\u251c').append('\u2500').append(' ');
-                } else {
-                    //buf.append("\\- ");
-                    buf.append('\u2514').append('\u2500').append(' ');
-                }
-            }
-            buf.append(node.getArtifact());
-            if (!depth.isEmpty()) {
-                buf.append(" (").append(node.getDependency().getScope());
-                if (node.getDependency().isOptional()) {
-                    buf.append(" optional");
-                }
-                buf.append(')');
-            }
-            buildTreeConsumer.accept(buf.toString());
+            consume(node);
         }
-        visitEnter(node);
+        final Dependency dep = node.getDependency();
+
+        final DependencyNode previousDeployment = currentDeployment;
+        final DependencyNode previousRuntime = currentRuntime;
+        final Artifact previousRuntimeArtifact = runtimeArtifactToFind;
+
+        final Artifact newRuntimeArtifact = DeploymentInjectingDependencyVisitor.getRuntimeArtifact(node);
+        if (newRuntimeArtifact != null) {
+            currentDeployment = node;
+            runtimeArtifactToFind = newRuntimeArtifact;
+            currentRuntime = null;
+        } else if (runtimeArtifactToFind != null && currentRuntime == null
+                && runtimeArtifactToFind.equals(dep.getArtifact())) {
+            currentRuntime = node;
+            runtimeArtifactToFind = null;
+        }
+
         final List<DependencyNode> children = node.getChildren();
         if (!children.isEmpty()) {
             final int childrenTotal = children.size();
@@ -94,13 +85,9 @@ public class BuildDependencyGraphVisitor {
                     depth.add(true);
                 }
                 int i = 0;
-                while (true) {
+                while (i < childrenTotal) {
                     visit(children.get(i++));
-                    if (i < childrenTotal - 1) {
-                        continue;
-                    } else if (i == childrenTotal) {
-                        break;
-                    } else if (depth != null) {
+                    if (depth != null && i == childrenTotal - 1) {
                         depth.set(depth.size() - 1, false);
                     }
                 }
@@ -110,18 +97,40 @@ public class BuildDependencyGraphVisitor {
             }
         }
         visitLeave(node);
+
+        currentDeployment = previousDeployment;
+        currentRuntime = previousRuntime;
+        runtimeArtifactToFind = previousRuntimeArtifact;
     }
 
-    private void visitEnter(DependencyNode node) {
-        final Dependency dep = node.getDependency();
-        if (deploymentNode == null) {
-            runtimeArtifact = DeploymentInjectingDependencyVisitor.getRuntimeArtifact(node);
-            if (runtimeArtifact != null) {
-                deploymentNode = node;
+    private void consume(DependencyNode node) {
+        buf.setLength(0);
+        if (!depth.isEmpty()) {
+            for (int i = 0; i < depth.size() - 1; ++i) {
+                if (depth.get(i)) {
+                    //buf.append("|  ");
+                    buf.append('\u2502').append("  ");
+                } else {
+                    buf.append("   ");
+                }
             }
-        } else if (runtimeArtifact != null && runtimeNode == null && runtimeArtifact.equals(dep.getArtifact())) {
-            runtimeNode = node;
+            if (depth.get(depth.size() - 1)) {
+                //buf.append("|- ");
+                buf.append('\u251c').append('\u2500').append(' ');
+            } else {
+                //buf.append("\\- ");
+                buf.append('\u2514').append('\u2500').append(' ');
+            }
         }
+        buf.append(node.getArtifact());
+        if (!depth.isEmpty()) {
+            buf.append(" (").append(node.getDependency().getScope());
+            if (node.getDependency().isOptional()) {
+                buf.append(" optional");
+            }
+            buf.append(')');
+        }
+        buildTreeConsumer.accept(buf.toString());
     }
 
     private void visitLeave(DependencyNode node) {
@@ -133,16 +142,15 @@ public class BuildDependencyGraphVisitor {
         if (artifact.getFile() == null) {
             requests.add(new ArtifactRequest(node));
         }
-        if (deploymentNode != null) {
-            if (runtimeNode == null && !appDeps.contains(new AppArtifactKey(artifact.getGroupId(),
-                    artifact.getArtifactId(), artifact.getClassifier(), artifact.getExtension()))) {
+        if (currentDeployment != null) {
+            if (currentRuntime == null && !allRuntimeDeps.contains(DependencyNodeUtils.toKey(artifact))) {
                 deploymentDepNodes.add(node);
-            } else if (runtimeNode == node) {
-                runtimeNode = null;
-                runtimeArtifact = null;
+            } else if (currentRuntime == node) {
+                currentRuntime = null;
+                runtimeArtifactToFind = null;
             }
-            if (deploymentNode == node) {
-                deploymentNode = null;
+            if (currentDeployment == node) {
+                currentDeployment = null;
             }
         }
     }

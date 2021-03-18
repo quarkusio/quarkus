@@ -181,31 +181,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             appArtifact.setPaths(PathsCollection.of(resolveResult.getArtifact().getFile().toPath()));
         }
 
-        final Set<AppArtifactKey> appDeps = new HashSet<>();
-        final List<AppDependency> userDeps = new ArrayList<>();
         DependencyNode resolvedDeps = mvn.resolveManagedDependencies(mvnArtifact,
                 directMvnDeps, managedDeps, managedRepos, excludedScopes.toArray(new String[0])).getRoot();
-
-        final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
-            @Override
-            public boolean visitEnter(DependencyNode node) {
-                return true;
-            }
-
-            @Override
-            public boolean visitLeave(DependencyNode node) {
-                final Dependency dep = node.getDependency();
-                if (dep != null) {
-                    final AppArtifact appArtifact = toAppArtifact(dep.getArtifact());
-                    appDeps.add(appArtifact.getKey());
-                    userDeps.add(new AppDependency(appArtifact, dep.getScope(), dep.isOptional()));
-                }
-                return true;
-            }
-        });
-        for (DependencyNode child : resolvedDeps.getChildren()) {
-            child.accept(visitor);
-        }
 
         ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));
         if (managingProject == null) {
@@ -252,7 +229,9 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             } catch (RepositoryException e) {
                 throw new AppModelResolverException("Failed to normalize the dependency graph", e);
             }
-            final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(appDeps, buildTreeConsumer);
+            final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(
+                    deploymentInjector.allRuntimeDeps,
+                    buildTreeConsumer);
             buildDepsVisitor.visit(resolvedDeps);
             final List<ArtifactRequest> requests = buildDepsVisitor.getArtifactRequests();
             if (!requests.isEmpty()) {
@@ -275,9 +254,6 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         collectPlatformProperties(appBuilder, managedDeps);
 
-        List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps.size() + deploymentDeps.size());
-        fullDeploymentDeps.addAll(userDeps);
-        fullDeploymentDeps.addAll(deploymentDeps);
         //we need these to have a type of 'jar'
         //type is blank when loaded
         for (AppArtifactKey i : localProjects) {
@@ -286,8 +262,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         return appBuilder
                 .addDeploymentDeps(deploymentDeps)
                 .setAppArtifact(appArtifact)
-                .addFullDeploymentDeps(fullDeploymentDeps)
-                .addRuntimeDeps(userDeps)
+                .addFullDeploymentDeps(deploymentDeps)
                 .build();
     }
 

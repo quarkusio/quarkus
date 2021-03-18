@@ -20,6 +20,6 @@ public class DevConsoleProcessor {
     @BuildStep
     @Record(value = RUNTIME_INIT, optional = true)
     DevConsoleRouteBuildItem invokeEndpoint(FlywayDevConsoleRecorder recorder) {
-        return new DevConsoleRouteBuildItem("containers", "POST", recorder.handler());
+        return new DevConsoleRouteBuildItem("datasources", "POST", recorder.handler());
     }
 }

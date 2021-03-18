@@ -6,6 +6,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
@@ -27,8 +28,13 @@ class ElasticsearchLowLevelClientProcessor {
     }
 
     @BuildStep
-    BeanDefiningAnnotationBuildItem elasticsearchClientConfigBeanDefiningAnnotation() {
-        return new BeanDefiningAnnotationBuildItem(ELASTICSEARCH_CLIENT_CONFIG, DotNames.APPLICATION_SCOPED, false);
+    void elasticsearchClientConfigSupport(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        // add the @ElasticsearchClientConfig class otherwise it won't be registered as a qualifier
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(ElasticsearchClientConfig.class).build());
+
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(ELASTICSEARCH_CLIENT_CONFIG, DotNames.APPLICATION_SCOPED, false));
     }
 
     @BuildStep

@@ -26,29 +26,23 @@ public class ElasticsearchClientConfigTest {
 
     @Inject
     ElasticsearchConfig config;
-    @Inject
-    @ElasticsearchClientConfig
-    TestConfigurator testConfigurator;
 
     @Test
     public void testRestClientBuilderHelperWithElasticsearchClientConfig() {
         RestClientBuilderHelper.createRestClientBuilder(config).build();
-        assertTrue(testConfigurator.isInvoked());
+        assertTrue(TestConfigurator.invoked);
     }
 
     @ElasticsearchClientConfig
     @ApplicationScoped
     public static class TestConfigurator implements RestClientBuilder.HttpClientConfigCallback {
-        private boolean invoked = false;
+
+        private static boolean invoked = false;
 
         @Override
         public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder builder) {
             invoked = true;
             return builder;
-        }
-
-        public boolean isInvoked() {
-            return invoked;
         }
     }
 

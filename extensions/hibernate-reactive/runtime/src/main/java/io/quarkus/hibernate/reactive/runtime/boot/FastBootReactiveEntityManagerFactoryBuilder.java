@@ -6,6 +6,7 @@ import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.spi.SessionFactoryOptions;
+import org.hibernate.reactive.bulk.impl.ReactiveBulkIdStrategy;
 import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -26,6 +27,7 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
     public EntityManagerFactory build() {
         final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
         optionsBuilder.enableCollectionInDefaultFetchGroup(true);
+        optionsBuilder.applyMultiTableBulkIdStrategy(new ReactiveBulkIdStrategy(metadata));
         populate(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry,
                 multiTenancyStrategy);
         SessionFactoryOptions options = optionsBuilder.buildOptions();

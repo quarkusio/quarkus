@@ -1,37 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>quarkus-resteasy-mutiny-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-apache-httpclient-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-
-    <artifactId>quarkus-resteasy-mutiny-common-deployment</artifactId>
-    <name>Quarkus - RESTEasy - Mutiny - Common - Deployment</name>
-
+    <artifactId>quarkus-apache-httpclient-deployment</artifactId>
+    <name>Quarkus - Apache HttpClient - Deployment</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-common-deployment</artifactId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-mutiny-deployment</artifactId>
-        </dependency>
-        <!-- if we remove the dependency to the RESTEasy client, we can remove this -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-mutiny-common</artifactId>
+            <artifactId>quarkus-apache-httpclient</artifactId>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>

@@ -36,6 +36,7 @@
         <module>websockets</module>
         <module>webjars-locator</module>
         <module>resteasy-reactive</module>
+        <module>apache-httpclient</module>
 
         <!-- Monitoring -->
         <module>smallrye-health</module>

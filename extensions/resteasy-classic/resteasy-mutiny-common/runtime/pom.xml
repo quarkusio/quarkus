@@ -32,6 +32,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- if we remove the dependency to the RESTEasy client, we can remove this -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-apache-httpclient</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>

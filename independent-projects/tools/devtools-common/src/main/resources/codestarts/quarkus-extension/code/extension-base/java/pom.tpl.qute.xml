@@ -22,14 +22,13 @@
     <groupId>{group-id}</groupId>
     <version>{version}</version>
 {/if}
-
     <artifactId>{namespace.id}{extension.id}-parent</artifactId>
 {#if extension.name}
     <name>{namespace.name}{extension.name} - Parent</name>
 {/if}
-
     <packaging>pom</packaging>
 
+    {#if !properties.from-parent}
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -44,6 +43,7 @@
         {/if}
     </properties>
 
+    {/if}
     <modules>
         <module>deployment</module>
         <module>runtime</module>

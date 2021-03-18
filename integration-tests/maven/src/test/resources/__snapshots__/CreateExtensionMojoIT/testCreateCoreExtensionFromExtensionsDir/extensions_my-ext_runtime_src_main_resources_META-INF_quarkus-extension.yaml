@@ -1,8 +1,8 @@
-name: {extension.name}
-#description: {extension.name} ...
+name: My Ext
+#description: My Ext ...
 metadata:
 #  keywords:
-#    - {extension.id}
+#    - my-ext
 #  guide: ...
 #  categories:
 #    - "miscellaneous"

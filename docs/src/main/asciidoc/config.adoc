@@ -55,6 +55,9 @@ It generates:
 
 == Create the configuration
 
+A Quarkus application uses the https://github.com/smallrye/smallrye-config[SmallRye Config] API to provide all
+mechanisms related with configuration.
+
 By default, Quarkus reads configuration properties from <<config-reference.adoc#configuration_sources,several sources>>.
 For the purpose of this guide, we will use an application configuration file located in `src/main/resources/application.properties`.
 Edit the file with the following content:

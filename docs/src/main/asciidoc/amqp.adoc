@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize MicroProfile Reactive Messaging to interact with AMQP.
+This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP.
 
 include::./status-include.adoc[]
 
@@ -357,7 +357,7 @@ The new `Emitter.send` method returns a `CompletionStage` completed when the pro
 == Going further
 
 This guide has shown how you can interact with AMQP using Quarkus.
-It utilizes MicroProfile Reactive Messaging to build data streaming applications.
+It utilizes SmallRye Reactive Messaging to build data streaming applications.
 
 If you did the Kafka quickstart, you have realized that it's the same code.
 The only difference is the connector configuration.

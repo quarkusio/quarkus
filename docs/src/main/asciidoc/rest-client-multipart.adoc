@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 RESTEasy has rich support for the `multipart/*` and `multipart/form-data` mime types. The multipart mime format is used to pass lists of content bodies. Multiple content bodies are embedded in one message. `multipart/form-data` is often found in web application HTML Form documents and is generally used to upload files. The form-data format is the same as other multipart formats, except that each inlined piece of content has a name associated with it.
 
 
-This guide explains how to use the MicroProfile REST Client with Multipart in order to interact with REST APIs
+This guide explains how to use the RESTEasy REST Client with Multipart in order to interact with REST APIs
 requiring `multipart/form-data` content-type with very little effort.
 
 == Prerequisites
@@ -93,7 +93,7 @@ The purpose of the annotations in the code above is the following:
 
 == Create the interface
 
-Using the MicroProfile REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/multipart/MultipartService.java` and have the following content:
+Using the RESTEasy REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/multipart/MultipartService.java` and have the following content:
 
 [source, java]
 ----
@@ -298,5 +298,5 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 
 == Further reading
 
- * link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.4.1/microprofile-rest-client-1.4.1.html[MicroProfile Rest Client specification]
- * link:https://docs.jboss.org/resteasy/docs/4.5.6.Final/userguide/html/Multipart.html[RESTEasy Multipart Provider]
+* link:https://docs.jboss.org/resteasy/docs/4.5.6.Final/userguide/html/Multipart.html[RESTEasy Multipart Provider]
+* link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.4.1/microprofile-rest-client-1.4.1.html[MicroProfile Rest Client specification]

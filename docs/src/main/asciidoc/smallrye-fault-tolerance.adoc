@@ -3,13 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Fault Tolerance
+= Quarkus - SmallRye Fault Tolerance
 
 include::./attributes.adoc[]
 
 One of the challenges brought by the distributed nature of microservices is that communication with external systems is
 inherently unreliable. This increases demand on resiliency of applications. To simplify making more resilient
-applications, Quarkus contains an implementation of the MicroProfile Fault Tolerance specification.
+applications, Quarkus provides https://github.com/smallrye/smallrye-fault-tolerance/[SmallRye Fault Tolerance] an
+implementation of the https://github.com/eclipse/microprofile-fault-tolerance/[MicroProfile Fault Tolerance]
+specification.
 
 In this guide, we demonstrate usage of MicroProfile Fault Tolerance annotations such as `@Timeout`, `@Fallback`,
 `@Retry` and `@CircuitBreaker`.
@@ -55,8 +57,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd microprofile-fault-tolerance-quickstart
 ----
 
-This command generates a Maven structure, importing the extensions for RESTEasy/JAX-RS
-and SmallRye Fault Tolerance, which is an implementation of the MicroProfile Fault Tolerance spec that Quarkus uses.
+This command generates a Maven structure, importing the extensions for RESTEasy/JAX-RS and SmallRye Fault Tolerance.
 
 If you already have your Quarkus project configured, you can add the `smallrye-fault-tolerance` extension
 to your project by running the following command in your project base directory:
@@ -479,7 +480,7 @@ You can also configure a property for all the annotation via `annotation-name/pr
 
 == Conclusion
 
-MicroProfile Fault Tolerance allows to improve resiliency of your application, without having an impact on the complexity
+SmallRye Fault Tolerance allows to improve resiliency of your application, without having an impact on the complexity
 of our business logic.
 
 All that is needed to enable the fault tolerance features in Quarkus is:

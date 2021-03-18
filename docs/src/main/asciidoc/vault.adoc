@@ -278,7 +278,7 @@ quarkus.vault.authentication.userpass.password=sinclair
 quarkus.vault.secret-config-kv-path=myapps/vault-quickstart/config
 ----
 
-This should mount whatever keys are stored in `secret/myapps/vault-quickstart` as MicroProfile Config properties.
+This should mount whatever keys are stored in `secret/myapps/vault-quickstart` as Config properties.
 
 Let's verify that by adding a new endpoint in GreetingResource:
 
@@ -325,7 +325,7 @@ You should see:
 
 [NOTE]
 ====
-The MicroProfile _Vault Config Source_ is configured with ordinal `270`, which is higher than the file system
+The _Vault Config Source_ is configured with ordinal `270`, which is higher than the file system
 or jar ordinals, but lower than environment variables.
 This value can be changed using property `quarkus.vault.config-ordinal`.
 ====

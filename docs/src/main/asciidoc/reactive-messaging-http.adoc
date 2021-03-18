@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize MicroProfile Reactive Messaging to
+This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to
 consume and produce HTTP messages.
 
 == Prerequisites
@@ -387,7 +387,7 @@ mp.messaging.incoming.<channelName>.buffer-size=3
 ----
 
 === Reactive Messaging
-This extension utilizes MicroProfile Reactive Messaging to build data streaming applications.
+This extension utilizes SmallRye Reactive Messaging to build data streaming applications.
 
 If you did the Kafka or AMQP quickstart, you have realized that it's the same code.
 The only difference is the connector configuration.

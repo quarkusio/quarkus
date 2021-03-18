@@ -831,27 +831,26 @@ Template inheritance makes it possible to reuse template layouts.
 <title>{#insert title}Default Title{/}</title> <1>
 </head>
 <body>
-  {#insert body}No body!{/} <2>
+  {#insert}No body!{/} <2>
 </body>
 </html>
 ----
 <1> `insert` sections are used to specify parts that could be overridden by a template that includes the given template.
-<2> An `insert` section may define the default content that is rendered if not overridden.
+<2> An `insert` section may define the default content that is rendered if not overridden. If no name parameter is supplied then the main block of the relevant `{#include}` section is used.
 
 .Template "detail"
 [source,html]
 ----
 {#include base} <1>
   {#title}My Title{/title} <2>
-  {#body}
-    <div>
-      My body.
-    </div>
-  {/body}
+  <div> <3>
+    My body.
+  </div>
 {/include}
 ----
 <1> `include` section is used to specify the extended template.
 <2> Nested blocks are used to specify the parts that should be overridden.
+<3> The content of the main block is used for an `{#insert}` section with no name parameter specified.
 
 NOTE: Section blocks can also define an optional end tag - `{/title}`.
 

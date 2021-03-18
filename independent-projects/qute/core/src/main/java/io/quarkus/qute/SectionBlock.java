@@ -153,11 +153,6 @@ public final class SectionBlock {
             return this;
         }
 
-        SectionBlock.Builder addNodes(TemplateNode... nodes) {
-            Collections.addAll(this.nodes, nodes);
-            return this;
-        }
-
         SectionBlock.Builder setLabel(String label) {
             this.label = label;
             return this;

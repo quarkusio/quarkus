@@ -17,4 +17,4 @@ metadata:
       - "java"
       - "kotlin"
       - "scala"
-    artifact: "io.quarkus:quarkus-descriptor-json"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

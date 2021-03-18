@@ -20,10 +20,10 @@
     </properties>
 
     <modules>
+        <module>project-core-extension-codestarts</module>
         <module>platform-descriptor-json-plugin</module>
         <module>platform-properties</module>
         <module>bom-descriptor-json</module>
-        <module>platform-descriptor-json</module>
         <module>maven</module>
         <module>gradle</module>
         <module>cli</module>

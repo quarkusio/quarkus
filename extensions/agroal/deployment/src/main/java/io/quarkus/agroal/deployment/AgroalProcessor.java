@@ -1,5 +1,7 @@
 package io.quarkus.agroal.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+
 import java.sql.Driver;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,9 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import javax.annotation.Priority;
 import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
+import javax.interceptor.Interceptor;
 import javax.sql.XADataSource;
 
 import org.jboss.jandex.DotName;
@@ -24,9 +29,12 @@ import io.quarkus.agroal.runtime.DataSourceSupport;
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.TransactionIntegration;
+import io.quarkus.agroal.runtime.schema.CleanDatabaseInterceptor;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -37,6 +45,7 @@ import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -48,6 +57,10 @@ import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.narayana.jta.runtime.interceptor.TestTransactionInterceptor;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
@@ -56,6 +69,7 @@ class AgroalProcessor {
 
     private static final Logger log = Logger.getLogger(AgroalProcessor.class);
 
+    private static final String CLEAN_DATABASE = "io.quarkus.test.ResetDatabase";
     private static final DotName DATA_SOURCE = DotName.createSimple(javax.sql.DataSource.class.getName());
 
     @BuildStep
@@ -332,5 +346,37 @@ class AgroalProcessor {
     HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
                 dataSourcesBuildTimeConfig.healthEnabled);
+    }
+
+    @BuildStep
+    public DevConsoleTemplateInfoBuildItem devConsoleInfo(
+            List<AggregatedDataSourceBuildTimeConfigBuildItem> dbs) {
+        return new DevConsoleTemplateInfoBuildItem("dbs",
+                dbs.stream().map(AggregatedDataSourceBuildTimeConfigBuildItem::getName)
+                        .collect(Collectors.toList()));
+    }
+
+    @BuildStep
+    @Record(value = STATIC_INIT, optional = true)
+    DevConsoleRouteBuildItem devConsoleCleanDatabaseHandler(AgroalRecorder recorder) {
+        return new DevConsoleRouteBuildItem("clean", "POST", recorder.devConsoleCleanDatabaseHandler());
+    }
+
+    @BuildStep(onlyIf = IsTest.class)
+    void cleanDatabaseSupport(BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        //generate the annotated interceptor with gizmo
+        //all the logic is in the parent, but we don't have access to the
+        //binding annotation here
+        try (ClassCreator c = ClassCreator.builder()
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer)).className(
+                        CleanDatabaseInterceptor.class.getName() + "Generated")
+                .superClass(TestTransactionInterceptor.class).build()) {
+            c.addAnnotation(CLEAN_DATABASE);
+            c.addAnnotation(Interceptor.class.getName());
+            c.addAnnotation(Priority.class).addValue("value", Interceptor.Priority.PLATFORM_BEFORE + 100);
+        }
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(CleanDatabaseInterceptor.class)
+                .addBeanClass(CLEAN_DATABASE).build());
     }
 }

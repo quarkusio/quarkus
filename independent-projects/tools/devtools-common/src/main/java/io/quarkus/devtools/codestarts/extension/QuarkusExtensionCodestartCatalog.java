@@ -35,6 +35,7 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         QUARKUS_BOM_GROUP_ID("quarkus.bom.group-id"),
         QUARKUS_BOM_ARTIFACT_ID("quarkus.bom.artifact-id"),
         QUARKUS_BOM_VERSION("quarkus.bom.version"),
+        PROPERTIES_FROM_PARENT("properties.from-parent"),
         PARENT_GROUP_ID("parent.group-id"),
         PARENT_ARTIFACT_ID("parent.artifact-id"),
         PARENT_VERSION("parent.version"),

@@ -21,7 +21,7 @@ public class KafkaBindingConverter implements ServiceBindingConverter {
         Map<String, String> properties = new HashMap<>();
         ServiceBinding binding = matchingByType.get();
 
-        String bootstrapServers = binding.getProperties().get("bootstrapServers");
+        String bootstrapServers = binding.getProperties().get("bootstrapservers");
         if (bootstrapServers == null) {
             bootstrapServers = binding.getProperties().get("bootstrap-servers");
         }
@@ -42,7 +42,9 @@ public class KafkaBindingConverter implements ServiceBindingConverter {
         String password = binding.getProperties().get("password");
         if ("PLAIN".equals(saslMechanism) && (user != null) && (password != null)) {
             properties.put("kafka.sasl.jaas.config",
-                    String.format("org.apache.kafka.common.security.plain.PlainLoginModule required %s %s", user, password));
+                    String.format(
+                            "org.apache.kafka.common.security.plain.PlainLoginModule required username='%s' password='%s';",
+                            user, password));
         }
 
         return Optional.of(new ServiceBindingConfigSource("kafka-k8s-service-binding-source", properties));

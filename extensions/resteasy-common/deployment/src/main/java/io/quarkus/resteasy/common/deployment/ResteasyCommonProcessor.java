@@ -53,6 +53,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
 import io.quarkus.resteasy.common.runtime.providers.ServerFormUrlEncodedProvider;
@@ -118,6 +119,16 @@ public class ResteasyCommonProcessor {
          */
         @ConfigItem(defaultValue = "10M")
         public MemorySize maxInput;
+    }
+
+    /**
+     * Initialize {@code NTLMEngineImpl} at runtime so as to avoid using a
+     * cached SecureRandom in the image heap.
+     */
+    @BuildStep
+    public RuntimeInitializedClassBuildItem runtimeInitNTLMEngineImpl() {
+        return new RuntimeInitializedClassBuildItem(
+                "org.apache.http.impl.auth.NTLMEngineImpl");
     }
 
     @BuildStep

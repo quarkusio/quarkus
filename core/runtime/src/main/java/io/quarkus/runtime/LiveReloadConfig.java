@@ -44,4 +44,16 @@ public class LiveReloadConfig {
      */
     @ConfigItem(defaultValue = "30s")
     public Duration connectTimeout;
+
+    /**
+     * The amount of time to wait between attempts when connecting to the server side of remote dev
+     */
+    @ConfigItem(defaultValue = "2s")
+    public Duration retryInterval;
+
+    /**
+     * The maximum number of attempts when connecting to the server side of remote dev
+     */
+    @ConfigItem(defaultValue = "10")
+    public Integer retryMaxAttempts;
 }

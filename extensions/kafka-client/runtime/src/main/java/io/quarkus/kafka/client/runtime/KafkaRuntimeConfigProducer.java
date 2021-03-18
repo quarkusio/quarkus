@@ -23,7 +23,7 @@ public class KafkaRuntimeConfigProducer {
     @Produces
     @DefaultBean
     @Singleton
-    @Named("default-kafka-broker")
+    @Named("default-kafka-broker") // TODO Should use @Identifier soon
     public Map<String, Object> createKafkaRuntimeConfig(Config config, ApplicationConfig app) {
         Map<String, Object> result = new HashMap<>();
 

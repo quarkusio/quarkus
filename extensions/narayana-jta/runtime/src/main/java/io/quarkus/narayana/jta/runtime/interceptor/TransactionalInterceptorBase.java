@@ -15,6 +15,8 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 import org.reactivestreams.Publisher;
 
@@ -34,6 +36,7 @@ import io.smallrye.reactive.converters.Registry;
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
 
     @Inject
     TransactionManager transactionManager;
@@ -106,16 +109,33 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
         int currentTmTimeout = ((CDIDelegatingTransactionManager) transactionManager).getTransactionTimeout();
-        if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
-            tm.setTransactionTimeout(configAnnotation.timeout());
+        boolean restoreTimeout = false;
+        if (configAnnotation != null) {
+            Integer newTimeout = null;
+            if (!configAnnotation.timeoutFromConfigProperty().equals(TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY)) {
+                Optional<Integer> configTimeout = ConfigProvider.getConfig()
+                        .getOptionalValue(configAnnotation.timeoutFromConfigProperty(), Integer.class);
+                if (configTimeout.isPresent()) {
+                    newTimeout = configTimeout.get();
+                } else if (log.isDebugEnabled()) {
+                    log.debug("Configuration property '" + configAnnotation.timeoutFromConfigProperty()
+                            + "' was not provided, so it will not affect the transaction's timeout.");
+                }
+            }
+            if ((newTimeout == null) && (configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)) {
+                newTimeout = configAnnotation.timeout();
+            }
+            if (newTimeout != null) {
+                tm.setTransactionTimeout(newTimeout);
+                restoreTimeout = true;
+            }
         }
         Transaction tx;
         try {
             tm.begin();
             tx = tm.getTransaction();
         } finally {
-            if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
-                //restore the default behaviour
+            if (restoreTimeout) {
                 tm.setTransactionTimeout(currentTmTimeout);
             }
         }
@@ -263,7 +283,9 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     private void checkConfiguration(InvocationContext ic) {
         TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
-        if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
+        if (configAnnotation != null && ((configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)
+                || !TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY
+                        .equals(configAnnotation.timeoutFromConfigProperty()))) {
             throw new RuntimeException("Changing timeout via @TransactionConfiguration can only be done " +
                     "at the entry level of a transaction");
         }

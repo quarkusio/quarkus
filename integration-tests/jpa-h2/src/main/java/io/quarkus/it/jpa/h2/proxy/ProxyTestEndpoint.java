@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.runtime.StartupEvent;
 
 @WebServlet(urlPatterns = "/jpa-h2/testproxy")
@@ -23,6 +24,7 @@ public class ProxyTestEndpoint extends HttpServlet {
     EntityManager entityManager;
 
     @Transactional
+    @TransactionConfiguration(timeoutFromConfigProperty = "dummy.transaction.timeout")
     public void setup(@Observes StartupEvent startupEvent) {
         Pet pet = new Pet();
         pet.setId(1);

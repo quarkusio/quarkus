@@ -79,7 +79,7 @@
         <maven-core.version>3.6.3</maven-core.version>
         <maven-resolver.version>1.4.1</maven-resolver.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
-        <guava.version>30.1-jre</guava.version>
+        <guava.version>30.1.1-jre</guava.version>
         <plexus-utils.version>3.2.1</plexus-utils.version>
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>

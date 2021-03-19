@@ -1,24 +1,18 @@
-package org.jboss.resteasy.reactive.server.providers.serialisers.json;
+package org.jboss.resteasy.reactive.common.providers.serialisers;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
-import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
+import javax.ws.rs.ext.MessageBodyReader;
 
-public abstract class AbstractJsonMessageBodyReader implements ServerMessageBodyReader<Object> {
+public abstract class AbstractJsonMessageBodyReader implements MessageBodyReader<Object> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return isReadable(mediaType, type);
     }
 
-    @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
-        return isReadable(mediaType, type);
-    }
-
-    private boolean isReadable(MediaType mediaType, Class<?> type) {
+    protected boolean isReadable(MediaType mediaType, Class<?> type) {
         if (mediaType == null) {
             return false;
         }

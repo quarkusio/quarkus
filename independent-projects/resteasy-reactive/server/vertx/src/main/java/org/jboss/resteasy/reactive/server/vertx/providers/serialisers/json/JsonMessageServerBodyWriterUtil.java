@@ -1,22 +1,16 @@
 package org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json;
 
+import static org.jboss.resteasy.reactive.common.providers.serialisers.JsonMessageBodyWriterUtil.isNotJson;
+
 import io.vertx.core.MultiMap;
 import java.util.Map;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-public final class JsonMessageBodyWriterUtil {
+public final class JsonMessageServerBodyWriterUtil {
 
-    private JsonMessageBodyWriterUtil() {
-    }
-
-    public static void setContentTypeIfNecessary(MultivaluedMap<String, Object> httpHeaders) {
-        Object contentType = httpHeaders.getFirst(HttpHeaders.CONTENT_TYPE);
-        if (isNotJson(contentType)) {
-            httpHeaders.putSingle(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
-        }
+    private JsonMessageServerBodyWriterUtil() {
     }
 
     public static void setContentTypeIfNecessary(ServerRequestContext context) {
@@ -35,9 +29,5 @@ public final class JsonMessageBodyWriterUtil {
         if (isNotJson(currentContentType)) {
             context.serverResponse().setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
         }
-    }
-
-    private static boolean isNotJson(Object contentType) {
-        return (contentType == null) || !contentType.toString().contains("json");
     }
 }

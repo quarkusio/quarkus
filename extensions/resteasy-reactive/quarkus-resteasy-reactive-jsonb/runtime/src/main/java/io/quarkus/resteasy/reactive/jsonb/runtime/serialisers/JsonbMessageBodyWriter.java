@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.reactive.jsonb.runtime.serialisers;
 
-import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageBodyWriterUtil.*;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -13,8 +11,10 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.jboss.resteasy.reactive.common.providers.serialisers.JsonMessageBodyWriterUtil;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+import org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageServerBodyWriterUtil;
 
 public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
@@ -28,7 +28,7 @@ public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteable
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        setContentTypeIfNecessary(httpHeaders);
+        JsonMessageBodyWriterUtil.setContentTypeIfNecessary(httpHeaders);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             entityStream.write(((String) o).getBytes());
         } else {
@@ -39,7 +39,7 @@ public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteable
     @Override
     public void writeResponse(Object o, Type genericType, ServerRequestContext context)
             throws WebApplicationException, IOException {
-        setContentTypeIfNecessary(context);
+        JsonMessageServerBodyWriterUtil.setContentTypeIfNecessary(context);
         OutputStream originalStream = context.getOrCreateOutputStream();
         OutputStream stream = new NoopCloseAndFlushOutputStream(originalStream);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...

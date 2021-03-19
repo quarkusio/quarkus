@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-rest-client-jsonb</artifactId>
     <name>Quarkus - REST Client - JSON-B - Runtime</name>
-    <description>Enable JSON-B serialization for the REST client</description>
+    <description>JSON-B serialization support for the REST client</description>
 
     <dependencies>
         <dependency>

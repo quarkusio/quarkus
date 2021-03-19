@@ -19,6 +19,7 @@ import javax.ws.rs.core.Feature;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
+import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -188,9 +189,11 @@ public class RuntimeDeploymentManager {
         }
         if (!interceptors.getContainerRequestFilters().getPreMatchInterceptors().isEmpty()) {
             preMatchHandlers = new ArrayList<>(interceptorDeployment.getPreMatchContainerRequestFilters().size());
-            for (ContainerRequestFilter containerRequestFilter : interceptorDeployment.getPreMatchContainerRequestFilters()
-                    .values()) {
-                preMatchHandlers.add(new ResourceRequestFilterHandler(containerRequestFilter, true));
+            for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : interceptorDeployment
+                    .getPreMatchContainerRequestFilters()
+                    .entrySet()) {
+                preMatchHandlers
+                        .add(new ResourceRequestFilterHandler(entry.getValue(), true, entry.getKey().isNonBlockingRequired()));
             }
         }
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {

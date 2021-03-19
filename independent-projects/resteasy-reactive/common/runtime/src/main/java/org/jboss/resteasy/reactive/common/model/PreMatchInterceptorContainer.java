@@ -31,4 +31,26 @@ public class PreMatchInterceptorContainer<T> extends InterceptorContainer<T> {
         super.sort();
         Collections.sort(preMatchInterceptors);
     }
+
+    /**
+     * Validates that any {@code ContainerRequestFilter} that has {@code nonBlockingRequired} set, comes before any other filter
+     */
+    public void validateThreadModel() {
+        boolean unsetNonBlockingInterceptorFound = false;
+        List<ResourceInterceptor<T>> allNonNamedInterceptors = new ArrayList<>(
+                preMatchInterceptors.size() + getGlobalResourceInterceptors().size());
+        allNonNamedInterceptors.addAll(preMatchInterceptors);
+        allNonNamedInterceptors.addAll(getGlobalResourceInterceptors());
+        for (ResourceInterceptor<T> filter : allNonNamedInterceptors) {
+            if (filter.isNonBlockingRequired()) {
+                if (unsetNonBlockingInterceptorFound) {
+                    throw new RuntimeException(
+                            "ContainerRequestFilters that are marked as '@NonBlocking' must be executed before any other filters. Offending class is '"
+                                    + filter.getClassName() + "'");
+                }
+            } else {
+                unsetNonBlockingInterceptorFound = true;
+            }
+        }
+    }
 }

@@ -10,6 +10,7 @@ public class ResourceInterceptor<T>
 
     private BeanFactory<T> factory;
     private Integer priority = Priorities.USER; // default priority as defined by spec
+    private boolean nonBlockingRequired; // whether or not @NonBlocking was specified on the class
 
     /**
      * The class names of the {@code @NameBinding} annotations that the method is annotated with.
@@ -53,6 +54,14 @@ public class ResourceInterceptor<T>
     public ResourceInterceptor<T> setClassName(String className) {
         this.className = className;
         return this;
+    }
+
+    public boolean isNonBlockingRequired() {
+        return nonBlockingRequired;
+    }
+
+    public void setNonBlockingRequired(boolean nonBlockingRequired) {
+        this.nonBlockingRequired = nonBlockingRequired;
     }
 
     // spec says that writer interceptors are sorted in ascending order

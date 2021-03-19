@@ -93,6 +93,10 @@ public class ResteasyReactiveInterceptorScanner {
             if (priorityInstance != null) {
                 interceptor.setPriority(priorityInstance.value().asInt());
             }
+            AnnotationInstance nonBlockingInstance = filterClass.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING);
+            if (nonBlockingInstance != null) {
+                interceptor.setNonBlockingRequired(true);
+            }
             if (interceptorContainer instanceof PreMatchInterceptorContainer
                     && filterClass.classAnnotation(ResteasyReactiveDotNames.PRE_MATCHING) != null) {
                 ((PreMatchInterceptorContainer<T>) interceptorContainer).addPreMatchInterceptor(interceptor);

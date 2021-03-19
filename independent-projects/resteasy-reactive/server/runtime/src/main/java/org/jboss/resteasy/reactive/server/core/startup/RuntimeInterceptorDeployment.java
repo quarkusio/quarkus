@@ -91,10 +91,11 @@ public class RuntimeInterceptorDeployment {
         for (ContainerResponseFilter responseFilter : responseFilters) {
             globalResponseInterceptorHandlers.add(new ResourceResponseFilterHandler(responseFilter));
         }
-        Collection<ContainerRequestFilter> requestFilters = globalRequestInterceptorsMap.values();
-        globalRequestInterceptorHandlers = new ArrayList<>(requestFilters.size());
-        for (ContainerRequestFilter requestFilter : requestFilters) {
-            globalRequestInterceptorHandlers.add(new ResourceRequestFilterHandler(requestFilter, false));
+        globalRequestInterceptorHandlers = new ArrayList<>(globalRequestInterceptorsMap.size());
+        for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : globalRequestInterceptorsMap
+                .entrySet()) {
+            globalRequestInterceptorHandlers
+                    .add(new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired()));
         }
 
         InterceptorHandler globalInterceptorHandler = null;
@@ -306,8 +307,8 @@ public class RuntimeInterceptorDeployment {
             return handlers;
         }
 
-        public List<ServerRestHandler> setupRequestFilterHandler() {
-            List<ServerRestHandler> handlers = new ArrayList<>();
+        public List<ResourceRequestFilterHandler> setupRequestFilterHandler() {
+            List<ResourceRequestFilterHandler> handlers = new ArrayList<>();
             // according to the spec, global request filters apply everywhere
             // and named request filters only apply to methods with exactly matching "qualifiers"
             if (method.getNameBindingNames().isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
@@ -323,12 +324,35 @@ public class RuntimeInterceptorDeployment {
                 TreeMap<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> interceptorsToUse = buildInterceptorMap(
                         globalRequestInterceptorsMap, nameRequestInterceptorsMap, methodSpecificRequestInterceptorsMap, method,
                         false);
+                // because named filters are different for each Resource method,
+                // we need to make sure that the final set of filters do not alternate the threading model
+                // from blocking to non-blocking
+                validateRequestFilterThreadModel(interceptorsToUse.keySet());
                 for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : interceptorsToUse
                         .entrySet()) {
-                    handlers.add(new ResourceRequestFilterHandler(entry.getValue(), false));
+                    handlers.add(
+                            new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired()));
                 }
             }
             return handlers;
+        }
+    }
+
+    /**
+     * Validates that any {@code ContainerRequestFilter} that has {@code nonBlockingRequired} set, comes before any other filter
+     */
+    public static void validateRequestFilterThreadModel(
+            Collection<ResourceInterceptor<ContainerRequestFilter>> requestFilters) {
+        boolean unsetNonBlockingInterceptorFound = false;
+        for (ResourceInterceptor<ContainerRequestFilter> filter : requestFilters) {
+            if (filter.isNonBlockingRequired()) {
+                if (unsetNonBlockingInterceptorFound) {
+                    throw new RuntimeException(
+                            "ContainerRequestFilters that are marked as '@NonBlocking' must be executed before any other filters.");
+                }
+            } else {
+                unsetNonBlockingInterceptorFound = true;
+            }
         }
     }
 

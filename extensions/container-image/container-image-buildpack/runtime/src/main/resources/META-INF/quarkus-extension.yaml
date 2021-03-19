@@ -1,0 +1,12 @@
+---
+name: "Container Image Buildpack"
+metadata:
+  keywords:
+    - "buildpack"
+    - "buildpacks"
+    - "cnb"
+    - "container"
+    - "image"
+  categories:
+    - "cloud"
+  status: "preview"

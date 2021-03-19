@@ -484,7 +484,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Set<String> nameBindingNames = nameBindingNames(info, classNameBindings);
             boolean blocking = defaultBlocking;
             Map.Entry<AnnotationTarget, AnnotationInstance> blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
-            Map.Entry<AnnotationTarget, AnnotationInstance> nonBlockingAnnotation = getInheritableAnnotation(info, NON_BLOCKING);
+            Map.Entry<AnnotationTarget, AnnotationInstance> nonBlockingAnnotation = getInheritableAnnotation(info,
+                    NON_BLOCKING);
             if ((blockingAnnotation != null) && (nonBlockingAnnotation != null)) {
                 if (blockingAnnotation.getKey().kind() == AnnotationTarget.Kind.METHOD) {
                     // the most specific annotation was the @Blocking annotation on the method

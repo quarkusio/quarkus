@@ -285,6 +285,10 @@ public class ResteasyReactiveScanningProcessor {
             if (preMatchingValue != null) {
                 builder.setPreMatching(preMatchingValue.asBoolean());
             }
+            AnnotationValue nonBlockingRequiredValue = instance.value("nonBlocking");
+            if (nonBlockingRequiredValue != null) {
+                builder.setNonBlockingRequired(nonBlockingRequiredValue.asBoolean());
+            }
 
             List<AnnotationInstance> annotations = methodInfo.annotations();
             Set<String> nameBindingNames = new HashSet<>();

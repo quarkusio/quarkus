@@ -157,6 +157,9 @@ public class ResteasyReactiveCommonProcessor {
         if (priority != null) {
             interceptor.setPriority(priority);
         }
+        if (filterItem instanceof ContainerRequestFilterBuildItem) {
+            interceptor.setNonBlockingRequired(((ContainerRequestFilterBuildItem) filterItem).isNonBlockingRequired());
+        }
         if (interceptors instanceof PreMatchInterceptorContainer
                 && ((ContainerRequestFilterBuildItem) filterItem).isPreMatching()) {
             ((PreMatchInterceptorContainer<T>) interceptors).addPreMatchInterceptor(interceptor);

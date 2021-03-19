@@ -108,11 +108,20 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
     private MavenProjectHelper projectHelper;
 
     /**
-     * Group ID's that we know don't contain extensions. This can speed up the process
-     * by preventing the download of artifacts that are not required.
+     * A set of artifact group ID's that should be excluded from of the BOM and the descriptor.
+     * This can speed up the process by preventing the download of artifacts that are not required.
      */
     @Parameter
     private Set<String> ignoredGroupIds = new HashSet<>(0);
+
+    /**
+     * A set of group IDs artifacts of which should be checked to be extensions and if so, included into the
+     * generated descriptor. If this parameter is configured, artifacts with group IDs that aren't found
+     * among the configured set will be ignored. However, this will not prevent extensions that are inherited
+     * from parent platforms with different group IDs to be included into the generated descriptor.
+     */
+    @Parameter
+    private Set<String> processGroupIds = new HashSet<>(1);
 
     /**
      * Skips the check for the descriptor's artifactId naming convention
@@ -246,6 +255,7 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
         for (Dependency dep : deps) {
             final Artifact artifact = dep.getArtifact();
 
+            // checking whether the descriptor is present in the BOM
             if (!skipBomCheck && !jsonFoundInBom) {
                 jsonFoundInBom = artifact.getArtifactId().equals(jsonArtifact.getArtifactId())
                         && artifact.getGroupId().equals(jsonArtifact.getGroupId())
@@ -254,11 +264,20 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
                         && artifact.getVersion().equals(jsonArtifact.getVersion());
             }
 
-            if (ignoredGroupIds.contains(artifact.getGroupId())
-                    || !artifact.getExtension().equals("jar")
+            // filtering non jar artifacts
+            if (!artifact.getExtension().equals("jar")
                     || "javadoc".equals(artifact.getClassifier())
                     || "tests".equals(artifact.getClassifier())
-                    || "sources".equals(artifact.getClassifier())) {
+                    || "sources".equals(artifact.getClassifier())
+                    || artifact.getArtifactId().endsWith("-deployment")) {
+                continue;
+            }
+
+            if (processGroupIds.isEmpty()) {
+                if (ignoredGroupIds.contains(artifact.getGroupId())) {
+                    continue;
+                }
+            } else if (!processGroupIds.contains(artifact.getGroupId())) {
                 continue;
             }
 
@@ -487,10 +506,6 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
     }
 
     private JsonExtension processDependency(Artifact artifact) throws IOException {
-        return processDependencyToObjectNode(artifact);
-    }
-
-    private JsonExtension processDependencyToObjectNode(Artifact artifact) throws IOException {
         final Path path = artifact.getFile().toPath();
         if (Files.isDirectory(path)) {
             return processMetaInfDir(artifact, path.resolve(BootstrapConstants.META_INF));
@@ -517,30 +532,28 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
         if (!Files.exists(metaInfDir)) {
             return null;
         }
-        Path jsonOrYaml = null;
 
         Path yaml = metaInfDir.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME);
         if (Files.exists(yaml)) {
             mapper = getMapper(true);
-            jsonOrYaml = yaml;
-        } else {
-            mapper = getMapper(false);
-            Path json = metaInfDir.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME);
-            if (!Files.exists(json)) {
-                final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
-                if (Files.exists(props)) {
-                    final JsonExtension e = new JsonExtension();
-                    e.setArtifact(new ArtifactCoords(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(),
-                            artifact.getExtension(), artifact.getVersion()));
-                    e.setName(artifact.getArtifactId());
-                    return e;
-                }
-                return null;
-            } else {
-                jsonOrYaml = json;
-            }
+            return processPlatformArtifact(artifact, yaml, mapper);
         }
-        return processPlatformArtifact(artifact, jsonOrYaml, mapper);
+
+        JsonExtension e = null;
+        mapper = getMapper(false);
+        Path json = metaInfDir.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME);
+        if (!Files.exists(json)) {
+            final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
+            if (Files.exists(props)) {
+                e = new JsonExtension();
+                e.setArtifact(new ArtifactCoords(artifact.getGroupId(), artifact.getArtifactId(),
+                        artifact.getClassifier(), artifact.getExtension(), artifact.getVersion()));
+                e.setName(artifact.getArtifactId());
+            }
+        } else {
+            e = processPlatformArtifact(artifact, json, mapper);
+        }
+        return e;
     }
 
     private JsonExtension processPlatformArtifact(Artifact artifact, Path descriptor, ObjectMapper mapper)

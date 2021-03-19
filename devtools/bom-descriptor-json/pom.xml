@@ -48,13 +48,12 @@
                     <execution>
                         <phase>${pluginPhase}</phase>
                         <goals>
-                            <!-- goal>generate-extensions-json</goal -->
                             <goal>generate-platform-descriptor-json</goal>
                         </goals>
                         <configuration>
-                            <ignoredGroupIds>
-                                <ignoredGroupId>software.amazon.awssdk</ignoredGroupId>
-                            </ignoredGroupIds>
+                            <processGroupIds>
+                                <groupId>io.quarkus</groupId>
+                            </processGroupIds>
                             <bomArtifactId>quarkus-bom</bomArtifactId>
                             <resolveDependencyManagement>true</resolveDependencyManagement>
                             <overridesFile>${basedir}/target/resources/catalog-overrides.json</overridesFile>

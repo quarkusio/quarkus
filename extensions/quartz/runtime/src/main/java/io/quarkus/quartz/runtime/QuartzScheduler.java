@@ -68,7 +68,7 @@ public class QuartzScheduler implements Scheduler {
     private final boolean startHalted;
 
     public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, SchedulerRuntimeConfig schedulerRuntimeConfig,
-            Event<SkippedExecution> skippedExecutionEvent, Instance<Job> jobs, Instance<UserTransaction> userTransation) {
+            Event<SkippedExecution> skippedExecutionEvent, Instance<Job> jobs, Instance<UserTransaction> userTransaction) {
         enabled = schedulerRuntimeConfig.enabled;
         final QuartzRuntimeConfig runtimeConfig = quartzSupport.getRuntimeConfig();
         warnDeprecated(runtimeConfig);
@@ -95,8 +95,8 @@ public class QuartzScheduler implements Scheduler {
 
             try {
                 boolean manageTx = quartzSupport.getBuildTimeConfig().storeType.isNonManagedTxJobStore();
-                if (manageTx && userTransation.isResolvable()) {
-                    transaction = userTransation.get();
+                if (manageTx && userTransaction.isResolvable()) {
+                    transaction = userTransaction.get();
                 }
                 Properties props = getSchedulerConfigurationProperties(quartzSupport);
 

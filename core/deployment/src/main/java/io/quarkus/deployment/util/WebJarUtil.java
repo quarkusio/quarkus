@@ -38,6 +38,7 @@ import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.io.jar.JarFiles;
@@ -99,15 +100,18 @@ public class WebJarUtil {
         }
     }
 
-    public static Path copyResourcesForDevOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem,
+    public static Path copyResourcesForDevOrTest(LiveReloadBuildItem liveReloadBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchMode,
             AppArtifact resourcesArtifact,
             String rootFolderInJar)
             throws IOException {
-        return copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, resourcesArtifact, rootFolderInJar, true);
+        return copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode, resourcesArtifact,
+                rootFolderInJar, true);
     }
 
-    public static Path copyResourcesForDevOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem,
+    public static Path copyResourcesForDevOrTest(LiveReloadBuildItem liveReloadBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchMode,
             AppArtifact resourcesArtifact,
             String rootFolderInJar,
@@ -121,7 +125,9 @@ public class WebJarUtil {
 
         // Clean if not in dev mode or if the resources jar is a snapshot version
         if (!launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)
-                || resourcesArtifact.getVersion().contains(SNAPSHOT_VERSION)) {
+                || resourcesArtifact.getVersion().contains(SNAPSHOT_VERSION)
+                || (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT) && !liveReloadBuildItem.isLiveReload())) {
+
             IoUtils.createOrEmptyDir(deploymentPath);
         }
 

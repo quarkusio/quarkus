@@ -802,6 +802,43 @@ public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
 }
 ----
 
+== Token Propagation
+
+Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+
+[[integration-testing]]
+== Testing
+
+=== Wiremock
+
+If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
+
+[source, properties]
+----
+# keycloak.url is set by OidcWiremockTestResource
+mp.jwt.verify.publickey.location=${keycloak.url}/realms/quarkus/protocol/openid-connect/certs
+mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
+
+# required to sign the tokens
+smallrye.jwt.sign.key.location=privateKey.jwk
+----
+
+It will ensure that the `smallrye-jwt` remote key resolution code also works as expected.
+
+=== Local Public Key
+
+You can use the same approach as described in the link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
+
+[source, properties]
+----
+mp.jwt.verify.publickey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlivFI8qB4D0y2jy0CfEqFyy46R0o7S8TKpsx5xbHKoU1VWg6QkQm+ntyIv1p4kE1sPEQO73+HY8+Bzs75XwRTYL1BmR1w8J5hmjVWjc6R2BTBGAYRPFRhor3kpM6ni2SPmNNhurEAHw7TaqszP5eUF/F9+KEBWkwVta+PZ37bwqSE4sCb1soZFrVz/UT/LF4tYpuVYt3YbqToZ3pZOZ9AX2o1GCG3xwOjkc4x0W7ezbQZdC9iftPxVHR8irOijJRRjcPDtA6vPKpzLl6CyYnsIYPd99ltwxTHjr3npfv/3Lw50bAkbT4HeLFxTx4flEoZLKO/g0bAoV2uqBhkA9xnQIDAQAB
+# set it to the issuer value which is used to generate the tokens
+mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
+
+# required to sign the tokens
+smallrye.jwt.sign.key.location=privateKey.pem
+----
+
 [[generate-jwt-tokens]]
 == Generate JWT tokens with SmallRye JWT
 

@@ -113,11 +113,9 @@ public class KubernetesClientTest {
         final Pod pod1 = new PodBuilder().withNewMetadata().withName("pod1").withNamespace("test").and().build();
         final Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
 
-        mockServer.expect().get().withPath("/api/v1/namespaces/test/pods")
-                .andReturn(200,
-                        new PodListBuilder().withNewMetadata().withResourceVersion("1").endMetadata().withItems(pod1, pod2)
-                                .build())
-                .always();
+        // Set up Kubernetes so that our "pretend" pods are created
+        mockServer.getClient().pods().create(pod1);
+        mockServer.getClient().pods().create(pod2);
     }
 
     @Test
@@ -139,6 +137,42 @@ Note that to take advantage of these features, the `quarkus-test-kubernetes-clie
     <scope>test</scope>
 </dependency>
 ----
+
+By default, the mock server will be in CRUD mode, so you have to use the client to build your state before your application can retrieve it,
+but you can also set it up in non-CRUD mode and mock all HTTP requests made to Kubernetes:
+
+[source%nowrap,java]
+----
+// you can even configure aspects like crud, https and port on this annotation
+@WithKubernetesTestServer(crud = false)
+@QuarkusTest
+public class KubernetesClientTest {
+
+    @KubernetesTestServer
+    KubernetesServer mockServer;
+
+    @BeforeEach
+    public void before() {
+        final Pod pod1 = new PodBuilder().withNewMetadata().withName("pod1").withNamespace("test").and().build();
+        final Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
+
+        // Mock any HTTP request to Kubernetes pods so that our pods are returned
+        mockServer.expect().get().withPath("/api/v1/namespaces/test/pods")
+                .andReturn(200,
+                        new PodListBuilder().withNewMetadata().withResourceVersion("1").endMetadata().withItems(pod1, pod2)
+                                .build())
+                .always();
+    }
+
+    @Test
+    public void testInteractionWithAPIServer() {
+        RestAssured.when().get("/pod/test").then()
+                .body("size()", is(2));
+    }
+
+}
+----
+
 
 Alternately, you can create a `CustomKubernetesMockServerTestResource.java` to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup:
 

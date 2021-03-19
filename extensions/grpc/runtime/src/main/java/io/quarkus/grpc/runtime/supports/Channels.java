@@ -86,6 +86,7 @@ public class Channels {
         }
 
         NettyChannelBuilder builder = NettyChannelBuilder.forAddress(host, port)
+                .defaultLoadBalancingPolicy(config.loadBalancingPolicy)
                 .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
                 .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
                 .maxHedgedAttempts(config.maxHedgedAttempts)

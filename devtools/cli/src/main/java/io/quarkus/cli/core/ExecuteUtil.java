@@ -9,10 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -78,11 +75,10 @@ public class ExecuteUtil {
     }
 
     private static String findExecutable(String exec) {
-        Optional<Path> mvnPath = Stream.of(System.getenv("PATH").split(Pattern.quote(File.pathSeparator)))
-                .map(Paths::get)
-                .filter(path -> Files.exists(path.resolve(exec))).findFirst();
-
-        return mvnPath.map(value -> value.getParent().toString()).orElse(null);
+        return Stream.of(System.getenv("PATH").split(Pattern.quote(File.pathSeparator)))
+                .map(Paths::get).map(path -> path.resolve(exec).toFile())
+                .filter(File::exists).findFirst()
+                .map(File::getParent).orElse(null);
     }
 
     private static int executeWrapper(File wrapper, QuarkusCli cli, String... args) throws Exception {

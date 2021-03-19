@@ -410,7 +410,8 @@ class SmallRyeHealthProcessor {
                     HEALTH_UI_WEBJAR_ARTIFACT_ID);
 
             if (launchMode.getLaunchMode().isDevOrTest()) {
-                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, artifact,
+                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
+                        artifact,
                         HEALTH_UI_WEBJAR_PREFIX);
                 updateApiUrl(tempPath.resolve(JS_FILE_TO_UPDATE), healthPath);
                 updateApiUrl(tempPath.resolve(INDEX_FILE_TO_UPDATE), healthPath);

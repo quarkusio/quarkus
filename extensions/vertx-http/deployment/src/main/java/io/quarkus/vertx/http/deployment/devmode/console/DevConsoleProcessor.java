@@ -804,7 +804,7 @@ public class DevConsoleProcessor {
             String commonPath = "";
             List<String[]> dirs = new ArrayList<>(paths.size());
             for (int i = 0; i < paths.size(); i++) {
-                dirs.add(i, paths.get(i).split(File.separator));
+                dirs.add(i, paths.get(i).split(Pattern.quote(File.separator)));
             }
             for (int j = 0; j < dirs.get(0).length; j++) {
                 String thisDir = dirs.get(0)[j]; // grab the next directory name in the first path

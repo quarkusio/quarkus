@@ -62,6 +62,7 @@ public class CreateExtension {
     private final EnhancedDataMap data = new EnhancedDataMap();
 
     private MessageWriter log = MessageWriter.info();
+    private String extensionId;
     private String itTestRelativeDir = "integration-tests";
     private String bomRelativeDir = "bom/application";
     private String extensionsRelativeDir = "extensions";
@@ -76,7 +77,9 @@ public class CreateExtension {
     }
 
     public CreateExtension extensionId(String extensionId) {
-        data.putIfNonEmptyString(EXTENSION_ID, extensionId);
+        if (!StringUtils.isEmpty(extensionId)) {
+            this.extensionId = extensionId;
+        }
         return this;
     }
 
@@ -187,14 +190,13 @@ public class CreateExtension {
     }
 
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {
-        final String extensionId = data.getRequiredStringValue(EXTENSION_ID);
-
         final Path workingDir = resolveWorkingDir(baseDir);
         final Model baseModel = resolveModel(baseDir);
         final LayoutType layoutType = detectLayoutType(baseModel, data.getStringValue(GROUP_ID).orElse(null));
 
-        data.putIfAbsent(EXTENSION_NAME, toCapWords(extensionId));
         data.putIfAbsent(NAMESPACE_ID, getDefaultNamespaceId(layoutType));
+        ensureRequiredStringData(EXTENSION_ID, resolveExtensionId());
+        data.putIfAbsent(EXTENSION_NAME, toCapWords(extensionId));
         data.putIfAbsent(NAMESPACE_NAME, computeDefaultNamespaceName(data.getRequiredStringValue(NAMESPACE_ID)));
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
 
@@ -212,13 +214,14 @@ public class CreateExtension {
             case QUARKUS_CORE:
             case OTHER_PLATFORM:
                 extensionDirName = extensionId;
-                final Model extensionsParentModel = readPom(baseDir.resolve(extensionsRelativeDir));
+                final Model extensionsParentModel = readPom(workingDir.resolve(extensionsRelativeDir));
+                data.putIfAbsent(PROPERTIES_FROM_PARENT, true);
                 ensureRequiredStringData(PARENT_GROUP_ID, resolveGroupId(extensionsParentModel));
                 ensureRequiredStringData(PARENT_ARTIFACT_ID, resolveArtifactId(extensionsParentModel));
                 ensureRequiredStringData(PARENT_VERSION, resolveVersion(extensionsParentModel));
 
                 data.putIfAbsent(PARENT_RELATIVE_PATH, "../pom.xml");
-                itTestModel = readPom(baseDir.resolve(itTestRelativeDir));
+                itTestModel = readPom(workingDir.resolve(itTestRelativeDir));
                 break;
             case QUARKIVERSE:
                 data.putIfAbsent(PARENT_GROUP_ID, DEFAULT_QUARKIVERSE_PARENT_GROUP_ID);
@@ -266,7 +269,15 @@ public class CreateExtension {
                     extensionsDir,
                     itTestDir, bomDir);
         }
-        return handler.execute(log, groupId, runtimeArtifactId, builder.build(), baseDir.resolve(extensionDirName));
+        return handler.execute(log, groupId, runtimeArtifactId, builder.build(), workingDir.resolve(extensionDirName));
+    }
+
+    private String resolveExtensionId() {
+        String namespaceId = data.getRequiredStringValue(NAMESPACE_ID);
+        if (extensionId.startsWith(namespaceId)) {
+            extensionId = extensionId.substring(namespaceId.length());
+        }
+        return extensionId;
     }
 
     private String getDefaultNamespaceId(LayoutType layoutType) {
@@ -315,7 +326,7 @@ public class CreateExtension {
     }
 
     private static Path resolveWorkingDir(Path dir) {
-        return dir.endsWith("extensions/") ? dir.resolve("..") : dir;
+        return "extensions".equals(dir.getFileName().toString()) ? dir.resolve("..") : dir;
     }
 
     public static LayoutType detectLayoutType(Model basePom, String groupId) {
@@ -430,10 +441,8 @@ public class CreateExtension {
             return Optional.ofNullable((o instanceof String) ? (String) o : null);
         }
 
-        public void putIfAbsent(QuarkusExtensionData dataKey, String defaultValue) {
-            if (!containsKey(dataKey)) {
-                this.put(dataKey.key(), defaultValue);
-            }
+        public void putIfAbsent(QuarkusExtensionData dataKey, Object value) {
+            this.putIfAbsent(dataKey.key(), value);
         }
 
         public void putIfNonEmptyString(QuarkusExtensionData dataKey, String value) {

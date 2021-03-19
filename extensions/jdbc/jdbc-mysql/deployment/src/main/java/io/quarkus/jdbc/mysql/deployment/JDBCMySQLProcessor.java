@@ -32,7 +32,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
-import io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -81,11 +80,6 @@ public class JDBCMySQLProcessor {
     @BuildStep
     NativeImageEnableAllCharsetsBuildItem enableAllCharsets() {
         return new NativeImageEnableAllCharsetsBuildItem();
-    }
-
-    @BuildStep
-    NativeImageEnableAllTimeZonesBuildItem enableAllTimeZones() {
-        return new NativeImageEnableAllTimeZonesBuildItem();
     }
 
     @BuildStep

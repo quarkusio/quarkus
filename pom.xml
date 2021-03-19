@@ -15,6 +15,18 @@
     <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <description>Quarkus - Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM</description>
+    <url>https://github.com/quarkusio/quarkus</url>
+
+    <developers>
+        <developer>
+            <id>quarkus</id>
+            <name>Quarkus Community</name>
+            <organization>Quarkus</organization>
+            <organizationUrl>https://quarkus.io</organizationUrl>
+        </developer>
+    </developers>
+
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -29,6 +41,11 @@
         <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/quarkusio/quarkus/issues/</url>
+    </issueManagement>
 
     <properties>
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>

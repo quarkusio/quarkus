@@ -86,7 +86,7 @@ public class DisposerInfo implements InjectionTargetInfo {
     MethodParameterInfo initDisposedParam(MethodInfo disposerMethod) {
         List<MethodParameterInfo> disposedParams = new ArrayList<>();
         for (AnnotationInstance annotation : disposerMethod.annotations()) {
-            if (Kind.METHOD_PARAMETER.equals(annotation.target().kind()) && annotation.name().equals(DotNames.DISPOSES)) {
+            if (Kind.METHOD_PARAMETER == annotation.target().kind() && annotation.name().equals(DotNames.DISPOSES)) {
                 disposedParams.add(annotation.target().asMethodParameter());
             }
         }

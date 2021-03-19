@@ -1,5 +1,8 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.Annotations.find;
+import static io.quarkus.arc.processor.Annotations.getParameterAnnotations;
+
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.ObserverTransformer.ObserverTransformation;
 import io.quarkus.arc.processor.ObserverTransformer.TransformationContext;
@@ -36,9 +39,11 @@ public class ObserverInfo implements InjectionTargetInfo {
     static ObserverInfo create(BeanInfo declaringBean, MethodInfo observerMethod, Injection injection, boolean isAsync,
             List<ObserverTransformer> transformers, BuildContext buildContext, boolean jtaCapabilities) {
         MethodParameterInfo eventParameter = initEventParam(observerMethod, declaringBean.getDeployment());
-        AnnotationInstance priorityAnnotation = observerMethod.annotation(DotNames.PRIORITY);
+        AnnotationInstance priorityAnnotation = find(
+                getParameterAnnotations(declaringBean.getDeployment(), observerMethod, eventParameter.position()),
+                DotNames.PRIORITY);
         Integer priority;
-        if (priorityAnnotation != null && priorityAnnotation.target().equals(eventParameter)) {
+        if (priorityAnnotation != null) {
             priority = priorityAnnotation.value().asInt();
         } else {
             priority = ObserverMethod.DEFAULT_PRIORITY;
@@ -285,10 +290,9 @@ public class ObserverInfo implements InjectionTargetInfo {
     static Set<AnnotationInstance> initQualifiers(BeanDeployment beanDeployment, MethodInfo observerMethod,
             MethodParameterInfo eventParameter) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
-        for (AnnotationInstance annotation : beanDeployment.getAnnotations(observerMethod)) {
-            if (annotation.target().equals(eventParameter)) {
-                beanDeployment.extractQualifiers(annotation).forEach(qualifiers::add);
-            }
+        for (AnnotationInstance annotation : getParameterAnnotations(beanDeployment, observerMethod,
+                eventParameter.position())) {
+            beanDeployment.extractQualifiers(annotation).forEach(qualifiers::add);
         }
         return qualifiers;
     }

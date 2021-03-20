@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
@@ -188,8 +189,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 }
             }
 
-            // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-            runtimeSettingsBuilder.put("hibernate.temp.use_jdbc_metadata_defaults", "true");
+            restorePersistenceUnitSettings(runtimeSettingsBuilder, persistenceUnit);
 
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
 
@@ -209,6 +209,22 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         log.debug("Found no matching persistence units");
         return null;
+    }
+
+    /**
+     * restore some hibernate settings which could be changed during static init
+     * to the values pre-parsed during image generation e.g. from persistence.xml
+     * 
+     * @param runtimeSettingsBuilder
+     * @param persistenceUnit pre-parsed descriptor during image generation
+     */
+    private static void restorePersistenceUnitSettings(RuntimeSettings.Builder runtimeSettingsBuilder,
+            PersistenceUnitDescriptor persistenceUnit) {
+        Properties properties = persistenceUnit.getProperties();
+
+        // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
+        Object useJdbcMetadataDefaults = properties.getOrDefault("hibernate.temp.use_jdbc_metadata_defaults", "true");
+        runtimeSettingsBuilder.put("hibernate.temp.use_jdbc_metadata_defaults", useJdbcMetadataDefaults);
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings,

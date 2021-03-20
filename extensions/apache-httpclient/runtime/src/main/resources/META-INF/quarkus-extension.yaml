@@ -1,0 +1,10 @@
+---
+name: Apache HttpClient
+metadata:
+  keywords:
+  - "http"
+  - "client"
+  categories:
+  - "web"
+  status: "stable"
+  unlisted: true

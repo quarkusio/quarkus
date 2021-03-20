@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>quarkus-resteasy-multipart-parent</artifactId>
         <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-apache-httpclient-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>quarkus-resteasy-multipart</artifactId>
-    <name>Quarkus - RESTEasy - Multipart - Runtime</name>
-    <description>Multipart support for RESTEasy</description>
+    <artifactId>quarkus-apache-httpclient</artifactId>
+    <name>Quarkus - Apache HttpClient - Runtime</name>
+    <description>Connect to HTTP resources using the Apache HttpClient</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-multipart-provider</artifactId>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -27,17 +27,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- resteasy-multipart is depending on resteasy-client which depends on http-client -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>commons-logging-jboss-logging</artifactId>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>

@@ -69,7 +69,7 @@ public class GrpcServerRecorder {
     public void initializeGrpcServer(RuntimeValue<Vertx> vertxSupplier,
             GrpcConfiguration cfg,
             ShutdownContext shutdown,
-            Map<String, List<String>> blockingMethodsPerServiceImplementationClass) {
+            Map<String, List<String>> blockingMethodsPerServiceImplementationClass, LaunchMode launchMode) {
         GrpcContainer grpcContainer = Arc.container().instance(GrpcContainer.class).get();
         if (grpcContainer == null) {
             throw new IllegalStateException("gRPC not initialized, GrpcContainer not found");
@@ -83,29 +83,29 @@ public class GrpcServerRecorder {
         this.blockingMethodsPerService = blockingMethodsPerServiceImplementationClass;
 
         GrpcServerConfiguration configuration = cfg.server;
-        final boolean devMode = ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
 
-        if (devMode) {
+        if (launchMode == LaunchMode.DEVELOPMENT) {
             // start single server, not in a verticle, regardless of the configuration.instances
             // for reason unknown to me, verticles occasionally get undeployed on dev mode reload
             if (GrpcServerReloader.getServer() == null) {
-                devModeStart(grpcContainer, vertx, configuration, shutdown);
+                devModeStart(grpcContainer, vertx, configuration, shutdown, launchMode);
             } else {
                 devModeReload(grpcContainer);
             }
         } else {
-            prodStart(grpcContainer, vertx, configuration);
+            prodStart(grpcContainer, vertx, configuration, launchMode);
         }
     }
 
-    private void prodStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration) {
+    private void prodStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
+            LaunchMode launchMode) {
         CompletableFuture<Void> startResult = new CompletableFuture<>();
 
         vertx.deployVerticle(
                 new Supplier<Verticle>() {
                     @Override
                     public Verticle get() {
-                        return new GrpcServerVerticle(configuration, grpcContainer);
+                        return new GrpcServerVerticle(configuration, grpcContainer, launchMode);
                     }
                 },
                 new DeploymentOptions().setInstances(configuration.instances),
@@ -115,7 +115,7 @@ public class GrpcServerRecorder {
                         if (result.failed()) {
                             startResult.completeExceptionally(result.cause());
                         } else {
-                            GrpcServerRecorder.this.postStartup(grpcContainer, configuration);
+                            GrpcServerRecorder.this.postStartup(grpcContainer, configuration, launchMode == LaunchMode.TEST);
 
                             startResult.complete(null);
                         }
@@ -134,7 +134,7 @@ public class GrpcServerRecorder {
         }
     }
 
-    private void postStartup(GrpcContainer grpcContainer, GrpcServerConfiguration configuration) {
+    private void postStartup(GrpcContainer grpcContainer, GrpcServerConfiguration configuration, boolean test) {
         grpcContainer.getHealthStorage().stream().forEach(new Consumer<GrpcHealthStorage>() { //NOSONAR
             @Override
             public void accept(GrpcHealthStorage storage) {
@@ -152,14 +152,14 @@ public class GrpcServerRecorder {
             }
         });
         LOGGER.infof("gRPC Server started on %s:%d [SSL enabled: %s]",
-                configuration.host, configuration.port, !configuration.plainText);
+                configuration.host, test ? configuration.testPort : configuration.port, !configuration.plainText);
     }
 
     private void devModeStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
-            ShutdownContext shutdown) {
+            ShutdownContext shutdown, LaunchMode launchMode) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        VertxServer vertxServer = buildServer(vertx, configuration, grpcContainer, true)
+        VertxServer vertxServer = buildServer(vertx, configuration, grpcContainer, launchMode)
                 .start(new Handler<AsyncResult<Void>>() { // NOSONAR
                     @Override
                     public void handle(AsyncResult<Void> ar) {
@@ -167,7 +167,7 @@ public class GrpcServerRecorder {
                             LOGGER.error("Unable to start the gRPC server", ar.cause());
                             future.completeExceptionally(ar.cause());
                         } else {
-                            postStartup(grpcContainer, configuration);
+                            postStartup(grpcContainer, configuration, false);
                             future.complete(true);
                             grpcVerticleCount.incrementAndGet();
                         }
@@ -281,9 +281,10 @@ public class GrpcServerRecorder {
     }
 
     private VertxServer buildServer(Vertx vertx, GrpcServerConfiguration configuration,
-            GrpcContainer grpcContainer, boolean devMode) {
+            GrpcContainer grpcContainer, LaunchMode launchMode) {
         VertxServerBuilder builder = VertxServerBuilder
-                .forAddress(vertx, configuration.host, configuration.port);
+                .forAddress(vertx, configuration.host,
+                        launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port);
 
         AtomicBoolean usePlainText = new AtomicBoolean();
         builder.useSsl(new Handler<HttpServerOptions>() { // NOSONAR
@@ -352,7 +353,7 @@ public class GrpcServerRecorder {
             builder.intercept(serverInterceptor);
         }
 
-        if (devMode) {
+        if (launchMode == LaunchMode.DEVELOPMENT) {
             builder.commandDecorator(new Consumer<Runnable>() {
                 @Override
                 public void accept(Runnable command) {
@@ -374,7 +375,8 @@ public class GrpcServerRecorder {
         }
 
         LOGGER.debugf("Starting gRPC Server on %s:%d  [SSL enabled: %s]...",
-                configuration.host, configuration.port, !usePlainText.get());
+                configuration.host, launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port,
+                !usePlainText.get());
 
         return builder.build();
     }
@@ -382,12 +384,14 @@ public class GrpcServerRecorder {
     private class GrpcServerVerticle extends AbstractVerticle {
         private final GrpcServerConfiguration configuration;
         private final GrpcContainer grpcContainer;
+        private final LaunchMode launchMode;
 
         private VertxServer grpcServer;
 
-        GrpcServerVerticle(GrpcServerConfiguration configuration, GrpcContainer grpcContainer) {
+        GrpcServerVerticle(GrpcServerConfiguration configuration, GrpcContainer grpcContainer, LaunchMode launchMode) {
             this.configuration = configuration;
             this.grpcContainer = grpcContainer;
+            this.launchMode = launchMode;
         }
 
         @Override
@@ -397,7 +401,7 @@ public class GrpcServerRecorder {
                         "Unable to find bean exposing the `BindableService` interface - not starting the gRPC server");
                 return;
             }
-            grpcServer = buildServer(getVertx(), configuration, grpcContainer, false)
+            grpcServer = buildServer(getVertx(), configuration, grpcContainer, launchMode)
                     .start(new Handler<AsyncResult<Void>>() { // NOSONAR
                         @Override
                         public void handle(AsyncResult<Void> ar) {

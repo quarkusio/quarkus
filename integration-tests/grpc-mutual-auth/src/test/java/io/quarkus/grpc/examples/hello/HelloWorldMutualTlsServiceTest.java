@@ -35,7 +35,7 @@ class HelloWorldMutualTlsServiceTest {
                 new File("src/main/resources/tls/client.key"));
         SslContext context = builder.build();
 
-        channel = NettyChannelBuilder.forAddress("localhost", 9000)
+        channel = NettyChannelBuilder.forAddress("localhost", 9001)
                 .sslContext(context)
                 .build();
     }

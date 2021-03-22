@@ -54,7 +54,7 @@ public class RegularGrpcServiceWithSSLFromClasspathTest extends GrpcServiceTestB
         SslContext sslcontext = GrpcSslContexts.forClient()
                 .trustManager(createTrustAllTrustManager())
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9000)
+        channel = NettyChannelBuilder.forAddress("localhost", 9001)
                 .sslContext(sslcontext)
                 .build();
     }

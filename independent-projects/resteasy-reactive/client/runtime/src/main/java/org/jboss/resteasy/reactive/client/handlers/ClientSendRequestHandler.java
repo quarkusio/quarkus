@@ -10,7 +10,6 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +51,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     actualEntity = ClientSendRequestHandler.this
                             .setRequestHeadersAndPrepareBody(httpClientRequest, requestContext);
                 } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                    requestContext.resume(new ProcessingException(e));
+                    return;
+                } catch (Throwable t) {
+                    requestContext.resume(t);
+                    return;
                 }
 
                 Future<HttpClientResponse> sent;

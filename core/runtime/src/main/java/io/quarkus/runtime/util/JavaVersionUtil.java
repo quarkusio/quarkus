@@ -9,6 +9,7 @@ public class JavaVersionUtil {
 
     private static boolean IS_JAVA_11_OR_NEWER;
     private static boolean IS_JAVA_13_OR_NEWER;
+    private static boolean IS_GRAALVM_JDK;
 
     static {
         performChecks();
@@ -25,6 +26,9 @@ public class JavaVersionUtil {
             IS_JAVA_11_OR_NEWER = false;
             IS_JAVA_13_OR_NEWER = false;
         }
+
+        String vmVendor = System.getProperty("java.vm.vendor");
+        IS_GRAALVM_JDK = (vmVendor != null) && vmVendor.startsWith("GraalVM");
     }
 
     public static boolean isJava11OrHigher() {
@@ -33,5 +37,9 @@ public class JavaVersionUtil {
 
     public static boolean isJava13OrHigher() {
         return IS_JAVA_13_OR_NEWER;
+    }
+
+    public static boolean isGraalvmJdk() {
+        return IS_GRAALVM_JDK;
     }
 }

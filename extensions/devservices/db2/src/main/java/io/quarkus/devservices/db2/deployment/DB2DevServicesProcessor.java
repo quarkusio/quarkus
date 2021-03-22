@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.testcontainers.containers.Db2Container;
+import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
@@ -21,10 +22,11 @@ public class DB2DevServicesProcessor {
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
                 Db2Container container = new Db2Container(
-                        imageName.orElse("ibmcom/db2:" + Db2Container.DEFAULT_TAG))
-                                .withPassword(password.orElse("quarkus"))
-                                .withUsername(username.orElse("quarkus"))
-                                .withDatabaseName(datasourceName.orElse("default"));
+                        DockerImageName.parse(imageName.orElse("ibmcom/db2:" + Db2Container.DEFAULT_TAG))
+                                .asCompatibleSubstituteFor(DockerImageName.parse("ibmcom/db2")))
+                                        .withPassword(password.orElse("quarkus"))
+                                        .withUsername(username.orElse("quarkus"))
+                                        .withDatabaseName(datasourceName.orElse("default"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
                 return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),

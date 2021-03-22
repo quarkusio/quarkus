@@ -51,10 +51,10 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
     @Test
     public void testClientInjection() {
         assertThat(client.listDatabaseNames().first()).isNotEmpty();
-        assertThat(reactiveClient.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
+        assertThat(reactiveClient.listDatabases().collect().first().await().indefinitely()).isNotEmpty();
 
         org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
-        assertThat(response.getState()).isEqualTo(HealthCheckResponse.State.UP);
+        assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
         assertThat(response.getData()).isNotEmpty();
         assertThat(response.getData().get()).hasSize(2).contains(entry("<default-reactive>", "OK"),
                 entry("<default>", "OK"));
@@ -63,7 +63,7 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
         stopMongoDatabase();
 
         response = health.call();
-        assertThat(response.getState()).isEqualTo(HealthCheckResponse.State.DOWN);
+        assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
         assertThat(response.getData()).isNotEmpty();
         assertThat(response.getData().get()).hasSize(2)
                 .allSatisfy(new BiConsumer<String, Object>() {

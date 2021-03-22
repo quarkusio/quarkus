@@ -53,7 +53,7 @@ public class ClientAndServerCallsTest {
 
     @Test
     public void testOneToMany() {
-        assertThat(client.oneToMany("hello").collectItems().asList().await().atMost(TIMEOUT)).containsExactly("HELLO", "HELLO");
+        assertThat(client.oneToMany("hello").collect().asList().await().atMost(TIMEOUT)).containsExactly("HELLO", "HELLO");
     }
 
     @Test
@@ -65,7 +65,7 @@ public class ClientAndServerCallsTest {
     @Test
     public void testManyToMany() {
         assertThat(client.manyToMany(Multi.createFrom().items("hello", "world"))
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT)).containsExactly("HELLO", "WORLD");
     }
 
@@ -116,7 +116,7 @@ public class ClientAndServerCallsTest {
         }
 
         Uni<List<String>> manyToOne(Multi<String> multi) {
-            return multi.map(String::toUpperCase).collectItems().asList();
+            return multi.map(String::toUpperCase).collect().asList();
         }
 
         Multi<String> oneToMany(String s) {

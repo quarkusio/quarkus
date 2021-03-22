@@ -96,7 +96,7 @@ public class BlockingAndNonBlockingTest {
 
     private ServerReflectionResponse invoke(ServerReflectionRequest request) {
         return reflection.serverReflectionInfo(Multi.createFrom().item(request))
-                .collectItems().first()
+                .collect().first()
                 .await().indefinitely();
     }
 

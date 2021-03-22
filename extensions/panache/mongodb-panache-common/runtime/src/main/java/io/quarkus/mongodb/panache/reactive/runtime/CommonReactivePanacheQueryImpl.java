@@ -162,7 +162,7 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<List<T>> list() {
         Multi<T> results = stream();
-        return results.collectItems().asList();
+        return results.collect().asList();
     }
 
     @SuppressWarnings("unchecked")
@@ -179,14 +179,14 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     public <T extends Entity> Uni<Optional<T>> firstResultOptional() {
         FindOptions options = buildOptions(1);
         Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
-        return results.collectItems().first().map(o -> Optional.ofNullable(o));
+        return results.collect().first().map(o -> Optional.ofNullable(o));
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> singleResult() {
         FindOptions options = buildOptions(2);
         Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
-        return results.collectItems().asList().map(list -> {
+        return results.collect().asList().map(list -> {
             if (list.size() != 1) {
                 throw new PanacheQueryException("There should be only one result");
             } else {
@@ -198,7 +198,7 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     public <T extends Entity> Uni<Optional<T>> singleResultOptional() {
         FindOptions options = buildOptions(2);
         Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
-        return results.collectItems().asList().map(list -> {
+        return results.collect().asList().map(list -> {
             if (list.size() == 2) {
                 throw new PanacheQueryException("There should be no more than one result");
             }

@@ -45,7 +45,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         ReactiveMongoCollection<Document> myCollection = database.getCollection(collection);
         Document document = createDoc();
         myCollection.insertOne(document)
-                .then(() -> myCollection.find(eq("foo", "bar")).collectItems().first())
+                .then(() -> myCollection.find(eq("foo", "bar")).collect().first())
                 .invoke(found -> {
                     assertThat(found).isNotNull();
                     assertThat(found.getObjectId("_id")).isNotNull();
@@ -60,7 +60,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         ReactiveMongoCollection<Document> myCollection = database.getCollection(collection);
         Document document = createDoc();
         myCollection.insertOne(document)
-                .then(() -> myCollection.find(eq("nothing", "missing")).collectItems().first())
+                .then(() -> myCollection.find(eq("nothing", "missing")).collect().first())
                 .invoke(opt -> assertThat(opt).isNull())
                 .await().indefinitely();
     }
@@ -74,7 +74,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         ObjectId value = new ObjectId();
         doc.put("_id", value);
         myCollection.insertOne(doc).await().indefinitely();
-        Optional<Document> optional = myCollection.find().collectItems().first().await().asOptional().indefinitely();
+        Optional<Document> optional = myCollection.find().collect().first().await().asOptional().indefinitely();
         assertThat(optional).isNotEmpty();
         assertThat(optional.orElse(new Document()).getObjectId("_id")).isEqualTo(value);
     }
@@ -88,7 +88,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         ObjectId value = new ObjectId();
         doc.put("_id", value);
         myCollection.insertOne(doc).await().indefinitely();
-        Optional<Document> optional = myCollection.find().collectItems().first().await().asOptional().indefinitely();
+        Optional<Document> optional = myCollection.find().collect().first().await().asOptional().indefinitely();
         assertThat(optional).isNotEmpty();
         assertThat(optional.orElse(new Document()).getObjectId("_id")).isEqualTo(value);
         assertThat(optional.orElse(new Document())).isEqualTo(doc);
@@ -241,7 +241,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
                         assertThat(result.getUpsertedId()).isNull();
                     }
 
-                    return client.getDatabase(DATABASE).getCollection(collection).find().collectItems().first();
+                    return client.getDatabase(DATABASE).getCollection(collection).find().collect().first();
                 });
     }
 
@@ -266,7 +266,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         Optional<Integer> optional = client.getDatabase(DATABASE).createCollection(collection)
                 .then(() -> insertDocs(client, collection, numDocs))
                 .onItem().transformToMulti(x -> client.getDatabase(DATABASE).getCollection(collection).aggregate(pipeline))
-                .collectItems().first()
+                .collect().first()
                 .onItem().transform(doc -> doc.getInteger("foo_starting_with_bar1"))
                 .await().asOptional().indefinitely();
         assertThat(optional).contains(11);

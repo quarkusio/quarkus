@@ -40,6 +40,6 @@ public class GrpcHealthEndpoint extends MutinyHealthGrpc.HealthImplBase {
                     public HealthOuterClass.HealthCheckResponse apply(ServingStatus servingStatus) {
                         return healthStorage.resultForStatus(servingStatus);
                     }
-                })).transform().byDroppingRepetitions();
+                })).skip().repetitions();
     }
 }

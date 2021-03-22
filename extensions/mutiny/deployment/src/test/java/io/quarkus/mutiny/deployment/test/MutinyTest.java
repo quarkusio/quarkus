@@ -45,7 +45,7 @@ public class MutinyTest {
 
     @Test
     public void testMulti() {
-        List<String> list = bean.stream().collectItems().asList().await().indefinitely();
+        List<String> list = bean.stream().collect().asList().await().indefinitely();
         Assertions.assertEquals(list.get(0), "hello");
         Assertions.assertEquals(list.get(1), "world");
     }

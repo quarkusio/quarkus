@@ -197,9 +197,9 @@ class AttachmentTest {
         Attachment attachment2 = new Attachment("attachment-2", new byte[0], "text/plain");
         Attachment attachment3 = new Attachment("attachment-3", Multi.createFrom().empty(), "text/plain");
 
-        assertThat(Multi.createFrom().publisher(attachment1.getData()).collectItems().first().await().indefinitely()).isNull();
-        assertThat(Multi.createFrom().publisher(attachment2.getData()).collectItems().first().await().indefinitely()).isNull();
-        assertThat(Multi.createFrom().publisher(attachment3.getData()).collectItems().first().await().indefinitely()).isNull();
+        assertThat(Multi.createFrom().publisher(attachment1.getData()).collect().first().await().indefinitely()).isNull();
+        assertThat(Multi.createFrom().publisher(attachment2.getData()).collect().first().await().indefinitely()).isNull();
+        assertThat(Multi.createFrom().publisher(attachment3.getData()).collect().first().await().indefinitely()).isNull();
     }
 
     @Test

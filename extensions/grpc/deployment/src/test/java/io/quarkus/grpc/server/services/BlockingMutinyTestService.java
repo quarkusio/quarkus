@@ -79,7 +79,7 @@ public class BlockingMutinyTestService
             Multi<Messages.StreamingInputCallRequest> request) {
         assertRunOnEventLoop();
         return request.map(i -> i.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .map(list -> {
                     assertRunOnEventLoop();
                     assertThat(list).containsExactly("a", "b", "c", "d");
@@ -93,7 +93,7 @@ public class BlockingMutinyTestService
             Multi<Messages.StreamingInputCallRequest> request) {
         assertRunOnWorker();
         return request.map(i -> i.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .map(list -> {
                     assertRunOnWorker();
                     assertThat(list).containsExactly("a", "b", "c", "d");
@@ -142,7 +142,7 @@ public class BlockingMutinyTestService
                     return r.getPayload().getBody().toStringUtf8();
                 })
                 .map(String::toUpperCase)
-                .collectItems().asList()
+                .collect().asList()
                 .onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
                 .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
                 .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build());
@@ -160,7 +160,7 @@ public class BlockingMutinyTestService
                     return r.getPayload().getBody().toStringUtf8();
                 })
                 .map(String::toUpperCase)
-                .collectItems().asList()
+                .collect().asList()
                 .onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
                 .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
                 .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build());

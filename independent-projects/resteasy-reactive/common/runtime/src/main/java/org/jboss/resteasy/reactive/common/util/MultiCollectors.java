@@ -13,12 +13,12 @@ import java.util.stream.Collectors;
 public class MultiCollectors {
 
     public static Uni<String> concatenateStrings(Multi<String> multi) {
-        return multi.collectItems().with(Collectors.joining());
+        return multi.collect().with(Collectors.joining());
     }
 
     public static Uni<byte[]> concatenateByteArrays(Multi<byte[]> multi) {
         // we could avoid the list and grow an array as we collect, but I doubt that's more efficient TBH
-        return multi.collectItems().asList()
+        return multi.collect().asList()
                 .map(list -> {
                     int size = 0;
                     for (byte[] array : list) {
@@ -36,7 +36,7 @@ public class MultiCollectors {
 
     public static Uni<char[]> concatenateCharArrays(Multi<char[]> multi) {
         // we could avoid the list and grow an array as we collect, but I doubt that's more efficient TBH
-        return multi.collectItems().asList()
+        return multi.collect().asList()
                 .map(list -> {
                     int size = 0;
                     for (char[] array : list) {

@@ -355,7 +355,7 @@ public class ReactiveFruitService {
                     fruit.setName(doc.getString("name"));
                     fruit.setDescription(doc.getString("description"));
                     return fruit;
-                }).collectItems().asList();
+                }).collect().asList();
     }
 
     public Uni<Void> add(Fruit fruit) {

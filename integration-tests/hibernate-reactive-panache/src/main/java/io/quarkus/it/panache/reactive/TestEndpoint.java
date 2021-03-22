@@ -379,7 +379,7 @@ public class TestEndpoint {
     }
 
     private <T> Uni<List<T>> collect(Multi<T> stream) {
-        return stream.collectItems().asList();
+        return stream.collect().asList();
     }
 
     private Uni<Void> testUpdate() {

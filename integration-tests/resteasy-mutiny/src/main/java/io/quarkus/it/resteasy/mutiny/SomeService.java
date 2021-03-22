@@ -33,7 +33,7 @@ public class SomeService {
     Multi<String> greetingAsMulti() {
         return Multi.createFrom().items("h", "e", "l", "l", "o")
                 .groupItems().intoMultis().of(2)
-                .onItem().transformToUniAndConcatenate(g -> g.collectItems().in(StringBuffer::new, StringBuffer::append))
+                .onItem().transformToUniAndConcatenate(g -> g.collect().in(StringBuffer::new, StringBuffer::append))
                 .emitOn(executor)
                 .onItem().transform(StringBuffer::toString);
     }

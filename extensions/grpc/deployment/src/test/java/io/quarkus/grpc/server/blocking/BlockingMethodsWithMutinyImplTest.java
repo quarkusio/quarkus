@@ -142,7 +142,7 @@ public class BlockingMethodsWithMutinyImplTest {
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
         List<String> response = mutiny.fullDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("a1", "b2", "c3", "d4");
@@ -156,7 +156,7 @@ public class BlockingMethodsWithMutinyImplTest {
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
         List<String> response = mutiny.fullDuplexCallBlocking(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("a1", "b2", "c3", "d4");
@@ -170,7 +170,7 @@ public class BlockingMethodsWithMutinyImplTest {
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
         List<String> response = mutiny.halfDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4).containsExactly("A", "B", "C", "D");
 
@@ -184,7 +184,7 @@ public class BlockingMethodsWithMutinyImplTest {
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
         List<String> response = mutiny.halfDuplexCallBlocking(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("A", "B", "C", "D");

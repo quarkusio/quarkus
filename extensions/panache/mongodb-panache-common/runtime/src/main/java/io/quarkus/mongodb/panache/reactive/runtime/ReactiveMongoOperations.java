@@ -337,7 +337,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public Uni<Optional> findByIdOptional(Class<?> entityClass, Object id) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
-        return collection.find(new Document(ID, id)).collectItems().first()
+        return collection.find(new Document(ID, id)).collect().first()
                 .onItem().transform(Optional::ofNullable);
     }
 

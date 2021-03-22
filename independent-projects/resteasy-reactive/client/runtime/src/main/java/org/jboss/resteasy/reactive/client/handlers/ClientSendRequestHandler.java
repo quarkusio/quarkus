@@ -32,6 +32,17 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         }
         requestContext.suspend();
         Future<HttpClientRequest> future = createRequest(requestContext);
+        // DNS failures happen before we send the request
+        future.onFailure(new Handler<Throwable>() {
+            @Override
+            public void handle(Throwable event) {
+                if (event instanceof IOException) {
+                    requestContext.resume(new ProcessingException(event));
+                } else {
+                    requestContext.resume(event);
+                }
+            }
+        });
         future.onSuccess(new Handler<HttpClientRequest>() {
             @Override
             public void handle(HttpClientRequest httpClientRequest) {

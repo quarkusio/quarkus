@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.resteasy.reactive.server.handlers.CompletionStageResponseHandler;
@@ -22,7 +23,8 @@ public class AsyncReturnTypeScanner implements MethodScanner {
     private static final DotName PUBLISHER = DotName.createSimple(Publisher.class.getName());
 
     @Override
-    public List<HandlerChainCustomizer> scan(MethodInfo method, Map<String, Object> methodContext) {
+    public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+            Map<String, Object> methodContext) {
         DotName returnTypeName = method.returnType().name();
         if (returnTypeName.equals(COMPLETION_STAGE)) {
             return Collections.singletonList(new FixedHandlerChainCustomizer(new CompletionStageResponseHandler(),

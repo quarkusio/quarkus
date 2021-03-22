@@ -239,7 +239,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
-    protected abstract METHOD createResourceMethod(MethodInfo info, Map<String, Object> methodContext);
+    protected abstract METHOD createResourceMethod(MethodInfo info, ClassInfo actualEndpointClass,
+            Map<String, Object> methodContext);
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
@@ -495,7 +496,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
 
-            ResourceMethod method = createResourceMethod(currentMethodInfo, methodContext)
+            ResourceMethod method = createResourceMethod(currentMethodInfo, actualEndpointInfo, methodContext)
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(methodPath)
                     .setConsumes(consumes)

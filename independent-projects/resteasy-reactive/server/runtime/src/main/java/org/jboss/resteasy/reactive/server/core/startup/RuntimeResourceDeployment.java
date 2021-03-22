@@ -256,7 +256,6 @@ public class RuntimeResourceDeployment {
 
         // given that we may inject form params in the endpoint we need to make sure we read the body before
         // we create/inject our endpoint
-        EndpointInvoker invoker = method.getInvoker().get();
         ServerRestHandler instanceHandler = null;
         if (!locatableResource) {
             if (clazz.isPerRequestResource()) {
@@ -301,7 +300,13 @@ public class RuntimeResourceDeployment {
                     param.isObtainedAsCollection(), param.isOptional()));
         }
         addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
-        handlers.add(new InvocationHandler(invoker));
+        EndpointInvoker invoker = method.getInvoker().get();
+        ServerRestHandler alternate = alternateInvoker(method, invoker);
+        if (alternate != null) {
+            handlers.add(alternate);
+        } else {
+            handlers.add(new InvocationHandler(invoker));
+        }
         addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
@@ -434,6 +439,16 @@ public class RuntimeResourceDeployment {
         for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
             handlers.addAll(method.getHandlerChainCustomizers().get(i).handlers(phase));
         }
+    }
+
+    private ServerRestHandler alternateInvoker(ServerResourceMethod method, EndpointInvoker invoker) {
+        for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
+            ServerRestHandler ret = method.getHandlerChainCustomizers().get(i).alternateInvocationHandler(invoker);
+            if (ret != null) {
+                return ret;
+            }
+        }
+        return null;
     }
 
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, boolean locatableResource,

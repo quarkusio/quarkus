@@ -25,6 +25,11 @@
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
+                <!-- see https://issues.redhat.com/browse/RESTEASY-2857 -->
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>resteasy-client</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

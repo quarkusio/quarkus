@@ -329,6 +329,7 @@ that will validate each datasources: link:datasource#datasource-health-check[Dat
 
 You can disable extension health check via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
 
+[[ui]]
 == Health UI 
 
 NOTE: Experimental - not included in the MicroProfile specification

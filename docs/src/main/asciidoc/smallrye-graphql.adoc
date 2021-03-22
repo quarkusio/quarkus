@@ -367,6 +367,7 @@ curl http://localhost:8080/graphql/schema.graphql
 
 The server will return the complete schema of the GraphQL API.
 
+[[ui]]
 ==  GraphiQL UI
 
 NOTE: Experimental - not included in the MicroProfile specification 

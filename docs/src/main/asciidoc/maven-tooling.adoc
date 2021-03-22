@@ -125,6 +125,7 @@ You can install all extensions which match a globbing pattern :
 ./mvnw quarkus:add-extension -Dextensions="hibernate-*"
 ----
 
+[[dev-mode]]
 == Development mode
 
 Quarkus comes with a built-in development mode.
@@ -515,6 +516,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <5> Enable the `native` package type. The build will therefore produce a native executable.
 <6> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
 
+[[fast-jar]]
 === Using fast-jar
 
 `fast-jar` is now the default quarkus package type. The result of `./mvnw package` command is a new directory under `target` named `quarkus-app`.

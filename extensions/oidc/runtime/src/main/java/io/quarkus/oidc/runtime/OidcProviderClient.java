@@ -127,11 +127,9 @@ public class OidcProviderClient {
         if (resp.statusCode() == 200) {
             return resp.bodyAsJsonObject();
         } else {
-            String error = resp.bodyAsString();
-            if (error != null) {
-                LOG.debugf("Request has failed: %s", error);
-            }
-            throw new OIDCException();
+            String errorMessage = resp.bodyAsString();
+            LOG.debugf("Request has failed: status: %d, error message: %s", resp.statusCode(), errorMessage);
+            throw new OIDCException(errorMessage);
         }
     }
 }

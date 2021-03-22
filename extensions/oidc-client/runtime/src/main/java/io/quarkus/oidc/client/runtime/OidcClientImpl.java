@@ -105,9 +105,11 @@ public class OidcClientImpl implements OidcClient {
             }
             return new Tokens(accessToken, accessTokenExpiresAt, oidcConfig.refreshTokenTimeSkew.orElse(null), refreshToken);
         } else {
-            LOG.debugf("%s OidcClient has failed to complete the %s grant request: %s", oidcConfig.getId().get(),
-                    (refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType), resp.bodyAsString());
-            throw new OidcClientException();
+            String errorMessage = resp.bodyAsString();
+            LOG.debugf("%s OidcClient has failed to complete the %s grant request:  status: %d, error message: %s",
+                    oidcConfig.getId().get(), (refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType), resp.statusCode(),
+                    errorMessage);
+            throw new OidcClientException(errorMessage);
         }
     }
 

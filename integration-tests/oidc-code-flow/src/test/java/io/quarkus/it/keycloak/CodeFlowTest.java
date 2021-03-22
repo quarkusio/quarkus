@@ -73,6 +73,11 @@ public class CodeFlowTest {
                     KeycloakRealmResourceManager.KEYCLOAK_SERVER_URL + "/realms/" + KeycloakRealmResourceManager.KEYCLOAK_REALM,
                     page.asText());
 
+            page = webClient.getPage("http://localhost:8081/web-app/configMetadataScopes");
+
+            assertTrue(page.asText().contains("openid"));
+            assertTrue(page.asText().contains("profile"));
+
             webClient.getCookieManager().clearCookies();
         }
     }

@@ -40,6 +40,7 @@ please refer to the link:reactive-sql-clients[Reactive SQL clients guide].
 This is a quick introduction to datasource configuration.
 If you want a better understanding of how all this works, this guide has a lot more information in the subsequent paragraphs.
 
+[[dev-services]]
 === Zero Config Setup (DevServices)
 
 When testing or running in dev mode Quarkus can even provide you with a zero config database out of the box, a feature

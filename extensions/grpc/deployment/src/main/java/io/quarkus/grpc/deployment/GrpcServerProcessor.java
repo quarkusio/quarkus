@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -95,6 +96,7 @@ public class GrpcServerProcessor {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem build(GrpcServerRecorder recorder, GrpcConfiguration config,
             ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
+            LaunchModeBuildItem launchModeBuildItem,
             VertxBuildItem vertx) {
 
         // Build the list of blocking methods per service implementation
@@ -106,7 +108,7 @@ public class GrpcServerProcessor {
         }
 
         if (!bindables.isEmpty()) {
-            recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown, blocking);
+            recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown, blocking, launchModeBuildItem.getLaunchMode());
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;

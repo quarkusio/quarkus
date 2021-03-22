@@ -24,7 +24,7 @@ public class ScalingTestBase {
         List<Callable<String>> calls = new ArrayList<>();
         for (int i = 0; i < requestNo; i++) {
             calls.add(() -> {
-                ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9000)
+                ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9001)
                         .usePlaintext()
                         .build();
                 HelloReply reply = GreeterGrpc.newBlockingStub(channel)

@@ -224,7 +224,8 @@ annotated method on a worker thread instead of the I/O thread (event-loop).
 The services are _served_ by a _server_.
 Available services (_CDI beans_) are automatically registered and exposed.
 
-By default, the server is exposed on `localhost:9000`, and uses _plain-text_ (so no TLS).
+By default, the server is exposed on `localhost:9000`, and uses _plain-text_ (so no TLS) when
+running normally, and `localhost:9001` for tests.
 
 Run the application using: `mvn quarkus:dev`.
 

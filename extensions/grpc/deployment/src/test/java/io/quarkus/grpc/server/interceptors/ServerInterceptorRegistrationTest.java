@@ -38,7 +38,7 @@ public class ServerInterceptorRegistrationTest {
 
     @BeforeEach
     public void init() throws Exception {
-        channel = ManagedChannelBuilder.forAddress("localhost", 9000)
+        channel = ManagedChannelBuilder.forAddress("localhost", 9001)
                 .usePlaintext()
                 .build();
     }

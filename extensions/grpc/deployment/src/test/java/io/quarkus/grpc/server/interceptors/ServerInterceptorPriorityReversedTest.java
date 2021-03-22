@@ -40,7 +40,7 @@ public class ServerInterceptorPriorityReversedTest {
 
     @BeforeEach
     public void init() {
-        channel = ManagedChannelBuilder.forAddress("localhost", 9000)
+        channel = ManagedChannelBuilder.forAddress("localhost", 9001)
                 .usePlaintext()
                 .build();
     }

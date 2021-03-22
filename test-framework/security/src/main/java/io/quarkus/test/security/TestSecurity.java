@@ -24,4 +24,5 @@ public @interface TestSecurity {
      */
     String[] roles() default {};
 
+    SecurityAttribute[] attributes() default {};
 }

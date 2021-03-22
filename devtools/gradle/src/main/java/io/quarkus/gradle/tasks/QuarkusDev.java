@@ -236,11 +236,21 @@ public class QuarkusDev extends QuarkusTask {
 
         for (AppDependency appDependency : appModel.getFullDeploymentDeps()) {
             final AppArtifact appArtifact = appDependency.getArtifact();
+            //we only use the launcher for launching from the IDE, we need to exclude it
+            if (appArtifact.getGroupId().equals("io.quarkus") && appArtifact.getGroupId().equals("quarkus-ide-launcher")) {
+                continue;
+            }
             if (!projectDependencies.contains(new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId()))) {
                 appArtifact.getPaths().forEach(p -> {
                     if (Files.exists(p)) {
-                        addToClassPaths(builder, p.toFile());
+                        if (appArtifact.getGroupId().equals("io.quarkus")
+                                && appArtifact.getArtifactId().equals("quarkus-class-change-agent")) {
+                            builder.jvmArgs("-javaagent:" + p.toFile().getAbsolutePath());
+                        } else {
+                            addToClassPaths(builder, p.toFile());
+                        }
                     }
+
                 });
             }
         }

@@ -17,11 +17,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
         </dependency>
-        <!-- resteasy-multipart is depending on resteasy-client which depends on http-client -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient-deployment</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-multipart</artifactId>

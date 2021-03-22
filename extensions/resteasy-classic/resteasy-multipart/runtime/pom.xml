@@ -25,12 +25,12 @@
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
+                <!-- see https://issues.redhat.com/browse/RESTEASY-2857 -->
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>resteasy-client</artifactId>
+                </exclusion>
             </exclusions>
-        </dependency>
-        <!-- resteasy-multipart is depending on resteasy-client which depends on http-client -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.logging</groupId>

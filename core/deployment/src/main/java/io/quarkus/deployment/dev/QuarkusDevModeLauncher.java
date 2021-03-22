@@ -279,8 +279,11 @@ public abstract class QuarkusDevModeLauncher {
      */
     protected void prepare() throws Exception {
 
-        // the following flags reduce startup time and are acceptable only for dev purposes
-        args.add("-XX:TieredStopAtLevel=1");
+        if (!JavaVersionUtil.isGraalvmJdk()) {
+            // prevent C2 compiler for kicking in - makes startup a little faster
+            // it only makes sense in dev-mode but it is not available when GraalVM is used as the JDK
+            args.add("-XX:TieredStopAtLevel=1");
+        }
 
         if (suspend != null) {
             switch (suspend.toLowerCase(Locale.ENGLISH)) {

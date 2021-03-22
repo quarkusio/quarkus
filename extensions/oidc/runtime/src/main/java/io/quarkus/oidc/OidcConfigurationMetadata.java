@@ -1,8 +1,10 @@
 package io.quarkus.oidc;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class OidcConfigurationMetadata {
@@ -13,6 +15,7 @@ public class OidcConfigurationMetadata {
     private static final String JWKS_ENDPOINT = "jwks_uri";
     private static final String USERINFO_ENDPOINT = "userinfo_endpoint";
     private static final String END_SESSION_ENDPOINT = "end_session_endpoint";
+    private static final String SCOPES_SUPPORTED = "scopes_supported";
 
     private final String tokenUri;
     private final String introspectionUri;
@@ -74,12 +77,27 @@ public class OidcConfigurationMetadata {
         return endSessionUri;
     }
 
+    public List<String> getSupportedScopes() {
+        return getStringList(SCOPES_SUPPORTED);
+    }
+
     public String getIssuer() {
         return issuer;
     }
 
     public String get(String propertyName) {
-        return json != null ? null : json.getString(propertyName);
+        return json == null ? null : json.getString(propertyName);
+    }
+
+    public List<String> getStringList(String propertyName) {
+        JsonArray array = json == null ? null : json.getJsonArray(propertyName);
+        if (array != null) {
+            @SuppressWarnings("unchecked")
+            List<String> values = array.getList();
+            return Collections.unmodifiableList(values);
+        } else {
+            return null;
+        }
     }
 
     public boolean contains(String propertyName) {

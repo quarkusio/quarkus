@@ -5,8 +5,9 @@ import java.nio.MappedByteBuffer;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+import com.oracle.svm.core.jdk.JDK15OrEarlier;
 
-@TargetClass(MappedByteBuffer.class)
+@TargetClass(value = MappedByteBuffer.class, onlyWith = JDK15OrEarlier.class)
 final class MappedByteBufferReplacement {
 
     @Substitute

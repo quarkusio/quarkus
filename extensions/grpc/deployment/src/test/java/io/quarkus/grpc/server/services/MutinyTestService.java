@@ -49,7 +49,7 @@ public class MutinyTestService extends MutinyTestServiceGrpc.TestServiceImplBase
             Multi<Messages.StreamingInputCallRequest> request) {
         assertThatTheRequestScopeIsActive();
         return request.map(i -> i.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .map(list -> {
                     assertThat(list).containsExactly("a", "b", "c", "d");
                     return Messages.StreamingInputCallResponse.newBuilder().build();
@@ -77,7 +77,7 @@ public class MutinyTestService extends MutinyTestServiceGrpc.TestServiceImplBase
         return request
                 .map(r -> r.getPayload().getBody().toStringUtf8())
                 .map(String::toUpperCase)
-                .collectItems().asList()
+                .collect().asList()
                 .onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
                 .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
                 .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build())

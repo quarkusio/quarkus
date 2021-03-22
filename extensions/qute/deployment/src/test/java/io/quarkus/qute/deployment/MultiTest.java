@@ -35,7 +35,7 @@ public class MultiTest {
         Multi<String> multi = foo.data("roundingMode", RoundingMode.HALF_UP)
                 .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).createMulti();
         assertEquals("123.4563 is not 123.46", multi
-                .collectItems().in(StringBuffer::new, StringBuffer::append)
+                .collect().in(StringBuffer::new, StringBuffer::append)
                 .onItem().transform(StringBuffer::toString)
                 .await().indefinitely());
     }

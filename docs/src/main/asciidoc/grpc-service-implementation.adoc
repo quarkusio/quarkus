@@ -122,7 +122,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
     public Multi<Item> source(Empty request) {
         // Just returns a stream emitting an item every 2ms and stopping after 10 items.
         return Multi.createFrom().ticks().every(Duration.ofMillis(2))
-                .transform().byTakingFirstItems(10)
+                .select().first(10)
                 .map(l -> Item.newBuilder().setValue(Long.toString(l)).build());
     }
 
@@ -132,7 +132,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
         return request
                 .map(Item::getValue)
                 .map(Long::parseLong)
-                .collectItems().last()
+                .collect().last()
                 .map(l -> Empty.newBuilder().build());
     }
 

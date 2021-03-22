@@ -143,7 +143,7 @@ public class MongoTestBase {
     protected List<io.quarkus.mongodb.reactive.ReactiveMongoCollection<Document>> getOurCollections(
             io.quarkus.mongodb.reactive.ReactiveMongoClient client) {
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
-        List<String> names = database.listCollectionNames().collectItems().asList().await().indefinitely();
+        List<String> names = database.listCollectionNames().collect().asList().await().indefinitely();
         return names
                 .stream()
                 .filter(c -> c.startsWith(COLLECTION_PREFIX))

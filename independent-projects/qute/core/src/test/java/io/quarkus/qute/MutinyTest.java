@@ -24,8 +24,8 @@ public class MutinyTest {
         Multi<String> multi = template.data(data).createMulti();
 
         assertMulti(multi, "foofooalpha");
-        assertMulti(multi.transform().byDroppingDuplicates(), "fooalpha");
-        assertMulti(multi.transform().byTakingFirstItems(1), "foo");
+        assertMulti(multi.select().distinct(), "fooalpha");
+        assertMulti(multi.select().first(), "foo");
     }
 
     @Test

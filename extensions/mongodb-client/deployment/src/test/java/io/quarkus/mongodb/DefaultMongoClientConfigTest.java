@@ -41,6 +41,6 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
     @Test
     public void testClientInjection() {
         assertThat(client.listDatabaseNames().first()).isNotEmpty();
-        assertThat(reactiveClient.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
+        assertThat(reactiveClient.listDatabases().collect().first().await().indefinitely()).isNotEmpty();
     }
 }

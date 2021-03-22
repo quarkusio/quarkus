@@ -50,8 +50,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 try {
                     actualEntity = ClientSendRequestHandler.this
                             .setRequestHeadersAndPrepareBody(httpClientRequest, requestContext);
-                } catch (IOException e) {
-                    requestContext.resume(new ProcessingException(e));
+                } catch (Throwable e) {
+                    requestContext.resume(e);
                     return;
                 }
 

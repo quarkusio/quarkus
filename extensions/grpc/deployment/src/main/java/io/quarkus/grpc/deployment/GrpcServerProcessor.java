@@ -39,6 +39,7 @@ import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
@@ -51,6 +52,11 @@ public class GrpcServerProcessor {
     private static final String KEY = SSL_PREFIX + "key";
     private static final String KEY_STORE = SSL_PREFIX + "key-store";
     private static final String TRUST_STORE = SSL_PREFIX + "trust-store";
+
+    @BuildStep
+    MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {
+        return new MinNettyAllocatorMaxOrderBuildItem(3);
+    }
 
     @BuildStep
     void discoverBindableServices(BuildProducer<BindableServiceBuildItem> bindables,

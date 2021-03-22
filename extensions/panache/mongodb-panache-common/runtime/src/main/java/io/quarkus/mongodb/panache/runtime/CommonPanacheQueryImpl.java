@@ -150,7 +150,7 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public long count() {
         if (count == null) {
-            count = collection.countDocuments(mongoQuery);
+            count = mongoQuery == null ? collection.countDocuments() : collection.countDocuments(mongoQuery);
         }
         return count;
     }

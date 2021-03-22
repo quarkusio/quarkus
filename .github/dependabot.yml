@@ -108,6 +108,8 @@ updates:
       # Logstash
       - dependency-name: biz.paluch.logging:logstash-gelf
       - dependency-name: io.sentry:*
+      # MongoDB
+      - dependency-name:  org.mongodb:*
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

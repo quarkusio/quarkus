@@ -160,6 +160,7 @@ You can install all extensions which match a globbing pattern:
 ./gradlew addExtension --extensions="hibernate*"
 ----
 
+[[dev-mode]]
 == Development mode
 
 Quarkus comes with a built-in development mode.

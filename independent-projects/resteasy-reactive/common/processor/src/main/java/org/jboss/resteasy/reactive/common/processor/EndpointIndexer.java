@@ -483,14 +483,21 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             Set<String> nameBindingNames = nameBindingNames(info, classNameBindings);
             boolean blocking = defaultBlocking;
-            AnnotationInstance blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
-            if (blockingAnnotation != null) {
-                blocking = true;
-            } else {
-                AnnotationInstance nonBlockingAnnotation = getInheritableAnnotation(info, NON_BLOCKING);
-                if (nonBlockingAnnotation != null) {
+            Map.Entry<AnnotationTarget, AnnotationInstance> blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
+            Map.Entry<AnnotationTarget, AnnotationInstance> nonBlockingAnnotation = getInheritableAnnotation(info,
+                    NON_BLOCKING);
+            if ((blockingAnnotation != null) && (nonBlockingAnnotation != null)) {
+                if (blockingAnnotation.getKey().kind() == AnnotationTarget.Kind.METHOD) {
+                    // the most specific annotation was the @Blocking annotation on the method
+                    blocking = true;
+                } else {
+                    // the most specific annotation was the @NonBlocking annotation on the method
                     blocking = false;
                 }
+            } else if ((blockingAnnotation != null) && (nonBlockingAnnotation == null)) {
+                blocking = true;
+            } else if ((nonBlockingAnnotation != null) && (blockingAnnotation == null)) {
+                blocking = false;
             }
 
             ResourceMethod method = createResourceMethod(info, methodContext)
@@ -598,13 +605,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return Objects.requireNonNull(result);
     }
 
-    private static AnnotationInstance getInheritableAnnotation(MethodInfo info, DotName name) {
+    private static Map.Entry<AnnotationTarget, AnnotationInstance> getInheritableAnnotation(MethodInfo info, DotName name) {
         // try method first, class second
         AnnotationInstance annotation = info.annotation(name);
+        AnnotationTarget target = info;
         if (annotation == null) {
             annotation = info.declaringClass().classAnnotation(name);
+            target = info.declaringClass();
         }
-        return annotation;
+        return annotation != null ? new AbstractMap.SimpleEntry<>(target, annotation) : null;
     }
 
     private static String methodDescriptor(MethodInfo info) {

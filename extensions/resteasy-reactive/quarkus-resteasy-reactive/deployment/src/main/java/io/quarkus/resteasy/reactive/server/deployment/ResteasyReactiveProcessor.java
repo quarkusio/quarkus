@@ -301,6 +301,7 @@ public class ResteasyReactiveProcessor {
         paramConverterProviders.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.sort();
         interceptors.sort();
+        interceptors.getContainerRequestFilters().validateThreadModel();
 
         try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
                 QUARKUS_INIT_CLASS, null, Object.class.getName(), ResteasyReactiveInitialiser.class.getName());

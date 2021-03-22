@@ -1150,6 +1150,19 @@ class Filters {
 }
 ----
 
+[IMPORTANT]
+====
+Request filters are usually executed on the same thread that the method that handles the request will be executed.
+That means that if the method servicing the request is annotated with `@Blocking`, then the filters will also be run
+on the worker thread.
+If the method is annotated with `@NonBlocking` (or is not annotated at all), then the filters will also be run
+on the same event-loop thread.
+
+If however a filter needs to be run on the event-loop despite the fact that the method servicing the request will be
+run on a worker thread, then `@ServerRequestFilter(nonBlocking=true)` can be used.
+Note however, that these filters need to be run before **any** filter that does not use that setting and would run on a worker thread.
+====
+
 Similarly, response filters can be declared with the `@ServerResponseFilter` annotation:
 
 [source,java]
@@ -1827,4 +1840,3 @@ To change this behavior, set the `quarkus.rest.client.scope` property to the ful
 - a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
 
 It is important to note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
-

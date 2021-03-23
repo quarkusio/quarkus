@@ -76,6 +76,13 @@ public class JsonExtensionCatalog extends JsonExtensionOrigin implements Extensi
         this.categories = categories;
     }
 
+    public void addCategory(Category c) {
+        if (categories == null) {
+            categories = new ArrayList<>();
+        }
+        categories.add(c);
+    }
+
     @Override
     public Map<String, Object> getMetadata() {
         return metadata == null ? Collections.emptyMap() : metadata;

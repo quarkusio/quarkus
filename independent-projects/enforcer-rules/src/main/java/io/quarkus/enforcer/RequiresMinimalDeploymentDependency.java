@@ -1,5 +1,7 @@
 package io.quarkus.enforcer;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -75,13 +77,20 @@ public class RequiresMinimalDeploymentDependency extends DeploymentDependencyRul
                     + requiredDeps);
         }
         if (!existingUnmatchedDeploymentDeps.isEmpty()) {
-            String superfluousDeps = existingUnmatchedDeploymentDeps.stream()
-                    .map(gav -> "    " + gav)
-                    .sorted()
-                    .collect(Collectors.joining("\n"));
-            throw new EnforcerRuleException(existingUnmatchedDeploymentDeps.size()
-                    + " minimal *-deployment dependencies are superfluous and must be removed from pom.xml:\n"
-                    + superfluousDeps);
+            Set<String> nonSuperfluous = parseNonSuperfluosArtifactIdsFromProperty(project);
+            if (!nonSuperfluous.isEmpty()) {
+                existingUnmatchedDeploymentDeps
+                        .removeIf(gav -> nonSuperfluous.stream().anyMatch(aid -> gav.contains(":" + aid + ":")));
+            }
+            if (!existingUnmatchedDeploymentDeps.isEmpty()) {
+                String superfluousDeps = existingUnmatchedDeploymentDeps.stream()
+                        .map(gav -> "    " + gav)
+                        .sorted()
+                        .collect(Collectors.joining("\n"));
+                throw new EnforcerRuleException(existingUnmatchedDeploymentDeps.size()
+                        + " minimal *-deployment dependencies are superfluous and must be removed from pom.xml:\n"
+                        + superfluousDeps);
+            }
         }
     }
 
@@ -89,5 +98,14 @@ public class RequiresMinimalDeploymentDependency extends DeploymentDependencyRul
             Set<String> existingDeploymentDeps) {
         return deploymentGAV.equals(projArtifactKey) // special case: current project itself is the "required dependency"
                 || existingDeploymentDeps.remove(deploymentGAV);
+    }
+
+    private Set<String> parseNonSuperfluosArtifactIdsFromProperty(MavenProject project) {
+        String propValue = project.getProperties().getProperty("enforcer.requiresMinimalDeploymentDependency.nonSuperfluous");
+        if (propValue != null) {
+            return Arrays.stream(propValue.split(",")).map(String::trim).collect(Collectors.toSet());
+        } else {
+            return Collections.emptySet();
+        }
     }
 }

@@ -17,6 +17,14 @@ public class ApplyDockerfileToBuildConfigDecorator extends NamedResourceDecorato
 
     public ApplyDockerfileToBuildConfigDecorator(String name, Path pathToDockerfile) {
         super(name);
+        if (!pathToDockerfile.toFile().exists()) {
+            throw new IllegalArgumentException(
+                    "Specified Dockerfile: '" + pathToDockerfile.toAbsolutePath().toString() + "' does not exist.");
+        }
+        if (!pathToDockerfile.toFile().isFile()) {
+            throw new IllegalArgumentException(
+                    "Specified Dockerfile: '" + pathToDockerfile.toAbsolutePath().toString() + "' is not a normal file.");
+        }
         this.pathToDockerfile = pathToDockerfile;
     }
 

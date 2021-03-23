@@ -77,14 +77,6 @@ public class OpenshiftWithS2iTest {
                                 assertThat(envVar.getValue()).isEqualTo("/deployments/quarkus-run.jar");
                             });
                             assertThat(envVars).anySatisfy(envVar -> {
-                                assertThat(envVar.getName()).isEqualTo("JAVA_LIB_DIR");
-                                assertThat(envVar.getValue()).isEqualTo("/deployments/lib");
-                            });
-                            assertThat(envVars).anySatisfy(envVar -> {
-                                assertThat(envVar.getName()).isEqualTo("JAVA_CLASSPATH");
-                                assertThat(envVar.getValue()).isNotBlank();
-                            });
-                            assertThat(envVars).anySatisfy(envVar -> {
                                 assertThat(envVar.getName()).isEqualTo("JAVA_OPTIONS");
                                 assertThat(envVar.getValue())
                                         .contains("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");

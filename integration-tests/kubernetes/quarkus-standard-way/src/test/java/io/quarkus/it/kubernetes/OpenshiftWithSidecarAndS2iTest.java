@@ -64,7 +64,7 @@ public class OpenshiftWithSidecarAndS2iTest {
     private void assertApplicationContainer(PodSpec podSpec) {
         assertThat(podSpec.getContainers()).filteredOn(ps -> "openshift-sidecar-test".equals(ps.getName()))
                 .singleElement().satisfies(c -> {
-                    assertThat(c.getEnv()).extracting("name").contains("JAVA_APP_JAR", "JAVA_LIB_DIR");
+                    assertThat(c.getEnv()).extracting("name").contains("JAVA_APP_JAR");
                 });
     }
 
@@ -83,7 +83,7 @@ public class OpenshiftWithSidecarAndS2iTest {
                     assertThat(c.getPorts()).singleElement().satisfies(p -> {
                         assertThat(p.getContainerPort()).isEqualTo(3000);
                     });
-                    assertThat(c.getEnv()).extracting("name").doesNotContain("JAVA_APP_JAR", "JAVA_LIB_DIR");
+                    assertThat(c.getEnv()).extracting("name").doesNotContain("JAVA_APP_JAR");
                 });
     }
 }

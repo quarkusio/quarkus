@@ -57,7 +57,7 @@ The more is done there, the smaller Quarkus applications using that extension wi
 Quarkus simplifies the most common usages.
 This means that its defaults might be different than the library it integrates.
 
-To make the simple experience easiest, unify the configuration in `application.properties` via MicroProfile Config.
+To make the simple experience easiest, unify the configuration in `application.properties` via SmallRye Config.
 Avoid library specific configuration files, or at least make them optional: e.g. `persistence.xml` for Hibernate ORM is optional.
 
 Extensions should see the configuration holistically as a Quarkus application instead of focusing on the library experience.
@@ -1515,7 +1515,7 @@ In order to provide a health check, you should do the following:
 
 - Import the `quarkus-smallrye-health` extension as an **optional** dependency in your runtime module so it will not impact the size of the application if
 health check is not included.
-- Create your health check following the link:microprofile-health[Quarkus - MicroProfile Health] guide. We advise providing only
+- Create your health check following the link:smallrye-health[SmallRye Health] guide. We advise providing only
 readiness check for an extension (liveness check is designed to express the fact that an application is up and needs to be lightweight).
 - Import the `quarkus-smallrye-health-spi` library in your deployment module.
 - Add a build step in your deployment module that produces a `HealthBuildItem`.

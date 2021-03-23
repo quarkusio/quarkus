@@ -1,11 +1,13 @@
 package org.jboss.resteasy.reactive.server;
 
+import io.smallrye.common.annotation.Blocking;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
@@ -83,4 +85,14 @@ public @interface ServerRequestFilter {
      * Whether or not the filter is a pre-matching filter
      */
     boolean preMatching() default false;
+
+    /**
+     * Normally {@link ContainerRequestFilter} classes are run by RESTEasy Reactive on the same thread as the Resource
+     * Method - this means than when a Resource Method is annotated with {@link Blocking}, the filters will also be run
+     * on a worker thread.
+     * This is meant to be set to {@code true} if a filter should be run on the event-loop even if the target Resource
+     * method is going to be run on the worker thread.
+     * For this to work, this filter must be run before any of the filters when non-blocking is not required.
+     */
+    boolean nonBlocking() default false;
 }

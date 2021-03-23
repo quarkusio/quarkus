@@ -49,6 +49,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -325,7 +326,8 @@ public class DevConsoleProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             ShutdownContextBuildItem shutdownContext,
-            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer) throws IOException {
+            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
+            LiveReloadBuildItem liveReloadBuildItem) throws IOException {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return;
         }
@@ -334,7 +336,8 @@ public class DevConsoleProcessor {
         AppArtifact devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
                 "quarkus-vertx-http-deployment");
 
-        Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem,
+        Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem,
+                curateOutcomeBuildItem,
                 launchModeBuildItem,
                 devConsoleResourcesArtifact, STATIC_RESOURCES_PATH);
 
@@ -801,7 +804,7 @@ public class DevConsoleProcessor {
             String commonPath = "";
             List<String[]> dirs = new ArrayList<>(paths.size());
             for (int i = 0; i < paths.size(); i++) {
-                dirs.add(i, paths.get(i).split(File.separator));
+                dirs.add(i, paths.get(i).split(Pattern.quote(File.separator)));
             }
             for (int j = 0; j < dirs.get(0).length; j++) {
                 String thisDir = dirs.get(0)[j]; // grab the next directory name in the first path

@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide explains how to use the MicroProfile REST Client in order to interact with REST APIs
+This guide explains how to use the RESTEasy REST Client in order to interact with REST APIs
 with very little effort.
 
 TIP: there is another guide if you need to write server link:rest-json[JSON REST APIs].
@@ -108,7 +108,7 @@ but it suffices for the purposes of this guide.
 
 == Create the interface
 
-Using the MicroProfile REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/CountriesService.java` and have the following content:
+Using the RESTEasy REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/CountriesService.java` and have the following content:
 
 [source, java]
 ----

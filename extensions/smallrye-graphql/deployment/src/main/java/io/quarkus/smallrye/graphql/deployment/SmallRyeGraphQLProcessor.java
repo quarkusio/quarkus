@@ -59,6 +59,7 @@ import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointB
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
+import io.smallrye.graphql.cdi.producer.SmallRyeContextAccessorProxy;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -135,6 +136,7 @@ public class SmallRyeGraphQLProcessor {
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(GraphQLConfig.class)
                 .addBeanClass(GraphQLProducer.class)
+                .addBeanClass(SmallRyeContextAccessorProxy.class)
                 .setUnremovable().build());
     }
 
@@ -471,7 +473,8 @@ public class SmallRyeGraphQLProcessor {
             AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, GRAPHQL_UI_WEBJAR_GROUP_ID,
                     GRAPHQL_UI_WEBJAR_ARTIFACT_ID);
             if (launchMode.getLaunchMode().isDevOrTest()) {
-                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, artifact,
+                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
+                        artifact,
                         GRAPHQL_UI_WEBJAR_PREFIX);
                 WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLPath, LINE_TO_UPDATE, LINE_FORMAT);
                 WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLUiPath,

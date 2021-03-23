@@ -1,4 +1,4 @@
-package io.quarkus.it.keycloak;
+package io.quarkus.test.oidc.server;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
@@ -16,8 +16,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.core.MediaType;
-
 import org.jboss.logging.Logger;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -28,9 +26,15 @@ import com.google.common.collect.ImmutableSet;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.jwt.build.Jwt;
 
-public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager {
+public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private static final Logger LOG = Logger.getLogger(KeycloakTestResource.class);
+    private static final Logger LOG = Logger.getLogger(OidcWiremockTestResource.class);
+    private static final String TOKEN_ISSUER = System.getProperty("quarkus.test.oidc.token.issuer",
+            "https://server.example.com");
+    private static final String TOKEN_AUDIENCE = System.getProperty("quarkus.test.oidc.token.audience",
+            "https://server.example.com");
+    private static final String TOKEN_USER_ROLES = System.getProperty("quarkus.test.oidc.token.user-roles", "user");
+    private static final String TOKEN_ADMIN_ROLES = System.getProperty("quarkus.test.oidc.token.admin-roles", "user,admin");
 
     private WireMockServer server;
 
@@ -46,7 +50,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus/.well-known/openid-configuration"))
                         .willReturn(aResponse()
-                                .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                                .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "    \"jwks_uri\": \"" + server.baseUrl()
                                         + "/auth/realms/quarkus/protocol/openid-connect/certs\",\n" +
@@ -54,7 +58,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
                                         + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\",\n" +
                                         "    \"authorization_endpoint\": \"" + server.baseUrl() + "/auth/realms/quarkus\"," +
                                         "    \"token_endpoint\": \"" + server.baseUrl() + "/auth/realms/quarkus/token\"," +
-                                        "    \"issuer\" : \"https://server.example.com\"," +
+                                        "    \"issuer\" : \"" + TOKEN_ISSUER + "\"," +
                                         "    \"introspection_endpoint\": \"" + server.baseUrl()
                                         + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\""
                                         +
@@ -63,7 +67,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/certs"))
                         .willReturn(aResponse()
-                                .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                                .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"keys\" : [\n" +
                                         "    {\n" +
@@ -79,9 +83,8 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         // define the mock for the introspect endpoint
 
         // Valid
-        defineValidIntrospectionMockTokenStubForUserWithRoles("alice", ImmutableSet.of("user"));
-        defineValidIntrospectionMockTokenStubForUserWithRoles("jdoe", ImmutableSet.of("user"));
-        defineValidIntrospectionMockTokenStubForUserWithRoles("admin", ImmutableSet.of("user", "admin"));
+        defineValidIntrospectionMockTokenStubForUserWithRoles("alice", ImmutableSet.copyOf(getUserRoles()));
+        defineValidIntrospectionMockTokenStubForUserWithRoles("admin", ImmutableSet.copyOf(getAdminRoles()));
 
         // Invalid
         defineInvalidIntrospectionMockTokenStubForUserWithRoles("expired", emptySet());
@@ -93,7 +96,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         server.stubFor(
                 get(urlPathMatching("/auth/realms/quarkus"))
                         .willReturn(aResponse()
-                                .withHeader("Content-Type", MediaType.TEXT_HTML)
+                                .withHeader("Content-Type", "text/html")
                                 .withBody("<html>\n" +
                                         "<body>\n" +
                                         " <form action=\"/login\" name=\"form\">\n" +
@@ -132,7 +135,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
                 .withRequestBody(matching("token=" + user + "&token_type_hint=access_token"))
                 .willReturn(WireMock
                         .aResponse()
-                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withHeader("Content-Type", "application/json")
                         .withBody(
                                 "{\"active\":true,\"scope\":\"" + roles.stream().collect(joining(" ")) + "\",\"username\":\""
                                         + user
@@ -144,7 +147,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
                 .withRequestBody(matching("token=" + user + "&token_type_hint=access_token"))
                 .willReturn(WireMock
                         .aResponse()
-                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withHeader("Content-Type", "application/json")
                         .withBody(
                                 "{\"active\":true,\"scope\":\"" + roles.stream().collect(joining(" ")) + "\",\"username\":\""
                                         + user
@@ -155,21 +158,37 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         server.stubFor(WireMock.post("/auth/realms/quarkus/token")
                 .withRequestBody(containing("authorization_code"))
                 .willReturn(WireMock.aResponse()
-                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withHeader("Content-Type", "application/json")
                         .withBody("{\n" +
                                 "  \"access_token\": \""
-                                + getAccessToken("alice", new HashSet<>(Arrays.asList("user", "admin"))) + "\",\n" +
+                                + getAccessToken("alice", getAdminRoles()) + "\",\n" +
                                 "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\",\n" +
-                                "  \"id_token\": \"" + getAccessToken("alice", new HashSet<>(Arrays.asList("user", "admin")))
+                                "  \"id_token\": \"" + getIdToken("alice", getAdminRoles())
                                 + "\"\n" +
                                 "}")));
     }
 
+    private Set<String> getAdminRoles() {
+        return new HashSet<>(Arrays.asList(TOKEN_ADMIN_ROLES.split(",")));
+    }
+
+    private Set<String> getUserRoles() {
+        return new HashSet<>(Arrays.asList(TOKEN_USER_ROLES.split(",")));
+    }
+
     private String getAccessToken(String userName, Set<String> groups) {
+        return generateJwtToken(userName, groups);
+    }
+
+    private String getIdToken(String userName, Set<String> groups) {
+        return generateJwtToken(userName, groups);
+    }
+
+    private String generateJwtToken(String userName, Set<String> groups) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
-                .issuer("https://server.example.com")
-                .audience("https://service.example.com")
+                .issuer(TOKEN_ISSUER)
+                .audience(TOKEN_AUDIENCE)
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");

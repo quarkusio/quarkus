@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -64,6 +65,7 @@ import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.handlers.PerRequestInstanceHandler;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
 import org.jboss.resteasy.reactive.server.handlers.SseResponseWriterHandler;
@@ -157,9 +159,11 @@ public class RuntimeResourceDeployment {
         // when a method is blocking, we also want all the request filters to run on the worker thread
         // because they can potentially set thread local variables
         //we don't need to run this for Servlet and other runtimes that default to blocking
+        Optional<Integer> blockingHandlerIndex = Optional.empty();
         if (!defaultBlocking) {
             if (method.isBlocking()) {
                 handlers.add(new BlockingHandler(executorSupplier));
+                blockingHandlerIndex = Optional.of(handlers.size() - 1);
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
             } else {
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
@@ -168,7 +172,23 @@ public class RuntimeResourceDeployment {
 
         //spec doesn't seem to test this, but RESTEasy does not run request filters again for sub resources (which makes sense)
         if (!locatableResource) {
-            handlers.addAll(interceptorDeployment.setupRequestFilterHandler());
+            List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
+                    .setupRequestFilterHandler();
+            if (blockingHandlerIndex.isPresent()) {
+                int initialIndex = blockingHandlerIndex.get();
+                for (int i = 0; i < containerRequestFilterHandlers.size(); i++) {
+                    ResourceRequestFilterHandler handler = containerRequestFilterHandlers.get(i);
+                    if (handler.isNonBlockingRequired()) {
+                        // the non-blocking handlers are added in the order we have already determined, but they need to
+                        // be added before the blocking handler
+                        handlers.add(initialIndex + i, handler);
+                    } else {
+                        handlers.add(handler);
+                    }
+                }
+            } else {
+                handlers.addAll(containerRequestFilterHandlers);
+            }
         }
 
         // some parameters need the body to be read

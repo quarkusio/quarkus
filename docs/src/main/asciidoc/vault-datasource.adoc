@@ -119,7 +119,7 @@ Now we are ready to configure Vault and Quarkus to be able to connect to this da
 == Vault MicroProfile Config Source
 
 The simplest approach is to write the database password in the KV secret engine under the path that is
-fetched from the Vault MicroProfile Config Source.
+fetched from the Vault Config Source.
 
 Open a new shell, `docker exec` in the Vault container and set the root token:
 [source,bash, subs=attributes+]

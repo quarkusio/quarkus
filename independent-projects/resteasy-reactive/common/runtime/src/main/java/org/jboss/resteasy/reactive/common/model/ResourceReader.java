@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -16,6 +17,7 @@ public class ResourceReader {
     private List<String> mediaTypeStrings = new ArrayList<>();
     private RuntimeType constraint;
     private boolean builtin = true;
+    private Integer priority = Priorities.USER;
     private volatile List<MediaType> mediaTypes;
     private volatile MessageBodyReader<?> instance;
 
@@ -51,6 +53,14 @@ public class ResourceReader {
 
     public void setBuiltin(boolean builtin) {
         this.builtin = builtin;
+    }
+
+    public Integer getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Integer priority) {
+        this.priority = priority;
     }
 
     public MessageBodyReader<?> instance() {
@@ -92,13 +102,12 @@ public class ResourceReader {
     /**
      * The comparison for now is simple:
      * 1) Application provided writers come first
-     * 2) Then the more specific the media type, the higher the priority
-     * 3) Finally we compare the number of media types
+     * 2) Readers with lower priority come first (same as reader interceptors)
+     * 3) Then the more specific the media type, the higher the priority
+     * 4) Finally we compare the number of media types
      *
      * The spec doesn't seem to mention this sorting being explicitly needed, but there are tests
      * in the TCK that only pass reliably if the Readers are sorted like this
-     *
-     * TODO: if this actually follows the exact same rules as ResourceWriter, we need to refactor
      */
     public static class ResourceReaderComparator implements Comparator<ResourceReader> {
 
@@ -109,6 +118,11 @@ public class ResourceReader {
             int builtInCompare = Boolean.compare(o1.isBuiltin(), o2.isBuiltin());
             if (builtInCompare != 0) {
                 return builtInCompare;
+            }
+
+            int priorityCompare = Integer.compare(o1.getPriority(), o2.getPriority());
+            if (priorityCompare != 0) {
+                return priorityCompare;
             }
 
             List<MediaType> mediaTypes1 = o1.mediaTypes();
@@ -127,7 +141,7 @@ public class ResourceReader {
                 return mediaTypeCompare;
             }
 
-            // TODO: not sure if this makes sense but was added to make the sorting more deterministic
+            // done to make the sorting result deterministic
             return Integer.compare(mediaTypes1.size(), mediaTypes2.size());
         }
     }

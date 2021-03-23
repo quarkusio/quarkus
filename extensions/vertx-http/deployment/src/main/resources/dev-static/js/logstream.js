@@ -11,13 +11,9 @@ var streamingPath = myself.attr('data-streamingPath');
 if (typeof streamingPath === "undefined" ) {
    var streamingPath = "/dev/logstream";
 }
-// See if we should show on start
-var showOnStart = myself.attr('data-showOnStart');   
-if (typeof showOnStart === "undefined" ) {
-   var showOnStart = false;
-}
 
 var zoom = 0.90;
+var panelHeight;
 var linespace = 1.00;
 var tabspace = 1;
 var increment = 0.05;
@@ -34,9 +30,6 @@ var filter = "";
 var localstoragekey = "quarkus_logging_manager_state";
 
 $('document').ready(function () {
-    if(!showOnStart){
-        hideLog();
-    }
     loadSettings();
     
     openSocket();
@@ -52,6 +45,7 @@ $('document').ready(function () {
 
     document.addEventListener("mouseup", function(){
         document.removeEventListener("mousemove", resize, false);
+        saveSettings();
     }, false);
     
     logstreamStopStartButton.addEventListener("click", stopStartEvent);
@@ -96,6 +90,14 @@ function loadSettings(){
         zoom = state.zoom;
         applyZoom();
 
+        if(state.panelHeight !== null && typeof(state.panelHeight) !== 'undefined'){
+            panelHeight = state.panelHeight;
+            showLog(panelHeight);
+        }else{
+            hideLog();
+            panelHeight = null;
+        }
+        
         linespace = state.linespace;
         applyLineSpacing();
 
@@ -133,8 +135,11 @@ function loadSettings(){
 
 function saveSettings(){
     // Running state
+    const panel = document.getElementById("logstreamFooter");
+    
     var state = {
         "zoom": zoom,
+        "panelHeight": panelHeight,
         "linespace": linespace,
         "tabspace": tabspace,
         "logScrolling": logScrolling,
@@ -165,26 +170,44 @@ function saveSettings(){
 }
 
 function showLog(){
-    $("#logstreamFooter").css("height", "33vh");
+    if (panelHeight === null || panelHeight === 'undefined') {
+        panelHeight = "33vh";
+    }
+    $("#logstreamFooter").css("height", panelHeight);
     $("#logstreamManager").show();
     $("#logstreamViewLogButton").hide();
     $("#logstreamHideLogButton").show();
     var element = document.getElementById("logstreamManager");
     element.scrollIntoView({block: "end"});
+    
+    saveSettings();
 }
 
 function hideLog(){
+    panelHeight = null;
     $("#logstreamFooter").css("height", "unset");
     $("#logstreamViewLogButton").show();
     $("#logstreamHideLogButton").hide();
     $("#logstreamManager").hide();
+    
+    saveSettings()
 }
 
 function resize(e){
     const dx = m_pos - e.y;
     m_pos = e.y;
     const panel = document.getElementById("logstreamFooter");
-    panel.style.height = (parseInt(getComputedStyle(panel, '').height) + dx) + "px";
+    
+    if(panel.style.height === "unset"){
+        panelHeight = null;
+    }else{    
+        panelHeight = parseInt(getComputedStyle(panel, '').height) + dx;
+        panelHeight = "" + panelHeight;
+        if(!panelHeight.endsWith("vh") && !panelHeight.endsWith("px")){
+            panelHeight = panelHeight + "px";
+        }
+        panel.style.height = panelHeight;
+    }
 }
 
 function addControlCListener(){

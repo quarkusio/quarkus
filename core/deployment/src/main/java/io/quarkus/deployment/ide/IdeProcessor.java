@@ -17,6 +17,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
@@ -24,6 +26,8 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.util.JavaVersionUtil;
 
 public class IdeProcessor {
+
+    private static final Logger log = Logger.getLogger(IdeProcessor.class);
 
     private static Map<String, List<Ide>> IDE_MARKER_FILES = new HashMap<>();
     private static Map<Predicate<ProcessInfo>, Ide> IDE_PROCESSES = new HashMap<>();
@@ -135,7 +139,13 @@ public class IdeProcessor {
             return null;
         }
         Set<Ide> result = new HashSet<>(4);
-        List<ProcessInfo> processInfos = ProcessUtil.runningProcesses();
+        List<ProcessInfo> processInfos = Collections.emptyList();
+        try {
+            processInfos = ProcessUtil.runningProcesses();
+        } catch (Exception e) {
+            // this shouldn't be a terminal failure, so just log it to the console
+            log.warn(e.getMessage());
+        }
         for (ProcessInfo processInfo : processInfos) {
             for (Map.Entry<Predicate<ProcessInfo>, Ide> entry : IDE_PROCESSES.entrySet()) {
                 if (entry.getKey().test(processInfo)) {
@@ -193,7 +203,7 @@ public class IdeProcessor {
                 });
                 return result;
             } catch (Exception e) {
-                throw new RuntimeException("Unable to determine running processes", e);
+                throw new RuntimeException("Unable to determine running IDE processes", e);
             }
         }
     }

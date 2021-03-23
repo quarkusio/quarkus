@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
+import java.time.Duration;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -68,4 +70,10 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean redirectToNonApplicationRootPath;
+
+    /**
+     * The REST Assured client timeout for testing.
+     */
+    @ConfigItem(defaultValue = "30s")
+    public Duration testTimeout;
 }

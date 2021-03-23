@@ -30,22 +30,17 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-oidc-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId> jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

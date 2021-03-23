@@ -12,19 +12,17 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.build.Jwt;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @QuarkusTest
-@QuarkusTestResource(KeycloakTestResource.class)
+@QuarkusTestResource(OidcWiremockTestResource.class)
 public class BearerTokenAuthorizationTest {
 
     @Test
     public void testSecureAccessSuccessPreferredUsername() {
-        for (String username : Arrays.asList("alice", "jdoe", "admin")) {
+        for (String username : Arrays.asList("alice", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username, new HashSet<>(Arrays.asList("user", "admin"))))
                     .when().get("/api/users/preferredUserName")
                     .then()

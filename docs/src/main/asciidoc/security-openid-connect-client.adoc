@@ -320,6 +320,112 @@ quarkus.oidc-client.credentials.jwt.key-id=mykey
 
 Using `private_key_jwt` or `private_key_jwt` authentication methods ensures that no client secret goes over the wire.
 
+[[integration-testing-oidc-client]]
+=== Testing
+
+Add the following dependencies to your test project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>com.github.tomakehurst</groupId>
+    <artifactId>wiremock-jre8</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.awaitility</groupId>
+    <artifactId>awaitility</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Write Wiremock based `QuarkusTestResourceLifecycleManager`, for example:
+[source, java]
+----
+package io.quarkus.it.keycloak;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.Options.ChunkedEncodingPolicy;
+
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+
+public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
+
+    private WireMockServer server;
+
+    @Override
+    public Map<String, String> start() {
+
+        server = new WireMockServer(wireMockConfig().dynamicPort().useChunkedTransferEncoding(ChunkedEncodingPolicy.NEVER));
+        server.start();
+
+        server.stubFor(WireMock.post("/tokens")
+                .withRequestBody(matching("grant_type=password&username=alice&password=alice"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                                "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+        server.stubFor(WireMock.post("/tokens")
+                .withRequestBody(matching("grant_type=refresh_token&refresh_token=refresh_token_1"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                                "{\"access_token\":\"access_token_2\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+
+
+        Map<String, String> conf = new HashMap<>();
+        conf.put("quarkus.oidc-client.auth-server-url", server.baseUrl());
+        conf.put("keycloak-url", server.baseUrl());
+        return conf;
+    }
+
+    @Override
+    public synchronized void stop() {
+        if (server != null) {
+            server.stop();
+            server = null;
+        }
+    }
+}
+----
+
+Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered OidcClient filter to invoke on the downstream endpoint which echoes the token back, for example, see the `integration-tests/oidc-client-wiremock` in the `main` Quarkus repository.
+
+Set `application.properties`, for example:
+
+[source, properties]
+----
+quarkus.oidc-client.auth-server-url=${keycloak.url}
+quarkus.oidc-client.discovery-enabled=false
+quarkus.oidc-client.token-path=/tokens
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.secret=secret
+quarkus.oidc-client.grant.type=password
+quarkus.oidc-client.grant-options.password.username=alice
+quarkus.oidc-client.grant-options.password.password=alice
+----
+
+and finally write the test code. Given the Wiremock-based resource above, the first test invocation should return `access_token_1` access token which will expire in 4 seconds. Use `awaitility` to wait for about 5 seconds, and now the next test invocation should return `access_token_2` access token which confirms the expired `access_token_1` access token has been refreshed.
+
 [[token-propagation]]
 == Token Propagation in MicroProfile RestClient client filter
 
@@ -429,6 +535,12 @@ smallrye.jwt.new-token.override-matching-claims=true
 
 
 This filter will be additionally enhanced in the future to support exchanging the access tokens before propagating them.
+
+[[integration-testing-token-propagation]]
+=== Testing
+
+You can generate the tokens as described in link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] section.
+Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered token propagation filter to invoke on the downstream endpoint, for example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
 
 == References
 

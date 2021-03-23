@@ -157,7 +157,7 @@ class YamlListObjectHandler {
         }
         if (!classInfo.hasNoArgsConstructor()) {
             throw new IllegalArgumentException(
-                    String.format("Class '%s' which is used as %s in class '%s' must be have a no-args constructor", classInfo,
+                    String.format("Class '%s' which is used as %s in class '%s' must have a no-args constructor", classInfo,
                             member.phraseUsage(), member.declaringClass().name().toString()));
         }
         if (!Modifier.isPublic(classInfo.flags())) {

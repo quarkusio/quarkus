@@ -8,7 +8,7 @@
 
         <description>Hibernate test case template Persistence Unit</description>
 
-        <class>io.quarkus.hibernate.orm.MyEntity</class>
+        <class>io.quarkus.hibernate.orm.xml.persistence.MyEntity</class>
 
         <properties>
             <!-- intentionally using worse case so that we can optimise for this -->

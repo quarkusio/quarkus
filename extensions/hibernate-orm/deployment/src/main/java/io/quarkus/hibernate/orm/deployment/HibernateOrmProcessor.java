@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -90,6 +91,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
@@ -110,6 +112,7 @@ import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
+import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -273,6 +276,7 @@ public final class HibernateOrmProcessor {
                             getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                     .getProperties().getProperty(AvailableSettings.MULTI_TENANT))),
                             null,
+                            jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             false,
                             true));
         }
@@ -300,13 +304,44 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+    public void contributePersistenceXmlToJpaModel(
+            BuildProducer<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions,
+            List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors) {
+        for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptor : persistenceXmlDescriptors) {
+            ParsedPersistenceXmlDescriptor descriptor = persistenceXmlDescriptor.getDescriptor();
+            jpaModelPuContributions.produce(new JpaModelPersistenceUnitContributionBuildItem(
+                    descriptor.getName(), descriptor.getManagedClassNames(),
+                    descriptor.getMappingFileNames()));
+        }
+    }
+
+    @BuildStep
+    public void contributeQuarkusConfigToJpaModel(
+            BuildProducer<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions,
+            HibernateOrmConfig hibernateOrmConfig) {
+        Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnitConfigs = new TreeMap<>();
+        if (hibernateOrmConfig.defaultPersistenceUnit != null) {
+            persistenceUnitConfigs.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                    hibernateOrmConfig.defaultPersistenceUnit);
+        }
+        persistenceUnitConfigs.putAll(hibernateOrmConfig.persistenceUnits);
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : persistenceUnitConfigs.entrySet()) {
+            String name = entry.getKey();
+            HibernateOrmConfigPersistenceUnit config = entry.getValue();
+            jpaModelPuContributions.produce(new JpaModelPersistenceUnitContributionBuildItem(
+                    name, Collections.emptySet(),
+                    config.mappingFiles.orElse(Collections.emptySet())));
+        }
+    }
+
+    @BuildStep
     public void defineJpaEntities(
             JpaModelIndexBuildItem indexBuildItem,
             BuildProducer<JpaModelBuildItem> domainObjectsProducer,
             List<IgnorableNonIndexedClasses> ignorableNonIndexedClassesBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBean,
-            List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors) throws Exception {
+            List<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions) throws Exception {
 
         Set<String> ignorableNonIndexedClasses = Collections.emptySet();
         if (!ignorableNonIndexedClassesBuildItems.isEmpty()) {
@@ -316,7 +351,7 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, persistenceXmlDescriptors,
+        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, jpaModelPuContributions,
                 indexBuildItem.getIndex(),
                 ignorableNonIndexedClasses);
         final JpaModelBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
@@ -341,6 +376,39 @@ public final class HibernateOrmProcessor {
         PreGeneratedProxies proxyDefinitions = generatedProxies(managedClassAndPackageNames,
                 indexBuildItem.getIndex(), generatedClassBuildItemBuildProducer, liveReloadBuildItem);
         return new ProxyDefinitionsBuildItem(proxyDefinitions);
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    public void preGenAnnotationProxies(List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+            BuildProducer<ReflectiveClassBuildItem> reflective,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions) {
+        if (hasXmlMappings(persistenceUnitDescriptorBuildItems)) {
+            // XML mapping may need to create annotation proxies, which requires reflection
+            // and pre-generation of the proxy classes.
+            // This probably could be optimized,
+            // but there are plans to make deep changes to XML mapping in ORM (to rely on Jandex directly),
+            // so let's not waste our time on optimizations that won't be relevant in a few months.
+            List<String> annotationClassNames = new ArrayList<>();
+            for (DotName name : HibernateOrmAnnotations.JPA_MAPPING_ANNOTATIONS) {
+                annotationClassNames.add(name.toString());
+            }
+            for (DotName name : HibernateOrmAnnotations.HIBERNATE_MAPPING_ANNOTATIONS) {
+                annotationClassNames.add(name.toString());
+            }
+            reflective.produce(new ReflectiveClassBuildItem(true, true, true, annotationClassNames.toArray(new String[0])));
+            for (String annotationClassName : annotationClassNames) {
+                proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(annotationClassName));
+            }
+        }
+    }
+
+    private boolean hasXmlMappings(List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems) {
+        for (PersistenceUnitDescriptorBuildItem descriptor : persistenceUnitDescriptorBuildItems) {
+            if (descriptor.hasXmlMappings()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SuppressWarnings("unchecked")
@@ -659,6 +727,7 @@ public final class HibernateOrmProcessor {
                     hibernateOrmConfig, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit,
                     modelClassesAndPackagesForDefaultPersistenceUnit,
+                    jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     storageEngineCollector);
@@ -679,6 +748,7 @@ public final class HibernateOrmProcessor {
                     hibernateOrmConfig, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
                     modelClassesAndPackagesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(),
                             Collections.emptySet()),
+                    jpaModel.getXmlMappings(persistenceUnitEntry.getKey()),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     storageEngineCollector);
@@ -695,6 +765,7 @@ public final class HibernateOrmProcessor {
             String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             Set<String> modelClassesAndPackages,
+            List<RecordableXmlMapping> xmlMappings,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
@@ -904,6 +975,7 @@ public final class HibernateOrmProcessor {
                 new PersistenceUnitDescriptorBuildItem(descriptor, dataSource,
                         getMultiTenancyStrategy(persistenceUnitConfig.multitenant),
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
+                        xmlMappings,
                         false, false));
     }
 

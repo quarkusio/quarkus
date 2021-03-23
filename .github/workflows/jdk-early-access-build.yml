@@ -1,0 +1,114 @@
+name: Quarkus Early Access JDK Build
+
+on:
+  schedule:
+    # midnight every weekday + saturday
+    - cron:  '0 0 * * 1-6'
+  workflow_dispatch:
+    inputs:
+      jdkVersion:
+        description: 'JDK version'
+        required: true
+        # switch to 17-ea once 16 has been fixed and is running in regular CI
+        # make sure to keep the default of JDK_VERSION in sync!
+        default: '16'
+
+env:
+  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '16' }}
+  # Workaround testsuite locale issue
+  LANG: en_US.UTF-8
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip"
+  DB_USER: hibernate_orm_test
+  DB_PASSWORD: hibernate_orm_test
+  DB_NAME: hibernate_orm_test
+jobs:
+  linux-jvm-test:
+    name: "JVM Tests - Early Access JDK Build"
+    runs-on: ubuntu-latest
+    if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
+    timeout-minutes: 360
+    env:
+      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+    steps:
+
+      - name: Set up JDK
+        # AdoptOpenJDK does not seem to provide EA builds, so use the standard action which provides a Zulu JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ env.JDK_VERSION }}
+      - name: Print Java version
+        shell: bash
+        run: java -version
+
+      - name: Stop mysql
+        shell: bash
+        run: |
+          ss -ln
+          sudo service mysql stop || true
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.ref || 'main' }}
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+        shell: bash
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          # refresh cache every month to avoid unlimited growth
+          # also add JDK version to key to avoid poisioning of the CI cache
+          key: q2maven-${{ steps.get-date.outputs.date }}-${{ env.JDK_VERSION }}
+      - name: Build with Maven
+        # try to gather as many failures as possible, test reports are evaluated in subsequent actions
+        run: |
+          mvn $JVM_TEST_MAVEN_OPTS -Dtcks install -fae -Dmaven.test.failure.ignore=true
+      - name: Publish Test Report
+        if: always()
+        uses: scacap/action-surefire-report@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # fail required to upload failure archive in subsequent actions
+          fail_on_test_failures: true
+      - name: Publish Gradle Test Report
+        if: always()
+        uses: scacap/action-surefire-report@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # fail required to upload failure archive in subsequent actions
+          fail_on_test_failures: true
+          check_name: 'Test Report for Gradle'
+          report_paths: '**/build/test-results/test/TEST-*.xml'
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-linux-jvm${{ env.JDK_VERSION }}
+          path: 'test-reports.tgz'
+      - name: Delete Local Artifacts From Cache
+        if: always()
+        shell: bash
+        run: rm -r ~/.m2/repository/io/quarkus
+      - name: Report status
+        uses: jbangdev/jbang-action@v0.68.0
+        if: "github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
+        with:
+          script: .github/NativeBuildReport.java
+          scriptargs: |
+            issueNumber=15867
+            runId=${{ github.run_id }}
+            status=${{ job.status }}
+            token=${{ secrets.GITHUB_API_TOKEN }}
+            issueRepo=${{ github.repository }}
+            thisRepo=${{ github.repository }}

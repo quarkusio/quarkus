@@ -19,6 +19,10 @@ public class PlatformArtifacts {
                 : getCatalogArtifactForBom(coords.getGroupId(), coords.getArtifactId(), coords.getVersion());
     }
 
+    public static String ensureCatalogArtifactId(String artifactId) {
+        return isCatalogArtifactId(artifactId) ? artifactId : artifactId + Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX;
+    }
+
     public static boolean isCatalogArtifactId(String artifactId) {
         return artifactId != null && artifactId.endsWith(Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX);
     }
@@ -26,4 +30,11 @@ public class PlatformArtifacts {
     public static boolean isCatalogArtifact(ArtifactCoords coords) {
         return isCatalogArtifactId(coords.getArtifactId());
     }
+
+    public static String ensureBomArtifactId(String artifactId) {
+        return isCatalogArtifactId(artifactId)
+                ? artifactId.substring(0, artifactId.length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length())
+                : artifactId;
+    }
+
 }

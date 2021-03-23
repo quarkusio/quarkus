@@ -12,6 +12,7 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 
 import com.google.common.cache.Cache;
@@ -60,9 +61,11 @@ public class QuarkusBootstrapProvider implements Closeable {
         return provider(mojo.projectId()).artifactResolver(mojo);
     }
 
+    // @deprecated in 1.14.0.Final
+    @Deprecated
     public AppArtifact projectArtifact(QuarkusBootstrapMojo mojo)
             throws MojoExecutionException {
-        return provider(mojo.projectId()).projectArtifact(mojo);
+        return provider(mojo.projectId()).appArtifact(mojo);
     }
 
     public QuarkusBootstrap bootstrapQuarkus(QuarkusBootstrapMojo mojo)
@@ -91,7 +94,7 @@ public class QuarkusBootstrapProvider implements Closeable {
 
     private class QuarkusAppBootstrapProvider implements Closeable {
 
-        private AppArtifact projectArtifact;
+        private AppArtifact appArtifact;
         private MavenArtifactResolver artifactResolver;
         private QuarkusBootstrap quarkusBootstrap;
         private CuratedApplication curatedApp;
@@ -112,34 +115,6 @@ public class QuarkusBootstrapProvider implements Closeable {
             } catch (BootstrapMavenException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus bootstrap Maven artifact resolver", e);
             }
-        }
-
-        private AppArtifact projectArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
-            if (projectArtifact != null) {
-                return projectArtifact;
-            }
-            final Artifact projectArtifact = mojo.mavenProject().getArtifact();
-            final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
-                    projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
-                    projectArtifact.getVersion());
-
-            File projectFile = projectArtifact.getFile();
-            if (projectFile == null) {
-                projectFile = new File(mojo.mavenProject().getBuild().getOutputDirectory());
-                if (!projectFile.exists()) {
-                    /*
-                     * TODO GenerateCodeMojo would fail
-                     * if (hasSources(project)) {
-                     * throw new MojoExecutionException("Project " + project.getArtifact() + " has not been compiled yet");
-                     * }
-                     */
-                    if (!projectFile.mkdirs()) {
-                        throw new MojoExecutionException("Failed to create the output dir " + projectFile);
-                    }
-                }
-            }
-            appArtifact.setPaths(PathsCollection.of(projectFile.toPath()));
-            return appArtifact;
         }
 
         protected QuarkusBootstrap bootstrapQuarkus(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
@@ -164,7 +139,8 @@ public class QuarkusBootstrapProvider implements Closeable {
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
 
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
-                    .setAppArtifact(projectArtifact(mojo))
+                    .setAppArtifact(appArtifact(mojo))
+                    .setManagingProject(managingProject(mojo))
                     .setMavenArtifactResolver(artifactResolver(mojo))
                     .setIsolateDeployment(true)
                     .setBaseClassLoader(getClass().getClassLoader())
@@ -193,6 +169,96 @@ public class QuarkusBootstrapProvider implements Closeable {
             } catch (BootstrapException e) {
                 throw new MojoExecutionException("Failed to bootstrap the application", e);
             }
+        }
+
+        protected AppArtifact managingProject(QuarkusBootstrapMojo mojo) {
+            if (mojo.appArtifactCoords() == null) {
+                return null;
+            }
+            final Artifact artifact = mojo.mavenProject().getArtifact();
+            return new AppArtifact(artifact.getGroupId(), artifact.getArtifactId(),
+                    artifact.getClassifier(), artifact.getArtifactHandler().getExtension(),
+                    artifact.getVersion());
+        }
+
+        private AppArtifact appArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
+            return appArtifact == null ? appArtifact = initAppArtifact(mojo) : appArtifact;
+        }
+
+        private AppArtifact initAppArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
+            String appArtifactCoords = mojo.appArtifactCoords();
+            if (appArtifactCoords == null) {
+                final Artifact projectArtifact = mojo.mavenProject().getArtifact();
+                final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+                        projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
+                        projectArtifact.getVersion());
+
+                File projectFile = projectArtifact.getFile();
+                if (projectFile == null) {
+                    projectFile = new File(mojo.mavenProject().getBuild().getOutputDirectory());
+                    if (!projectFile.exists()) {
+                        /*
+                         * TODO GenerateCodeMojo would fail
+                         * if (hasSources(project)) {
+                         * throw new MojoExecutionException("Project " + project.getArtifact() + " has not been compiled yet");
+                         * }
+                         */
+                        if (!projectFile.mkdirs()) {
+                            throw new MojoExecutionException("Failed to create the output dir " + projectFile);
+                        }
+                    }
+                }
+                appArtifact.setPaths(PathsCollection.of(projectFile.toPath()));
+                return appArtifact;
+            }
+
+            final String[] coordsArr = appArtifactCoords.split(":");
+            if (coordsArr.length < 2 || coordsArr.length > 5) {
+                throw new MojoExecutionException(
+                        "appArtifact expression " + appArtifactCoords
+                                + " does not follow format groupId:artifactId:classifier:type:version");
+            }
+            final String groupId = coordsArr[0];
+            final String artifactId = coordsArr[1];
+            String classifier = "";
+            String type = "jar";
+            String version = null;
+            if (coordsArr.length == 3) {
+                version = coordsArr[2];
+            } else if (coordsArr.length > 3) {
+                classifier = coordsArr[2] == null ? "" : coordsArr[2];
+                type = coordsArr[3] == null ? "jar" : coordsArr[3];
+                if (coordsArr.length > 4) {
+                    version = coordsArr[4];
+                }
+            }
+            if (version == null) {
+                for (Artifact dep : mojo.mavenProject().getArtifacts()) {
+                    if (dep.getArtifactId().equals(artifactId)
+                            && dep.getGroupId().equals(groupId)
+                            && dep.getClassifier().equals(classifier)
+                            && dep.getType().equals(type)) {
+                        return new AppArtifact(dep.getGroupId(),
+                                dep.getArtifactId(),
+                                dep.getClassifier(),
+                                dep.getArtifactHandler().getExtension(),
+                                dep.getVersion());
+                    }
+                }
+                throw new IllegalStateException("Failed to locate " + appArtifactCoords + " among the project dependencies");
+            }
+
+            final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, classifier, type, version);
+            try {
+                appArtifact.setPath(
+                        artifactResolver(mojo).resolve(new DefaultArtifact(groupId, artifactId, classifier, type, version))
+                                .getArtifact().getFile().toPath());
+            } catch (MojoExecutionException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new MojoExecutionException("Failed to resolve " + appArtifact, e);
+            }
+            return appArtifact;
         }
 
         @Override

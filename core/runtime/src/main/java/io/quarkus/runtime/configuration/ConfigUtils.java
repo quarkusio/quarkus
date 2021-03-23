@@ -6,7 +6,6 @@ import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE
 import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE_PARENT;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
 import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
-import static io.smallrye.config.SmallRyeConfigBuilder.WEB_INF_MICROPROFILE_CONFIG_PROPERTIES;
 
 import java.io.IOException;
 import java.net.URL;
@@ -101,7 +100,6 @@ public final class ConfigUtils {
         } else {
             final List<ConfigSource> sources = new ArrayList<>();
             sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
-            sources.addAll(classPathSources(WEB_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
             sources.addAll(new BuildTimeDotEnvConfigSourceProvider().getConfigSources(classLoader));
             sources.add(new BuildTimeEnvConfigSource());
             sources.add(new BuildTimeSysPropConfigSource());

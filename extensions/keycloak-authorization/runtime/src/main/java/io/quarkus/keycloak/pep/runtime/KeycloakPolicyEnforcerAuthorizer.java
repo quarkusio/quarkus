@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 
+import org.jboss.logging.Logger;
 import org.keycloak.AuthorizationContext;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.authorization.KeycloakAdapterPolicyEnforcer;
@@ -21,6 +22,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.TlsConfig;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -31,6 +33,7 @@ import io.vertx.ext.web.RoutingContext;
 @Singleton
 public class KeycloakPolicyEnforcerAuthorizer
         implements HttpSecurityPolicy, BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> {
+    private static final Logger LOG = Logger.getLogger(KeycloakPolicyEnforcerAuthorizer.class);
 
     private volatile KeycloakAdapterPolicyEnforcer delegate;
     private volatile long readTimeout;
@@ -43,6 +46,11 @@ public class KeycloakPolicyEnforcerAuthorizer
 
     @Override
     public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
+        if (delegate == null) {
+            LOG.debug(
+                    "Keycloak Policy Enforcer has not been initialized - please make sure 'quarkus.oidc.enabled' is not set to 'false'");
+            throw new AuthenticationFailedException();
+        }
         VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, readTimeout);
         AuthorizationContext result = delegate.authorize(httpFacade);
 

@@ -1,5 +1,7 @@
 package io.quarkus.it.keycloak;
 
+import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
@@ -59,6 +61,12 @@ public class ProtectedResource {
     @Path("configMetadataIssuer")
     public String configMetadataIssuer() {
         return configMetadata.getIssuer();
+    }
+
+    @GET
+    @Path("configMetadataScopes")
+    public String configMetadataScopes() {
+        return configMetadata.getSupportedScopes().stream().collect(Collectors.joining(","));
     }
 
     @GET

@@ -49,7 +49,7 @@ public class OpenshiftWithDockerBuildStrategyTest {
                     assertThat(c.getCommand()).isNullOrEmpty();
                     assertThat(c.getArgs()).isNullOrEmpty();
                     //We explicitly remove them when using the `docker build strategy`.
-                    assertThat(c.getEnv()).extracting("name").doesNotContain("JAVA_APP_JAR", "JAVA_LIB_DIR");
+                    assertThat(c.getEnv()).extracting("name").doesNotContain("JAVA_APP_JAR");
                 });
             });
         });

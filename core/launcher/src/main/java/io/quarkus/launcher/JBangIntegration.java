@@ -32,7 +32,6 @@ public class JBangIntegration {
             String pomContents = String.join("\n", Files.readAllLines(pomFile));
             dataOutputStream.writeUTF(pomContents);
             //Source file locations
-            dataOutputStream.writeUTF(appClasses.toAbsolutePath().toString());
             dataOutputStream.writeUTF(System.getProperty("jbang.source"));
             dataOutputStream.writeInt(originalDeps.size());
             for (Map.Entry<String, Path> i : originalDeps) {

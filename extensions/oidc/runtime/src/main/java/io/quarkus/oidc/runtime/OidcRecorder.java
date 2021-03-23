@@ -81,7 +81,9 @@ public class OidcRecorder {
             OidcTenantConfig oidcConfig, TlsConfig tlsConfig, String tenantId) {
 
         if (!dynamicTenantsConfig.containsKey(tenantId)) {
-            return createTenantContext(vertx, oidcConfig, tlsConfig, tenantId).onItem().transform(
+            Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, tlsConfig, tenantId);
+            uniContext.onFailure().transform(t -> logTenantConfigContextFailure(t, tenantId));
+            return uniContext.onItem().transform(
                     new Function<TenantConfigContext, TenantConfigContext>() {
                         @Override
                         public TenantConfigContext apply(TenantConfigContext t) {
@@ -97,7 +99,23 @@ public class OidcRecorder {
     private TenantConfigContext createStaticTenantContext(Vertx vertx,
             OidcTenantConfig oidcConfig, TlsConfig tlsConfig, String tenantId) {
 
-        return createTenantContext(vertx, oidcConfig, tlsConfig, tenantId).await().indefinitely();
+        Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, tlsConfig, tenantId);
+        return uniContext.onFailure()
+                .recoverWithItem(new Function<Throwable, TenantConfigContext>() {
+                    @Override
+                    public TenantConfigContext apply(Throwable t) {
+                        logTenantConfigContextFailure(t, tenantId);
+                        return new TenantConfigContext(null, oidcConfig, false);
+                    }
+                })
+                .await().indefinitely();
+    }
+
+    private static Throwable logTenantConfigContextFailure(Throwable t, String tenantId) {
+        LOG.debugf(
+                "'%s' tenant initialization has failed: '%s'. Access to resources protected by this tenant will fail with HTTP 401.",
+                tenantId, t.getMessage());
+        return t;
     }
 
     private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, TlsConfig tlsConfig,
@@ -114,7 +132,11 @@ public class OidcRecorder {
             return Uni.createFrom().item(createTenantContextFromPublicKey(oidcConfig));
         }
 
-        OidcCommonUtils.verifyCommonConfiguration(oidcConfig, true);
+        try {
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, true);
+        } catch (Throwable t) {
+            return Uni.createFrom().failure(t);
+        }
 
         if (!oidcConfig.discoveryEnabled) {
             if (oidcConfig.applicationType != ApplicationType.SERVICE) {

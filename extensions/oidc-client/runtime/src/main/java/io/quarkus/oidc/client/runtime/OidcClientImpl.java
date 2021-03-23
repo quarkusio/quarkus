@@ -1,8 +1,10 @@
 package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.function.Supplier;
@@ -29,6 +31,7 @@ public class OidcClientImpl implements OidcClient {
 
     private static final Logger LOG = Logger.getLogger(OidcClientImpl.class);
 
+    private static final Duration REQUEST_RETRY_BACKOFF_DURATION = Duration.ofSeconds(1);
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
     private final WebClient client;
@@ -84,7 +87,12 @@ public class OidcClientImpl implements OidcClient {
                     body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
                     body.add(OidcConstants.CLIENT_ASSERTION, OidcCommonUtils.signJwtWithKey(oidcConfig, clientJwtKey));
                 }
-                return request.sendForm(body).onItem()
+                // Retry up to three times with a one second delay between the retries if the connection is closed
+                Uni<HttpResponse<Buffer>> response = request.sendForm(body)
+                        .onFailure(ConnectException.class)
+                        .retry()
+                        .atMost(3);
+                return response.onItem()
                         .transform(resp -> emitGrantTokens(resp, refresh));
             }
         });

@@ -14,8 +14,15 @@ class TenantConfigContext {
      */
     final OidcTenantConfig oidcConfig;
 
+    final boolean ready;
+
     public TenantConfigContext(OidcProvider client, OidcTenantConfig config) {
+        this(client, config, true);
+    }
+
+    public TenantConfigContext(OidcProvider client, OidcTenantConfig config, boolean ready) {
         this.provider = client;
         this.oidcConfig = config;
+        this.ready = ready;
     }
 }

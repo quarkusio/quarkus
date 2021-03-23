@@ -1,5 +1,7 @@
 package io.quarkus.registry.config;
 
+import java.util.Map;
+
 public interface RegistryConfig {
 
     String getId();
@@ -17,4 +19,6 @@ public interface RegistryConfig {
     RegistryMavenConfig getMaven();
 
     RegistryQuarkusVersionsConfig getQuarkusVersions();
+
+    Map<String, Object> getExtra();
 }

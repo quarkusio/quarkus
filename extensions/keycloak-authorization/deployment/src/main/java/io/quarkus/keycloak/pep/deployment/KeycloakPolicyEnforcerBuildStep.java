@@ -27,8 +27,8 @@ public class KeycloakPolicyEnforcerBuildStep {
     }
 
     @BuildStep
-    RequireBodyHandlerBuildItem requireBody(KeycloakPolicyEnforcerConfig config) {
-        if (config.policyEnforcer.enable) {
+    RequireBodyHandlerBuildItem requireBody(OidcBuildTimeConfig oidcBuildTimeConfig, KeycloakPolicyEnforcerConfig config) {
+        if (oidcBuildTimeConfig.enabled && config.policyEnforcer.enable) {
             if (isBodyClaimInformationPointDefined(config.policyEnforcer.claimInformationPoint.simpleConfig)) {
                 return new RequireBodyHandlerBuildItem();
             }
@@ -57,8 +57,8 @@ public class KeycloakPolicyEnforcerBuildStep {
     }
 
     @BuildStep
-    public AdditionalBeanBuildItem beans(KeycloakPolicyEnforcerConfig config) {
-        if (config.policyEnforcer.enable) {
+    public AdditionalBeanBuildItem beans(OidcBuildTimeConfig oidcBuildTimeConfig, KeycloakPolicyEnforcerConfig config) {
+        if (oidcBuildTimeConfig.enabled && config.policyEnforcer.enable) {
             return AdditionalBeanBuildItem.builder().setUnremovable()
                     .addBeanClass(KeycloakPolicyEnforcerAuthorizer.class).build();
         }

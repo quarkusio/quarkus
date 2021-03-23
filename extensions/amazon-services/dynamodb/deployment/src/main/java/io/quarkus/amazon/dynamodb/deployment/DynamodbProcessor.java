@@ -31,6 +31,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -66,6 +67,14 @@ public class DynamodbProcessor extends AbstractAmazonServiceProcessor {
     @BuildStep
     AdditionalBeanBuildItem producer() {
         return AdditionalBeanBuildItem.unremovableOf(DynamodbClientProducer.class);
+    }
+
+    @BuildStep
+    void runtimeInitialize(BuildProducer<RuntimeInitializedClassBuildItem> producer) {
+        // This class triggers initialization of FullJitterBackoffStragegy so needs to get runtime-initialized
+        // as well
+        producer.produce(
+                new RuntimeInitializedClassBuildItem("software.amazon.awssdk.services.dynamodb.DynamoDbRetryPolicy"));
     }
 
     @BuildStep

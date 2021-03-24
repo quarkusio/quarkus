@@ -1,5 +1,7 @@
 package io.quarkus.amazon.lambda.http;
 
+import static java.util.Optional.ofNullable;
+
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.channels.Channels;
@@ -150,16 +152,14 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
     private APIGatewayV2HTTPResponse nettyDispatch(InetSocketAddress clientAddress, APIGatewayV2HTTPEvent request,
             Context context)
             throws Exception {
-        StringBuilder sb = new StringBuilder(request.getRawPath());
-        sb.append('?').append(request.getRawQueryString());
-        String path = new StringBuilder(request.getRawPath()).append('?').append(request.getRawQueryString()).toString();
-        //log.info("---- Got lambda request: " + path);
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.class, request);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.RequestContext.class, request.getRequestContext());
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod()), path, quarkusHeaders);
+                HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod()), ofNullable(request.getRawQueryString())
+                        .filter(q -> !q.isEmpty()).map(q -> request.getRawPath() + '?' + q).orElse(request.getRawPath()),
+                quarkusHeaders);
         if (request.getHeaders() != null) { //apparently this can be null if no headers are sent
             for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
                 if (header.getValue() != null) {

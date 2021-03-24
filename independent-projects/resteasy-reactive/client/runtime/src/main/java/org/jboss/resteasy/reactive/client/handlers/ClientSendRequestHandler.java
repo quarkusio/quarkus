@@ -19,12 +19,18 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Variant;
+
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
+    private final boolean followRedirects;
+
+    public ClientSendRequestHandler(boolean followRedirects) {
+        this.followRedirects = followRedirects;
+    }
 
     @Override
     public void handle(RestClientRequestContext requestContext) {
@@ -114,13 +120,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         URI uri = state.getUri();
         boolean isHttps = "https".equals(uri.getScheme());
         int port = uri.getPort() != -1 ? uri.getPort() : (isHttps ? 443 : 80);
-        return  httpClient.request(
-                new RequestOptions()
-                        .setMethod(HttpMethod.valueOf(state.getHttpMethod()))
-                        .setHost(uri.getHost())
-                        .setURI(uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()))
-                        .setPort(port)
-                        .setSsl(isHttps));
+        RequestOptions requestOptions = new RequestOptions();
+        requestOptions.setHost(uri.getHost());
+        requestOptions.setPort(port);
+        requestOptions.setMethod(HttpMethod.valueOf(state.getHttpMethod()));
+        requestOptions.setURI(uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
+        requestOptions.setFollowRedirects(followRedirects);
+        requestOptions.setSsl(isHttps);
+        return httpClient.request(requestOptions);
     }
 
     private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,

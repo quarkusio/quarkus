@@ -15,7 +15,7 @@ public class HeaderContainer {
         this.requestContext = requestContext;
     }
 
-    MultivaluedMap<String, String> getHeaders() {
+    public MultivaluedMap<String, String> getHeaders() {
         if (requestContext == null) {
             return EMPTY_MAP;
         } else {

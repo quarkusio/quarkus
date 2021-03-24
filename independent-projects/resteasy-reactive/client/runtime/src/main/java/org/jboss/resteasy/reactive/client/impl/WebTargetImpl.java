@@ -29,7 +29,9 @@ public class WebTargetImpl implements WebTarget {
 
     public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration,
-            ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
+            ClientRestHandler[] handlerChain,
+            ClientRestHandler[] abortHandlerChain,
+            ThreadSetupAction requestContext) {
         this.restClient = restClient;
         this.client = client;
         this.uriBuilder = uriBuilder;

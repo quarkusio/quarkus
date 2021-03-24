@@ -23,6 +23,9 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Configurable;
 import javax.ws.rs.core.MultivaluedMap;
 
+import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
+import io.quarkus.rest.client.reactive.MicroProfileRestClientRequestFilter;
+import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
@@ -42,6 +45,7 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -52,10 +56,8 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
-import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
+import io.quarkus.rest.client.reactive.BeanGrabber;
 import io.quarkus.rest.client.reactive.HeaderFiller;
-import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
-import io.quarkus.rest.client.reactive.runtime.RestClientReactiveRequestFilter;
 import io.quarkus.runtime.util.HashUtil;
 
 /**
@@ -64,8 +66,8 @@ import io.quarkus.runtime.util.HashUtil;
  * Used mostly to handle the `@RegisterProvider` annotation that e.g. registers filters
  * and to add support for `@ClientHeaderParam` annotations for specifying (possibly) computed headers via annotations
  */
-class RestClientReactiveEnricher implements JaxrsClientReactiveEnricher {
-    private static final Logger log = Logger.getLogger(RestClientReactiveEnricher.class);
+class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
+    private static final Logger log = Logger.getLogger(MicroProfileRestClientEnricher.class);
 
     public static final String DEFAULT_HEADERS_FACTORY = DefaultClientHeadersFactoryImpl.class.getName();
 
@@ -128,7 +130,7 @@ class RestClientReactiveEnricher implements JaxrsClientReactiveEnricher {
         }
 
         ResultHandle restClientFilter = constructor.newInstance(
-                MethodDescriptor.ofConstructor(RestClientReactiveRequestFilter.class, ClientHeadersFactory.class),
+                MethodDescriptor.ofConstructor(MicroProfileRestClientRequestFilter.class, ClientHeadersFactory.class),
                 clientHeadersFactory);
 
         constructor.assign(webTargetBase, constructor.invokeInterfaceMethod(
@@ -433,13 +435,35 @@ class RestClientReactiveEnricher implements JaxrsClientReactiveEnricher {
 
     private void addProvider(MethodCreator ctor, AssignableResultHandle target, IndexView index,
             AnnotationInstance registerProvider) {
-        ResultHandle provider = ctor.newInstance(MethodDescriptor.ofConstructor(registerProvider.value().asString()));
-        ResultHandle alteredTarget = ctor.invokeInterfaceMethod(
+        // if a registered provider is a cdi bean, it has to be reused
+        // take the name of the provider class from the annotation:
+        String providerClass = registerProvider.value().asString();
+
+        // get bean, or null, with BeanGrabber.getBeanIfDefined(providerClass)
+        ResultHandle providerBean = ctor.invokeStaticMethod(
+                MethodDescriptor.ofMethod(BeanGrabber.class, "getBeanIfDefined", Object.class, Class.class),
+                ctor.loadClass(providerClass));
+
+        // if bean != null, register the bean
+        BranchResult branchResult = ctor.ifNotNull(providerBean);
+        BytecodeCreator beanProviderAvailable = branchResult.trueBranch();
+
+        ResultHandle alteredTarget = beanProviderAvailable.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class,
+                        int.class),
+                target, providerBean,
+                beanProviderAvailable.load(registerProvider.valueWithDefault(index, "priority").asInt()));
+        beanProviderAvailable.assign(target, alteredTarget);
+
+        // else, create a new instance of the provider class
+        BytecodeCreator beanProviderNotAvailable = branchResult.falseBranch();
+        ResultHandle provider = beanProviderNotAvailable.newInstance(MethodDescriptor.ofConstructor(providerClass));
+        alteredTarget = beanProviderNotAvailable.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class,
                         int.class),
                 target, provider,
-                ctor.load(registerProvider.valueWithDefault(index, "priority").asInt()));
-        ctor.assign(target, alteredTarget);
+                beanProviderNotAvailable.load(registerProvider.valueWithDefault(index, "priority").asInt()));
+        beanProviderNotAvailable.assign(target, alteredTarget);
     }
 
 }

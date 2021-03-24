@@ -93,6 +93,7 @@ import io.quarkus.jaxrs.client.reactive.deployment.beanparam.Item;
 import io.quarkus.jaxrs.client.reactive.deployment.beanparam.QueryParamItem;
 import io.quarkus.jaxrs.client.reactive.runtime.ClientResponseBuilderFactory;
 import io.quarkus.jaxrs.client.reactive.runtime.JaxrsClientReactiveRecorder;
+import io.quarkus.resteasy.reactive.client.runtime.ToObjectArray;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
@@ -451,7 +452,8 @@ public class JaxrsClientReactiveProcessor {
 
                         // query params have to be set on a method-level web target (they vary between invocations)
                         methodCreator.assign(methodTarget, addQueryParam(methodCreator, methodTarget, param.name,
-                                methodCreator.getMethodParam(paramIdx)));
+                                methodCreator.getMethodParam(paramIdx),
+                                jandexMethod.parameters().get(paramIdx), index));
                     } else if (param.parameterType == ParameterType.BEAN) {
                         // bean params require both, web-target and Invocation.Builder, modifications
                         // The web target changes have to be done on the method level.
@@ -470,7 +472,7 @@ public class JaxrsClientReactiveProcessor {
                         handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
                         addBeanParamData(methodCreator, handleBeanParamMethod,
                                 invocationBuilderRef, beanParam.getItems(),
-                                methodCreator.getMethodParam(paramIdx), methodTarget);
+                                methodCreator.getMethodParam(paramIdx), methodTarget, index);
 
                         handleBeanParamMethod.returnValue(invocationBuilderRef);
                         invocationBuilderEnrichers.put(handleBeanParamDescriptor, methodCreator.getMethodParam(paramIdx));
@@ -809,8 +811,8 @@ public class JaxrsClientReactiveProcessor {
             AssignableResultHandle invocationBuilder,
             List<Item> beanParamItems,
             ResultHandle param,
-            AssignableResultHandle target // can only be used in the current method, not in `invocationBuilderEnricher`
-    ) {
+            AssignableResultHandle target, // can only be used in the current method, not in `invocationBuilderEnricher`
+            IndexView index) {
         BytecodeCreator creator = methodCreator.ifNotNull(param).trueBranch();
         BytecodeCreator invoEnricher = invocationBuilderEnricher.ifNotNull(invocationBuilderEnricher.getMethodParam(1))
                 .trueBranch();
@@ -820,12 +822,15 @@ public class JaxrsClientReactiveProcessor {
                     BeanParamItem beanParamItem = (BeanParamItem) item;
                     ResultHandle beanParamElementHandle = beanParamItem.extract(creator, param);
                     addBeanParamData(creator, invoEnricher, invocationBuilder, beanParamItem.items(),
-                            beanParamElementHandle, target);
+                            beanParamElementHandle, target, index);
                     break;
                 case QUERY_PARAM:
                     QueryParamItem queryParam = (QueryParamItem) item;
                     creator.assign(target,
-                            addQueryParam(creator, target, queryParam.name(), queryParam.extract(creator, param)));
+                            addQueryParam(creator, target, queryParam.name(),
+                                    queryParam.extract(creator, param),
+                                    queryParam.getValueType(),
+                                    index));
                     break;
                 case COOKIE:
                     CookieParamItem cookieParam = (CookieParamItem) item;
@@ -848,13 +853,29 @@ public class JaxrsClientReactiveProcessor {
     // takes a result handle to target as one of the parameters, returns a result handle to a modified target
     private ResultHandle addQueryParam(BytecodeCreator methodCreator,
             ResultHandle target,
-            String paramName, ResultHandle queryParamHandle) {
-        ResultHandle array = methodCreator.newArray(Object.class, 1);
-        methodCreator.writeArrayValue(array, 0, queryParamHandle);
+            String paramName,
+            ResultHandle queryParamHandle,
+            Type type,
+            IndexView index) {
+        ResultHandle paramArray;
+        if (type.kind() == Type.Kind.ARRAY) {
+            paramArray = methodCreator.checkCast(queryParamHandle, Object[].class);
+        } else if (index
+                .getClassByName(type.name()).interfaceNames().stream()
+                .anyMatch(DotName.createSimple(Collection.class.getName())::equals)) {
+            paramArray = methodCreator.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
+                    queryParamHandle);
+        } else {
+            paramArray = methodCreator.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
+                    queryParamHandle);
+        }
+
         ResultHandle alteredTarget = methodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
                         String.class, Object[].class),
-                target, methodCreator.load(paramName), array);
+                target, methodCreator.load(paramName), paramArray);
         return alteredTarget;
     }
 

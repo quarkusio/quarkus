@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_REDIRECTS;
 
 import io.netty.channel.EventLoopGroup;
 import io.vertx.core.AsyncResult;
@@ -63,6 +64,8 @@ import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
+import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
 public class ClientImpl implements Client {
 
@@ -78,16 +81,20 @@ public class ClientImpl implements Client {
     final ClientRestHandler[] handlerChain;
     final ClientRestHandler[] abortHandlerChain;
     final Vertx vertx;
+    private final MultiQueryParamMode multiQueryParamMode;
 
     public ClientImpl(HttpClientOptions options, ConfigurationImpl configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
-            SSLContext sslContext) {
+            SSLContext sslContext, boolean followRedirects,
+            MultiQueryParamMode multiQueryParamMode) {
+        configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
         // TODO: ssl context
         // TODO: hostnameVerifier
-        this.configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
+        this.configuration = configuration;
         this.clientContext = clientContext;
         this.hostnameVerifier = hostnameVerifier;
         this.sslContext = sslContext;
+        this.multiQueryParamMode = multiQueryParamMode;
         Supplier<Vertx> vertx = clientContext.getVertx();
         if (vertx != null) {
             this.vertx = vertx.get();
@@ -101,16 +108,21 @@ public class ClientImpl implements Client {
             });
             closeVertx = true;
         }
-        Object connectTimeoutMs = configuration == null ? null : configuration.getProperty(CONNECT_TIMEOUT);
+        Object connectTimeoutMs = configuration.getProperty(CONNECT_TIMEOUT);
         if (connectTimeoutMs == null) {
             options.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
         } else {
             options.setConnectTimeout((int) connectTimeoutMs);
         }
+
+        Object maxRedirects = configuration.getProperty(MAX_REDIRECTS);
+        if (maxRedirects != null) {
+            options.setMaxRedirects((Integer) maxRedirects);
+        }
         this.httpClient = this.vertx.createHttpClient(options);
         abortHandlerChain = new ClientRestHandler[] { new ClientErrorHandler() };
-        handlerChain = new ClientRestHandler[] { new ClientRequestFiltersRestHandler(), new ClientSendRequestHandler(),
-                new ClientResponseRestHandler() };
+        handlerChain = new ClientRestHandler[] { new ClientRequestFiltersRestHandler(),
+                new ClientSendRequestHandler(followRedirects), new ClientResponseRestHandler() };
     }
 
     public ClientContext getClientContext() {
@@ -151,6 +163,9 @@ public class ClientImpl implements Client {
     public WebTarget target(UriBuilder uriBuilder) {
         abortIfClosed();
         Objects.requireNonNull(uriBuilder);
+        if (uriBuilder instanceof UriBuilderImpl && multiQueryParamMode != null) {
+            ((UriBuilderImpl) uriBuilder).multiQueryParamMode(multiQueryParamMode);
+        }
         return new WebTargetImpl(this, httpClient, uriBuilder, new ConfigurationImpl(configuration), handlerChain,
                 abortHandlerChain, null);
     }

@@ -199,7 +199,7 @@
         <grpc.version>1.34.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
         <protobuf-java.version>3.14.0</protobuf-java.version>
-        <protoc.version>3.13.0</protoc.version>
+        <protoc.version>${protobuf-java.version}</protoc.version>
 
         <picocli.version>4.6.1</picocli.version>
         <org.eclipse.sisu.inject.version>0.3.4</org.eclipse.sisu.inject.version>

@@ -95,6 +95,8 @@
                     </dependency>
                   </dependencies>
                 <configuration>
+                    <!-- store outside of target to speed up formatting when mvn clean is used -->
+                    <cachedir>.cache</cachedir>
                     <configFile>eclipse-format.xml</configFile>
                     <lineEnding>LF</lineEnding>
                     <skip>${format.skip}</skip>
@@ -105,6 +107,8 @@
                 <artifactId>impsort-maven-plugin</artifactId>
                 <version>1.6.0</version>
                 <configuration>
+                    <!-- store outside of target to speed up formatting when mvn clean is used -->
+                    <cachedir>.cache</cachedir>
                     <removeUnused>true</removeUnused>
                     <skip>${format.skip}</skip>
                 </configuration>
@@ -145,7 +149,6 @@
                 <skipTests>true</skipTests>
                 <skipITs>true</skipITs>
                 <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
             </properties>
             <build>

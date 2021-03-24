@@ -109,7 +109,9 @@ updates:
       - dependency-name: biz.paluch.logging:logstash-gelf
       - dependency-name: io.sentry:*
       # MongoDB
-      - dependency-name:  org.mongodb:*
+      - dependency-name: org.mongodb:*
+      # Avro
+      - dependency-name: org.apache.avro:*
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

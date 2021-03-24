@@ -31,7 +31,6 @@
         <jaeger.version>0.34.3</jaeger.version>
         <quarkus-http.version>3.1.0.Beta2</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
-        <threetenbp.version>1.4.3</threetenbp.version>
         <micrometer.version>1.6.5</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>

@@ -23,6 +23,13 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
+
+    private final boolean followRedirects;
+
+    public ClientSendRequestHandler(boolean followRedirects) {
+        this.followRedirects = followRedirects;
+    }
+
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
         if (requestContext.getAbortedWith() != null) {
@@ -85,6 +92,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(state.getHttpMethod()), uri.getPort(),
                 uri.getHost(),
                 uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
+        httpClientRequest.setFollowRedirects(followRedirects);
         state.setHttpClientRequest(httpClientRequest);
         return httpClientRequest;
     }

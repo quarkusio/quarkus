@@ -20,25 +20,34 @@ import javax.net.ssl.HostnameVerifier;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 
 public class RestClientCDIDelegateBuilder {
 
     private static final String MP_REST = "mp-rest";
-    private static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
-    private static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
-    private static final String REST_CONNECT_TIMEOUT_FORMAT = "%s/" + MP_REST + "/connectTimeout";
-    private static final String REST_READ_TIMEOUT_FORMAT = "%s/" + MP_REST + "/readTimeout";
-    public static final String REST_SCOPE_FORMAT = "%s/" + MP_REST + "/scope";
-    private static final String REST_PROVIDERS = "%s/" + MP_REST + "/providers";
-    private static final String REST_TRUST_STORE = "%s/" + MP_REST + "/trustStore";
-    private static final String REST_TRUST_STORE_PASSWORD = "%s/" + MP_REST + "/trustStorePassword";
-    private static final String REST_TRUST_STORE_TYPE = "%s/" + MP_REST + "/trustStoreType";
+    private static final String REST_FOLLOW_REDIRECTS = "%s/" + MP_REST + "/followRedirects";
+    private static final String REST_HOSTNAME_VERIFIER = "%s/" + MP_REST + "/hostnameVerifier";
     private static final String REST_KEY_STORE = "%s/" + MP_REST + "/keyStore";
     private static final String REST_KEY_STORE_PASSWORD = "%s/" + MP_REST + "/keyStorePassword";
     private static final String REST_KEY_STORE_TYPE = "%s/" + MP_REST + "/keyStoreType";
-    private static final String REST_HOSTNAME_VERIFIER = "%s/" + MP_REST + "/hostnameVerifier";
-    private static final String REST_NOOP_HOSTNAME_VERIFIER = "io.quarkus.restclient.NoopHostnameVerifier";
+    private static final String REST_PROVIDERS = "%s/" + MP_REST + "/providers";
+    private static final String REST_PROXY_ADDRESS = "%s/" + MP_REST + "/proxyAddress";
+    private static final String REST_QUERY_PARAM_STYLE = "%s/" + MP_REST + "/queryParamStyle";
+    public static final String REST_SCOPE_FORMAT = "%s/" + MP_REST + "/scope";
+    private static final String REST_TIMEOUT_CONNECT = "%s/" + MP_REST + "/connectTimeout";
+    private static final String REST_TIMEOUT_READ = "%s/" + MP_REST + "/readTimeout";
+    private static final String REST_TRUST_STORE = "%s/" + MP_REST + "/trustStore";
+    private static final String REST_TRUST_STORE_PASSWORD = "%s/" + MP_REST + "/trustStorePassword";
+    private static final String REST_TRUST_STORE_TYPE = "%s/" + MP_REST + "/trustStoreType";
+    private static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
+    private static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
+
+    private static final String MAX_REDIRECTS = "quarkus.rest.client.max-redirects";
+
     private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
+
+    private static final String REST_NOOP_HOSTNAME_VERIFIER = "io.quarkus.restclient.NoopHostnameVerifier";
 
     private final Class<?> jaxrsInterface;
     private final String baseUriFromAnnotation;
@@ -62,8 +71,55 @@ public class RestClientCDIDelegateBuilder {
         configureTimeouts(builder);
         configureProviders(builder);
         configureSsl(builder);
+        configureRedirects(builder);
+        configureQueryParamStyle(builder);
+        configureProxy(builder);
         Object result = builder.build(jaxrsInterface);
         return result;
+    }
+
+    private void configureProxy(RestClientBuilder builder) {
+        Optional<String> maybeProxy = getOptionalDynamicProperty(REST_PROXY_ADDRESS, String.class);
+        if (maybeProxy.isPresent()) {
+            String proxyString = maybeProxy.get();
+
+            int lastColonIndex = proxyString.lastIndexOf(':');
+
+            if (lastColonIndex <= 0 || lastColonIndex == proxyString.length() - 1) {
+                throw new RuntimeException("Invalid proxy string. Expected <hostname>:<port>, found '" + proxyString + "'");
+            }
+
+            String host = proxyString.substring(0, lastColonIndex);
+            int port = 0;
+            try {
+                port = Integer.valueOf(proxyString.substring(lastColonIndex + 1));
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("Invalid proxy setting. The port is not a number in '" + proxyString + "'", e);
+            }
+
+            builder.proxyAddress(host, port);
+        }
+    }
+
+    private void configureQueryParamStyle(RestClientBuilder builder) {
+        Optional<QueryParamStyle> maybeQueryParamStyle = getOptionalDynamicProperty(REST_QUERY_PARAM_STYLE,
+                QueryParamStyle.class);
+        if (maybeQueryParamStyle.isPresent()) {
+            QueryParamStyle queryParamStyle = maybeQueryParamStyle.get();
+            builder.queryParamStyle(queryParamStyle);
+        }
+    }
+
+    private void configureRedirects(RestClientBuilder builder) {
+        Optional<Integer> maxRedirects = getOptionalProperty(MAX_REDIRECTS, Integer.class);
+        if (maxRedirects.isPresent()) {
+            builder.property(QuarkusRestClientProperties.MAX_REDIRECTS, maxRedirects.get());
+        }
+
+        Optional<Boolean> maybeFollowRedirects = getOptionalDynamicProperty(REST_FOLLOW_REDIRECTS, Boolean.class);
+        if (maybeFollowRedirects.isPresent()) {
+            builder.followRedirects(maybeFollowRedirects.get());
+        }
     }
 
     private void configureSsl(RestClientBuilder builder) {
@@ -204,12 +260,12 @@ public class RestClientCDIDelegateBuilder {
     }
 
     private void configureTimeouts(RestClientBuilder builder) {
-        Optional<Long> connectTimeout = getOptionalDynamicProperty(REST_CONNECT_TIMEOUT_FORMAT, Long.class);
+        Optional<Long> connectTimeout = getOptionalDynamicProperty(REST_TIMEOUT_CONNECT, Long.class);
         if (connectTimeout.isPresent()) {
             builder.connectTimeout(connectTimeout.get(), TimeUnit.MILLISECONDS);
         }
 
-        Optional<Long> readTimeout = getOptionalDynamicProperty(REST_READ_TIMEOUT_FORMAT, Long.class);
+        Optional<Long> readTimeout = getOptionalDynamicProperty(REST_TIMEOUT_READ, Long.class);
         if (readTimeout.isPresent()) {
             builder.readTimeout(readTimeout.get(), TimeUnit.MILLISECONDS);
         }

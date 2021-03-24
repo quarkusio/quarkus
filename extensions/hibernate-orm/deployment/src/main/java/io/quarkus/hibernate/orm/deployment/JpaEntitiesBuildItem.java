@@ -6,8 +6,6 @@ import java.util.TreeSet;
 import javax.persistence.Entity;
 
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
  * Internal model to represent which objects are likely needing enhancement
@@ -19,23 +17,11 @@ public final class JpaEntitiesBuildItem extends SimpleBuildItem {
     private final Set<String> entityClassNames = new TreeSet<>();
     private final Set<String> allModelClassNames = new TreeSet<>();
 
-    public void addModelPackage(String packageName) {
-        allModelPackageNames.add(packageName);
-    }
-
-    void addEntityClass(final String className) {
-        entityClassNames.add(className);
-        allModelClassNames.add(className);
-    }
-
-    void addModelClass(final String className) {
-        allModelClassNames.add(className);
-    }
-
-    void registerAllForReflection(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        for (String className : allModelClassNames) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
-        }
+    public JpaEntitiesBuildItem(Set<String> allModelPackageNames, Set<String> entityClassNames,
+            Set<String> allModelClassNames) {
+        this.allModelPackageNames.addAll(allModelPackageNames);
+        this.entityClassNames.addAll(entityClassNames);
+        this.allModelClassNames.addAll(allModelClassNames);
     }
 
     /**

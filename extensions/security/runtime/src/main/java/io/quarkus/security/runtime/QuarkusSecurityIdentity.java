@@ -22,6 +22,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
     private final Set<Credential> credentials;
     private final Map<String, Object> attributes;
     private final List<Function<Permission, Uni<Boolean>>> permissionCheckers;
+    private final boolean anonymous;
 
     private QuarkusSecurityIdentity(Builder builder) {
         this.principal = builder.principal;
@@ -29,6 +30,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         this.credentials = Collections.unmodifiableSet(builder.credentials);
         this.attributes = Collections.unmodifiableMap(builder.attributes);
         this.permissionCheckers = Collections.unmodifiableList(builder.permissionCheckers);
+        this.anonymous = builder.anonymous;
     }
 
     @Override
@@ -38,7 +40,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
 
     @Override
     public boolean isAnonymous() {
-        return false;
+        return anonymous;
     }
 
     @Override
@@ -121,11 +123,13 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
     }
 
     public static Builder builder(SecurityIdentity identity) {
-        return new Builder()
+        Builder builder = new Builder()
                 .addAttributes(identity.getAttributes())
                 .addCredentials(identity.getCredentials())
                 .addRoles(identity.getRoles())
-                .setPrincipal(identity.getPrincipal());
+                .setPrincipal(identity.getPrincipal())
+                .setAnonymous(identity.isAnonymous());
+        return builder;
     }
 
     public static class Builder {
@@ -135,6 +139,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         Set<Credential> credentials = new HashSet<>();
         Map<String, Object> attributes = new HashMap<>();
         List<Function<Permission, Uni<Boolean>>> permissionCheckers = new ArrayList<>();
+        private boolean anonymous;
         boolean built = false;
 
         public Builder setPrincipal(Principal principal) {
@@ -211,7 +216,25 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
             return this;
         }
 
+        /**
+         * Sets an anonymous identity status.
+         * 
+         * @param anonymous the anonymous status
+         * @return This builder
+         */
+        public Builder setAnonymous(boolean anonymous) {
+            if (built) {
+                throw new IllegalStateException();
+            }
+            this.anonymous = anonymous;
+            return this;
+        }
+
         public QuarkusSecurityIdentity build() {
+            if (principal == null && !anonymous) {
+                throw new IllegalStateException("Principal is null but anonymous status is false");
+            }
+
             built = true;
             return new QuarkusSecurityIdentity(this);
         }

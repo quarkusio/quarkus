@@ -2,8 +2,10 @@ package io.quarkus.keycloak.pep.deployment;
 
 import java.util.Map;
 
+import javax.inject.Singleton;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -12,6 +14,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
+import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfigBean;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
 import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
@@ -72,11 +75,18 @@ public class KeycloakPolicyEnforcerBuildStep {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    public void setup(OidcBuildTimeConfig oidcBuildTimeConfig, OidcConfig oidcRunTimeConfig, TlsConfig tlsConfig,
-            KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder, BeanContainerBuildItem bc,
+    public SyntheticBeanBuildItem setup(OidcBuildTimeConfig oidcBuildTimeConfig, OidcConfig oidcRunTimeConfig,
+            TlsConfig tlsConfig,
+            KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder,
             HttpConfiguration httpConfiguration) {
         if (oidcBuildTimeConfig.enabled && keycloakConfig.policyEnforcer.enable) {
-            recorder.setup(oidcRunTimeConfig, keycloakConfig, tlsConfig, bc.getValue(), httpConfiguration);
+            return SyntheticBeanBuildItem.configure(KeycloakPolicyEnforcerConfigBean.class).unremovable()
+                    .types(KeycloakPolicyEnforcerConfigBean.class)
+                    .supplier(recorder.setup(oidcRunTimeConfig, keycloakConfig, tlsConfig, httpConfiguration))
+                    .scope(Singleton.class)
+                    .setRuntimeInit()
+                    .done();
         }
+        return null;
     }
 }

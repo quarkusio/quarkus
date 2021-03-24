@@ -681,6 +681,12 @@ method takes parameters of the following type:
 |link:{jaxrsapi}/javax/ws/rs/sse/Sse.html[`Sse`]
 |Advanced: Complex SSE use-cases
 
+|link:{vertxapi}/io/vertx/core/http/HttpServerRequest.html[`HttpServerRequest`]
+|Advanced: Vert.x HTTP Request
+
+|link:{vertxapi}/io/vertx/core/http/HttpServerResponse.html[`HttpServerResponse`]
+|Advanced: Vert.x HTTP Response
+
 |===
 
 For example, here is how you can return the name of the currently logged-in user:

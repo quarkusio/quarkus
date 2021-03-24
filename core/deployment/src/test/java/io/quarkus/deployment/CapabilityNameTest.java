@@ -12,8 +12,7 @@ public class CapabilityNameTest {
         assertAll(
                 () -> assertEquals("io.quarkus.agroal", Capability.AGROAL.getName()),
                 () -> assertEquals("io.quarkus.security.jpa", Capability.SECURITY_JPA.getName()),
-                () -> assertEquals("io.quarkus.container.image.docker", Capability.CONTAINER_IMAGE_DOCKER.getName())
-        );
+                () -> assertEquals("io.quarkus.container.image.docker", Capability.CONTAINER_IMAGE_DOCKER.getName()));
     }
 
 }

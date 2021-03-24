@@ -16,9 +16,11 @@ public class AdditionalWatchedResourcesDevModeTest {
     private static final String RES_WATCHED = "watched.txt";
     private static final String RES_WATCHED_SUBPATH = "sub/watched.txt";
     private static final String RES_NOT_WATCHED = "not-watched.txt";
+    private static final String RES_GLOB_WATCHED = "*.sample";
+    private static final String SAMPLE_FILE = "data.sample";
 
     private static final String PROPERTY = "quarkus.live-reload.watched-resources="
-            + RES_WATCHED + "," + RES_WATCHED_SUBPATH;
+            + RES_WATCHED + "," + RES_WATCHED_SUBPATH + "," + RES_GLOB_WATCHED;
 
     private static final String MODIFIED = "modified";
     private static final String INITIAL = "initial";
@@ -30,6 +32,7 @@ public class AdditionalWatchedResourcesDevModeTest {
                     .addAsResource(new StringAsset(INITIAL), RES_WATCHED)
                     .addAsResource(new StringAsset(INITIAL), RES_WATCHED_SUBPATH)
                     .addAsResource(new StringAsset(INITIAL), RES_NOT_WATCHED)
+                    .addAsResource(new StringAsset(INITIAL), SAMPLE_FILE)
                     .addAsResource(new StringAsset(PROPERTY), "application.properties"));
 
     @Test
@@ -58,4 +61,14 @@ public class AdditionalWatchedResourcesDevModeTest {
 
         RestAssured.get("/content/{name}", RES_NOT_WATCHED).then().body(is(INITIAL));
     }
+
+    @Test
+    public void globWatch() {
+        RestAssured.get("/content/{name}", SAMPLE_FILE).then().body(is(INITIAL));
+
+        TEST.modifyResourceFile(SAMPLE_FILE, oldSource -> MODIFIED);
+
+        RestAssured.get("/content/{name}", SAMPLE_FILE).then().body(is(MODIFIED));
+    }
+
 }

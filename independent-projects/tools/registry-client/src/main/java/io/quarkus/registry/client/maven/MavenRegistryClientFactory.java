@@ -8,6 +8,7 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.client.RegistryClient;
+import io.quarkus.registry.client.RegistryClientDispatcher;
 import io.quarkus.registry.client.RegistryClientFactory;
 import io.quarkus.registry.client.RegistryNonPlatformExtensionsResolver;
 import io.quarkus.registry.client.RegistryPlatformsResolver;
@@ -151,7 +152,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
             platformsResolver = new MavenPlatformsResolver(platformsConfig, resolver, log);
         }
 
-        return new RegistryClient(config, platformsResolver,
+        return new RegistryClientDispatcher(config, platformsResolver,
                 Boolean.TRUE.equals(config.getPlatforms().getExtensionCatalogsIncluded())
                         ? new MavenPlatformExtensionsResolver(resolver, log)
                         : new MavenPlatformExtensionsResolver(originalResolver, log),

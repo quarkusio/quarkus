@@ -101,6 +101,9 @@ public class RegistriesConfigLocator {
             if (original.getPlatforms() != null) {
                 config.setPlatforms(original.getPlatforms());
             }
+            if (!original.getExtra().isEmpty()) {
+                config.setExtra(original.getExtra());
+            }
         }
         return config;
     }

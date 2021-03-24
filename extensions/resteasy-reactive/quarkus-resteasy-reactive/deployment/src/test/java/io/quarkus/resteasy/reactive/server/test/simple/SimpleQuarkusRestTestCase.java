@@ -385,11 +385,16 @@ public class SimpleQuarkusRestTestCase {
                 .queryParam("q", "qv")
                 .queryParam("q3", "999")
                 .header("h", "123")
+                .header("X-My-Header", "test")
+                .header("Test-Header-Param", "test")
+                .header("Param-Empty", "empty")
                 .formParam("f", "fv")
                 .post("/new-params/myklass;m=mv/myregex/params/pv")
                 .then()
                 .log().ifError()
-                .body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv, m: mv, c: cv, q2: empty, q3: 999"));
+                .body(Matchers
+                        .equalTo(
+                                "params: p: pv, q: qv, h: 123, xMyHeader: test, testHeaderParam: test, paramEmpty: empty, f: fv, m: mv, c: cv, q2: empty, q3: 999"));
         RestAssured.get("/new-params/myklass/myregex/sse")
                 .then()
                 .log().ifError()

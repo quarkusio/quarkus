@@ -35,6 +35,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -66,7 +67,8 @@ public class NativeImageAutoFeatureStep {
     static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
-    static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
+    static final String LEGACY_LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
+    static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
 
     @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
@@ -217,12 +219,28 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!resourceBundles.isEmpty()) {
-            ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_FEATURE);
+            AssignableResultHandle registerMethod = overallCatch.createVariable(Method.class);
+            AssignableResultHandle locClass = overallCatch.createVariable(Class.class);
+            TryBlock locTryBlock = overallCatch.tryBlock();
+            ResultHandle legacyLocClass = locTryBlock.loadClass(LEGACY_LOCALIZATION_FEATURE);
+            locTryBlock.assign(locClass, legacyLocClass);
 
-            ResultHandle params = overallCatch.marshalAsArray(Class.class, overallCatch.loadClass(String.class));
-            ResultHandle registerMethod = overallCatch.invokeVirtualMethod(
-                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass,
-                    overallCatch.load("addBundleToCache"), params);
+            ResultHandle legacyParams = locTryBlock.marshalAsArray(Class.class, locTryBlock.loadClass(String.class));
+            ResultHandle legacyRegisterMethod = locTryBlock.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), legacyLocClass,
+                    locTryBlock.load("addBundleToCache"), legacyParams);
+            locTryBlock.assign(registerMethod, legacyRegisterMethod);
+
+            CatchBlockCreator locCatchBlock = locTryBlock.addCatch(NoClassDefFoundError.class);
+            ResultHandle newLocClass = locCatchBlock.loadClass(LOCALIZATION_FEATURE);
+            locCatchBlock.assign(locClass, newLocClass);
+
+            ResultHandle newParams = locCatchBlock.marshalAsArray(Class.class, locCatchBlock.loadClass(String.class));
+            ResultHandle newRegisterMethod = locCatchBlock.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), newLocClass,
+                    locCatchBlock.load("prepareBundle"), newParams);
+            locCatchBlock.assign(registerMethod, newRegisterMethod);
+
             overallCatch.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class),
                     registerMethod, overallCatch.load(true));
 

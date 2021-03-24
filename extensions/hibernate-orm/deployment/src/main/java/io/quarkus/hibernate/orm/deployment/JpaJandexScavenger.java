@@ -49,7 +49,7 @@ public final class JpaJandexScavenger {
         this.ignorableNonIndexedClasses = ignorableNonIndexedClasses;
     }
 
-    public JpaEntitiesBuildItem discoverModelAndRegisterForReflection() {
+    public JpaModelBuildItem discoverModelAndRegisterForReflection() {
         Collector collector = new Collector();
 
         for (DotName packageAnnotation : HibernateOrmAnnotations.PACKAGE_ANNOTATIONS) {
@@ -101,7 +101,7 @@ public final class JpaJandexScavenger {
             }
         }
 
-        return new JpaEntitiesBuildItem(collector.packages, collector.entityTypes, allModelClassNames);
+        return new JpaModelBuildItem(collector.packages, collector.entityTypes, allModelClassNames);
     }
 
     private void enlistExplicitClasses(Collector collector, List<String> managedClassNames) {

@@ -11,13 +11,13 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * Internal model to represent which objects are likely needing enhancement
  * via HibernateEntityEnhancer.
  */
-public final class JpaEntitiesBuildItem extends SimpleBuildItem {
+public final class JpaModelBuildItem extends SimpleBuildItem {
 
     private final Set<String> allModelPackageNames = new TreeSet<>();
     private final Set<String> entityClassNames = new TreeSet<>();
     private final Set<String> allModelClassNames = new TreeSet<>();
 
-    public JpaEntitiesBuildItem(Set<String> allModelPackageNames, Set<String> entityClassNames,
+    public JpaModelBuildItem(Set<String> allModelPackageNames, Set<String> entityClassNames,
             Set<String> allModelClassNames) {
         this.allModelPackageNames.addAll(allModelPackageNames);
         this.entityClassNames.addAll(entityClassNames);

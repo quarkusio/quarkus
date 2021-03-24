@@ -39,18 +39,15 @@ public final class JpaJandexScavenger {
     private final List<PersistenceXmlDescriptorBuildItem> explicitDescriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     private final IndexView indexView;
-    private final Set<String> nonJpaModelClasses;
     private final Set<String> ignorableNonIndexedClasses;
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<PersistenceXmlDescriptorBuildItem> explicitDescriptors,
             IndexView indexView,
-            Set<String> nonJpaModelClasses,
             Set<String> ignorableNonIndexedClasses) {
         this.reflectiveClass = reflectiveClass;
         this.explicitDescriptors = explicitDescriptors;
         this.indexView = indexView;
-        this.nonJpaModelClasses = nonJpaModelClasses;
         this.ignorableNonIndexedClasses = ignorableNonIndexedClasses;
     }
 
@@ -176,11 +173,6 @@ public final class JpaJandexScavenger {
             if (!klass.simpleName().equals("package-info")) {
                 continue; // Annotation on an actual class, not a package.
             }
-            DotName targetDotName = klass.name();
-            // ignore non-jpa model classes that we think belong to JPA
-            if (nonJpaModelClasses.contains(targetDotName.toString())) {
-                continue;
-            }
             collectPackage(domainObjectCollector, klass);
         }
     }
@@ -196,10 +188,6 @@ public final class JpaJandexScavenger {
         for (AnnotationInstance annotation : jpaAnnotations) {
             ClassInfo klass = annotation.target().asClass();
             DotName targetDotName = klass.name();
-            // ignore non-jpa model classes that we think belong to JPA
-            if (nonJpaModelClasses.contains(targetDotName.toString())) {
-                continue;
-            }
             addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, javaTypeCollector, targetDotName,
                     unindexedClasses);
             collectDomainObject(domainObjectCollector, klass);

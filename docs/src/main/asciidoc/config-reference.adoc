@@ -88,7 +88,7 @@ TIP: Quarkus supports the use of <<using_property_expressions,property expressio
 
 == Embedding a configuration file inside a dependency
 
-You can embed a configuration file inside one of your dependencies by adding a `META-INF/microprofile.properties` configuration file to it
+You can embed a configuration file inside one of your dependencies by adding a `META-INF/microprofile-config.properties` configuration file to it
 (this is a standard functionality of MicroProfile Config).
 
 When you add this dependency to your application, its configuration properties will be merged.

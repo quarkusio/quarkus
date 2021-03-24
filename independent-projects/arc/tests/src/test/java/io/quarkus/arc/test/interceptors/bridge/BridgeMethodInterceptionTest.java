@@ -17,7 +17,7 @@ public class BridgeMethodInterceptionTest {
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Base.class, Submarine.class, Ubot.class, Ponorka.class,
             Counter.class, Simple.class, SimpleInterceptor.class, ExampleApi.class, ExampleResource.class,
-            AbstractResource.class);
+            AbstractResource.class, NextBase.class, NextSubmarine.class);
 
     @Test
     public void testInterception() {
@@ -53,6 +53,17 @@ public class BridgeMethodInterceptionTest {
         Base<Boolean> basePonorka = ponorka;
         assertEquals("TRUE", basePonorka.echo(true));
         assertNull(basePonorka.getName());
+        assertEquals(4, counter.get());
+
+        counter.reset();
+        NextSubmarine nextSubmarine = container.instance(NextSubmarine.class).get();
+        assertEquals("foo", nextSubmarine.echo("foo"));
+        assertEquals(NextSubmarine.class.getSimpleName(), nextSubmarine.getName());
+        assertEquals(2, counter.get());
+        // Now let's invoke the bridge method...
+        NextBase<String> nextBase = nextSubmarine;
+        assertEquals("foo", nextBase.echo("foo"));
+        assertEquals(NextSubmarine.class.getSimpleName(), nextBase.getName());
         assertEquals(4, counter.get());
     }
 
@@ -120,6 +131,35 @@ public class BridgeMethodInterceptionTest {
     @Simple
     @Singleton
     static class Ponorka extends Base<Boolean> {
+
+    }
+
+    static class NextBase<T extends Comparable<T>> {
+
+        String echo(T payload) {
+            return payload.toString().toUpperCase();
+        }
+
+        T getName() {
+            return null;
+        }
+
+    }
+
+    @ApplicationScoped
+    static class NextSubmarine extends NextBase<String> {
+
+        @Simple
+        @Override
+        String echo(String payload) {
+            return payload.toString();
+        }
+
+        @Simple
+        @Override
+        String getName() {
+            return NextSubmarine.class.getSimpleName();
+        }
 
     }
 

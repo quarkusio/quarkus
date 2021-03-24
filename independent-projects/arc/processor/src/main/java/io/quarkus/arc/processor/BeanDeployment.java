@@ -78,6 +78,7 @@ public class BeanDeployment {
     private final List<ObserverInfo> observers;
 
     final BeanResolverImpl beanResolver;
+    private final AssignabilityCheck assignabilityCheck;
 
     private final InterceptorResolver interceptorResolver;
 
@@ -180,6 +181,7 @@ public class BeanDeployment {
         this.beans = new CopyOnWriteArrayList<>();
         this.observers = new CopyOnWriteArrayList<>();
 
+        this.assignabilityCheck = new AssignabilityCheck(beanArchiveIndex, applicationIndex);
         this.beanResolver = new BeanResolverImpl(this);
         this.interceptorResolver = new InterceptorResolver(this);
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
@@ -415,6 +417,10 @@ public class BeanDeployment {
 
     public BeanResolver getBeanResolver() {
         return beanResolver;
+    }
+
+    public AssignabilityCheck getAssignabilityCheck() {
+        return assignabilityCheck;
     }
 
     boolean hasApplicationIndex() {

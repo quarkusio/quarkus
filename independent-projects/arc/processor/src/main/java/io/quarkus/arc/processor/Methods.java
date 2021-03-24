@@ -143,7 +143,8 @@ final class Methods {
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses) {
         return addInterceptedMethodCandidates(beanDeployment, classInfo, candidates, classLevelBindings,
-                bytecodeTransformerConsumer, transformUnproxyableClasses, new SubclassSkipPredicate(), false);
+                bytecodeTransformerConsumer, transformUnproxyableClasses,
+                new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom), false);
     }
 
     static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
@@ -396,9 +397,14 @@ final class Methods {
      */
     static class SubclassSkipPredicate implements Predicate<MethodInfo> {
 
+        private final BiFunction<Type, Type, Boolean> assignableFromFun;
         private ClassInfo clazz;
         private List<MethodInfo> regularMethods;
         private Set<MethodInfo> bridgeMethods = new HashSet<>();
+
+        public SubclassSkipPredicate(BiFunction<Type, Type, Boolean> assignableFromFun) {
+            this.assignableFromFun = assignableFromFun;
+        }
 
         void startProcessing(ClassInfo clazz) {
             this.clazz = clazz;
@@ -459,8 +465,7 @@ final class Methods {
                     for (int i = 0; i < bridgeParams.size(); i++) {
                         Type bridgeParam = bridgeParams.get(i);
                         Type param = params.get(i);
-                        if (param.name().equals(bridgeParam.name())
-                                || bridgeParam.name().equals(DotNames.OBJECT)) {
+                        if (assignableFromFun.apply(bridgeParam, param)) {
                             continue;
                         } else {
                             paramsNotMatching = true;
@@ -477,8 +482,8 @@ final class Methods {
                             // both cases are a match
                             return true;
                         } else {
-                            // as a last resort, we simply check equality of return Type
-                            return bridge.returnType().name().equals(declaredMethod.returnType().name());
+                            // as a last resort, we simply check assignability of the return type
+                            return assignableFromFun.apply(bridge.returnType(), declaredMethod.returnType());
                         }
                     }
                     return true;

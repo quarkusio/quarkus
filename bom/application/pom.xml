@@ -52,7 +52,7 @@
         <smallrye-jwt.version>2.4.4</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.1.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
-        <smallrye-converter-api.version>1.4.0</smallrye-converter-api.version>
+        <smallrye-reactive-utils.version>1.5.0</smallrye-reactive-utils.version>
         <smallrye-reactive-messaging.version>2.9.0</smallrye-reactive-messaging.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
@@ -139,7 +139,6 @@
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.1.Final</jboss-logging.version>
         <mutiny.version>0.14.0</mutiny.version>
-        <mutiny-vertx.version>1.5.0</mutiny-vertx.version>
         <kafka2.version>2.7.0</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
@@ -4296,7 +4295,7 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-core</artifactId>
-                <version>${mutiny-vertx.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
@@ -4311,27 +4310,27 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
-                <version>${mutiny-vertx.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-sql-client</artifactId>
-                <version>${mutiny-vertx.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-db2-client</artifactId>
-                <version>${mutiny-vertx.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>
-                <version>${mutiny-vertx.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
-                <version>${mutiny-vertx.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <!-- Used by the Reactive PG Client -->
@@ -4342,12 +4341,12 @@
            <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
-                <version>${mutiny-vertx.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-redis-client</artifactId>
-                <version>${mutiny-vertx.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>
@@ -4601,17 +4600,17 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-converter-api</artifactId>
-                <version>${smallrye-converter-api.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-converter-mutiny</artifactId>
-                <version>${smallrye-converter-api.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-converter-rxjava2</artifactId>
-                <version>${smallrye-converter-api.version}</version>
+                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
 
             <dependency>

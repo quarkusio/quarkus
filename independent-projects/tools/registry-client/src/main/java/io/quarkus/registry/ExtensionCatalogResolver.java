@@ -148,6 +148,10 @@ public class ExtensionCatalogResolver {
                 ClassLoader providerCl = new URLClassLoader(new URL[] { providerJar.toURI().toURL() }, originalCl);
                 final Iterator<RegistryClientFactoryProvider> i = ServiceLoader
                         .load(RegistryClientFactoryProvider.class, providerCl).iterator();
+                if (!i.hasNext()) {
+                    throw new Exception("Failed to locate an implementation of " + RegistryClientFactoryProvider.class.getName()
+                            + " service provider");
+                }
                 final RegistryClientFactoryProvider provider = i.next();
                 if (i.hasNext()) {
                     final StringBuilder buf = new StringBuilder();

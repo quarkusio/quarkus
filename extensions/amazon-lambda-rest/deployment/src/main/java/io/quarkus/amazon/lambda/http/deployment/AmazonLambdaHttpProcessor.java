@@ -60,7 +60,7 @@ public class AmazonLambdaHttpProcessor {
      */
     @BuildStep
     void setTempDir(BuildProducer<SystemPropertyBuildItem> systemProperty) {
-        systemProperty.produce(new SystemPropertyBuildItem(FileResolver.CACHE_DIR_BASE_PROP_NAME, "/tmp"));
+        systemProperty.produce(new SystemPropertyBuildItem(FileResolver.CACHE_DIR_BASE_PROP_NAME, "/tmp/quarkus"));
     }
 
     @BuildStep

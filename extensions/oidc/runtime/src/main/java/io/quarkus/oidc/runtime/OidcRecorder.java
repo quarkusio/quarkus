@@ -107,7 +107,7 @@ public class OidcRecorder {
         }
         if (!oidcConfig.tenantEnabled) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
-            Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null), oidcConfig));
+            return Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null), oidcConfig));
         }
 
         if (oidcConfig.getPublicKey().isPresent()) {

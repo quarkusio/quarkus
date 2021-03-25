@@ -4,6 +4,7 @@ import static io.quarkus.vault.runtime.config.VaultCacheEntry.tryReturnLastKnown
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toMap;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.vault.VaultKVSecretEngine;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 
 public class VaultConfigSource implements ConfigSource {
 
@@ -56,6 +58,11 @@ public class VaultConfigSource implements ConfigSource {
         VaultCacheEntry<Map<String, String>> cacheEntry = cache.get();
         if (cacheEntry != null && cacheEntry.youngerThan(vaultBootstrapConfig.secretConfigCachePeriod)) {
             return cacheEntry.getValue();
+        }
+
+        if (!Infrastructure.canCallerThreadBeBlocked()) {
+            // running in a non blocking thread, best effort to return cached values if any
+            return cacheEntry != null ? cacheEntry.getValue() : Collections.emptyMap();
         }
 
         Map<String, String> properties = new HashMap<>();

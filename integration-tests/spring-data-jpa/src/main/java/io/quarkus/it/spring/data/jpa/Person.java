@@ -1,11 +1,8 @@
 package io.quarkus.it.spring.data.jpa;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import javax.json.bind.annotation.JsonbDateFormat;
@@ -26,8 +23,6 @@ import javax.persistence.Table;
 
 @Entity
 public class Person {
-
-    private static final Random RANDOM = new Random();
 
     @Id
     @SequenceGenerator(name = "personSeqGen", sequenceName = "personSeq", initialValue = 100, allocationSize = 1)
@@ -54,11 +49,9 @@ public class Person {
 
     public Person(String name) {
         this.name = name;
-        this.age = RANDOM.nextInt(100);
-        this.joined = Date.from(LocalDate.now().minusDays(RANDOM.nextInt(3000)).atStartOfDay()
-                .atZone(ZoneId.systemDefault())
-                .toInstant());
-        this.active = RANDOM.nextBoolean();
+        this.age = DataGenerator.randomAge();
+        this.joined = DataGenerator.randomDate();
+        this.active = DataGenerator.randomBoolean();
     }
 
     public Person() {

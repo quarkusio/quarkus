@@ -755,13 +755,9 @@ import javax.ws.rs.core.MediaType;
 @Path("/fruit-data")
 public class ResourceUsingWebClient {
 
-    @Inject
-    Vertx vertx;
+    private final WebClient client;
 
-    private WebClient client;
-
-    @PostConstruct
-    void initialize() {
+    public ResourceUsingWebClient(Vertx vertx) {
         this.client = WebClient.create(vertx,
                 new WebClientOptions().setDefaultHost("fruityvice.com").setDefaultPort(443).setSsl(true)
                         .setTrustAll(true));

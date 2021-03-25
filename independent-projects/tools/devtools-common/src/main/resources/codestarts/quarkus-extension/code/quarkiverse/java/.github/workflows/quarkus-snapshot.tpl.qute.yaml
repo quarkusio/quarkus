@@ -38,13 +38,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: current-repo
-          ref: main
 
       - name: Checkout Ecosystem
         uses: actions/checkout@v2
         with:
           repository: ${{ env.ECOSYSTEM_CI_REPO }}
-          ref: main
           path: ecosystem-ci
 
       - name: Setup and Run Tests

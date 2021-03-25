@@ -19,6 +19,7 @@ import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -43,7 +44,17 @@ public class KeycloakPolicyEnforcerAuthorizer
 
     @Override
     public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
-        VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext,
+
+        AccessTokenCredential credential = identity.getCredential(AccessTokenCredential.class);
+
+        if (credential == null) {
+            // If SecurityIdentity has been created by the authentication mechanism other than quarkus-oidc then do not block
+            // the request.
+            return CheckResult.PERMIT;
+        }
+
+        String token = credential.getToken();
+        VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, token,
                 configBean.httpConfiguration.readTimeout.toMillis());
         AuthorizationContext result = delegate.authorize(httpFacade);
 

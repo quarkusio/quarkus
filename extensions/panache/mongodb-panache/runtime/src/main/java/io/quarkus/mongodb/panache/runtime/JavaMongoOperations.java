@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 
 import org.bson.Document;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
@@ -17,8 +18,8 @@ public class JavaMongoOperations extends MongoOperations<PanacheQuery<?>, Panach
     public static final JavaMongoOperations INSTANCE = new JavaMongoOperations();
 
     @Override
-    protected PanacheQuery<?> createQuery(MongoCollection collection, Document query, Document sortDoc) {
-        return new PanacheQueryImpl(collection, query, sortDoc);
+    protected PanacheQuery<?> createQuery(MongoCollection collection, ClientSession session, Document query, Document sortDoc) {
+        return new PanacheQueryImpl(collection, session, query, sortDoc);
     }
 
     @Override

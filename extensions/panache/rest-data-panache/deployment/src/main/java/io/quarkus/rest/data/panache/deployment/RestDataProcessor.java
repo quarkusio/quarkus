@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.jboss.resteasy.links.impl.EL;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.Capabilities;
@@ -29,14 +28,8 @@ import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapperJsonbSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalLink;
 import io.quarkus.rest.data.panache.runtime.hal.HalLinkJacksonSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalLinkJsonbSerializer;
-import io.quarkus.rest.data.panache.runtime.jta.TransactionalExecutor;
 
 public class RestDataProcessor {
-
-    @BuildStep
-    AdditionalBeanBuildItem registerTransactionalExecutor() {
-        return AdditionalBeanBuildItem.unremovableOf(TransactionalExecutor.class);
-    }
 
     @BuildStep
     void implementResources(CombinedIndexBuildItem index, List<RestDataResourceBuildItem> resourceBuildItems,

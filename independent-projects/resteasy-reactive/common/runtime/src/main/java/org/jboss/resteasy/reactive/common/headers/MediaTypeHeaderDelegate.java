@@ -60,7 +60,7 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
         return result;
     }
 
-    private static MediaType internalParse(String type) {
+    protected static MediaType internalParse(String type) {
         int typeIndex = type.indexOf('/');
         int paramIndex = type.indexOf(';');
         String major = null;
@@ -141,7 +141,7 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
         return result;
     }
 
-    private String internalToString(MediaType type) {
+    protected static String internalToString(MediaType type) {
         StringBuilder buf = new StringBuilder();
 
         buf.append(type.getType().toLowerCase()).append("/").append(type.getSubtype().toLowerCase());
@@ -156,5 +156,13 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
                 buf.append(val);
         }
         return buf.toString();
+    }
+
+    protected static Map<String, MediaType> getMap() {
+        return map;
+    }
+
+    protected static Map<MediaType, String> getReverseMap() {
+        return reverseMap;
     }
 }

@@ -1,79 +1,26 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
-import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public class ClientRequestHeaders {
-    protected CaseInsensitiveMap<Object> headers = new CaseInsensitiveMap<Object>();
-    protected ConfigurationImpl configuration;
+public class ClientRequestHeaders extends AbstractClientRequestHeaders {
 
-    public ClientRequestHeaders(final ConfigurationImpl configuration) {
-        this.configuration = configuration;
+    public ClientRequestHeaders() {
     }
 
-    public CaseInsensitiveMap<Object> getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(MultivaluedMap<String, Object> newHeaders) {
-        headers.clear();
-        if (newHeaders == null)
-            return;
-        headers.putAll(newHeaders);
-    }
-
-    public void setLanguage(Locale language) {
-        //if this already set by HeaderParamProcessor
-        if (this.getHeader(HttpHeaders.CONTENT_LANGUAGE) != null) {
-            return;
-        }
-        if (language == null) {
-            headers.remove(HttpHeaders.CONTENT_LANGUAGE);
-            return;
-        }
-        headers.putSingle(HttpHeaders.CONTENT_LANGUAGE, language);
-    }
-
-    public void setLanguage(String language) {
-        setLanguage(new Locale(language));
-    }
-
-    public void setMediaType(MediaType mediaType) {
-        if (mediaType == null) {
-            headers.remove(HttpHeaders.CONTENT_TYPE);
-            return;
-        }
-        headers.putSingle(HttpHeaders.CONTENT_TYPE, mediaType);
-    }
-
-    public void acceptLanguage(Locale... locales) {
-        String accept = (String) headers.getFirst(HttpHeaders.ACCEPT_LANGUAGE);
-        StringBuilder builder = buildAcceptString(accept, locales);
-        headers.putSingle(HttpHeaders.ACCEPT_LANGUAGE, builder.toString());
-    }
-
-    public void acceptLanguage(String... locales) {
-        String accept = (String) headers.getFirst(HttpHeaders.ACCEPT_LANGUAGE);
-        StringBuilder builder = buildAcceptString(accept, locales);
-        headers.putSingle(HttpHeaders.ACCEPT_LANGUAGE, builder.toString());
-    }
-
-    private StringBuilder buildAcceptString(String accept, Object[] items) {
+    protected StringBuilder buildAcceptString(String accept, Object[] items) {
         StringBuilder builder = new StringBuilder();
         if (accept != null)
             builder.append(accept).append(", ");
@@ -108,23 +55,12 @@ public class ClientRequestHeaders {
         headers.putSingle(HttpHeaders.ACCEPT, builder.toString());
     }
 
-    public void cookie(Cookie cookie) {
-        if (!(Cookie.class.equals(cookie.getClass()))) {
-            cookie = new Cookie(cookie.getName(), cookie.getValue(), cookie.getPath(), cookie.getDomain(), cookie.getVersion());
-        }
-        headers.add(HttpHeaders.COOKIE, cookie);
-    }
-
     public void allow(String... methods) {
         HeaderUtil.setAllow(this.headers, methods);
     }
 
     public void allow(Set<String> methods) {
         HeaderUtil.setAllow(headers, methods);
-    }
-
-    public void cacheControl(CacheControl cacheControl) {
-        headers.putSingle(HttpHeaders.CACHE_CONTROL, cacheControl);
     }
 
     public void header(String name, Object value) {
@@ -140,10 +76,6 @@ public class ClientRequestHeaders {
             acceptLanguage(HeaderUtil.headerToString(value));
         else
             headers.add(name, value);
-    }
-
-    public Date getDate() {
-        return HeaderUtil.getDate(headers);
     }
 
     public String getHeader(String name) {

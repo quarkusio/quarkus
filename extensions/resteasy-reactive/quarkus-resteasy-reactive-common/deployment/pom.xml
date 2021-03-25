@@ -18,6 +18,10 @@
             <artifactId>resteasy-reactive-common-processor</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-runtime-delegate</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-core-deployment</artifactId>
         </dependency>

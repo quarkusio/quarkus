@@ -93,6 +93,12 @@
 
             <dependency>
                 <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-runtime-delegate</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
                 <artifactId>resteasy-reactive-client-processor</artifactId>
                 <version>${project.version}</version>
             </dependency>

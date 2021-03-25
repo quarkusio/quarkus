@@ -15,6 +15,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>runtime-delegate</module>
         <module>runtime</module>
         <module>processor</module>
     </modules>

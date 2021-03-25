@@ -11,6 +11,9 @@ public class LinkHeaders {
     private final Map<String, Link> linksByRelationship = new HashMap<>();
     private final List<Link> links = new ArrayList<>();
 
+    public LinkHeaders() {
+    }
+
     public LinkHeaders(MultivaluedMap<String, Object> headers) {
         List<Object> values = headers.get("Link");
         if (values == null) {
@@ -31,7 +34,7 @@ public class LinkHeaders {
         }
     }
 
-    private void addLink(final Link link) {
+    protected void addLink(final Link link) {
         links.add(link);
         for (String rel : link.getRels()) {
             linksByRelationship.put(rel, link);

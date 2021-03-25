@@ -10,12 +10,12 @@ public class RequestSpec {
 
     public RequestSpec(ConfigurationImpl configuration) {
         this.configuration = configuration;
-        headers = new ClientRequestHeaders(configuration);
+        headers = new ClientRequestHeaders();
     }
 
     public RequestSpec(RequestSpec requestSpec) {
         this.configuration = requestSpec.configuration;
-        this.headers = new ClientRequestHeaders(configuration);
+        this.headers = new ClientRequestHeaders();
         this.headers.headers.putAll(requestSpec.headers.headers);
         this.chunked = requestSpec.chunked;
     }

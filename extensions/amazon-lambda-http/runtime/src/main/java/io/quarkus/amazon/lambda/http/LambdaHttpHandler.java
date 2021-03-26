@@ -6,7 +6,10 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -92,12 +95,21 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                     HttpResponse res = (HttpResponse) msg;
                     responseBuilder.setStatusCode(res.status().code());
 
-                    Headers multiValueHeaders = new Headers();
-                    responseBuilder.setMultiValueHeaders(multiValueHeaders);
+                    final Map<String, String> headers = new HashMap<>();
+                    responseBuilder.setHeaders(headers);
                     for (String name : res.headers().names()) {
-                        for (String v : res.headers().getAll(name)) {
-                            multiValueHeaders.add(name, v);
+                        final List<String> allForName = res.headers().getAll(name);
+                        if (allForName == null || allForName.isEmpty()) {
+                            continue;
                         }
+                        final StringBuilder sb = new StringBuilder();
+                        for (Iterator<String> valueIterator = allForName.iterator(); valueIterator.hasNext();) {
+                            sb.append(valueIterator.next());
+                            if (valueIterator.hasNext()) {
+                                sb.append(",");
+                            }
+                        }
+                        headers.put(name, sb.toString());
                     }
                 }
                 if (msg instanceof HttpContent) {
@@ -122,7 +134,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 }
                 if (msg instanceof LastHttpContent) {
                     if (baos != null) {
-                        if (isBinary(((Headers) responseBuilder.getMultiValueHeaders()).getFirst("Content-Type"))) {
+                        if (isBinary(responseBuilder.getHeaders().get("Content-Type"))) {
                             responseBuilder.setIsBase64Encoded(true);
                             responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
                         } else {

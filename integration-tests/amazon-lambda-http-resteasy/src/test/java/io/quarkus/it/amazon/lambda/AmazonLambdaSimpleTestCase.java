@@ -44,7 +44,7 @@ public class AmazonLambdaSimpleTestCase {
         APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);
         Assertions.assertEquals(body(out), "hello");
-        Assertions.assertTrue(out.getMultiValueHeaders().get("Content-Type").get(0).startsWith("text/plain"));
+        Assertions.assertTrue(out.getHeaders().get("Content-Type").startsWith("text/plain"));
     }
 
     private APIGatewayV2HTTPEvent request(String path) {
@@ -77,7 +77,7 @@ public class AmazonLambdaSimpleTestCase {
         APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);
         Assertions.assertEquals(body(out), "hello Bill");
-        Assertions.assertTrue(out.getMultiValueHeaders().get("Content-Type").get(0).startsWith("text/plain"));
+        Assertions.assertTrue(out.getHeaders().get("Content-Type").startsWith("text/plain"));
     }
 
     @Test
@@ -92,7 +92,7 @@ public class AmazonLambdaSimpleTestCase {
         request.setIsBase64Encoded(true);
         APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);
-        Assertions.assertEquals(out.getMultiValueHeaders().get("Content-Type").get(0),
+        Assertions.assertEquals(out.getHeaders().get("Content-Type"),
                 MediaType.APPLICATION_OCTET_STREAM);
         Assertions.assertTrue(out.getIsBase64Encoded());
         byte[] rtn = Base64.decodeBase64(out.getBody());

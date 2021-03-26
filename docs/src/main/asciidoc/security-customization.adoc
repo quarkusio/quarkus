@@ -7,6 +7,21 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
+== Quarkus Security Dependency
+
+`io.quarkus:quarkus-security` module contains the core Quarkus security classes.
+
+In most cases it does not have to be added directly to your project's `pom.xml` as it is already provided by all of the security extensions.
+However if you need to write your own custom security code (for example, register a <<jaxrs-security-context, Custom JAX-RS SecurityContext>>) or use <<bouncy-castle, BouncyCastle>> libraries, then please make sure it is included:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-security</artifactId>
+</dependency>
+----
+
 == HttpAuthenticationMechanism Customization
 
 One can customize `HttpAuthenticationMechanism` by registering a CDI implementation bean.
@@ -146,6 +161,7 @@ If more than one custom `SecurityIdentityAugmentor` is registered then they will
 You can enforce the order by implementing a default `SecurityIdentityAugmentor#priority` method. Augmentors with higher priorities will be invoked first.
 ===
 
+[[jaxrs-security-context]]
 == Custom JAX-RS SecurityContext
 
 If you use JAX-RS `ContainerRequestFilter` to set a custom JAX-RS `SecurityContext` then make sure `ContainerRequestFilter` runs in the JAX-RS pre-match phase by adding a `@PreMatching` annotation to it for this custom security context to be linked with Quarkus `SecurityIdentity`, for example:
@@ -235,6 +251,7 @@ configuration to register the "SunRsaSign" and "SunJCE" security providers:
 quarkus.security.security-providers=SunRsaSign,SunJCE
 ----
 
+[[bouncy-castle]]
 === BouncyCastle
 
 If you need to register an `org.bouncycastle.jce.provider.BouncyCastleProvider` JCE provider then please set a `BC` provider name:

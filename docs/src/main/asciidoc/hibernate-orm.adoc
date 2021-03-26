@@ -35,6 +35,7 @@ Add the following dependencies to your project:
   - `quarkus-jdbc-mariadb` for link:https://mariadb.com/[MariaDB]
   - `quarkus-jdbc-mssql` for link:https://www.microsoft.com/en-gb/sql-server/[Microsoft SQL Server]
   - `quarkus-jdbc-mysql` for link:https://www.mysql.com/[MySQL]
+  - `quarkus-jdbc-oracle` for link:https://www.oracle.com/database/[Oracle Database]
   - `quarkus-jdbc-postgresql` for link:https://www.postgresql.org/[PostgreSQL]
 
 

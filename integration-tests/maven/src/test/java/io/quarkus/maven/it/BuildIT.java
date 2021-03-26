@@ -86,13 +86,27 @@ class BuildIT extends MojoTestBase {
         launch();
     }
 
+    @Test
+    void testMultiBuildMode() throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/multi-build-mode");
+        build(null);
+
+        launch("foo-", "Foo: hello, from foo");
+        launch("bar-", "Bar: hello, from bar");
+    }
+
     private void launch() throws IOException {
-        File output = new File(testDir, "target/output.log");
+        launch("", "hello, from foo");
+    }
+
+    private void launch(String outputPrefix, String expectedMessage) throws IOException {
+        File output = new File(testDir, String.format("target/%soutput.log", outputPrefix));
         output.createNewFile();
-        Process process = JarRunnerIT.doLaunch(new File(testDir, "target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
+        Process process = JarRunnerIT.doLaunch(new File(testDir, String.format("target/%squarkus-app", outputPrefix)),
+                Paths.get("quarkus-run.jar"), output,
                 Collections.emptyList()).start();
         try {
-            Assertions.assertEquals("hello, from foo", DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals(expectedMessage, DevModeTestUtils.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }

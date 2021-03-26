@@ -12,7 +12,7 @@ public class MultiResultNode implements ResultNode {
     private final ResultNode[] results;
 
     public MultiResultNode(CompletableFuture<ResultNode>[] futures) {
-        results = new ResultNode[futures.length];
+        ResultNode[] results = new ResultNode[futures.length];
         for (int i = 0; i < futures.length; i++) {
             try {
                 results[i] = futures[i].get();
@@ -20,6 +20,7 @@ public class MultiResultNode implements ResultNode {
                 throw new IllegalStateException(e);
             }
         }
+        this.results = results;
     }
 
     @Override

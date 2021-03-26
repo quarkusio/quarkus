@@ -8,6 +8,8 @@ import java.util.concurrent.CompletionStage;
 
 public final class Futures {
 
+    static final CompletableFuture<Void> COMPLETED = CompletableFuture.completedFuture(null);
+
     private Futures() {
     }
 

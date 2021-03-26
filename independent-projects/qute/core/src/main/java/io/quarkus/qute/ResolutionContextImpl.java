@@ -1,21 +1,18 @@
 package io.quarkus.qute;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 class ResolutionContextImpl implements ResolutionContext {
 
     private final Object data;
-    private final List<NamespaceResolver> namespaceResolvers;
     private final Evaluator evaluator;
     private final Map<String, SectionBlock> extendingBlocks;
     private final TemplateInstance templateInstance;
 
-    ResolutionContextImpl(Object data, List<NamespaceResolver> namespaceResolvers,
+    ResolutionContextImpl(Object data,
             Evaluator evaluator, Map<String, SectionBlock> extendingBlocks, TemplateInstance templateInstance) {
         this.data = data;
-        this.namespaceResolvers = namespaceResolvers;
         this.evaluator = evaluator;
         this.extendingBlocks = extendingBlocks;
         this.templateInstance = templateInstance;
@@ -39,11 +36,6 @@ class ResolutionContextImpl implements ResolutionContext {
     @Override
     public Object getData() {
         return data;
-    }
-
-    @Override
-    public List<NamespaceResolver> getNamespaceResolvers() {
-        return namespaceResolvers;
     }
 
     @Override
@@ -74,11 +66,13 @@ class ResolutionContextImpl implements ResolutionContext {
         private final ResolutionContext parent;
         private final Object data;
         private final Map<String, SectionBlock> extendingBlocks;
+        private final Evaluator evaluator;
 
         public ChildResolutionContext(ResolutionContext parent, Object data, Map<String, SectionBlock> extendingBlocks) {
             this.parent = parent;
             this.data = data;
             this.extendingBlocks = extendingBlocks;
+            this.evaluator = parent.getEvaluator();
         }
 
         @Override
@@ -89,7 +83,7 @@ class ResolutionContextImpl implements ResolutionContext {
         @Override
         public CompletionStage<Object> evaluate(Expression expression) {
             // Make sure we use the correct resolution context
-            return getEvaluator().evaluate(expression, this);
+            return evaluator.evaluate(expression, this);
         }
 
         @Override
@@ -100,11 +94,6 @@ class ResolutionContextImpl implements ResolutionContext {
         @Override
         public Object getData() {
             return data;
-        }
-
-        @Override
-        public List<NamespaceResolver> getNamespaceResolvers() {
-            return parent.getNamespaceResolvers();
         }
 
         @Override
@@ -133,7 +122,7 @@ class ResolutionContextImpl implements ResolutionContext {
 
         @Override
         public Evaluator getEvaluator() {
-            return parent.getEvaluator();
+            return evaluator;
         }
 
     }

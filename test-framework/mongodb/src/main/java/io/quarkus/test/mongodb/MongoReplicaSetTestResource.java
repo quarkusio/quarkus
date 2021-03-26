@@ -1,4 +1,4 @@
-package io.quarkus.it.mongodb.panache;
+package io.quarkus.test.mongodb;
 
 import static org.awaitility.Awaitility.await;
 
@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
 import org.bson.Document;
 import org.jboss.logging.Logger;
 
@@ -37,9 +38,16 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
     @Override
     public Map<String, String> start() {
         try {
+            //JDK bug workaround
+            //https://github.com/quarkusio/quarkus/issues/14424
+            //force class init to prevent possible deadlock when done by mongo threads
+            Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
+        } catch (ClassNotFoundException e) {
+        }
+        try {
             List<IMongodConfig> configs = new ArrayList<>();
             for (int i = 0; i < 2; i++) {
-                int port = 27018 + i;
+                int port = 27017 + i;
                 configs.add(buildMongodConfiguration("localhost", port, true));
             }
             configs.forEach(config -> {
@@ -90,7 +98,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
             LOGGER.infof("replSetInitiate: %s", cr);
 
             // Check replica set status before to proceed
-            await()
+            Awaitility.await()
                     .pollInterval(100, TimeUnit.MILLISECONDS)
                     .atMost(1, TimeUnit.MINUTES)
                     .until(() -> {

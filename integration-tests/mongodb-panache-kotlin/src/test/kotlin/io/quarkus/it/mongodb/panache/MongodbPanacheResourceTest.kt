@@ -6,9 +6,9 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.quarkus.it.mongodb.panache.book.BookDetail
 import io.quarkus.it.mongodb.panache.person.Person
-import io.quarkus.it.mongodb.panache.person.PersonEntity
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
+import io.quarkus.test.mongodb.MongoTestResource
 import io.restassured.RestAssured
 import io.restassured.RestAssured.get
 import io.restassured.common.mapper.TypeRef
@@ -18,6 +18,8 @@ import io.restassured.response.Response
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
 import java.util.Calendar
 import java.util.Collections
 import java.util.Date
@@ -25,6 +27,7 @@ import java.util.GregorianCalendar
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource::class)
+@DisabledOnOs(OS.WINDOWS)
 open class MongodbPanacheResourceTest {
     @Test
     fun testBookEntity() {

@@ -19,6 +19,7 @@ import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 
 @QuarkusTest
 @QuarkusTestResource(MongoReplicaSetTestResource.class)

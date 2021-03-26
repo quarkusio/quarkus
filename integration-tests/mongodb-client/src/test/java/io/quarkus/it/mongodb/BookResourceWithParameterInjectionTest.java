@@ -1,7 +1,5 @@
 package io.quarkus.it.mongodb;
 
-import static org.hamcrest.Matchers.*;
-
 import javax.json.bind.Jsonb;
 
 import org.junit.jupiter.api.AfterAll;
@@ -10,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.mongodb.MongoTestResource;
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource.class)

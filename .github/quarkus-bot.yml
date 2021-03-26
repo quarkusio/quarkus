@@ -290,7 +290,7 @@ triage:
         - extensions/cache/
         - integration-tests/cache/
     - labels: [area/cli]
-      title: "cli|qs"
+      title: "cli |qs "
       directories:
         - devtools/cli/
       notify: [maxandersen,ebullient,gsmet]

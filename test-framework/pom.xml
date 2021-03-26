@@ -37,6 +37,7 @@
         <module>ldap</module>
         <module>security</module>
         <module>oidc-server</module>
+        <module>keycloak-server</module>
         <module>jacoco</module>
     </modules>
 

@@ -504,7 +504,7 @@ public class Fruit {
                 .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null);
     }
 
-    public Uni<Long> save(PgPool client) {
+    public Uni<Long> save(PgPool client, String name) {
         return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)").execute(Tuple.of(name))
                 .onItem().transform(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
     }
@@ -608,16 +608,6 @@ public class FruitResource {
         this.client = client;
     }
 
-    private void initdb() {
-        client.query("DROP TABLE IF EXISTS fruits").execute()
-                .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)").execute())
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Kiwi')").execute())
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Durian')").execute())
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pomelo')").execute())
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Lychee')").execute())
-                .await().indefinitely();
-    }
-
     @GET
     public Multi<Fruit> get() {
         return Fruit.findAll(client);
@@ -633,7 +623,7 @@ public class FruitResource {
 
     @POST
     public Uni<Response> create(Fruit fruit) {
-        return fruit.save(client)
+        return fruit.save(client, fruit.name)
                 .onItem().transform(id -> URI.create("/fruits/" + id))
                 .onItem().transform(uri -> Response.created(uri).build());
     }

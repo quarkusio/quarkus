@@ -135,7 +135,6 @@
                 <skipITs>true</skipITs>
                 <skipDocs>true</skipDocs>
                 <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
                 <skipExtensionValidation>true</skipExtensionValidation>
                 <skip.gradle.tests>true</skip.gradle.tests>
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->

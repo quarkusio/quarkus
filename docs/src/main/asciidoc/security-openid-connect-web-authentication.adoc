@@ -519,7 +519,7 @@ In such cases configuring Quarkus to recognize the original headers forwarded by
 
 === Google Cloud
 
-You can have Quarkus OIDC `web-app` applications access **Google Cloud services** such as **BigQuery** on behalf of the currently authenticated users who have enabled OpendId Connect (Authorization Code Flow) permissions to such services in their Google Developer Consoles.
+You can have Quarkus OIDC `web-app` applications access **Google Cloud services** such as **BigQuery** on behalf of the currently authenticated users who have enabled OpenID  Connect (Authorization Code Flow) permissions to such services in their Google Developer Consoles.
 
 It is super easy to do with https://github.com/quarkiverse[Quarkiverse] https://github.com/quarkiverse/quarkiverse-google-cloud-services[Google Cloud Services], only add
 the https://github.com/quarkiverse/quarkiverse-google-cloud-services/releases/latest[latest tag] service dependency, for example:

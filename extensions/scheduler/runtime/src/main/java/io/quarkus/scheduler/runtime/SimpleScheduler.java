@@ -8,6 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -82,12 +83,15 @@ public class SimpleScheduler implements Scheduler {
                 int nameSequence = 0;
                 for (Scheduled scheduled : method.getSchedules()) {
                     nameSequence++;
-                    SimpleTrigger trigger = createTrigger(method.getInvokerClassName(), parser, scheduled, nameSequence);
-                    ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
-                    if (scheduled.concurrentExecution() == ConcurrentExecution.SKIP) {
-                        invoker = new SkipConcurrentExecutionInvoker(invoker, skippedExecutionEvent);
+                    Optional<SimpleTrigger> trigger = createTrigger(method.getInvokerClassName(), parser, scheduled,
+                            nameSequence);
+                    if (trigger.isPresent()) {
+                        ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
+                        if (scheduled.concurrentExecution() == ConcurrentExecution.SKIP) {
+                            invoker = new SkipConcurrentExecutionInvoker(invoker, skippedExecutionEvent);
+                        }
+                        scheduledTasks.add(new ScheduledTask(trigger.get(), invoker));
                     }
-                    scheduledTasks.add(new ScheduledTask(trigger, invoker));
                 }
             }
         }
@@ -151,7 +155,7 @@ public class SimpleScheduler implements Scheduler {
         return enabled && running;
     }
 
-    SimpleTrigger createTrigger(String invokerClass, CronParser parser, Scheduled scheduled, int nameSequence) {
+    Optional<SimpleTrigger> createTrigger(String invokerClass, CronParser parser, Scheduled scheduled, int nameSequence) {
         String id = SchedulerUtils.lookUpPropertyValue(scheduled.identity());
         if (id.isEmpty()) {
             id = nameSequence + "_" + invokerClass;
@@ -169,15 +173,22 @@ public class SimpleScheduler implements Scheduler {
 
         String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
         if (!cron.isEmpty()) {
+            if (SchedulerUtils.isOff(cron)) {
+                return Optional.empty();
+            }
             Cron cronExpr;
             try {
                 cronExpr = parser.parse(cron);
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Cannot parse cron expression: " + cron, e);
             }
-            return new CronTrigger(id, start, cronExpr);
+            return Optional.of(new CronTrigger(id, start, cronExpr));
         } else if (!scheduled.every().isEmpty()) {
-            return new IntervalTrigger(id, start, SchedulerUtils.parseEveryAsMillis(scheduled));
+            final OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
+            if (!everyMillis.isPresent()) {
+                return Optional.empty();
+            }
+            return Optional.of(new IntervalTrigger(id, start, everyMillis.getAsLong()));
         } else {
             throw new IllegalArgumentException("Invalid schedule configuration: " + scheduled);
         }

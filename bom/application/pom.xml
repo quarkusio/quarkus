@@ -4324,7 +4324,7 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-core</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
@@ -4339,27 +4339,27 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-sql-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-db2-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <!-- Used by the Reactive PG Client -->
@@ -4370,12 +4370,12 @@
            <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+               <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-redis-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>
@@ -4629,17 +4629,17 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-converter-api</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-converter-mutiny</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-converter-rxjava2</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
 
             <dependency>

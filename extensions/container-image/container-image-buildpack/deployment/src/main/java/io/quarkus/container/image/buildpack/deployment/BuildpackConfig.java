@@ -1,5 +1,6 @@
 package io.quarkus.container.image.buildpack.deployment;
 
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -14,6 +15,12 @@ public class BuildpackConfig {
      */
     @ConfigItem(defaultValue = "paketobuildpacks/builder:full")
     public String builderImage;
+    
+    /**
+     * Environment key/values to pass to buildpacks.
+     */
+    @ConfigItem
+    public Map<String,String> builderEnv;
 
     /**
      * The buildpacks run image to use when building the project
@@ -56,5 +63,6 @@ public class BuildpackConfig {
      */
     @ConfigItem
     public Optional<String> baseRegistryPassword;
-
+    
+    
 }

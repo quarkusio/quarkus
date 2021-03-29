@@ -2,9 +2,9 @@ package io.quarkus.container.image.buildpack.deployment;
 
 import org.jboss.logging.Logger;
 
-import dev.snowdrop.buildpack.BuildPackBuilder;
+import dev.snowdrop.buildpack.BuildpackBuilder;
 
-public class BuildpackLogReader implements BuildPackBuilder.LogReader {
+public class BuildpackLogReader implements BuildpackBuilder.LogReader {
     private static final Logger bplog = Logger.getLogger("buildpack");
     
 	@Override

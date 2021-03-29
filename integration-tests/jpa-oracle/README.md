@@ -7,13 +7,13 @@ By default, the tests of this module are disabled.
 To run the tests in a standard JVM with an Oracle database started as a Docker container, you can run the following command:
 
 ```
-mvn verify -Dtest-containers -Dstart-containers
+mvn verify -Dtest-oracle -Dstart-oracle-containers
 ```
 
 To also test as a native image, add `-Dnative`:
 
 ```
-mvn verify -Dtest-containers -Dstart-containers -Dnative
+mvn verify -Dtest-oracle -Dstart-oracle-containers -Dnative
 ```
 
 Alternatively you can connect to your own Oracle database.
@@ -50,5 +50,13 @@ docker run -it --rm=true --name ORCLCDB -p 1521:1521 store/oracle/database-enter
 
 This will start a local instance with the configuration matching the parameters used by the integration tests of this module.
 
-Once the `docker` standalone command works, you can use `-Dstart-containers` as described earlier to let the build
+Once the `docker` standalone command works, you can use `-Dstart-oracle-containers` as described earlier to let the build
 automatically start/stop the containers as necessary.
+
+## A note on build properties
+
+N.B. the property names to enable running tests of this module (`-Dtest-oracle`) and starting the container (`-Dstart-oracle-containers`)
+are different than the ones used by many other Quarkus modules because of the need to authenticate on dockerhub and
+approve the license terms; in particular at the time of writing this isn't supported by our CI infrastructure.
+
+This might evolve, hopefully conforming to the same parameter names as other modules.

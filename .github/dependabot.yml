@@ -24,6 +24,9 @@ updates:
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
       - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
+      - dependency-name: com.jcraft:jzlib
+      - dependency-name: org.jboss.logging:*
+      - dependency-name: org.jboss.logmanager:*
       # Quarkus
       - dependency-name: io.quarkus.gizmo:gizmo
       - dependency-name: io.quarkus.http:*
@@ -34,7 +37,8 @@ updates:
       - dependency-name: org.postgresql:postgresql
       - dependency-name: org.mariadb.jdbc:mariadb-java-client
       - dependency-name: mysql:mysql-connector-java
-      - dependency-name: org.apache.derby:derbyclient
+      - dependency-name: org.apache.derby:*
+      - dependency-name: com.ibm.db2:jcc
       # Kafka
       - dependency-name: org.apache.kafka:*
       - dependency-name: org.apache.zookeeper:zookeeper
@@ -94,13 +98,18 @@ updates:
       - dependency-name: com.github.ben-manes.caffeine:caffeine
       # Jackson
       - dependency-name: com.fasterxml.jackson:jackson-bom
+      - dependency-name: com.fasterxml:classmate
       # AWS
       - dependency-name: software.amazon.awssdk:*
       - dependency-name: com.amazon.alexa:*
       - dependency-name: com.amazonaws:*
+      - dependency-name: com.amazonaws.serverless:*
+      # Azure
+      - dependency-name: com.microsoft.azure.functions:*
       # Apache Commons
       - dependency-name: commons-io:commons-io
       - dependency-name: org.apache.commons:commons-lang3
+      - dependency-name: commons-codec:commons-codec
       # Micrometer
       - dependency-name: io.micrometer:micrometer-bom
       # BouncyCastle
@@ -112,6 +121,8 @@ updates:
       - dependency-name: org.mongodb:*
       # Avro
       - dependency-name: org.apache.avro:*
+      # gRPC
+      - dependency-name: io.grpc:*
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

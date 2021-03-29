@@ -11,7 +11,7 @@ publishing {
     publications {
         mavenJave(MavenPublication) {
             groupId = 'org.acme'
-            artifactId = 'acme-ext'
+            artifactId = 'runtime'
             version = '1.0-SNAPSHOT'
 
             from components.java

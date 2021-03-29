@@ -19,7 +19,8 @@ import java.util.Properties;
 
 public class QuarkusGradleTestBase {
 
-    protected File getProjectDir(final String projectName) throws URISyntaxException, IOException, FileNotFoundException {
+    protected static File getProjectDir(final String projectName)
+            throws URISyntaxException, IOException, FileNotFoundException {
         final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource(projectName);
         if (projectUrl == null) {
             throw new IllegalStateException("Failed to locate test project " + projectName);
@@ -46,7 +47,7 @@ public class QuarkusGradleTestBase {
         return projectDir;
     }
 
-    protected String getQuarkusVersion() throws IOException {
+    protected static String getQuarkusVersion() throws IOException {
         final Path curDir = Paths.get("").toAbsolutePath().normalize();
         final Path gradlePropsFile = curDir.resolve("gradle.properties");
         Properties props = new Properties();

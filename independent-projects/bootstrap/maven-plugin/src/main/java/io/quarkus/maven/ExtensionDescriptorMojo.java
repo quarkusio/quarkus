@@ -421,7 +421,15 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private void setBuiltWithQuarkusCoreVersion(ObjectMapper mapper, ObjectNode extObject) throws MojoExecutionException {
         final QuarkusCoreDeploymentVersionLocator coreVersionLocator = new QuarkusCoreDeploymentVersionLocator();
-        collectDeploymentDeps().getRoot().accept(coreVersionLocator);
+        final DependencyNode root;
+        try {
+            root = repoSystem.collectDependencies(repoSession, newCollectRuntimeDepsRequest()).getRoot();
+        } catch (MojoExecutionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to collect runtime dependencies of " + project.getArtifact(), e);
+        }
+        root.accept(coreVersionLocator);
         if (coreVersionLocator.coreVersion != null) {
             ObjectNode metadata;
             JsonNode mvalue = extObject.get(METADATA);
@@ -453,12 +461,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         try {
             resolvedDeps = repoSystem.resolveDependencies(repoSession,
-                    new DependencyRequest()
-                            .setCollectRequest(newCollectRequest(new DefaultArtifact(project.getArtifact().getGroupId(),
-                                    project.getArtifact().getArtifactId(),
-                                    project.getArtifact().getClassifier(),
-                                    project.getArtifact().getArtifactHandler().getExtension(),
-                                    project.getArtifact().getVersion()))));
+                    new DependencyRequest().setCollectRequest(newCollectRuntimeDepsRequest()));
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve dependencies of " + project.getArtifact(), e);
         }
@@ -731,6 +734,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private AppArtifactCoords getDeploymentCoords() {
         return deploymentCoords == null ? deploymentCoords = AppArtifactCoords.fromString(deployment) : deploymentCoords;
+    }
+
+    private CollectRequest newCollectRuntimeDepsRequest() throws MojoExecutionException {
+        return newCollectRequest(new DefaultArtifact(project.getArtifact().getGroupId(),
+                project.getArtifact().getArtifactId(),
+                project.getArtifact().getClassifier(),
+                project.getArtifact().getArtifactHandler().getExtension(),
+                project.getArtifact().getVersion()));
     }
 
     private CollectRequest newCollectRequest(DefaultArtifact projectArtifact) throws MojoExecutionException {

@@ -28,12 +28,12 @@ repositories {
 }
 
 dependencies {
+    testImplementation "io.quarkus:quarkus-project-core-extension-codestarts:${version}@pom"
     testImplementation "io.quarkus:quarkus-test-devtools:${version}"
     testImplementation "io.quarkus:quarkus-bootstrap-core:${version}"
     testImplementation "io.quarkus:quarkus-core-deployment:${version}"
     testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"
     testImplementation "io.quarkus:quarkus-devtools-common:${version}"
-    testImplementation "io.quarkus:quarkus-platform-descriptor-json:${version}"
     testImplementation "io.quarkus:io.quarkus.gradle.plugin:${version}"
     testImplementation 'org.mockito:mockito-core:3.8.0'
     testImplementation 'org.assertj:assertj-core:3.19.0'

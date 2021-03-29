@@ -55,7 +55,7 @@ DEPS+='\n'
 # note on sed: Remove artifacts that are not extensions (since not -deployment sibling exists).
 #              This is a bit fragile but without this -deployment deps would need to be added by hand.
 DEPS+=`echo "${ARTIFACT_IDS}" \
-  | sed -e '/-bootstrap/d' -e '/-test/d' -e '/-junit/d' -e '/-devtools/d' -e '/-descriptor/d' \
+  | sed -e '/-bootstrap/d' -e '/-test/d' -e '/-junit/d' -e '/-devtools/d' -e '/-descriptor/d' -e '/-extension-codestarts/d' \
   | xargs -i sh -c "echo \"${DEP_TEMPLATE_DEPLOYMENT}\" | sed 's/XXX/{}/'" \
   | sed "${SED_EXPR_NEWLINES}"`
 

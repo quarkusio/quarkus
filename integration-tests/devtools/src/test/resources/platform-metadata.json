@@ -47,6 +47,6 @@
       }
     },
     "codestarts-artifacts": [
-      "${project.groupId}:quarkus-platform-descriptor-json::jar:${project.version}"
+      "${project.groupId}:quarkus-project-core-extension-codestarts::jar:${project.version}"
     ]
 }

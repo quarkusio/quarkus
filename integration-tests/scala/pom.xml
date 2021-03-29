@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-platform-descriptor-json</artifactId>
+            <artifactId>quarkus-project-core-extension-codestarts</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

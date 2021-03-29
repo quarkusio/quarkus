@@ -16,11 +16,19 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-common</artifactId>
         </dependency>
+        <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-platform-descriptor-json</artifactId>
+            <artifactId>quarkus-project-core-extension-codestarts</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
-        <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-devtools</artifactId>

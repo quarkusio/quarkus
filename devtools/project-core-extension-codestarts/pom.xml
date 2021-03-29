@@ -10,8 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-platform-descriptor-json</artifactId>
-    <name>Quarkus - Dev tools - Platform Descriptor - JSON</name>
+    <artifactId>quarkus-project-core-extension-codestarts</artifactId>
+    <name>Quarkus - Dev tools - Project Core Extension Codestarts</name>
 
     <properties>
         <gradle-wrapper.path>${project.basedir}/../gradle</gradle-wrapper.path>
@@ -29,48 +29,6 @@
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-bom</id>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>io.quarkus</groupId>
-                                    <artifactId>quarkus-bom</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>pom</type>
-                                    <outputDirectory>${project.build.outputDirectory}/quarkus-bom</outputDirectory>
-                                    <destFileName>pom.xml</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-bom-descriptor-json</id>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>io.quarkus</groupId>
-                                    <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>json</type>
-                                    <classifier>${project.version}</classifier>
-                                    <outputDirectory>${project.build.outputDirectory}/quarkus-bom-descriptor</outputDirectory>
-                                    <destFileName>extensions.json</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -103,16 +61,6 @@
             </plugin>
         </plugins>
     </build>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
-            <version>${project.version}</version>
-            <type>json</type>
-            <classifier>${project.version}</classifier>
-        </dependency>
-    </dependencies>
 
     <profiles>
         <profile>

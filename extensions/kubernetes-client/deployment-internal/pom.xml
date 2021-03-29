@@ -9,8 +9,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-kubernetes-client-deployment-internal</artifactId>
-    <name>Quarkus - Kubernetes Client - Deployment - Internal</name>
+    <artifactId>quarkus-kubernetes-client-internal-deployment</artifactId>
+    <name>Quarkus - Kubernetes Client - Internal - Deployment</name>
     <description>This module only exists as a separate module to so the kubernetes extension can share code with the kubernetes-client extension</description>
 
     <dependencies>

@@ -62,9 +62,15 @@ public class OpenIdeHandler extends DevConsolePostHandler {
     }
 
     private String toFileName(String className, String lang, String srcMainPath) {
-        // TODO: handler inner classes
+        String effectiveClassName = className;
+        int dollarIndex = className.indexOf("$");
+        if (dollarIndex > -1) {
+            // in this case we are dealing with inner classes, so we need to get the name of the outer class
+            // in order to use for conversion to the file name
+            effectiveClassName = className.substring(0, dollarIndex);
+        }
         return srcMainPath + File.separator + lang + File.separator
-                + (className.replace('.', File.separatorChar) + "." + LANG_TO_EXT.get(lang));
+                + (effectiveClassName.replace('.', File.separatorChar) + "." + LANG_TO_EXT.get(lang));
 
     }
 

@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -31,6 +32,7 @@ import io.quarkus.extest.runtime.config.MyEnum;
 import io.quarkus.extest.runtime.config.NestedConfig;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
 import io.quarkus.extest.runtime.config.ObjectValueOf;
+import io.quarkus.extest.runtime.config.OverrideBuildTimeConfigSource;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.test.QuarkusUnitTest;
@@ -44,6 +46,9 @@ public class ConfiguredBeanTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ConfiguredBean.class)
+                    // Don't change this to types, because of classloader class cast exception.
+                    .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
+                            "io.quarkus.extest.runtime.config.OverrideBuildTimeConfigSource")
                     .addAsResource("application.properties"));
 
     @Inject
@@ -296,6 +301,18 @@ public class ConfiguredBeanTest {
         Assertions.assertTrue(map.containsKey("inner-key"));
         Assertions.assertFalse(map.containsKey("outer-key"));
         Assertions.assertEquals("1234", map.get("inner-key"));
+    }
+
+    @Inject
+    TestBuildAndRunTimeConfig buildAndRunTimeConfig;
+
+    @Test
+    public void buildTimeDefaults() {
+        // Source is only initialized once in runtime.
+        Assertions.assertEquals(1, OverrideBuildTimeConfigSource.counter.get());
+        // Test that build configRoot are not overridden by properties in runtime.
+        Assertions.assertEquals(1234567891L, buildAndRunTimeConfig.allValues.longPrimitive);
+        Assertions.assertEquals(0, ConfigProvider.getConfig().getValue("quarkus.btrt.all-values.long-primitive", Long.class));
     }
 
     @Test

@@ -39,7 +39,9 @@ public class SmallRyeOpenTracingProcessor {
     }
 
     @BuildStep
-    void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
+    void setupFilter(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
             BuildProducer<FilterBuildItem> filterProducer,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<CustomContainerResponseFilterBuildItem> customResponseFilters,
@@ -48,6 +50,7 @@ public class SmallRyeOpenTracingProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENTRACING));
 
+        additionalBeans.produce(new AdditionalBeanBuildItem(QuarkusSmallRyeTracingDynamicFeature.class));
         providers.produce(new ResteasyJaxrsProviderBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));
 
         if (capabilities.isPresent(Capability.SERVLET)) {

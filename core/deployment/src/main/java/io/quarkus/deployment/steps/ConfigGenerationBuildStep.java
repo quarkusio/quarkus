@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
+import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -45,6 +46,7 @@ public class ConfigGenerationBuildStep {
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LiveReloadBuildItem liveReloadBuildItem,
+            List<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders,
             List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders) {
         if (liveReloadBuildItem.isLiveReload()) {
             return;
@@ -62,7 +64,20 @@ public class ConfigGenerationBuildStep {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, false);
         RunTimeConfigurationGenerator.generate(readResult, classOutput,
                 launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT, defaults, additionalConfigTypes,
+                getAdditionalStaticInitConfigSourceProviders(additionalStaticInitConfigSourceProviders),
                 getAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders));
+    }
+
+    private List<String> getAdditionalStaticInitConfigSourceProviders(
+            List<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders) {
+        if (additionalStaticInitConfigSourceProviders.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> result = new ArrayList<>(additionalStaticInitConfigSourceProviders.size());
+        for (AdditionalStaticInitConfigSourceProviderBuildItem provider : additionalStaticInitConfigSourceProviders) {
+            result.add(provider.getProviderClassName());
+        }
+        return result;
     }
 
     private List<String> getAdditionalBootstrapConfigSourceProviders(

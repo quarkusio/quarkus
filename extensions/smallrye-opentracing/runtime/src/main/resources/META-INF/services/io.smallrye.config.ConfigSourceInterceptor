@@ -1,0 +1,1 @@
+io.quarkus.smallrye.opentracing.runtime.TracingConfigRelocateConfigSourceInterceptor

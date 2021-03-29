@@ -6,10 +6,12 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.RemoveExtensionsCommandHandler;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
+import java.util.HashMap;
 import java.util.Set;
 
 /**
@@ -26,6 +28,10 @@ public class RemoveExtensions {
 
     public RemoveExtensions(final QuarkusProject quarkusProject) {
         invocation = new QuarkusCommandInvocation(quarkusProject);
+    }
+
+    public RemoveExtensions(final QuarkusProject quarkusProject, final MessageWriter messageWriter) {
+        this.invocation = new QuarkusCommandInvocation(quarkusProject, new HashMap<>(), messageWriter);
     }
 
     public RemoveExtensions extensions(Set<String> extensions) {

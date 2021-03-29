@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +25,7 @@ public class DevModeTestUtils {
         for (ProcessInfo pi : JProcesses.getProcessList()) {
             for (String part : cmdParts) {
                 if (pi.getCommand().contains(part)) {
-                    JProcesses.killProcess(Integer.valueOf(pi.getPid()));
+                    JProcesses.killProcess(Integer.parseInt(pi.getPid()));
                     break;
                 }
             }
@@ -120,10 +121,15 @@ public class DevModeTestUtils {
     }
 
     public static String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason) {
+        return getHttpResponse(path, allowError, brokenReason, 1, TimeUnit.MINUTES);
+    }
+
+    public static String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason, long timeout,
+            TimeUnit tu) {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                .atMost(timeout, tu).until(() -> {
                     String broken = brokenReason.get();
                     if (broken != null) {
                         resp.set("BROKEN: " + broken);
@@ -133,15 +139,15 @@ public class DevModeTestUtils {
                         URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
                         String content;
                         if (!allowError) {
-                            content = IOUtils.toString(url, "UTF-8");
+                            content = IOUtils.toString(url, StandardCharsets.UTF_8);
                         } else {
                             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                             // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.8
                             conn.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
                             if (conn.getResponseCode() >= 400) {
-                                content = IOUtils.toString(conn.getErrorStream(), "UTF-8");
+                                content = IOUtils.toString(conn.getErrorStream(), StandardCharsets.UTF_8);
                             } else {
-                                content = IOUtils.toString(conn.getInputStream(), "UTF-8");
+                                content = IOUtils.toString(conn.getInputStream(), StandardCharsets.UTF_8);
                             }
                         }
                         resp.set(content);
@@ -154,10 +160,14 @@ public class DevModeTestUtils {
     }
 
     public static boolean getHttpResponse(String path, int expectedStatus) {
+        return getHttpResponse(path, expectedStatus, 5, TimeUnit.MINUTES);
+    }
+
+    public static boolean getHttpResponse(String path, int expectedStatus, long timeout, TimeUnit tu) {
         AtomicBoolean code = new AtomicBoolean();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(5, TimeUnit.MINUTES).until(() -> {
+                .atMost(timeout, tu).until(() -> {
                     try {
                         URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -197,7 +207,23 @@ public class DevModeTestUtils {
     }
 
     public static String get() throws IOException {
-        URL url = new URL("http://localhost:8080");
-        return IOUtils.toString(url, "UTF-8");
+        return get("http://localhost:8080");
+    }
+
+    public static String get(String urlStr) throws IOException {
+        return IOUtils.toString(new URL(urlStr), StandardCharsets.UTF_8);
+    }
+
+    public static boolean isCode(String path, int code) {
+        try {
+            URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            // the default Accept header used by HttpURLConnection is not compatible with
+            // RESTEasy negotiation as it uses q=.2
+            connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+            return connection.getResponseCode() == code;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

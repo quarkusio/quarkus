@@ -14,6 +14,19 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class OpenshiftConfig implements PlatformConfiguration {
 
+    public static enum OpenshiftFlavor {
+        v3,
+        v4;
+    }
+
+    /**
+     * The OpenShift flavor / version to use.
+     * Older versions of OpenShift have minor differrences in the labels and fields they support.
+     * This option allows users to have their manifests automatically aligned to the OpenShift 'flavor' they use.
+     */
+    @ConfigItem(defaultValue = "v4")
+    OpenshiftFlavor flavor;
+
     /**
      * The name of the group this component belongs too
      */
@@ -93,6 +106,8 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The host under which the application is going to be exposed
+     * 
+     * @deprecated Use the {@code quarkus.openshift.route.host} instead
      */
     @ConfigItem
     Optional<String> host;
@@ -144,6 +159,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
      */
     @ConfigItem
     ProbeConfig readinessProbe;
+
+    /**
+     * Prometheus configuration
+     */
+    @ConfigItem
+    PrometheusConfig prometheus;
 
     /**
      * Volume mounts
@@ -201,15 +222,49 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * Sidecar containers
+     *
+     * @deprecated Use the {@code sidecars} property instead
      */
     @ConfigItem
+    @Deprecated
     Map<String, ContainerConfig> containers;
 
     /**
+     * Sidecar containers
+     */
+    @ConfigItem
+    Map<String, ContainerConfig> sidecars;
+
+    /**
+     * The host aliases
+     */
+    @ConfigItem
+    Map<String, HostAliasConfig> hostAliases;
+
+    /**
+     * Resources requirements
+     */
+    @ConfigItem
+    ResourcesConfig resources;
+
+    /**
      * If true, an Openshift Route will be created
+     * 
+     * @deprecated Use the {@code quarkus.openshift.route.exposition} instead
      */
     @ConfigItem
     boolean expose;
+
+    /**
+     * Openshift route configuration
+     */
+    ExpositionConfig route;
+
+    /**
+     * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and DeploymentConfig
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addVersionToLabelSelectors;
 
     public Optional<String> getPartOf() {
         return partOf;
@@ -288,6 +343,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return readinessProbe;
     }
 
+    public PrometheusConfig getPrometheusConfig() {
+        return prometheus;
+    }
+
     public Map<String, MountConfig> getMounts() {
         return mounts;
     }
@@ -320,12 +379,29 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return azureDiskVolumes;
     }
 
+    public Map<String, HostAliasConfig> getHostAliases() {
+        return hostAliases;
+    }
+
+    public ResourcesConfig getResources() {
+        return resources;
+    }
+
     public Map<String, ContainerConfig> getInitContainers() {
         return initContainers;
     }
 
     public Map<String, ContainerConfig> getSidecars() {
-        return containers;
+        if (!containers.isEmpty() && !sidecars.isEmpty()) {
+            // done in order to make migration to the new property straight-forward
+            throw new IllegalStateException(
+                    "'quarkus.openshift.sidecars' and 'quarkus.openshift.containers' cannot be used together. Please use the former as the latter has been deprecated");
+        }
+        if (!containers.isEmpty()) {
+            return containers;
+        }
+
+        return sidecars;
     }
 
     @Override
@@ -370,5 +446,31 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public EnvVarsConfig getEnv() {
         return env;
+    }
+
+    /**
+     * If set, the secret will mounted to the application container and its contents will be used for application configuration.
+     */
+    @ConfigItem
+    Optional<String> appSecret;
+
+    /**
+     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * configuration.
+     */
+    @ConfigItem
+    Optional<String> appConfigMap;
+
+    public Optional<String> getAppSecret() {
+        return this.appSecret;
+    }
+
+    public Optional<String> getAppConfigMap() {
+        return this.appConfigMap;
+    }
+
+    @Override
+    public Optional<ExpositionConfig> getExposition() {
+        return Optional.of(route);
     }
 }

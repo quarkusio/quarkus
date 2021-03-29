@@ -21,18 +21,10 @@ public class PgPoolProducerTest {
             .withConfigurationResource("application-default-datasource.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(BeanUsingBarePgClient.class)
-                    .addClass(BeanUsingMutinyPgClient.class)
-                    .addClasses(BeanUsingAxlePgClient.class)
-                    .addClasses(BeanUsingRXPgClient.class));
+                    .addClass(BeanUsingMutinyPgClient.class));
 
     @Inject
     BeanUsingBarePgClient beanUsingBare;
-
-    @Inject
-    BeanUsingAxlePgClient beanUsingAxle;
-
-    @Inject
-    BeanUsingRXPgClient beanUsingRx;
 
     @Inject
     BeanUsingMutinyPgClient beanUsingMutiny;
@@ -41,8 +33,6 @@ public class PgPoolProducerTest {
     public void testVertxInjection() {
         beanUsingBare.verify()
                 .thenCompose(v -> beanUsingMutiny.verify())
-                .thenCompose(v -> beanUsingAxle.verify())
-                .thenCompose(v -> beanUsingRx.verify())
                 .toCompletableFuture()
                 .join();
     }
@@ -71,35 +61,6 @@ public class PgPoolProducerTest {
                     .onItem().ignore().andContinueWithNull()
                     .onFailure().recoverWithItem(() -> null)
                     .subscribeAsCompletionStage();
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingAxlePgClient {
-
-        @Inject
-        io.vertx.axle.pgclient.PgPool pgClient;
-
-        public CompletionStage<Void> verify() {
-            return pgClient.query("SELECT 1").execute()
-                    .<Void> thenApply(rs -> null)
-                    .exceptionally(t -> null);
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingRXPgClient {
-
-        @Inject
-        io.vertx.reactivex.pgclient.PgPool pgClient;
-
-        public CompletionStage<Void> verify() {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            pgClient.query("SELECT 1").rxExecute()
-                    .ignoreElement()
-                    .onErrorComplete()
-                    .subscribe(() -> cf.complete(null));
-            return cf;
         }
     }
 }

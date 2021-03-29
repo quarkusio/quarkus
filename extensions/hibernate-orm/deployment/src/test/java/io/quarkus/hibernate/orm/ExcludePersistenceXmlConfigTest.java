@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.enhancer.Address;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ExcludePersistenceXmlConfigTest {
@@ -43,7 +44,7 @@ public class ExcludePersistenceXmlConfigTest {
         Arc.container().requestContext().activate();
         try {
             // it is the default entity manager from application.properties, not templatePU from the persistence.xml
-            Assertions.assertEquals("default",
+            Assertions.assertEquals(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     entityManager.getEntityManagerFactory().getProperties().get("hibernate.ejb.persistenceUnitName"));
         } finally {
             Arc.container().requestContext().deactivate();

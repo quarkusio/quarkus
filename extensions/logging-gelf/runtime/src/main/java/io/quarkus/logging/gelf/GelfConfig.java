@@ -105,4 +105,16 @@ public class GelfConfig {
      */
     @ConfigItem(defaultValue = "8192")
     public int maximumMessageSize;
+
+    /**
+     * Include message parameters from the log event
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean includeLogMessageParameters;
+
+    /**
+     * Include source code location
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean includeLocation;
 }

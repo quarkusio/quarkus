@@ -1,0 +1,12 @@
+name: "Micrometer registry: Prometheus"
+metadata:
+  keywords:
+  - "micrometer"
+  - "metrics"
+  - "metric"
+  - "prometheus"
+  - "monitoring"
+  guide: "https://quarkus.io/guides/micrometer-metrics"
+  categories:
+  - "observability"
+  status: "stable"

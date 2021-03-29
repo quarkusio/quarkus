@@ -45,14 +45,14 @@ public class KubernetesWithConfigMapCustomModeTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getVolumes()).hasOnlyOneElementSatisfying(volume -> {
+                        assertThat(podSpec.getVolumes()).singleElement().satisfies(volume -> {
                             assertThat(volume.getName()).isEqualTo("app-config");
                             assertThat(volume.getConfigMap().getName()).isEqualTo("app-config");
                             assertThat(volume.getConfigMap().getDefaultMode()).isEqualTo(420);
                         });
 
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
-                            assertThat(container.getVolumeMounts()).hasOnlyOneElementSatisfying(volumeMount -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
+                            assertThat(container.getVolumeMounts()).singleElement().satisfies(volumeMount -> {
                                 assertThat(volumeMount.getName()).isEqualTo("app-config");
                                 assertThat(volumeMount.getMountPath()).isEqualTo("/deployments/config");
                             });

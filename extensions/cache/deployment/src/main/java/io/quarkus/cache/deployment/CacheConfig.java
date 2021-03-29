@@ -15,6 +15,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class CacheConfig {
 
     /**
+     * Whether or not the cache extension is enabled.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * Cache type.
      */
     @ConfigItem(defaultValue = CacheDeploymentConstants.CAFFEINE_CACHE_TYPE)

@@ -23,9 +23,14 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.logging.Handler;
+import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
+import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -42,6 +47,7 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -53,6 +59,8 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -68,8 +76,12 @@ public class QuarkusUnitTest
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
 
+    private static final Logger rootLogger;
+    private Handler[] originalHandlers;
+
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+        rootLogger = (Logger) LogManager.getLogManager().getLogger("");
     }
 
     boolean started = false;
@@ -79,9 +91,12 @@ public class QuarkusUnitTest
     private Supplier<JavaArchive> archiveProducer;
     private List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
     private Runnable afterUndeployListener;
-    private String logFileName;
 
-    private static final Timer timeoutTimer = new Timer("Test thread dump timer");
+    private String logFileName;
+    private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
+    private Consumer<List<LogRecord>> assertLogRecords;
+
+    private Timer timeoutTimer;
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
     private Runnable beforeAllCustomizer;
@@ -98,6 +113,7 @@ public class QuarkusUnitTest
     private String[] commandLineParameters = new String[0];
 
     private boolean allowTestClassOutsideDeployment;
+    private List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return assertException(t -> {
@@ -151,8 +167,35 @@ public class QuarkusUnitTest
         return this;
     }
 
+    public QuarkusUnitTest addClassLoaderEventListener(ClassLoaderEventListener listener) {
+        this.classLoadListeners.add(listener);
+        return this;
+    }
+
     public QuarkusUnitTest setLogFileName(String logFileName) {
         this.logFileName = logFileName;
+        return this;
+    }
+
+    public QuarkusUnitTest setLogRecordPredicate(Predicate<LogRecord> predicate) {
+        this.inMemoryLogHandler = new InMemoryLogHandler(predicate);
+        return this;
+    }
+
+    public List<LogRecord> getLogRecords() {
+        return inMemoryLogHandler.records;
+    }
+
+    public void clearLogRecords() {
+        inMemoryLogHandler.clearRecords();
+    }
+
+    public QuarkusUnitTest assertLogRecords(Consumer<List<LogRecord>> assertLogRecords) {
+        if (this.assertLogRecords != null) {
+            throw new IllegalStateException("Don't set the a log record assertion twice"
+                    + " to avoid shadowing out the first call.");
+        }
+        this.assertLogRecords = assertLogRecords;
         return this;
     }
 
@@ -200,6 +243,7 @@ public class QuarkusUnitTest
         try {
             JavaArchive archive = getArchiveProducerOrDefault();
             Class<?> c = testClass;
+            archive.addClasses(c.getClasses());
             while (c != Object.class) {
                 archive.addClass(c);
                 c = c.getSuperclass();
@@ -304,10 +348,15 @@ public class QuarkusUnitTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        //set the right launch mode in the outer CL, used by the HTTP host config source
+        ProfileManager.setLaunchMode(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }
         originalClassLoader = Thread.currentThread().getContextClassLoader();
+        originalHandlers = rootLogger.getHandlers();
+        rootLogger.addHandler(inMemoryLogHandler);
+
         timeoutTask = new TimerTask() {
             @Override
             public void run() {
@@ -322,6 +371,7 @@ public class QuarkusUnitTest
                 }
             }
         };
+        timeoutTimer = new Timer("Test thread dump timer");
         timeoutTimer.schedule(timeoutTask, 1000 * 60 * 5);
         if (logFileName != null) {
             PropertyTestUtil.setLogFileProperty(logFileName);
@@ -374,7 +424,9 @@ public class QuarkusUnitTest
                     }
                 });
             } catch (ClassNotFoundException e) {
-                //ignore
+                System.err.println("Couldn't make the test class " + testClass.getSimpleName() + " an unremovable bean"
+                        + " (probably because a dependency on io.quarkus:quarkus-arc-deployment is missing);"
+                        + " other beans may also be removed and injection may not work as expected");
             }
 
             final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
@@ -397,11 +449,13 @@ public class QuarkusUnitTest
                             .setBaseClassLoader(
                                     QuarkusClassLoader
                                             .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
+                                            .addClassLoaderEventListeners(this.classLoadListeners)
                                             .addBannedElement(ClassPathElement.fromPath(testLocation)).build());
                 }
+                builder.addClassLoaderEventListeners(this.classLoadListeners);
                 curatedApplication = builder.build().bootstrap();
 
-                runningQuarkusApplication = new AugmentActionImpl(curatedApplication, customizers)
+                runningQuarkusApplication = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
                         .createInitialRuntimeApplication()
                         .run(commandLineParameters);
                 //we restore the CL at the end of the test
@@ -467,21 +521,33 @@ public class QuarkusUnitTest
 
     @Override
     public void afterAll(ExtensionContext extensionContext) throws Exception {
+        actualTestClass = null;
+        actualTestInstance = null;
+        if (assertLogRecords != null) {
+            assertLogRecords.accept(inMemoryLogHandler.records);
+        }
+        rootLogger.setHandlers(originalHandlers);
+        inMemoryLogHandler.clearRecords();
+
         try {
             if (runningQuarkusApplication != null) {
                 runningQuarkusApplication.close();
+                runningQuarkusApplication = null;
             }
             if (afterUndeployListener != null) {
                 afterUndeployListener.run();
             }
             if (curatedApplication != null) {
                 curatedApplication.close();
+                curatedApplication = null;
             }
         } finally {
             System.clearProperty("test.url");
             Thread.currentThread().setContextClassLoader(originalClassLoader);
+            originalClassLoader = null;
             timeoutTask.cancel();
             timeoutTask = null;
+            timeoutTimer = null;
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);
             }

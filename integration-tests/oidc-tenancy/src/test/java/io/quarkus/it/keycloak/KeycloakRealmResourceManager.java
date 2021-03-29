@@ -26,7 +26,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
     @Override
     public Map<String, String> start() {
-        for (String realmId : Arrays.asList("a", "b", "c", "d", "webapp", "webapp2")) {
+        for (String realmId : Arrays.asList("a", "b", "c", "d", "webapp", "webapp2", "hybrid")) {
             RealmRepresentation realm = createRealm(KEYCLOAK_REALM + realmId);
 
             realm.getClients().add(createClient("quarkus-app-" + realmId));
@@ -92,10 +92,10 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         client.setDirectAccessGrantsEnabled(true);
         client.setEnabled(true);
         client.setDefaultRoles(new String[] { "role-" + clientId });
-        if (clientId.startsWith("quarkus-app-webapp")) {
+        if (clientId.startsWith("quarkus-app-webapp") || clientId.equals("quarkus-app-hybrid")) {
             client.setRedirectUris(Arrays.asList("*"));
         }
-        if (clientId.equals("quarkus-app-webapp")) {
+        if (clientId.equals("quarkus-app-webapp") || clientId.equals("quarkus-app-hybrid")) {
             // This instructs Keycloak to include the roles with the ID token too
             client.setDefaultClientScopes(Arrays.asList("microprofile-jwt"));
         }
@@ -123,7 +123,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
     @Override
     public void stop() {
-        for (String realmId : Arrays.asList("a", "b", "c", "d", "webapp", "webapp2")) {
+        for (String realmId : Arrays.asList("a", "b", "c", "d", "webapp", "webapp2", "hybrid")) {
             RestAssured
                     .given()
                     .auth().oauth2(getAdminAccessToken())

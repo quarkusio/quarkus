@@ -6,6 +6,7 @@ public class TestReactiveEntity extends ReactivePanacheMongoEntity {
     public String title;
     public String category;
     public String description;
+    public int cpt = 1;
 
     public TestReactiveEntity() {
     }

@@ -18,6 +18,7 @@
         <module>arc</module>
         <module>scheduler</module>
         <module>quartz</module>
+        <module>jaxp</module>
 
         <!-- Configuration -->
         <module>config-yaml</module>
@@ -32,8 +33,10 @@
         <module>vertx-core</module>
         <module>vertx-http</module>
         <module>undertow</module>
-        <module>undertow-websockets</module>
+        <module>websockets</module>
         <module>webjars-locator</module>
+        <module>resteasy-reactive</module>
+        <module>apache-httpclient</module>
 
         <!-- Monitoring -->
         <module>smallrye-health</module>
@@ -41,20 +44,13 @@
         <module>smallrye-opentracing</module>
         <module>smallrye-fault-tolerance</module>
         <module>jaeger</module>
+        <module>micrometer</module>
+        <module>micrometer-registry-prometheus</module>
+        <module>opentelemetry</module>
+        <module>opentelemetry-exporter-jaeger</module>
 
         <!-- REST services -->
-        <module>resteasy-common</module>
-        <module>resteasy-server-common</module>
-        <module>resteasy</module>
-        <module>resteasy-jsonb</module>
-        <module>resteasy-jackson</module>
-        <module>resteasy-jaxb</module>
-        <module>resteasy-mutiny</module>
-        <module>resteasy-qute</module>
-        <module>rest-client</module>
-        <module>rest-client-jackson</module>
-        <module>rest-client-jsonb</module>
-        <module>rest-client-jaxb</module>
+        <module>resteasy-classic</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
         <module>swagger-ui</module>
@@ -64,6 +60,7 @@
         <module>vertx</module>
         <module>vertx-web</module>
         <module>netty</module>
+        <module>reactive-messaging-http</module>
         <module>reactive-streams-operators</module>
         <module>smallrye-reactive-messaging</module>
         <module>smallrye-reactive-messaging-kafka</module>
@@ -89,7 +86,7 @@
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
         <module>panache</module>
-        <module>hibernate-search-elasticsearch</module>
+        <module>hibernate-search-orm-elasticsearch</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
@@ -103,6 +100,7 @@
         <module>artemis-core</module>
         <module>artemis-jms</module>
         <module>avro</module>
+        <module>devservices</module>
 
         <!-- Spring -->
         <module>spring-di</module>
@@ -113,6 +111,7 @@
         <module>spring-cloud-config-client</module>
         <module>spring-cache</module>
         <module>spring-scheduled</module>
+        <module>spring-data-rest</module>
 
         <!-- Security -->
         <module>security</module>
@@ -123,8 +122,13 @@
         <module>elytron-security-ldap</module>
         <module>elytron-security-properties-file</module>
         <module>elytron-security-oauth2</module>
+        <module>smallrye-jwt-build</module>
         <module>smallrye-jwt</module>
+        <module>oidc-common</module>
         <module>oidc</module>
+        <module>oidc-token-propagation</module>
+        <module>oidc-client</module>
+        <module>oidc-client-filter</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
 
@@ -138,7 +142,10 @@
         <!-- Integrations -->
         <module>amazon-lambda</module>
         <module>amazon-lambda-xray</module>
+        <!-- AWS API Gateway HTTP API -->
         <module>amazon-lambda-http</module>
+        <!-- AWS API Gateway REST API -->
+        <module>amazon-lambda-rest</module>
         <module>amazon-services</module>
         <module>amazon-alexa</module>
         <module>azure-functions-http</module>
@@ -155,6 +162,8 @@
         <module>kubernetes</module>
         <module>kubernetes-client</module>
         <module>kubernetes-config</module>
+        <module>openshift-client</module>
+        <module>kubernetes-service-binding</module>
 
         <!-- Consul -->
         <module>consul-config</module>
@@ -183,31 +192,35 @@
         <module>picocli</module>
         <module>google-cloud-functions-http</module>
         <module>google-cloud-functions</module>
+        <module>grpc-common</module>
     </modules>
 
-    <!-- Unfortunately the config below introduces a build dependency on the maven plugin
-         which leads to an ordering that prevents the tooling to include the generated
-         JSON platform descriptor.
-         Hopefully, this can be re-enabled once we refactor the tools.
     <build>
         <plugins>
             <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${project.version}</version>
-                <inherited>false</inherited>
-                < ! - - Settings for stubbing new extensions via
-                     mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-ext -Dquarkus.nameBase="My Extension"
-                - - >
-                <configuration>
-                    <artifactIdPrefix>quarkus-</artifactIdPrefix>
-                    <namePrefix xml:space="preserve">Quarkus - </namePrefix>
-                    <quarkusVersion>@{project.version}</quarkusVersion>
-                    <bomPath>../bom/application/pom.xml</runtimeBomPath>
-                    <itestParentPath>../integration-tests/pom.xml</itestParentPath>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-no-runtime-deps</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bansRuntimeDependency implementation="io.quarkus.enforcer.BansRuntimeDependency"/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-enforcer-rules</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
-    -->
 </project>

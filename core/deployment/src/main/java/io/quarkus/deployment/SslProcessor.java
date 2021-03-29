@@ -39,7 +39,7 @@ public class SslProcessor {
 
     private void registerIfExists(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized, String className) {
         try {
-            Class.forName(className);
+            Class.forName(className, false, Thread.currentThread().getContextClassLoader());
             reinitialized.produce(new RuntimeReinitializedClassBuildItem(className));
         } catch (ClassNotFoundException ignored) {
 

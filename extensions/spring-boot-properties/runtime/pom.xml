@@ -22,6 +22,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-spring-core-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

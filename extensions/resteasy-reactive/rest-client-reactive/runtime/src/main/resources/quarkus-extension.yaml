@@ -1,0 +1,15 @@
+---
+name: "Reactive REST Client"
+metadata:
+  keywords:
+  - "rest-client-jackson"
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "json"
+  - "jackson"
+  - "resteasy-reactive"
+  categories:
+  - "microprofile"
+  - "web"
+  status: "experimental"

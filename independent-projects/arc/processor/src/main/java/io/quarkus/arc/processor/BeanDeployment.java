@@ -56,16 +56,17 @@ public class BeanDeployment {
 
     private final BuildContextImpl buildContext;
 
-    private final IndexView index;
+    private final IndexView beanArchiveIndex;
+
+    private final IndexView applicationIndex;
 
     private final Map<DotName, ClassInfo> qualifiers;
-
     private final Map<DotName, ClassInfo> repeatingQualifierAnnotations;
+    private final Map<DotName, Set<String>> qualifierNonbindingMembers;
 
     private final Map<DotName, ClassInfo> interceptorBindings;
-
-    private final Map<DotName, Set<String>> nonBindingFields;
-
+    private final Map<DotName, ClassInfo> repeatingInterceptorBindingAnnotations;
+    private final Map<DotName, Set<String>> interceptorNonbindingMembers;
     private final Map<DotName, Set<AnnotationInstance>> transitiveInterceptorBindings;
 
     private final Map<DotName, StereotypeInfo> stereotypes;
@@ -76,7 +77,8 @@ public class BeanDeployment {
 
     private final List<ObserverInfo> observers;
 
-    private final BeanResolver beanResolver;
+    final BeanResolverImpl beanResolver;
+    private final AssignabilityCheck assignabilityCheck;
 
     private final InterceptorResolver interceptorResolver;
 
@@ -108,7 +110,7 @@ public class BeanDeployment {
 
     private final List<Predicate<ClassInfo>> excludeTypes;
 
-    BeanDeployment(IndexView index, BuildContextImpl buildContext, BeanProcessor.Builder builder) {
+    BeanDeployment(BuildContextImpl buildContext, BeanProcessor.Builder builder) {
         this.buildContext = buildContext;
         Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
         if (builder.additionalBeanDefiningAnnotations != null) {
@@ -116,7 +118,8 @@ public class BeanDeployment {
         }
         this.beanDefiningAnnotations = beanDefiningAnnotations;
         this.resourceAnnotations = new HashSet<>(builder.resourceAnnotations);
-        this.index = index;
+        this.beanArchiveIndex = builder.beanArchiveIndex;
+        this.applicationIndex = builder.applicationIndex;
         this.annotationStore = new AnnotationStore(initAndSort(builder.annotationTransformers, buildContext), buildContext);
         if (buildContext != null) {
             buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);
@@ -127,34 +130,50 @@ public class BeanDeployment {
         this.removeUnusedBeans = builder.removeUnusedBeans;
         this.unusedExclusions = removeUnusedBeans ? new ArrayList<>(builder.removalExclusions) : null;
         this.removedBeans = new CopyOnWriteArraySet<>();
-
         this.customContexts = new ConcurrentHashMap<>();
 
-        this.qualifiers = findQualifiers(index);
-        this.repeatingQualifierAnnotations = findContainerAnnotations(qualifiers, index);
+        this.excludeTypes = builder.excludeTypes != null ? new ArrayList<>(builder.excludeTypes) : Collections.emptyList();
+
+        qualifierNonbindingMembers = new HashMap<>();
+        qualifiers = findQualifiers(this.beanArchiveIndex);
+        for (QualifierRegistrar registrar : builder.qualifierRegistrars) {
+            for (Map.Entry<DotName, Set<String>> entry : registrar.getAdditionalQualifiers().entrySet()) {
+                DotName dotName = entry.getKey();
+                ClassInfo classInfo = getClassByName(this.beanArchiveIndex, dotName);
+                if (classInfo != null) {
+                    if (entry.getValue() != null) {
+                        qualifierNonbindingMembers.put(dotName, entry.getValue());
+                    }
+                    this.qualifiers.put(dotName, classInfo);
+                }
+            }
+        }
+        repeatingQualifierAnnotations = findContainerAnnotations(qualifiers, this.beanArchiveIndex);
         buildContextPut(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
 
-        this.interceptorBindings = findInterceptorBindings(index);
-        this.nonBindingFields = new HashMap<>();
-        for (InterceptorBindingRegistrar registrar : builder.additionalInterceptorBindingRegistrars) {
-            for (Map.Entry<DotName, Set<String>> bindingEntry : registrar.registerAdditionalBindings().entrySet()) {
-                DotName dotName = bindingEntry.getKey();
-                ClassInfo classInfo = getClassByName(index, dotName);
+        interceptorNonbindingMembers = new HashMap<>();
+        interceptorBindings = findInterceptorBindings(this.beanArchiveIndex);
+        for (InterceptorBindingRegistrar registrar : builder.interceptorBindingRegistrars) {
+            for (Map.Entry<DotName, Set<String>> entry : registrar.registerAdditionalBindings().entrySet()) {
+                DotName dotName = entry.getKey();
+                ClassInfo classInfo = getClassByName(this.beanArchiveIndex, dotName);
                 if (classInfo != null) {
-                    if (bindingEntry.getValue() != null) {
-                        nonBindingFields.put(dotName, bindingEntry.getValue());
+                    if (entry.getValue() != null) {
+                        interceptorNonbindingMembers.put(dotName, entry.getValue());
                     }
                     interceptorBindings.put(dotName, classInfo);
                 }
             }
         }
+        repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings, this.beanArchiveIndex);
         buildContextPut(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
 
-        this.stereotypes = findStereotypes(index, interceptorBindings, beanDefiningAnnotations, customContexts,
+        this.stereotypes = findStereotypes(this.beanArchiveIndex, interceptorBindings, beanDefiningAnnotations, customContexts,
                 builder.additionalStereotypes, annotationStore);
         buildContextPut(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
 
-        this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(), index,
+        this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(),
+                this.beanArchiveIndex,
                 new HashMap<>(), interceptorBindings, annotationStore);
 
         this.injectionPoints = new CopyOnWriteArrayList<>();
@@ -162,12 +181,12 @@ public class BeanDeployment {
         this.beans = new CopyOnWriteArrayList<>();
         this.observers = new CopyOnWriteArrayList<>();
 
-        this.beanResolver = new BeanResolver(this);
+        this.assignabilityCheck = new AssignabilityCheck(beanArchiveIndex, applicationIndex);
+        this.beanResolver = new BeanResolverImpl(this);
         this.interceptorResolver = new InterceptorResolver(this);
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
         this.jtaCapabilities = builder.jtaCapabilities;
         this.alternativePriorities = builder.alternativePriorities;
-        this.excludeTypes = builder.excludeTypes != null ? new ArrayList<>(builder.excludeTypes) : Collections.emptyList();
     }
 
     ContextRegistrar.RegistrationContext registerCustomContexts(List<ContextRegistrar> contextRegistrars) {
@@ -195,12 +214,15 @@ public class BeanDeployment {
         for (ContextRegistrar contextRegistrar : contextRegistrars) {
             contextRegistrar.register(registrationContext);
         }
+        return registrationContext;
+    }
+
+    void registerScopes() {
         if (buildContext != null) {
             List<ScopeInfo> allScopes = Arrays.stream(BuiltinScope.values()).map(i -> i.getInfo()).collect(Collectors.toList());
             allScopes.addAll(customContexts.keySet());
             buildContext.putInternal(Key.SCOPES.asString(), Collections.unmodifiableList(allScopes));
         }
-        return registrationContext;
     }
 
     BeanRegistrar.RegistrationContext registerBeans(List<BeanRegistrar> beanRegistrars) {
@@ -217,7 +239,8 @@ public class BeanDeployment {
         return registerSyntheticBeans(beanRegistrars, buildContext);
     }
 
-    void init(Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
+    void init(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            List<Predicate<BeanInfo>> additionalUnusedBeanExclusions) {
         long start = System.currentTimeMillis();
 
         // Collect dependency resolution errors
@@ -232,6 +255,10 @@ public class BeanDeployment {
             interceptor.init(errors, bytecodeTransformerConsumer, transformUnproxyableClasses);
         }
         processErrors(errors);
+        List<Predicate<BeanInfo>> allUnusedExclusions = new ArrayList<>(additionalUnusedBeanExclusions);
+        if (unusedExclusions != null) {
+            allUnusedExclusions.addAll(unusedExclusions);
+        }
 
         if (removeUnusedBeans) {
             long removalStart = System.currentTimeMillis();
@@ -257,7 +284,7 @@ public class BeanDeployment {
                     continue test;
                 }
                 // Custom exclusions
-                for (Predicate<BeanInfo> exclusion : unusedExclusions) {
+                for (Predicate<BeanInfo> exclusion : allUnusedExclusions) {
                     if (exclusion.test(bean)) {
                         continue test;
                     }
@@ -344,24 +371,60 @@ public class BeanDeployment {
         return Collections.unmodifiableCollection(qualifiers.values());
     }
 
+    Map<DotName, Set<String>> getQualifierNonbindingMembers() {
+        return qualifierNonbindingMembers;
+    }
+
     public Collection<ClassInfo> getInterceptorBindings() {
         return Collections.unmodifiableCollection(interceptorBindings.values());
     }
 
+    public Collection<InjectionPointInfo> getInjectionPoints() {
+        return Collections.unmodifiableList(injectionPoints);
+    }
+
     public Collection<ObserverInfo> getObservers() {
-        return observers;
+        return Collections.unmodifiableList(observers);
     }
 
     public Collection<InterceptorInfo> getInterceptors() {
-        return interceptors;
+        return Collections.unmodifiableList(interceptors);
     }
 
-    public IndexView getIndex() {
-        return index;
+    public Collection<StereotypeInfo> getStereotypes() {
+        return Collections.unmodifiableCollection(stereotypes.values());
     }
 
-    BeanResolver getBeanResolver() {
+    /**
+     * This index was used to discover components (beans, interceptors, qualifiers, etc.) and during type-safe resolution.
+     * 
+     * @return the bean archive index
+     */
+    public IndexView getBeanArchiveIndex() {
+        return beanArchiveIndex;
+    }
+
+    /**
+     * This index is optional and is used to discover types during type-safe resolution.
+     * <p>
+     * Some types may not be part of the bean archive index but are still needed during type-safe resolution.
+     * 
+     * @return the application index or {@code null}
+     */
+    public IndexView getApplicationIndex() {
+        return applicationIndex;
+    }
+
+    public BeanResolver getBeanResolver() {
         return beanResolver;
+    }
+
+    public AssignabilityCheck getAssignabilityCheck() {
+        return assignabilityCheck;
+    }
+
+    boolean hasApplicationIndex() {
+        return applicationIndex != null;
     }
 
     public InterceptorResolver getInterceptorResolver() {
@@ -375,25 +438,47 @@ public class BeanDeployment {
     /**
      * Extracts qualifiers from given annotation instance.
      * This returns a collection because in case of repeating qualifiers there can be multiple.
-     * For most instances this will be a singleton instance (if given annotatation is a qualifier) or an empty list for
+     * For most instances this will be a singleton instance (if given annotation is a qualifier) or an empty list for
      * cases where the annotation is not a qualifier.
      *
-     * @param annotation instance to be inspected
+     * @param annotation annotation to be inspected
      * @return a collection of qualifiers or an empty collection
      */
     Collection<AnnotationInstance> extractQualifiers(AnnotationInstance annotation) {
+        return extractAnnotations(annotation, qualifiers, repeatingQualifierAnnotations);
+    }
+
+    /**
+     * Extracts interceptor bindings from given annotation instance.
+     * This returns a collection because in case of repeating interceptor bindings there can be multiple.
+     * For most instances this will be a singleton instance (if given annotation is an interceptor binding) or
+     * an empty list for cases where the annotation is not an interceptor binding.
+     *
+     * @param annotation annotation to be inspected
+     * @return a collection of interceptor bindings or an empty collection
+     */
+    Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation) {
+        return extractAnnotations(annotation, interceptorBindings, repeatingInterceptorBindingAnnotations);
+    }
+
+    private static Collection<AnnotationInstance> extractAnnotations(AnnotationInstance annotation,
+            Map<DotName, ClassInfo> singulars, Map<DotName, ClassInfo> repeatables) {
         DotName annotationName = annotation.name();
-        if (qualifiers.get(annotationName) != null) {
+        if (singulars.get(annotationName) != null) {
             return Collections.singleton(annotation);
         } else {
-            if (repeatingQualifierAnnotations.get(annotationName) != null) {
-                // container annotation, we need to extract actual qualifiers
+            if (repeatables.get(annotationName) != null) {
+                // repeatable, we need to extract actual annotations
                 return new ArrayList<>(Arrays.asList(annotation.value().asNestedArray()));
             } else {
-                // neither qualifier, nor container annotation, return empty collection
+                // neither singular nor repeatable, return empty collection
                 return Collections.emptyList();
             }
         }
+    }
+
+    BeanResolverImpl beanResolver() {
+        return beanResolver;
     }
 
     ClassInfo getInterceptorBinding(DotName name) {
@@ -424,7 +509,7 @@ public class BeanDeployment {
         return annotationStore.getAnnotations(target);
     }
 
-    AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
+    public AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
         return annotationStore.getAnnotation(target, name);
     }
 
@@ -452,31 +537,40 @@ public class BeanDeployment {
         }
     }
 
-    private static Map<DotName, ClassInfo> findQualifiers(IndexView index) {
+    private Map<DotName, ClassInfo> findQualifiers(IndexView index) {
         Map<DotName, ClassInfo> qualifiers = new HashMap<>();
         for (AnnotationInstance qualifier : index.getAnnotations(DotNames.QUALIFIER)) {
-            qualifiers.put(qualifier.target().asClass().name(), qualifier.target().asClass());
+            ClassInfo qualifierClass = qualifier.target().asClass();
+            if (isExcluded(qualifierClass)) {
+                continue;
+            }
+            qualifiers.put(qualifierClass.name(), qualifierClass);
         }
         return qualifiers;
     }
 
-    private static Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> qualifiers, IndexView index) {
+    private Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations, IndexView index) {
         Map<DotName, ClassInfo> containerAnnotations = new HashMap<>();
-        for (ClassInfo qualifier : qualifiers.values()) {
-            AnnotationInstance instance = qualifier.classAnnotation(DotNames.REPEATABLE);
-            if (instance != null) {
-                DotName annotationName = instance.value().asClass().name();
-                containerAnnotations.put(annotationName, getClassByName(index, annotationName));
+        for (ClassInfo annotation : annotations.values()) {
+            AnnotationInstance repeatableMetaAnnotation = annotation.classAnnotation(DotNames.REPEATABLE);
+            if (repeatableMetaAnnotation != null) {
+                DotName containerAnnotationName = repeatableMetaAnnotation.value().asClass().name();
+                ClassInfo containerClass = getClassByName(index, containerAnnotationName);
+                containerAnnotations.put(containerAnnotationName, containerClass);
             }
         }
         return containerAnnotations;
     }
 
-    private static Map<DotName, ClassInfo> findInterceptorBindings(IndexView index) {
+    private Map<DotName, ClassInfo> findInterceptorBindings(IndexView index) {
         Map<DotName, ClassInfo> bindings = new HashMap<>();
         // Note: doesn't use AnnotationStore, this will operate on classes without applying annotation transformers
         for (AnnotationInstance binding : index.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
-            bindings.put(binding.target().asClass().name(), binding.target().asClass());
+            ClassInfo bindingClass = binding.target().asClass();
+            if (isExcluded(bindingClass)) {
+                continue;
+            }
+            bindings.put(bindingClass.name(), bindingClass);
         }
         return bindings;
     }
@@ -521,7 +615,7 @@ public class BeanDeployment {
         return result;
     }
 
-    private static Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
+    private Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
             Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes, AnnotationStore annotationStore) {
@@ -534,7 +628,7 @@ public class BeanDeployment {
         for (AnnotationInstance stereotype : stereotypeAnnotations) {
             final DotName stereotypeName = stereotype.target().asClass().name();
             ClassInfo stereotypeClass = getClassByName(index, stereotypeName);
-            if (stereotypeClass != null) {
+            if (stereotypeClass != null && !isExcluded(stereotypeClass)) {
 
                 boolean isAlternative = false;
                 Integer alternativePriority = null;
@@ -625,13 +719,12 @@ public class BeanDeployment {
         Map<MethodInfo, Set<ClassInfo>> syncObserverMethods = new HashMap<>();
         Map<MethodInfo, Set<ClassInfo>> asyncObserverMethods = new HashMap<>();
         // Stereotypes excluding additional BeanDefiningAnnotations
-        List<DotName> realStereotypes = this.stereotypes.entrySet().stream()
-                .filter(e -> !e.getValue().isAdditionalBeanDefiningAnnotation()
-                        && !e.getValue().isAdditionalStereotypeBuildItem())
-                .map(Entry::getKey)
-                .collect(Collectors.toList());
+        Set<DotName> realStereotypes = this.stereotypes.values().stream()
+                .filter(StereotypeInfo::isGenuine)
+                .map(StereotypeInfo::getName)
+                .collect(Collectors.toSet());
 
-        for (ClassInfo beanClass : index.getKnownClasses()) {
+        for (ClassInfo beanClass : beanArchiveIndex.getKnownClasses()) {
 
             if (Modifier.isInterface(beanClass.flags()) || Modifier.isAbstract(beanClass.flags())
             // Replace with ClassInfo#isAnnotation() and ClassInfo#isEnum() when using Jandex 2.1.4+
@@ -716,24 +809,22 @@ public class BeanDeployment {
 
             // inherited stuff
             ClassInfo aClass = beanClass;
-            Set<ClassInfo> scannedClasses = new HashSet<>();
-            Set<MethodInfo> methods = new HashSet<>();
+            Set<Methods.MethodKey> methods = new HashSet<>();
             while (aClass != null) {
-                if (!scannedClasses.add(aClass)) {
-                    continue;
-                }
                 for (MethodInfo method : aClass.methods()) {
-                    if (Methods.isSynthetic(method) || Methods.isOverriden(method, methods)) {
+                    Methods.MethodKey methodDescriptor = new Methods.MethodKey(method);
+                    if (Methods.isSynthetic(method) || Methods.isOverriden(methodDescriptor, methods)) {
                         continue;
                     }
-                    methods.add(method);
-                    if (annotationStore.getAnnotations(method).isEmpty()) {
+                    methods.add(methodDescriptor);
+                    Collection<AnnotationInstance> methodAnnotations = annotationStore.getAnnotations(method);
+                    if (methodAnnotations.isEmpty()) {
                         continue;
                     }
                     // Verify that non-producer methods are not annotated with stereotypes
                     // only account for 'real' stereotypes that are not additional BeanDefiningAnnotations
                     if (!annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
-                        for (AnnotationInstance i : annotationStore.getAnnotations(method)) {
+                        for (AnnotationInstance i : methodAnnotations) {
                             if (realStereotypes.contains(i.name())) {
                                 throw new DefinitionException(
                                         "Method " + method + " of class " + beanClass
@@ -766,11 +857,10 @@ public class BeanDeployment {
                         }
                     }
                 }
-                Type superType = aClass.superClassType();
-                aClass = superType != null && !superType.name().equals(DotNames.OBJECT)
-                        && CLASS_TYPES.contains(superType.kind())
-                                ? getClassByName(index, superType.name())
-                                : null;
+                DotName superType = aClass.superName();
+                aClass = superType != null && !superType.equals(DotNames.OBJECT)
+                        ? getClassByName(beanArchiveIndex, superType)
+                        : null;
             }
             for (FieldInfo field : beanClass.fields()) {
                 if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
@@ -915,11 +1005,11 @@ public class BeanDeployment {
             if (disposer.getDeclaringBean().equals(declaringBean)) {
                 boolean hasQualifier = true;
                 for (AnnotationInstance disposerQualifier : disposer.getDisposedParameterQualifiers()) {
-                    if (!Beans.hasQualifier(getQualifier(disposerQualifier.name()), disposerQualifier, qualifiers)) {
+                    if (!Beans.hasQualifier(declaringBean.getDeployment(), disposerQualifier, qualifiers)) {
                         hasQualifier = false;
                     }
                 }
-                if (hasQualifier && beanResolver.matches(beanType, disposer.getDisposedParameterType())) {
+                if (hasQualifier && beanResolver.matches(disposer.getDisposedParameterType(), beanType)) {
                     found.add(disposer);
                 }
             }
@@ -966,6 +1056,13 @@ public class BeanDeployment {
     }
 
     private void addSyntheticBean(BeanInfo bean) {
+        for (BeanInfo b : beans) {
+            if (b.getIdentifier().equals(bean.getIdentifier())) {
+                throw new IllegalStateException(
+                        "A synthetic bean with identifier " + bean.getIdentifier() + " is already registered: "
+                                + b);
+            }
+        }
         beans.add(bean);
     }
 
@@ -1005,15 +1102,15 @@ public class BeanDeployment {
     }
 
     private List<InterceptorInfo> findInterceptors(List<InjectionPointInfo> injectionPoints) {
-        Set<ClassInfo> interceptorClasses = new HashSet<>();
-        for (AnnotationInstance annotation : index.getAnnotations(DotNames.INTERCEPTOR)) {
+        Map<DotName, ClassInfo> interceptorClasses = new HashMap<>();
+        for (AnnotationInstance annotation : beanArchiveIndex.getAnnotations(DotNames.INTERCEPTOR)) {
             if (Kind.CLASS.equals(annotation.target().kind())) {
-                interceptorClasses.add(annotation.target().asClass());
+                interceptorClasses.put(annotation.target().asClass().name(), annotation.target().asClass());
             }
         }
         List<InterceptorInfo> interceptors = new ArrayList<>();
-        for (ClassInfo interceptorClass : interceptorClasses) {
-            if (annotationStore.hasAnnotation(interceptorClass, DotNames.VETOED)) {
+        for (ClassInfo interceptorClass : interceptorClasses.values()) {
+            if (annotationStore.hasAnnotation(interceptorClass, DotNames.VETOED) || isExcluded(interceptorClass)) {
                 // Skip vetoed interceptors
                 continue;
             }
@@ -1035,6 +1132,7 @@ public class BeanDeployment {
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
 
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
+        Set<DotName> classesReceivingNoArgsCtor = new HashSet<>();
 
         for (BeanInfo bean : beans) {
             if (bean.getName() != null) {
@@ -1045,7 +1143,7 @@ public class BeanDeployment {
                 }
                 named.add(bean);
             }
-            bean.validate(errors, validators, bytecodeTransformerConsumer);
+            bean.validate(errors, validators, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
         }
 
         if (!namedBeans.isEmpty()) {
@@ -1064,8 +1162,12 @@ public class BeanDeployment {
         }
     }
 
-    public Set<String> getNonBindingFields(DotName name) {
-        return nonBindingFields.getOrDefault(name, Collections.emptySet());
+    public Set<String> getInterceptorNonbindingMembers(DotName name) {
+        return interceptorNonbindingMembers.getOrDefault(name, Collections.emptySet());
+    }
+
+    public Set<String> getQualifierNonbindingMembers(DotName name) {
+        return qualifierNonbindingMembers.getOrDefault(name, Collections.emptySet());
     }
 
     private static class ValidationContextImpl implements ValidationContext {

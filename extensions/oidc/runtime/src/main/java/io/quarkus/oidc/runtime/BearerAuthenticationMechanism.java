@@ -2,6 +2,8 @@ package io.quarkus.oidc.runtime;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -12,14 +14,12 @@ import io.vertx.ext.web.RoutingContext;
 
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
 
-    private static final String BEARER = "Bearer";
     protected static final ChallengeData UNAUTHORIZED_CHALLENGE = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
             null, null);
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager,
-            DefaultTenantConfigResolver resolver) {
-        String token = extractBearerToken(context);
+            IdentityProviderManager identityProviderManager) {
+        String token = extractBearerToken(context, resolver.resolveConfig(context));
 
         // if a bearer token is provided try to authenticate
         if (token != null) {
@@ -28,24 +28,31 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return Uni.createFrom().nullItem();
     }
 
-    public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
+    public Uni<ChallengeData> getChallenge(RoutingContext context) {
         return Uni.createFrom().item(UNAUTHORIZED_CHALLENGE);
     }
 
-    private String extractBearerToken(RoutingContext context) {
+    private String extractBearerToken(RoutingContext context, OidcTenantConfig oidcConfig) {
         final HttpServerRequest request = context.request();
-        final String authorization = request.headers().get(HttpHeaders.AUTHORIZATION);
+        String header = oidcConfig.token.header.isPresent() ? oidcConfig.token.header.get()
+                : HttpHeaders.AUTHORIZATION.toString();
+        final String headerValue = request.headers().get(header);
 
-        if (authorization == null) {
+        if (headerValue == null) {
             return null;
         }
 
-        int idx = authorization.indexOf(' ');
+        int idx = headerValue.indexOf(' ');
+        final String scheme = idx > 0 ? headerValue.substring(0, idx) : null;
 
-        if (idx <= 0 || !BEARER.equalsIgnoreCase(authorization.substring(0, idx))) {
+        if (scheme == null && !header.equalsIgnoreCase(HttpHeaders.AUTHORIZATION.toString())) {
+            return headerValue;
+        }
+
+        if (!OidcConstants.BEARER_SCHEME.equalsIgnoreCase(scheme)) {
             return null;
         }
 
-        return authorization.substring(idx + 1);
+        return headerValue.substring(idx + 1);
     }
 }

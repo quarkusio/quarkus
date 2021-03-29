@@ -28,6 +28,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.SessionTrackingMode;
 
 import org.jboss.logging.Logger;
 
@@ -46,12 +47,15 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
+import io.undertow.httpcore.UndertowOptionMap;
+import io.undertow.httpcore.UndertowOptions;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.NotificationReceiver;
 import io.undertow.security.api.SecurityNotification;
@@ -85,6 +89,7 @@ import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
+import io.undertow.servlet.api.ServletSessionConfig;
 import io.undertow.servlet.api.ThreadSetupHandler;
 import io.undertow.servlet.api.TransportGuaranteeType;
 import io.undertow.servlet.api.WebResourceCollection;
@@ -152,7 +157,8 @@ public class UndertowDeploymentRecorder {
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
             LaunchMode launchMode, ShutdownContext context, String contextPath, String httpRootPath, String defaultCharset,
-            String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth) {
+            String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth,
+            List<String> welcomeFiles) {
         String realMountPoint;
         if (contextPath.equals("/")) {
             realMountPoint = httpRootPath;
@@ -197,7 +203,12 @@ public class UndertowDeploymentRecorder {
         }
         d.setResourceManager(resourceManager);
 
-        d.addWelcomePages("index.html", "index.htm");
+        if (welcomeFiles != null) {
+            // if available, use welcome-files from web.xml
+            d.addWelcomePages(welcomeFiles);
+        } else {
+            d.addWelcomePages("index.html", "index.htm");
+        }
 
         d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
         for (HandlerWrapper i : hotDeploymentWrappers) {
@@ -205,23 +216,14 @@ public class UndertowDeploymentRecorder {
         }
         d.addAuthenticationMechanism("QUARKUS", new ImmediateAuthenticationMechanismFactory(QuarkusAuthMechanism.INSTANCE));
         d.setLoginConfig(new LoginConfig("QUARKUS", "QUARKUS"));
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    d.getResourceManager().close();
-                } catch (IOException e) {
-                    log.error("Failed to close Servlet ResourceManager", e);
-                }
-            }
-        });
+        context.addShutdownTask(new ShutdownContext.CloseRunnable(d.getResourceManager()));
 
         d.addNotificationReceiver(new NotificationReceiver() {
             @Override
             public void handleNotification(SecurityNotification notification) {
                 if (notification.getEventType() == SecurityNotification.EventType.AUTHENTICATED) {
                     QuarkusUndertowAccount account = (QuarkusUndertowAccount) notification.getAccount();
-                    CDI.current().getBeanManager().fireEvent(account.getSecurityIdentity());
+                    CDI.current().select(CurrentIdentityAssociation.class).get().setIdentity(account.getSecurityIdentity());
                 }
             }
         });
@@ -371,21 +373,34 @@ public class UndertowDeploymentRecorder {
         UndertowBufferAllocator allocator = new UndertowBufferAllocator(
                 servletRuntimeConfig.directBuffers.orElse(DEFAULT_DIRECT_BUFFERS), (int) servletRuntimeConfig.bufferSize
                         .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
+
+        UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
+        undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters);
+        UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
+
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                event.request().pause();
+                if (!event.request().isEnded()) {
+                    event.request().pause();
+                }
+
                 //we handle auth failure directly
                 event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+
                 VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event,
                         event.getBody());
                 exchange.setPushHandler(VertxHttpRecorder.getRootHandler());
+
                 Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
                 Duration readTimeout = httpConfiguration.readTimeout;
                 exchange.setReadTimeout(readTimeout.toMillis());
+
+                exchange.setUndertowOptions(undertowOptionMap);
+
                 //we eagerly dispatch to the exector, as Undertow needs to be blocking anyway
                 //its actually possible to be on a different IO thread at this point which confuses Undertow
                 //see https://github.com/quarkusio/quarkus/issues/7782
@@ -560,8 +575,13 @@ public class UndertowDeploymentRecorder {
                                 currentVertxRequest.setCurrent(rc);
 
                                 if (association != null) {
-                                    association
-                                            .setIdentity(QuarkusHttpUser.getSecurityIdentity(rc, null));
+                                    QuarkusHttpUser existing = (QuarkusHttpUser) rc.user();
+                                    if (existing != null) {
+                                        SecurityIdentity identity = existing.getSecurityIdentity();
+                                        association.setIdentity(identity);
+                                    } else {
+                                        association.setIdentity(QuarkusHttpUser.getSecurityIdentity(rc, null));
+                                    }
                                 }
 
                                 return action.call(exchange, context);
@@ -636,6 +656,45 @@ public class UndertowDeploymentRecorder {
                 .addWebResourceCollections(webResourceCollections.toArray(new WebResourceCollection[0]));
         deployment.getValue().addSecurityConstraint(securityConstraint);
 
+    }
+
+    public void setSessionTimeout(RuntimeValue<DeploymentInfo> deployment, int sessionTimeout) {
+        deployment.getValue().setDefaultSessionTimeout(sessionTimeout * 60);
+    }
+
+    public ServletSessionConfig sessionConfig(RuntimeValue<DeploymentInfo> deployment) {
+        ServletSessionConfig config = new ServletSessionConfig();
+        deployment.getValue().setServletSessionConfig(config);
+        return config;
+    }
+
+    public void setSessionTracking(ServletSessionConfig config, Set<SessionTrackingMode> modes) {
+        config.setSessionTrackingModes(modes);
+    }
+
+    public void setSessionCookieConfig(ServletSessionConfig config, String name, String path, String comment, String domain,
+            Boolean httpOnly, Integer maxAge, Boolean secure) {
+        if (name != null) {
+            config.setName(name);
+        }
+        if (path != null) {
+            config.setPath(path);
+        }
+        if (comment != null) {
+            config.setComment(comment);
+        }
+        if (domain != null) {
+            config.setDomain(domain);
+        }
+        if (httpOnly != null) {
+            config.setHttpOnly(httpOnly);
+        }
+        if (maxAge != null) {
+            config.setMaxAge(maxAge);
+        }
+        if (secure != null) {
+            config.setSecure(secure);
+        }
     }
 
     /**

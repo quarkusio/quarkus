@@ -2,16 +2,14 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Parameter.EMPTY;
 
-import io.quarkus.qute.Results.Result;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -47,21 +45,24 @@ public class LoopSectionHelper implements SectionHelper {
                 results.add(nextElement(iterator.next(), idx++, iterator.hasNext(), context));
             }
             if (results.isEmpty()) {
-                return CompletableFuture.completedFuture(ResultNode.NOOP);
+                return ResultNode.NOOP;
+            }
+            if (results.size() == 1) {
+                return results.get(0);
             }
             CompletableFuture<ResultNode> result = new CompletableFuture<>();
-            CompletableFuture<ResultNode>[] all = new CompletableFuture[results.size()];
+            CompletableFuture<ResultNode>[] allResults = new CompletableFuture[results.size()];
             idx = 0;
             for (CompletionStage<ResultNode> r : results) {
-                all[idx++] = r.toCompletableFuture();
+                allResults[idx++] = r.toCompletableFuture();
             }
             CompletableFuture
-                    .allOf(all)
+                    .allOf(allResults)
                     .whenComplete((v, t) -> {
                         if (t != null) {
                             result.completeExceptionally(t);
                         } else {
-                            result.complete(new MultiResultNode(all));
+                            result.complete(new MultiResultNode(allResults));
                         }
                     });
             return result;
@@ -80,7 +81,13 @@ public class LoopSectionHelper implements SectionHelper {
         } else if (it instanceof Integer) {
             return IntStream.rangeClosed(1, (Integer) it).iterator();
         } else if (it.getClass().isArray()) {
-            return Arrays.stream((Object[]) it).iterator();
+            int length = Array.getLength(it);
+            List<Object> elements = new ArrayList<>(length);
+            for (int i = 0; i < length; i++) {
+                // The val is automatically wrapped for primitive types
+                elements.add(Array.get(it, i));
+            }
+            return elements.iterator();
         } else {
             throw new TemplateException(String.format(
                     "Loop section error in template %s on line %s: [%s] resolved to [%s] which is not iterable",
@@ -90,16 +97,15 @@ public class LoopSectionHelper implements SectionHelper {
     }
 
     CompletionStage<ResultNode> nextElement(Object element, int index, boolean hasNext, SectionResolutionContext context) {
-        AtomicReference<ResolutionContext> resolutionContextHolder = new AtomicReference<>();
         ResolutionContext child = context.resolutionContext().createChild(new IterationElement(alias, element, index, hasNext),
                 null);
-        resolutionContextHolder.set(child);
         return context.execute(child);
     }
 
     public static class Factory implements SectionHelperFactory<LoopSectionHelper> {
 
-        public static final String HINT = "<for-element>";
+        public static final String HINT_ELEMENT = "<loop-element>";
+        public static final String HINT_PREFIX = "<loop#";
         private static final String ALIAS = "alias";
         private static final String IN = "in";
         private static final String ITERABLE = "iterable";
@@ -130,17 +136,23 @@ public class LoopSectionHelper implements SectionHelper {
                 if (iterable == null) {
                     iterable = ValueResolvers.THIS;
                 }
+                // foo.items becomes |org.acme.Foo|.items<loop-element>
+                previousScope.setLastPartHint(HINT_ELEMENT);
                 Expression iterableExpr = block.addExpression(ITERABLE, iterable);
+                previousScope.setLastPartHint(null);
+
                 String alias = block.getParameters().get(ALIAS);
-                if (iterableExpr.getParts().get(0).getTypeInfo() != null) {
+
+                if (iterableExpr.hasTypeInfo()) {
+                    // it.name becomes it<loop#123>.name
                     alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
                     Scope newScope = new Scope(previousScope);
-                    newScope.put(alias, iterableExpr.collectTypeInfo() + HINT);
+                    newScope.putBinding(alias, alias + HINT_PREFIX + iterableExpr.getGeneratedId() + ">");
                     return newScope;
                 } else {
                     // Make sure we do not try to validate against the parent context
                     Scope newScope = new Scope(previousScope);
-                    newScope.put(alias, null);
+                    newScope.putBinding(alias, null);
                     return newScope;
                 }
             } else {
@@ -151,43 +163,47 @@ public class LoopSectionHelper implements SectionHelper {
 
     static class IterationElement implements Mapper {
 
+        static final CompletableFuture<Object> EVEN = CompletableFuture.completedFuture("even");
+        static final CompletableFuture<Object> ODD = CompletableFuture.completedFuture("odd");
+
         final String alias;
-        final Object element;
+        final CompletableFuture<Object> element;
         final int index;
         final boolean hasNext;
 
         public IterationElement(String alias, Object element, int index, boolean hasNext) {
             this.alias = alias;
-            this.element = element;
+            this.element = CompletableFuture.completedFuture(element);
             this.index = index;
             this.hasNext = hasNext;
         }
 
         @Override
-        public Object get(String key) {
+        public CompletionStage<Object> getAsync(String key) {
             if (alias.equals(key)) {
                 return element;
             }
             // Iteration metadata
             switch (key) {
                 case "count":
-                    return index + 1;
+                    return CompletableFuture.completedFuture(index + 1);
                 case "index":
-                    return index;
+                    return CompletableFuture.completedFuture(index);
                 case "indexParity":
-                    return index % 2 != 0 ? "even" : "odd";
+                    return index % 2 != 0 ? EVEN : ODD;
                 case "hasNext":
-                    return hasNext;
+                    return hasNext ? Results.TRUE : Results.FALSE;
                 case "isOdd":
                 case "odd":
-                    return index % 2 == 0;
+                    return (index % 2 == 0) ? Results.TRUE : Results.FALSE;
                 case "isEven":
                 case "even":
-                    return index % 2 != 0;
+                    return (index % 2 != 0) ? Results.TRUE : Results.FALSE;
                 default:
-                    return Result.NOT_FOUND;
+                    return Results.NOT_FOUND;
             }
         }
+
     }
 
 }

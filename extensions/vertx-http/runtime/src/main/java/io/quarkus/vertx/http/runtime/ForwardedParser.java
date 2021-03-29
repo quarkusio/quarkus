@@ -178,36 +178,53 @@ class ForwardedParser {
     }
 
     private void setHostAndPort(String hostToParse, int defaultPort) {
-        int portSeparatorIdx = hostToParse.lastIndexOf(':');
-        if (portSeparatorIdx > hostToParse.lastIndexOf(']')) {
-            host = hostToParse.substring(0, portSeparatorIdx);
-            delegate.headers().set(HttpHeaders.HOST, host);
-            port = parsePort(hostToParse.substring(portSeparatorIdx + 1), defaultPort);
-        } else {
-            host = hostToParse;
-            port = -1;
+        if (hostToParse == null) {
+            hostToParse = "";
         }
+        String[] hostAndPort = parseHostAndPort(hostToParse);
+        host = hostAndPort[0];
+        delegate.headers().set(HttpHeaders.HOST, host);
+        port = parsePort(hostAndPort[1], defaultPort);
     }
 
     private SocketAddress parseFor(String forToParse, int defaultPort) {
-        String host = forToParse;
-        int port = defaultPort;
-        int portSeparatorIdx = forToParse.lastIndexOf(':');
-        if (portSeparatorIdx > forToParse.lastIndexOf(']')) {
-            host = forToParse.substring(0, portSeparatorIdx);
-            port = parsePort(forToParse.substring(portSeparatorIdx + 1), defaultPort);
-        }
-
+        String[] hostAndPort = parseHostAndPort(forToParse);
+        String host = hostAndPort[0];
+        int port = parsePort(hostAndPort[1], defaultPort);
         return new SocketAddressImpl(port, host);
     }
 
-    private int parsePort(String portToParse, int defaultPort) {
-        try {
-            return Integer.parseInt(portToParse);
-        } catch (NumberFormatException ignored) {
-            log.error("Failed to parse a port from \"forwarded\"-type headers.");
-            return defaultPort;
+    /**
+     * Returns a String[] of 2 elements, with the first being the host and the second the port
+     */
+    private String[] parseHostAndPort(String hostToParse) {
+        String[] hostAndPort = { hostToParse, "" };
+        int portSeparatorIdx = hostToParse.lastIndexOf(':');
+        int squareBracketIdx = hostToParse.lastIndexOf(']');
+        if ((squareBracketIdx > -1 && portSeparatorIdx > squareBracketIdx)) {
+            // ipv6 with port
+            hostAndPort[0] = hostToParse.substring(0, portSeparatorIdx);
+            hostAndPort[1] = hostToParse.substring(portSeparatorIdx + 1);
+        } else {
+            long numberOfColons = hostToParse.chars().filter(ch -> ch == ':').count();
+            if (numberOfColons == 1 && !hostToParse.endsWith(":")) {
+                // ipv4 with port
+                hostAndPort[0] = hostToParse.substring(0, portSeparatorIdx);
+                hostAndPort[1] = hostToParse.substring(portSeparatorIdx + 1);
+            }
         }
+        return hostAndPort;
+    }
+
+    private int parsePort(String portToParse, int defaultPort) {
+        if (portToParse != null && portToParse.length() > 0) {
+            try {
+                return Integer.parseInt(portToParse);
+            } catch (NumberFormatException ignored) {
+                log.error("Failed to parse a port from \"forwarded\"-type headers.");
+            }
+        }
+        return defaultPort;
     }
 
     private String appendPrefixToUri(String prefix, String uri) {

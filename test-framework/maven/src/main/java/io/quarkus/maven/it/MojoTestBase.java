@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,22 +22,45 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
+import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
+import io.quarkus.devtools.test.RegistryClientTestHelper;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class MojoTestBase {
 
-    public static Invoker initInvoker(File root) {
-        Invoker invoker = new DefaultInvoker();
+    public Invoker initInvoker(File root) {
+        Invoker invoker = new DefaultInvoker() {
+            @Override
+            public InvocationResult execute(InvocationRequest request)
+                    throws MavenInvocationException {
+                passUserSettings(request);
+                getEnv().forEach(request::addShellEnvironment);
+                enableDevToolsTestConfig(request);
+                return super.execute(request);
+            }
+        };
         invoker.setWorkingDirectory(root);
-        String repo = System.getProperty("maven.repo");
+        String repo = System.getProperty("maven.repo.local");
         if (repo == null) {
             repo = new File(System.getProperty("user.home"), ".m2/repository").getAbsolutePath();
         }
         invoker.setLocalRepositoryDirectory(new File(repo));
         return invoker;
+    }
+
+    public static void passUserSettings(InvocationRequest request) {
+        final String mvnSettings = System.getProperty("maven.settings");
+        if (mvnSettings != null) {
+            final File settingsFile = new File(mvnSettings);
+            if (settingsFile.exists()) {
+                request.setUserSettingsFile(settingsFile);
+            }
+        }
     }
 
     public static File initEmptyProject(String name) {
@@ -49,6 +73,7 @@ public class MojoTestBase {
             }
         }
         boolean mkdirs = tc.mkdirs();
+
         Logger.getLogger(MojoTestBase.class.getName())
                 .log(Level.FINE, "test-classes created? %s", mkdirs);
         return tc;
@@ -121,7 +146,7 @@ public class MojoTestBase {
         assertThat(logs.contains(infoLogLevel)).isTrue();
         Predicate<String> datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}").asPredicate();
         assertThat(datePattern.test(logs)).isTrue();
-        assertThat(logs.contains("cdi, resteasy, servlet, undertow-websockets")).isTrue();
+        assertThat(logs.contains("cdi, resteasy, smallrye-context-propagation, websockets")).isTrue();
         assertThat(logs.contains("JBoss Threads version")).isFalse();
     }
 
@@ -140,4 +165,20 @@ public class MojoTestBase {
         return files != null ? Arrays.asList(files) : Collections.emptyList();
     }
 
+    public static void enableDevToolsTestConfig(InvocationRequest request) {
+        Properties properties = request.getProperties();
+        if (properties == null) {
+            properties = new Properties();
+            request.setProperties(properties);
+        }
+        enableDevToolsTestConfig(properties);
+    }
+
+    public static void enableDevToolsTestConfig(Properties properties) {
+        RegistryClientTestHelper.enableRegistryClientTestConfig(properties);
+    }
+
+    public static void disableDevToolsTestConfig(Properties properties) {
+        RegistryClientTestHelper.disableRegistryClientTestConfig(properties);
+    }
 }

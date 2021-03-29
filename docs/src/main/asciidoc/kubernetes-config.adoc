@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Kubernetes Config
 
@@ -16,7 +16,7 @@ Quarkus includes the `kubernetes-config` extension which allows developers to us
 Once you have your Quarkus project configured you can add the `kubernetes-config` extension
 by running the following command in your project base directory.
 
-[source]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="kubernetes-config"
 ----
@@ -43,13 +43,17 @@ The extension understands the following types of ConfigMaps and Secrets as input
 You have to explicitly enable the retrieval of ConfigMaps and Secrets by setting `quarkus.kubernetes-config.enabled=true`.
 The default is `false` in order to make it easy to test the application locally.
 
-Afterwards, set the `quarkus.kubernetes-config.configmaps` property to configure which ConfigMaps should be used.
+Afterwards, set the `quarkus.kubernetes-config.config-maps` property to configure which ConfigMaps should be used.
 Set the `quarkus.kubernetes-config.secrets` property to configure which Secrets should be used.
 To access ConfigMaps and Secrets from a specific namespace, you can set the `quarkus.kubernetes-config.namespace` property.
 
 === Priority of obtained properties
 
 The properties obtained from the ConfigMaps and Secrets have a higher priority than (i.e. they override) any properties of the same name that are found in `application.properties` (or the YAML equivalents), but they have lower priority than properties set via Environment Variables or Java System Properties.
+
+Furthermore, when multiple ConfigMaps (or Secrets) are used, ConfigMaps (or Secrets) defined later in the list have a higher priority that ConfigMaps defined earlier in the list.
+
+Finally, when both ConfigMaps and Secrets are used, the latter always a higher priority than the former.
 
 === Kubernetes Permissions
 

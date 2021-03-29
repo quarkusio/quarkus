@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-image-s2i-deployment</artifactId>
+            <artifactId>quarkus-container-image-openshift-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

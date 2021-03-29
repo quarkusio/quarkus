@@ -58,4 +58,11 @@ public class InjectedSpringBeansResourceTest {
                 .statusCode(200)
                 .body(Matchers.is("0"));
     }
+
+    @Test
+    public void testPrototypeScope() {
+        RestAssured.when().get("/spring-test/prototype").then()
+                .body(Matchers.containsString("0"))
+                .body(Matchers.containsString("1"));
+    }
 }

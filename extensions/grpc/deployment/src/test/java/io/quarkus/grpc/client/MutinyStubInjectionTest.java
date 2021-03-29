@@ -21,6 +21,8 @@ import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.runtime.annotations.GrpcService;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
 
 public class MutinyStubInjectionTest {
 
@@ -40,7 +42,10 @@ public class MutinyStubInjectionTest {
     @Test
     public void test() {
         String neo = service.invoke("neo-mutiny");
-        assertThat(neo).isEqualTo("Hello neo-mutiny");
+        assertThat(neo).startsWith("Hello neo-mutiny").doesNotContain("vert.x");
+
+        neo = service.invokeFromIoThread("neo-io");
+        assertThat(neo).startsWith("Hello neo-io").contains("vert.x");
     }
 
     @ApplicationScoped
@@ -50,10 +55,25 @@ public class MutinyStubInjectionTest {
         @GrpcService("hello-service")
         MutinyGreeterGrpc.MutinyGreeterStub service;
 
+        @Inject
+        Vertx vertx;
+
         public String invoke(String s) {
             return service.sayHello(HelloRequest.newBuilder().setName(s).build())
                     .map(HelloReply::getMessage)
+                    .map(r -> r + " " + Thread.currentThread().getName())
                     .await().atMost(Duration.ofSeconds(5));
+        }
+
+        public String invokeFromIoThread(String s) {
+            return Uni.createFrom().<String> emitter(e -> {
+                vertx.runOnContext(x -> {
+                    service.sayHello(HelloRequest.newBuilder().setName(s).build())
+                            .map(HelloReply::getMessage)
+                            .map(r -> r + " " + Thread.currentThread().getName())
+                            .subscribe().with(e::complete, e::fail);
+                });
+            }).await().atMost(Duration.ofSeconds(5));
         }
 
     }

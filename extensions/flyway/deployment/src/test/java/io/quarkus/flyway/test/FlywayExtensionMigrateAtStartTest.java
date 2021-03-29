@@ -35,7 +35,7 @@ public class FlywayExtensionMigrateAtStartTest {
         String currentVersion = migrationInfo
                 .getVersion()
                 .toString();
-        // Expected to be 1.0.0 as migration runs at start
+
         assertEquals("1.0.0", currentVersion);
     }
 }

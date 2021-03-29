@@ -8,7 +8,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-redis-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-redis-client</artifactId>
@@ -29,16 +28,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

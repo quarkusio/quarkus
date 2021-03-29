@@ -29,6 +29,15 @@ public class TransactionBeanWithEvents {
     @Inject
     TransactionManager tm;
 
+    static void cleanCounts() {
+        initializedCount = 0;
+        beforeDestroyedCount = 0;
+        destroyedCount = 0;
+
+        commitCount = 0;
+        rollbackCount = 0;
+    }
+
     static int getInitialized() {
         return initializedCount;
     }

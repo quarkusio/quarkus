@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import java.lang.reflect.Array;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -10,6 +11,14 @@ import java.util.concurrent.ExecutionException;
 @SuppressWarnings("rawtypes")
 public final class EvaluatedParams {
 
+    static final EvaluatedParams EMPTY;
+
+    static {
+        CompletableFuture<Void> empty = new CompletableFuture<Void>();
+        empty.complete(null);
+        EMPTY = new EvaluatedParams(empty, new CompletableFuture<?>[0]);
+    }
+
     /**
      * 
      * @param context
@@ -17,12 +26,42 @@ public final class EvaluatedParams {
      */
     public static EvaluatedParams evaluate(EvalContext context) {
         List<Expression> params = context.getParams();
-        if (params.size() == 1) {
+        if (params.isEmpty()) {
+            return EMPTY;
+        } else if (params.size() == 1) {
             return new EvaluatedParams(context.evaluate(params.get(0)));
         }
-        CompletableFuture<?>[] results = new CompletableFuture<?>[params.size()];
+        CompletableFuture<?>[] allResults = new CompletableFuture<?>[params.size()];
+        List<CompletableFuture<?>> results = new LinkedList<>();
         int i = 0;
         Iterator<Expression> it = params.iterator();
+        while (it.hasNext()) {
+            Expression expression = it.next();
+            CompletableFuture<Object> result = context.evaluate(expression).toCompletableFuture();
+            allResults[i++] = result;
+            if (!expression.isLiteral()) {
+                results.add(result);
+            }
+        }
+        return new EvaluatedParams(CompletableFuture.allOf(results.toArray(new CompletableFuture[0])), allResults);
+    }
+
+    public static EvaluatedParams evaluateMessageKey(EvalContext context) {
+        List<Expression> params = context.getParams();
+        if (params.isEmpty()) {
+            throw new IllegalArgumentException("No params to evaluate");
+        }
+        return new EvaluatedParams(context.evaluate(params.get(0)));
+    }
+
+    public static EvaluatedParams evaluateMessageParams(EvalContext context) {
+        List<Expression> params = context.getParams();
+        if (params.size() < 2) {
+            return EMPTY;
+        }
+        CompletableFuture<?>[] results = new CompletableFuture<?>[params.size() - 1];
+        int i = 0;
+        Iterator<Expression> it = params.subList(1, params.size()).iterator();
         while (it.hasNext()) {
             results[i++] = context.evaluate(it.next()).toCompletableFuture();
         }
@@ -55,7 +94,12 @@ public final class EvaluatedParams {
      * @throws ExecutionException
      */
     public boolean parameterTypesMatch(boolean varargs, Class<?>[] types) throws InterruptedException, ExecutionException {
-        if (types.length != results.length) {
+        // Check the number of parameters and replace the last param type with component type if needed
+        if (types.length == results.length) {
+            if (varargs) {
+                types[types.length - 1] = types[types.length - 1].getComponentType();
+            }
+        } else {
             if (varargs) {
                 int diff = types.length - results.length;
                 if (diff == 1) {
@@ -65,7 +109,6 @@ public final class EvaluatedParams {
                     return false;
                 }
                 // diff < 1
-                // Replace the last param type with component type
                 Class<?> varargsType = types[types.length - 1];
                 types[types.length - 1] = varargsType.getComponentType();
             } else {

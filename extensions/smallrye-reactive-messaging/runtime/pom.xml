@@ -6,7 +6,6 @@
         <artifactId>quarkus-smallrye-reactive-messaging-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
@@ -20,10 +19,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mutiny-reactive-streams-operators</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.reactivex.rxjava2</groupId>
-            <artifactId>rxjava</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

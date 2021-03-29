@@ -37,10 +37,9 @@ public class RouteMethodParametersTest {
 
     @Test
     public void testRoutes() {
-        //RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-response").then().statusCode(200).body(is("Hello world!"));
-        when().get("/hello-rx-response").then().statusCode(200).body(is("Hello world!"));
+        when().get("/hello-mutiny-response").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-response-nonvoid?name=foo").then().statusCode(200).body(is("Hello foo!"));
         when().get("/hello-all").then().statusCode(200).body(is("ok"));
         when().get("/hello-params?name=foo&identifier=10").then().statusCode(200).body(is("Hello foo! Your id is 10"));
@@ -48,7 +47,8 @@ public class RouteMethodParametersTest {
                 .body(is("Hello 42! Your name is foo and id is 10"));
         when().get("/hello-multiple-params?id=foo&id=10").then().statusCode(200)
                 .body(is("foo,10"));
-        given().header("My-Header", "fooooo").get("/hello-header").then().statusCode(200).body(is("fooooo"));
+        given().header("My-Header", "fooooo").header("My-Number-Header", "10000").get("/hello-header").then().statusCode(200)
+                .body(is("fooooo=10000"));
         given().header("My-Header", "fooooo").header("My-Header", "baaar").get("/hello-multiple-headers").then().statusCode(200)
                 .body(is("fooooo,baaar"));
         given().contentType("application/json").body("{\"name\":\"Eleven\"}")
@@ -67,6 +67,12 @@ public class RouteMethodParametersTest {
         given().contentType("application/json").body("{\"name\":\"Eleven\"}")
                 .post("/hello-body-pojo?id=13").then().statusCode(200).body("name", is("Eleven"))
                 .body("id", is(13));
+        when().get("/hello-params-conversion?id=22&size=100&valid=false&doubles=2").then().statusCode(200)
+                .body(is("id=22,size=100,valid=false,doubles=[2.0]"));
+        when().get("/hello-param-conversion-optional").then().statusCode(200)
+                .body(is("hello 42"));
+        when().get("/hello-param-conversion-optional?id=1").then().statusCode(200)
+                .body(is("hello 1"));
     }
 
     static class SimpleBean {
@@ -82,9 +88,9 @@ public class RouteMethodParametersTest {
             response.setStatusCode(200).end("Hello world!");
         }
 
-        @Route(path = "/hello-rx-response")
-        void hello3(io.vertx.reactivex.core.http.HttpServerResponse response) {
-            response.setStatusCode(200).end("Hello world!");
+        @Route(path = "/hello-mutiny-response")
+        void hello3(io.vertx.mutiny.core.http.HttpServerResponse response) {
+            response.setStatusCode(200).endAndForget("Hello world!");
         }
 
         @Route(path = "/hello-response-nonvoid")
@@ -93,11 +99,11 @@ public class RouteMethodParametersTest {
         }
 
         @Route(path = "/hello-all")
-        String hello5(io.vertx.reactivex.core.http.HttpServerResponse rxResponse, RoutingContext routingContext,
+        String hello5(io.vertx.mutiny.core.http.HttpServerResponse mutinyResp, RoutingContext routingContext,
                 RoutingExchange routingExchange, HttpServerRequest request, HttpServerResponse response,
-                io.vertx.reactivex.core.http.HttpServerRequest rxRequest) {
-            assertNotNull(rxRequest);
-            assertNotNull(rxResponse);
+                io.vertx.mutiny.core.http.HttpServerRequest mutinyReq) {
+            assertNotNull(mutinyReq);
+            assertNotNull(mutinyResp);
             assertNotNull(routingContext);
             assertNotNull(routingExchange);
             assertNotNull(request);
@@ -121,9 +127,10 @@ public class RouteMethodParametersTest {
         }
 
         @Route
-        String helloHeader(@Header("My-Header") String myHeader, @Header Optional<String> missingHeader) {
+        String helloHeader(@Header("My-Header") String myHeader, @Header Optional<String> missingHeader,
+                @Header("My-Number-Header") Long numberHeader) {
             assertFalse(missingHeader.isPresent());
-            return myHeader;
+            return myHeader + "=" + numberHeader;
         }
 
         @Route
@@ -155,6 +162,21 @@ public class RouteMethodParametersTest {
         Person helloBodyPojo(@Body Person person, @Param("id") Optional<String> primaryKey) {
             person.setId(primaryKey.map(Integer::valueOf).orElse(11));
             return person;
+        }
+
+        @Route
+        String helloParamsConversion(@Param Integer id, @Param Long size, @Param Boolean valid, @Param List<Double> doubles) {
+            return String.format("id=%s,size=%s,valid=%s,doubles=%s", id, size, valid, doubles);
+        }
+
+        @Route
+        String helloParamConversionOptional(@Param Optional<Integer> id) {
+            return "hello " + id.orElse(42);
+        }
+
+        @Route
+        String helloParamConversionFailure(@Param Integer id) {
+            return "hello " + id;
         }
 
     }

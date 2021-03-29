@@ -1,0 +1,12 @@
+name: quarkus-jbang
+type: project
+fallback: true
+output-strategy:
+  "README.md": append
+  "readme.md": forbidden
+  "README.adoc": forbidden
+  "readme.adoc": forbidden
+  ".gitignore": append
+  "*": fail-on-duplicate
+
+

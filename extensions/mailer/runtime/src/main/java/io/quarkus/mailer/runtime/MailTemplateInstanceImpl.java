@@ -1,5 +1,6 @@
 package io.quarkus.mailer.runtime;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -79,13 +80,19 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     }
 
     @Override
+    public MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId) {
+        this.mail.addInlineAttachment(name, file, contentType, contentId);
+        return this;
+    }
+
+    @Override
     public MailTemplateInstance data(String key, Object value) {
         this.data.put(key, value);
         return this;
     }
 
     @Override
-    public CompletionStage<Void> send() {
+    public Uni<Void> send() {
         Object variantsAttr = templateInstance.getAttribute(TemplateInstance.VARIANTS);
         if (variantsAttr != null) {
             List<Result> results = new ArrayList<>();
@@ -108,7 +115,7 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
             if (results.isEmpty()) {
                 throw new IllegalStateException("No suitable template variant found");
             }
-            List<Uni<String>> unis = results.stream().map(Result::getValue).collect(Collectors.toList());
+            List<Uni<String>> unis = results.stream().map(Result::resolve).collect(Collectors.toList());
             return Uni.combine().all().unis(unis)
                     .combinedWith(combine(results))
                     .chain(new Function<Mail, Uni<? extends Void>>() {
@@ -116,8 +123,7 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
                         public Uni<? extends Void> apply(Mail m) {
                             return mailer.send(m);
                         }
-                    })
-                    .subscribeAsCompletionStage();
+                    });
         } else {
             throw new IllegalStateException("No template variant found");
         }
@@ -126,13 +132,14 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     private Function<List<?>, Mail> combine(List<Result> results) {
         return new Function<List<?>, Mail>() {
             @Override
-            public Mail apply(List<?> ignored) {
-                for (Result res : results) {
-                    // We can safely access the content here: 1. it has been resolved, 2. it's cached.
-                    String content = res.value.await().indefinitely();
-                    if (res.variant.getContentType().equals(Variant.TEXT_HTML)) {
+            public Mail apply(List<?> resolved) {
+                for (int i = 0; i < resolved.size(); i++) {
+                    Result result = results.get(i);
+                    // We can safely cast, as we know that the results are Strings.
+                    String content = (String) resolved.get(i);
+                    if (result.variant.getContentType().equals(Variant.TEXT_HTML)) {
                         mail.setHtml(content);
-                    } else if (res.variant.getContentType().equals(Variant.TEXT_PLAIN)) {
+                    } else if (result.variant.getContentType().equals(Variant.TEXT_PLAIN)) {
                         mail.setText(content);
                     }
                 }
@@ -148,10 +155,10 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
         public Result(Variant variant, Uni<String> result) {
             this.variant = variant;
-            this.value = result.cache();
+            this.value = result;
         }
 
-        Uni<String> getValue() {
+        Uni<String> resolve() {
             return value;
         }
     }

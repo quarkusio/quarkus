@@ -6,7 +6,6 @@
         <groupId>org.acme</groupId>
         <artifactId>root</artifactId>
         <version>1.0</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>root-module1</artifactId>

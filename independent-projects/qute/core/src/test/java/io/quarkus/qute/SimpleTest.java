@@ -52,7 +52,7 @@ public class SimpleTest {
 
         }).build();
 
-        Template template = engine.parse("{this.get(0)}");
+        Template template = engine.parse("{get(0)}");
         assertEquals("moon", template.render(ImmutableList.of("moon")));
     }
 
@@ -207,5 +207,23 @@ public class SimpleTest {
         } catch (IllegalStateException expected) {
             assertEquals("Not found: foo", expected.getMessage());
         }
+    }
+
+    @Test
+    public void testConvenientDataMethods() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("1:2", engine.parse("{d1}:{d2}").data("d1", 1, "d2", 2).render());
+        assertEquals("1:2:3", engine.parse("{d1}:{d2}:{d3}").data("d1", 1, "d2", 2, "d3", 3).render());
+        assertEquals("1:2:3:4", engine.parse("{d1}:{d2}:{d3}:{d4}").data("d1", 1, "d2", 2, "d3", 3, "d4", 4).render());
+        assertEquals("1:2:3:4:5",
+                engine.parse("{d1}:{d2}:{d3}:{d4}:{d5}").data("d1", 1, "d2", 2, "d3", 3, "d4", 4, "d5", 5).render());
+    }
+
+    @Test
+    public void testOrEmpty() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("STARTEND::STARTJackEND",
+                engine.parse("START{#for pet in pets.orEmpty}...{/for}END::START{#for dog in dogs.orEmpty}{dog}{/for}END")
+                        .data("pets", null, "dogs", Collections.singleton("Jack")).render());
     }
 }

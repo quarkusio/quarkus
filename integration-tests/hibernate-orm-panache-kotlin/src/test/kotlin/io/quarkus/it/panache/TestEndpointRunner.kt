@@ -77,7 +77,7 @@ class TestEndpointRunner {
     private fun invokeNonOverload(function: () -> Any?) {
         try {
             function()
-        } catch (ignored: Exception) {
+        } catch (ignored: java.lang.UnsupportedOperationException) {
             fail("This method should have been replaced", ignored)
         }
     }

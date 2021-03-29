@@ -48,6 +48,11 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-graphql-ui-graphiql</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-context-propagation-deployment</artifactId>
+        </dependency>
         
         <!--  Test dependencies -->
         <dependency>
@@ -62,22 +67,27 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-metrics</artifactId>
+            <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-opentracing</artifactId>
+            <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-elytron-security</artifactId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-elytron-security-properties-file</artifactId>
+            <artifactId>quarkus-elytron-security-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elytron-security-properties-file-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -1,9 +1,9 @@
 package io.quarkus.runtime.graal;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Handler;
 
 import org.jboss.logmanager.LogContext;
-import org.jboss.logmanager.handlers.DelayedHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +13,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 
 /**
  */
@@ -20,8 +21,8 @@ import io.quarkus.bootstrap.logging.InitialConfigurator;
 final class Target_org_jboss_logmanager_LoggerNode {
 
     @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    volatile Handler[] handlers;
+    @RecomputeFieldValue(declClass = AtomicReference.class, kind = RecomputeFieldValue.Kind.NewInstance)
+    AtomicReference<Handler[]> handlersRef;
 }
 
 @TargetClass(className = "org.slf4j.LoggerFactory")
@@ -38,7 +39,7 @@ final class Target_org_slf4j_LoggerFactory {
 final class Target_io_quarkus_runtime_logging_InitialConfigurator {
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
     @Alias
-    public static DelayedHandler DELAYED_HANDLER = new DelayedHandler();
+    public static QuarkusDelayedHandler DELAYED_HANDLER = new QuarkusDelayedHandler();
 }
 
 @TargetClass(java.util.logging.Logger.class)

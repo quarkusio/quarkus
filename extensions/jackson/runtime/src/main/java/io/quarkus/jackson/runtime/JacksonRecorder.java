@@ -1,0 +1,20 @@
+package io.quarkus.jackson.runtime;
+
+import java.util.function.Supplier;
+
+import io.quarkus.runtime.annotations.Recorder;
+
+@Recorder
+public class JacksonRecorder {
+
+    public Supplier<JacksonConfigSupport> jacksonConfigSupport(JacksonBuildTimeConfig jacksonBuildTimeConfig) {
+        return new Supplier<JacksonConfigSupport>() {
+
+            @Override
+            public JacksonConfigSupport get() {
+                return new JacksonConfigSupport(jacksonBuildTimeConfig.failOnUnknownProperties,
+                        jacksonBuildTimeConfig.writeDatesAsTimestamps, jacksonBuildTimeConfig.timezone.orElse(null));
+            }
+        };
+    }
+}

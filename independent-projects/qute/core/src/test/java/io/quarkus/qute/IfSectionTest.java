@@ -76,6 +76,37 @@ public class IfSectionTest {
         assertEquals("OK", engine.parse("{#if (foo || false || true) && (true)}OK{/if}").render());
         assertEquals("NOK", engine.parse("{#if foo || false}OK{#else}NOK{/if}").render());
         assertEquals("OK", engine.parse("{#if false || (foo || (false || true))}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if (true && false)}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && true}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if true && false}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if false && true}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true and (true or false)}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if true and (true == false)}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && (false == false)}OK{#else}NOK{/if}").render());
+
+        Map<String, String> foo = new HashMap<>();
+        foo.put("bar", "something");
+        assertEquals("NOK",
+                engine.parse("{#if foo.bar != 'something' && foo.bar != 'other'}OK{#else}NOK{/if}").data("foo", foo).render());
+        assertEquals("OK",
+                engine.parse("{#if foo.bar != 'nothing' && foo.bar != 'other'}OK{#else}NOK{/if}").data("foo", foo).render());
+        assertEquals("OK",
+                engine.parse("{#if foo.bar == 'something' || foo.bar != 'other'}OK{#else}NOK{/if}").data("foo", foo).render());
+        assertEquals("OK", engine.parse("{#if (foo.bar == 'something') || (foo.bar == 'other')}OK{#else}NOK{/if}")
+                .data("foo", foo).render());
+
+        Map<String, String> qual = new HashMap<>();
+        Template template = engine.parse(
+                "{#if qual.name != 'javax.inject.Named' \n"
+                        + "          && qual.name != 'javax.enterprise.inject.Any'\n"
+                        + "          && qual.name != 'javax.enterprise.inject.Default'}{qual.name}{/if}");
+        qual.put("name", "org.acme.MyQual");
+        assertEquals("org.acme.MyQual", template
+                .data("qual", qual).render());
+        qual.put("name", "javax.enterprise.inject.Any");
+        assertEquals("", template
+                .data("qual", qual).render());
+
     }
 
     @Test

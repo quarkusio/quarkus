@@ -75,7 +75,8 @@ public class SubclassGenerator extends AbstractGenerator {
     private final Set<String> existingClasses;
 
     static String generatedName(DotName providerTypeName, String baseName) {
-        return DotNames.packageName(providerTypeName).replace('.', '/') + "/" + baseName + SUBCLASS_SUFFIX;
+        String packageName = DotNames.internalPackageNameWithTrailingSlash(providerTypeName);
+        return packageName + baseName + SUBCLASS_SUFFIX;
     }
 
     private final AnnotationLiteralProcessor annotationLiterals;
@@ -103,7 +104,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 generateSources);
 
         Type providerType = bean.getProviderType();
-        ClassInfo providerClass = getClassByName(bean.getDeployment().getIndex(), providerType.name());
+        ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
         String generatedName = generatedName(providerType.name(), baseName);

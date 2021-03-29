@@ -14,11 +14,11 @@ import io.restassured.http.ContentType;
 public class HealthCheckTest {
     @Test
     public void testHealthCheck() {
-        RestAssured.when().get("/health").then()
+        RestAssured.when().get("/q/health").then()
                 .contentType(ContentType.JSON)
                 .header("Content-Type", containsString("charset=UTF-8"))
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
-                        "checks.name", containsInAnyOrder("Reactive MySQL connection health check"));
+                        "checks.name", containsInAnyOrder("Reactive MySQL connections health check"));
     }
 }

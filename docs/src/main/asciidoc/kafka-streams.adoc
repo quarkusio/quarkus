@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Apache Kafka Streams
 
@@ -32,14 +32,14 @@ Using the dev mode, you'll instantly see messages on the output topic(s) as prod
 
 For the best development experience, we recommend applying the following configuration settings to your Kafka broker:
 
-[source, subs=attributes+]
+[source,properties,subs=attributes+]
 ----
 group.min.session.timeout.ms=250
 ----
 
 Also specify the following settings in your Quarkus `application.properties`:
 
-[source, subs=attributes+]
+[source,properties,subs=attributes+]
 ----
 kafka-streams.consumer.session.timeout.ms=250
 kafka-streams.consumer.heartbeat.interval.ms=200
@@ -52,7 +52,7 @@ Together, these settings will ensure that the application can very quickly recon
 
 In this guide, we are going to generate (random) temperature values in one component (named `generator`).
 These values are associated to given weather stations and are written in a Kafka topic (`temperature-values`).
-Another topic (`weather-stations`) contains just the master data about the weather stations themselves (id and name).
+Another topic (`weather-stations`) contains just the main data about the weather stations themselves (id and name).
 
 A second component (`aggregator`) reads from the two Kafka topics and processes them in a streaming pipeline:
 
@@ -82,12 +82,13 @@ The solution is located in the `kafka-streams-quickstart` {quickstarts-tree-url}
 First, we need a new project with the temperature value producer.
 Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-producer \
     -Dextensions="kafka" \
+    -DnoExamples \
     && mv kafka-streams-quickstart-producer producer
 ----
 
@@ -98,7 +99,7 @@ to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="kafka"
+./mvnw quarkus:add-extension -Dextensions="quarkus-smallrye-reactive-messaging-kafka"
 ----
 
 This will add the following to your `pom.xml`:
@@ -122,21 +123,19 @@ package org.acme.kafka.streams.producer.generator;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import io.smallrye.mutiny.Multi;
+import io.smallrye.reactive.messaging.kafka.Record;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
-
-import io.reactivex.Flowable;
-import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 
 /**
  * A bean producing random temperature data every second.
@@ -164,12 +163,10 @@ public class ValuesGenerator {
                     new WeatherStation(9, "Marrakesh", 20)
             ));
 
-
-    @Outgoing("temperature-values")                             // <1>
-    public Flowable<KafkaRecord<Integer, String>> generate() {
-
-        return Flowable.interval(500, TimeUnit.MILLISECONDS)    // <2>
-                .onBackpressureDrop()
+    @Outgoing("temperature-values")                                        // <1>
+    public Multi<Record<Integer, String>> generate() {
+        return Multi.createFrom().ticks().every(Duration.ofMillis(500))    // <2>
+                .onOverflow().drop()
                 .map(tick -> {
                     WeatherStation station = stations.get(random.nextInt(stations.size()));
                     double temperature = BigDecimal.valueOf(random.nextGaussian() * 15 + station.averageTemperature)
@@ -177,21 +174,19 @@ public class ValuesGenerator {
                             .doubleValue();
 
                     LOG.infov("station: {0}, temperature: {1}", station.name, temperature);
-                    return KafkaRecord.of(station.id, Instant.now() + ";" + temperature);
+                    return Record.of(station.id, Instant.now() + ";" + temperature);
                 });
     }
 
-    @Outgoing("weather-stations")                               // <3>
-    public Flowable<KafkaRecord<Integer, String>> weatherStations() {
-        List<KafkaRecord<Integer, String>> stationsAsJson = stations.stream()
-            .map(s -> KafkaRecord.of(
+    @Outgoing("weather-stations")                                          // <3>
+    public Multi<Record<Integer, String>> weatherStations() {
+        return Multi.createFrom().items(stations.stream()
+            .map(s -> Record.of(
                     s.id,
                     "{ \"id\" : " + s.id +
                     ", \"name\" : \"" + s.name + "\" }"))
-            .collect(Collectors.toList());
-
-        return Flowable.fromIterable(stationsAsJson);
-    };
+        );
+    }
 
     private static class WeatherStation {
 
@@ -207,9 +202,9 @@ public class ValuesGenerator {
     }
 }
 ----
-<1> Instruct Reactive Messaging to dispatch the items from the returned `Flowable` to `temperature-values`.
-<2> The method returns a RX Java 2 _stream_ (`Flowable`) emitting a random temperature value every 0.5 seconds.
-<3> Instruct Reactive Messaging to dispatch the items from the returned `Flowable` (static list of weather stations) to `weather-stations`.
+<1> Instruct Reactive Messaging to dispatch the items from the returned `Multi` to `temperature-values`.
+<2> The method returns a Mutiny _stream_ (`Multi`) emitting a random temperature value every 0.5 seconds.
+<3> Instruct Reactive Messaging to dispatch the items from the returned `Multi` (static list of weather stations) to `weather-stations`.
 
 The two methods each return a _reactive stream_ whose items are sent to the streams named `temperature-values` and `weather-stations`, respectively.
 
@@ -218,7 +213,7 @@ The two methods each return a _reactive stream_ whose items are sent to the stre
 The two channels are mapped to Kafka topics using the Quarkus configuration file `application.properties`.
 For that, add the following to the file `producer/src/main/resources/application.properties`:
 
-[source]
+[source,properties]
 ----
 # Configure the Kafka broker location
 kafka.bootstrap.servers=localhost:9092
@@ -241,16 +236,17 @@ With the producer application in place, it's time to implement the actual aggreg
 which will run the Kafka Streams pipeline.
 Create another project like so:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-aggregator \
-    -Dextensions="kafka-streams,resteasy-jsonb" \
+    -Dextensions="resteasy,kafka-streams,resteasy-jackson" \
+    -DnoExamples \
     && mv kafka-streams-quickstart-aggregator aggregator
 ----
 
-This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for JSON-B.
+This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for Jackson.
 
 If you already have your Quarkus project configured, you can add the `kafka-streams` extension
 to your project by running the following command in your project base directory:
@@ -385,7 +381,7 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
 import org.apache.kafka.streams.state.Stores;
 
-import io.quarkus.kafka.client.serialization.JsonbSerde;
+import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
 
 @ApplicationScoped
 public class TopologyProducer {
@@ -400,9 +396,9 @@ public class TopologyProducer {
     public Topology buildTopology() {
         StreamsBuilder builder = new StreamsBuilder();
 
-        JsonbSerde<WeatherStation> weatherStationSerde = new JsonbSerde<>(
+        ObjectMapperSerde<WeatherStation> weatherStationSerde = new ObjectMapperSerde<>(
                 WeatherStation.class);
-        JsonbSerde<Aggregation> aggregationSerde = new JsonbSerde<>(Aggregation.class);
+        ObjectMapperSerde<Aggregation> aggregationSerde = new ObjectMapperSerde<>(Aggregation.class);
 
         KeyValueBytesStoreSupplier storeSupplier = Stores.persistentKeyValueStore(
                 WEATHER_STATIONS_STORE);
@@ -472,6 +468,8 @@ e.g. via environment variables or system properties.
 `topics` is specific to Quarkus: the application will wait for all the given topics to exist before launching the Kafka Streams engine.
 This is to done to gracefully await the creation of topics that don't yet exist at application startup time.
 
+TIP: Alternatively, you can use `kafka.bootstrap.servers` instead of `quarkus.kafka-streams.bootstrap-servers` as you did in the _generator_ project above.
+
 All the properties within the `kafka-streams` namespace are passed through as-is to the Kafka Streams engine.
 Changing their values requires a rebuild of the application.
 
@@ -479,7 +477,7 @@ Changing their values requires a rebuild of the application.
 
 We now can build the `producer` and `aggregator` applications:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -f producer/pom.xml
 ./mvnw clean package -f aggregator/pom.xml
@@ -500,7 +498,7 @@ version: '3.5'
 
 services:
   zookeeper:
-    image: strimzi/kafka:0.11.3-kafka-2.1.0
+    image: strimzi/kafka:0.19.0-kafka-2.5.0
     command: [
       "sh", "-c",
       "bin/zookeeper-server-start.sh config/zookeeper.properties"
@@ -512,7 +510,7 @@ services:
     networks:
       - kafkastreams-network
   kafka:
-    image: strimzi/kafka:0.11.3-kafka-2.1.0
+    image: strimzi/kafka:0.19.0-kafka-2.5.0
     command: [
       "sh", "-c",
       "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT} --override num.partitions=$${KAFKA_NUM_PARTITIONS}"
@@ -558,19 +556,21 @@ networks:
 To launch all the containers, building the `producer` and `aggregator` container images,
 run `docker-compose up --build`.
 
+TIP: Instead of `QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS`, you can use `KAFKA_BOOTSTRAP_SERVERS`.
+
 You should see log statements from the `producer` application about messages being sent to the "temperature-values" topic.
 
 Now run an instance of the _debezium/tooling_ image, attaching to the same network all the other containers run in.
 This image provides several useful tools such as _kafkacat_ and _httpie_:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
-docker run --tty --rm -i --network ks debezium/tooling:1.0
+docker run --tty --rm -i --network ks debezium/tooling:1.1
 ----
 
 Within the tooling container, run _kafkacat_ to examine the results of the streaming pipeline:
 
-[source, subs=attributes+]
+[source,subs=attributes+]
 ----
 kafkacat -b kafka:9092 -C -o beginning -q -t temperatures-aggregated
 
@@ -731,11 +731,9 @@ import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -752,8 +750,6 @@ public class WeatherStationEndpoint {
 
     @GET
     @Path("/data/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public Response getWeatherStationData(@PathParam("id") int id) {
         GetWeatherStationDataResult result = interactiveQueries.getWeatherStationData(id);
 
@@ -771,7 +767,7 @@ public class WeatherStationEndpoint {
 
 With this code in place, it's time to rebuild the application and the `aggregator` service in Docker Compose:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -f aggregator/pom.xml
 docker-compose stop aggregator
@@ -1021,7 +1017,7 @@ public class WeatherStationEndpoint {
 Now stop the `aggregator` service again and rebuild it.
 Then let's spin up three instances of it:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -f aggregator/pom.xml
 docker-compose stop aggregator
@@ -1078,7 +1074,8 @@ http 2af13fe516a9:8080/weather-stations/data/1
 
 If that node holds the data for key "1", you'll get a response like this:
 
-```
+[source]
+----
 HTTP/1.1 200 OK
 Connection: keep-alive
 Content-Length: 74
@@ -1093,23 +1090,25 @@ Date: Tue, 11 Jun 2019 19:16:31 GMT
   "stationId": 1,
   "stationName": "Hamburg"
 }
-```
+----
 
 Otherwise, the service will send a redirect:
 
-```
+[source]
+----
 HTTP/1.1 303 See Other
 Connection: keep-alive
 Content-Length: 0
 Date: Tue, 18 Jun 2019 20:01:03 GMT
 Location: http://1eb39af8d587:8080/weather-stations/data/1
-```
+----
 
 You can also have _httpie_ automatically follow the redirect by passing the `--follow option`:
 
-```bash
+[source,bash]
+----
 http --follow 2af13fe516a9:8080/weather-stations/data/1
-```
+----
 
 == Running Natively
 
@@ -1119,7 +1118,7 @@ natively via GraalVM without further configuration.
 To run both the `producer` and `aggregator` applications in native mode,
 the Maven builds can be executed using the `native` profile:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw clean package -f producer/pom.xml -Pnative -Dnative-image.container-runtime=docker
 ./mvnw clean package -f aggregator/pom.xml -Pnative -Dnative-image.container-runtime=docker
@@ -1127,7 +1126,7 @@ the Maven builds can be executed using the `native` profile:
 
 Now create an environment variable named `QUARKUS_MODE` and with value set to "native":
 
-[source, shell]
+[source,bash]
 ----
 export QUARKUS_MODE=native
 ----
@@ -1136,7 +1135,7 @@ This is used by the Docker Compose file to use the correct `Dockerfile` when bui
 The Kafka Streams application can work with less than 50 MB RSS in native mode.
 To do so, add the `Xmx` option to the program invocation in `aggregator/src/main/docker/Dockerfile.native`:
 
-[source, shell]
+[source,dockerfile]
 ----
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Xmx32m"]
 ----
@@ -1151,12 +1150,12 @@ If you are using the `quarkus-smallrye-health` extension, `quarkus-kafka-streams
 * a readiness health check to validate that all topics declared in the `quarkus.kafka-streams.topics` property are created,
 * a liveness health check based on the Kafka Streams state.
 
-So when you access the `/health` endpoint of your application you will have information about the state of the Kafka Streams and the available and/or missing topics.
+So when you access the `/q/health` endpoint of your application you will have information about the state of the Kafka Streams and the available and/or missing topics.
 
 This is an example of when the status is `DOWN`:
 [source, subs=attributes+]
 ----
-curl -i http://aggregator:8080/health
+curl -i http://aggregator:8080/q/health
 
 HTTP/1.1 503 Service Unavailable
 content-type: application/json; charset=UTF-8
@@ -1183,8 +1182,8 @@ content-length: 454
     ]
 }
 ----
-<1> Liveness health check. Also available at `/health/live` endpoint.
-<2> Readiness health check. Also available at `/health/ready` endpoint.
+<1> Liveness health check. Also available at `/q/health/live` endpoint.
+<2> Readiness health check. Also available at `/q/health/ready` endpoint.
 
 So as you can see, the status is `DOWN` as soon as one of the `quarkus.kafka-streams.topics` is missing or the Kafka Streams `state` is not `RUNNING`.
 
@@ -1193,13 +1192,15 @@ As well as if no topics are missing, the `missing_topics` key will not be presen
 
 You can of course disable the health check of the `quarkus-kafka-streams` extension by setting the `quarkus.kafka-streams.health.enabled` property to `false` in your `application.properties`.
 
-Obviously you can create your liveness and readiness probes based on the respective endpoints `/health/live` and `/health/ready`.
+Obviously you can create your liveness and readiness probes based on the respective endpoints `/q/health/live` and `/q/health/ready`.
 
 === Liveness health check
 
 Here is an example of the liveness check:
-```
-curl -i http://aggregator:8080/health/live
+
+[source]
+----
+curl -i http://aggregator:8080/q/health/live
 
 HTTP/1.1 503 Service Unavailable
 content-type: application/json; charset=UTF-8
@@ -1217,14 +1218,16 @@ content-length: 225
         }
     ]
 }
-```
+----
 The `state` is coming from the `KafkaStreams.State` enum.
 
 === Readiness health check
 
 Here is an example of the readiness check:
-```
-curl -i http://aggregator:8080/health/ready
+
+[source]
+----
+curl -i http://aggregator:8080/q/health/ready
 
 HTTP/1.1 503 Service Unavailable
 content-type: application/json; charset=UTF-8
@@ -1242,15 +1245,14 @@ content-length: 265
         }
     ]
 }
-
-```
+----
 
 == Going Further
 
 This guide has shown how you can build stream processing applications using Quarkus and the Kafka Streams APIs,
 both in JVM and native modes.
 For running your KStreams application in production, you could also add health checks and metrics for the data pipeline.
-Refer to the Quarkus guides on link:microprofile-metrics[metrics] and link:microprofile-health[health checks] to learn more.
+Refer to the Quarkus guides on link:micrometer[Micrometer], link:smallrye-metrics[SmallRye Metrics], and link:smallrye-health[SmallRye Health] to learn more.
 
 == Configuration Reference
 

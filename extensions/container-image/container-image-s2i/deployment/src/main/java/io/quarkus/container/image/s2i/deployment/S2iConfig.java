@@ -30,14 +30,14 @@ public class S2iConfig {
     /**
      * Additional JVM arguments to pass to the JVM when starting the application
      */
-    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
+    @ConfigItem(defaultValue = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
 
     /**
      * Additional arguments to pass when starting the native application
      */
-    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0")
-    public List<String> nativeArguments;
+    @ConfigItem
+    public Optional<List<String>> nativeArguments;
 
     /**
      * The directory where the jar is added during the assemble phase.
@@ -80,6 +80,15 @@ public class S2iConfig {
      */
     public boolean hasDefaultBaseJvmImage() {
         return baseJvmImage.equals(DEFAULT_BASE_JVM_IMAGE);
+    }
+
+    /**
+     * Check if baseNativeImage is the default
+     *
+     * @returns true if baseNativeImage is the default
+     */
+    public boolean hasDefaultBaseNativeImage() {
+        return baseNativeImage.equals(DEFAULT_BASE_NATIVE_IMAGE);
     }
 
 }

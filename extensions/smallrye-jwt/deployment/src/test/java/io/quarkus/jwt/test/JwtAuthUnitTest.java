@@ -21,7 +21,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 public class JwtAuthUnitTest {
-    private static Class[] testClasses = {
+    private static Class<?>[] testClasses = {
             JsonValuejectionEndpoint.class,
             TokenUtils.class
     };
@@ -30,9 +30,7 @@ public class JwtAuthUnitTest {
      */
     private String token;
     // Time claims in the token
-    private Long iatClaim;
     private Long authTimeClaim;
-    private Long expClaim;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -47,9 +45,7 @@ public class JwtAuthUnitTest {
     public void generateToken() throws Exception {
         HashMap<String, Long> timeClaims = new HashMap<>();
         token = TokenUtils.generateTokenString("/Token1.json", null, timeClaims);
-        iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
-        expClaim = timeClaims.get(Claims.exp.name());
     }
 
     // Basic @ServletSecurity tests

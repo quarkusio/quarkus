@@ -44,9 +44,6 @@ public class SyncRouteTest {
         when().get("hello-buffer-sync").then().statusCode(200).body(is("Sync Buffer"))
                 .header("content-type", is(nullValue()));
 
-        when().get("hello-buffer-rx-sync").then().statusCode(200).body(is("Sync RX Buffer"))
-                .header("content-type", is(nullValue()));
-
         when().get("hello-buffer-mutiny-sync").then().statusCode(200).body(is("Sync Mutiny Buffer"))
                 .header("content-type", is(nullValue()));
 
@@ -90,11 +87,6 @@ public class SyncRouteTest {
         @Route(path = "hello-buffer-sync")
         Buffer helloBufferSync(RoutingContext context) {
             return Buffer.buffer("Sync Buffer");
-        }
-
-        @Route(path = "hello-buffer-rx-sync")
-        io.vertx.reactivex.core.buffer.Buffer helloRxBufferSync() {
-            return io.vertx.reactivex.core.buffer.Buffer.buffer("Sync RX Buffer");
         }
 
         @Route(path = "hello-buffer-mutiny-sync")

@@ -7,11 +7,10 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -79,14 +78,16 @@ public class MethodNameParser {
 
     public Result parse(MethodInfo methodInfo) {
         String methodName = methodInfo.name();
+        ClassInfo repositoryClassInfo = methodInfo.declaringClass();
+        String repositoryMethodDescription = methodName + " of Repository " + repositoryClassInfo;
         QueryType queryType = getType(methodName);
         if (queryType == null) {
-            throw new UnableToParseMethodException("Repository method " + methodName + " cannot be parsed");
+            throw new UnableToParseMethodException("Method " + repositoryMethodDescription + " cannot be parsed");
         }
 
         int byIndex = methodName.indexOf("By");
         if ((byIndex == -1) || (byIndex + 2 >= methodName.length())) {
-            throw new UnableToParseMethodException("Repository method " + methodName + " cannot be parsed");
+            throw new UnableToParseMethodException("Method " + repositoryMethodDescription + " cannot be parsed");
         }
 
         // handle 'Top' and 'First'
@@ -104,17 +105,19 @@ public class MethodNameParser {
                 }
             } catch (Exception e) {
                 throw new UnableToParseMethodException(
-                        "Unable to parse query with limiting results clause. Offending method is " + methodName);
+                        "Unable to parse query with limiting results clause. Offending method is "
+                                + repositoryMethodDescription + ".");
             }
         }
         if ((topCount != null) && (queryType != QueryType.SELECT)) {
             throw new UnableToParseMethodException(
-                    "When 'Top' or 'First' is specified, the query must be a find query. Offending method is " + methodName);
+                    "When 'Top' or 'First' is specified, the query must be a find query. Offending method is "
+                            + repositoryMethodDescription + ".");
         }
 
         if (methodName.substring(0, byIndex).contains("Distinct")) {
             throw new UnableToParseMethodException(
-                    "Distinct is not yet supported. Offending method is " + methodName);
+                    "Distinct is not yet supported. Offending method is " + repositoryMethodDescription + ".");
         }
 
         // handle 'AllIgnoreCase'
@@ -131,7 +134,7 @@ public class MethodNameParser {
             int orderByIndex = afterByPart.indexOf(ORDER_BY);
             if (orderByIndex + ORDER_BY.length() == afterByPart.length()) {
                 throw new UnableToParseMethodException(
-                        "A field must by supplied after 'OrderBy' . Offending method is " + methodName);
+                        "A field must by supplied after 'OrderBy' . Offending method is " + repositoryMethodDescription + ".");
             }
             String afterOrderByPart = afterByPart.substring(orderByIndex + ORDER_BY.length());
             afterByPart = afterByPart.substring(0, orderByIndex);
@@ -148,7 +151,7 @@ public class MethodNameParser {
                 throw new UnableToParseMethodException(
                         "Field " + orderField
                                 + " which was configured as the order field does not exist in the entity. Offending method is "
-                                + methodName);
+                                + repositoryMethodDescription + ".");
             }
 
             if (ascending) {
@@ -164,7 +167,7 @@ public class MethodNameParser {
         if (containsAnd && containsOr) {
             throw new UnableToParseMethodException(
                     "'And' and 'Or' clauses cannot be mixed in a method name - Try specifying the Query with the @Query annotation. Offending method is "
-                            + methodName);
+                            + repositoryMethodDescription + ".");
         }
         if (containsAnd) {
             parts = Arrays.asList(afterByPart.split("And"));
@@ -172,6 +175,7 @@ public class MethodNameParser {
             parts = Arrays.asList(afterByPart.split("Or"));
         }
 
+        MutableReference<List<ClassInfo>> mappedSuperClassInfoRef = MutableReference.of(mappedSuperClassInfos);
         StringBuilder where = new StringBuilder();
         int paramsCount = 0;
         for (String part : parts) {
@@ -192,61 +196,17 @@ public class MethodNameParser {
             } else {
                 fieldName = lowerFirstLetter(part.replaceAll(operation, ""));
             }
-            FieldInfo fieldInfo = getField(fieldName);
+            FieldInfo fieldInfo = getFieldInfo(fieldName, entityClass, mappedSuperClassInfoRef);
             if (fieldInfo == null) {
-                String parsingExceptionMethod = "Entity " + entityClass + " does not contain a field named: " + part + ". " +
-                        "Offending method is " + methodName;
-
-                // determine if we are trying to use a field of one of the associated entities
-
-                int fieldEndIndex = -1;
-                for (int i = 1; i < fieldName.length() - 1; i++) {
-                    char c = fieldName.charAt(i);
-                    if ((c >= 'A' && c <= 'Z') || c == '_') {
-                        fieldEndIndex = i;
-                        break;
-                    }
-                }
-
-                if (fieldEndIndex == -1) {
-                    throw new UnableToParseMethodException(parsingExceptionMethod);
-                }
-
-                int associatedEntityFieldStartIndex = fieldName.charAt(fieldEndIndex) == '_' ? fieldEndIndex + 1
-                        : fieldEndIndex;
-                if (associatedEntityFieldStartIndex >= fieldName.length() - 1) {
-                    throw new UnableToParseMethodException(parsingExceptionMethod);
-                }
-
-                String simpleFieldName = fieldName.substring(0, fieldEndIndex);
-                String associatedEntityFieldName = lowerFirstLetter(fieldName.substring(associatedEntityFieldStartIndex));
-                fieldInfo = getField(simpleFieldName);
-                if ((fieldInfo == null) || !(fieldInfo.type() instanceof ClassType)) {
-                    throw new UnableToParseMethodException(parsingExceptionMethod);
-                }
-
-                ClassInfo associatedEntityClassInfo = indexView.getClassByName(fieldInfo.type().name());
-                if (associatedEntityClassInfo == null) {
-                    throw new IllegalStateException(
-                            "Entity class " + fieldInfo.type().name() + " was not part of the Quarkus index");
-                }
-                FieldInfo associatedEntityClassField = getAssociatedEntityClassField(associatedEntityFieldName,
-                        associatedEntityClassInfo);
-                if (associatedEntityClassField == null) {
-                    throw new UnableToParseMethodException(parsingExceptionMethod);
-                }
-
-                validateFieldWithOperation(operation, associatedEntityClassField, methodName);
-
-                // set the fieldName to the proper JPQL expression
-                fieldName = simpleFieldName + "." + associatedEntityFieldName;
-            } else {
-                validateFieldWithOperation(operation, fieldInfo, methodName);
+                StringBuilder fieldPathBuilder = new StringBuilder(fieldName.length() + 5);
+                fieldInfo = resolveNestedField(repositoryMethodDescription, fieldName, fieldPathBuilder);
+                fieldName = fieldPathBuilder.toString();
             }
+            validateFieldWithOperation(operation, fieldInfo, fieldName, repositoryMethodDescription);
             if ((ignoreCase || allIgnoreCase) && !DotNames.STRING.equals(fieldInfo.type().name())) {
                 throw new UnableToParseMethodException(
-                        "IgnoreCase cannot be specified for field" + fieldInfo.name() + " of method "
-                                + methodName + " because it is not a String type");
+                        "IgnoreCase cannot be specified for field" + fieldInfo.name() + " because it is not a String type. "
+                                + "Offending method is " + repositoryMethodDescription + ".");
             }
 
             if (where.length() > 0) {
@@ -255,12 +215,6 @@ public class MethodNameParser {
 
             String upperPrefix = (ignoreCase || allIgnoreCase) ? "UPPER(" : "";
             String upperSuffix = (ignoreCase || allIgnoreCase) ? ")" : "";
-
-            // If the fieldName is not a field in the class and in camelcase format,
-            // then split it as hierarchy of fields
-            if (entityClass.field(fieldName) == null) {
-                fieldName = handleFieldsHierarchy(fieldName, fieldInfo);
-            }
 
             where.append(upperPrefix).append(fieldName).append(upperSuffix);
             if ((operation == null) || "Equals".equals(operation) || "Is".equals(operation)) {
@@ -375,72 +329,76 @@ public class MethodNameParser {
                 topCount);
     }
 
-    private String handleFieldsHierarchy(String fieldName, FieldInfo currentField) {
-        StringBuilder finalName = new StringBuilder(fieldName);
+    /**
+     * See:
+     * https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories.query-methods.query-property-expressions
+     */
+    private FieldInfo resolveNestedField(String repositoryMethodDescription, String fieldPathExpression,
+            StringBuilder fieldPathBuilder) {
 
-        Set<String> childFields = new HashSet<>();
+        String fieldNotResolvableMessage = "Entity " + this.entityClass + " does not contain a field named: "
+                + fieldPathExpression + ". ";
+        String offendingMethodMessage = "Offending method is " + repositoryMethodDescription + ".";
 
-        childFields.addAll(entityClass.fields().stream()
-                .map(FieldInfo::name)
-                .collect(Collectors.toList()));
+        ClassInfo parentClassInfo = this.entityClass;
+        FieldInfo fieldInfo = null;
 
-        // Collecting the current class fields
-        ClassInfo currentClassInfo = indexView.getClassByName(currentField.type().name());
-
-        if (currentClassInfo != null) {
-            childFields.addAll(
-                    currentClassInfo.fields()
-                            .stream()
-                            .map(FieldInfo::name)
-                            .collect(Collectors.toList()));
+        int fieldStartIndex = 0;
+        while (fieldStartIndex < fieldPathExpression.length()) {
+            if (fieldPathExpression.charAt(fieldStartIndex) == '_') {
+                fieldStartIndex++;
+                if (fieldStartIndex >= fieldPathExpression.length()) {
+                    throw new UnableToParseMethodException(fieldNotResolvableMessage + offendingMethodMessage);
+                }
+            }
+            MutableReference<List<ClassInfo>> parentSuperClassInfos = new MutableReference<>();
+            // the underscore character is treated as reserved character to manually define traversal points.
+            int firstSeparator = fieldPathExpression.indexOf('_', fieldStartIndex);
+            int fieldEndIndex = firstSeparator == -1 ? fieldPathExpression.length() : firstSeparator;
+            while (fieldEndIndex >= fieldStartIndex) {
+                String simpleFieldName = lowerFirstLetter(fieldPathExpression.substring(fieldStartIndex, fieldEndIndex));
+                fieldInfo = getFieldInfo(simpleFieldName, parentClassInfo, parentSuperClassInfos);
+                if (fieldInfo != null) {
+                    break;
+                }
+                fieldEndIndex = previousPotentialFieldEnd(fieldPathExpression, fieldStartIndex, fieldEndIndex);
+            }
+            if (fieldInfo == null) {
+                String detail = "";
+                if (fieldStartIndex > 0) {
+                    String notMatched = lowerFirstLetter(fieldPathExpression.substring(fieldStartIndex));
+                    detail = "Can not resolve " + parentClassInfo + "." + notMatched + ". ";
+                }
+                throw new UnableToParseMethodException(
+                        fieldNotResolvableMessage + detail + offendingMethodMessage);
+            }
+            if (fieldPathBuilder.length() > 0) {
+                fieldPathBuilder.append('.');
+            }
+            fieldPathBuilder.append(fieldInfo.name());
+            if (!isHibernateProvidedBasicType(fieldInfo.type().name())) {
+                parentClassInfo = indexView.getClassByName(fieldInfo.type().name());
+                if (parentClassInfo == null) {
+                    throw new IllegalStateException(
+                            "Entity class " + fieldInfo.type().name() + " referenced by "
+                                    + this.entityClass + "." + fieldPathBuilder
+                                    + " was not part of the Quarkus index. " + offendingMethodMessage);
+                }
+            }
+            fieldStartIndex = fieldEndIndex;
         }
 
-        // Collecting the inherited fields from the superclass of the actual class
-        DotName superClassName = entityClass.superClassType().name();
-        ClassInfo superClassInfo = indexView.getClassByName(superClassName);
+        return fieldInfo;
+    }
 
-        ClassInfo classByName;
-
-        if (superClassName != null && superClassInfo != null && currentClassInfo != null &&
-                currentClassInfo.superClassType() != null &&
-                (classByName = indexView.getClassByName(currentClassInfo.superClassType().name())) != null) {
-
-            childFields.addAll(superClassInfo.fields()
-                    .stream()
-                    .map(FieldInfo::name).collect(Collectors.toList()));
-
-            childFields.addAll(classByName.fields()
-                    .stream()
-                    .map(FieldInfo::name).collect(Collectors.toList()));
-        }
-
-        // Collecting the inherited fields from the superclasses of the attributes
-        if (currentClassInfo != null && currentClassInfo.superClassType() != null
-                && (classByName = indexView.getClassByName(currentClassInfo.superClassType().name())) != null) {
-
-            childFields.addAll(
-                    classByName.fields()
-                            .stream()
-                            .map(FieldInfo::name).collect(Collectors.toList()));
-        }
-
-        // Building the fieldName from the members classes and their superclasses
-        for (String fieldInf : childFields) {
-            if (StringUtils.containsIgnoreCase(fieldName, fieldInf)) {
-                String newValue = finalName.toString()
-                        .replaceAll("(?i)" + fieldInf, lowerFirstLetter(fieldInf) + ".");
-                finalName.delete(0, finalName.length());
-                finalName.append(newValue);
+    private int previousPotentialFieldEnd(String fieldName, int fieldStartIndex, int fieldEndIndexExclusive) {
+        for (int i = fieldEndIndexExclusive - 1; i > fieldStartIndex; i--) {
+            char c = fieldName.charAt(i);
+            if (c >= 'A' && c <= 'Z') {
+                return i;
             }
         }
-
-        // In some cases, the built hierarchy is ending by a joining point. so we need to remove it
-        if (finalName.toString().charAt(finalName.length() - 1) == '.') {
-            fieldName = finalName.toString().replaceAll(".$", "");
-        } else {
-            fieldName = finalName.toString();
-        }
-        return fieldName;
+        return -1;
     }
 
     /**
@@ -461,39 +419,20 @@ public class MethodNameParser {
         return Character.isUpperCase(str.charAt(index + operatorStr.length()));
     }
 
-    /**
-     * Looks for the field in either the class itself or in a superclass that is annotated with @MappedSuperClass
-     */
-    private FieldInfo getAssociatedEntityClassField(String associatedEntityFieldName, ClassInfo associatedEntityClassInfo) {
-        FieldInfo fieldInfo = associatedEntityClassInfo.field(associatedEntityFieldName);
-        if (fieldInfo != null) {
-            return fieldInfo;
-        }
-        if (DotNames.OBJECT.equals(associatedEntityClassInfo.superName())) {
-            return null;
-        }
-
-        ClassInfo superClassInfo = indexView.getClassByName(associatedEntityClassInfo.superName());
-        if (superClassInfo.classAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) == null) {
-            return null;
-        }
-
-        return getAssociatedEntityClassField(associatedEntityFieldName, superClassInfo);
-    }
-
-    private void validateFieldWithOperation(String operation, FieldInfo fieldInfo, String methodName) {
+    private void validateFieldWithOperation(String operation, FieldInfo fieldInfo, String fieldPath,
+            String repositoryMethodDescription) {
         DotName fieldTypeDotName = fieldInfo.type().name();
         if (STRING_LIKE_OPERATIONS.contains(operation) && !DotNames.STRING.equals(fieldTypeDotName)) {
             throw new UnableToParseMethodException(
-                    operation + " cannot be specified for field" + fieldInfo.name() + " of method "
-                            + methodName + " because it is not a String type");
+                    operation + " cannot be specified for field" + fieldPath + " because it is not a String type. "
+                            + "Offending method is " + repositoryMethodDescription + ".");
         }
 
         if (BOOLEAN_OPERATIONS.contains(operation) && !DotNames.BOOLEAN.equals(fieldTypeDotName)
                 && !DotNames.PRIMITIVE_BOOLEAN.equals(fieldTypeDotName)) {
             throw new UnableToParseMethodException(
-                    operation + " cannot be specified for field" + fieldInfo.name() + " of method "
-                            + methodName + " because it is not a boolean type");
+                    operation + " cannot be specified for field" + fieldPath + " because it is not a boolean type. "
+                            + "Offending method is " + repositoryMethodDescription + ".");
         }
     }
 
@@ -546,7 +485,11 @@ public class MethodNameParser {
     }
 
     private String getEntityName() {
-        // TODO: not true?
+        AnnotationInstance annotationInstance = entityClass.classAnnotation(DotNames.JPA_ENTITY);
+        if (annotationInstance != null && annotationInstance.value("name") != null) {
+            AnnotationValue annotationValue = annotationInstance.value("name");
+            return annotationValue.asString().length() > 0 ? annotationValue.asString() : entityClass.simpleName();
+        }
         return entityClass.simpleName();
     }
 
@@ -564,16 +507,14 @@ public class MethodNameParser {
         return false;
     }
 
-    private FieldInfo getField(String fieldName) {
-        // Before validating the fieldInfo,
-        // we need to split the camelcase format and grab the first item
+    private FieldInfo getFieldInfo(String fieldName, ClassInfo entityClass,
+            MutableReference<List<ClassInfo>> mappedSuperClassInfos) {
         FieldInfo fieldInfo = entityClass.field(fieldName);
         if (fieldInfo == null) {
-            String[] camelCaseStrings = StringUtils.splitByCharacterTypeCamelCase(fieldName);
-            fieldInfo = entityClass.field(camelCaseStrings[0]);
-        }
-        if (fieldInfo == null) {
-            for (ClassInfo superClass : mappedSuperClassInfos) {
+            if (mappedSuperClassInfos.isEmpty()) {
+                mappedSuperClassInfos.set(getMappedSuperClassInfos(indexView, entityClass));
+            }
+            for (ClassInfo superClass : mappedSuperClassInfos.get()) {
                 fieldInfo = superClass.field(fieldName);
                 if (fieldInfo != null) {
                     break;
@@ -587,19 +528,50 @@ public class MethodNameParser {
         List<ClassInfo> mappedSuperClassInfoElements = new ArrayList<>(3);
         Type superClassType = entityClass.superClassType();
         while (superClassType != null && !superClassType.name().equals(DotNames.OBJECT)) {
-            ClassInfo superClass = indexView.getClassByName(entityClass.superName());
+            ClassInfo superClass = indexView.getClassByName(superClassType.name());
             if (superClass.classAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) != null) {
                 mappedSuperClassInfoElements.add(superClass);
             }
 
             if (superClassType.kind() == Kind.CLASS) {
-                superClassType = indexView.getClassByName(superClassType.name()).superClassType();
+                superClassType = superClass.superClassType();
             } else if (superClassType.kind() == Kind.PARAMETERIZED_TYPE) {
                 ParameterizedType parameterizedType = superClassType.asParameterizedType();
                 superClassType = parameterizedType.owner();
             }
         }
         return mappedSuperClassInfoElements;
+    }
+
+    private boolean isHibernateProvidedBasicType(DotName dotName) {
+        return DotNames.HIBERNATE_PROVIDED_BASIC_TYPES.contains(dotName);
+    }
+
+    private static class MutableReference<T> {
+        private T reference;
+
+        public static <T> MutableReference<T> of(T reference) {
+            return new MutableReference<>(reference);
+        }
+
+        public MutableReference() {
+        }
+
+        private MutableReference(T reference) {
+            this.reference = reference;
+        }
+
+        public T get() {
+            return reference;
+        }
+
+        public void set(T value) {
+            this.reference = value;
+        }
+
+        public boolean isEmpty() {
+            return reference == null;
+        }
     }
 
     public static class Result {

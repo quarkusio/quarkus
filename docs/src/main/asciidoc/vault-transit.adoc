@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using HashiCorp Vault's Transit Secret Engine
 
@@ -50,7 +50,7 @@ To complete this guide, you need:
 We assume there is a Vault running from the {base-guide}, and the root token is known.
 The first step consists in activating the Transit Secret Engine, and creating the different keys:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 docker exec -it dev-vault sh
 export VAULT_TOKEN={root-token}
@@ -70,7 +70,7 @@ keep it secured.
 
 Once the keys have been created, we now need to create a policy that provides access for it:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 cat <<EOF | vault policy write vault-transit-quickstart-policy -
 path "transit/encrypt/my-encryption-key" {
@@ -91,21 +91,21 @@ EOF
 
 And finally, let's add the `vault-transit-quickstart-policy` to user `bob` that was created in the {base-guide}:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 vault write auth/userpass/users/bob password=sinclair policies=vault-quickstart-policy,vault-transit-quickstart-policy
 ----
 
 To check that the configuration is correct, try logging in:
 
-[source, shell]
+[source,bash]
 ----
 vault login -method=userpass username=bob password=sinclair
 ----
 
 You should see:
 
-[source, shell, subs=attributes+]
+[source,text, subs=attributes+]
 ----
 Success! You are now authenticated. The token information displayed below
 is already stored in the token helper. You do NOT need to run "vault login"
@@ -125,7 +125,7 @@ token_meta_username    bob
 
 Now set `VAULT_TOKEN` to the `token` above (instead of the root token), and try encrypting some data:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 export VAULT_TOKEN={client-token}
 # note: "my secret data" in base64 is "bXkgc2VjcmV0IGRhdGEK"
@@ -133,7 +133,7 @@ vault write transit/encrypt/my-encryption-key plaintext=bXkgc2VjcmV0IGRhdGEK
 ----
 
 You should see:
-[source, shell, subs=attributes+]
+[source,text, subs=attributes+]
 ----
 Key           Value
 ---           -----
@@ -142,16 +142,16 @@ ciphertext    vault:v1:vIQxsLANFbcfKofJL55zjoIXV6MqAzvjKUUQLGg5pWTz0W2Qab/B4nEJa
 
 == Encrypt and Decrypt
 
-First, let's create a simple Quarkus application with vault and jsonb capabilities:
+First, let's create a simple Quarkus application with Vault and Jackson extensions:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vault-transit-quickstart \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="vault,resteasy-jsonb"
+    -Dextensions="resteasy,vault,resteasy-jackson"
 cd vault-transit-quickstart
 ----
 
@@ -198,14 +198,14 @@ public class TransitResource {
 ----
 
 After compiling and starting the Quarkus application, let's encrypt some data:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 curl -X POST --data 'some secret data' --header "Content-Type: text/plain"  http://localhost:8080/transit/encrypt
 # ==> vault:v1:fN4P7WNjIegpb3lD/pSuhXvyONhGrI21gcKNcedk+5jpjguOw6JkqXYXlkY=
 ----
 
 And decrypt back this cipher text:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 curl -X POST --data 'vault:v1:fN4P7WNjIegpb3lD/pSuhXvyONhGrI21gcKNcedk+5jpjguOw6JkqXYXlkY=' --header "Content-Type: text/plain"  http://localhost:8080/transit/decrypt
 # ==> some secret data
@@ -238,14 +238,14 @@ public Response verify(VerifyRequest request) {
 ----
 
 And start signing some data:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 curl -X POST --data 'some secret data' --header "Content-Type: text/plain"  http://localhost:8080/transit/sign
 # ==> vault:v1:MEUCIQDl+nE4y4E878bkugGG6FG1/RsttaQnoWfZHppeuk4TnQIgTGWTtMhVPCzN8VH/EEr2qp5h34lI1bnEP6L1F+QQoPI=
 ----
 
 And finally, let's make sure the signature is matching our input data:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 curl -v -X POST --data '{"input":"some secret data","signature":"vault:v1:MEUCIQDl+nE4y4E878bkugGG6FG1/RsttaQnoWfZHppeuk4TnQIgTGWTtMhVPCzN8VH/EEr2qp5h34lI1bnEP6L1F+QQoPI="}' --header "Content-Type: application/json" http://localhost:8080/transit/verify
 # ==> ... < HTTP/1.1 202 Accepted

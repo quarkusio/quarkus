@@ -20,19 +20,6 @@ public class GreetingVertx {
         context.response().setStatusCode(200).end("hello " + name);
     }
 
-    @Route(path = "/vertx/rx/hello", methods = GET)
-    void rxHelloGet(io.vertx.reactivex.ext.web.RoutingContext context) {
-        context.response().headers().set("Content-Type", "text/plain");
-        context.response().setStatusCode(200).end("hello");
-    }
-
-    @Route(path = "/vertx/rx/hello", methods = POST)
-    void rxHelloPost(io.vertx.reactivex.ext.web.RoutingContext context) {
-        String name = context.getBodyAsString();
-        context.response().headers().set("Content-Type", "text/plain");
-        context.response().setStatusCode(200).end("hello " + name);
-    }
-
     @Route(path = "/vertx/exchange/hello", methods = GET)
     void exchange(RoutingExchange exchange) {
         exchange.response().headers().set("Content-Type", "text/plain");

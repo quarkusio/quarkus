@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import javax.enterprise.context.Dependent;
@@ -77,10 +76,9 @@ import io.quarkus.smallrye.metrics.deployment.spi.MetricsConfigurationBuildItem;
 import io.quarkus.smallrye.metrics.runtime.MetadataHolder;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
 import io.quarkus.smallrye.metrics.runtime.TagHolder;
-import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.MetricsRequestHandler;
@@ -93,11 +91,9 @@ import io.smallrye.metrics.interceptors.MetricsBinding;
 import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.SimplyTimedInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
-import io.vertx.ext.web.Route;
-import io.vertx.ext.web.Router;
 
 public class SmallRyeMetricsProcessor {
-    private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsProcessor");
+    static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsProcessor");
 
     @ConfigRoot(name = "smallrye-metrics")
     static final class SmallRyeMetricsConfig {
@@ -105,7 +101,7 @@ public class SmallRyeMetricsProcessor {
         /**
          * The path to the metrics handler.
          */
-        @ConfigItem(defaultValue = "/metrics")
+        @ConfigItem(defaultValue = "metrics")
         String path;
 
         /**
@@ -123,6 +119,15 @@ public class SmallRyeMetricsProcessor {
         @ConfigItem(name = "micrometer.compatibility")
         public boolean micrometerCompatibility;
 
+        /**
+         * Whether or not detailed JAX-RS metrics should be enabled.
+         * <p>
+         * See <a href=
+         * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile
+         * Metrics: Optional REST metrics</a>.
+         */
+        @ConfigItem(name = "jaxrs.enabled", defaultValue = "false")
+        public boolean jaxrsEnabled;
     }
 
     SmallRyeMetricsConfig metrics;
@@ -133,10 +138,10 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    MetricsCapabilityBuildItem metricsCapabilityBuildItem() {
+    MetricsCapabilityBuildItem metricsCapabilityBuildItem(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         if (metrics.extensionsEnabled) {
-            return new MetricsCapabilityBuildItem(x -> MetricsFactory.MP_METRICS.equals(x),
-                    metrics.path);
+            return new MetricsCapabilityBuildItem(MetricsFactory.MP_METRICS::equals,
+                    nonApplicationRootPathBuildItem.resolvePath(metrics.path));
         }
         return null;
     }
@@ -145,18 +150,28 @@ public class SmallRyeMetricsProcessor {
     @Record(STATIC_INIT)
     void createRoute(BuildProducer<RouteBuildItem> routes,
             SmallRyeMetricsRecorder recorder,
-            HttpRootPathBuildItem httpRoot,
+            NonApplicationRootPathBuildItem frameworkRoot,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            LaunchModeBuildItem launchModeBuildItem) {
-        Function<Router, Route> route = recorder.route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
-        Function<Router, Route> slash = recorder.route(metrics.path);
+            LaunchModeBuildItem launchModeBuildItem,
+            BeanContainerBuildItem beanContainer) {
 
         // add metrics endpoint for not found display in dev or test mode
         if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(metrics.path));
         }
-        routes.produce(new RouteBuildItem(route, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
-        routes.produce(new RouteBuildItem(slash, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
+        routes.produce(frameworkRoot.routeBuilder()
+                .route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"))
+                .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path)))
+                .requiresLegacyRedirect()
+                .blockingRoute()
+                .build());
+        routes.produce(frameworkRoot.routeBuilder()
+                .route(metrics.path)
+                .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path)))
+                .displayOnNotFoundPage("Metrics")
+                .requiresLegacyRedirect()
+                .blockingRoute()
+                .build());
     }
 
     @BuildStep

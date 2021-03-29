@@ -7,11 +7,13 @@ public class FlywayContainer {
     private final Flyway flyway;
     private final boolean cleanAtStart;
     private final boolean migrateAtStart;
+    private final String dataSourceName;
 
-    public FlywayContainer(Flyway flyway, boolean cleanAtStart, boolean migrateAtStart) {
+    public FlywayContainer(Flyway flyway, boolean cleanAtStart, boolean migrateAtStart, String dataSourceName) {
         this.flyway = flyway;
         this.cleanAtStart = cleanAtStart;
         this.migrateAtStart = migrateAtStart;
+        this.dataSourceName = dataSourceName;
     }
 
     public Flyway getFlyway() {
@@ -24,5 +26,9 @@ public class FlywayContainer {
 
     public boolean isMigrateAtStart() {
         return migrateAtStart;
+    }
+
+    public String getDataSourceName() {
+        return dataSourceName;
     }
 }

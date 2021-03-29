@@ -11,12 +11,12 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class OpenApiWithResteasyPathTestCase {
-    private static final String OPEN_API_PATH = "/openapi";
+    private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(OpenApiResource.class)
+                    .addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsResource(new StringAsset("quarkus.resteasy.path=/foo/bar"),
                             "application.properties"));
 

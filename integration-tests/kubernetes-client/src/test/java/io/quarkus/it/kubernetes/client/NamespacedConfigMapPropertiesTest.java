@@ -10,7 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
-@QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
+@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedClass = true)
 @TestProfile(NamespacedConfigMapPropertiesTest.MyProfile.class)
 @QuarkusTest
 public class NamespacedConfigMapPropertiesTest {
@@ -40,6 +40,7 @@ public class NamespacedConfigMapPropertiesTest {
             conf.put("quarkus.kubernetes-config.config-maps", "cmap3");
             conf.put("quarkus.kubernetes-config.namespace", "demo");
             conf.put("quarkus.kubernetes-config.secrets", "s1");
+            conf.put("quarkus.kubernetes-config.secrets.enabled", "true");
             return conf;
         }
 

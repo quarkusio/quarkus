@@ -5,8 +5,6 @@ import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
@@ -21,10 +19,10 @@ import io.vertx.mutiny.sqlclient.Tuple;
 public class HibernateReactiveTestEndpoint {
 
     @Inject
-    CompletionStage<Stage.Session> stageSession;
+    Stage.Session stageSession;
 
     @Inject
-    Uni<Mutiny.Session> mutinySession;
+    Mutiny.Session mutinySession;
 
     // Injecting a Vert.x Pool is not required, it us only used to
     // independently validate the contents of the database for the test
@@ -33,121 +31,104 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactiveFind")
-    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<GuineaPig> reactiveFind() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
-        return stageSession
-                .thenCompose(session -> {
-                    return populateDB().convert().toCompletionStage()
-                            .thenCompose(junk -> session.find(GuineaPig.class, expectedPig.getId()));
-                });
+        return populateDB().convert().toCompletionStage()
+                .thenCompose(junk -> stageSession.find(GuineaPig.class, expectedPig.getId()));
     }
 
     @GET
     @Path("/reactiveFindMutiny")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<GuineaPig> reactiveFindMutiny() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
-        return mutinySession
-                .flatMap(session -> {
-                    return populateDB()
-                            .then(() -> session.find(GuineaPig.class, expectedPig.getId()));
-                });
+        return populateDB().chain(() -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
     }
 
     @GET
     @Path("/reactivePersist")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactivePersist() {
+        final GuineaPig pig = new GuineaPig(10, "Tulip");
         return mutinySession
-                .flatMap(s -> s.persist(new GuineaPig(10, "Tulip")))
-                .flatMap(s -> s.flush())
-                .flatMap(junk -> selectNameFromId(10));
+                .persist(pig)
+                .chain(() -> mutinySession.flush())
+                .chain(() -> selectNameFromId(10));
     }
 
     @GET
     @Path("/reactiveCowPersist")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<FriesianCow> reactiveCowPersist() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina";
         return mutinySession
-                .flatMap(s -> s.persist(cow))
-                .flatMap(s -> s.flush())
-                .flatMap(s -> s.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
+                .persist(cow)
+                .chain(() -> mutinySession.flush())
+                .chain(s -> mutinySession.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
                         .setParameter("name", cow.name).getSingleResult());
     }
 
     @GET
     @Path("/reactiveRemoveTransientEntity")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveTransientEntity() {
-        return mutinySession
-                .flatMap(mutinySession -> {
-                    return populateDB()
-                            .flatMap(junk -> selectNameFromId(5))
-                            .map(name -> {
-                                if (name == null)
-                                    throw new AssertionError("Database was not populated properly");
-                                return name;
-                            })
-                            .flatMap(junk -> mutinySession.merge(new GuineaPig(5, "Aloi")))
-                            .flatMap(aloi -> mutinySession.remove(aloi))
-                            .flatMap(junk -> mutinySession.flush())
-                            .flatMap(junk -> selectNameFromId(5))
-                            .map(result -> {
-                                if (result == null)
-                                    return "OK";
-                                else
-                                    return result;
-                            });
+        return populateDB()
+                .chain(() -> selectNameFromId(5))
+                .invoke(name -> {
+                    if (name == null)
+                        throw new AssertionError("Database was not populated properly");
+                })
+                .chain(() -> mutinySession.merge(new GuineaPig(5, "Aloi")))
+                .chain(aloi -> mutinySession.remove(aloi))
+                .chain(() -> mutinySession.flush())
+                .chain(() -> selectNameFromId(5))
+                .map(result -> {
+                    if (result == null)
+                        return "OK";
+                    else
+                        return result;
                 });
     }
 
     @GET
     @Path("/reactiveRemoveManagedEntity")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveManagedEntity() {
-        return mutinySession
-                .flatMap(mutinySession -> {
-                    return populateDB()
-                            .flatMap(junk -> mutinySession.find(GuineaPig.class, 5))
-                            .flatMap(aloi -> mutinySession.remove(aloi))
-                            .flatMap(junk -> mutinySession.flush())
-                            .flatMap(junk -> selectNameFromId(5))
-                            .map(result -> {
-                                if (result == null)
-                                    return "OK";
-                                else
-                                    return result;
-                            });
+        return populateDB()
+                .chain(() -> selectNameFromId(5))
+                .invoke(name -> {
+                    if (name == null)
+                        throw new AssertionError("Database was not populated properly");
+                })
+                .chain(() -> mutinySession.find(GuineaPig.class, 5))
+                .chain(aloi -> mutinySession.remove(aloi))
+                .chain(() -> mutinySession.flush())
+                .chain(() -> selectNameFromId(5))
+                .map(result -> {
+                    if (result == null)
+                        return "OK";
+                    else
+                        return result;
                 });
     }
 
     @GET
     @Path("/reactiveUpdate")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveUpdate() {
         final String NEW_NAME = "Tina";
-        return mutinySession
-                .flatMap(mutinySession -> {
-                    return populateDB()
-                            .flatMap(junk -> mutinySession.find(GuineaPig.class, 5))
-                            .map(pig -> {
-                                if (NEW_NAME.equals(pig.getName()))
-                                    throw new AssertionError("Pig already had name " + NEW_NAME);
-                                pig.setName(NEW_NAME);
-                                return pig;
-                            })
-                            .flatMap(junk -> mutinySession.flush())
-                            .flatMap(junk -> selectNameFromId(5));
-                });
+        return populateDB()
+                .chain(() -> mutinySession.find(GuineaPig.class, 5))
+                .invoke(pig -> {
+                    if (NEW_NAME.equals(pig.getName()))
+                        throw new AssertionError("Pig already had name " + NEW_NAME);
+                    pig.setName(NEW_NAME);
+                })
+                .chain(() -> mutinySession.flush())
+                .chain(() -> selectNameFromId(5));
     }
 
     private Uni<RowSet<Row>> populateDB() {
-        return pgPool.query("DELETE FROM Pig").execute()
-                .and(pgPool.query("DELETE FROM Cow").execute())
-                .flatMap(junk -> pgPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
+        return Uni.combine().all().unis(
+                pgPool.query("DELETE FROM Pig").execute(),
+                pgPool.query("DELETE FROM Cow").execute())
+                .asTuple()
+                .chain(() -> pgPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
     }
 
     private Uni<String> selectNameFromId(Integer id) {

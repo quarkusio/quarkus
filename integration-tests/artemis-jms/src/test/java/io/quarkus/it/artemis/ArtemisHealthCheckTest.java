@@ -21,7 +21,7 @@ public class ArtemisHealthCheckTest {
 
     @Test
     public void test() {
-        Response response = RestAssured.with().get("/health/ready");
+        Response response = RestAssured.with().get("/q/health/ready");
         Assertions.assertEquals(Status.OK.getStatusCode(), response.statusCode());
 
         Map<String, Object> body = response.as(new TypeRef<Map<String, Object>>() {

@@ -9,139 +9,23 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-/**
- * 
- */
 final class ExpressionImpl implements Expression {
 
-    static class VirtualMethodExpressionPartImpl extends ExpressionPartImpl implements VirtualMethodPart {
-
-        private final List<Expression> parameters;
-
-        VirtualMethodExpressionPartImpl(String name, List<Expression> parameters) {
-            super(name, null);
-            this.parameters = parameters;
-        }
-
-        public List<Expression> getParameters() {
-            return parameters;
-        }
-
-        @Override
-        public boolean isVirtualMethod() {
-            return true;
-        }
-
-        @Override
-        public VirtualMethodPart asVirtualMethod() {
-            return this;
-        }
-
-        @Override
-        public String getTypeInfo() {
-            return toString();
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = super.hashCode();
-            result = prime * result + Objects.hash(parameters);
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (!super.equals(obj)) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            VirtualMethodExpressionPartImpl other = (VirtualMethodExpressionPartImpl) obj;
-            return Objects.equals(parameters, other.parameters);
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            builder.append(name).append("(");
-            for (Iterator<Expression> iterator = parameters.iterator(); iterator.hasNext();) {
-                Expression expression = iterator.next();
-                builder.append(expression.toOriginalString());
-                if (iterator.hasNext()) {
-                    builder.append(",");
-                }
-            }
-            builder.append(")");
-            return builder.toString();
-        }
-
-    }
-
-    static class ExpressionPartImpl implements Part {
-
-        protected final String name;
-        protected final String typeInfo;
-
-        ExpressionPartImpl(String name, String typeInfo) {
-            this.name = name;
-            this.typeInfo = typeInfo;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getTypeInfo() {
-            return typeInfo;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(name, typeInfo);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            ExpressionPartImpl other = (ExpressionPartImpl) obj;
-            return Objects.equals(name, other.name) && Objects.equals(typeInfo, other.typeInfo);
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-
-    }
-
-    static final ExpressionImpl EMPTY = new ExpressionImpl(null, Collections.emptyList(), null, null);
+    static final ExpressionImpl EMPTY = new ExpressionImpl(0, null, Collections.emptyList(), null, null);
 
     /**
      * 
      * @param value
-     * @return a non-contextual expression
+     * @return a new expression
      */
     static ExpressionImpl from(String value) {
         if (value == null || value.isEmpty()) {
             return EMPTY;
         }
-        return Parser.parseExpression(value, Scope.EMPTY, Parser.SYNTHETIC_ORIGIN);
+        return Parser.parseExpression(ExpressionImpl::syntheticId, value, Scope.EMPTY, Parser.SYNTHETIC_ORIGIN);
     }
 
-    static ExpressionImpl literalFrom(String literal) {
+    static ExpressionImpl literalFrom(int id, String literal) {
         if (literal == null || literal.isEmpty()) {
             return EMPTY;
         }
@@ -149,27 +33,33 @@ final class ExpressionImpl implements Expression {
         if (literalValue == null) {
             throw new IllegalArgumentException("Not a literal value: " + literal);
         }
-        return literal(literal, literalValue, Parser.SYNTHETIC_ORIGIN);
+        return literal(id, literal, literalValue, Parser.SYNTHETIC_ORIGIN);
     }
 
-    static ExpressionImpl literal(String literal, Object value, Origin origin) {
+    static ExpressionImpl literal(int id, String literal, Object value, Origin origin) {
         if (literal == null) {
             throw new IllegalArgumentException("Literal must not be null");
         }
-        return new ExpressionImpl(null,
-                Collections.singletonList(new ExpressionPartImpl(literal,
+        return new ExpressionImpl(id, null,
+                Collections.singletonList(new PartImpl(literal,
                         value != null
                                 ? Expressions.TYPE_INFO_SEPARATOR + value.getClass().getName() + Expressions.TYPE_INFO_SEPARATOR
                                 : null)),
                 value, origin);
     }
 
+    static Integer syntheticId() {
+        return -1;
+    }
+
+    private final int id;
     private final String namespace;
     private final List<Part> parts;
     private final CompletableFuture<Object> literal;
     private final Origin origin;
 
-    ExpressionImpl(String namespace, List<Part> parts, Object literal, Origin origin) {
+    ExpressionImpl(int id, String namespace, List<Part> parts, Object literal, Origin origin) {
+        this.id = id;
         this.namespace = namespace;
         this.parts = parts;
         this.literal = literal != Result.NOT_FOUND ? CompletableFuture.completedFuture(literal) : null;
@@ -198,23 +88,29 @@ final class ExpressionImpl implements Expression {
     }
 
     @Override
+    public int getGeneratedId() {
+        return id;
+    }
+
+    @Override
     public int hashCode() {
-        return Objects.hash(toOriginalString());
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Objects.hashCode(toOriginalString());
+        result = prime * result + Objects.hashCode(origin);
+        return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
+        if (this == obj)
             return true;
-        }
-        if (obj == null) {
+        if (obj == null)
             return false;
-        }
-        if (getClass() != obj.getClass()) {
+        if (getClass() != obj.getClass())
             return false;
-        }
         ExpressionImpl other = (ExpressionImpl) obj;
-        return Objects.equals(toOriginalString(), other.toOriginalString());
+        return Objects.equals(toOriginalString(), other.toOriginalString()) && Objects.equals(origin, other.origin);
     }
 
     @Override
@@ -252,4 +148,131 @@ final class ExpressionImpl implements Expression {
         return null;
     }
 
+    static class VirtualMethodPartImpl extends PartImpl implements VirtualMethodPart {
+
+        private final List<Expression> parameters;
+
+        VirtualMethodPartImpl(String name, List<Expression> parameters, String lastPartHint) {
+            super(name, buildTypeInfo(name, parameters, lastPartHint));
+            this.parameters = parameters;
+        }
+
+        public List<Expression> getParameters() {
+            return parameters;
+        }
+
+        @Override
+        public boolean isVirtualMethod() {
+            return true;
+        }
+
+        @Override
+        public VirtualMethodPart asVirtualMethod() {
+            return this;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = super.hashCode();
+            result = prime * result + Objects.hash(parameters);
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!super.equals(obj)) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            VirtualMethodPartImpl other = (VirtualMethodPartImpl) obj;
+            return Objects.equals(parameters, other.parameters);
+        }
+
+        @Override
+        public String toString() {
+            return buildTypeInfo(name, parameters, null);
+        }
+
+        private static String buildTypeInfo(String name, List<Expression> parameters, String lastPartHint) {
+            StringBuilder builder = new StringBuilder();
+            builder.append(name).append("(");
+            for (Iterator<Expression> iterator = parameters.iterator(); iterator.hasNext();) {
+                Expression expression = iterator.next();
+                builder.append(expression.toOriginalString());
+                if (iterator.hasNext()) {
+                    builder.append(",");
+                }
+            }
+            builder.append(")");
+            if (lastPartHint != null) {
+                builder.append(lastPartHint);
+            }
+            return builder.toString();
+        }
+
+    }
+
+    static class PartImpl implements Part {
+
+        protected final String name;
+        protected final String typeInfo;
+        protected volatile ValueResolver cachedResolver;
+
+        PartImpl(String name, String typeInfo) {
+            this.name = name;
+            this.typeInfo = typeInfo;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getTypeInfo() {
+            return typeInfo;
+        }
+
+        void setCachedResolver(ValueResolver resolver) {
+            ValueResolver last = this.cachedResolver;
+            if (last != null) {
+                return;
+            }
+            synchronized (this) {
+                if (this.cachedResolver == null) {
+                    this.cachedResolver = resolver;
+                }
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, typeInfo);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            PartImpl other = (PartImpl) obj;
+            return Objects.equals(name, other.name) && Objects.equals(typeInfo, other.typeInfo);
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+
+    }
 }

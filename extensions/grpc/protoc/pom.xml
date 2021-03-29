@@ -7,7 +7,6 @@
         <artifactId>quarkus-grpc-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-grpc-protoc-plugin</artifactId>

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Funqy HTTP Binding (Standalone)
 
@@ -53,7 +53,7 @@ To write Funqy HTTP functions, simply include the `quarkus-funqy-http` dependenc
 
 == Build Project
 
-[source, shell]
+[source,bash]
 ----
 mvn clean quarkus:dev
 ----
@@ -76,7 +76,7 @@ Invoking the other functions in the quickstart requires an HTTP POST.
 To execute the `greet` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/GreetingFunction.java[GreetingFunction.java]
 invoke this curl script.
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/greet" \
 -X POST \
@@ -88,7 +88,7 @@ Primitive types can also be passed as input using the standard JSON mapping for 
 To execute the `toLowerCase` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
 invoke this curl script:
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/toLowerCase" \
 -X POST \
@@ -99,7 +99,7 @@ curl "http://localhost:8080/toLowerCase" \
 To execute the `double` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
 invoke this curl script:
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/double" \
 -X POST \
@@ -125,7 +125,7 @@ public String hello(Map<String, Integer> map) {
 Key values must be a primitive type (except char) or `String`.  Values can be primitives (except char), `String`, `OffsetDateTime` or a complex
 bean style class.  For the above example, here's the corresponding curl request:
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/a=1&b=2"
 ----
@@ -159,7 +159,7 @@ Property values can be any primitive type except `char`. It can also be `String`
 
 You can invoke on this using an HTTP GET and query parameters:
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/greet?first=Bill&last=Burke"
 ----
@@ -191,7 +191,7 @@ public class MyFunctions {
 
 In this case, query parameters for nested values use the `.` notation.  For example:
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/greet?dad.first=John&dad.last=Smith&mom.first=Martha&mom.last=Smith"
 ----
@@ -217,7 +217,7 @@ public class MyFunctions {
 
 To invoke a GET request, just list the `pets` query parameter multiple times.
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/greet?pets=itchy&pets=scratchy"
 ----
@@ -246,7 +246,7 @@ Each `kids` query parameter must identify the kid they are referencing so that
 the runtime can figure out which
 property values go to which members in the list.  Here's the curl request:
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/greet?kids.1.first=Buffy&kids.2.first=Charlie"
 ----
@@ -275,7 +275,7 @@ public class MyFunctions {
 
 The corresponding call would look like this:
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/greet?address.state=MA&address.city=Boston"
 ----
@@ -298,7 +298,7 @@ public class MyFunctions {
 }
 ----
 
-[source, shell]
+[source,bash]
 ----
 curl "http://localhost:8080/greet?addresses.home.state=MA&addresses.home.city=Boston"
 ----

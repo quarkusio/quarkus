@@ -4,13 +4,11 @@ import org.jboss.logging.Logger;
 
 public class HibernateReactive {
 
-    static {
+    public static void featureInit(boolean enabled) {
         // Override the JPA persistence unit resolver so to use our custom boot
         // strategy:
-        ReactivePersistenceProviderSetup.registerPersistenceProvider();
-    }
+        ReactivePersistenceProviderSetup.registerStaticInitPersistenceProvider();
 
-    public static void featureInit(boolean enabled) {
         if (enabled) {
             Logger.getLogger("org.hibernate.quarkus.feature").debug("Hibernate Reactive Features Enabled");
         }

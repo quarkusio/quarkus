@@ -23,14 +23,14 @@ import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSourceSupport;
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
-import io.quarkus.agroal.runtime.LegacyDataSourceJdbcBuildTimeConfig;
-import io.quarkus.agroal.runtime.LegacyDataSourcesJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.TransactionIntegration;
+import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -47,6 +47,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
@@ -56,10 +57,6 @@ class AgroalProcessor {
     private static final Logger log = Logger.getLogger(AgroalProcessor.class);
 
     private static final DotName DATA_SOURCE = DotName.createSimple(javax.sql.DataSource.class.getName());
-
-    private static final String QUARKUS_DATASOURCE_CONFIG_PREFIX = "quarkus.datasource.";
-    private static final String QUARKUS_DATASOURCE_DB_KIND_CONFIG_NAME = "db-kind";
-    private static final String QUARKUS_DATASOURCE_DRIVER_CONFIG_NAME = "driver";
 
     @BuildStep
     void agroal(BuildProducer<FeatureBuildItem> feature,
@@ -72,17 +69,23 @@ class AgroalProcessor {
     void build(
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
-            LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
+            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
             List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig) throws Exception {
+            BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
+        if (dataSourcesBuildTimeConfig.driver.isPresent() || dataSourcesBuildTimeConfig.url.isPresent()) {
+            throw new ConfigurationException(
+                    "quarkus.datasource.url and quarkus.datasource.driver have been deprecated in Quarkus 1.3 and removed in 1.9. "
+                            + "Please use the new datasource configuration as explained in https://quarkus.io/guides/datasource.");
+        }
+
         List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
                 dataSourcesBuildTimeConfig,
-                dataSourcesJdbcBuildTimeConfig,
-                legacyDataSourcesJdbcBuildTimeConfig,
-                jdbcDriverBuildItems);
+                dataSourcesJdbcBuildTimeConfig, curateOutcomeBuildItem,
+                jdbcDriverBuildItems, defaultDbKinds);
 
         if (aggregatedDataSourceBuildTimeConfigs.isEmpty()) {
             log.warn("The Agroal dependency is present but no JDBC datasources have been defined.");
@@ -164,9 +167,9 @@ class AgroalProcessor {
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedBuildTimeConfigBuildItems) {
             String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
             dataSourceSupportEntries.put(dataSourceName,
-                    new DataSourceSupport.Entry(dataSourceName, aggregatedDataSourceBuildTimeConfig.getResolvedDbKind(),
+                    new DataSourceSupport.Entry(dataSourceName, aggregatedDataSourceBuildTimeConfig.getDbKind(),
                             aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass(),
-                            aggregatedDataSourceBuildTimeConfig.isLegacy(), aggregatedDataSourceBuildTimeConfig.isDefault()));
+                            aggregatedDataSourceBuildTimeConfig.isDefault()));
         }
 
         return new DataSourceSupport(sslNativeConfig.isExplicitlyDisabled(),
@@ -256,21 +259,21 @@ class AgroalProcessor {
     private List<AggregatedDataSourceBuildTimeConfigBuildItem> getAggregatedConfigBuildItems(
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
-            LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
-            List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems, List<DefaultDataSourceDbKindBuildItem> defaultDbKinds) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
-        // New configuration
-        if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
+        Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
+                .resolve(dataSourcesBuildTimeConfig.defaultDataSource.dbKind, defaultDbKinds, curateOutcomeBuildItem);
+
+        if (effectiveDbKind.isPresent()) {
             if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
                 dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
                         dataSourcesBuildTimeConfig.defaultDataSource,
                         dataSourcesJdbcBuildTimeConfig.jdbc,
-                        null,
-                        dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get(),
-                        resolveDriver(null, dataSourcesBuildTimeConfig.defaultDataSource,
-                                dataSourcesJdbcBuildTimeConfig.jdbc, jdbcDriverBuildItems),
-                        false));
+                        effectiveDbKind.get(),
+                        resolveDriver(DataSourceUtil.DEFAULT_DATASOURCE_NAME, effectiveDbKind.get(),
+                                dataSourcesJdbcBuildTimeConfig.jdbc, jdbcDriverBuildItems)));
             }
         }
         for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.namedDataSources.entrySet()) {
@@ -280,102 +283,29 @@ class AgroalProcessor {
             if (!jdbcBuildTimeConfig.enabled) {
                 continue;
             }
+            Optional<String> dbKind = DefaultDataSourceDbKindBuildItem
+                    .resolve(entry.getValue().dbKind, defaultDbKinds, curateOutcomeBuildItem);
+            if (!dbKind.isPresent()) {
+                continue;
+            }
             dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
                     entry.getValue(),
                     jdbcBuildTimeConfig,
-                    null,
-                    entry.getValue().dbKind.get(),
-                    resolveDriver(entry.getKey(), entry.getValue(), jdbcBuildTimeConfig, jdbcDriverBuildItems),
-                    false));
-        }
-
-        // Legacy configuration
-        if (legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.isPresent()) {
-            String resolvedDbKind = resolveLegacyKind(legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.get());
-            boolean alreadyConfigured = ensureNoConfigurationClash(dataSources, DataSourceUtil.DEFAULT_DATASOURCE_NAME,
-                    resolvedDbKind);
-
-            if (!alreadyConfigured) {
-                dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
-                        dataSourcesBuildTimeConfig.defaultDataSource,
-                        dataSourcesJdbcBuildTimeConfig.jdbc,
-                        legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource,
-                        resolvedDbKind,
-                        legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.get(),
-                        true));
-            }
-        }
-        for (Entry<String, LegacyDataSourceJdbcBuildTimeConfig> entry : legacyDataSourcesJdbcBuildTimeConfig.namedDataSources
-                .entrySet()) {
-            String datasourceName = entry.getKey();
-            DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.namedDataSources
-                    .containsKey(datasourceName) ? dataSourcesBuildTimeConfig.namedDataSources.get(datasourceName)
-                            : new DataSourceBuildTimeConfig();
-            DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
-                    .containsKey(datasourceName) ? dataSourcesJdbcBuildTimeConfig.namedDataSources.get(datasourceName).jdbc
-                            : new DataSourceJdbcBuildTimeConfig();
-
-            String resolvedDbKind = resolveLegacyKind(entry.getValue().driver.get());
-            boolean alreadyConfigured = ensureNoConfigurationClash(dataSources, datasourceName, resolvedDbKind);
-
-            if (!alreadyConfigured) {
-                dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(datasourceName,
-                        dataSourceBuildTimeConfig,
-                        jdbcBuildTimeConfig,
-                        entry.getValue(),
-                        resolvedDbKind,
-                        entry.getValue().driver.get(),
-                        true));
-            }
+                    dbKind.get(),
+                    resolveDriver(entry.getKey(), dbKind.get(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
         }
 
         return dataSources;
     }
 
-    private boolean ensureNoConfigurationClash(List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources,
-            String datasourceName, String resolvedDbKind) {
-
-        boolean alreadyConfigured = false;
-        for (AggregatedDataSourceBuildTimeConfigBuildItem alreadyConfiguredDataSource : dataSources) {
-            if (alreadyConfiguredDataSource.getName().equals(datasourceName)) {
-                if (!alreadyConfiguredDataSource.getResolvedDbKind().equals(resolvedDbKind)) {
-                    throw new RuntimeException("Incompatible values detected between "
-                            + quotedDataSourcePropertyName(datasourceName, QUARKUS_DATASOURCE_DB_KIND_CONFIG_NAME) + " and "
-                            + quotedDataSourcePropertyName(datasourceName, QUARKUS_DATASOURCE_DRIVER_CONFIG_NAME)
-                            + ". Consider removing the latter.");
-                }
-                alreadyConfigured = true;
-            }
-        }
-        if (alreadyConfigured) {
-            log.warn("Configuring " + quotedDataSourcePropertyName(datasourceName, QUARKUS_DATASOURCE_DRIVER_CONFIG_NAME)
-                    + " is redundant when "
-                    + quotedDataSourcePropertyName(datasourceName, QUARKUS_DATASOURCE_DB_KIND_CONFIG_NAME)
-                    + " is also configured");
-        }
-
-        return alreadyConfigured;
-    }
-
-    private String quotedDataSourcePropertyName(String datasourceName, String propertyName) {
-        return "\"" + dataSourcePropertyName(datasourceName, propertyName) + "\"";
-    }
-
-    private String dataSourcePropertyName(String datasourceName, String propertyName) {
-        if (DataSourceUtil.DEFAULT_DATASOURCE_NAME.equals(datasourceName)) {
-            return QUARKUS_DATASOURCE_CONFIG_PREFIX + propertyName;
-        }
-        return QUARKUS_DATASOURCE_CONFIG_PREFIX + datasourceName + "." + propertyName;
-    }
-
-    private String resolveDriver(String dataSourceName, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
+    private String resolveDriver(String dataSourceName, String dbKind,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
         if (dataSourceJdbcBuildTimeConfig.driver.isPresent()) {
             return dataSourceJdbcBuildTimeConfig.driver.get();
         }
 
         Optional<JdbcDriverBuildItem> matchingJdbcDriver = jdbcDriverBuildItems.stream()
-                .filter(i -> dataSourceBuildTimeConfig.dbKind.get().equals(i.getDbKind()))
+                .filter(i -> dbKind.equals(i.getDbKind()))
                 .findFirst();
 
         if (matchingJdbcDriver.isPresent()) {
@@ -388,33 +318,14 @@ class AgroalProcessor {
             }
         }
 
-        throw new ConfigurationException("Unable to determine the driver for " + (dataSourceName == null ? "default datasource"
-                : "datasource named " + dataSourceName));
-    }
-
-    private String resolveLegacyKind(String driver) {
-        switch (driver) {
-            case "org.apache.derby.jdbc.ClientDriver":
-            case "org.apache.derby.jdbc.ClientXADataSource":
-                return DatabaseKind.DERBY;
-            case "org.h2.Driver":
-            case "org.h2.jdbcx.JdbcDataSource":
-                return DatabaseKind.H2;
-            case "org.mariadb.jdbc.Driver":
-            case "org.mariadb.jdbc.MySQLDataSource":
-                return DatabaseKind.MARIADB;
-            case "com.microsoft.sqlserver.jdbc.SQLServerDriver":
-            case "com.microsoft.sqlserver.jdbc.SQLServerXADataSource":
-                return DatabaseKind.MSSQL;
-            case "com.mysql.cj.jdbc.Driver":
-            case "com.mysql.cj.jdbc.MysqlXADataSource":
-                return DatabaseKind.MYSQL;
-            case "org.postgresql.Driver":
-            case "org.postgresql.xa.PGXADataSource":
-                return DatabaseKind.POSTGRESQL;
-        }
-
-        return "other-legacy";
+        throw new ConfigurationException("Unable to find a JDBC driver corresponding to the database kind '"
+                + dbKind + "' for the "
+                + (DataSourceUtil.isDefault(dataSourceName) ? "default datasource"
+                        : "datasource '" + dataSourceName + "'")
+                + ". Either provide a suitable JDBC driver extension, define the driver manually, or disable the JDBC datasource by adding "
+                + (DataSourceUtil.isDefault(dataSourceName) ? "'quarkus.datasource.jdbc=false'"
+                        : "'quarkus.datasource." + dataSourceName + ".jdbc=false'")
+                + " to your configuration if you don't need it.");
     }
 
     @BuildStep

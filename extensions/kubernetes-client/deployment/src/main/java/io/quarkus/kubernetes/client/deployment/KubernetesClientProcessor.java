@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -26,6 +26,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
+import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 
 public class KubernetesClientProcessor {
@@ -40,25 +41,26 @@ public class KubernetesClientProcessor {
 
     private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
 
-    @Inject
-    BuildProducer<FeatureBuildItem> featureProducer;
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
-
-    @Inject
-    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies;
-
-    @Inject
-    BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses;
-
-    @Inject
-    BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer;
+    @BuildStep
+    public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
+            Capabilities capabilities) {
+        // wire up the Config bean support
+        additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesConfigProducer.class));
+        // do not register our client producer if the openshift client is present, because it provides it too
+        if (capabilities.isMissing(Capability.OPENSHIFT_CLIENT)) {
+            // wire up the KubernetesClient bean support
+            additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
+        }
+    }
 
     @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem) {
+            BuildProducer<FeatureBuildItem> featureProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
+            BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer) {
 
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
         roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
@@ -74,7 +76,10 @@ public class KubernetesClientProcessor {
                 log.warnv("Unable to lookup class: {0}", className);
             } else {
                 reflectiveHierarchies
-                        .produce(new ReflectiveHierarchyBuildItem(Type.create(watchedClass.name(), Type.Kind.CLASS)));
+                        .produce(new ReflectiveHierarchyBuildItem.Builder()
+                                .type(Type.create(watchedClass.name(), Type.Kind.CLASS))
+                                .source(getClass().getSimpleName() + " > " + watchedClass.name())
+                                .build());
             }
         }
 
@@ -100,13 +105,6 @@ public class KubernetesClientProcessor {
                 new IgnoreJsonDeserializeClassBuildItem(
                         DotName.createSimple("io.fabric8.kubernetes.api.model.KubernetesResourceList")));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
-
-        final String[] doneables = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple("io.fabric8.kubernetes.api.model.Doneable"))
-                .stream()
-                .map(c -> c.name().toString())
-                .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.weakClass(doneables));
 
         final String[] deserializerClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))
@@ -141,9 +139,6 @@ public class KubernetesClientProcessor {
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KUBERNETES_CLIENT));
-
-        // wire up the KubernetesClient bean support
-        additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
     }
 
     private void findWatchedClasses(final DotName implementor, final ApplicationIndexBuildItem applicationIndex,

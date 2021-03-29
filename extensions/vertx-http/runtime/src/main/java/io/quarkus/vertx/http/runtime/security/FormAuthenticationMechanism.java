@@ -27,20 +27,25 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     private static final Logger log = Logger.getLogger(FormAuthenticationMechanism.class);
 
-    public static final String DEFAULT_POST_LOCATION = "/j_security_check";
-
     private final String loginPage;
     private final String errorPage;
-    private final String postLocation = DEFAULT_POST_LOCATION;
-    private final String locationCookie = "quarkus-redirect-location";
+    private final String postLocation;
+    private final String usernameParameter;
+    private final String passwordParameter;
+    private final String locationCookie;
     private final String landingPage;
     private final boolean redirectAfterLogin;
 
     private final PersistentLoginManager loginManager;
 
-    public FormAuthenticationMechanism(String loginPage, String errorPage, String landingPage, boolean redirectAfterLogin,
-            PersistentLoginManager loginManager) {
+    public FormAuthenticationMechanism(String loginPage, String postLocation,
+            String usernameParameter, String passwordParameter, String errorPage, String landingPage,
+            boolean redirectAfterLogin, String locationCookie, PersistentLoginManager loginManager) {
         this.loginPage = loginPage;
+        this.postLocation = postLocation;
+        this.usernameParameter = usernameParameter;
+        this.passwordParameter = passwordParameter;
+        this.locationCookie = locationCookie;
         this.errorPage = errorPage;
         this.landingPage = landingPage;
         this.redirectAfterLogin = redirectAfterLogin;
@@ -59,8 +64,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                         try {
                             MultiMap res = exchange.request().formAttributes();
 
-                            final String jUsername = res.get("j_username");
-                            final String jPassword = res.get("j_password");
+                            final String jUsername = res.get(usernameParameter);
+                            final String jPassword = res.get(passwordParameter);
                             if (jUsername == null || jPassword == null) {
                                 log.debugf(
                                         "Could not authenticate as username or password was not present in the posted result for %s",
@@ -74,17 +79,22 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                     .subscribe().with(new Consumer<SecurityIdentity>() {
                                         @Override
                                         public void accept(SecurityIdentity identity) {
-                                            loginManager.save(identity, exchange, null);
-                                            if (redirectAfterLogin || exchange.getCookie(locationCookie) != null) {
-                                                handleRedirectBack(exchange);
-                                                //we  have authenticated, but we want to just redirect back to the original page
-                                                //so we don't actually authenticate the current request
-                                                //instead we have just set a cookie so the redirected request will be authenticated
-                                            } else {
-                                                exchange.response().setStatusCode(200);
-                                                exchange.response().end();
+                                            try {
+                                                loginManager.save(identity, exchange, null, exchange.request().isSSL());
+                                                if (redirectAfterLogin || exchange.getCookie(locationCookie) != null) {
+                                                    handleRedirectBack(exchange);
+                                                    //we  have authenticated, but we want to just redirect back to the original page
+                                                    //so we don't actually authenticate the current request
+                                                    //instead we have just set a cookie so the redirected request will be authenticated
+                                                } else {
+                                                    exchange.response().setStatusCode(200);
+                                                    exchange.response().end();
+                                                }
+                                                uniEmitter.complete(null);
+                                            } catch (Throwable t) {
+                                                log.error("Unable to complete post authentication", t);
+                                                uniEmitter.fail(t);
                                             }
-                                            uniEmitter.complete(null);
                                         }
                                     }, new Consumer<Throwable>() {
                                         @Override
@@ -106,6 +116,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         Cookie redirect = exchange.getCookie(locationCookie);
         String location;
         if (redirect != null) {
+            redirect.setSecure(exchange.request().isSSL());
             location = redirect.getValue();
             exchange.response().addCookie(redirect.setMaxAge(0));
         } else {
@@ -117,7 +128,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     protected void storeInitialLocation(final RoutingContext exchange) {
-        exchange.response().addCookie(Cookie.cookie(locationCookie, exchange.request().absoluteURI()).setPath("/"));
+        exchange.response().addCookie(Cookie.cookie(locationCookie, exchange.request().absoluteURI())
+                .setPath("/").setSecure(exchange.request().isSSL()));
     }
 
     protected void servePage(final RoutingContext exchange, final String location) {
@@ -140,21 +152,21 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
 
-        PersistentLoginManager.RestoreResult result = loginManager.restore(context);
-        if (result != null) {
-            Uni<SecurityIdentity> ret = identityProviderManager
-                    .authenticate(new TrustedAuthenticationRequest(result.getPrincipal()));
-            return ret.onItem().invoke(new Consumer<SecurityIdentity>() {
-                @Override
-                public void accept(SecurityIdentity securityIdentity) {
-                    loginManager.save(securityIdentity, context, result);
-                }
-            });
-        }
-
         if (context.normalisedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
+            //we always re-auth if it is a post to the auth URL
             return runFormAuth(context, identityProviderManager);
         } else {
+            PersistentLoginManager.RestoreResult result = loginManager.restore(context);
+            if (result != null) {
+                Uni<SecurityIdentity> ret = identityProviderManager
+                        .authenticate(new TrustedAuthenticationRequest(result.getPrincipal()));
+                return ret.onItem().invoke(new Consumer<SecurityIdentity>() {
+                    @Override
+                    public void accept(SecurityIdentity securityIdentity) {
+                        loginManager.save(securityIdentity, context, result, context.request().isSSL());
+                    }
+                });
+            }
             return Uni.createFrom().optional(Optional.empty());
         }
     }

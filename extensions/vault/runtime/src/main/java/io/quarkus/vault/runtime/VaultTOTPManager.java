@@ -4,25 +4,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import io.quarkus.vault.VaultTOTPSecretEngine;
-import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPReadKeyResult;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalTOPTSecretEngine;
 import io.quarkus.vault.secrets.totp.CreateKeyParameters;
 import io.quarkus.vault.secrets.totp.KeyConfiguration;
 import io.quarkus.vault.secrets.totp.KeyDefinition;
 
+@ApplicationScoped
 public class VaultTOTPManager implements VaultTOTPSecretEngine {
 
+    @Inject
     private VaultAuthManager vaultAuthManager;
-    private VaultClient vaultClient;
-
-    public VaultTOTPManager(VaultAuthManager vaultAuthManager, VaultClient vaultClient) {
-        this.vaultAuthManager = vaultAuthManager;
-        this.vaultClient = vaultClient;
-    }
+    @Inject
+    private VaultInternalTOPTSecretEngine vaultInternalTOPTSecretEngine;
 
     @Override
     public Optional<KeyDefinition> createKey(String name, CreateKeyParameters createKeyParameters) {
@@ -41,15 +42,14 @@ public class VaultTOTPManager implements VaultTOTPSecretEngine {
         body.skew = createKeyParameters.getSkew();
         body.url = createKeyParameters.getUrl();
 
-        final VaultTOTPCreateKeyResult result = this.vaultClient
-                .createTOTPKey(getToken(), name, body);
+        final VaultTOTPCreateKeyResult result = vaultInternalTOPTSecretEngine.createTOTPKey(getToken(), name, body);
 
         return result == null ? Optional.empty() : Optional.of(new KeyDefinition(result.data.barcode, result.data.url));
     }
 
     @Override
     public KeyConfiguration readKey(String name) {
-        final VaultTOTPReadKeyResult result = this.vaultClient.readTOTPKey(getToken(), name);
+        final VaultTOTPReadKeyResult result = vaultInternalTOPTSecretEngine.readTOTPKey(getToken(), name);
         return new KeyConfiguration(result.data.accountName,
                 result.data.algorithm, result.data.digits,
                 result.data.issuer, result.data.period);
@@ -58,7 +58,7 @@ public class VaultTOTPManager implements VaultTOTPSecretEngine {
     @Override
     public List<String> listKeys() {
         try {
-            return this.vaultClient.listTOTPKeys(getToken()).data.keys;
+            return vaultInternalTOPTSecretEngine.listTOTPKeys(getToken()).data.keys;
         } catch (VaultClientException e) {
             if (e.getStatus() == 404) {
                 return Collections.emptyList();
@@ -69,17 +69,17 @@ public class VaultTOTPManager implements VaultTOTPSecretEngine {
 
     @Override
     public void deleteKey(String name) {
-        this.vaultClient.deleteTOTPKey(getToken(), name);
+        vaultInternalTOPTSecretEngine.deleteTOTPKey(getToken(), name);
     }
 
     @Override
     public String generateCode(String name) {
-        return this.vaultClient.generateTOTPCode(getToken(), name).data.code;
+        return vaultInternalTOPTSecretEngine.generateTOTPCode(getToken(), name).data.code;
     }
 
     @Override
     public boolean validateCode(String name, String code) {
-        return this.vaultClient.validateTOTPCode(getToken(), name, code).data.valid;
+        return vaultInternalTOPTSecretEngine.validateTOTPCode(getToken(), name, code).data.valid;
     }
 
     private String getToken() {

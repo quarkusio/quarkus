@@ -8,6 +8,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.BindException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -27,6 +29,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.AugmentAction;
+import io.quarkus.bootstrap.app.ClassChangeInformation;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
@@ -40,7 +43,9 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.deployment.util.FSWatchUtil;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
@@ -58,7 +63,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
     private static volatile RunningQuarkusApplication runner;
     static volatile Throwable deploymentProblem;
-    static volatile RuntimeUpdatesProcessor runtimeUpdatesProcessor;
     private static volatile CuratedApplication curatedApplication;
     private static volatile AugmentAction augmentAction;
     private static volatile boolean restarting;
@@ -69,6 +73,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
 
+            boolean augmentDone = false;
             //ok, we have resolved all the deps
             try {
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
@@ -94,54 +99,61 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                         System.in.read();
                                     }
                                     System.out.println("Restarting...");
-                                    runtimeUpdatesProcessor.checkForChangedClasses();
-                                    restartApp(runtimeUpdatesProcessor.checkForFileChange());
+                                    RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses();
+                                    restartApp(RuntimeUpdatesProcessor.INSTANCE.checkForFileChange(), null);
                                 } catch (Exception e) {
                                     log.error("Failed to restart", e);
                                 }
                             }
                         });
 
-                startCodeGenWatcher(deploymentClassLoader, codeGens);
-
+                startCodeGenWatcher(deploymentClassLoader, codeGens, context.getBuildSystemProperties());
+                augmentDone = true;
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
             } catch (Throwable t) {
-                deploymentProblem = t;
-                if (context.isAbortOnFailedStart()) {
-                    log.error("Failed to start quarkus", t);
-                } else {
-                    //we need to set this here, while we still have the correct TCCL
-                    //this is so the config is still valid, and we can read HTTP config from application.properties
-                    log.info("Attempting to start hot replacement endpoint to recover from previous Quarkus startup failure");
-                    if (runtimeUpdatesProcessor != null) {
-                        Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
-
-                        try {
-                            if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
-                                Class<?> cl = Thread.currentThread().getContextClassLoader()
-                                        .loadClass(LoggingSetupRecorder.class.getName());
-                                cl.getMethod("handleFailedStart").invoke(null);
+                Throwable rootCause = t;
+                while (rootCause.getCause() != null) {
+                    rootCause = rootCause.getCause();
+                }
+                if (!(rootCause instanceof BindException)) {
+                    deploymentProblem = t;
+                    if (!augmentDone) {
+                        log.error("Failed to start quarkus", t);
+                    }
+                    if (!context.isAbortOnFailedStart()) {
+                        //we need to set this here, while we still have the correct TCCL
+                        //this is so the config is still valid, and we can read HTTP config from application.properties
+                        log.info(
+                                "Attempting to start hot replacement endpoint to recover from previous Quarkus startup failure");
+                        if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                            Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
+                            try {
+                                if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+                                    Class<?> cl = Thread.currentThread().getContextClassLoader()
+                                            .loadClass(LoggingSetupRecorder.class.getName());
+                                    cl.getMethod("handleFailedStart").invoke(null);
+                                }
+                                RuntimeUpdatesProcessor.INSTANCE.startupFailed();
+                            } catch (Exception e) {
+                                close();
+                                log.error("Failed to recover after failed start", e);
+                                //this is the end of the road, we just exit
+                                //generally we only hit this if something is already listening on the HTTP port
+                                //or the system config is so broken we can't start HTTP
+                                System.exit(1);
                             }
-                            runtimeUpdatesProcessor.startupFailed();
-                        } catch (Exception e) {
-                            close();
-                            log.error("Failed to recover after failed start", e);
-                            //this is the end of the road, we just exit
-                            //generally we only hit this if something is already listening on the HTTP port
-                            //or the system config is so broken we can't start HTTP
-                            System.exit(1);
                         }
                     }
                 }
-
             }
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
     }
 
-    private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens) {
+    private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens,
+            Map<String, String> properties) {
 
         Collection<FSWatchUtil.Watcher> watchers = new ArrayList<>();
         for (CodeGenData codeGen : codeGens) {
@@ -150,7 +162,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         try {
                             CodeGenerator.trigger(classLoader,
                                     codeGen,
-                                    curatedApplication.getAppModel());
+                                    curatedApplication.getAppModel(), properties);
                         } catch (Exception any) {
                             log.warn("Code generation failed", any);
                         }
@@ -159,7 +171,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         FSWatchUtil.observe(watchers, 500);
     }
 
-    public synchronized void restartApp(Set<String> changedResources) {
+    public void restartCallback(Set<String> changedResources, ClassScanResult result) {
+        restartApp(changedResources,
+                new ClassChangeInformation(result.changedClassNames, result.deletedClassNames, result.addedClassNames));
+    }
+
+    public synchronized void restartApp(Set<String> changedResources, ClassChangeInformation classChangeInformation) {
         restarting = true;
         stop();
         Timing.restart(curatedApplication.getAugmentClassLoader());
@@ -169,14 +186,21 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
             //ok, we have resolved all the deps
             try {
-                StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources);
+                StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources,
+                        classChangeInformation);
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
             } catch (Throwable t) {
                 deploymentProblem = t;
-                log.error("Failed to start quarkus", t);
-                Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
-                LoggingSetupRecorder.handleFailedStart();
+                Throwable rootCause = t;
+                while (rootCause.getCause() != null) {
+                    rootCause = rootCause.getCause();
+                }
+                if (!(rootCause instanceof BindException)) {
+                    log.error("Failed to start quarkus", t);
+                    Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
+                    LoggingSetupRecorder.handleFailedStart();
+                }
             }
         } finally {
             restarting = false;
@@ -202,7 +226,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 return null;
             }
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(appRoot, context, compiler,
-                    devModeType, this::restartApp, null);
+                    devModeType, this::restartCallback, null, new BiFunction<String, byte[], byte[]>() {
+                        @Override
+                        public byte[] apply(String s, byte[] bytes) {
+                            return ClassTransformingBuildStep.transform(s, bytes);
+                        }
+                    });
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
                     curatedApplication.getBaseRuntimeClassLoader())) {
@@ -210,6 +239,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 service.setupHotDeployment(processor);
                 processor.addHotReplacementSetup(service);
             }
+            DevConsoleManager.setQuarkusBootstrap(curatedApplication.getQuarkusBootstrap());
+            DevConsoleManager.setHotReplacementContext(processor);
             return processor;
         }
         return null;
@@ -250,7 +281,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         } finally {
             try {
                 try {
-                    runtimeUpdatesProcessor.close();
+                    RuntimeUpdatesProcessor.INSTANCE.close();
                 } catch (IOException e) {
                     log.error("Failed to close compiler", e);
                 }
@@ -322,7 +353,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 }
                             }).produces(ApplicationClassPredicateBuildItem.class).build();
                         }
-                    }));
+                    }),
+                    Collections.emptyList());
             List<CodeGenData> codeGens = new ArrayList<>();
             QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
 
@@ -337,19 +369,20 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     sourcePath -> module.addSourcePaths(singleton(sourcePath.toAbsolutePath().toString()))));
                 }
             }
-            runtimeUpdatesProcessor = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT),
+            RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT),
                     (DevModeType) params.get(DevModeType.class.getName()));
-            if (runtimeUpdatesProcessor != null) {
-                runtimeUpdatesProcessor.checkForFileChange();
-                runtimeUpdatesProcessor.checkForChangedClasses();
+            if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                RuntimeUpdatesProcessor.INSTANCE.checkForFileChange();
+                RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses();
             }
             firstStart(deploymentClassLoader, codeGens);
 
             //        doStart(false, Collections.emptySet());
-            if (deploymentProblem != null || runtimeUpdatesProcessor.getCompileProblem() != null) {
+            if (deploymentProblem != null || RuntimeUpdatesProcessor.INSTANCE.getCompileProblem() != null) {
                 if (context.isAbortOnFailedStart()) {
                     throw new RuntimeException(
-                            deploymentProblem == null ? runtimeUpdatesProcessor.getCompileProblem() : deploymentProblem);
+                            deploymentProblem == null ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
+                                    : deploymentProblem);
                 }
             }
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {

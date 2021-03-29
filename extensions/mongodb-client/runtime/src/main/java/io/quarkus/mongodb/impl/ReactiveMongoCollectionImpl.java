@@ -7,6 +7,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 
 import com.mongodb.MongoNamespace;
+import com.mongodb.ReadPreference;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.model.BulkWriteOptions;
 import com.mongodb.client.model.CountOptions;
@@ -824,5 +825,10 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     @Override
     public <NewTDocument> ReactiveMongoCollection<NewTDocument> withDocumentClass(Class<NewTDocument> clazz) {
         return new ReactiveMongoCollectionImpl<>(this.collection.withDocumentClass(clazz));
+    }
+
+    @Override
+    public ReactiveMongoCollectionImpl<T> withReadPreference(ReadPreference readPreference) {
+        return new ReactiveMongoCollectionImpl<>(this.collection.withReadPreference(readPreference));
     }
 }

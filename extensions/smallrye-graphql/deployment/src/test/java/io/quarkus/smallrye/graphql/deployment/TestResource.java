@@ -41,6 +41,11 @@ public class TestResource {
         return context.getPath();
     }
 
+    @Query
+    public TestGenericsPojo<String> generics() {
+        return new TestGenericsPojo<>("I know it");
+    }
+
     @Mutation
     public TestPojo moo(String name) {
         return new TestPojo(name);

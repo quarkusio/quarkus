@@ -10,6 +10,7 @@ import static io.quarkus.deployment.util.ReflectUtil.rawTypeExtends;
 import static io.quarkus.deployment.util.ReflectUtil.rawTypeIs;
 import static io.quarkus.deployment.util.ReflectUtil.rawTypeOf;
 import static io.quarkus.deployment.util.ReflectUtil.rawTypeOfParameter;
+import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.lang.reflect.AnnotatedElement;
@@ -79,6 +80,7 @@ import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -88,6 +90,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
+import io.smallrye.config.KeyMap;
+import io.smallrye.config.KeyMapBackedConfigSource;
+import io.smallrye.config.NameIterator;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -99,6 +104,7 @@ public final class ExtensionLoader {
     private ExtensionLoader() {
     }
 
+    private static final Logger loadLog = Logger.getLogger("io.quarkus.deployment");
     private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
@@ -111,57 +117,18 @@ public final class ExtensionLoader {
      * Load all the build steps from the given class loader.
      *
      * @param classLoader the class loader
-     * @return a consumer which adds the steps to the given chain builder
-     * @throws IOException if the class loader could not load a resource
-     * @throws ClassNotFoundException if a build step class is not found
-     */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader)
-            throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, new Properties());
-    }
-
-    /**
-     * Load all the build steps from the given class loader.
-     *
-     * @param classLoader the class loader
-     * @param launchMode the launch mode
-     * @return a consumer which adds the steps to the given chain builder
-     * @throws IOException if the class loader could not load a resource
-     * @throws ClassNotFoundException if a build step class is not found
-     */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, LaunchMode launchMode,
-            Consumer<ConfigBuilder> configCustomizer)
-            throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, new Properties(), launchMode, configCustomizer);
-    }
-
-    /**
-     * Load all the build steps from the given class loader.
-     *
-     * @param classLoader the class loader
      * @param buildSystemProps the build system properties to use
-     * @return a consumer which adds the steps to the given chain builder
-     * @throws IOException if the class loader could not load a resource
-     * @throws ClassNotFoundException if a build step class is not found
-     */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps)
-            throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, buildSystemProps, LaunchMode.NORMAL, null);
-    }
-
-    /**
-     * Load all the build steps from the given class loader.
-     *
-     * @param classLoader the class loader
-     * @param buildSystemProps the build system properties to use
+     * @param platformProperties Quarkus platform properties
+     * @param launchMode launch mode
+     * @param configCustomizer configuration customizer
      * @return a consumer which adds the steps to the given chain builder
      * @throws IOException if the class loader could not load a resource
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            LaunchMode launchMode, Consumer<ConfigBuilder> configCustomizer)
+            Map<String, String> platformProperties, LaunchMode launchMode, DevModeType devModeType,
+            Consumer<ConfigBuilder> configCustomizer)
             throws IOException, ClassNotFoundException {
-
         // populate with all known types
         List<Class<?>> roots = new ArrayList<>();
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, CONFIG_ROOTS_LIST)) {
@@ -183,8 +150,19 @@ public final class ExtensionLoader {
         final DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(
                 reader.getBuildTimeRunTimePatternMap());
         final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
-
-        builder.withSources(ds1, ds2, pcs);
+        if (platformProperties.isEmpty()) {
+            builder.withSources(ds1, ds2, pcs);
+        } else {
+            final KeyMap<String> props = new KeyMap<>(platformProperties.size());
+            for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
+                props.findOrAdd(new NameIterator(prop.getKey())).putRootValue(prop.getValue());
+            }
+            final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
+                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
+                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
+                    Integer.MIN_VALUE + 1000, props);
+            builder.withSources(ds1, ds2, platformConfigSource, pcs);
+        }
 
         if (configCustomizer != null) {
             configCustomizer.accept(builder);
@@ -208,7 +186,7 @@ public final class ExtensionLoader {
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             try {
                 result = result.andThen(
-                        ExtensionLoader.loadStepsFrom(clazz, readResult, proxies, launchMode));
+                        ExtensionLoader.loadStepsFromClass(clazz, readResult, proxies, launchMode, devModeType));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to load steps from " + clazz, e);
             }
@@ -248,11 +226,15 @@ public final class ExtensionLoader {
      * @param launchMode the launch mode
      * @return a consumer which adds the steps to the given chain builder
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(Class<?> clazz, BuildTimeConfigurationReader.ReadResult readResult,
-            Map<Class<?>, Object> runTimeProxies, final LaunchMode launchMode) {
+    private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
+            BuildTimeConfigurationReader.ReadResult readResult,
+            Map<Class<?>, Object> runTimeProxies, final LaunchMode launchMode, DevModeType devModeType) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
+        if (Modifier.isAbstract(clazz.getModifiers())) {
+            return chainConfig;
+        }
         // this is the step configuration that applies to all steps on this class
         Consumer<BuildStepBuilder> stepConfig = Functions.discardingConsumer();
         // this is the build step instance setup that applies to all steps on this class
@@ -290,6 +272,7 @@ public final class ExtensionLoader {
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                     ctorParamFns.add(bc -> bc.consumeMulti(buildItemClass));
                 } else if (isConsumerOf(parameterType, BuildItem.class)) {
+                    deprecatedProducer(parameter);
                     final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                             .asSubclass(BuildItem.class);
                     if (overridable) {
@@ -308,6 +291,7 @@ public final class ExtensionLoader {
                     }
                     ctorParamFns.add(bc -> (Consumer<? extends BuildItem>) bc::produce);
                 } else if (isBuildProducerOf(parameterType, BuildItem.class)) {
+                    deprecatedProducer(parameter);
                     final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                             .asSubclass(BuildItem.class);
                     if (overridable) {
@@ -399,6 +383,7 @@ public final class ExtensionLoader {
                 stepInstanceSetup = stepInstanceSetup
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consumeMulti(buildItemClass)));
             } else if (isConsumerOf(fieldType, BuildItem.class)) {
+                deprecatedProducer(field);
                 final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
                 if (overridable) {
                     if (weak) {
@@ -417,6 +402,7 @@ public final class ExtensionLoader {
                 stepInstanceSetup = stepInstanceSetup
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Consumer<? extends BuildItem>) bc::produce));
             } else if (isBuildProducerOf(fieldType, BuildItem.class)) {
+                deprecatedProducer(field);
                 final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
                 if (overridable) {
                     if (weak) {
@@ -482,7 +468,7 @@ public final class ExtensionLoader {
         }
 
         // now iterate the methods
-        final Method[] methods = clazz.getDeclaredMethods();
+        final List<Method> methods = getMethods(clazz);
         for (Method method : methods) {
             final int mods = method.getModifiers();
             if (Modifier.isStatic(mods)) {
@@ -535,6 +521,8 @@ public final class ExtensionLoader {
                             final Class<?> parameterClass = parameter.getType();
                             if (parameterClass == LaunchMode.class) {
                                 paramSuppList.add(() -> launchMode);
+                            } else if (parameterClass == DevModeType.class) {
+                                paramSuppList.add(() -> devModeType);
                             } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                                 final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
                                 final ConfigPhase phase = annotation.phase();
@@ -961,6 +949,21 @@ public final class ExtensionLoader {
                     });
         }
         return chainConfig;
+    }
+
+    private static void deprecatedProducer(final Object element) {
+        loadLog.warnf(
+                "Producing values from constructors and fields is no longer supported and will be removed in a future release: %s",
+                element);
+    }
+
+    protected static List<Method> getMethods(Class<?> clazz) {
+        List<Method> declaredMethods = new ArrayList<>();
+        if (!clazz.getName().equals(Object.class.getName())) {
+            declaredMethods.addAll(getMethods(clazz.getSuperclass()));
+            declaredMethods.addAll(asList(clazz.getDeclaredMethods()));
+        }
+        return declaredMethods;
     }
 
     private static BooleanSupplier and(BooleanSupplier a, BooleanSupplier b) {

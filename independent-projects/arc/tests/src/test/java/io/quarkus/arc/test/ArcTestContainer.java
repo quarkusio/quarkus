@@ -15,6 +15,7 @@ import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.processor.ObserverTransformer;
+import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.arc.processor.ResourceOutput;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -65,10 +67,12 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
         private final List<Class<?>> resourceReferenceProviders;
         private final List<Class<?>> beanClasses;
+        private final List<Class<?>> additionalClasses;
         private final List<Class<? extends Annotation>> resourceAnnotations;
         private final List<BeanRegistrar> beanRegistrars;
         private final List<ObserverRegistrar> observerRegistrars;
         private final List<ContextRegistrar> contextRegistrars;
+        private final List<QualifierRegistrar> qualifierRegistrars;
         private final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
         private final List<AnnotationsTransformer> annotationsTransformers;
         private final List<InjectionPointsTransformer> injectionsPointsTransformers;
@@ -82,10 +86,12 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
             beanClasses = new ArrayList<>();
+            additionalClasses = new ArrayList<>();
             resourceAnnotations = new ArrayList<>();
             beanRegistrars = new ArrayList<>();
             observerRegistrars = new ArrayList<>();
             contextRegistrars = new ArrayList<>();
+            qualifierRegistrars = new ArrayList<>();
             interceptorBindingRegistrars = new ArrayList<>();
             annotationsTransformers = new ArrayList<>();
             injectionsPointsTransformers = new ArrayList<>();
@@ -101,6 +107,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
         public Builder beanClasses(Class<?>... beanClasses) {
             Collections.addAll(this.beanClasses, beanClasses);
+            return this;
+        }
+
+        public Builder additionalClasses(Class<?>... additionalClasses) {
+            Collections.addAll(this.additionalClasses, additionalClasses);
             return this;
         }
 
@@ -137,6 +148,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
         public Builder observerTransformers(ObserverTransformer... transformers) {
             Collections.addAll(this.observerTransformers, transformers);
+            return this;
+        }
+
+        public Builder qualifierRegistrars(QualifierRegistrar... registrars) {
+            Collections.addAll(this.qualifierRegistrars, registrars);
             return this;
         }
 
@@ -179,23 +195,18 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final List<Class<?>> resourceReferenceProviders;
 
     private final List<Class<?>> beanClasses;
+    private final List<Class<?>> additionalClasses;
 
     private final List<Class<? extends Annotation>> resourceAnnotations;
 
     private final List<BeanRegistrar> beanRegistrars;
-
     private final List<ObserverRegistrar> observerRegistrars;
-
     private final List<ContextRegistrar> contextRegistrars;
-
-    List<InterceptorBindingRegistrar> bindingRegistrars;
-
+    private final List<QualifierRegistrar> qualifierRegistrars;
+    private final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
     private final List<AnnotationsTransformer> annotationsTransformers;
-
     private final List<InjectionPointsTransformer> injectionPointsTransformers;
-
     private final List<ObserverTransformer> observerTransformers;
-
     private final List<BeanDeploymentValidator> beanDeploymentValidators;
 
     private final boolean shouldFail;
@@ -209,11 +220,13 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     public ArcTestContainer(Class<?>... beanClasses) {
         this.resourceReferenceProviders = Collections.emptyList();
         this.beanClasses = Arrays.asList(beanClasses);
+        this.additionalClasses = Collections.emptyList();
         this.resourceAnnotations = Collections.emptyList();
         this.beanRegistrars = Collections.emptyList();
         this.observerRegistrars = Collections.emptyList();
         this.contextRegistrars = Collections.emptyList();
-        this.bindingRegistrars = Collections.emptyList();
+        this.interceptorBindingRegistrars = Collections.emptyList();
+        this.qualifierRegistrars = Collections.emptyList();
         this.annotationsTransformers = Collections.emptyList();
         this.injectionPointsTransformers = Collections.emptyList();
         this.observerTransformers = Collections.emptyList();
@@ -228,11 +241,13 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     public ArcTestContainer(Builder builder) {
         this.resourceReferenceProviders = builder.resourceReferenceProviders;
         this.beanClasses = builder.beanClasses;
+        this.additionalClasses = builder.additionalClasses;
         this.resourceAnnotations = builder.resourceAnnotations;
         this.beanRegistrars = builder.beanRegistrars;
         this.observerRegistrars = builder.observerRegistrars;
         this.contextRegistrars = builder.contextRegistrars;
-        this.bindingRegistrars = builder.interceptorBindingRegistrars;
+        this.qualifierRegistrars = builder.qualifierRegistrars;
+        this.interceptorBindingRegistrars = builder.interceptorBindingRegistrars;
         this.annotationsTransformers = builder.annotationsTransformers;
         this.injectionPointsTransformers = builder.injectionsPointsTransformers;
         this.observerTransformers = builder.observerTransformers;
@@ -294,11 +309,22 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         Arc.shutdown();
 
         // Build index
-        Index index;
+        Index beanArchiveIndex;
         try {
-            index = index(beanClasses);
+            beanArchiveIndex = index(beanClasses);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create index", e);
+        }
+
+        Index applicationIndex;
+        if (additionalClasses.isEmpty()) {
+            applicationIndex = null;
+        } else {
+            try {
+                applicationIndex = index(additionalClasses);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to create index", e);
+            }
         }
 
         ClassLoader old = Thread.currentThread()
@@ -331,8 +357,9 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
             BeanProcessor.Builder builder = BeanProcessor.builder()
                     .setName(testClass.getSimpleName())
-                    .setIndex(BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(),
-                            new BeanArchives.PersistentClassIndex(), index));
+                    .setBeanArchiveIndex(BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(),
+                            new ConcurrentHashMap<>(), beanArchiveIndex))
+                    .setApplicationIndex(applicationIndex);
             if (!resourceAnnotations.isEmpty()) {
                 builder.addResourceAnnotations(resourceAnnotations.stream()
                         .map(c -> DotName.createSimple(c.getName()))
@@ -341,7 +368,8 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             beanRegistrars.forEach(builder::addBeanRegistrar);
             observerRegistrars.forEach(builder::addObserverRegistrar);
             contextRegistrars.forEach(builder::addContextRegistrar);
-            bindingRegistrars.forEach(builder::addInterceptorbindingRegistrar);
+            qualifierRegistrars.forEach(builder::addQualifierRegistrar);
+            interceptorBindingRegistrars.forEach(builder::addInterceptorBindingRegistrar);
             annotationsTransformers.forEach(builder::addAnnotationTransformer);
             injectionPointsTransformers.forEach(builder::addInjectionPointTransformer);
             observerTransformers.forEach(builder::addObserverTransformer);

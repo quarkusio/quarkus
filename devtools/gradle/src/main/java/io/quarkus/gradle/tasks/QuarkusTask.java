@@ -6,7 +6,7 @@ import java.util.Properties;
 import org.gradle.api.DefaultTask;
 
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.gradle.QuarkusPluginExtension;
+import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
 public abstract class QuarkusTask extends DefaultTask {
 

@@ -37,6 +37,18 @@ public @interface QuarkusTestResource {
      */
     ResourceArg[] initArgs() default {};
 
+    /**
+     * Whether this test resource is to be started in parallel (concurrently) along with others also marked as parallel
+     */
+    boolean parallel() default false;
+
+    /**
+     * Whether this annotation should only be enabled if it is placed on the currently running test class or test profile.
+     * Note that this defaults to true for meta-annotations since meta-annotations are only considered
+     * for the current test class or test profile.
+     */
+    boolean restrictToAnnotatedClass() default false;
+
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @Documented

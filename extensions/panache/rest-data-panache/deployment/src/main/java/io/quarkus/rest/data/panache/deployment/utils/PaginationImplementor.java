@@ -8,61 +8,46 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.core.Link;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
 import io.quarkus.panache.common.Page;
 
+/**
+ * Pagination logic implementor utilities.
+ */
 public final class PaginationImplementor {
 
+    public static final int DEFAULT_PAGE_INDEX = 0;
+
+    public static final int DEFAULT_PAGE_SIZE = 20;
+
     /**
-     * Extracts page and size query parameters from the URI and returns the {@link Page} instance.
-     * If page index or size is invalid - default value is used.
-     *
-     * @param creator a bytecode creator to be used for code generation
-     * @param uriInfo a {@link UriInfo} instance to extract the query parameters form
-     * @return a {@link Page} instance
+     * Get a {@link Page} instance give an index and size.
      */
-    public static ResultHandle getRequestPage(BytecodeCreator creator, ResultHandle uriInfo) {
-        ResultHandle queryParams = creator.invokeInterfaceMethod(
-                ofMethod(UriInfo.class, "getQueryParameters", MultivaluedMap.class), uriInfo);
-        AssignableResultHandle page = creator.createVariable(Integer.class);
-        assignIntQueryParam(creator, queryParams, "page", 0, 0, page);
-        AssignableResultHandle size = creator.createVariable(Integer.class);
-        assignIntQueryParam(creator, queryParams, "size", 1, 20, size);
-        return creator.invokeStaticMethod(ofMethod(Page.class, "of", Page.class, int.class, int.class), page, size);
+    public ResultHandle getPage(BytecodeCreator creator, ResultHandle index, ResultHandle size) {
+        ResultHandle validIndex = getValidOrDefault(creator, index, 0, DEFAULT_PAGE_INDEX);
+        ResultHandle validSize = getValidOrDefault(creator, size, 1, DEFAULT_PAGE_SIZE);
+        return creator.invokeStaticMethod(ofMethod(Page.class, "of", Page.class, int.class, int.class), validIndex, validSize);
     }
 
-    private static void assignIntQueryParam(BytecodeCreator creator, ResultHandle queryParams, String key, int minValue,
-            int defaultValue, AssignableResultHandle variable) {
-        ResultHandle stringValue = creator.invokeInterfaceMethod(
-                ofMethod(MultivaluedMap.class, "getFirst", Object.class, Object.class), queryParams, creator.load(key));
-        TryBlock tryBlock = creator.tryBlock();
-
-        // Catch NumberFormatException and return default
-        CatchBlockCreator catchBlockCreator = tryBlock.addCatch(NumberFormatException.class);
-        catchBlockCreator.assign(variable, catchBlockCreator.load(defaultValue));
-
-        // Parse int and return that or default
-        ResultHandle value = tryBlock.invokeStaticMethod(
-                ofMethod(Integer.class, "parseInt", int.class, String.class), stringValue);
-        BranchResult valueIsTooSmall = tryBlock.ifIntegerLessThan(value, tryBlock.load(minValue));
-        valueIsTooSmall.trueBranch().assign(variable, tryBlock.load(defaultValue));
-        valueIsTooSmall.falseBranch().assign(variable, value);
+    private ResultHandle getValidOrDefault(BytecodeCreator creator, ResultHandle value, int minValue, int defaultValue) {
+        AssignableResultHandle result = creator.createVariable(int.class);
+        BranchResult isValid = creator.ifIntegerGreaterEqual(value, creator.load(minValue));
+        isValid.trueBranch().assign(result, value);
+        isValid.falseBranch().assign(result, isValid.falseBranch().load(defaultValue));
+        return result;
     }
 
     /**
      * Return an array with the links applicable for the provided page and page count.
      */
-    public static ResultHandle getLinks(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page,
+    public ResultHandle getLinks(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page,
             ResultHandle pageCount) {
         ResultHandle links = creator.newInstance(ofConstructor(ArrayList.class, int.class), creator.load(4));
 
@@ -91,7 +76,7 @@ public final class PaginationImplementor {
                 ofMethod(List.class, "toArray", Object[].class, Object[].class), links, linksArray);
     }
 
-    private static ResultHandle getLink(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page, String rel) {
+    private ResultHandle getLink(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page, String rel) {
         ResultHandle builder = creator.invokeStaticMethod(
                 ofMethod(Link.class, "fromUri", Link.Builder.class, URI.class), getPageUri(creator, uriInfo, page));
         creator.invokeInterfaceMethod(ofMethod(Link.Builder.class, "rel", Link.Builder.class, String.class),
@@ -109,7 +94,7 @@ public final class PaginationImplementor {
      * @param page a {@link Page} to be used for getting page number and size
      * @return a page {@link URI}
      */
-    private static ResultHandle getPageUri(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page) {
+    private ResultHandle getPageUri(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page) {
         ResultHandle uriBuilder = creator.invokeInterfaceMethod(
                 ofMethod(UriInfo.class, "getAbsolutePathBuilder", UriBuilder.class), uriInfo);
 
@@ -132,7 +117,7 @@ public final class PaginationImplementor {
     /**
      * Returns the last page with the same size as the provided page.
      */
-    private static ResultHandle getLastPage(BytecodeCreator creator, ResultHandle page, ResultHandle pageCount) {
+    private ResultHandle getLastPage(BytecodeCreator creator, ResultHandle page, ResultHandle pageCount) {
         ResultHandle pageNumber = creator.invokeStaticMethod(
                 ofMethod(Integer.class, "sum", int.class, int.class, int.class), pageCount, creator.load(-1));
         return creator.invokeVirtualMethod(
@@ -142,7 +127,7 @@ public final class PaginationImplementor {
     /**
      * Compares indexes of two pages.
      */
-    private static BranchResult isTheSamePage(BytecodeCreator creator, ResultHandle page, ResultHandle anotherPage) {
+    private BranchResult isTheSamePage(BytecodeCreator creator, ResultHandle page, ResultHandle anotherPage) {
         ResultHandle index = creator.readInstanceField(FieldDescriptor.of(Page.class, "index", int.class), page);
         ResultHandle anotherIndex = creator.readInstanceField(FieldDescriptor.of(Page.class, "index", int.class), anotherPage);
         return creator.ifIntegerEqual(index, anotherIndex);

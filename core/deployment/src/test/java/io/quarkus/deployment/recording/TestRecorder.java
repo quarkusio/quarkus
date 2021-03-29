@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.RelaxedValidation;
 
 public class TestRecorder {
 
@@ -89,5 +90,13 @@ public class TestRecorder {
                 return val;
             }
         };
+    }
+
+    public void relaxedObject(@RelaxedValidation ValidationFails validationFails) {
+        RESULT.add(validationFails);
+    }
+
+    public void ignoredProperties(IgnoredProperties ignoredProperties) {
+        RESULT.add(ignoredProperties);
     }
 }

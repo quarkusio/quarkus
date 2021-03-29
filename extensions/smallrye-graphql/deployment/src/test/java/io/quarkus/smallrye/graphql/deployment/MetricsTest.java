@@ -3,14 +3,13 @@ package io.quarkus.smallrye.graphql.deployment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.SimpleTimer;
-import org.eclipse.microprofile.metrics.annotation.RegistryType;
+import org.eclipse.microprofile.metrics.Tag;
 import org.hamcrest.CoreMatchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
@@ -21,24 +20,23 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.smallrye.metrics.MetricRegistries;
 
 public class MetricsTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class)
+                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.metrics.enabled=true"), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
-
-    @Inject
-    @RegistryType(type = MetricRegistry.Type.VENDOR)
-    MetricRegistry metricRegistry;
 
     // Run a Query and check that its corresponding metric is updated
     @Test
     public void testQuery() {
-        SimpleTimer metric = metricRegistry.getSimpleTimers().get(new MetricID("mp_graphql_Query_ping"));
+        MetricRegistry metricRegistry = MetricRegistries.get(MetricRegistry.Type.VENDOR);
+        SimpleTimer metric = metricRegistry.getSimpleTimers()
+                .get(new MetricID("mp_graphql", new Tag("type", "QUERY"), new Tag("name", "ping"), new Tag("source", "false")));
         assertNotNull(metric, "Metrics should be registered eagerly");
 
         String pingRequest = getPayload("{\n" +

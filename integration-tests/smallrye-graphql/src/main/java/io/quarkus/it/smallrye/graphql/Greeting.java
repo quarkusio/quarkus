@@ -2,7 +2,7 @@ package io.quarkus.it.smallrye.graphql;
 
 import java.time.LocalTime;
 
-public class Greeting {
+public class Greeting extends Salutation {
 
     private String message;
     private LocalTime time;
@@ -29,6 +29,11 @@ public class Greeting {
 
     public void setTime(LocalTime time) {
         this.time = time;
+    }
+
+    @Override
+    public String getType() {
+        return "Greet";
     }
 
 }

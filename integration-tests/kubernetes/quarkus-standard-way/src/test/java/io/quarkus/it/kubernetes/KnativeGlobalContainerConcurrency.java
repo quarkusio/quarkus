@@ -41,7 +41,7 @@ public class KnativeGlobalContainerConcurrency {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
-        assertThat(kubernetesList).filteredOn(i -> "ConfigMap".equals(i.getKind())).hasOnlyOneElementSatisfying(c -> {
+        assertThat(kubernetesList).filteredOn(i -> "ConfigMap".equals(i.getKind())).singleElement().satisfies(c -> {
             assertThat(c.getMetadata()).satisfies(m -> assertThat(m.getName()).isEqualTo("config-autoscaler"));
             assertThat(c).isInstanceOfSatisfying(ConfigMap.class, m -> {
                 assertThat(m.getData()).contains(entry("container-concurrency", "100"));

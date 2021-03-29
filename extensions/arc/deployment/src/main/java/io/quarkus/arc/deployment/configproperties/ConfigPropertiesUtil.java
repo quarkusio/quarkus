@@ -9,6 +9,9 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.ConfigBuildStep;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -107,6 +110,20 @@ final class ConfigPropertiesUtil {
         return new ReadOptionalResponse(value, isPresentTrue, isPresentBranch.falseBranch());
     }
 
+    public static boolean isListOfObject(Type type) {
+        if (type.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+            return false;
+        }
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        if (!DotNames.LIST.equals(parameterizedType.name())) {
+            return false;
+        }
+        if (parameterizedType.arguments().size() != 1) {
+            return false;
+        }
+        return !parameterizedType.arguments().get(0).name().toString().startsWith("java");
+    }
+
     private static boolean isCollection(final Type resultType) {
         return DotNames.COLLECTION.equals(resultType.name()) ||
                 DotNames.LIST.equals(resultType.name()) ||
@@ -126,6 +143,15 @@ final class ConfigPropertiesUtil {
         }
 
         return type.asParameterizedType().arguments().get(0);
+    }
+
+    static void registerImplicitConverter(Type type, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        // We need to register for reflection in case an implicit converter is required.
+        if (!ConfigBuildStep.isHandledByProducers(type)) {
+            if (type.kind() != Type.Kind.ARRAY) {
+                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+            }
+        }
     }
 
     static class ReadOptionalResponse {

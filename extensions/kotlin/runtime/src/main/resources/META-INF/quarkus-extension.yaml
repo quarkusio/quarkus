@@ -1,4 +1,3 @@
----
 name: "Kotlin"
 metadata:
   keywords:
@@ -7,4 +6,7 @@ metadata:
   categories:
   - "alt-languages"
   status: "preview"
-  codestart: "kotlin"
+  codestart:
+    name: "kotlin"
+    kind: "core"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

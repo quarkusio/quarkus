@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Accessing application properties with Spring Boot properties API
 
@@ -35,14 +35,14 @@ The solution is located in the `spring-boot-properties-quickstart` {quickstarts-
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=spring-boot-properties-quickstart \
     -DclassName="org.acme.spring.boot.properties.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-boot-properties"
+    -Dextensions="resteasy,spring-boot-properties"
 cd spring-boot-properties-quickstart
 ----
 
@@ -112,7 +112,7 @@ Here `text` field is public, but it could also be a private field with getter an
 Because `text` does not have a default value it is considered required and unless it is defined in a configuration file (`application.properties` by default)  your application will fail to start.
 Define this property in your `src/main/resources/application.properties` file:
 
-[source,shell]
+[source,properties]
 ----
 # Your configuration properties
 greeting.text = hello
@@ -153,7 +153,7 @@ Open your browser to http://localhost:8080/greeting.
 
 Changing the configuration file is immediately reflected.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
 == Default values
@@ -350,7 +350,7 @@ This is especially useful when then number of properties grows.
 Because of the additional class, our property names have changed.
 Let's update the properties file and the `GreetingResource` class.
 
-[source,shell]
+[source,properties]
 ----
 # Your configuration properties
 greeting.message.text = hello
@@ -387,6 +387,7 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * link:spring-di[Quarkus - Extension for Spring DI]
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
 * link:spring-security[Quarkus - Extension for Spring Security]
 * link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
 * link:spring-cache[Quarkus - Extension for Spring Cache]

@@ -6,13 +6,16 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
+import de.flapdoodle.embed.mongo.Command;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
 import de.flapdoodle.embed.mongo.config.IMongodConfig;
 import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
 import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder;
 import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.runtime.Network;
+import de.flapdoodle.embed.process.config.IRuntimeConfig;
+import de.flapdoodle.embed.process.config.io.ProcessOutput;
 
 public class MongoTestBase {
 
@@ -37,6 +40,13 @@ public class MongoTestBase {
 
     @BeforeAll
     public static void startMongoDatabase() throws IOException {
+        try {
+            //JDK bug workaround
+            //https://github.com/quarkusio/quarkus/issues/14424
+            //force class init to prevent possible deadlock when done by mongo threads
+            Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
+        } catch (ClassNotFoundException e) {
+        }
         String uri = getConfiguredConnectionString();
         // This switch allow testing against a running mongo database.
         if (uri == null) {
@@ -45,7 +55,7 @@ public class MongoTestBase {
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
             IMongodConfig config = new MongodConfigBuilder()
                     .version(version)
-                    .net(new Net(port, Network.localhostIsIPv6()))
+                    .net(new Net("127.0.0.1", port, false))
                     .build();
             MONGO = getMongodExecutable(config);
             try {
@@ -80,7 +90,11 @@ public class MongoTestBase {
     }
 
     private static MongodExecutable doGetExecutable(IMongodConfig config) {
-        return MongodStarter.getDefaultInstance().prepare(config);
+        IRuntimeConfig runtimeConfig = new RuntimeConfigBuilder()
+                .defaults(Command.MongoD)
+                .processOutput(ProcessOutput.getDefaultInstanceSilent())
+                .build();
+        return MongodStarter.getInstance(runtimeConfig).prepare(config);
     }
 
     @AfterAll

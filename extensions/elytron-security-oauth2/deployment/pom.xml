@@ -6,7 +6,6 @@
         <artifactId>quarkus-elytron-security-oauth2-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -25,6 +24,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security-deployment</artifactId>
+        </dependency>
+        <!-- JSON-P is needed for cases where JSON-B is not in scope-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp-deployment</artifactId>
         </dependency>
 
         <dependency>

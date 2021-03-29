@@ -29,7 +29,7 @@ public class FlywayExtensionConfigNamedDataSourceWithoutDefaultTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(FlywayExtensionConfigFixture.class)
+                    .addClasses(FlywayExtensionConfigFixture.class, FlywayExtensionCallback.class)
                     .addAsResource("config-for-named-datasource-without-default.properties", "application.properties"));
 
     @Test

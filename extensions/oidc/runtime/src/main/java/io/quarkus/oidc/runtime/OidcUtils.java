@@ -21,12 +21,16 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public final class OidcUtils {
+    static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
+    static final String USER_INFO_ATTRIBUTE = "userinfo";
+    static final String TENANT_ID_ATTRIBUTE = "tenant-id";
     /**
      * This pattern uses a positive lookahead to split an expression around the forward slashes
      * ignoring those which are located inside a pair of the double quotes.
@@ -60,28 +64,6 @@ public final class OidcUtils {
         } catch (IllegalArgumentException ex) {
             return null;
         }
-    }
-
-    public static boolean validateClaims(OidcTenantConfig.Token tokenConfig, JsonObject json) {
-        if (tokenConfig.issuer.isPresent()) {
-            String issuer = json.getString(Claims.iss.name());
-            if (!tokenConfig.issuer.get().equals(issuer)) {
-                throw new OIDCException("Invalid issuer");
-            }
-        }
-        if (tokenConfig.audience.isPresent()) {
-            Object claimValue = json.getValue(Claims.aud.name());
-            List<String> audience = Collections.emptyList();
-            if (claimValue instanceof JsonArray) {
-                audience = convertJsonArrayToList((JsonArray) claimValue);
-            } else if (claimValue != null) {
-                audience = Arrays.asList((String) claimValue);
-            }
-            if (!audience.containsAll(tokenConfig.audience.get())) {
-                throw new OIDCException("Invalid audience");
-            }
-        }
-        return true;
     }
 
     public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {
@@ -154,13 +136,9 @@ public final class OidcUtils {
 
     static QuarkusSecurityIdentity validateAndCreateIdentity(
             RoutingContext vertxContext, TokenCredential credential,
-            OidcTenantConfig config, JsonObject tokenJson, JsonObject rolesJson, JsonObject userInfo) {
-        try {
-            OidcUtils.validateClaims(config.getToken(), tokenJson);
-        } catch (OIDCException e) {
-            throw new AuthenticationFailedException(e);
-        }
+            TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, JsonObject userInfo) {
 
+        OidcTenantConfig config = resolvedContext.oidcConfig;
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.addCredential(credential);
 
@@ -174,6 +152,16 @@ public final class OidcUtils {
             throw new AuthenticationFailedException(e);
         }
         builder.setPrincipal(jwtPrincipal);
+        setSecurityIdentityRoles(builder, config, rolesJson);
+        setSecurityIdentityUserInfo(builder, userInfo);
+        setSecurityIdentityConfigMetadata(builder, resolvedContext);
+        setBlockinApiAttribute(builder, vertxContext);
+        setTenantIdAttribute(builder, config);
+        return builder.build();
+    }
+
+    public static void setSecurityIdentityRoles(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
+            JsonObject rolesJson) {
         try {
             String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
             for (String role : findRoles(clientId, config.getRoles(), rolesJson)) {
@@ -182,13 +170,29 @@ public final class OidcUtils {
         } catch (Exception e) {
             throw new ForbiddenException(e);
         }
-        setSecurityIdentityUserInfo(builder, userInfo);
-        return builder.build();
+    }
+
+    public static void setBlockinApiAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext vertxContext) {
+        if (vertxContext != null) {
+            builder.addAttribute(AuthenticationRequestContext.class.getName(),
+                    vertxContext.get(AuthenticationRequestContext.class.getName()));
+        }
+    }
+
+    public static void setTenantIdAttribute(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config) {
+        builder.addAttribute(TENANT_ID_ATTRIBUTE, config.tenantId.orElse("Default"));
     }
 
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, JsonObject userInfo) {
         if (userInfo != null) {
-            builder.addAttribute("userinfo", new UserInfo(userInfo.encode()));
+            builder.addAttribute(USER_INFO_ATTRIBUTE, new UserInfo(userInfo.encode()));
+        }
+    }
+
+    public static void setSecurityIdentityConfigMetadata(QuarkusSecurityIdentity.Builder builder,
+            TenantConfigContext resolvedContext) {
+        if (resolvedContext.provider.client != null) {
+            builder.addAttribute(CONFIG_METADATA_ATTRIBUTE, resolvedContext.provider.client.getMetadata());
         }
     }
 

@@ -1,7 +1,6 @@
 package io.quarkus.vertx.core.runtime.config;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -31,10 +30,9 @@ public class VertxConfiguration {
 
     /**
      * The maximum amount of time the event loop can be blocked.
-     * Default is 2s.
      */
-    @ConfigItem
-    public Optional<Duration> maxEventLoopExecuteTime;
+    @ConfigItem(defaultValue = "2")
+    public Duration maxEventLoopExecuteTime;
 
     /**
      * The amount of time before a warning is displayed if the event loop is blocked.
@@ -50,10 +48,9 @@ public class VertxConfiguration {
 
     /**
      * The maximum amount of time the worker thread can be blocked.
-     * Default is 10s.
      */
-    @ConfigItem
-    public Optional<Duration> maxWorkerExecuteTime;
+    @ConfigItem(defaultValue = "60")
+    public Duration maxWorkerExecuteTime;
 
     /**
      * The size of the internal thread pool (used for the file system).
@@ -78,6 +75,12 @@ public class VertxConfiguration {
      */
     @ConfigItem
     public ClusterConfiguration cluster;
+
+    /**
+     * The address resolver configuration.
+     */
+    @ConfigItem
+    public AddressResolverConfiguration resolver;
 
     /**
      * Enable or disable native transport

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Sending emails
 
@@ -29,18 +29,20 @@ It covers simple emails, attachments, inlined attachments, the reactive and impe
 
 Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=sending-email-quickstart \
-    -Dextensions="mailer"
+    -DclassName="org.acme.mailer.SimpleMailerResource" \
+    -Dpath="/simple" \
+    -Dextensions="resteasy,mailer"
 cd sending-email-quickstart
 ----
 
 If you already have an existing project, add the `mailer` extension:
 
-[source]
+[source,bash]
 ----
 ./mvnw quarkus:add-extensions -Dextensions="mailer"
 ----
@@ -62,7 +64,7 @@ Note that the password can also be configured using system properties and enviro
 
 Here is an example using _sendgrid_:
 
-[source]
+[source,properties]
 ----
 quarkus.mailer.from=test@quarkus.io
 quarkus.mailer.host=smtp.sendgrid.net
@@ -79,14 +81,16 @@ It is recommended to encrypt any sensitive data, such as the `quarkus.mailer.pas
 One approach is to save the value into a secure store like HashiCorp Vault, and refer to it from the configuration.
 Assuming for instance that Vault contains key `mail-password` at path `myapps/myapp/myconfig`, then the mailer
 extension can be simply configured as:
-```
+
+[source,properties]
+----
 ...
 # path within the kv secret engine where is located the application sensitive configuration
 quarkus.vault.secret-config-kv-path=myapps/myapp/myconfig
 
 ...
 quarkus.mailer.password=${mail-password}
-```
+----
 Please note that the password value is evaluated only once, at startup time. If `mail-password` was changed in Vault,
 the only way to get the new value would be to restart the application.
 ====
@@ -236,7 +240,7 @@ It's also possible to inject a mail template, where the message body is created 
 public class MailingResource {
 
     @CheckedTemplate
-    class Templates {
+    static class Templates {
         public static native MailTemplateInstance hello(String name); <1>
     }
     
@@ -287,6 +291,28 @@ public CompletionStage<Response> send() {
 
 TIP: Injected mail templates are validated during build. If there is no matching template in `src/main/resources/templates` the build fails.
 
+Adding `quarkus-resteasy-reactive` extension allows you to directly return a `Uni`, such as:
+
+[source, java]
+----
+@Inject
+MailTemplate hello;
+
+@GET
+@Path("/mail")
+public Uni<Response> send() { <1>
+    return hello.to("to@acme.org")
+        .subject("Hello from Qute template")
+        // the template looks like: Hello {name}!
+        .data("name", "John")
+        .send()
+        .onItem().transform(x -> Response.accepted().build()); <2>
+}
+----
+<1> The method returns a `Uni`
+<2> Transform the `Uni<Void>` returned by `MailTemplate` into `Unit<Response>`
+
+[[testing]]]
 == Testing email sending
 
 Because it is very inconvenient to send emails during development and testing, you can set the `quarkus.mailer.mock` boolean
@@ -340,7 +366,7 @@ When done, you can configure your Quarkus application by adding the following pr
 
 With TLS:
 
-[source]
+[source,properties]
 ----
 quarkus.mailer.auth-methods=DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGIN
 quarkus.mailer.from=YOUREMAIL@gmail.com
@@ -353,7 +379,7 @@ quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
 
 Or with SSL:
 
-[source]
+[source,properties]
 ---- 
 quarkus.mailer.auth-methods=DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGIN
 quarkus.mailer.from=YOUREMAIL@gmail.com
@@ -388,8 +414,6 @@ If you need fine control on how the mail is sent, for instance if you need to re
 Three API flavors are exposed:
 
 * the Mutiny client (`io.vertx.mutiny.ext.mail.MailClient`)
-* the Axle client (`io.vertx.axle.ext.mail.MailClient`), using `CompletionStage` and Reactive Streams `Publisher` - deprecated, it is recommended to switch to the Mutiny client
-* the RX Java 2 client (`io.vertx.reactivex.ext.mail.MailClient`) - deprecated, it is recommended to switch to the Mutiny client
 * the bare client (`io.vertx.ext.mail.MailClient`)
 
 Check the link:vertx[Using Vert.x guide] for further details about these different APIs and how to select the most suitable for you.

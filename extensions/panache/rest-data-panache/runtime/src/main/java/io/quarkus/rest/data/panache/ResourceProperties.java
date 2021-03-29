@@ -16,14 +16,12 @@ import java.lang.annotation.Target;
 public @interface ResourceProperties {
 
     /**
-     * Generate operations that support HAL content type.
-     * HAL methods are generated in addition to the standard methods. They accept the same parameters but return a content of
-     * `application/hal+json` type.
-     * The operations that support HAL responses are `get`, `list`, `add` and `update`.
+     * Whether this resource operations should be exposed as JAX-RS methods by default.
+     * Separate methods can override this setting by using {@link MethodProperties} annotation.
      * <p>
-     * Default: false.
+     * Default: true.
      */
-    boolean hal() default false;
+    boolean exposed() default true;
 
     /**
      * URL path segment that should be used to access the resources.
@@ -42,4 +40,21 @@ public @interface ResourceProperties {
      * Default: true.
      */
     boolean paged() default true;
+
+    /**
+     * Generate operations that support HAL content type.
+     * HAL methods are generated in addition to the standard methods. They accept the same parameters but return a content of
+     * `application/hal+json` type.
+     * The operations that support HAL responses are `get`, `list`, `add` and `update`.
+     * <p>
+     * Default: false.
+     */
+    boolean hal() default false;
+
+    /**
+     * Name that should be used when generating a HAL collection response.
+     * <p>
+     * Default: hyphenated resource name without a suffix. Ignored suffixes are `Controller` and `Resource`.
+     */
+    String halCollectionName() default "";
 }

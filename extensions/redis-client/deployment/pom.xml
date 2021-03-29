@@ -8,7 +8,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-redis-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-redis-client-deployment</artifactId>
@@ -28,12 +27,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health-spi</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <build>

@@ -2,7 +2,6 @@ package io.quarkus.avro.deployment;
 
 import java.util.Collection;
 
-import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.specific.AvroGenerated;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -24,14 +23,12 @@ public class AvroProcessor {
             BuildProducer<NativeImageConfigBuildItem> conf) {
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
-        builder.addRuntimeInitializedClass(GenericDatumReader.class.getName());
 
         Collection<AnnotationInstance> annotations = indexBuildItem.getIndex()
                 .getAnnotations(DotName.createSimple(AvroGenerated.class.getName()));
         for (AnnotationInstance annotation : annotations) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                 String className = annotation.target().asClass().name().toString();
-                builder.addRuntimeInitializedClass(className);
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, className));
             }
         }

@@ -1,39 +1,18 @@
 package io.quarkus.bootstrap.logging;
 
+import io.quarkus.bootstrap.graal.ImageInfo;
 import java.util.logging.Handler;
 import java.util.logging.Level;
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
-import org.jboss.logmanager.handlers.DelayedHandler;
 
 /**
  *
  */
 public final class InitialConfigurator implements EmbeddedConfigurator {
 
-    public static final DelayedHandler DELAYED_HANDLER;
-
-    static {
-        //a hack around class loading
-        //this is always loaded in the root class loader with jboss-logmanager,
-        //however it may also be loaded in an isolated CL when running in dev
-        //or test mode. If it is in an isolated CL we load the handler from
-        //the class on the system class loader so they are equal
-        //TODO: should this class go in its own module and be excluded from isolated class loading?
-        DelayedHandler handler = new DelayedHandler();
-        ClassLoader cl = InitialConfigurator.class.getClassLoader();
-        try {
-            Class<?> root = Class.forName(InitialConfigurator.class.getName(), false, ClassLoader.getSystemClassLoader());
-            if (root.getClassLoader() != cl) {
-                handler = (DelayedHandler) root.getDeclaredField("DELAYED_HANDLER").get(null);
-            }
-        } catch (Exception e) {
-            //ignore, happens on native image build
-        }
-        DELAYED_HANDLER = handler;
-    }
+    public static final QuarkusDelayedHandler DELAYED_HANDLER = new QuarkusDelayedHandler();
 
     @Override
     public Level getMinimumLevelOf(final String loggerName) {

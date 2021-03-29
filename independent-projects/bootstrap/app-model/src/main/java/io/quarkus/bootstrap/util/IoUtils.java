@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -17,6 +18,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -86,6 +88,32 @@ public class IoUtils {
                 }
             });
         } catch (IOException e) {
+        }
+    }
+
+    /**
+     * Creates a new empty directory or empties an existing one.
+     * 
+     * @param dir directory
+     * @throws IOException in case of a failure
+     */
+    public static void createOrEmptyDir(Path dir) throws IOException {
+        Objects.requireNonNull(dir);
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+            return;
+        }
+        if (!Files.isDirectory(dir)) {
+            throw new IllegalArgumentException(dir + " is not a directory");
+        }
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path p : stream) {
+                if (Files.isDirectory(p)) {
+                    recursiveDelete(p);
+                } else {
+                    Files.delete(p);
+                }
+            }
         }
     }
 

@@ -24,6 +24,8 @@ public class DirectUserDepsOverrideTransitiveExtDepsTest extends ExecutableOutpu
         addToExpectedLib(common3);
 
         final TsArtifact appJar = TsArtifact.jar("app")
+                .addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties())
                 .addDependency(ext1)
                 .addDependency(common3)
                 .addDependency(ext2);

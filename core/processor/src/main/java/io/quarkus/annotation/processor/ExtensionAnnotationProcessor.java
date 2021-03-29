@@ -100,11 +100,15 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        doProcess(annotations, roundEnv);
-        if (roundEnv.processingOver()) {
-            doFinish();
+        try {
+            doProcess(annotations, roundEnv);
+            if (roundEnv.processingOver()) {
+                doFinish();
+            }
+            return true;
+        } finally {
+            JDeparser.dropCaches();
         }
-        return true;
     }
 
     @Override

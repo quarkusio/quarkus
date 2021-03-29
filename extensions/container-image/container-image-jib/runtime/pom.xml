@@ -11,9 +11,15 @@
     </parent>
 
     <artifactId>quarkus-container-image-jib</artifactId>
-    <name>Quarkus - Container - Image - Jib</name>
+    <name>Quarkus - Container Image - Jib</name>
     <description>Build container images of your application using Jib</description>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>

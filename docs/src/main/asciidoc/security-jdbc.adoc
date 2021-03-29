@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Security with JDBC
 
@@ -44,12 +44,13 @@ The solution is located in the `security-jdbc-quickstart` {quickstarts-tree-url}
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-jdbc-quickstart \
-    -Dextensions="elytron-security-jdbc, jdbc-postgresql, resteasy"
+    -Dextensions="elytron-security-jdbc,jdbc-postgresql,resteasy" \
+    -DnoExamples
 cd security-jdbc-quickstart
 ----
 
@@ -141,9 +142,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
 @Path("/api/users")
@@ -152,7 +151,6 @@ public class UserResource {
     @GET
     @RolesAllowed("user")
     @Path("/me")
-    @Produces(MediaType.APPLICATION_JSON)
     public String me(@Context SecurityContext securityContext) {
         return securityContext.getUserPrincipal().getName();
     }
@@ -171,7 +169,7 @@ quarkus.datasource.password=quarkus
 quarkus.datasource.jdbc.url=jdbc:postgresql:elytron-security-jdbc
 ----
 
-In our context, we are using PostgreSQL as identity store and we init the database with users and roles.
+In our context, we are using PostgreSQL as identity store and we initialize the database with users and roles.
 
 [source,sql]
 ----
@@ -257,6 +255,7 @@ By providing the `admin:admin` credentials, the extension authenticated the user
 The `admin` user is authorized to access to the protected resources.
 
 The user `admin` should be forbidden to access a resource protected with `@RolesAllowed("user")` because it doesn't have this role.
+
 [source,shell]
 ----
 $ curl -i -X GET -u admin:admin http://localhost:8080/api/users/me
@@ -268,9 +267,10 @@ Forbidden%
 ----
 
 Finally, using the user `user` works and the security context contains the principal details (username for instance).
+
 [source,shell]
 ----
-curl -i -X GET -u user:user http://localhost:8080/api/users/me
+$ curl -i -X GET -u user:user http://localhost:8080/api/users/me
 HTTP/1.1 200 OK
 Content-Length: 4
 Content-Type: text/plain;charset=UTF-8
@@ -310,7 +310,6 @@ quarkus.security.jdbc.principal-query.roles.attribute-mappings.0.to=groups
 
 include::{generated-dir}/config/quarkus-elytron-security-jdbc.adoc[opts=optional, leveloffset=+1]
 
-== Future Work
+== References
 
-* Propose more password mappers.
-* Provide an opinionated configuration.
+* link:security[Quarkus Security]

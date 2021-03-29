@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Google Cloud Functions (Serverless)
 :extension-status: experimental
@@ -42,19 +42,19 @@ The solution is located in the `google-cloud-functions-quickstart` {quickstarts-
 Create an application with the `quarkus-google-cloud-functions` extension.
 You can use the following Maven command to create it:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=google-cloud-functions \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="google-cloud-functions"
+    -Dextensions="resteasy,google-cloud-functions"
 ----
 
 Now, let's remove what's not needed inside the generated application:
 
-- Remove the dependency `io.quarkus:quarkus-reasteasy` from your `pom.xml` file.
+- Remove the dependency `io.quarkus:quarkus-resteasy` from your `pom.xml` file.
 - Remove the generated `org.acme.quickstart.GreetingResource` class.
 - Remove the `index.html` from `resources/META-INF/resources` or it will be picked up instead of your Function.
 - Remove the existing tests.
@@ -63,25 +63,25 @@ Now, let's remove what's not needed inside the generated application:
 
 Login to Google Cloud is necessary for deploying the application and it can be done as follows:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 gcloud auth login
 ----
 
 At the time of this writing, Cloud Functions are still in beta so make sure to install the `beta` command group.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 gcloud components install beta
 ----
 
 == Creating the functions
 
-For this example project, we will create three functions, one `HttpFunction`, one `BackgroundFunction` (Storage event) and one `RawBakgroundFunction` (PubSub event).
+For this example project, we will create three functions, one `HttpFunction`, one `BackgroundFunction` (Storage event) and one `RawBackgroundFunction` (PubSub event).
 
 == Choose Your Function
 
-The `quarkus-google-cloud-functions` extension scans your project for a class that directly implements the Google Cloud `HttpFunction`, `BackgroundFunction` or `RawBakgroundFunction` interface.
+The `quarkus-google-cloud-functions` extension scans your project for a class that directly implements the Google Cloud `HttpFunction`, `BackgroundFunction` or `RawBackgroundFunction` interface.
 It must find a class in your project that implements one of these interfaces or it will throw a build time failure.
 If it finds more than one function classes, a build time exception will also be thrown.
 
@@ -91,7 +91,7 @@ project and use configuration or an environment variable to pick the function yo
 
 To configure the name of the function, you can use the following configuration property:
 
-[source, subs=attributes+]
+[source,properties,subs=attributes+]
 ----
 quarkus.google-cloud-functions.function=test
 ----
@@ -239,7 +239,7 @@ This means that Cloud Build is not activated yet. To overcome this error, open t
 
 This is an example command to deploy your `HttpFunction` to Google Cloud:
 
-[source]
+[source,bash]
 ----
 gcloud beta functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.QuarkusHttpFunction \
@@ -257,7 +257,7 @@ This command will give you as output a `httpsTrigger.url` that points to your fu
 
 Before deploying your function, you need to create a bucket.
 
-[source]
+[source,bash]
 ----
 gsutil mb gs://quarkus-hello
 ----
@@ -265,7 +265,7 @@ gsutil mb gs://quarkus-hello
 This is an example command to deploy your `BackgroundFunction` to Google Cloud, as the function is triggered by a Storage event,
 it needs to use `--trigger-event google.storage.object.finalize` and the `--trigger-resource` parameter with the name of a previously created bucket:
 
-[source]
+[source,bash]
 ----
 gcloud beta functions deploy quarkus-example-storage \
     --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
@@ -280,7 +280,7 @@ The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroun
 
 To trigger the event, you can send a file to the GCS `quarkus-hello` bucket or you can use gcloud to simulate one:
 
-[source]
+[source,bash]
 ----
 gcloud functions call quarkus-example-storage  --data '{"name":"test.txt"}'
 ----
@@ -292,7 +292,7 @@ NOTE: `--data` contains the GCS event, it is a JSON document with the name of th
 This is an example command to deploy your `RawBackgroundFunction` to Google Cloud, as the function is triggered by a PubSub event,
 it needs to use `--trigger-event google.pubsub.topic.publish` and the `--trigger-resource` parameter with the name of a previously created topic:
 
-[source]
+[source,bash]
 ----
 gcloud beta functions deploy quarkus-example-pubsub \
   --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
@@ -304,9 +304,9 @@ gcloud beta functions deploy quarkus-example-pubsub \
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
 
-To trigger the event, you can send a file to the `hello_topic` topic of you can use gcloud to simulate one:
+To trigger the event, you can send a file to the `hello_topic` topic or you can use gcloud to simulate one:
 
-[source]
+[source,bash]
 ----
 gcloud functions call quarkus-example-pubsub --data '{"data":{"greeting":"world"}}'
 ----
@@ -317,23 +317,27 @@ The easiest way to locally test your function is using the Cloud Function invoke
 
 You can download it via Maven using the following command:
 
-[source]
+[source,bash]
 ----
 mvn dependency:copy \
   -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-beta1' \
   -DoutputDirectory=.
 ----
 
+Before using the invoker, you first need to build your function via `mvn package`.
+
 === The HttpFunction
 
 To test an `HttpFunction`, you can use this command to launch your function locally.
 
-[source]
+[source,bash]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/google-cloud-functions-1.0-SNAPSHOT-runner.jar \
+  --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusHttpFunction
 ----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
 
 Your endpoints will be available on http://localhost:8080.
 
@@ -341,16 +345,18 @@ Your endpoints will be available on http://localhost:8080.
 
 For background functions, you launch the invoker with a target class of `io.quarkus.gcp.functions.BackgroundFunction`.
 
-[source]
+[source,bash]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/google-cloud-functions-1.0-SNAPSHOT-runner.jar \
+  --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusBackgroundFunction
 ----
 
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
+
 Then you can call your background function via an HTTP call with a payload containing the event:
 
-[source]
+[source,bash]
 ----
 curl localhost:8080 -d '{"data":{"name":"hello.txt"}}'
 ----
@@ -361,16 +367,18 @@ This will call your Storage background function with an event `{"name":"hello.tx
 
 For background functions, you launch the invoker with a target class of `io.quarkus.gcp.functions.BackgroundFunction`.
 
-[source]
+[source,bash]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/google-cloud-functions-1.0-SNAPSHOT-runner.jar \
+  --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusBackgroundFunction
 ----
 
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
+
 Then you can call your background function via an HTTP call with a payload containing the event:
 
-[source]
+[source,bash]
 ----
 curl localhost:8080 -d '{"data":{"greeting":"world"}}'
 ----

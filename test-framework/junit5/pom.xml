@@ -8,7 +8,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-test-framework</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-junit5</artifactId>
@@ -46,10 +45,14 @@
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-datasource-deployment-spi</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
-            <!-- Avoid adding this to the BOM / Version has to be kept in sync with what optaplanner uses otherwise the enforcer complains -->
-            <version>1.4.11.1</version>
+            <!-- Avoid adding this to the BOM -->
+            <version>1.4.16</version>
         </dependency>
     </dependencies>
 

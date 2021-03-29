@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
  * {@link ArcProcessor#registerBeans(ContextRegistrationPhaseBuildItem, List)}.
  * 
  * @see ContextConfiguratorBuildItem
+ * @see CustomScopeBuildItem
  */
 public final class ContextRegistrationPhaseBuildItem extends SimpleBuildItem {
 

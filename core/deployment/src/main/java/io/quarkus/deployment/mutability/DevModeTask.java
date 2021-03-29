@@ -56,7 +56,7 @@ public class DevModeTask {
                     .setAppArtifact(existingModel.getAppArtifact())
                     .setExistingModel(existingModel)
                     .setIsolateDeployment(true)
-                    .setMode(QuarkusBootstrap.Mode.DEV)
+                    .setMode(QuarkusBootstrap.Mode.REMOTE_DEV_SERVER)
                     .setBuildSystemProperties(buildSystemProperties)
                     .setBaseName(appModel.getBaseName())
                     .setApplicationRoot(existingModel.getAppArtifact().getPath())
@@ -129,8 +129,7 @@ public class DevModeTask {
                 //not all local projects are dependencies
                 continue;
             }
-            IoUtils.recursiveDelete(moduleClasses);
-            Files.createDirectories(moduleClasses);
+            IoUtils.createOrEmptyDir(moduleClasses);
             for (Path p : dep.getPaths()) {
                 if (Files.isDirectory(p)) {
                     Path moduleTarget = moduleClasses;

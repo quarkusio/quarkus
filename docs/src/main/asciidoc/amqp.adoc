@@ -1,14 +1,14 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using AMQP with Reactive Messaging
 :extension-status: preview
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize MicroProfile Reactive Messaging to interact with AMQP.
+This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP.
 
 include::./status-include.adoc[]
 
@@ -46,12 +46,13 @@ The solution is located in the `amqp-quickstart` {quickstarts-tree-url}/amqp-qui
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amqp-quickstart \
-    -Dextensions="amqp"
+    -Dextensions="amqp" \
+    -DnoExamples
 cd amqp-quickstart
 ----
 
@@ -93,17 +94,17 @@ Create the `src/main/java/org/acme/amqp/PriceGenerator.java` file, with the foll
 ----
 package org.acme.amqp;
 
-import io.reactivex.Flowable;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import java.time.Duration;
+import java.util.Random;
 
 import javax.enterprise.context.ApplicationScoped;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
+
+import io.smallrye.mutiny.Multi;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
 /**
  * A bean producing random prices every 5 seconds.
- * The prices are written to an AMQP queue (prices). The AMQP configuration is specified in the
- * application configuration.
+ * The prices are written to a AMQP queue (prices). The AMQP configuration is specified in the application configuration.
  */
 @ApplicationScoped
 public class PriceGenerator {
@@ -111,15 +112,17 @@ public class PriceGenerator {
     private Random random = new Random();
 
     @Outgoing("generated-price")                        // <1>
-    public Flowable<Integer> generate() {               // <2>
-        return Flowable.interval(5, TimeUnit.SECONDS)
+    public Multi<Integer> generate() {                  // <2>
+        return Multi.createFrom().ticks().every(Duration.ofSeconds(5))
+                .onOverflow().drop()
                 .map(tick -> random.nextInt(100));
     }
 
 }
+
 ----
 <1> Instruct Reactive Messaging to dispatch the items from returned stream to `generated-price`.
-<2> The method returns a RX Java 2 _stream_ (`Flowable`) emitting a random _price_ every 5 seconds.
+<2> The method returns a Mutiny _stream_ (`Multi`) emitting a random _price_ every 5 seconds.
 
 The method returns a _Reactive Stream_. The generated items are sent to the stream named `generated-price`.
 This stream is mapped to an AMQP queue using the `application.properties` file that we will create soon.
@@ -198,7 +201,6 @@ public class PriceResource {
         return "hello";
     }
 
-
     @GET
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)                     // <2>
@@ -222,7 +224,7 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 * `generated-price` -> sink in which we write the prices
 * `prices` -> source in which we read the prices
 
-[source]
+[source,properties]
 ----
 # Configures the AMQP broker credentials.
 amqp-username=quarkus
@@ -286,7 +288,7 @@ Nothing spectacular here. On each received price, it updates the page.
 If you followed the instructions, you should have the AMQP broker running.
 Then, you just need to run the application using:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw quarkus:dev
 ----
@@ -299,7 +301,7 @@ NOTE: If you started the AMQP broker with docker compose, stop it using `CTRL+C`
 
 You can build the native executable with:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw package -Pnative
 ----
@@ -355,7 +357,7 @@ The new `Emitter.send` method returns a `CompletionStage` completed when the pro
 == Going further
 
 This guide has shown how you can interact with AMQP using Quarkus.
-It utilizes MicroProfile Reactive Messaging to build data streaming applications.
+It utilizes SmallRye Reactive Messaging to build data streaming applications.
 
 If you did the Kafka quickstart, you have realized that it's the same code.
 The only difference is the connector configuration.

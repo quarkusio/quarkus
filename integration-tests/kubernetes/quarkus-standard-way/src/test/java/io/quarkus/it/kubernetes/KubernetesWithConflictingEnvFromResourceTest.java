@@ -10,7 +10,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.builder.BuildException;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -22,7 +21,6 @@ public class KubernetesWithConflictingEnvFromResourceTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .assertBuildException(e -> assertThat(e)
                     .isInstanceOf(RuntimeException.class)
-                    .hasCauseInstanceOf(BuildException.class)
                     .hasMessageContaining(
                             "'db-password' env var can't simultaneously take its value from 'db-configmap' configmap & 'db-secret' secret"))
             .withConfigurationResource("kubernetes-with-conflicting-env-from-resource.properties");

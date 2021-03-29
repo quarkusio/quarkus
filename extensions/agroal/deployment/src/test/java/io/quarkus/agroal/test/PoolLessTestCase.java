@@ -31,8 +31,8 @@ public class PoolLessTestCase {
             }
         }
 
-        // Assert there are no connections on the pool
-        Assertions.assertEquals(0L, defaultDS.getMetrics().availableCount());
+        // Assert there are no connections in the pool
+        Assertions.assertEquals(0L, defaultDS.getMetrics().activeCount());
 
         Assertions.assertEquals(1L, defaultDS.getMetrics().creationCount());
         Assertions.assertEquals(1L, defaultDS.getMetrics().acquireCount());

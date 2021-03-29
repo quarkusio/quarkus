@@ -2,6 +2,7 @@ package io.quarkus.funqy.gcp.functions;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -34,11 +35,13 @@ public class FunqyCloudFunctionsBindingRecorder {
 
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
-                ObjectReader reader = objectMapper.readerFor(invoker.getInputType());
+                JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
+                ObjectReader reader = objectMapper.readerFor(javaInputType);
                 invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
             }
             if (invoker.hasOutput()) {
-                ObjectWriter writer = objectMapper.writerFor(invoker.getOutputType());
+                JavaType javaOutputType = objectMapper.constructType(invoker.getOutputType());
+                ObjectWriter writer = objectMapper.writerFor(javaOutputType);
                 invoker.getBindingContext().put(ObjectWriter.class.getName(), writer);
             }
         }

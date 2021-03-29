@@ -39,7 +39,7 @@ public class QuarkusRemoveExtension extends QuarkusPlatformTask {
                 .map(String::trim)
                 .collect(toSet());
         try {
-            new RemoveExtensions(getQuarkusProject())
+            new RemoveExtensions(getQuarkusProject(true))
                     .extensions(extensionsSet)
                     .execute();
         } catch (Exception e) {

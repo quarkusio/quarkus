@@ -20,8 +20,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-io</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.logmanager</groupId>

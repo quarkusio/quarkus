@@ -7,7 +7,6 @@
         <groupId>org.acme</groupId>
         <artifactId>grand-parent</artifactId>
         <version>0.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>my-project-add-to-bom-parent</artifactId>

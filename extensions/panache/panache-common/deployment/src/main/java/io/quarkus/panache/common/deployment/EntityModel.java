@@ -5,19 +5,19 @@ import java.util.Map;
 
 import org.jboss.jandex.ClassInfo;
 
-public class EntityModel<EntityFieldType extends EntityField> {
+public class EntityModel {
 
     public final String name;
     public final String superClassName;
     // VERY IMPORTANT: field traversal order should not change
-    public final Map<String, EntityFieldType> fields = new LinkedHashMap<>();
+    public final Map<String, EntityField> fields = new LinkedHashMap<>();
 
     public EntityModel(ClassInfo classInfo) {
         this.name = classInfo.name().toString();
         this.superClassName = classInfo.superName().toString();
     }
 
-    public void addField(EntityFieldType field) {
+    public void addField(EntityField field) {
         fields.put(field.name, field);
     }
 }

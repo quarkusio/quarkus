@@ -14,7 +14,7 @@ rsync -vr --delete \
     --exclude='**/index.adoc' \
     --exclude='**/attributes.adoc' \
     ../target/asciidoc/generated/ \
-    target/web-site/_generated-config
+    target/web-site/_generated-config/latest
 
 echo "Sync done!"
 echo "=========="

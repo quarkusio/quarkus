@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public final class Expressions {
@@ -11,6 +10,8 @@ public final class Expressions {
 
     static final String LEFT_BRACKET = "(";
     static final String RIGHT_BRACKET = ")";
+    static final String SQUARE_LEFT_BRACKET = "[";
+    static final String SQUARE_RIGHT_BRACKET = "]";
     public static final char TYPE_INFO_SEPARATOR = '|';
 
     private Expressions() {
@@ -18,6 +19,10 @@ public final class Expressions {
 
     public static boolean isVirtualMethod(String value) {
         return value.indexOf(LEFT_BRACKET) != -1;
+    }
+
+    public static boolean isBracketNotation(String value) {
+        return value.startsWith(SQUARE_LEFT_BRACKET);
     }
 
     public static String parseVirtualMethodName(String value) {
@@ -29,9 +34,16 @@ public final class Expressions {
         int start = value.indexOf(LEFT_BRACKET);
         if (start != -1 && value.endsWith(RIGHT_BRACKET)) {
             String params = value.substring(start + 1, value.length() - 1);
-            return splitParts(params, Expressions::isParamSeparator, Parser::isStringLiteralSeparator);
+            return splitParts(params, PARAMS_SPLIT_CONFIG);
         }
         throw new IllegalArgumentException("Not a virtual method: " + value);
+    }
+
+    public static String parseBracketContent(String value) {
+        if (value.endsWith(SQUARE_RIGHT_BRACKET)) {
+            return value.substring(1, value.length() - 1);
+        }
+        throw new IllegalArgumentException("Not a bracket notation expression: " + value);
     }
 
     public static String buildVirtualMethodSignature(String name, List<String> params) {
@@ -39,7 +51,7 @@ public final class Expressions {
     }
 
     public static List<String> splitParts(String value) {
-        return splitParts(value, Parser::isSeparator, Parser::isStringLiteralSeparator);
+        return splitParts(value, DEFAULT_SPLIT_CONFIG);
     }
 
     /**
@@ -48,43 +60,41 @@ public final class Expressions {
      * @return the parts
      */
     public static List<String> splitTypeInfoParts(String value) {
-        return splitParts(value, Parser::isSeparator, new Predicate<Character>() {
-
-            @Override
-            public boolean test(Character t) {
-                return t == TYPE_INFO_SEPARATOR;
-            }
-        }.or(Parser::isStringLiteralSeparator));
+        return splitParts(value, TYPE_INFO_SPLIT_CONFIG);
     }
 
-    public static List<String> splitParts(String value, Predicate<Character> separatorPredicate,
-            Predicate<Character> literalSeparatorPredicate) {
+    public static List<String> splitParts(String value, SplitConfig splitConfig) {
         if (value == null || value.isEmpty()) {
             return Collections.emptyList();
         }
         boolean literal = false;
-        boolean separator = false;
+        char separator = 0;
         byte infix = 0;
         byte brackets = 0;
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        ImmutableList.Builder<String> parts = ImmutableList.builder();
         StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
-            if (separatorPredicate.test(c)) {
-                // Adjacent separators are ignored
-                if (!separator) {
+            if (splitConfig.isSeparator(c)) {
+                // Adjacent separators may be ignored
+                if (separator == 0 || separator != c) {
                     if (!literal && brackets == 0) {
-                        if (buffer.length() > 0) {
-                            builder.add(buffer.toString());
+                        if (splitConfig.shouldPrependSeparator(c)) {
+                            buffer.append(c);
+                        }
+                        if (addPart(buffer, parts)) {
                             buffer = new StringBuilder();
                         }
-                        separator = true;
+                        if (splitConfig.shouldAppendSeparator(c)) {
+                            buffer.append(c);
+                        }
+                        separator = c;
                     } else {
                         buffer.append(c);
                     }
                 }
             } else {
-                if (literalSeparatorPredicate.test(c)) {
+                if (splitConfig.isLiteralSeparator(c)) {
                     literal = !literal;
                 }
                 // Non-separator char
@@ -98,13 +108,13 @@ public final class Expressions {
                             // Next infix method
                             infix = 1;
                             buffer.append(RIGHT_BRACKET);
-                            builder.add(buffer.toString());
-                            buffer = new StringBuilder();
+                            if (addPart(buffer, parts)) {
+                                buffer = new StringBuilder();
+                            }
                         } else {
                             // First space - start infix method
                             infix++;
-                            if (buffer.length() > 0) {
-                                builder.add(buffer.toString());
+                            if (addPart(buffer, parts)) {
                                 buffer = new StringBuilder();
                             }
                         }
@@ -116,24 +126,91 @@ public final class Expressions {
                         }
                         buffer.append(c);
                     }
-                    separator = false;
+                    separator = 0;
                 } else {
                     buffer.append(c);
-                    separator = false;
+                    separator = 0;
                 }
             }
         }
         if (infix > 0) {
             buffer.append(RIGHT_BRACKET);
         }
-        if (buffer.length() > 0) {
-            builder.add(buffer.toString());
-        }
-        return builder.build();
+        addPart(buffer, parts);
+        return parts.build();
     }
 
-    private static boolean isParamSeparator(char candidate) {
-        return ',' == candidate;
+    /**
+     * 
+     * @param buffer
+     * @param parts
+     * @return true if a new buffer should be created
+     */
+    private static boolean addPart(StringBuilder buffer, ImmutableList.Builder<String> parts) {
+        if (buffer.length() == 0) {
+            return false;
+        }
+        String val = buffer.toString().trim();
+        if (!val.isEmpty()) {
+            parts.add(val);
+        }
+        return true;
+    }
+
+    private static final SplitConfig DEFAULT_SPLIT_CONFIG = new DefaultSplitConfig();
+
+    private static final SplitConfig PARAMS_SPLIT_CONFIG = new SplitConfig() {
+
+        @Override
+        public boolean isSeparator(char candidate) {
+            return ',' == candidate;
+        }
+
+    };
+
+    private static final SplitConfig TYPE_INFO_SPLIT_CONFIG = new DefaultSplitConfig() {
+
+        @Override
+        public boolean isLiteralSeparator(char candidate) {
+            return candidate == TYPE_INFO_SEPARATOR || LiteralSupport.isStringLiteralSeparator(candidate);
+        }
+    };
+
+    private static class DefaultSplitConfig implements SplitConfig {
+
+        @Override
+        public boolean isSeparator(char candidate) {
+            return candidate == '.' || candidate == '[' || candidate == ']';
+        }
+
+        @Override
+        public boolean shouldPrependSeparator(char candidate) {
+            return candidate == ']';
+        }
+
+        @Override
+        public boolean shouldAppendSeparator(char candidate) {
+            return candidate == '[';
+        }
+
+    }
+
+    interface SplitConfig {
+
+        boolean isSeparator(char candidate);
+
+        default boolean isLiteralSeparator(char candidate) {
+            return LiteralSupport.isStringLiteralSeparator(candidate);
+        }
+
+        default boolean shouldPrependSeparator(char candidate) {
+            return false;
+        }
+
+        default boolean shouldAppendSeparator(char candidate) {
+            return false;
+        }
+
     }
 
 }

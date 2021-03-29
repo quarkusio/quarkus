@@ -22,5 +22,5 @@ public class SdkBuildTimeConfig {
      * @see software.amazon.awssdk.core.interceptor.ExecutionInterceptor
      */
     @ConfigItem
-    public Optional<List<Class<?>>> interceptors;
+    public Optional<List<String>> interceptors; // cannot be classes as can be runtime initialized (e.g. XRay interceptor)
 }

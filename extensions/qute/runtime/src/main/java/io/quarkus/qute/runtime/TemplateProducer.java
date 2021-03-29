@@ -5,11 +5,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstanceBase;
@@ -29,6 +30,7 @@ import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Singleton
 public class TemplateProducer {
@@ -70,22 +72,26 @@ public class TemplateProducer {
     }
 
     @Produces
+    @Location("ignored")
     @ResourcePath("ignored")
     Template getTemplate(InjectionPoint injectionPoint) {
-        ResourcePath path = null;
+        String path = null;
         for (Annotation qualifier : injectionPoint.getQualifiers()) {
-            if (qualifier.annotationType().equals(ResourcePath.class)) {
-                path = (ResourcePath) qualifier;
+            if (qualifier.annotationType().equals(Location.class)) {
+                path = ((Location) qualifier).value();
+                break;
+            } else if (qualifier.annotationType().equals(ResourcePath.class)) {
+                path = ((ResourcePath) qualifier).value();
                 break;
             }
         }
-        if (path == null || path.value().isEmpty()) {
-            throw new IllegalStateException("No template reource path specified");
+        if (path == null || path.isEmpty()) {
+            throw new IllegalStateException("No template location specified");
         }
         // We inject a delegating template in order to:
         // 1. Be able to select an appropriate variant if needed
         // 2. Be able to reload the template when needed, i.e. when the cache is cleared
-        return new InjectableTemplate(path.value(), templateVariants, engine);
+        return new InjectableTemplate(path, templateVariants, engine);
     }
 
     /**
@@ -113,7 +119,7 @@ public class TemplateProducer {
         }
 
         @Override
-        public Set<Expression> getExpressions() {
+        public List<Expression> getExpressions() {
             throw new UnsupportedOperationException("Injected templates do not support getExpressions()");
         }
 
@@ -160,6 +166,11 @@ public class TemplateProducer {
         }
 
         @Override
+        public Uni<String> createUni() {
+            return templateInstance().createUni();
+        }
+
+        @Override
         public CompletionStage<Void> consume(Consumer<String> consumer) {
             return templateInstance().consume(consumer);
         }
@@ -179,7 +190,8 @@ public class TemplateProducer {
             Variant selected = (Variant) getAttribute(TemplateInstance.SELECTED_VARIANT);
             String id;
             if (selected != null) {
-                id = variants.variantToTemplate.get(selected);
+                // Currently, we only use the content type to match the template
+                id = variants.getId(selected.getContentType());
                 if (id == null) {
                     id = variants.defaultTemplate;
                 }
@@ -201,6 +213,15 @@ public class TemplateProducer {
             this.defaultTemplate = defaultTemplate;
         }
 
+        String getId(String contentType) {
+            for (Entry<Variant, String> entry : variantToTemplate.entrySet()) {
+                if (entry.getKey().getContentType().equals(contentType)) {
+                    return entry.getValue();
+                }
+            }
+            return null;
+        }
+
         @Override
         public String toString() {
             return "TemplateVariants{default=" + defaultTemplate + ", variants=" + variantToTemplate + "}";
@@ -208,7 +229,7 @@ public class TemplateProducer {
     }
 
     private static Map<Variant, String> initVariants(String base, List<String> availableVariants, ContentTypes contentTypes) {
-        Map<Variant, String> map = new HashMap<>();
+        Map<Variant, String> map = new LinkedHashMap<>();
         for (String path : availableVariants) {
             if (!base.equals(path)) {
                 map.put(new Variant(null, contentTypes.getContentType(path), null), path);

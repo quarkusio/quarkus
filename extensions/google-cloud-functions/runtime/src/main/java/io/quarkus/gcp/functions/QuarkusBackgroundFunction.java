@@ -55,7 +55,7 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
     static void setDelegates(String selectedDelegate, String selectedRawDelegate) {
         if (selectedDelegate != null) {
             try {
-                Class<?> clazz = Class.forName(selectedDelegate);
+                Class<?> clazz = Class.forName(selectedDelegate, false, Thread.currentThread().getContextClassLoader());
                 for (Method method : clazz.getDeclaredMethods()) {
                     if (method.getName().equals("accept")) {
                         // the first parameter of the accept method is the event, we need to register it's type to
@@ -73,7 +73,7 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
 
         if (selectedRawDelegate != null) {
             try {
-                Class<?> clazz = Class.forName(selectedRawDelegate);
+                Class<?> clazz = Class.forName(selectedRawDelegate, false, Thread.currentThread().getContextClassLoader());
                 rawDelegate = (RawBackgroundFunction) Arc.container().instance(clazz).get();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);

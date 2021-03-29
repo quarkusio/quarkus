@@ -5,7 +5,7 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Represents a message bundle method that has a template that needs to be validated.
+ * Represents a message bundle method.
  * <p>
  * Note that templates that contain no expressions don't need to be validated.
  */
@@ -43,6 +43,15 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
 
     public String getTemplate() {
         return template;
+    }
+
+    /**
+     * A bundle method that does not need to be validated has {@code null} template id.
+     * 
+     * @return {@code true} if the template needs to be validated
+     */
+    public boolean isValidatable() {
+        return templateId != null;
     }
 
 }

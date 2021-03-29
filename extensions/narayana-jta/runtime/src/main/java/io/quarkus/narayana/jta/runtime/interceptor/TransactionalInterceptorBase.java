@@ -301,17 +301,19 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     protected void endTransaction(TransactionManager tm, Transaction tx, RunnableWithException afterEndTransaction)
             throws Exception {
-        if (tx != tm.getTransaction()) {
-            throw new RuntimeException(jtaLogger.i18NLogger.get_wrong_tx_on_thread());
-        }
+        try {
+            if (tx != tm.getTransaction()) {
+                throw new RuntimeException(jtaLogger.i18NLogger.get_wrong_tx_on_thread());
+            }
 
-        if (tx.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
-            tm.rollback();
-        } else {
-            tm.commit();
+            if (tx.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
+                tm.rollback();
+            } else {
+                tm.commit();
+            }
+        } finally {
+            afterEndTransaction.run();
         }
-
-        afterEndTransaction.run();
     }
 
     protected boolean setUserTransactionAvailable(boolean available) {

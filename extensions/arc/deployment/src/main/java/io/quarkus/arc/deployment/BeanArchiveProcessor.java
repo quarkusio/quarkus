@@ -1,13 +1,7 @@
 package io.quarkus.arc.deployment;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -22,51 +16,42 @@ import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.runtime.LifecycleEventRunner;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ExcludeDependencyBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.PersistentClassIndex;
 
 public class BeanArchiveProcessor {
 
-    @Inject
-    ApplicationArchivesBuildItem applicationArchivesBuildItem;
-
-    @Inject
-    List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations;
-
-    @Inject
-    List<AdditionalBeanBuildItem> additionalBeans;
-
-    @Inject
-    List<GeneratedBeanBuildItem> generatedBeans;
-
-    @Inject
-    BuildProducer<GeneratedClassBuildItem> generatedClass;
-
-    ArcConfig config;
-
     @BuildStep
-    public BeanArchiveIndexBuildItem build(LiveReloadBuildItem liveReloadBuildItem) throws Exception {
+    public BeanArchiveIndexBuildItem build(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
+            List<AdditionalBeanBuildItem> additionalBeans, List<GeneratedBeanBuildItem> generatedBeans,
+            LiveReloadBuildItem liveReloadBuildItem, BuildProducer<GeneratedClassBuildItem> generatedClass,
+            CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems)
+            throws Exception {
 
         // First build an index from application archives
-        IndexView applicationIndex = buildApplicationIndex();
+        IndexView applicationIndex = buildApplicationIndex(config, applicationArchivesBuildItem,
+                additionalBeanDefiningAnnotations, customScopes, excludeDependencyBuildItems);
 
         // Then build additional index for beans added by extensions
         Indexer additionalBeanIndexer = new Indexer();
-        List<String> additionalBeans = new ArrayList<>();
-        for (AdditionalBeanBuildItem i : this.additionalBeans) {
-            additionalBeans.addAll(i.getBeanClasses());
+        List<String> additionalBeanClasses = new ArrayList<>();
+        for (AdditionalBeanBuildItem i : additionalBeans) {
+            additionalBeanClasses.addAll(i.getBeanClasses());
         }
-        additionalBeans.add(LifecycleEventRunner.class.getName());
+
+        // Build the index for additional beans and generated bean classes
         Set<DotName> additionalIndex = new HashSet<>();
-        for (String beanClass : additionalBeans) {
+        for (String beanClass : additionalBeanClasses) {
             IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,
                     Thread.currentThread().getContextClassLoader());
         }
@@ -80,21 +65,23 @@ public class BeanArchiveProcessor {
                     generatedBeanClass.getSource()));
         }
 
-        BeanArchives.PersistentClassIndex index = liveReloadBuildItem.getContextObject(BeanArchives.PersistentClassIndex.class);
+        PersistentClassIndex index = liveReloadBuildItem.getContextObject(PersistentClassIndex.class);
         if (index == null) {
-            index = new BeanArchives.PersistentClassIndex();
-            liveReloadBuildItem.setContextObject(BeanArchives.PersistentClassIndex.class, index);
+            index = new PersistentClassIndex();
+            liveReloadBuildItem.setContextObject(PersistentClassIndex.class, index);
         }
 
         // Finally, index ArC/CDI API built-in classes
         return new BeanArchiveIndexBuildItem(
-                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), index, applicationIndex,
+                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), index.getAdditionalClasses(),
+                        applicationIndex,
                         additionalBeanIndexer.complete()),
-                generatedClassNames,
-                additionalBeans);
+                generatedClassNames);
     }
 
-    private IndexView buildApplicationIndex() {
+    private IndexView buildApplicationIndex(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
+            CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems) {
 
         Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
@@ -111,10 +98,13 @@ public class BeanArchiveProcessor {
             }
         }
 
-        Collection<DotName> beanDefiningAnnotations = BeanDeployment
+        Set<DotName> beanDefiningAnnotations = BeanDeployment
                 .initBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
                         .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
                         .collect(Collectors.toList()), stereotypes);
+        for (DotName customScopeAnnotationName : customScopes.getCustomScopeNames()) {
+            beanDefiningAnnotations.add(customScopeAnnotationName);
+        }
         // Also include archives that are not bean archives but contain qualifiers or interceptor bindings
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
@@ -122,7 +112,7 @@ public class BeanArchiveProcessor {
         List<IndexView> indexes = new ArrayList<>();
 
         for (ApplicationArchive archive : applicationArchivesBuildItem.getApplicationArchives()) {
-            if (isApplicationArchiveExcluded(archive)) {
+            if (isApplicationArchiveExcluded(config, excludeDependencyBuildItems, archive)) {
                 continue;
             }
             IndexView index = archive.getIndex();
@@ -137,17 +127,39 @@ public class BeanArchiveProcessor {
         return CompositeIndex.create(indexes);
     }
 
-    private boolean isApplicationArchiveExcluded(ApplicationArchive archive) {
+    private boolean isApplicationArchiveExcluded(ArcConfig config, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
+            ApplicationArchive archive) {
         if (archive.getArtifactKey() != null) {
             AppArtifactKey key = archive.getArtifactKey();
             for (IndexDependencyConfig excludeDependency : config.excludeDependency.values()) {
-                if (Objects.equal(key.getArtifactId(), excludeDependency.artifactId)
-                        && Objects.equal(key.getGroupId(), excludeDependency.groupId)
-                        && Objects.equal(key.getClassifier(), excludeDependency.classifier)) {
+                if (archiveMatches(key, excludeDependency.groupId, excludeDependency.artifactId,
+                        excludeDependency.classifier)) {
+                    return true;
+                }
+            }
+
+            for (ExcludeDependencyBuildItem excludeDependencyBuildItem : excludeDependencyBuildItems) {
+                if (archiveMatches(key, excludeDependencyBuildItem.getGroupId(), excludeDependencyBuildItem.getArtifactId(),
+                        excludeDependencyBuildItem.getClassifier())) {
                     return true;
                 }
             }
         }
+
+        return false;
+    }
+
+    public static boolean archiveMatches(AppArtifactKey key, String groupId, String artifactId, Optional<String> classifier) {
+
+        if (Objects.equal(key.getArtifactId(), artifactId)
+                && Objects.equal(key.getGroupId(), groupId)) {
+            if (classifier.isPresent() && Objects.equal(key.getClassifier(), classifier.get())) {
+                return true;
+            } else if (!classifier.isPresent() && "".equals(key.getClassifier())) {
+                return true;
+            }
+        }
+
         return false;
     }
 

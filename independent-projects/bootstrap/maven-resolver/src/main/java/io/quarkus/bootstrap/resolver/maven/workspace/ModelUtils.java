@@ -71,10 +71,9 @@ public class ModelUtils {
      * @param deps POM model application dependencies
      * @param appDeps resolved application dependencies
      * @return dependencies that can be checked for updates
-     * @throws AppCreatorException in case of a failure
      */
     public static List<AppDependency> getUpdateCandidates(List<Dependency> deps, List<AppDependency> appDeps,
-            Set<String> groupIds) throws IOException {
+            Set<String> groupIds) {
         final Map<AppArtifactKey, AppDependency> appDepMap = new LinkedHashMap<>(appDeps.size());
         for (AppDependency appDep : appDeps) {
             final AppArtifact appArt = appDep.getArtifact();
@@ -121,15 +120,22 @@ public class ModelUtils {
                                 final Path propsPath = artifactIdPath.resolve("pom.properties");
                                 if (Files.exists(propsPath)) {
                                     final Properties props = loadPomProps(appJar, artifactIdPath);
-                                    return new AppArtifact(props.getProperty("groupId"), props.getProperty("artifactId"),
+                                    AppArtifact appArtifact = new AppArtifact(props.getProperty("groupId"),
+                                            props.getProperty("artifactId"),
                                             props.getProperty("version"));
+                                    appArtifact.setPath(appJar);
+                                    return appArtifact;
                                 }
                             }
                         }
                     }
                 }
             }
-            throw new IOException("Failed to located META-INF/maven/<groupId>/<artifactId>/pom.properties in " + appJar);
+            AppArtifact appArtifact = new AppArtifact("unknown", "unknown",
+                    "1.0-SNAPSHOT");
+            appArtifact.setPath(appJar);
+
+            return appArtifact;
         }
     }
 

@@ -77,7 +77,7 @@ public class MongoMetricsTest extends MongoTestBase {
 
     private Tag[] getTags() {
         return new Tag[] {
-                new Tag("host", "localhost"),
+                new Tag("host", "127.0.0.1"),
                 new Tag("port", "27018"),
         };
     }

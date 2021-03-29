@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using OpenID Connect and Keycloak to Centralize Authorization
 
@@ -9,11 +9,13 @@ include::./attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can authorize a bearer token access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].
 
-The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak and currently can only be used with the Quarkus link:security-openid-connect[OIDC service appications].
+The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak and currently can only be used with the Quarkus link:security-openid-connect[OIDC service applications].
 It provides a flexible and dynamic authorization capability based on Resource-Based Access Control.
 In other words, instead of explicitly enforcing access based on some specific access control mechanism (e.g.: RBAC), you just check whether or not a request is allowed to access a resource based on its name, identifier or URI.
 
 By externalizing authorization from your application, you are allowed to protect your applications using different access control mechanisms as well as avoid re-deploying your application every time your security requirements change, where Keycloak will be acting as a centralized authorization service from where your protected resources and their associated permissions are managed.
+
+See the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information about `Bearer Token` authentication mechanism.
 
 If you are already familiar with Keycloak, you’ll notice that the extension is basically another adapter implementation but specific for Quarkus applications.
 Otherwise, you can find more information in the Keycloak https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[documentation].
@@ -66,12 +68,13 @@ The solution is located in the `security-keycloak-authorization-quickstart` {qui
 First, we need a new project.
 Create a new project with the following command:
 
-[source,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-keycloak-authorization-quickstart \
-    -Dextensions="oidc, keycloak-authorization, resteasy-jsonb"
+    -Dextensions="oidc,keycloak-authorization,resteasy-jackson" \
+    -DnoExamples
 cd security-keycloak-authorization-quickstart
 ----
 
@@ -104,13 +107,11 @@ As you can see from the source code below it is just a regular JAX-RS resource:
 
 [source,java]
 ----
-package org.acme.security.keycloak.authorization;;
+package org.acme.security.keycloak.authorization;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
 
@@ -124,7 +125,6 @@ public class UsersResource {
 
     @GET
     @Path("/me")
-    @Produces(MediaType.APPLICATION_JSON)
     @NoCache
     public User me() {
         return new User(identity);
@@ -149,7 +149,7 @@ The source code for the `/api/admin` endpoint is also very simple:
 
 [source,java]
 ----
-package org.acme.security.keycloak.authorization;;
+package org.acme.security.keycloak.authorization;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -180,9 +180,10 @@ The OpenID Connect extension allows you to define the adapter configuration usin
 [source,properties]
 ----
 # OIDC Configuration
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=https://localhost:8543/auth/realms/quarkus
 quarkus.oidc.client-id=backend-service
 quarkus.oidc.credentials.secret=secret
+quarkus.oidc.tls.verification=none
 
 # Enable Policy Enforcement
 quarkus.keycloak.policy-enforcer.enable=true
@@ -196,10 +197,10 @@ To start a Keycloak Server you can use Docker and just run the following command
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 {keycloak-docker-image}
+docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 -p 8543:8443 {keycloak-docker-image}
 ----
 
-You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
+You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth] or https://localhost:8543/auth[localhost:8543/auth].
 
 Log in as the `admin` user to access the Keycloak Administration Console.
 Username should be `admin` and password `admin`.
@@ -228,7 +229,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/security-keycloak-authorization-quickstart-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 === Running in Native Mode
@@ -258,7 +259,7 @@ The application is using bearer token authorization and the first thing to do is
 [source,bash]
 ----
 export access_token=$(\
-    curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
@@ -293,7 +294,7 @@ In order to access the admin endpoint you should obtain a token for the `admin` 
 [source,bash]
 ----
 export access_token=$(\
-    curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
@@ -307,6 +308,9 @@ injecting a `SecurityIdentity` instance in your beans, you are allowed to check 
 
 [source,java]
 ----
+import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
 @Path("/api/protected")
 public class ProtectedResource {
 
@@ -315,12 +319,11 @@ public class ProtectedResource {
     
     
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public CompletionStage<List<Permission>> get() {
-        return identity.checkPermission(new AuthPermission("{resource_name}"))
-                .thenCompose(granted -> {
+    public Uni<List<Permission>> get() {
+        return identity.checkPermission(new AuthPermission("{resource_name}")).onItem()
+                .transform(granted -> {
                     if (granted) {
-                        return CompletableFuture.completedFuture(doGetState());
+                        return identity.getAttribute("permissions");
                     }
                     throw new ForbiddenException();
                 });
@@ -359,3 +362,4 @@ include::{generated-dir}/config/quarkus-keycloak-keycloak-policy-enforcer-config
 * https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* link:security[Quarkus Security]

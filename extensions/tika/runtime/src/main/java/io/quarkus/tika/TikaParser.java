@@ -84,15 +84,15 @@ public class TikaParser {
             try (InputStream tikaStream = TikaInputStream.get(entityStream)) {
                 parser.parse(tikaStream, tikaHandler, tikaMetadata, context);
                 if (this.appendEmbeddedContent) {
-                    // the embedded content if any has already been appended to the master content
+                    // the embedded content if any has already been appended to the main document content
                     return new TikaContent(tikaHandler == null ? null : tikaHandler.toString().trim(), convert(tikaMetadata));
                 } else {
                     RecursiveParserWrapperHandler rHandler = (RecursiveParserWrapperHandler) tikaHandler;
 
-                    // The metadata list represents the master and embedded content (text and metadata)
-                    // The first metadata in the list represents the master (outer) content
+                    // The metadata list represents the main document and embedded content (text and metadata)
+                    // The first metadata in the list represents the main document (outer) content
                     List<org.apache.tika.metadata.Metadata> allMetadata = rHandler.getMetadataList();
-                    String masterText = allMetadata.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT);
+                    String mainDocumentText = allMetadata.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT);
 
                     // Embedded (inner) content starts from the index 1.
                     List<TikaContent> embeddedContent = new LinkedList<>();
@@ -104,7 +104,7 @@ public class TikaParser {
                             embeddedContent.add(new TikaContent(embeddedText.trim(), convert(allMetadata.get(i))));
                         }
                     }
-                    return new TikaContent(masterText, convert(allMetadata.get(0)), embeddedContent);
+                    return new TikaContent(mainDocumentText, convert(allMetadata.get(0)), embeddedContent);
 
                 }
             }
@@ -118,14 +118,14 @@ public class TikaParser {
     private ContentHandler validateContentHandler(ContentHandler contentHandler) {
         if (!this.appendEmbeddedContent && !(contentHandler instanceof RecursiveParserWrapperHandler)) {
             throw new IllegalStateException(
-                    "The master and every embedded document will require a unique ContentHandler instance");
+                    "The main document and every embedded document will require a unique ContentHandler instance");
         }
         return contentHandler;
     }
 
     private ContentHandler createContentHandler() {
         // RecursiveParserWrapperHandler will use the factory to create a new ContentHandler
-        // for the master and each of the embedded documents
+        // for the main document and each of the embedded documents
         return this.appendEmbeddedContent ? new ToTextContentHandler()
                 : new RecursiveParserWrapperHandler(
                         new BasicContentHandlerFactory(BasicContentHandlerFactory.HANDLER_TYPE.TEXT, -1));

@@ -26,21 +26,13 @@ public interface ResolutionContext {
     CompletionStage<Object> evaluate(Expression expression);
 
     /**
-     * Create a child resolution context with the specified data and namespace resolvers.
+     * Create a child resolution context.
      * 
      * @param data
-     * @param namespaceResolversFactories
-     * @return a new child resolution context
-     */
-    ResolutionContext createChild(Object data, List<NamespaceResolver> namespaceResolvers);
-
-    /**
-     * Create a child resolution context with the specifiec extending blocks.
-     * 
      * @param extendingBlocks
      * @return a new child resolution context
      */
-    ResolutionContext createChild(Map<String, SectionBlock> extendingBlocks);
+    ResolutionContext createChild(Object data, Map<String, SectionBlock> extendingBlocks);
 
     /**
      * 
@@ -74,5 +66,11 @@ public interface ResolutionContext {
      * @see TemplateInstance#getAttribute(String)
      */
     Object getAttribute(String key);
+
+    /**
+     * 
+     * @return the evaluator
+     */
+    Evaluator getEvaluator();
 
 }

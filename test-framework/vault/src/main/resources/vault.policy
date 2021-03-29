@@ -13,6 +13,13 @@ path "secret/data/multi/*" {
   capabilities = ["read"]
 }
 
+path "secret/metadata/hello/*" {
+  capabilities = ["list"]
+}
+path "secret-v1/hello/*" {
+  capabilities = ["list"]
+}
+
 # kv engine v1
 path "secret-v1/foo" {
   capabilities = ["read"]
@@ -30,7 +37,7 @@ path "database/creds/mydbrole" {
 
 # transit
 path "transit/*" {
-  capabilities = [ "create", "read", "update" ]
+  capabilities = [ "create", "read", "update", "delete", "list" ]
 }
 #path "transit/encrypt/my-key" {
 #  capabilities = [ "read", "update" ]

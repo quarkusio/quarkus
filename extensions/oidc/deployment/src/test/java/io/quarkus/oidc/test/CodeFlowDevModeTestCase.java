@@ -26,7 +26,8 @@ public class CodeFlowDevModeTestCase {
     private static Class<?>[] testClasses = {
             ProtectedResource.class,
             UnprotectedResource.class,
-            CustomTenantConfigResolver.class
+            CustomTenantConfigResolver.class,
+            CustomTokenStateManager.class
     };
 
     @RegisterExtension
@@ -71,7 +72,7 @@ public class CodeFlowDevModeTestCase {
 
             page = webClient.getPage("http://localhost:8080/protected");
 
-            assertEquals("Log in to devmode", page.getTitleText());
+            assertEquals("Sign in to devmode", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -81,6 +82,9 @@ public class CodeFlowDevModeTestCase {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("alice-dev-mode", page.getBody().asText());
+
+            assertEquals("custom", page.getWebClient().getCookieManager().getCookie("q_session").getValue().split("\\|")[3]);
+
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -89,7 +93,7 @@ public class CodeFlowDevModeTestCase {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8080/protected/tenant/tenant-config-resolver");
 
-            assertEquals("Log in to devmode", page.getTitleText());
+            assertEquals("Sign in to devmode", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 

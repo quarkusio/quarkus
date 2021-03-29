@@ -1,8 +1,5 @@
 package io.quarkus.arc.deployment.configproperties;
 
-import static io.quarkus.arc.deployment.configproperties.InterfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties;
-import static io.quarkus.arc.deployment.configproperties.InterfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties;
-
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,12 +22,14 @@ import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.configproperties.InterfaceConfigPropertiesUtil.GeneratedClass;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -105,10 +104,12 @@ public class ConfigPropertiesBuildStep {
     @BuildStep
     void setup(CombinedIndexBuildItem combinedIndex,
             List<ConfigPropertiesMetadataBuildItem> configPropertiesMetadataList,
+            Capabilities capabilities,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigPropertyBuildItem> configProperties) {
         if (configPropertiesMetadataList.isEmpty()) {
             return;
@@ -128,6 +129,14 @@ public class ConfigPropertiesBuildStep {
         producerClassCreator.addAnnotation(Singleton.class);
 
         Set<DotName> configClassesThatNeedValidation = new HashSet<>(configPropertiesMetadataList.size());
+        IndexView index = combinedIndex.getIndex();
+        YamlListObjectHandler yamlListObjectHandler = new YamlListObjectHandler(nonBeansClassOutput, index, reflectiveClasses);
+        ClassConfigPropertiesUtil classConfigPropertiesUtil = new ClassConfigPropertiesUtil(index,
+                yamlListObjectHandler, producerClassCreator, capabilities, reflectiveClasses, reflectiveMethods,
+                configProperties);
+        InterfaceConfigPropertiesUtil interfaceConfigPropertiesUtil = new InterfaceConfigPropertiesUtil(index,
+                yamlListObjectHandler, nonBeansClassOutput, producerClassCreator, capabilities, defaultConfigValues,
+                configProperties, reflectiveClasses);
         for (ConfigPropertiesMetadataBuildItem configPropertiesMetadata : configPropertiesMetadataList) {
             ClassInfo classInfo = configPropertiesMetadata.getClassInfo();
 
@@ -139,14 +148,13 @@ public class ConfigPropertiesBuildStep {
                  */
 
                 Map<DotName, GeneratedClass> interfaceToGeneratedClass = new HashMap<>();
-                generateImplementationForInterfaceConfigProperties(
-                        classInfo, nonBeansClassOutput, combinedIndex.getIndex(), configPropertiesMetadata.getPrefix(),
-                        configPropertiesMetadata.getNamingStrategy(), defaultConfigValues, configProperties,
+                interfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(
+                        classInfo, configPropertiesMetadata.getPrefix(),
+                        configPropertiesMetadata.getNamingStrategy(),
                         interfaceToGeneratedClass);
                 for (Map.Entry<DotName, GeneratedClass> entry : interfaceToGeneratedClass.entrySet()) {
-                    addProducerMethodForInterfaceConfigProperties(entry.getKey(),
+                    interfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(entry.getKey(),
                             configPropertiesMetadata.getPrefix(), configPropertiesMetadata.isNeedsQualifier(),
-                            producerClassCreator,
                             entry.getValue());
                 }
             } else {
@@ -154,11 +162,10 @@ public class ConfigPropertiesBuildStep {
                  * In this case the producer method contains all the logic to instantiate the config class
                  * and call setters for value obtained from MP Config
                  */
-                boolean needsValidation = ClassConfigPropertiesUtil.addProducerMethodForClassConfigProperties(
-                        Thread.currentThread().getContextClassLoader(), classInfo, producerClassCreator,
+                boolean needsValidation = classConfigPropertiesUtil.addProducerMethodForClassConfigProperties(
+                        Thread.currentThread().getContextClassLoader(), classInfo,
                         configPropertiesMetadata.getPrefix(), configPropertiesMetadata.getNamingStrategy(),
-                        configPropertiesMetadata.isFailOnMismatchingMember(), configPropertiesMetadata.isNeedsQualifier(),
-                        combinedIndex.getIndex(), reflectiveMethods, configProperties);
+                        configPropertiesMetadata.isFailOnMismatchingMember(), configPropertiesMetadata.isNeedsQualifier());
                 if (needsValidation) {
                     configClassesThatNeedValidation.add(classInfo.name());
                 }

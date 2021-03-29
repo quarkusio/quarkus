@@ -64,17 +64,17 @@ public class OpenshiftWithHealthTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-health");
             });
             assertThat(h).extracting("spec").extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
                     podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getReadinessProbe()).isNotNull().satisfies(p -> {
                                 assertThat(p.getPeriodSeconds()).isEqualTo(10);
                                 assertThat(p.getHttpGet()).satisfies(h1 -> {
-                                    assertThat(h1.getPath()).isEqualTo("/health/ready");
+                                    assertThat(h1.getPath()).isEqualTo("/q/health/ready");
                                 });
                             });
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {

@@ -12,6 +12,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -21,6 +22,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -30,7 +32,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.runner.bootstrap.GenerateConfigTask;
 
 /**
- * Generates an example application-config.properties, with all properties commented out
+ * Generates an example application.properties, with all properties commented out.
  *
  * If this is already present then it will be appended too, although only properties that were not already present
  *
@@ -46,6 +48,9 @@ public class GenerateConfigMojo extends AbstractMojo {
      */
     @Component
     private RepositorySystem repoSystem;
+
+    @Component
+    private RemoteRepositoryManager remoteRepoManager;
 
     @Component
     private MavenProjectHelper projectHelper;
@@ -86,10 +91,6 @@ public class GenerateConfigMojo extends AbstractMojo {
     @Parameter(defaultValue = "${file}")
     private String file;
 
-    public GenerateConfigMojo() {
-        MojoLogger.logSupplier = this::getLog;
-    }
-
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -120,6 +121,7 @@ public class GenerateConfigMojo extends AbstractMojo {
                     .setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepoManager)
                     .build();
 
             final Artifact projectArtifact = project.getArtifact();
@@ -151,5 +153,11 @@ public class GenerateConfigMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate config file", e);
         }
+    }
+
+    @Override
+    public void setLog(Log log) {
+        super.setLog(log);
+        MojoLogger.delegate = log;
     }
 }

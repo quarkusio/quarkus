@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using HashiCorp Vault with Databases
 
@@ -109,7 +109,7 @@ public int geGiftCount() {
 
 Start a PostgreSQL database:
 
-[source, shell]
+[source,bash]
 ----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-quarkus-hibernate -e POSTGRES_USER=sarah -e POSTGRES_PASSWORD=connor -e POSTGRES_DB=mydatabase -p 5432:5432 postgres:10.5
 ----
@@ -119,10 +119,10 @@ Now we are ready to configure Vault and Quarkus to be able to connect to this da
 == Vault MicroProfile Config Source
 
 The simplest approach is to write the database password in the KV secret engine under the path that is
-fetched from the Vault MicroProfile Config Source.
+fetched from the Vault Config Source.
 
 Open a new shell, `docker exec` in the Vault container and set the root token:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 docker exec -it dev-vault sh
 export VAULT_TOKEN={root-token}
@@ -130,7 +130,7 @@ export VAULT_TOKEN={root-token}
 
 Add a `dbpassword` property in the `config` path of the KV secret engine, beside the original `a-private-key`
 property:
-[source, shell]
+[source,bash]
 ----
 vault kv put secret/myapps/vault-quickstart/config a-private-key=123456 dbpassword=connor
 ----
@@ -149,22 +149,22 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
 Compile and start the application:
-[source, shell]
+[source,bash]
 ----
 ./mvnw package
-java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 Test it with the `gift-count` endpoint:
 
-[source, shell]
+[source,bash]
 ----
 curl http://localhost:8080/hello/gift-count
 ----
 
 You should see:
 
-[source, shell]
+[source,text]
 ----
 0
 ----
@@ -187,7 +187,7 @@ we make sure we have a fresh value every time.
 
 Create a new path (different than the `config` path) in Vault where the database password will be added:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 vault kv put secret/myapps/vault-quickstart/db password=connor
 ----
@@ -234,7 +234,7 @@ of databases are supported, such as https://www.vaultproject.io/docs/secrets/dat
 First we need to enable the `database` secret engine, configure the `postgresql-database-plugin` and create
 the database role `mydbrole` (replace `10.0.0.3` by the actual host that is running the PostgreSQL container;
 for simplicity we disabled _TLS_ between Vault and the PostgreSQL database):
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 vault secrets enable database
 
@@ -266,7 +266,7 @@ to create users.
 ====
 
 Then we need to give a read capability to the Quarkus application on path `database/creds/mydbrole`.
-[source, shell]
+[source,bash]
 ----
 cat <<EOF | vault policy write vault-quickstart-policy -
 path "secret/data/myapps/vault-quickstart/*" {
@@ -297,7 +297,7 @@ is not the owner. As expected this will fail. As a result, it is recommended to 
 Recompile with `./mvnw package`, start and test the `gift-count` endpoint. You should see `0` again.
 
 Notice in the logs:
-[source, shell, subs=attributes+]
+[source,text, subs=attributes+]
 ----
 2020-04-22 14:29:48,522 DEBUG [io.qua.vau.run.VaultDbManager] (Agroal_682171661) generated mydbrole credentials: {leaseId: database/creds/mydbrole/L6PxoI68gZDeVPXP0RAA4c0a, renewable: true, leaseDuration: 60s, valid_until: Wed Apr 22 14:30:48 CEST 2020, username: v-userpass-mydbrole-HeOMJCmy9coEnO2my2AR-1587558588, password:***}
 ----

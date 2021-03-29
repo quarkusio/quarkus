@@ -1,9 +1,12 @@
 package io.quarkus.runtime;
 
+import java.net.BindException;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.enterprise.context.spi.CreationalContext;
@@ -12,12 +15,14 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 import org.wildfly.common.lock.Locks;
 
-import com.oracle.svm.core.OS;
-
+import io.quarkus.bootstrap.runner.RunnerClassLoader;
+import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -29,7 +34,7 @@ import sun.misc.SignalHandler;
  * but nothing else. This class can be used to run both persistent applications that will run
  * till they receive a signal, and command mode applications that will run until the main method
  * returns. This class registers a shutdown hook to properly shut down the application, and handles
- * exiting with the supplied exit code.
+ * exiting with the supplied exit code as well as any exception thrown when starting the application.
  *
  * This class should be used to run production and dev mode applications, while test use cases will
  * likely want to just use {@link Application} directly.
@@ -39,9 +44,9 @@ import sun.misc.SignalHandler;
  */
 public class ApplicationLifecycleManager {
 
-    private static volatile Consumer<Integer> defaultExitCodeHandler = new Consumer<Integer>() {
+    private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = new BiConsumer<Integer, Throwable>() {
         @Override
-        public void accept(Integer integer) {
+        public void accept(Integer integer, Throwable cause) {
             System.exit(integer);
         }
     };
@@ -63,18 +68,21 @@ public class ApplicationLifecycleManager {
     private static boolean hooksRegistered;
     private static boolean vmShuttingDown;
 
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+    private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
+
     public static void run(Application application, String... args) {
         run(application, null, null, args);
     }
 
     public static void run(Application application, Class<? extends QuarkusApplication> quarkusApplication,
-            Consumer<Integer> exitCodeHandler, String... args) {
+            BiConsumer<Integer, Throwable> exitCodeHandler, String... args) {
         stateLock.lock();
         //in tests we might pass this method an already started application
         //in this case we don't shut it down at the end
         boolean alreadyStarted = application.isStarted();
         if (!hooksRegistered) {
-            registerHooks();
+            registerHooks(exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler);
             hooksRegistered = true;
         }
         if (currentApplication != null && !shutdownRequested) {
@@ -87,8 +95,10 @@ public class ApplicationLifecycleManager {
         } finally {
             stateLock.unlock();
         }
+        boolean appStarted = false;
         try {
             application.start(args);
+            appStarted = true;
             //now we are started, we either run the main application or just wait to exit
             if (quarkusApplication != null) {
                 BeanManager beanManager = CDI.current().getBeanManager();
@@ -102,7 +112,7 @@ public class ApplicationLifecycleManager {
                 }
                 QuarkusApplication instance;
                 if (bean == null) {
-                    instance = quarkusApplication.newInstance();
+                    instance = quarkusApplication.getDeclaredConstructor().newInstance();
                 } else {
                     CreationalContext<?> ctx = beanManager.createCreationalContext(bean);
                     instance = (QuarkusApplication) beanManager.getReference(bean, quarkusApplication, ctx);
@@ -124,6 +134,7 @@ public class ApplicationLifecycleManager {
                     }
                 }
             } else {
+                longLivedPostBootCleanup();
                 stateLock.lock();
                 try {
                     while (!shutdownRequested) {
@@ -135,7 +146,36 @@ public class ApplicationLifecycleManager {
                 }
             }
         } catch (Exception e) {
-            Logger.getLogger(Application.class).error("Error running Quarkus application", e);
+            if (exitCodeHandler == null) {
+                Throwable rootCause = e;
+                while (rootCause.getCause() != null) {
+                    rootCause = rootCause.getCause();
+                }
+                Logger applicationLogger = Logger.getLogger(Application.class);
+                if (rootCause instanceof BindException) {
+                    int port = ConfigProviderResolver.instance().getConfig()
+                            .getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+                    applicationLogger.error("Port " + port + " seems to be in use by another process. " +
+                            "Quarkus may already be running or the port is used by another application.");
+                    if (IS_WINDOWS) {
+                        applicationLogger.info("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
+                        applicationLogger.info("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
+                    } else if (IS_MAC) {
+                        applicationLogger
+                                .info("Use 'netstat -anv | grep " + port + "' to identify the process occupying the port.");
+                        applicationLogger.info("You can try to kill it with 'kill -9 <pid>'.");
+                    } else {
+                        applicationLogger
+                                .info("Use 'netstat -anop | grep " + port + "' to identify the process occupying the port.");
+                        applicationLogger.info("You can try to kill it with 'kill -9 <pid>'.");
+                    }
+                } else if (rootCause instanceof ConfigurationException) {
+                    System.err.println(rootCause.getMessage());
+                } else {
+                    applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
+                            ProfileManager.getActiveProfile());
+                }
+            }
             stateLock.lock();
             try {
                 shutdownRequested = true;
@@ -144,45 +184,57 @@ public class ApplicationLifecycleManager {
                 stateLock.unlock();
             }
             application.stop();
-            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(1);
+            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(1, e);
             return;
         }
         if (!alreadyStarted) {
             application.stop(); //this could have already been called
         }
-        (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode()); //this may not be called if shutdown was initiated by a signal
+        (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); //this may not be called if shutdown was initiated by a signal
     }
 
-    private static void registerHooks() {
+    /**
+     * Run some background cleanup once after the application has booted.
+     * This will not be invoked for command mode, as it's not worth it for a short lived process.
+     */
+    private static void longLivedPostBootCleanup() {
+        final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl instanceof RunnerClassLoader) {
+            RunnerClassLoader rcl = (RunnerClassLoader) cl;
+            rcl.resetInternalCaches();
+        }
+    }
+
+    private static void registerHooks(final BiConsumer<Integer, Throwable> exitCodeHandler) {
         if (ImageInfo.inImageRuntimeCode() && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
-            registerSignalHandlers();
+            registerSignalHandlers(exitCodeHandler);
         }
         final ShutdownHookThread shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    private static void registerSignalHandlers() {
-        final SignalHandler handler = new SignalHandler() {
+    private static void registerSignalHandlers(final BiConsumer<Integer, Throwable> exitCodeHandler) {
+        final SignalHandler exitHandler = new SignalHandler() {
             @Override
             public void handle(Signal signal) {
-                System.exit(signal.getNumber() + 0x80);
+                exitCodeHandler.accept(signal.getNumber() + 0x80, null);
             }
         };
-        final SignalHandler quitHandler = new SignalHandler() {
+        final SignalHandler diagnosticsHandler = new SignalHandler() {
             @Override
             public void handle(Signal signal) {
                 DiagnosticPrinter.printDiagnostics(System.out);
             }
         };
-        handleSignal("INT", handler);
-        handleSignal("TERM", handler);
+        handleSignal("INT", exitHandler);
+        handleSignal("TERM", exitHandler);
         // the HUP and QUIT signals are not defined for the Windows OpenJDK implementation:
         // https://hg.openjdk.java.net/jdk8u/jdk8u-dev/hotspot/file/7d5c800dae75/src/os/windows/vm/jvm_windows.cpp
-        if (OS.getCurrent() == OS.WINDOWS) {
-            handleSignal("BREAK", quitHandler);
+        if (IS_WINDOWS) {
+            handleSignal("BREAK", diagnosticsHandler);
         } else {
-            handleSignal("HUP", handler);
-            handleSignal("QUIT", quitHandler);
+            handleSignal("HUP", exitHandler);
+            handleSignal("QUIT", diagnosticsHandler);
         }
     }
 
@@ -204,7 +256,7 @@ public class ApplicationLifecycleManager {
         exit(-1);
     }
 
-    public static Consumer<Integer> getDefaultExitCodeHandler() {
+    public static BiConsumer<Integer, Throwable> getDefaultExitCodeHandler() {
         return defaultExitCodeHandler;
     }
 
@@ -217,6 +269,20 @@ public class ApplicationLifecycleManager {
     }
 
     /**
+     * Sets the default exit code and exception handler for application run through the run method
+     * that does not take an exit handler.
+     *
+     * By default this will just call System.exit, however this is not always
+     * what is wanted.
+     *
+     * @param defaultExitCodeHandler the new default exit handler
+     */
+    public static void setDefaultExitCodeHandler(BiConsumer<Integer, Throwable> defaultExitCodeHandler) {
+        Objects.requireNonNull(defaultExitCodeHandler);
+        ApplicationLifecycleManager.defaultExitCodeHandler = defaultExitCodeHandler;
+    }
+
+    /**
      * Sets the default exit code handler for application run through the run method
      * that does not take an exit handler.
      *
@@ -226,8 +292,7 @@ public class ApplicationLifecycleManager {
      * @param defaultExitCodeHandler the new default exit handler
      */
     public static void setDefaultExitCodeHandler(Consumer<Integer> defaultExitCodeHandler) {
-        Objects.requireNonNull(defaultExitCodeHandler);
-        ApplicationLifecycleManager.defaultExitCodeHandler = defaultExitCodeHandler;
+        setDefaultExitCodeHandler((exitCode, cause) -> defaultExitCodeHandler.accept(exitCode));
     }
 
     /**
@@ -287,6 +352,12 @@ public class ApplicationLifecycleManager {
                 stateCond.signalAll();
             } finally {
                 stateLock.unlock();
+            }
+            if (currentApplication.isStarted()) {
+                // On CLI apps, SIGINT won't call io.quarkus.runtime.Application#stop(),
+                // making the awaitShutdown() below block the application termination process
+                // It should be a noop if called twice anyway
+                currentApplication.stop();
             }
             currentApplication.awaitShutdown();
             System.out.flush();

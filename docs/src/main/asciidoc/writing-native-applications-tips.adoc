@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Tips for writing native applications
 
@@ -48,7 +48,7 @@ Here we include all the XML files and JSON files into the native executable.
 
 [NOTE]
 ====
-You can find more information about this topic in https://github.com/oracle/graal/blob/master/substratevm/RESOURCES.md[the GraalVM documentation].
+You can find more information about this topic in https://github.com/oracle/graal/blob/master/substratevm/Resources.md[the GraalVM documentation].
 ====
 
 The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
@@ -172,11 +172,20 @@ public class MyClass {
 }
 ----
 
+If your class is in a third-party jar, you can do it by using an empty class that will host the `@RegisterForReflection` for it.
+
+[source,java]
+----
+@RegisterForReflection(targets=MyClass.class)
+public class MyReflectionConfiguration {
+}
+----
+
+Note that `MyClass` will be registered for reflection but not `MyReflectionConfiguration`.
+
 ==== Using a configuration file
 
-Obviously, adding `@RegisterForReflection` is not possible if the class is in a third-party jar.
-
-In this case, you can use a configuration file to register classes for reflection.
+You can use a configuration file to register classes for reflection.
 
 As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflection-config.json` (the most common location is within `src/main/resources`)
 
@@ -197,7 +206,7 @@ As an example, in order to register all methods of class `com.acme.MyClass` for 
 
 [NOTE]
 ====
-For more details on the format of this file, please refer to https://github.com/oracle/graal/blob/master/substratevm/REFLECTION.md[the GraalVM documentation].
+For more details on the format of this file, please refer to https://github.com/oracle/graal/blob/master/substratevm/Reflection.md[the GraalVM documentation].
 ====
 
 The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
@@ -258,11 +267,11 @@ Call path from entry point to com.amazonaws.services.s3.model.CryptoConfiguratio
 
 If you need to delay the initialization of a class, you can use the `--initialize-at-run-time=<package or class>` configuration knob.
 
-It should be added to the `native-image` configuration using an `<additionalBuildArg>` as shown in the examples above.
+It should be added to the `native-image` configuration using the `quarkus.native.additional-build-args` configuration property as shown in the examples above.
 
 [NOTE]
 ====
-You can find more information about all this in https://github.com/oracle/graal/blob/master/substratevm/CLASS-INITIALIZATION.md[the GraalVM documentation].
+You can find more information about all this in https://github.com/oracle/graal/blob/master/substratevm/ClassInitialization.md[the GraalVM documentation].
 ====
 
 [NOTE]
@@ -270,9 +279,16 @@ You can find more information about all this in https://github.com/oracle/graal/
 When multiple classes or packages need to be specified via the `quarkus.native.additional-build-args` configuration property, the `,` symbol needs to be escaped.
 An example of this is the following:
 
-[source]
+[source,properties]
 ----
 quarkus.native.additional-build-args=--initialize-at-run-time=com.example.SomeClass\\,org.acme.SomeOtherClass
+----
+
+and in the case of using the Maven configuration instead of `application.properties`:
+
+[source,xml]
+----
+<quarkus.native.additional-build-args>--initialize-at-run-time=com.example.SomeClass\,org.acme.SomeOtherClass</quarkus.native.additional-build-args>
 ----
 ====
 
@@ -288,7 +304,7 @@ com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfac
 ----
 
 Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
-You can find all the information about the format of this file in https://github.com/oracle/graal/blob/master/substratevm/DYNAMIC_PROXY.md#manual-configuration[the GraalVM documentation].
+You can find all the information about the format of this file in https://github.com/oracle/graal/blob/master/substratevm/DynamicProxy.md#manual-configuration[the GraalVM documentation].
 
 [[native-in-extension]]
 == Supporting native in a Quarkus extension
@@ -321,12 +337,8 @@ public class SaxParserProcessor {
 
 [NOTE]
 ====
-More information about reflection in GraalVM can be found https://github.com/oracle/graal/blob/master/substratevm/REFLECTION.md[here].
+More information about reflection in GraalVM can be found https://github.com/oracle/graal/blob/master/substratevm/Reflection.md[here].
 ====
-
-=== Alternative with @RegisterForReflection
-
-As for applications, you can also use the `@RegisterForReflection` annotation if the class is in your extension and not in a third-party jar.
 
 === Including resources
 
@@ -346,7 +358,7 @@ public class ResourcesProcessor {
 
 [NOTE]
 ====
-For more information about GraalVM resource handling in native executables please refer to https://github.com/oracle/graal/blob/master/substratevm/RESOURCES.md[the GraalVM documentation].
+For more information about GraalVM resource handling in native executables please refer to https://github.com/oracle/graal/blob/master/substratevm/Resources.md[the GraalVM documentation].
 ====
 
 
@@ -370,7 +382,7 @@ Using such a construct means that a `--initialize-at-run-time` option will autom
 
 [NOTE]
 ====
-For more information about `--initialize-at-run-time`, please read https://github.com/oracle/graal/blob/master/substratevm/CLASS-INITIALIZATION.md[the GraalVM documentation].
+For more information about `--initialize-at-run-time`, please read https://github.com/oracle/graal/blob/master/substratevm/ClassInitialization.md[the GraalVM documentation].
 ====
 
 === Managing Proxy Classes
@@ -394,7 +406,7 @@ Using such a construct means that a `-H:DynamicProxyConfigurationResources` opti
 
 [NOTE]
 ====
-For more information about Proxy Classes you can read https://github.com/oracle/graal/blob/master/substratevm/DYNAMIC_PROXY.md[the GraalVM documentation].
+For more information about Proxy Classes you can read https://github.com/oracle/graal/blob/master/substratevm/DynamicProxy.md[the GraalVM documentation].
 ====
 
 === Logging with Native Image

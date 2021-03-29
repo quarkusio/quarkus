@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using SSL With Native Executables
 
@@ -20,7 +20,7 @@ To complete this guide, you need:
 
 * less than 20 minutes
 * an IDE
-* GraalVM installed with `JAVA_HOME` and `GRAALVM_HOME` configured appropriately
+* GraalVM (Java 11) installed with `JAVA_HOME` and `GRAALVM_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 This guide is based on the REST client guide so you should get this Maven project first.
@@ -32,34 +32,44 @@ The project is located in the `rest-client-quickstart` {quickstarts-tree-url}/re
 == Looks like it works out of the box?!?
 
 If you open the application's configuration file (`src/main/resources/application.properties`), you can see the following line:
-```
+
+[source,properties]
+----
 org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest
-```
+----
 which configures our REST client to connect to an SSL REST service.
 
 Now let's build the application as a native executable and run the tests:
-```
+
+[source,bash]
+----
 ./mvnw clean install -Pnative
-```
+----
 
 And we obtain the following result:
-```
+
+[source]
+----
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-```
+----
 
 So, yes, it appears it works out of the box and this guide is pretty useless.
 
 It's not. The magic happens when building the native executable:
-```
-[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dcom.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize=true -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar rest-client-1.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:+PrintAnalysisCallTree -H:EnableURLProtocols=http,https --enable-all-security-services -H:-SpawnIsolates -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
-```
+
+[source]
+----
+[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dcom.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize=true -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar rest-client-1.0.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:+PrintAnalysisCallTree -H:EnableURLProtocols=http,https --enable-all-security-services -H:-SpawnIsolates -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
+----
 
 The important elements are these 3 options:
-```
+
+[source,bash]
+----
 -H:EnableURLProtocols=http,https --enable-all-security-services -H:+JNI
-```
+----
 
 They enable the native SSL support for your native executable.
 
@@ -67,7 +77,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
 
  * the Agroal connection pooling extension (`quarkus-agroal`),
  * the Amazon DynamoDB extension (`quarkus-amazon-dynamodb`),
- * the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-elasticsearch`),
+ * the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-orm-elasticsearch`),
  * the Infinispan Client extension (`quarkus-infinispan-client`).
  * the Jaeger extension (`quarkus-jaeger`),
  * the JGit extension (`quarkus-jgit`),
@@ -82,14 +92,17 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Reactive client for PostgreSQL extension (`quarkus-reactive-pg-client`),
  * the Reactive client for MySQL extension (`quarkus-reactive-mysql-client`),
  * the Reactive client for DB2 extension (`quarkus-reactive-db2-client`).
+ * the Cassandra client extensions (`cassandra-quarkus-client`)
 
 As long as you have one of those extensions in your project, the SSL support will be enabled by default.
 
 Now, let's just check the size of our native executable as it will be useful later:
-```
-$ ls -lh target/rest-client-quickstart-1.0-SNAPSHOT-runner
--rwxrwxr-x. 1 gandrian gandrian 46M Jun 11 13:01 target/rest-client-quickstart-1.0-SNAPSHOT-runner
-```
+
+[source,shell]
+----
+$ ls -lh target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
+-rwxrwxr-x. 1 gandrian gandrian 46M Jun 11 13:01 target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
+----
 
 == Let's disable SSL and see how it goes
 
@@ -100,50 +113,66 @@ So if you are sure you don't need it, you can disable it entirely.
 First, let's disable it without changing the REST service URL and see how it goes.
 
 Open `src/main/resources/application.properties` and add the following line:
-```
+
+[source,properties]
+----
 quarkus.ssl.native=false
-```
+----
 
 And let's try to build again:
-```
+
+[source,bash]
+----
 ./mvnw clean install -Pnative
-```
+----
 
 The native executable tests will fail with the following error:
-```
+
+[source]
+----
 Exception handling request to /country/name/greece: com.oracle.svm.core.jdk.UnsupportedFeatureError: Accessing an URL protocol that was not enabled. The URL protocol https is supported but not enabled by default. It must be enabled by adding the --enable-url-protocols=https option to the native-image command.
-```
+----
 
 This error is the one you obtain when trying to use SSL while it was not explicitly enabled in your native executable.
 
 Now, let's change the REST service URL to **not** use SSL in `src/main/resources/application.properties`:
-```
+
+[source,properties]
+----
 org.acme.restclient.CountriesService/mp-rest/url=http://restcountries.eu/rest
-```
+----
 
 And build again:
-```
+
+[source,bash]
+----
 ./mvnw clean install -Pnative
-```
+----
 
 If you check carefully the native executable build options, you can see that the SSL related options are gone:
-```
-[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dcom.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize=true -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar rest-client-1.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:+PrintAnalysisCallTree -H:EnableURLProtocols=http -H:-SpawnIsolates -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
-```
+
+[source]
+----
+[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dcom.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize=true -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar rest-client-1.0.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:+PrintAnalysisCallTree -H:EnableURLProtocols=http -H:-SpawnIsolates -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
+----
 
 And we end up with:
-```
+
+[source]
+----
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-```
+----
 
 You remember we checked the size of the native executable with SSL enabled?
 Let's check again with SSL support entirely disabled:
-```
-$ ls -lh target/rest-client-quickstart-1.0-SNAPSHOT-runner
--rwxrwxr-x. 1 gandrian gandrian 35M Jun 11 13:06 target/rest-client-quickstart-1.0-SNAPSHOT-runner
-```
+
+[source,shell]
+----
+$ ls -lh target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
+-rwxrwxr-x. 1 gandrian gandrian 35M Jun 11 13:06 target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
+----
 
 Yes, it is now **35 MB** whereas it used to be **46 MB**. SSL comes with a 11 MB overhead in native executable size.
 
@@ -152,14 +181,18 @@ And there's more to it.
 == Let's start again with a clean slate
 
 Let's revert the changes we made to the configuration file and go back to SSL with the following command:
-```
+
+[source,bash]
+----
 git checkout -- src/main/resources/application.properties
-```
+----
 
 And let's build the native executable again:
-```
+
+[source,bash]
+----
 ./mvnw clean install -Pnative
-```
+----
 
 [#the-truststore-path]
 == The TrustStore path
@@ -179,9 +212,10 @@ As a consequence, system properties such as `javax.net.ssl.trustStore` do not ha
 run time, so when the defaults need to be changed, these system properties must be provided at image build time.
 The easiest way to do so is by setting `quarkus.native.additional-build-args`. For example:
 
-```
+[source,bash]
+----
 quarkus.native.additional-build-args=-J-Djavax.net.ssl.trustStore=/tmp/mycerts,-J-Djavax.net.ssl.trustStorePassword=changeit
-```
+----
 
 will ensure that the certificates of `/tmp/mycerts` are baked into the native binary and used *in addition* to the default cacerts.
 

@@ -21,11 +21,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
@@ -39,9 +34,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <!--suppress MavenModelInspection -->
-                        <maven.home>${maven.home}</maven.home>
-                        <maven.repo>${settings.localRepository}</maven.repo>
                         <project.version>${project.version}</project.version>
                     </systemPropertyVariables>
                 </configuration>

@@ -18,6 +18,7 @@ import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -81,10 +82,34 @@ public class VertxRecorder {
                 consumer.handler(new Handler<Message<Object>>() {
                     @Override
                     public void handle(Message<Object> m) {
-                        try {
-                            invoker.invoke(m);
-                        } catch (Throwable e) {
-                            m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                        if (invoker.isBlocking()) {
+                            vertx.executeBlocking(new Handler<Promise<Object>>() {
+                                @Override
+                                public void handle(Promise<Object> event) {
+                                    try {
+                                        invoker.invoke(m);
+                                    } catch (Exception e) {
+                                        if (m.replyAddress() == null) {
+                                            // No reply handler
+                                            throw wrapIfNecessary(e);
+                                        } else {
+                                            m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                        }
+                                    }
+                                    event.complete();
+                                }
+                            }, invoker.isOrdered(), null);
+                        } else {
+                            try {
+                                invoker.invoke(m);
+                            } catch (Exception e) {
+                                if (m.replyAddress() == null) {
+                                    // No reply handler
+                                    throw wrapIfNecessary(e);
+                                } else {
+                                    m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                }
+                            }
                         }
                     }
                 });
@@ -105,6 +130,16 @@ public class VertxRecorder {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Unable to register all message consumer methods", e);
             }
+        }
+    }
+
+    static RuntimeException wrapIfNecessary(Throwable e) {
+        if (e instanceof Error) {
+            throw (Error) e;
+        } else if (e instanceof RuntimeException) {
+            return (RuntimeException) e;
+        } else {
+            return new RuntimeException(e);
         }
     }
 

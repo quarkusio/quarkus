@@ -19,10 +19,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Smoke test for metrics exposed by the smallrye-metrics extension and computed from Hibernate statistics objects.
+ * Smoke test for metrics exposed by a metrics extension and computed from Hibernate statistics objects.
  */
 public class HibernateMetricsTestCase {
 
@@ -56,10 +57,13 @@ public class HibernateMetricsTestCase {
     @Test
     @Transactional
     public void testMetrics() {
-        assertEquals(0L, getCounterValueOrNull("hibernate-orm.queries.executed",
-                new Tag("entityManagerFactory", "default")));
-        assertEquals(0L, getCounterValueOrNull("hibernate-orm.entities.inserted",
-                new Tag("entityManagerFactory", "default")));
+        assertEquals(0L, getCounterValueOrNull("hibernate.query.executions",
+                new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
+        assertEquals(0L, getCounterValueOrNull("hibernate.entities.inserts",
+                new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
+        assertEquals(0L, getCounterValueOrNull("hibernate.cache.query.requests",
+                new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
+                new Tag("result", "miss")));
         Arc.container().requestContext().activate();
         try {
             DummyEntity entity = new DummyEntity();
@@ -67,10 +71,10 @@ public class HibernateMetricsTestCase {
             em.persist(entity);
             em.flush();
             em.createQuery("from DummyEntity e").getResultList();
-            assertEquals(1L, getCounterValueOrNull("hibernate-orm.queries.executed",
-                    new Tag("entityManagerFactory", "default")));
-            assertEquals(1L, getCounterValueOrNull("hibernate-orm.entities.inserted",
-                    new Tag("entityManagerFactory", "default")));
+            assertEquals(1L, getCounterValueOrNull("hibernate.query.executions",
+                    new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
+            assertEquals(1L, getCounterValueOrNull("hibernate.entities.inserts",
+                    new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
         } finally {
             Arc.container().requestContext().terminate();
         }

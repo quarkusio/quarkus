@@ -37,9 +37,9 @@ public class MessageBundleExpressionValidationTest {
                     fail("No template exception thrown: " + t);
                 }
                 assertTrue(te.getMessage().contains("Found template problems (3)"), te.getMessage());
-                assertTrue(te.getMessage().contains("Incorrect expression: item.foo"), te.getMessage());
-                assertTrue(te.getMessage().contains("Incorrect expression: bar"), te.getMessage());
-                assertTrue(te.getMessage().contains("Incorrect expression: foo"), te.getMessage());
+                assertTrue(te.getMessage().contains("item.foo"), te.getMessage());
+                assertTrue(te.getMessage().contains("bar"), te.getMessage());
+                assertTrue(te.getMessage().contains("foo"), te.getMessage());
             });
 
     @Test

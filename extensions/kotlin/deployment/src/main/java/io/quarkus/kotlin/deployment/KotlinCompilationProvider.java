@@ -11,10 +11,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.cli.common.ExitCode;
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments;
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation;
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity;
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation;
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler;
 import org.jetbrains.kotlin.config.Services;
@@ -102,7 +105,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
             return !errors.isEmpty();
         }
 
-        @Override
+        //kotlin 1.3 version
         public void report(CompilerMessageSeverity severity, String s, CompilerMessageLocation location) {
             if (severity.isError()) {
                 if ((location != null) && (location.getLineContent() != null)) {
@@ -117,6 +120,20 @@ public class KotlinCompilationProvider implements CompilationProvider {
 
         public List<String> getErrors() {
             return errors;
+        }
+
+        @Override
+        public void report(@NotNull CompilerMessageSeverity severity, @NotNull String s,
+                @Nullable CompilerMessageSourceLocation location) {
+            if (severity.isError()) {
+                if ((location != null) && (location.getLineContent() != null)) {
+                    errors.add(String.format("%s%n%s:%d:%d%nReason: %s", location.getLineContent(), location.getPath(),
+                            location.getLine(),
+                            location.getColumn(), s));
+                } else {
+                    errors.add(s);
+                }
+            }
         }
     }
 }

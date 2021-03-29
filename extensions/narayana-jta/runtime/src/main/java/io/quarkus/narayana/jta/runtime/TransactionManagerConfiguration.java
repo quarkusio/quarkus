@@ -23,4 +23,12 @@ public final class TransactionManagerConfiguration {
      */
     @ConfigItem(defaultValue = "60")
     public Optional<Duration> defaultTransactionTimeout;
+
+    /**
+     * The directory name of location of the transaction logs.
+     * If the value is not absolute then the directory is relative
+     * to the <em>user.dir</em> system property.
+     */
+    @ConfigItem(defaultValue = "ObjectStore")
+    public String objectStoreDirectory;
 }

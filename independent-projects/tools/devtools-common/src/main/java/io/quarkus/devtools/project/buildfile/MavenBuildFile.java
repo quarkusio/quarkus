@@ -5,8 +5,9 @@ import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
@@ -28,8 +30,8 @@ public class MavenBuildFile extends BuildFile {
 
     private final AtomicReference<Model> modelRef = new AtomicReference<>();
 
-    public MavenBuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
-        super(projectDirPath, platformDescriptor);
+    public MavenBuildFile(final Path projectDirPath, ExtensionCatalog catalog) {
+        super(projectDirPath, catalog);
     }
 
     @Override
@@ -91,8 +93,9 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
-    public List<Dependency> getDependencies() throws IOException {
-        return getModel() == null ? Collections.emptyList() : getModel().getDependencies();
+    public List<AppArtifactCoords> getDependencies() throws IOException {
+        return getModel() == null ? Collections.emptyList()
+                : getModel().getDependencies().stream().map(Extensions::toCoords).collect(Collectors.toList());
     }
 
     @Override
@@ -127,6 +130,9 @@ public class MavenBuildFile extends BuildFile {
     }
 
     private Model initModel() throws IOException {
+        if (!hasProjectFile(BuildTool.MAVEN.getDependenciesFile())) {
+            return null;
+        }
         byte[] content = readProjectFile(BuildTool.MAVEN.getDependenciesFile());
         return MojoUtils.readPom(new ByteArrayInputStream(content));
     }

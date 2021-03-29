@@ -9,6 +9,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -26,7 +27,7 @@ public class NestedClassAndSuperclassConfigPropertiesTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class, DummyProperties.NestedDummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.lastname=redhat\ndummy.name=quarkus\ndummy.nested.ages=1,2,3,4\ndummy.supernested.heights=100,200\ndummy.unused=whatever\ndummy.nested.unused=whatever2"),
+                            "dummy.lname=redhat\ndummy.name=quarkus\ndummy.nested.ages=1,2,3,4\ndummy.supernested.afraid-of-heights=100,200\ndummy.unused=whatever\ndummy.nested.unused=whatever2"),
                             "application.properties"));
 
     @Inject
@@ -78,6 +79,7 @@ public class NestedClassAndSuperclassConfigPropertiesTest {
     }
 
     public static class SuperDummyProperties {
+        @ConfigProperty(name = "lname")
         private String lastname;
         private NestedSuperDummyProperties supernested;
 
@@ -99,6 +101,7 @@ public class NestedClassAndSuperclassConfigPropertiesTest {
 
         public static class NestedSuperDummyProperties {
 
+            @ConfigProperty(name = "afraid-of-heights")
             public Set<Integer> heights;
             @ConfigIgnore
             public Integer ignored;

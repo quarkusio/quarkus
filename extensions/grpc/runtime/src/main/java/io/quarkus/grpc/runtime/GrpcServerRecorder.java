@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.enterprise.inject.Instance;
 
@@ -27,15 +29,20 @@ import org.jboss.logging.Logger;
 import grpc.health.v1.HealthOuterClass;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
+import io.grpc.ServerInterceptors;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.quarkus.arc.Arc;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
+import io.quarkus.grpc.runtime.config.GrpcServerNettyConfig;
 import io.quarkus.grpc.runtime.devmode.GrpcHotReplacementInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.reflection.ReflectionService;
+import io.quarkus.grpc.runtime.supports.BlockingServerInterceptor;
+import io.quarkus.grpc.runtime.supports.CompressionInterceptor;
+import io.quarkus.grpc.runtime.supports.RequestScopeHandlerInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -46,6 +53,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.grpc.VertxServer;
@@ -56,10 +64,12 @@ public class GrpcServerRecorder {
     private static final Logger LOGGER = Logger.getLogger(GrpcServerRecorder.class.getName());
 
     private static final AtomicInteger grpcVerticleCount = new AtomicInteger(0);
+    private Map<String, List<String>> blockingMethodsPerService = Collections.emptyMap();
 
     public void initializeGrpcServer(RuntimeValue<Vertx> vertxSupplier,
             GrpcConfiguration cfg,
-            ShutdownContext shutdown) {
+            ShutdownContext shutdown,
+            Map<String, List<String>> blockingMethodsPerServiceImplementationClass, LaunchMode launchMode) {
         GrpcContainer grpcContainer = Arc.container().instance(GrpcContainer.class).get();
         if (grpcContainer == null) {
             throw new IllegalStateException("gRPC not initialized, GrpcContainer not found");
@@ -70,51 +80,45 @@ public class GrpcServerRecorder {
                     "Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
 
-        GrpcServerConfiguration configuration = cfg.server;
-        final boolean devMode = ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
+        this.blockingMethodsPerService = blockingMethodsPerServiceImplementationClass;
 
-        if (devMode) {
+        GrpcServerConfiguration configuration = cfg.server;
+
+        if (launchMode == LaunchMode.DEVELOPMENT) {
             // start single server, not in a verticle, regardless of the configuration.instances
             // for reason unknown to me, verticles occasionally get undeployed on dev mode reload
             if (GrpcServerReloader.getServer() == null) {
-                devModeStart(grpcContainer, vertx, configuration, shutdown);
+                devModeStart(grpcContainer, vertx, configuration, shutdown, launchMode);
             } else {
                 devModeReload(grpcContainer);
             }
         } else {
-            prodStart(grpcContainer, vertx, configuration);
+            prodStart(grpcContainer, vertx, configuration, launchMode);
         }
     }
 
-    private void prodStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration) {
+    private void prodStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
+            LaunchMode launchMode) {
         CompletableFuture<Void> startResult = new CompletableFuture<>();
 
-        vertx.deployVerticle(() -> new GrpcServerVerticle(configuration, grpcContainer),
+        vertx.deployVerticle(
+                new Supplier<Verticle>() {
+                    @Override
+                    public Verticle get() {
+                        return new GrpcServerVerticle(configuration, grpcContainer, launchMode);
+                    }
+                },
                 new DeploymentOptions().setInstances(configuration.instances),
-                result -> {
-                    if (result.failed()) {
-                        startResult.completeExceptionally(result.cause());
-                    } else {
-                        grpcContainer.getHealthStorage().stream().forEach(new Consumer<GrpcHealthStorage>() { //NOSONAR
-                            @Override
-                            public void accept(GrpcHealthStorage storage) {
-                                storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
-                                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
-                                grpcContainer.getServices().forEach(
-                                        new Consumer<BindableService>() { // NOSONAR
-                                            @Override
-                                            public void accept(BindableService service) {
-                                                ServerServiceDefinition definition = service.bindService();
-                                                storage.setStatus(definition.getServiceDescriptor().getName(),
-                                                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
-                                            }
-                                        });
-                            }
-                        });
-                        LOGGER.infof("gRPC Server started on %s:%d [SSL enabled: %s]",
-                                configuration.host, configuration.port, !configuration.plainText);
+                new Handler<AsyncResult<String>>() {
+                    @Override
+                    public void handle(AsyncResult<String> result) {
+                        if (result.failed()) {
+                            startResult.completeExceptionally(result.cause());
+                        } else {
+                            GrpcServerRecorder.this.postStartup(grpcContainer, configuration, launchMode == LaunchMode.TEST);
 
-                        startResult.complete(null);
+                            startResult.complete(null);
+                        }
                     }
                 });
 
@@ -130,11 +134,32 @@ public class GrpcServerRecorder {
         }
     }
 
+    private void postStartup(GrpcContainer grpcContainer, GrpcServerConfiguration configuration, boolean test) {
+        grpcContainer.getHealthStorage().stream().forEach(new Consumer<GrpcHealthStorage>() { //NOSONAR
+            @Override
+            public void accept(GrpcHealthStorage storage) {
+                storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
+                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
+                grpcContainer.getServices().forEach(
+                        new Consumer<BindableService>() { // NOSONAR
+                            @Override
+                            public void accept(BindableService service) {
+                                ServerServiceDefinition definition = service.bindService();
+                                storage.setStatus(definition.getServiceDescriptor().getName(),
+                                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
+                            }
+                        });
+            }
+        });
+        LOGGER.infof("gRPC Server started on %s:%d [SSL enabled: %s]",
+                configuration.host, test ? configuration.testPort : configuration.port, !configuration.plainText);
+    }
+
     private void devModeStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
-            ShutdownContext shutdown) {
+            ShutdownContext shutdown, LaunchMode launchMode) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        VertxServer vertxServer = buildServer(vertx, configuration, grpcContainer, true)
+        VertxServer vertxServer = buildServer(vertx, configuration, grpcContainer, launchMode)
                 .start(new Handler<AsyncResult<Void>>() { // NOSONAR
                     @Override
                     public void handle(AsyncResult<Void> ar) {
@@ -142,6 +167,7 @@ public class GrpcServerRecorder {
                             LOGGER.error("Unable to start the gRPC server", ar.cause());
                             future.completeExceptionally(ar.cause());
                         } else {
+                            postStartup(grpcContainer, configuration, false);
                             future.complete(true);
                             grpcVerticleCount.incrementAndGet();
                         }
@@ -166,6 +192,14 @@ public class GrpcServerRecorder {
                         GrpcServerReloader.reset();
                     }
                 });
+    }
+
+    private void applyNettySettings(GrpcServerConfiguration configuration, VertxServerBuilder builder) {
+        if (configuration.netty != null) {
+            GrpcServerNettyConfig config = configuration.netty;
+            config.keepAliveTime.ifPresent(duration -> builder.nettyBuilder()
+                    .keepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
+        }
     }
 
     private void applyTransportSecurityConfig(GrpcServerConfiguration configuration, VertxServerBuilder builder) {
@@ -198,37 +232,48 @@ public class GrpcServerRecorder {
                         && services.get().bindService().getServiceDescriptor().getName().equals("grpc.health.v1.Health");
     }
 
-    private static List<ServerServiceDefinition> gatherServices(Instance<BindableService> services) {
-        List<ServerServiceDefinition> definitions = new ArrayList<>();
-
-        services.forEach(new Consumer<BindableService>() { // NOSONAR
-            @Override
-            public void accept(BindableService bindable) {
-                ServerServiceDefinition definition = bindable.bindService();
-                LOGGER.debugf("Registered gRPC service '%s'", definition.getServiceDescriptor().getName());
-                definitions.add(definition);
-            }
-        });
+    private static List<GrpcServiceDefinition> collectServiceDefinitions(Instance<BindableService> services) {
+        List<GrpcServiceDefinition> definitions = new ArrayList<>();
+        for (BindableService service : services) {
+            ServerServiceDefinition definition = service.bindService();
+            definitions.add(new GrpcServiceDefinition(service, definition));
+        }
         return definitions;
     }
 
-    private static void devModeReload(GrpcContainer grpcContainer) {
-        List<ServerServiceDefinition> serviceDefinitions = gatherServices(grpcContainer.getServices());
+    private static class GrpcServiceDefinition {
+        public final BindableService service;
+        public final ServerServiceDefinition definition;
 
-        Map<String, ServerMethodDefinition<?, ?>> methods = new HashMap<>();
-        for (ServerServiceDefinition service : serviceDefinitions) {
-            for (ServerMethodDefinition<?, ?> method : service.getMethods()) {
-                methods.put(method.getMethodDescriptor().getFullMethodName(), method);
-            }
+        GrpcServiceDefinition(BindableService service, ServerServiceDefinition definition) {
+            this.service = service;
+            this.definition = definition;
         }
 
-        ServerServiceDefinition reflectionService = new ReflectionService(serviceDefinitions).bindService();
+        public String getImplementationClassName() {
+            return service.getClass().getName();
+        }
+    }
+
+    private static void devModeReload(GrpcContainer grpcContainer) {
+        List<GrpcServiceDefinition> svc = collectServiceDefinitions(grpcContainer.getServices());
+
+        List<ServerServiceDefinition> definitions = new ArrayList<>();
+        Map<String, ServerMethodDefinition<?, ?>> methods = new HashMap<>();
+        for (GrpcServiceDefinition service : svc) {
+            for (ServerMethodDefinition<?, ?> method : service.definition.getMethods()) {
+                methods.put(method.getMethodDescriptor().getFullMethodName(), method);
+            }
+            definitions.add(service.definition);
+        }
+
+        ServerServiceDefinition reflectionService = new ReflectionService(definitions).bindService();
 
         for (ServerMethodDefinition<?, ?> method : reflectionService.getMethods()) {
             methods.put(method.getMethodDescriptor().getFullMethodName(), method);
         }
 
-        GrpcServerReloader.reinitialize(serviceDefinitions, methods, grpcContainer.getSortedInterceptors());
+        GrpcServerReloader.reinitialize(definitions, methods, grpcContainer.getSortedInterceptors());
     }
 
     public static int getVerticleCount() {
@@ -236,9 +281,10 @@ public class GrpcServerRecorder {
     }
 
     private VertxServer buildServer(Vertx vertx, GrpcServerConfiguration configuration,
-            GrpcContainer grpcContainer, boolean devMode) {
+            GrpcContainer grpcContainer, LaunchMode launchMode) {
         VertxServerBuilder builder = VertxServerBuilder
-                .forAddress(vertx, configuration.host, configuration.port);
+                .forAddress(vertx, configuration.host,
+                        launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port);
 
         AtomicBoolean usePlainText = new AtomicBoolean();
         builder.useSsl(new Handler<HttpServerOptions>() { // NOSONAR
@@ -255,6 +301,11 @@ public class GrpcServerRecorder {
         if (configuration.maxInboundMessageSize.isPresent()) {
             builder.maxInboundMessageSize(configuration.maxInboundMessageSize.getAsInt());
         }
+
+        if (configuration.maxInboundMetadataSize.isPresent()) {
+            builder.maxInboundMetadataSize(configuration.maxInboundMetadataSize.getAsInt());
+        }
+
         Optional<Duration> handshakeTimeout = configuration.handshakeTimeout;
         if (handshakeTimeout.isPresent()) {
             builder.handshakeTimeout(handshakeTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
@@ -262,11 +313,35 @@ public class GrpcServerRecorder {
 
         applyTransportSecurityConfig(configuration, builder);
 
+        applyNettySettings(configuration, builder);
+
         boolean reflectionServiceEnabled = configuration.enableReflectionService
                 || ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
-        List<ServerServiceDefinition> definitions = gatherServices(grpcContainer.getServices());
-        for (ServerServiceDefinition definition : definitions) {
-            builder.addService(definition);
+        List<GrpcServiceDefinition> toBeRegistered = collectServiceDefinitions(grpcContainer.getServices());
+        List<ServerServiceDefinition> definitions = new ArrayList<>();
+
+        CompressionInterceptor compressionInterceptor = null;
+        if (configuration.compression.isPresent()) {
+            compressionInterceptor = new CompressionInterceptor(configuration.compression.get());
+        }
+
+        for (GrpcServiceDefinition service : toBeRegistered) {
+            List<ServerInterceptor> interceptors = new ArrayList<>();
+            if (compressionInterceptor != null) {
+                interceptors.add(compressionInterceptor);
+            }
+            // We only register the blocking interceptor if needed by at least one method of the service.
+            if (!blockingMethodsPerService.isEmpty()) {
+                List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
+                if (list != null) {
+                    interceptors.add(new BlockingServerInterceptor(vertx, list));
+                }
+            }
+            // Order matters! Request scope must be called first (on the event loop) and so should be last in the list...
+            interceptors.add(new RequestScopeHandlerInterceptor());
+            builder.addService(ServerInterceptors.intercept(service.definition, interceptors));
+            LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
+            definitions.add(service.definition);
         }
 
         if (reflectionServiceEnabled) {
@@ -278,19 +353,30 @@ public class GrpcServerRecorder {
             builder.intercept(serverInterceptor);
         }
 
-        if (devMode) {
-            builder.commandDecorator(command -> vertx.executeBlocking(new Handler<Promise<Boolean>>() {
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            builder.commandDecorator(new Consumer<Runnable>() {
                 @Override
-                public void handle(Promise<Boolean> event) {
-                    event.complete(GrpcHotReplacementInterceptor.fire());
+                public void accept(Runnable command) {
+                    vertx.executeBlocking(new Handler<Promise<Boolean>>() {
+                        @Override
+                        public void handle(Promise<Boolean> event) {
+                            event.complete(GrpcHotReplacementInterceptor.fire());
+                        }
+                    },
+                            false,
+                            new Handler<AsyncResult<Boolean>>() {
+                                @Override
+                                public void handle(AsyncResult<Boolean> result) {
+                                    command.run();
+                                }
+                            });
                 }
-            },
-                    false,
-                    result -> command.run()));
+            });
         }
 
         LOGGER.debugf("Starting gRPC Server on %s:%d  [SSL enabled: %s]...",
-                configuration.host, configuration.port, !usePlainText.get());
+                configuration.host, launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port,
+                !usePlainText.get());
 
         return builder.build();
     }
@@ -298,12 +384,14 @@ public class GrpcServerRecorder {
     private class GrpcServerVerticle extends AbstractVerticle {
         private final GrpcServerConfiguration configuration;
         private final GrpcContainer grpcContainer;
+        private final LaunchMode launchMode;
 
         private VertxServer grpcServer;
 
-        GrpcServerVerticle(GrpcServerConfiguration configuration, GrpcContainer grpcContainer) {
+        GrpcServerVerticle(GrpcServerConfiguration configuration, GrpcContainer grpcContainer, LaunchMode launchMode) {
             this.configuration = configuration;
             this.grpcContainer = grpcContainer;
+            this.launchMode = launchMode;
         }
 
         @Override
@@ -313,7 +401,7 @@ public class GrpcServerRecorder {
                         "Unable to find bean exposing the `BindableService` interface - not starting the gRPC server");
                 return;
             }
-            grpcServer = buildServer(getVertx(), configuration, grpcContainer, false)
+            grpcServer = buildServer(getVertx(), configuration, grpcContainer, launchMode)
                     .start(new Handler<AsyncResult<Void>>() { // NOSONAR
                         @Override
                         public void handle(AsyncResult<Void> ar) {

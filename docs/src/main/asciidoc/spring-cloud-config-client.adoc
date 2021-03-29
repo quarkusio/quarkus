@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Reading properties from Spring Cloud Config Server
 
@@ -35,7 +35,7 @@ The end result of that process is a running Config Server that will provide the 
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -150,6 +150,7 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * link:spring-di[Quarkus - Extension for Spring DI]
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
 * link:spring-security[Quarkus - Extension for Spring Security]
 * link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
 * link:spring-cache[Quarkus - Extension for Spring Cache]
@@ -158,5 +159,5 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 [[spring-cloud-config-client-configuration-reference]]
 == Spring Cloud Config Client Reference
 
-include::{generated-dir}/config/quarkus-spring-cloud-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-spring-cloud-config-client.adoc[leveloffset=+1, opts=optional]
 

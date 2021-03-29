@@ -107,7 +107,8 @@ public class InfinispanClientProducer {
         // If you are changing this method, you will most likely have to change builderFromProperties as well
         String marshallerClassName = (String) properties.get(ConfigurationProperties.MARSHALLER);
         if (marshallerClassName != null) {
-            Class<?> marshallerClass = Class.forName(marshallerClassName);
+            Class<?> marshallerClass = Class.forName(marshallerClassName, false,
+                    Thread.currentThread().getContextClassLoader());
             properties.put(ConfigurationProperties.MARSHALLER, Util.getInstance(marshallerClass));
         } else {
             // Default to proto stream marshaller if one is not provided

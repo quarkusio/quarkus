@@ -1,0 +1,66 @@
+name: Quarkus Deploy Snapshots
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+
+env:
+  LANG: en_US.UTF-8
+jobs:
+  build-and-deploy:
+    name: "Build and deploy"
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: main
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Set up JDK 8
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 8
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+        shell: bash
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          # refresh cache every month to avoid unlimited growth
+          key: q2maven-${{ steps.get-date.outputs.date }}
+      - name: Build and Deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        run: |
+          mvn -e -B --settings .github/mvn-settings.xml \
+            -DskipITs -Dno-format -Dinvoker.skip=true \
+            -DretryFailedDeploymentCount=10 \
+            clean deploy
+      - name: Delete Local Artifacts From Cache
+        shell: bash
+        run: rm -r ~/.m2/repository/io/quarkus
+
+      - name: Report
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          STATUS: ${{ job.status }}
+          ISSUE_NUMBER: "12111"
+        run: |
+          echo "The report step got status: ${STATUS}"
+          sudo apt-get update -o Dir::Etc::sourcelist="sources.list" \
+            -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
+          sudo apt-get install -y gnupg2 gnupg-agent
+          echo Installing SDKMAN
+          curl -s "https://get.sdkman.io" | bash
+          source ~/.sdkman/bin/sdkman-init.sh && \
+          sdk install jbang 0.36.1
+          jbang .github/NativeBuildReport.java token="${GITHUB_TOKEN}" status="${STATUS}" issueRepo="${GITHUB_REPOSITORY}" issueNumber="${ISSUE_NUMBER}" thisRepo="${GITHUB_REPOSITORY}" runId="${GITHUB_RUN_ID}"

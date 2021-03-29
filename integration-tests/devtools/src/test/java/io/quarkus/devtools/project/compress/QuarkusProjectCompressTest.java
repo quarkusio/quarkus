@@ -19,10 +19,13 @@ import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusProjectCompressTest extends PlatformAwareTestBase {
 
@@ -30,7 +33,7 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
     public void createZip() throws Exception {
         // Given a Quarkus project
         final Path testDir = Paths.get("target/zip");
-        ProjectTestUtil.delete(testDir.toFile());
+        SnapshotTesting.deleteTestDirectory(testDir.toFile());
         testDir.toFile().mkdirs();
         Path zip = testDir.resolve("project.zip");
 
@@ -51,7 +54,7 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
     public void createZipWithParentFolder() throws Exception {
         // Given a Quarkus project
         final Path testDir = Paths.get("target/zip");
-        ProjectTestUtil.delete(testDir.toFile());
+        SnapshotTesting.deleteTestDirectory(testDir.toFile());
         testDir.toFile().mkdirs();
         Path zip = testDir.resolve("project.zip");
 
@@ -82,7 +85,8 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
 
     private Path createProject(Path testDir) throws QuarkusCommandException, IOException {
         final Path projectPath = testDir.resolve("project");
-        final QuarkusCommandOutcome result = new CreateProject(projectPath, getPlatformDescriptor())
+        final QuarkusProject project = QuarkusProjectHelper.getProject(projectPath, BuildTool.MAVEN);
+        final QuarkusCommandOutcome result = new CreateProject(project)
                 .groupId("org.acme")
                 .artifactId("basic-rest")
                 .version("1.0.0-SNAPSHOT")

@@ -32,11 +32,7 @@ class QueryObjectReader extends BaseObjectReader {
                 continue;
             Class paramType = m.getParameterTypes()[0];
             Type paramGenericType = m.getGenericParameterTypes()[0];
-            Function<String, Object> extractor = mapper.extractor(paramType);
-            QueryPropertySetter propertySetter = null;
-            if (extractor == null) { // not string or primitive
-                propertySetter = mapper.setterFor(paramType, paramGenericType);
-            }
+            final Function<String, Object> extractor = mapper.extractor(paramType);
 
             String name;
             if (m.getName().length() > 4) {
@@ -44,7 +40,6 @@ class QueryObjectReader extends BaseObjectReader {
             } else {
                 name = m.getName().substring(3).toLowerCase();
             }
-            final QueryPropertySetter finalPropertySetter = propertySetter;
             ValueSetter setter = new ValueSetter() {
                 @Override
                 public void setValue(Object target, String propName, Object value) {
@@ -62,7 +57,11 @@ class QueryObjectReader extends BaseObjectReader {
 
                 @Override
                 public QueryPropertySetter getSetter() {
-                    return finalPropertySetter;
+                    if (extractor == null) {
+                        return mapper.setterFor(paramType, paramGenericType);
+                    } else {
+                        return null;
+                    }
                 }
             };
             properties.put(name, setter);

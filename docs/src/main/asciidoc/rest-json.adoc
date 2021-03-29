@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Writing JSON REST Services
 
@@ -41,7 +41,36 @@ The solution is located in the `rest-json-quickstart` {quickstarts-tree-url}/res
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=rest-json-quickstart \
+    -DclassName="org.acme.rest.json.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy,resteasy-jackson"
+cd rest-json-quickstart
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
+and in particular adds the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
+----
+
+[NOTE]
+====
+To improve user experience, Quarkus registers the three Jackson https://github.com/FasterXML/jackson-modules-java8[Java 8 modules] so you don't need to do it manually.
+====
+
+Quarkus also supports http://json-b.net/[JSON-B] so, if you prefer JSON-B over Jackson, you can create a project relying on the RESTEasy JSON-B extension instead:
+
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -62,32 +91,6 @@ and in particular adds the following dependency:
     <artifactId>quarkus-resteasy-jsonb</artifactId>
 </dependency>
 ----
-
-Quarkus also supports https://github.com/FasterXML/jackson[Jackson] so, if you prefer Jackson over JSON-B, you can create a project relying on the RESTEasy Jackson extension instead:
-
-[source,shell,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-json-quickstart \
-    -DclassName="org.acme.rest.json.FruitResource" \
-    -Dpath="/fruits" \
-    -Dextensions="resteasy-jackson"
-cd rest-json-quickstart
-----
-
-This command generates a Maven structure importing the RESTEasy/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
-and in particular adds the following dependency:
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
-</dependency>
-----
-
-To improve user experience, Quarkus registers the three Jackson https://github.com/FasterXML/jackson-modules-java8[Java 8 modules] so you don't need to do it manually.
 
 == Creating your first JSON REST service
 
@@ -126,17 +129,12 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 @Path("/fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     private Set<Fruit> fruits = Collections.newSetFromMap(Collections.synchronizedMap(new LinkedHashMap<>()));
@@ -172,17 +170,90 @@ depending on the extension you chose when initializing the project.
 
 [NOTE]
 ====
-While RESTEasy supports auto-negotiation, when using Quarkus, it is very important to define the `@Produces` and `@Consumes` annotations.
-They are analyzed at build time and Quarkus restricts the number of JAX-RS providers included in the native executable to the minimum required by the application.
-It allows to reduce the size of the native executable.
+When a JSON extension is installed such as `quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`, Quarkus will use the `application/json` media type
+by default for most return values, unless the media type is explicitly set via
+`@Produces` or `@Consumes` annotations (there are some exceptions for well known types, such as `String` and `File`, which default to `text/plain` and `application/octet-stream`
+respectively).
+
+If you don't want JSON by default you can set `quarkus.resteasy-json.default-json=false` and the default will change back to being auto-negotiated. If you set this
+you will need to add `@Produces(MediaType.APPLICATION_JSON)` and `@Consumes(MediaType.APPLICATION_JSON)` to your endpoints in order to use JSON.
+
+If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
+It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
 ====
 
 === Configuring JSON support
 
+==== Jackson
+
+In Quarkus, the default Jackson `ObjectMapper` obtained via CDI (and consumed by the Quarkus extensions) is configured to ignore unknown properties
+(by disabling the `DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES` feature).
+
+You can restore the default behavior of Jackson by setting `quarkus.jackson.fail-on-unknown-properties=true` in your `application.properties`
+or on a per class basis via `@JsonIgnoreProperties(ignoreUnknown = false)`.
+
+Furthermore, the `ObjectMapper` is configured to format dates and time in ISO-8601
+(by disabling the `SerializationFeature.WRITE_DATES_AS_TIMESTAMPS` feature).
+
+The default behaviour of Jackson can be restored by setting `quarkus.jackson.write-dates-as-timestamps=true`
+in your `application.properties`. If you want to change the format for a single field, you can use the
+`@JsonFormat` annotation.
+
+Also, Quarkus makes it very easy to configure various Jackson settings via CDI beans.
+The simplest (and suggested) approach is to define a CDI bean of type `io.quarkus.jackson.ObjectMapperCustomizer`
+inside of which any Jackson configuration can be applied.
+
+An example where a custom module needs to be registered would look like so:
+
+[source,java]
+----
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.jackson.ObjectMapperCustomizer;
+import javax.inject.Singleton;
+
+@Singleton
+public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
+
+    public void customize(ObjectMapper mapper) {
+        mapper.registerModule(new CustomModule());
+    }
+}
+----
+
+Users can even provide their own `ObjectMapper` bean if they so choose.
+If this is done, it is very important to manually inject and apply all `io.quarkus.jackson.ObjectMapperCustomizer` beans in the CDI producer that produces `ObjectMapper`.
+Failure to do so will prevent Jackson specific customizations provided by various extensions from being applied. 
+
+[source,java]
+----
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.jackson.ObjectMapperCustomizer;
+
+import javax.enterprise.inject.Instance;
+import javax.inject.Singleton;
+
+public class CustomObjectMapper {
+
+    // Replaces the CDI producer for ObjectMapper built into Quarkus
+    @Singleton
+    ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers) {
+        ObjectMapper mapper = myObjectMapper(); // Custom `ObjectMapper`
+
+        // Apply all ObjectMapperCustomerizer beans (incl. Quarkus)
+        for (ObjectMapperCustomizer customizer : customizers) {
+            customizer.customize(mapper);
+        }
+
+        return mapper;
+    }
+}
+----
+
 ==== JSON-B
 
-Quarkus makes it very easy to configure various JSON-B settings via CDI beans. The simplest (and suggested) approach is to define a CDI bean of type `io.quarkus.jsonb.JsonbConfigCustomizer`
-inside of which any JSON-B configuration can be applied.
+As stated above, Quarkus provides the option of using JSON-B instead of Jackson via the use of the `quarkus-resteasy-jsonb` extension.
+
+Following the same approach as described in the previous section, JSON-B can be configured using a `io.quarkus.jsonb.JsonbConfigCustomizer` bean.
 
 If for example a custom serializer named `FooSerializer` for type `com.example.Foo` needs to be registered with JSON-B, the addition of a bean like the following would suffice:
 
@@ -206,31 +277,31 @@ A more advanced option would be to directly provide a bean of `javax.json.bind.J
 If the latter approach is leveraged it is very important to manually inject and apply all `io.quarkus.jsonb.JsonbConfigCustomizer` beans in the CDI producer that produces `javax.json.bind.Jsonb`.
 Failure to do so will prevent JSON-B specific customizations provided by various extensions from being applied.
 
-==== Jackson
-
-As stated above, Quarkus provides the option of using https://github.com/FasterXML/jackson[Jackson] instead of JSON-B via the use of the `quarkus-resteasy-jackson` extension.
-
-Following the same approach as described in the previous section, Jackson's `ObjectMapper` can be configured using a `io.quarkus.jackson.ObjectMapperCustomizer` bean.
-An example where a custom module needs to be registered would like so:
-
 [source,java]
 ----
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.jackson.ObjectMapperCustomizer;
-import javax.inject.Singleton;
+import io.quarkus.jsonb.JsonbConfigCustomizer;
 
-@Singleton
-public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
+import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Instance;
+import javax.json.bind.JsonbConfig;
 
-    public void customize(ObjectMapper mapper) {
-        mapper.registerModule(new CustomModule());
+public class CustomJsonbConfig {
+
+    // Replaces the CDI producer for JsonbConfig built into Quarkus
+    @Dependent
+    JsonbConfig jsonConfig(Instance<JsonbConfigCustomizer> customizers) {
+        JsonbConfig config = myJsonbConfig(); // Custom `JsonbConfig`
+
+        // Apply all JsonbConfigCustomizer beans (incl. Quarkus)
+        for (JsonbConfigCustomizer customizer : customizers) {
+            customizer.customize(config);
+        }
+
+        return config;
     }
 }
 ----
 
-Users can even provide their own `ObjectMapper` bean if they so choose.
-If this is done, it is very important to manually inject and apply all `io.quarkus.jackson.ObjectMapperCustomizer` beans in the CDI producer that produces `ObjectMapper`.
-Failure to do so will prevent Jackson specific customizations provided by various extensions from being applied.
 
 == Creating a frontend
 
@@ -248,7 +319,7 @@ You can now interact with your REST service:
 
 You can build a native executable with the usual command `./mvnw package -Pnative`.
 
-Running it is as simple as executing `./target/rest-json-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`.
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
 
@@ -266,7 +337,6 @@ When you have the following REST method, Quarkus determines that `Fruit` will be
 [source,JAVA]
 ----
 @GET
-@Produces("application/json")
 public List<Fruit> list() {
     // ...
 }
@@ -286,7 +356,6 @@ Your REST method then looks like this:
 [source,JAVA]
 ----
 @GET
-@Produces("application/json")
 public Response list() {
     // ...
 }
@@ -367,7 +436,7 @@ Open a browser to http://localhost:8080/legumes.html and you will see our list o
 The interesting part starts when running the application as a native executable:
 
  * create the native executable with `./mvnw package -Pnative`.
- * execute it with `./target/rest-json-quickstart-1.0-SNAPSHOT-runner`
+ * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
 No legumes there.
@@ -398,7 +467,7 @@ Let's do that and follow the same steps as before:
 
  * hit `Ctrl+C` to stop the application
  * create the native executable with `./mvnw package -Pnative`.
- * execute it with `./target/rest-json-quickstart-1.0-SNAPSHOT-runner`
+ * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
 This time, you can see our list of legumes.
@@ -492,7 +561,7 @@ public class LoggingFilter implements ContainerRequestFilter {
 
 Now, whenever a REST method is invoked, the request will be logged into the console:
 
-[source,shell]
+[source,text]
 ----
 2019-06-05 12:44:26,526 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /legumes from IP 127.0.0.1
 2019-06-05 12:49:19,623 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /fruits from IP 0:0:0:0:0:0:0:1
@@ -523,16 +592,46 @@ quarkus.resteasy.gzip.max-input=10M // <2>
 <2> Configure the upper limit on deflated request body. This is useful to mitigate potential attacks by limiting their reach. The default value is `10M`.
 This configuration option would recognize strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`. If no suffix is given, assume bytes.
 
+Once GZip support has been enabled you can use it on an endpoint by adding the `@org.jboss.resteasy.annotations.GZIP` annotation to your endpoint method.
+
+If you want to compress everything then we recommended that you use the `quarkus.http.enable-compression=true` setting instead to globally enable
+compression support.
+
+== Multipart Support
+
+RESTEasy supports multipart via the https://docs.jboss.org/resteasy/docs/4.5.6.Final/userguide/html/Multipart.html[RESTEasy Multipart Provider].
+
+Quarkus provides an extension called `quarkus-resteasy-multipart` to make things easier for you.
+
+This extension slightly differs from the RESTEasy default behavior as the default charset (if none is specified in your request) is UTF-8 rather than US-ASCII.
+
+You can configure this behavior with the following configuration properties:
+
+include::{generated-dir}/config/quarkus-resteasy-multipart.adoc[leveloffset=+1, opts=optional]
+
 == Servlet compatibility
 
 In Quarkus, RESTEasy can either run directly on top of the Vert.x HTTP server, or on top of Undertow if you have any servlet dependency.
 
 As a result, certain classes, such as `HttpServletRequest` are not always available for injection. Most use-cases for this particular
 class are covered by JAX-RS equivalents, except for getting the remote client's IP. RESTEasy comes with a replacement API which you can inject:
-https://docs.jboss.org/resteasy/docs/4.4.2.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html[`HttpRequest`], which has the methods
-https://docs.jboss.org/resteasy/docs/4.4.2.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteAddress--[`getRemoteAddress()`]
-and https://docs.jboss.org/resteasy/docs/4.4.2.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteHost--[`getRemoteHost()`]
+https://docs.jboss.org/resteasy/docs/4.5.6.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html[`HttpRequest`], which has the methods
+https://docs.jboss.org/resteasy/docs/4.5.6.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteAddress--[`getRemoteAddress()`]
+and https://docs.jboss.org/resteasy/docs/4.5.6.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteHost--[`getRemoteHost()`]
 to solve this problem.
+
+== RESTEasy and REST Client interactions
+
+In Quarkus, the RESTEasy extension and link:rest-client[the REST Client extension] share the same infrastructure.
+One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
+
+For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
+which might not be the desired behavior.
+
+However, you can change this default behavior and constrain a provider to:
+
+* only consider *server* calls by adding the `@ConstrainedTo(RuntimeType.SERVER)` annotation to your provider;
+* only consider *client* calls by adding the `@ConstrainedTo(RuntimeType.CLIENT)` annotation to your provider.
 
 == What's Different from Jakarta EE Development
 
@@ -540,9 +639,22 @@ to solve this problem.
 
 Configuration via an application-supplied subclass of `Application` is supported, but not required.
 
+=== Only a single JAX-RS application
+
+In contrast to JAX-RS (and RESTeasy) running in a standard servlet-container, Quarkus only supports the deployment of a single JAX-RS application.
+If multiple JAX-RS `Application` classes are defined, the build will fail with the message `Multiple classes have been annotated with @ApplicationPath which is currently not supported`.
+
+If multiple JAX-RS applications are defined, the property `quarkus.resteasy.ignoreApplicationClasses=true` can be used to ignore all explicit `Application` classes. This makes all resource-classes available via the application-path as defined by `quarkus.resteasy.path` (default: `/`).
+
+=== Support limitations of JAX-RS application
+
+The RESTEasy extension doesn't support the method `getProperties()` of the class `javax.ws.rs.core.Application`. Moreover, it only relies on the methods `getClasses()` and `getSingletons()` to filter out the annotated resource, provider and feature classes.
+It doesn't filter out the built-in resource, provider and feature classes and also the resource, provider and feature classes registered by the other extensions.
+Finally the objects returned by the method `getSingletons()` are ignored, only the classes are took into account to filter out the resource, provider and feature classes, in other words the method `getSingletons()` is actually managed the same way as `getClasses()`.
+
 === Lifecycle of Resources
 
-In Quarkus all JAX-RS resources are treated as CDI beans. 
+In Quarkus all JAX-RS resources are treated as CDI beans.
 It's possible to inject other beans via `@Inject`, bind interceptors using bindings such as `@Transactional`, define `@PostConstruct` callbacks, etc.
 
 If there is no scope annotation declared on the resource class then the scope is defaulted.
@@ -550,6 +662,28 @@ The default scope can be controlled through the `quarkus.resteasy.singleton-reso
 If set to `true` (default) then a *single instance* of a resource class is created to service all requests (as defined by `@javax.inject.Singleton`).
 If set to `false` then a *new instance* of the resource class is created per each request.
 An explicit CDI scope annotation (`@RequestScoped`, `@ApplicationScoped`, etc.) always overrides the default behavior and specifies the lifecycle of resource instances.
+
+== Include/Exclude JAX-RS classes with build time conditions
+
+Quarkus enables the inclusion or exclusion of JAX-RS Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
+Thus, the various JAX-RS classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these JAX-RS classes should be included.
+
+In the following example, Quarkus includes the endpoint `sayHello` if and only if the build profile `app1` has been enabled.
+
+[source,java]
+----
+@IfBuildProfile("app1")
+public class ResourceForApp1Only {
+
+    @GET
+    @Path("sayHello")
+    public String sayHello() {
+        return "hello";
+     }
+}
+----
+
+Please note that if a JAX-RS Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the JAX-RS Application.
 
 == Conclusion
 

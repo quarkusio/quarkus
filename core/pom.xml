@@ -21,16 +21,6 @@
         <module>test-extension</module>
         <module>devmode-spi</module>
         <module>launcher</module>
+        <module>class-change-agent</module>
     </modules>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

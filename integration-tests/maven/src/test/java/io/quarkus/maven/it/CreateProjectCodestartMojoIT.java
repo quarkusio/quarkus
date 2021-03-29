@@ -7,19 +7,17 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
+import java.nio.file.Path;
 import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
@@ -29,64 +27,90 @@ import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.InvokerLogger;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import io.quarkus.deployment.util.ProcessUtil;
-import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
 
-/**
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
- */
 @DisableForNative
 public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
     private static final Logger LOG = Logger.getLogger(CreateProjectCodestartMojoIT.class.getName());
 
-    private ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Invoker invoker;
-    private RunningInvoker running;
     private File testDir;
 
-    private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
-    private static final String GRADLE_WRAPPER_UNIX = "gradlew";
-    private static final String GRADLE_NO_DAEMON = "--no-daemon";
-
-    private void check(final File resource, final String contentsToFind) throws IOException {
-        assertThat(resource).isFile();
-        assertThat(FileUtils.readFileToString(resource, "UTF-8")).contains(contentsToFind);
-    }
-
-    @AfterEach
-    public void cleanup() {
-        if (running != null) {
-            running.stop();
-        }
-        executor.shutdownNow();
+    private static Stream<Arguments> provideLanguages() {
+        return Stream.of("java", "kotlin")
+                .flatMap(l -> Stream.of("", "resteasy", "qute").map(e -> Arguments.of(l, e)));
     }
 
     @ParameterizedTest
-    @CsvSource({ "maven,java", "maven,kotlin", "maven,scala", "gradle,java", "gradle,kotlin", "gradle,scala" })
-    public void generateProjectRunTestsAndDev(String buildtool, String language) throws Exception {
-        testDir = prepareTestDir("project-" + buildtool + "-" + language);
-        LOG.info("creating project in " + testDir.toPath().toString());
-        runCreateCommand(buildtool, "resteasy,qute" + (!Objects.equals(language, "java") ? "," + language : ""));
-        LOG.info("running quarkus test and dev command...");
-        switch (buildtool) {
-            case "maven":
-                runMavenQuarkusDevCommand();
-                LOG.info("checking resteasy...");
-                checkRestEasyDevmode();
+    @MethodSource("provideLanguages")
+    public void generateMavenProject(String language, String extensions) throws Exception {
+        final Path generatedProjectPath = generateProject("maven", language, extensions, Collections.emptyMap());
+        checkDir(generatedProjectPath.resolve("src/main/" + language));
+        Stream.of(extensions.split(","))
+                .filter(s -> !s.isEmpty())
+                .forEach(e -> checkContent(generatedProjectPath.resolve("pom.xml"), e));
+    }
 
-                break;
-            case "gradle":
-                // FIXME find a way to make gradle check work
-                //runGradleQuarkusDevCommand();
-                break;
+    @ParameterizedTest
+    @MethodSource("provideLanguages")
+    public void generateGradleProject(String language, String extensions) throws Exception {
+        final Path generatedProjectPath = generateProject("gradle", language, extensions, Collections.emptyMap());
+        checkDir(generatedProjectPath.resolve("src/main/" + language));
+        Stream.of(extensions.split(","))
+                .forEach(e -> checkContent(generatedProjectPath.resolve("build.gradle"), e));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideLanguages")
+    public void generateGradleKotlinProject(String language, String extensions) throws Exception {
+        final Path generatedProjectPath = generateProject("gradle-kotlin-dsl", language, extensions, Collections.emptyMap());
+        checkDir(generatedProjectPath.resolve("src/main/" + language));
+        Stream.of(extensions.split(","))
+                .forEach(e -> checkContent(generatedProjectPath.resolve("build.gradle.kts"), e));
+    }
+
+    @Test
+    public void generateCustomRESTEasyJavaProject() throws Exception {
+        final HashMap<String, String> options = new HashMap<>();
+        options.put("path", "/bonjour");
+        options.put("className", "com.andy.BonjourResource");
+        final Path generatedProjectPath = generateProject("maven", "java",
+                "resteasy", options);
+        checkDir(generatedProjectPath.resolve("src/main/java/com/andy"));
+        checkContent(generatedProjectPath.resolve("src/main/java/com/andy/BonjourResource.java"),
+                "package com.andy;",
+                "class BonjourResource",
+                "@Path(\"/bonjour\")");
+
+        checkContent(generatedProjectPath.resolve("src/test/java/com/andy/BonjourResourceTest.java"),
+                "package com.andy;",
+                "class BonjourResourceTest",
+                "\"/bonjour\"");
+
+        checkContent(generatedProjectPath.resolve("src/test/java/com/andy/NativeBonjourResourceIT.java"),
+                "package com.andy;",
+                "class NativeBonjourResourceIT extends BonjourResourceTest");
+    }
+
+    private Path generateProject(String buildtool, String language, String extensions, Map<String, String> options)
+            throws Exception {
+        String name = "project-" + buildtool + "-" + language;
+        if (extensions.isEmpty()) {
+            name += "-commandmode";
+        } else {
+            name += "-" + extensions.replace(",", "-");
         }
+        if (!options.isEmpty()) {
+            name += "-custom";
+        }
+        testDir = prepareTestDir(name);
+        LOG.info("creating project in " + testDir.toPath().toString());
+        return runCreateCommand(buildtool, extensions + (!Objects.equals(language, "java") ? "," + language : ""), options);
     }
 
     private static File prepareTestDir(String name) {
@@ -103,102 +127,65 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
         return tc;
     }
 
-    private void checkRestEasyDevmode() {
-        String resp = DevModeTestUtils.getHttpResponse();
-
-        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.test")
-                .containsIgnoringCase("1.0-SNAPSHOT");
-
-        String greeting = DevModeTestUtils.getHttpResponse("/resteasy/hello");
-        assertThat(greeting).containsIgnoringCase("hello");
-    }
-
-    private void runCreateCommand(String buildTool, String extensions)
+    private Path runCreateCommand(String buildTool, String extensions, Map<String, String> options)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
         // Scaffold the new project
         assertThat(testDir).isDirectory();
-        invoker = initInvoker(testDir);
 
         Properties properties = new Properties();
         properties.put("projectGroupId", "org.test");
         properties.put("projectArtifactId", "my-test-app");
         properties.put("codestartsEnabled", "true");
-        properties.put("withExampleCode", "true");
         properties.put("buildTool", buildTool);
         properties.put("extensions", extensions);
+        properties.putAll(options);
 
         InvocationResult result = executeCreate(properties);
 
         assertThat(result.getExitCode()).isZero();
 
-        // Run
-        // As the directory is not empty (log) navigate to the artifactID directory
-        testDir = new File(testDir, "my-test-app");
-    }
-
-    private void runMavenQuarkusDevCommand() throws MavenInvocationException {
-        running = new RunningInvoker(testDir, false);
-        final Properties mvnRunProps = new Properties();
-        mvnRunProps.setProperty("debug", "false");
-        running.execute(Arrays.asList("test", "compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
-    }
-
-    private void runGradleQuarkusDevCommand() throws IOException, InterruptedException {
-        runGradleWrapper(testDir, "test", "quarkusDev");
+        return testDir.toPath().resolve("my-test-app");
     }
 
     private InvocationResult executeCreate(Properties params)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
-
+        Invoker invoker = initInvoker(testDir);
         params.setProperty("platformGroupId", ToolsConstants.IO_QUARKUS);
         params.setProperty("platformArtifactId", "quarkus-bom");
-        params.setProperty("platformVersion", getPluginVersion());
+        params.setProperty("platformVersion", getQuarkusCoreVersion());
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                getPluginGroupId() + ":" + getPluginArtifactId() + ":" + getPluginVersion() + ":create"));
+                getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setDebug(false);
-        request.setShowErrors(false);
+        request.setShowErrors(true);
         request.setProperties(params);
-        getEnv().forEach(request::addShellEnvironment);
-        File log = new File(testDir, "build-create-codestart-" + testDir.getName() + ".log");
-        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
-                InvokerLogger.DEBUG);
+
+        PrintStreamLogger logger = getPrintStreamLogger("create-codestart.log");
         invoker.setLogger(logger);
         return invoker.execute(request);
     }
 
-    public void runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {
-        List<String> command = new LinkedList<>();
-        command.add(projectDir.toPath().resolve(getGradleWrapperName()).toAbsolutePath().toString());
-        command.add(GRADLE_NO_DAEMON);
-        command.addAll(Arrays.asList(args));
-        executor.submit(() -> {
-            try {
-                System.out.println("Running command: " + command);
-                final Process p = new ProcessBuilder()
-                        .directory(projectDir)
-                        .command(command)
-                        .start();
-                try {
-                    ProcessUtil.streamToSysOutSysErr(p);
-                    p.waitFor(3, TimeUnit.MINUTES);
-                } catch (InterruptedException e) {
-                    p.destroyForcibly();
-                    Thread.currentThread().interrupt();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+    private PrintStreamLogger getPrintStreamLogger(String s) throws UnsupportedEncodingException, FileNotFoundException {
+        File log = new File(testDir, s);
+        return new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
+                InvokerLogger.DEBUG);
     }
 
-    private String getGradleWrapperName() {
-        if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows")) {
-            return GRADLE_WRAPPER_WINDOWS;
-        }
-        return GRADLE_WRAPPER_UNIX;
+    private void checkContent(final Path resource, final String... contentsToFind) {
+        assertThat(resource).isRegularFile();
+        Stream.of(contentsToFind)
+                .forEach(c -> {
+                    try {
+                        assertThat(FileUtils.readFileToString(resource.toFile(), "UTF-8")).contains(c);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
     }
 
+    private void checkDir(final Path dir) throws IOException {
+        assertThat(dir).isDirectory();
+    }
 }

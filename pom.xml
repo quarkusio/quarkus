@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>36</version>
+        <version>37</version>
     </parent>
 
     <groupId>io.quarkus</groupId>
@@ -15,10 +15,22 @@
     <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <description>Quarkus - Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM</description>
+    <url>https://github.com/quarkusio/quarkus</url>
+
+    <developers>
+        <developer>
+            <id>quarkus</id>
+            <name>Quarkus Community</name>
+            <organization>Quarkus</organization>
+            <organizationUrl>https://quarkus.io</organizationUrl>
+        </developer>
+    </developers>
+
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -30,24 +42,37 @@
         <tag>HEAD</tag>
     </scm>
 
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/quarkusio/quarkus/issues/</url>
+    </issueManagement>
+
     <properties>
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <gitflow-incremental-builder.version>3.13.0</gitflow-incremental-builder.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
+
+        <sonar.projectKey>quarkusio_quarkus</sonar.projectKey>
+        <sonar.organization>quarkusio</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <modules>
 
         <!-- External projects -->
         <module>independent-projects/ide-config</module>
+        <module>independent-projects/revapi</module>
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
         <module>independent-projects/qute</module>
         <module>independent-projects/tools</module>
+        <module>independent-projects/enforcer-rules</module>
+        <module>independent-projects/resteasy-reactive</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>
@@ -79,11 +104,9 @@
             <id>central</id>
             <name>Maven Repository Switchboard</name>
             <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-        <repository>
-            <id>gradle-dependencies</id>
-            <name>Gradle releases repository</name>
-            <url>https://repo.gradle.org/gradle/libs-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
 
@@ -107,6 +130,31 @@
                 </property>
             </activation>
             <properties>
+                <!-- please check quick-build-ci as well when modifying these properties -->
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <skipDocs>true</skipDocs>
+                <enforcer.skip>true</enforcer.skip>
+                <skipExtensionValidation>true</skipExtensionValidation>
+                <skip.gradle.tests>true</skip.gradle.tests>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
+                <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
+                <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
+                <skipCodestartValidation>true</skipCodestartValidation>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+            <id>quick-build-ci</id>
+            <activation>
+                <property>
+                    <name>quickly-ci</name>
+                </property>
+            </activation>
+            <properties>
                 <skipTests>true</skipTests>
                 <skipITs>true</skipITs>
                 <skipDocs>true</skipDocs>
@@ -114,10 +162,10 @@
                 <format.skip>true</format.skip>
                 <skipExtensionValidation>true</skipExtensionValidation>
                 <skip.gradle.tests>true</skip.gradle.tests>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
+                <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
+                <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
             </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
         </profile>
         <profile>
             <id>release</id>
@@ -129,10 +177,11 @@
                         <version>${nexus-staging-maven-plugin.version}</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                             <serverId>ossrh</serverId>
                             <autoReleaseAfterClose>false</autoReleaseAfterClose>
                             <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
+                            <stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -198,6 +247,43 @@
             <modules>
                 <module>tcks</module>
             </modules>
+        </profile>
+        <profile>
+            <id>incremental</id>
+            <activation>
+                <property>
+                    <name>incremental</name>
+                </property>
+            </activation>
+            <properties>
+                <!-- the *local* main, not refs/remotes/... -->
+                <gib.referenceBranch>main</gib.referenceBranch>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.vackosar.gitflowincrementalbuilder</groupId>
+                        <artifactId>gitflow-incremental-builder</artifactId>
+                        <version>${gitflow-incremental-builder.version}</version>
+                        <extensions>true</extensions>
+                        <!-- https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
+                             General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
+                             See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
+                        <configuration>
+                            <!-- pointless to attempt incremental build if something like mvnw was changed
+                                 (and also potentially wrong, given that independent-projects might not be built) -->
+                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
+                            <!-- Note: *Upstream* is only relevant in case of:
+                                 -am or
+                                 -Dgib.buildUpstream=always|true or
+                                 -Dgib.buildAll=true or
+                                 -Dgib.forceBuildModules=... -->
+                            <skipTestsForUpstreamModules>true</skipTestsForUpstreamModules>
+                            <argsForUpstreamModules>skipITs invoker.skip no-format</argsForUpstreamModules>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 

@@ -3,7 +3,6 @@ package io.quarkus.gradle;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -19,11 +18,11 @@ import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.codegen.SourceType;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
-public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
+public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     private File projectRoot;
 
@@ -33,17 +32,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
-    public void canRunListExtensions() throws IOException, InterruptedException {
-        createProject(SourceType.JAVA);
-
-        BuildResult build = runGradleWrapper(projectRoot, "listExtensions");
-
-        assertThat(build.getTasks().get(":listExtensions")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        assertThat(build.getOutput()).contains("Quarkus - Core");
-    }
-
-    @Test
-    public void canGenerateConfig() throws IOException, InterruptedException {
+    public void canGenerateConfig() throws Exception {
         createProject(SourceType.JAVA);
 
         BuildResult build = runGradleWrapper(projectRoot, "generateConfig");
@@ -54,7 +43,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
 
     @ParameterizedTest(name = "Build {0} project")
     @EnumSource(SourceType.class)
-    public void canBuild(SourceType sourceType) throws IOException, InterruptedException {
+    public void canBuild(SourceType sourceType) throws Exception {
         createProject(sourceType);
 
         BuildResult build = runGradleWrapper(projectRoot, "build", "--stacktrace");
@@ -68,7 +57,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
-    public void canDetectUpToDateBuild() throws IOException, InterruptedException {
+    public void canDetectUpToDateBuild() throws Exception {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
@@ -79,27 +68,28 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
-    public void canDetectResourceChangeWhenBuilding() throws IOException, InterruptedException {
+    public void canDetectResourceChangeWhenBuilding() throws Exception {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
 
         final File applicationProperties = projectRoot.toPath().resolve("src/main/resources/application.properties").toFile();
-        DevModeTestUtils.filter(applicationProperties, ImmutableMap.of("# Configuration file", "quarkus.http.port=8888"));
+        Files.write(applicationProperties.toPath(), "quarkus.http.port=8888".getBytes());
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
     }
 
     @Test
-    public void canDetectClassChangeWhenBuilding() throws IOException, InterruptedException {
+    public void canDetectClassChangeWhenBuilding() throws Exception {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
 
-        final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/org/acme/GreetingResource.java").toFile();
+        final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/org/acme/foo/GreetingResource.java")
+                .toFile();
         DevModeTestUtils.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
@@ -107,7 +97,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
-    public void canDetectClasspathChangeWhenBuilding() throws IOException, InterruptedException {
+    public void canDetectClasspathChangeWhenBuilding() throws Exception {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
@@ -119,13 +109,13 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
-    public void canDetectOutputChangeWhenBuilding() throws IOException, InterruptedException {
+    public void canDetectOutputChangeWhenBuilding() throws Exception {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
 
         assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        Path runnerJar = projectRoot.toPath().resolve("build").resolve("foo-1.0.0-SNAPSHOT-runner.jar");
+        Path runnerJar = projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar");
         Files.delete(runnerJar);
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
@@ -135,7 +125,35 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
-    public void canRunTest() throws IOException, InterruptedException {
+    public void canDetectUpToDateTests() throws Exception {
+        createProject(SourceType.JAVA);
+
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "test");
+
+        assertThat(firstBuild.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "test");
+
+        assertThat(secondBuild.getTasks().get(":test")).isEqualTo(BuildResult.UPTODATE_OUTCOME);
+    }
+
+    @Test
+    public void canDetectSystemPropertyChangeWhenBuilding() throws Exception {
+        createProject(SourceType.JAVA);
+
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+
+        assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar")).exists();
+
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "-Dquarkus.package.type=fast-jar");
+
+        assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app")).exists();
+    }
+
+    @Test
+    public void canRunTest() throws Exception {
         createProject(SourceType.JAVA);
 
         BuildResult buildResult = runGradleWrapper(projectRoot, "test", "--stacktrace");
@@ -143,16 +161,15 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
         assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
     }
 
-    private void createProject(SourceType sourceType) throws IOException {
+    private void createProject(SourceType sourceType) throws Exception {
         Map<String, Object> context = new HashMap<>();
         context.put("path", "/greeting");
-        assertThat(new CreateProject(projectRoot.toPath(),
-                QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
+        assertThat(new CreateProject(QuarkusProjectHelper.getProject(projectRoot.toPath(),
+                BuildTool.GRADLE))
                         .groupId("com.acme.foo")
                         .artifactId("foo")
                         .version("1.0.0-SNAPSHOT")
-                        .buildTool(BuildTool.GRADLE)
-                        .className("org.acme.GreetingResource")
+                        .className("org.acme.foo.GreetingResource")
                         .sourceType(sourceType)
                         .doCreateProject(context))
                                 .withFailMessage("Project was not created")

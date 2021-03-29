@@ -8,12 +8,12 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
-import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,10 +26,12 @@ import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
 import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
@@ -39,6 +41,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.dns.AddressResolverOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.ClientAuth;
@@ -49,6 +52,7 @@ import io.vertx.core.spi.resolver.ResolverProvider;
 public class VertxCoreRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(VertxCoreRecorder.class.getName());
+    public static final String VERTX_CACHE = "vertx-cache";
 
     static volatile VertxSupplier vertx;
 
@@ -63,7 +67,7 @@ public class VertxCoreRecorder {
     public Supplier<Vertx> configureVertx(VertxConfiguration config,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers) {
         if (launchMode != LaunchMode.DEVELOPMENT) {
-            vertx = new VertxSupplier(config, customizers);
+            vertx = new VertxSupplier(config, customizers, shutdown);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks
             shutdown.addLastShutdownTask(new Runnable() {
@@ -74,7 +78,7 @@ public class VertxCoreRecorder {
             });
         } else {
             if (vertx == null) {
-                vertx = new VertxSupplier(config, customizers);
+                vertx = new VertxSupplier(config, customizers, shutdown);
             } else if (vertx.v != null) {
                 tryCleanTccl(vertx.v);
             }
@@ -170,12 +174,12 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer) {
+    public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer, ShutdownContext shutdown) {
 
         VertxOptions options = new VertxOptions();
 
         if (conf != null) {
-            convertToVertxOptions(conf, options, true);
+            convertToVertxOptions(conf, options, true, shutdown);
         }
 
         // Allow extension customizers to do their thing
@@ -186,17 +190,26 @@ public class VertxCoreRecorder {
         Vertx vertx;
         if (options.getEventBusOptions().isClustered()) {
             CompletableFuture<Vertx> latch = new CompletableFuture<>();
-            Vertx.clusteredVertx(options, ar -> {
-                if (ar.failed()) {
-                    latch.completeExceptionally(ar.cause());
-                } else {
-                    latch.complete(ar.result());
+            Vertx.clusteredVertx(options, new Handler<AsyncResult<Vertx>>() {
+                @Override
+                public void handle(AsyncResult<Vertx> ar) {
+                    if (ar.failed()) {
+                        latch.completeExceptionally(ar.cause());
+                    } else {
+                        latch.complete(ar.result());
+                    }
                 }
             });
             vertx = latch.join();
         } else {
             vertx = Vertx.vertx(options);
         }
+        vertx.exceptionHandler(new Handler<Throwable>() {
+            @Override
+            public void handle(Throwable error) {
+                LOGGER.error("Uncaught exception received by Vert.x", error);
+            }
+        });
         return logVertxInitialization(vertx);
     }
 
@@ -205,11 +218,14 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options, boolean allowClustering) {
+    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options, boolean allowClustering,
+            ShutdownContext shutdown) {
 
         if (!conf.useAsyncDNS) {
             System.setProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true");
         }
+
+        setAddressResolverOptions(conf, options);
 
         if (allowClustering) {
             // Order matters, as the cluster options modifies the event bus options.
@@ -217,8 +233,34 @@ public class VertxCoreRecorder {
             initializeClusterOptions(conf, options);
         }
 
-        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME,
-                System.getProperty("java.io.tmpdir", ".") + File.separator + "vertx-cache");
+        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
+        if (fileCacheDir == null) {
+            File tmp = new File(System.getProperty("java.io.tmpdir", ".") + File.separator + VERTX_CACHE);
+            if (!tmp.isDirectory()) {
+                if (!tmp.mkdirs()) {
+                    LOGGER.warnf("Unable to create Vert.x cache directory : %s", tmp.getAbsolutePath());
+                }
+                if (!(tmp.setReadable(true, false) && tmp.setWritable(true, false))) {
+                    LOGGER.warnf("Unable to make the Vert.x cache directory (%s) world readable and writable",
+                            tmp.getAbsolutePath());
+                }
+            }
+
+            File cache = getRandomDirectory(tmp);
+            LOGGER.debugf("Vert.x Cache configured to: %s", cache.getAbsolutePath());
+            fileCacheDir = cache.getAbsolutePath();
+            if (shutdown != null) {
+                shutdown.addLastShutdownTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Recursively delete the created directory and all the files
+                        deleteDirectory(cache);
+                        // We do not delete the vertx-cache directory on purpose, as it could be used concurrently by
+                        // another application. In the worse case, it's just an empty directory.
+                    }
+                });
+            }
+        }
 
         options.setFileSystemOptions(new FileSystemOptions()
                 .setFileCachingEnabled(conf.caching)
@@ -235,23 +277,27 @@ public class VertxCoreRecorder {
             options.setEventLoopPoolSize(calculateDefaultIOThreads());
         }
 
-        Optional<Duration> maxEventLoopExecuteTime = conf.maxEventLoopExecuteTime;
-        if (maxEventLoopExecuteTime.isPresent()) {
-            options.setMaxEventLoopExecuteTime(maxEventLoopExecuteTime.get().toMillis());
-            options.setMaxEventLoopExecuteTimeUnit(TimeUnit.MILLISECONDS);
-        }
+        options.setMaxEventLoopExecuteTime(conf.maxEventLoopExecuteTime.toMillis());
+        options.setMaxEventLoopExecuteTimeUnit(TimeUnit.MILLISECONDS);
 
-        Optional<Duration> maxWorkerExecuteTime = conf.maxWorkerExecuteTime;
-        if (maxWorkerExecuteTime.isPresent()) {
-            options.setMaxWorkerExecuteTime(maxWorkerExecuteTime.get().toMillis());
-            options.setMaxWorkerExecuteTimeUnit(TimeUnit.MILLISECONDS);
-        }
+        options.setMaxWorkerExecuteTime(conf.maxWorkerExecuteTime.toMillis());
+        options.setMaxWorkerExecuteTimeUnit(TimeUnit.MILLISECONDS);
 
         options.setWarningExceptionTime(conf.warningExceptionTime.toNanos());
 
         options.setPreferNativeTransport(conf.preferNativeTransport);
 
         return options;
+    }
+
+    private static File getRandomDirectory(File tmp) {
+        long random = Math.abs(UUID.randomUUID().getMostSignificantBits());
+        File cache = new File(tmp, Long.toString(random));
+        if (cache.isDirectory()) {
+            // Do not reuse an existing directory.
+            return getRandomDirectory(tmp);
+        }
+        return cache;
     }
 
     private static int calculateDefaultIOThreads() {
@@ -269,13 +315,18 @@ public class VertxCoreRecorder {
 
     void destroy() {
         if (vertx != null && vertx.v != null) {
+            // Netty attaches a ThreadLocal to the main thread that can leak the QuarkusClassLoader which can be problematic in dev or test mode
+            FastThreadLocal.destroy();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
-            vertx.v.close(ar -> {
-                if (ar.failed()) {
-                    problem.set(ar.cause());
+            vertx.v.close(new Handler<AsyncResult<Void>>() {
+                @Override
+                public void handle(AsyncResult<Void> ar) {
+                    if (ar.failed()) {
+                        problem.set(ar.cause());
+                    }
+                    latch.countDown();
                 }
-                latch.countDown();
             });
             try {
                 latch.await();
@@ -284,7 +335,7 @@ public class VertxCoreRecorder {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted when closing Vert.x instance", e);
+                throw new IllegalStateException("Exception when closing Vert.x instance", e);
             }
             vertx = null;
         }
@@ -342,6 +393,16 @@ public class VertxCoreRecorder {
         options.setEventBusOptions(opts);
     }
 
+    private static void setAddressResolverOptions(VertxConfiguration conf, VertxOptions options) {
+        AddressResolverConfiguration ar = conf.resolver;
+        AddressResolverOptions opts = new AddressResolverOptions();
+        opts.setCacheMaxTimeToLive(ar.cacheMaxTimeToLive);
+        opts.setCacheMinTimeToLive(ar.cacheMinTimeToLive);
+        opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive);
+
+        options.setAddressResolverOptions(opts);
+    }
+
     public Supplier<EventLoopGroup> bossSupplier() {
         return new Supplier<EventLoopGroup>() {
             @Override
@@ -376,20 +437,28 @@ public class VertxCoreRecorder {
         };
     }
 
+    public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config) {
+        return vertx = new VertxSupplier(config, Collections.emptyList(), null);
+
+    }
+
     static class VertxSupplier implements Supplier<Vertx> {
         final VertxConfiguration config;
         final VertxOptionsCustomizer customizer;
+        final ShutdownContext shutdown;
         Vertx v;
 
-        VertxSupplier(VertxConfiguration config, List<Consumer<VertxOptions>> customizers) {
+        VertxSupplier(VertxConfiguration config, List<Consumer<VertxOptions>> customizers,
+                ShutdownContext shutdown) {
             this.config = config;
             this.customizer = new VertxOptionsCustomizer(customizers);
+            this.shutdown = shutdown;
         }
 
         @Override
         public synchronized Vertx get() {
             if (v == null) {
-                v = initialize(config, customizer);
+                v = initialize(config, customizer, shutdown);
             }
             return v;
         }
@@ -412,5 +481,15 @@ public class VertxCoreRecorder {
 
     public static void setWebDeploymentId(String webDeploymentId) {
         VertxCoreRecorder.webDeploymentId = webDeploymentId;
+    }
+
+    private static void deleteDirectory(File directory) {
+        File[] children = directory.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                deleteDirectory(child);
+            }
+        }
+        directory.delete();
     }
 }

@@ -3,6 +3,7 @@ package io.quarkus.gradle.devmode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.gradle.BuildResult;
 import io.quarkus.gradle.QuarkusGradleWrapperTestBase;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -26,26 +28,47 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     private static final String PLUGIN_UNDER_TEST_METADATA_PROPERTIES = "plugin-under-test-metadata.properties";
 
     private Future<?> quarkusDev;
-    private File projectDir;
+    protected File projectDir;
 
     @Test
     public void main() throws Exception {
 
         projectDir = getProjectDir();
         ExecutorService executor = null;
+        final BuildResult[] buildResult = new BuildResult[1];
         try {
             executor = Executors.newSingleThreadExecutor();
             quarkusDev = executor.submit(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        build();
+                        buildResult[0] = build();
                     } catch (Exception e) {
                         throw new IllegalStateException("Failed to build the project", e);
                     }
                 }
             });
             testDevMode();
+        } catch (Exception | AssertionError e) {
+            if (buildResult[0] != null) {
+                System.err.println("BELOW IS THE CAPTURED LOGGING OF THE FAILED GRADLE TEST PROJECT BUILD");
+                System.err.println(buildResult[0].getOutput());
+            } else {
+                File logOutput = new File(projectDir, "command-output.log");
+                if (logOutput.exists()) {
+                    System.err.println("BELOW IS THE CAPTURED LOGGING OF THE FAILED GRADLE TEST PROJECT BUILD");
+                    try (BufferedReader reader = Files.newBufferedReader(logOutput.toPath())) {
+                        String line = reader.readLine();
+                        while (line != null) {
+                            System.err.println(line);
+                            line = reader.readLine();
+                        }
+                    }
+                } else {
+                    System.err.println("GRADLE TEST PROJECT BUILD OUTPUT IS NOT AVAILABLE");
+                }
+            }
+            throw e;
         } finally {
             if (quarkusDev != null) {
                 quarkusDev.cancel(true);
@@ -65,7 +88,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         }
     }
 
-    protected void build() throws Exception {
+    protected BuildResult build() throws Exception {
         // Plugin's classpath won't be visible in QuarkusDev task
         // so, here we are going to propagate the plugin-under-test-metadata properties
         final Path path = ClassPathUtils
@@ -75,7 +98,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         }
         System.setProperty(PLUGIN_UNDER_TEST_METADATA_PROPERTIES, path.toAbsolutePath().toString());
 
-        runGradleWrapper(projectDir, buildArguments());
+        return runGradleWrapper(projectDir, buildArguments());
     }
 
     protected abstract String projectDirectoryName();
@@ -105,7 +128,11 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected String getHttpResponse(String path) {
-        return DevModeTestUtils.getHttpResponse(path, getQuarkusDevBrokenReason());
+        return getHttpResponse(path, 1, TimeUnit.MINUTES);
+    }
+
+    protected String getHttpResponse(String path, long timeout, TimeUnit tu) {
+        return DevModeTestUtils.getHttpResponse(path, false, getQuarkusDevBrokenReason(), timeout, tu);
     }
 
     private Supplier<String> getQuarkusDevBrokenReason() {
@@ -125,8 +152,12 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected void assertUpdatedResponseContains(String path, String value) {
+        assertUpdatedResponseContains(path, value, 1, TimeUnit.MINUTES);
+    }
+
+    protected void assertUpdatedResponseContains(String path, String value, long waitAtMost, TimeUnit timeUnit) {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse(path).contains(value));
+                .atMost(waitAtMost, timeUnit).until(() -> getHttpResponse(path, waitAtMost, timeUnit).contains(value));
     }
 }

@@ -12,6 +12,13 @@ public class SwaggerUITestCase {
 
     @Test
     public void testSwaggerUi() {
+        RestAssured.when().get("/q/swagger-ui").then()
+                .body(containsString("#swagger-ui"))
+                .body(containsString("/openapi"));
+    }
+
+    @Test
+    public void testSwaggerUiRedirect() {
         RestAssured.when().get("/swagger-ui").then()
                 .body(containsString("#swagger-ui"))
                 .body(containsString("/openapi"));

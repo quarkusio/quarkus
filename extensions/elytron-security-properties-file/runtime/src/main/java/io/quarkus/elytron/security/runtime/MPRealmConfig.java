@@ -41,7 +41,7 @@ public class MPRealmConfig {
     @Override
     public String toString() {
         return "MPRealmConfig{" +
-                ", realmName='" + realmName + '\'' +
+                "realmName='" + realmName + '\'' +
                 ", enabled=" + enabled +
                 '}';
     }

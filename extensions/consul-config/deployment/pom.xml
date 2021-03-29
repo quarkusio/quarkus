@@ -17,6 +17,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-core-deployment</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

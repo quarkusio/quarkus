@@ -1,6 +1,7 @@
 package io.quarkus.consul.config.runtime;
 
-import static io.quarkus.consul.config.runtime.ResponseUtil.createOptionalResponse;
+import static io.quarkus.consul.config.runtime.ResponseUtil.emptyResponse;
+import static io.quarkus.consul.config.runtime.ResponseUtil.validResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -12,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -45,9 +47,9 @@ class ConsulConfigSourceProviderTest {
 
         ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
         // make sure the first is is properly resolved
-        when(mockGateway.getValue("some/first")).thenReturn(createOptionalResponse("some/first", "whatever"));
+        when(mockGateway.getValue("some/first")).thenReturn(validResponse("some/first", "whatever"));
         // make sure the second is not resolved
-        when(mockGateway.getValue("some/second")).thenReturn(Optional.empty());
+        when(mockGateway.getValue("some/second")).thenReturn(emptyResponse());
 
         ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
 
@@ -68,21 +70,21 @@ class ConsulConfigSourceProviderTest {
 
         ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
         // make sure the first is is properly resolved
-        when(mockGateway.getValue("some/first")).thenReturn(createOptionalResponse("some/first", "whatever"));
+        when(mockGateway.getValue("some/first")).thenReturn(validResponse("some/first", "whatever"));
         // make sure the second is not resolved
-        when(mockGateway.getValue("some/second")).thenReturn(Optional.empty());
+        when(mockGateway.getValue("some/second")).thenReturn(emptyResponse());
         // make sure the third is is properly resolved
-        when(mockGateway.getValue("some/third")).thenReturn(createOptionalResponse("some/third", "other"));
+        when(mockGateway.getValue("some/third")).thenReturn(validResponse("some/third", "other"));
 
         ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("some.first", "whatever"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("third")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("third")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("some.third", "other"));
         });
@@ -100,19 +102,19 @@ class ConsulConfigSourceProviderTest {
 
         ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
         when(mockGateway.getValue("greeting/message"))
-                .thenReturn(createOptionalResponse("greeting/message", "hello"));
+                .thenReturn(validResponse("greeting/message", "hello"));
         when(mockGateway.getValue("greeting/name"))
-                .thenReturn(createOptionalResponse("greeting/name", "quarkus"));
+                .thenReturn(validResponse("greeting/name", "quarkus"));
 
         ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hello"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.name", "quarkus"));
         });
@@ -129,19 +131,19 @@ class ConsulConfigSourceProviderTest {
 
         ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
         when(mockGateway.getValue("whatever/greeting/message"))
-                .thenReturn(createOptionalResponse("whatever/greeting/message", "hello"));
+                .thenReturn(validResponse("whatever/greeting/message", "hello"));
         when(mockGateway.getValue("whatever/greeting/name"))
-                .thenReturn(createOptionalResponse("whatever/greeting/name", "quarkus"));
+                .thenReturn(validResponse("whatever/greeting/name", "quarkus"));
 
         ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hello"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.name", "quarkus"));
         });
@@ -157,20 +159,20 @@ class ConsulConfigSourceProviderTest {
 
         ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
         when(mockGateway.getValue("first"))
-                .thenReturn(createOptionalResponse("first", "greeting.message=hi\ngreeting.name=quarkus"));
+                .thenReturn(validResponse("first", "greeting.message=hi\ngreeting.name=quarkus"));
         when(mockGateway.getValue("second"))
-                .thenReturn(createOptionalResponse("second", "other.key=value"));
+                .thenReturn(validResponse("second", "other.key=value"));
 
         ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hi"),
                     entry("greeting.name", "quarkus"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("second")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("second")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("other.key", "value"));
         });
@@ -187,20 +189,20 @@ class ConsulConfigSourceProviderTest {
 
         ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
         when(mockGateway.getValue("config/first"))
-                .thenReturn(createOptionalResponse("config/first", "greeting.message=hi\ngreeting.name=quarkus"));
+                .thenReturn(validResponse("config/first", "greeting.message=hi\ngreeting.name=quarkus"));
         when(mockGateway.getValue("config/second"))
-                .thenReturn(createOptionalResponse("config/second", "other.key=value"));
+                .thenReturn(validResponse("config/second", "other.key=value"));
 
         ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hi"),
                     entry("greeting.name", "quarkus"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("second")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("second")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("other.key", "value"));
         });
@@ -217,6 +219,8 @@ class ConsulConfigSourceProviderTest {
         config.propertiesValueKeys = Optional.empty();
         config.prefix = Optional.empty();
         config.agent = new ConsulConfig.AgentConfig();
+        config.agent.readTimeout = Duration.ofSeconds(10);
+        config.agent.connectionTimeout = Duration.ofSeconds(10);
         return config;
     }
 

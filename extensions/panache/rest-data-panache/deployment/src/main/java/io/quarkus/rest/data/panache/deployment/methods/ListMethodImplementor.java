@@ -1,37 +1,45 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
-import static io.quarkus.gizmo.FieldDescriptor.of;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-import static io.quarkus.rest.data.panache.deployment.PrivateFields.URI_INFO;
-import static io.quarkus.rest.data.panache.deployment.PrivateMethods.IS_PAGED;
+import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_INDEX;
+import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_SIZE;
+
+import java.util.List;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
-import org.jboss.jandex.IndexView;
-
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.RestDataResource;
-import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
-import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
-import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
+import io.quarkus.rest.data.panache.deployment.Constants;
+import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
+import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 
 public final class ListMethodImplementor extends StandardMethodImplementor {
 
-    public static final String NAME = "list";
+    private static final String METHOD_NAME = "list";
+
+    private static final String RESOURCE_METHOD_NAME = "list";
 
     private static final String REL = "list";
 
+    private final PaginationImplementor paginationImplementor = new PaginationImplementor();
+
+    private final SortImplementor sortImplementor = new SortImplementor();
+
     /**
-     * Implements {@link RestDataResource#list()}.
-     * Generated code looks more or less like this:
+     * Generate JAX-RS GET method that exposes {@link RestDataResource#list(Page, Sort)}.
+     * Generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
+     * query parameters are skipped and null {@link Page} instance is used.
      *
      * <pre>
      * {@code
@@ -42,61 +50,110 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
      *         rel = "list",
      *         entityClassName = "com.example.Entity"
      *     )
-     *     public Response list() {
-     *         if (this.isPaged()) {
-     *            Page page = ...; // Extract page index and size from a UriInfo field and create a page instance.
-     *            PanacheQuery query = Entity.findAll();
-     *            query.page(page);
-     *            // Get the page count, and build first, last, next, previous page instances
-     *            Response.ResponseBuilder responseBuilder = Response.status(200);
-     *            responseBuilder.entity(query.list());
-     *            // Add headers with first, last, next and previous page URIs if they exist
-     *            return responseBuilder.build();
-     *         } else {
-     *             return Response.ok(Entity.listAll()).build();
+     *     public Response list(@QueryParam("page") @DefaultValue("0") int pageIndex,
+     *             &#64;QueryParam("size") @DefaultValue("20") int pageSize,
+     *             &#64;QueryParam("sort") String sortQuery) {
+     *         Page page = Page.of(pageIndex, pageSize);
+     *         Sort sort = ...; // Build a sort instance by parsing a query param
+     *         try {
+     *             List<Entity> entities = resource.getAll(page, sort);
+     *             // Get the page count, and build first, last, next, previous page instances
+     *             Response.ResponseBuilder responseBuilder = Response.status(200);
+     *             responseBuilder.entity(entities);
+     *             // Add headers with first, last, next and previous page URIs if they exist
+     *             return responseBuilder.build();
+     *         } catch (Throwable t) {
+     *             throw new RestDataPanacheException(t);
      *         }
      *     }
      * }
      * </pre>
      */
     @Override
-    protected void implementInternal(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
-            RestDataResourceInfo resourceInfo) {
-        MethodMetadata methodMetadata = getMethodMetadata(resourceInfo);
-        MethodCreator methodCreator = classCreator.getMethodCreator(methodMetadata.getName(), Response.class);
-        addGetAnnotation(methodCreator);
-        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getClassInfo(), methodMetadata));
-        addProducesAnnotation(methodCreator, APPLICATION_JSON);
-        addLinksAnnotation(methodCreator, resourceInfo.getEntityClassName(), REL);
-
-        FieldDescriptor uriInfoField = of(methodCreator.getMethodDescriptor().getDeclaringClass(), URI_INFO.getName(),
-                URI_INFO.getType());
-        MethodDescriptor isPagedMethod = ofMethod(methodCreator.getMethodDescriptor().getDeclaringClass(), IS_PAGED.getName(),
-                IS_PAGED.getType(), IS_PAGED.getParams());
-
-        BranchResult isPaged = methodCreator.ifTrue(methodCreator.invokeVirtualMethod(isPagedMethod, methodCreator.getThis()));
-        returnPaged(isPaged.trueBranch(), resourceInfo.getDataAccessImplementor(), uriInfoField);
-        returnNotPaged(isPaged.falseBranch(), resourceInfo.getDataAccessImplementor());
-        methodCreator.close();
+    protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, FieldDescriptor resourceField) {
+        if (resourceProperties.isPaged()) {
+            implementPaged(classCreator, resourceMetadata, resourceProperties, resourceField);
+        } else {
+            implementNotPaged(classCreator, resourceMetadata, resourceProperties, resourceField);
+        }
     }
 
     @Override
-    protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(NAME);
+    protected String getResourceMethodName() {
+        return RESOURCE_METHOD_NAME;
     }
 
-    private void returnPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor,
-            FieldDescriptor uriInfoField) {
-        ResultHandle uriInfo = creator.readInstanceField(uriInfoField, creator.getThis());
-        ResultHandle page = PaginationImplementor.getRequestPage(creator, uriInfo);
-        ResultHandle pageCount = dataAccessImplementor.pageCount(creator, page);
-        ResultHandle links = PaginationImplementor.getLinks(creator, uriInfo, page, pageCount);
-        ResultHandle entities = dataAccessImplementor.findAll(creator, page);
+    private void implementPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, FieldDescriptor resourceField) {
+        // Method parameters: sort strings, page index, page size, uri info
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class, List.class, int.class,
+                int.class, UriInfo.class);
 
-        creator.returnValue(ResponseImplementor.ok(creator, entities, links));
+        // Add method annotations
+        addGetAnnotation(methodCreator);
+        addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
+        addProducesAnnotation(methodCreator, APPLICATION_JSON);
+        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addSortQueryParamValidatorAnnotation(methodCreator);
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "page");
+        addDefaultValueAnnotation(methodCreator.getParameterAnnotations(1), Integer.toString(DEFAULT_PAGE_INDEX));
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(2), "size");
+        addDefaultValueAnnotation(methodCreator.getParameterAnnotations(2), Integer.toString(DEFAULT_PAGE_SIZE));
+        addContextAnnotation(methodCreator.getParameterAnnotations(3));
+
+        ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
+        ResultHandle sortQuery = methodCreator.getMethodParam(0);
+        ResultHandle sort = sortImplementor.getSort(methodCreator, sortQuery);
+        ResultHandle pageIndex = methodCreator.getMethodParam(1);
+        ResultHandle pageSize = methodCreator.getMethodParam(2);
+        ResultHandle page = paginationImplementor.getPage(methodCreator, pageIndex, pageSize);
+        ResultHandle uriInfo = methodCreator.getMethodParam(3);
+
+        // Invoke resource methods
+        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to list the entities");
+        ResultHandle pageCount = tryBlock.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
+                        int.class, Page.class),
+                resource, page);
+        ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount);
+        ResultHandle entities = tryBlock.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
+                resource, page, sort);
+
+        // Return response
+        tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities, links));
+
+        tryBlock.close();
+        methodCreator.close();
     }
 
-    private void returnNotPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor) {
-        creator.returnValue(ResponseImplementor.ok(creator, dataAccessImplementor.listAll(creator)));
+    private void implementNotPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, FieldDescriptor resourceFieldDescriptor) {
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class, List.class);
+
+        // Add method annotations
+        addGetAnnotation(methodCreator);
+        addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
+        addProducesAnnotation(methodCreator, APPLICATION_JSON);
+        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
+
+        ResultHandle sortQuery = methodCreator.getMethodParam(0);
+        ResultHandle sort = sortImplementor.getSort(methodCreator, sortQuery);
+        ResultHandle resource = methodCreator.readInstanceField(resourceFieldDescriptor, methodCreator.getThis());
+
+        // Invoke resource methods
+        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to list the entities");
+        ResultHandle entities = tryBlock.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
+                resource, tryBlock.loadNull(), sort);
+
+        // Return response
+        tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities));
+
+        tryBlock.close();
+        methodCreator.close();
     }
 }

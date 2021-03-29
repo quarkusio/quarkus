@@ -18,7 +18,7 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
 
     private final Set<DotName> customScopeNames;
 
-    public CustomScopeAnnotationsBuildItem(Set<DotName> customScopeNames) {
+    CustomScopeAnnotationsBuildItem(Set<DotName> customScopeNames) {
         this.customScopeNames = customScopeNames;
     }
 

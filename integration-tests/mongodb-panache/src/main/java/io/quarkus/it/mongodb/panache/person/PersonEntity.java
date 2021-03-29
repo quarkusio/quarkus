@@ -12,6 +12,7 @@ public class PersonEntity extends PanacheMongoEntityBase {
     public Long id;
     public String firstname;
     public String lastname;
+    public Status status = Status.ALIVE;
 
     public static List<PersonEntity> findOrdered() {
         return findAll(Sort.by("lastname", "firstname")).list();

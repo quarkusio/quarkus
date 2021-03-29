@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Quarkus Extension for Spring Cache API
 
@@ -29,14 +29,14 @@ To complete this guide, you need:
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=spring-cache-quickstart \
     -DclassName="org.acme.spring.cache.GreeterResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-di,spring-cache"
+    -Dextensions="resteasy,spring-di,spring-cache"
 cd spring-cache-quickstart
 ----
 
@@ -146,8 +146,6 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 
@@ -158,7 +156,6 @@ public class WeatherForecastResource {
     WeatherForecastService service;
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WeatherForecast getForecast(@QueryParam String city, @QueryParam long daysInFuture) { // <1>
         long executionStart = System.currentTimeMillis();
         List<String> dailyForecasts = Arrays.asList(
@@ -276,6 +273,7 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-security[Quarkus - Extension for Spring Security]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
 * link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
 * link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
 * link:spring-scheduled[Quarkus - Extension for Spring Scheduled]

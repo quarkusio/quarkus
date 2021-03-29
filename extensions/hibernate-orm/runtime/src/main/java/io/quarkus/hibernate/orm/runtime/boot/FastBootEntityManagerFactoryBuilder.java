@@ -69,8 +69,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     public EntityManagerFactory build() {
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-            populate(optionsBuilder, standardServiceRegistry, multiTenancyStrategy);
-            return new SessionFactoryImpl(metadata.getOriginalMetadata(), optionsBuilder.buildOptions(), HQLQueryPlan::new);
+            populate(persistenceUnitName, optionsBuilder, standardServiceRegistry, multiTenancyStrategy);
+            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(), HQLQueryPlan::new);
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }
@@ -119,7 +119,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         return "[PersistenceUnit: " + persistenceUnitName + "] ";
     }
 
-    protected void populate(SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr, MultiTenancyStrategy strategy) {
+    protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr,
+            MultiTenancyStrategy strategy) {
 
         // will use user override value or default to false if not supplied to follow
         // JPA spec.
@@ -164,7 +165,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
         if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
             options.applyMultiTenancyStrategy(strategy);
-            options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver());
+            options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
         }
 
     }

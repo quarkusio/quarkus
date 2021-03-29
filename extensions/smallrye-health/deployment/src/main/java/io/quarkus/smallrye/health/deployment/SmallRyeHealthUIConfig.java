@@ -8,8 +8,9 @@ public class SmallRyeHealthUIConfig {
     /**
      * The path where Health UI is available.
      * The value `/` is not allowed as it blocks the application from serving anything else.
+     * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
      */
-    @ConfigItem(defaultValue = "/health-ui")
+    @ConfigItem(defaultValue = "health-ui")
     String rootPath;
 
     /**
@@ -19,9 +20,4 @@ public class SmallRyeHealthUIConfig {
     @ConfigItem(defaultValue = "false")
     boolean alwaysInclude;
 
-    /**
-     * If Health UI should be enabled. By default, Health UI is enabled.
-     */
-    @ConfigItem(defaultValue = "true")
-    boolean enable;
 }

@@ -6,6 +6,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.arc.Arc;
@@ -37,25 +38,54 @@ public class TenantResource {
         if (tenant.startsWith("tenant-web-app")) {
             throw new OIDCException("Wrong tenant");
         }
-        return tenant + ":" + getNameServiceType();
+        String name = getNameServiceType();
+        if ("tenant-d".equals(tenant) || "tenant-b-no-discovery".equals(tenant)) {
+            UserInfo userInfo = getUserInfo();
+            if (!userInfo.contains(Claims.sub.name())) {
+                throw new OIDCException("UserInfo returned from Keycloak must contain 'sub'");
+            }
+            if (userInfo.getPropertyNames().contains(Claims.preferred_username.name())) {
+                name = name + "." + userInfo.getString(Claims.preferred_username.name());
+            }
+        }
+        return tenant + ":" + name;
+    }
+
+    @GET
+    @RolesAllowed("user")
+    @Path("no-discovery")
+    public String userNameServiceNoDiscovery(@PathParam("tenant") String tenant) {
+        return userNameService(tenant);
     }
 
     @GET
     @Path("webapp")
     @RolesAllowed("user")
     public String userNameWebApp(@PathParam("tenant") String tenant) {
-        if (!tenant.equals("tenant-web-app")) {
+        if (!tenant.equals("tenant-web-app") && !tenant.equals("tenant-web-app-dynamic")
+                && !tenant.equals("tenant-web-app-no-discovery")) {
             throw new OIDCException("Wrong tenant");
         }
-        if (!(securityIdentity.getAttribute("userinfo") instanceof UserInfo)) {
-            throw new OIDCException("userinfo attribute muset be set");
-        }
-        // Not injecting in the service field as not all tenants require it
-        UserInfo userInfo = Arc.container().instance(UserInfo.class).get();
+        UserInfo userInfo = getUserInfo();
         if (!idToken.getGroups().contains("user")) {
             throw new OIDCException("Groups expected");
         }
         return tenant + ":" + getNameWebAppType(userInfo.getString("upn"), "upn", "preferred_username");
+    }
+
+    @GET
+    @Path("webapp-no-discovery")
+    @RolesAllowed("user")
+    public String userNameWebAppNoDiscovery(@PathParam("tenant") String tenant) {
+        return userNameWebApp(tenant);
+    }
+
+    private UserInfo getUserInfo() {
+        if (!(securityIdentity.getAttribute("userinfo") instanceof UserInfo)) {
+            throw new OIDCException("userinfo attribute must be set");
+        }
+        // Not injecting in the service field as not all tenants require it
+        return Arc.container().instance(UserInfo.class).get();
     }
 
     @GET

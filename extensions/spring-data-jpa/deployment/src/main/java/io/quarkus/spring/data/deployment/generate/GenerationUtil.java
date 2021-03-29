@@ -20,14 +20,29 @@ public final class GenerationUtil {
     private GenerationUtil() {
     }
 
-    static List<DotName> extendedSpringDataRepos(ClassInfo repositoryToImplement) {
+    static List<DotName> extendedSpringDataRepos(ClassInfo repositoryToImplement, IndexView index) {
         List<DotName> result = new ArrayList<>();
         for (DotName interfaceName : repositoryToImplement.interfaceNames()) {
             if (DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)) {
                 result.add(interfaceName);
+            } else {
+                ClassInfo intermediateInterfaces = index.getClassByName(interfaceName);
+                List<DotName> dns = intermediateInterfaces.interfaceNames();
+                for (DotName in : dns) {
+                    result.addAll(extendedSpringDataRepos(intermediateInterfaces, index));
+                }
             }
         }
         return result;
+    }
+
+    static boolean isIntermediateRepository(DotName interfaceName, IndexView indexView) {
+        if (!DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)) {
+            ClassInfo intermediateInterface = indexView.getClassByName(interfaceName);
+            List<DotName> extendedSpringDataRepos = extendedSpringDataRepos(intermediateInterface, indexView);
+            return DotNames.SUPPORTED_REPOSITORIES.stream().anyMatch(item -> extendedSpringDataRepos.contains(item));
+        }
+        return false;
     }
 
     static Set<MethodInfo> interfaceMethods(Collection<DotName> interfaces, IndexView index) {

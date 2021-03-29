@@ -6,17 +6,12 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-test-elytron-security</artifactId>
     <name>Quarkus - Integration Tests - Elytron Security</name>
     <description>The elytron-security integration tests module</description>
-
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -42,6 +37,33 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elytron-security-properties-file-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -60,9 +82,6 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
-                        <configuration>
-                            <uberJar>true</uberJar>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -71,59 +90,18 @@
 
     <profiles>
         <profile>
-            <id>native-image</id>
+            <id>no-native</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>!native</name>
                 </property>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skipTests>${native.surefire.skip}</skipTests>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>native-image</id>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <cleanupServer>true</cleanupServer>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <graalvmHome>${graalvmHome}</graalvmHome>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <!-- these properties must not be defined in the general properties,
+                 otherwise the native profile in the parent pom is not able to override them -->
+            <properties>
+                <quarkus.package.type>uber-jar</quarkus.package.type>
+            </properties>
         </profile>
-
     </profiles>
 
 </project>

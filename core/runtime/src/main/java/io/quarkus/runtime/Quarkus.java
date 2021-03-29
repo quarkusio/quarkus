@@ -1,6 +1,8 @@
 package io.quarkus.runtime;
 
-import java.util.function.Consumer;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.LogManager;
@@ -24,6 +26,8 @@ public class Quarkus {
     //WARNING: this is too early to inject a logger
     //private static final Logger log = Logger.getLogger(Quarkus.class);
 
+    private static Closeable LAUNCHED_FROM_IDE;
+
     /**
      * Runs a quarkus application, that will run until the provided {@link QuarkusApplication} has completed.
      *
@@ -46,10 +50,11 @@ public class Quarkus {
      * go into the QuarkusApplication.
      *
      * @param quarkusApplication The application to run, or null
-     * @param exitHandler The handler that is called with the exit code when the application has finished
+     * @param exitHandler The handler that is called with the exit code and any exception (if any) thrown when the application
+     *        has finished
      * @param args The command line parameters
      */
-    public static void run(Class<? extends QuarkusApplication> quarkusApplication, Consumer<Integer> exitHandler,
+    public static void run(Class<? extends QuarkusApplication> quarkusApplication, BiConsumer<Integer, Throwable> exitHandler,
             String... args) {
         try {
             System.setProperty("java.util.logging.manager", LogManager.class.getName());
@@ -63,12 +68,11 @@ public class Quarkus {
         } catch (ClassNotFoundException e) {
             //ignore, this happens when running in dev mode
         } catch (Exception e) {
-            //TODO: exception mappers
-            Logger.getLogger(Quarkus.class).error("Error running Quarkus", e);
             if (exitHandler != null) {
-                exitHandler.accept(1);
+                exitHandler.accept(1, e);
             } else {
-                ApplicationLifecycleManager.getDefaultExitCodeHandler().accept(1);
+                Logger.getLogger(Quarkus.class).error("Error running Quarkus", e);
+                ApplicationLifecycleManager.getDefaultExitCodeHandler().accept(1, e);
             }
             return;
         }
@@ -76,12 +80,11 @@ public class Quarkus {
         //dev mode path, i.e. launching from the IDE
         //this is not the quarkus:dev path as it will augment before
         //calling this method
-        launchFromIDE(quarkusApplication, exitHandler, args);
+        launchFromIDE(quarkusApplication, args);
 
     }
 
-    private static void launchFromIDE(Class<? extends QuarkusApplication> quarkusApplication, Consumer<Integer> exitHandler,
-            String... args) {
+    private static void launchFromIDE(Class<? extends QuarkusApplication> quarkusApplication, String... args) {
         //some trickery, get the class that has invoked us, and use this to figure out the
         //classes root
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
@@ -90,8 +93,18 @@ public class Quarkus {
             pos++;
         }
         String callingClass = stackTrace[pos].getClassName();
-        QuarkusLauncher.launch(callingClass, quarkusApplication == null ? null : quarkusApplication.getName(), exitHandler,
-                args);
+        LAUNCHED_FROM_IDE = QuarkusLauncher.launch(callingClass,
+                quarkusApplication == null ? null : quarkusApplication.getName(), args);
+    }
+
+    private static void terminateForIDE() {
+        if (LAUNCHED_FROM_IDE != null) {
+            try {
+                LAUNCHED_FROM_IDE.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -122,6 +135,7 @@ public class Quarkus {
      * @param code The exit code. This may be overridden if an exception occurs on shutdown
      */
     public static void asyncExit(int code) {
+        terminateForIDE();
         ApplicationLifecycleManager.exit(code);
     }
 
@@ -138,6 +152,7 @@ public class Quarkus {
      *
      */
     public static void asyncExit() {
+        terminateForIDE();
         ApplicationLifecycleManager.exit(-1);
     }
 

@@ -192,6 +192,31 @@ public class MovieResourceTest {
     }
 
     @Test
+    void testFindAllRatings() {
+        when().get("/movie/ratings").then()
+                .statusCode(200)
+                .body(containsString("PG"))
+                .body(containsString("PG-13"));
+    }
+
+    @Test
+    void testFindRatingByTitle() {
+        when().get("/movie/rating/forTitle/Interstellar").then()
+                .statusCode(200)
+                .body(containsString("Interstellar"))
+                .body(containsString("PG-13"))
+                .body(not(containsString("duration")));
+    }
+
+    @Test
+    void testFindOptionalRatingByTitle() {
+        when().get("/movie/rating/opt/forTitle/Aladdin").then()
+                .statusCode(200)
+                .body(containsString("Aladdin"))
+                .body(not(containsString("duration")));
+    }
+
+    @Test
     void testNewMovie() {
         long id = 999L;
         String title = "tenet";
@@ -210,5 +235,12 @@ public class MovieResourceTest {
         when().get("/movie/delete/title/" + title).then()
                 .statusCode(200)
                 .body(is("1"));
+    }
+
+    @Test
+    void getTitle() {
+        when().get("/movie/titles/rating/PG-13").then()
+                .statusCode(200)
+                .body(containsString("Godzilla"));
     }
 }

@@ -32,7 +32,7 @@ public class TypesTest {
         DotName producerName = DotName.createSimple(Producer.class.getName());
         ClassInfo fooClass = index.getClassByName(fooName);
         Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = new HashMap<>();
-        BeanDeployment dummyDeployment = BeanProcessor.builder().setIndex(index).build().getBeanDeployment();
+        BeanDeployment dummyDeployment = BeanProcessor.builder().setBeanArchiveIndex(index).build().getBeanDeployment();
 
         // Baz, Foo<String>, Object
         Set<Type> bazTypes = Types.getTypeClosure(index.getClassByName(bazName), null,

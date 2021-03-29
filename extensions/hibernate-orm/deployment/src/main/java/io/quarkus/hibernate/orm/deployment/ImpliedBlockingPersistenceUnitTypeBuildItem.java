@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
@@ -13,29 +12,22 @@ import io.quarkus.builder.item.SimpleBuildItem;
 public final class ImpliedBlockingPersistenceUnitTypeBuildItem extends SimpleBuildItem {
 
     private static final ImpliedBlockingPersistenceUnitTypeBuildItem NONE = new ImpliedBlockingPersistenceUnitTypeBuildItem(
-            false, null);
+            false);
     private final boolean shouldGenerateOne;
-    private final JdbcDataSourceBuildItem datasourceConfig;
 
-    private ImpliedBlockingPersistenceUnitTypeBuildItem(boolean shouldGenerateOne, JdbcDataSourceBuildItem datasourceConfig) {
+    private ImpliedBlockingPersistenceUnitTypeBuildItem(boolean shouldGenerateOne) {
         this.shouldGenerateOne = shouldGenerateOne;
-        this.datasourceConfig = datasourceConfig;
     }
 
     public static ImpliedBlockingPersistenceUnitTypeBuildItem none() {
         return NONE;
     }
 
-    public static ImpliedBlockingPersistenceUnitTypeBuildItem generateImpliedPersistenceUnit(
-            JdbcDataSourceBuildItem datasourceConfig) {
-        return new ImpliedBlockingPersistenceUnitTypeBuildItem(true, datasourceConfig);
+    public static ImpliedBlockingPersistenceUnitTypeBuildItem generateImpliedPersistenceUnit() {
+        return new ImpliedBlockingPersistenceUnitTypeBuildItem(true);
     }
 
     public boolean shouldGenerateImpliedBlockingPersistenceUnit() {
         return shouldGenerateOne;
-    }
-
-    public JdbcDataSourceBuildItem getDatasourceBuildTimeConfiguration() {
-        return datasourceConfig;
     }
 }

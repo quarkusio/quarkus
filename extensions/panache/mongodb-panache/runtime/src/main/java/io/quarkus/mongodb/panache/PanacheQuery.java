@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
 
 import io.quarkus.panache.common.Page;
@@ -143,6 +144,14 @@ public interface PanacheQuery<Entity> {
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> withCollation(Collation collation);
+
+    /**
+     * Define the read preference used for this query.
+     *
+     * @param readPreference the read preference to be used for this query.
+     * @return this query, modified
+     */
+    public <T extends Entity> PanacheQuery<T> withReadPreference(ReadPreference readPreference);
 
     // Results
 

@@ -14,6 +14,11 @@ public class ResourcesITCase extends ResourcesTestCase {
                 .get("/resources/test-resources/file.adoc")
                 .then()
                 .statusCode(404);
+
+        RestAssured.when()
+                .get("/resources/test-resources/excluded/unwanted.txt")
+                .then()
+                .statusCode(404);
     }
 
 }

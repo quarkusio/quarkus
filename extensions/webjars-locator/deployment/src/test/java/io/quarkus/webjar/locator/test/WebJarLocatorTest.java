@@ -23,9 +23,7 @@ public class WebJarLocatorTest {
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "/index.html")
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"))
             .setForcedDependencies(Arrays.asList(new AppArtifact("org.webjars", "jquery", "3.4.1"),
-                    new AppArtifact("org.webjars", "momentjs", "2.24.0"),
-                    // We require another extension to provide basic web server capabilities
-                    new AppArtifact("io.quarkus", "quarkus-resteasy", "999-SNAPSHOT")));
+                    new AppArtifact("org.webjars", "momentjs", "2.24.0")));
 
     @Test
     public void test() {
@@ -61,5 +59,9 @@ public class WebJarLocatorTest {
                 .statusCode(404);
         RestAssured.get("/webjars/momentjs/2.25.0/min/moment.min.js").then()
                 .statusCode(404);
+
+        // Test webjar that does not have a version in the jar path
+        RestAssured.get("/webjars/dcjs/dc.min.js").then()
+                .statusCode(200);
     }
 }

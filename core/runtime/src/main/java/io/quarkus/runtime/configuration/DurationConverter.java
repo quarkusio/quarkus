@@ -29,11 +29,23 @@ public class DurationConverter implements Converter<Duration>, Serializable {
      * If the value consists only of a number, it implicitly treats the value as seconds.
      * Otherwise, tries to convert the value assuming that it is in the accepted ISO-8601 duration format.
      *
-     * @param value
+     * @param value duration as String
      * @return {@link Duration}
      */
     @Override
     public Duration convert(String value) {
+        return parseDuration(value);
+    }
+
+    /**
+     * Converts a value which start with a number by implicitly appending `PT` to it.
+     * If the value consists only of a number, it implicitly treats the value as seconds.
+     * Otherwise, tries to convert the value assuming that it is in the accepted ISO-8601 duration format.
+     *
+     * @param value duration as String
+     * @return {@link Duration}
+     */
+    public static Duration parseDuration(String value) {
         value = value.trim();
         if (value.isEmpty()) {
             return null;
@@ -51,6 +63,5 @@ public class DurationConverter implements Converter<Duration>, Serializable {
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException(e);
         }
-
     }
 }

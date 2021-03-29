@@ -8,7 +8,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-reactive-pg-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-reactive-pg-client</artifactId>
@@ -31,10 +30,6 @@
         <dependency>
             <groupId>com.ongres.scram</groupId>
             <artifactId>client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-axle-pg-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>

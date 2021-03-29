@@ -2,9 +2,9 @@ package io.quarkus.hibernate.orm.runtime.tenant;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Locale;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import javax.enterprise.inject.Default;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
@@ -14,8 +14,7 @@ import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.DefaultBean;
-import io.quarkus.hibernate.orm.runtime.JPAConfig;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
 
 /**
@@ -25,73 +24,90 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
  * @author Michael Schnell
  *
  */
-@DefaultBean
-@ApplicationScoped
 public class DataSourceTenantConnectionResolver implements TenantConnectionResolver {
 
     private static final Logger LOG = Logger.getLogger(DataSourceTenantConnectionResolver.class);
 
-    @Inject
-    JPAConfig jpaConfig;
+    private String persistenceUnitName;
+
+    private String dataSourceName;
+
+    private MultiTenancyStrategy multiTenancyStrategy;
+
+    private String multiTenancySchemaDataSourceName;
+
+    public DataSourceTenantConnectionResolver() {
+    }
+
+    public DataSourceTenantConnectionResolver(String persistenceUnitName, String dataSourceName,
+            MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSourceName) {
+        this.persistenceUnitName = persistenceUnitName;
+        this.dataSourceName = dataSourceName;
+        this.multiTenancyStrategy = multiTenancyStrategy;
+        this.multiTenancySchemaDataSourceName = multiTenancySchemaDataSourceName;
+    }
 
     @Override
     public ConnectionProvider resolve(String tenantId) {
+        LOG.debugv("resolve((persistenceUnitName={0}, tenantIdentifier={1})", persistenceUnitName, tenantId);
+        LOG.debugv("multitenancy strategy: {0}", multiTenancyStrategy);
 
-        LOG.debugv("resolve({0})", tenantId);
-
-        final MultiTenancyStrategy strategy = jpaConfig.getMultiTenancyStrategy();
-        LOG.debugv("multitenancy strategy: {0}", strategy);
-        AgroalDataSource dataSource = tenantDataSource(jpaConfig, tenantId, strategy);
+        AgroalDataSource dataSource = tenantDataSource(dataSourceName, tenantId, multiTenancyStrategy,
+                multiTenancySchemaDataSourceName);
         if (dataSource == null) {
-            throw new IllegalStateException("No instance of datasource found for tenant: " + tenantId);
+            throw new IllegalStateException(
+                    String.format(Locale.ROOT, "No instance of datasource found for persistence unit '%1$s' and tenant '%2$s'",
+                            persistenceUnitName, tenantId));
         }
-        if (strategy == MultiTenancyStrategy.SCHEMA) {
-            return new TenantConnectionProvider(tenantId, dataSource);
+        if (multiTenancyStrategy == MultiTenancyStrategy.SCHEMA) {
+            return new SchemaTenantConnectionProvider(tenantId, dataSource);
         }
         return new QuarkusConnectionProvider(dataSource);
     }
 
     /**
      * Create a new data source from the given configuration.
-     * 
+     *
      * @param config Configuration to use.
-     * 
+     *
      * @return New data source instance.
      */
     private static AgroalDataSource createFrom(AgroalDataSourceConfiguration config) {
         try {
             return AgroalDataSource.from(config);
         } catch (SQLException ex) {
-            throw new IllegalStateException("Failed to create a new data source based on the default config", ex);
+            throw new IllegalStateException("Failed to create a new data source based on the existing datasource configuration",
+                    ex);
         }
     }
 
-    /**
-     * Returns either the default data source or the tenant specific one.
-     * 
-     * @param tenantId Tenant identifier. The value is required (non-{@literal null}) in case of
-     *        {@link MultiTenancyStrategy#DATABASE}.
-     * @param strategy Current multitenancy strategy Required value that cannot be {@literal null}.
-     * 
-     * @return Data source.
-     */
-    private static AgroalDataSource tenantDataSource(JPAConfig jpaConfig, String tenantId, MultiTenancyStrategy strategy) {
+    private static AgroalDataSource tenantDataSource(String dataSourceName, String tenantId, MultiTenancyStrategy strategy,
+            String multiTenancySchemaDataSourceName) {
         if (strategy != MultiTenancyStrategy.SCHEMA) {
             return Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(tenantId)).get();
         }
-        String dataSourceName = jpaConfig.getMultiTenancySchemaDataSource();
-        if (dataSourceName == null) {
-            AgroalDataSource dataSource = Arc.container().instance(AgroalDataSource.class).get();
+
+        if (multiTenancySchemaDataSourceName == null) {
+            AgroalDataSource dataSource = getDataSource(dataSourceName);
             return createFrom(dataSource.getConfiguration());
         }
-        return Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(dataSourceName)).get();
+
+        return getDataSource(multiTenancySchemaDataSourceName);
     }
 
-    private static class TenantConnectionProvider extends QuarkusConnectionProvider {
+    private static AgroalDataSource getDataSource(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Arc.container().instance(AgroalDataSource.class, Default.Literal.INSTANCE).get();
+        } else {
+            return Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(dataSourceName)).get();
+        }
+    }
+
+    private static class SchemaTenantConnectionProvider extends QuarkusConnectionProvider {
 
         private final String tenantId;
 
-        public TenantConnectionProvider(String tenantId, AgroalDataSource dataSource) {
+        public SchemaTenantConnectionProvider(String tenantId, AgroalDataSource dataSource) {
             super(dataSource);
             this.tenantId = tenantId;
         }

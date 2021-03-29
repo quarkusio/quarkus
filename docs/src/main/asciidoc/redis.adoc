@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using the Redis Client
 :extension-status: preview
@@ -43,12 +43,13 @@ The solution is located in the `redis-quickstart` {quickstarts-tree-url}/redis-q
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=redis-quickstart \
-    -Dextensions="redis-client, resteasy-jsonb, resteasy-mutiny"
+    -Dextensions="redis-client,resteasy-jackson,resteasy-mutiny" \
+    -DnoExamples
 cd redis-quickstart
 ----
 
@@ -88,9 +89,9 @@ docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name red
 Once we have the Redis server running, we need to configure the Redis connection properties.
 This is done in the `application.properties` configuration file. Edit it to the following content:
 
-[source]
+[source,properties]
 ----
-quarkus.redis.hosts=localhost:6379 <1>
+quarkus.redis.hosts=redis://localhost:6379 <1>
 ----
 
 1. Configure Redis hosts to connect to. Here we connect to the Redis server we started in the previous section
@@ -200,19 +201,14 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.PUT;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.POST;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 import io.smallrye.mutiny.Uni;
 
 @Path("/increments")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class IncrementResource {
 
     @Inject
@@ -394,7 +390,7 @@ public class IncrementResourceTest {
 If you followed the instructions, you should have the Redis server running.
 Then, you just need to run the application using:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw quarkus:dev
 ----
@@ -409,7 +405,7 @@ a key.
 
 === Creating a new increment
 
-[source, shell]
+[source,bash]
 ----
 curl -X POST -H "Content-Type: application/json" -d '{"key":"first","value":10}' http://localhost:8080/increments <1>
 ----
@@ -430,7 +426,7 @@ Running the above command should return the result below:
 
 To see the list of current increments keys, run the following command:
 
-[source, shell]
+[source,bash]
 ----
 curl http://localhost:8080/increments
 ----
@@ -441,7 +437,7 @@ The above command should return  `["first"]` indicating that we have only one in
 
 To retrieve an increment using its key, we will have to run the below command:
 
-[source, shell]
+[source,bash]
 ----
 curl http://localhost:8080/increments/first <1>
 ----
@@ -460,7 +456,7 @@ curl http://localhost:8080/increments/first <1>
 
 To increment a value, run the following command:
 
-[source, shell]
+[source,bash]
 ----
 curl -X PUT -H "Content-Type: application/json" -d '27' http://localhost:8080/increments/first <1>
 ----
@@ -483,7 +479,7 @@ Now, running the command `curl http://localhost:8080/increments/first` should re
 
 Use the command below, to delete an increment given its key.
 
-[source, shell]
+[source,bash]
 ----
 curl -X DELETE  http://localhost:8080/increments/first <1>
 ----
@@ -498,7 +494,7 @@ You can run the application as a conventional jar file.
 
 First, we will need to package it:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw package
 ----
@@ -507,9 +503,9 @@ NOTE: This command will start a Redis instance to execute the tests. Thus your R
 
 Then run it:
 
-[source, shell]
+[source,bash]
 ----
-java -jar ./target/redis-quickstart-1.0-SNAPSHOT-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 == Running Native
@@ -523,16 +519,16 @@ Compiling a native executable takes a bit longer, as GraalVM performs additional
 steps to remove unnecessary codepaths. Use the  `native` profile to compile a
 native executable:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw package -Pnative
 ----
 
 Once the build is finished, you can run the executable with:
 
-[source, shell]
+[source,bash]
 ----
-./target/redis-quickstart-1.0-SNAPSHOT-runner
+./target/redis-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 == Connection Health Check
@@ -540,9 +536,43 @@ Once the build is finished, you can run the executable with:
 If you are using the `quarkus-smallrye-health` extension, `quarkus-vertx-redis` will automatically add a readiness health check
 to validate the connection to the Redis server.
 
-So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
+
+== Multiple Redis Clients
+
+The Redis extension allows you to configure multiple clients.
+Using several clients works the same way as having a single client.
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://localhost:6379
+quarkus.redis.second.hosts=redis://localhost:6379
+----
+
+Notice there's an extra bit in the key (the `second` segment).
+The syntax is as follows: `quarkus.redis.[optional name.][redis configuration property]`.
+If the name is omitted, it configures the default client.
+
+=== Named Redis client Injection
+
+When using multiple clients, you can select the client to inject using the `io.quarkus.redis.client.RedisClientName` qualifier.
+Using the above properties to configure three different clients, you can also inject each one as follows:
+
+[source,java,indent=0]
+----
+@Inject
+RedisClient defaultRedisClient;
+
+@Inject
+@RedisClientName("second")
+RedisClient redisClient2;
+
+@Inject
+@RedisClientName("second")
+ReactiveRedisClient reactiveClient2;
+----
 
 == Configuration Reference
 

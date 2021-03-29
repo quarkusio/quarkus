@@ -65,6 +65,13 @@ public interface Expression {
     }
 
     /**
+     * The id must be unique for the template.
+     * 
+     * @return the generated id or {@code -1} for an expression that was not created by a parser
+     */
+    int getGeneratedId();
+
+    /**
      * 
      * @see Expression#getParts()
      */
@@ -72,7 +79,7 @@ public interface Expression {
 
         /**
          * 
-         * @return the name of the property or virtual method
+         * @return the name of a property or virtual method
          */
         String getName();
 
@@ -82,9 +89,9 @@ public interface Expression {
          * <li>type info that represents a fully qualified type name (including type parameters) -
          * {@code |TYPE_INFO|<section-hint>};
          * for example {@code |org.acme.Foo|},
-         * {@code |java.util.List<org.acme.Label>|} and {@code |org.acme.Foo|<for-element>}</li>
-         * <li>property; for example {@code foo} and {@code foo<for-element>}</li>
-         * <li>virtual method; for example {@code foo.call(|org.acme.Bar|)}</li>
+         * {@code |java.util.List<org.acme.Label>|} and {@code |org.acme.Foo|<when#123>}</li>
+         * <li>property; for example {@code foo} and {@code foo<loop#123>}</li>
+         * <li>virtual method; for example {@code foo.call(bar)} and {@code foo.getNames(10)<loop-element>}</li>
          * </ul>
          * 
          * @return the type check info
@@ -96,7 +103,7 @@ public interface Expression {
         }
 
         default VirtualMethodPart asVirtualMethod() {
-            throw new IllegalArgumentException("Not a virtual method");
+            throw new IllegalStateException("Not a virtual method: " + toString() + " [typeInfo: " + getTypeInfo() + "]");
         }
 
     }

@@ -1,4 +1,3 @@
----
 name: "YAML Configuration"
 metadata:
   keywords:
@@ -9,4 +8,10 @@ metadata:
   - "core"
   status: "stable"
   guide: "https://quarkus.io/guides/config#yaml"
-  codestart: "config-yaml"
+  codestart:
+    name: "config-yaml"
+    kind: "example"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

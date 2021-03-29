@@ -1,8 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.proxies;
 
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +17,8 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.proxy.pojo.ProxyFactoryHelper;
 import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyProxyHelper;
 import org.jboss.logging.Logger;
+
+import net.bytebuddy.ClassFileVersion;
 
 /**
  * Runtime proxies are used by Hibernate ORM to handle a number of corner cases;
@@ -102,7 +103,7 @@ public final class ProxyDefinitions {
             PreGeneratedProxies preGeneratedProxies) {
         final String entityName = persistentClass.getEntityName();
         final Class mappedClass = persistentClass.getMappedClass();
-        if ((mappedClass.getModifiers() & ACC_FINAL) == ACC_FINAL) {
+        if (Modifier.isFinal(mappedClass.getModifiers())) {
             LOGGER.warn("Could not generate an enhanced proxy for entity '" + entityName + "' (class='"
                     + mappedClass.getCanonicalName()
                     + "') as it's final. Your application might perform better if we're allowed to extend it.");
@@ -192,7 +193,7 @@ public final class ProxyDefinitions {
         @Override
         public ByteBuddyProxyHelper get() {
             if (helper == null) {
-                bytecodeProvider = new BytecodeProviderImpl();
+                bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V8);
                 helper = bytecodeProvider.getByteBuddyProxyHelper();
             }
             return helper;

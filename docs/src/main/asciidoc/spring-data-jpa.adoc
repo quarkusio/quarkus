@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Extension for Spring Data API
 
@@ -35,14 +35,14 @@ The solution is located in the `spring-data-jpa-quickstart` {quickstarts-tree-ur
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=spring-data-jpa-quickstart \
     -DclassName="org.acme.spring.data.jpa.FruitResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-data-jpa,resteasy-jsonb,quarkus-jdbc-postgresql"
+    -Dextensions="resteasy,spring-data-jpa,resteasy-jackson,quarkus-jdbc-postgresql"
 cd spring-data-jpa-quickstart
 ----
 
@@ -144,9 +144,10 @@ This configuration assumes that PostgreSQL will be running locally.
 
 A very easy way to accomplish that is by using the following Docker command:
 
-```
+[source,bash]
+----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:11.5
-```
+----
 
 If you plan on using a different setup, please change your `application.properties` accordingly.
 
@@ -161,6 +162,7 @@ INSERT INTO fruit(id, name, color) VALUES (1, 'Cherry', 'Red');
 INSERT INTO fruit(id, name, color) VALUES (2, 'Apple', 'Red');
 INSERT INTO fruit(id, name, color) VALUES (3, 'Banana', 'Yellow');
 INSERT INTO fruit(id, name, color) VALUES (4, 'Avocado', 'Green');
+INSERT INTO fruit(id, name, color) VALUES (5, 'Strawberry', 'Red');
 ----
 
 Hibernate ORM will execute these queries on application startup.
@@ -201,7 +203,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
@@ -218,7 +219,6 @@ public class FruitResource {
     }
 
     @GET
-    @Produces("application/json")
     public Iterable<Fruit> findAll() {
         return fruitRepository.findAll();
     }
@@ -232,14 +232,12 @@ public class FruitResource {
 
     @POST
     @Path("/name/{name}/color/{color}")
-    @Produces("application/json")
     public Fruit create(@PathParam String name, @PathParam String color) {
         return fruitRepository.save(new Fruit(name, color));
     }
 
     @PUT
     @Path("/id/{id}/color/{color}")
-    @Produces("application/json")
     public Fruit changeColor(@PathParam Long id, @PathParam String color) {
         Optional<Fruit> optional = fruitRepository.findById(id);
         if (optional.isPresent()) {
@@ -253,7 +251,6 @@ public class FruitResource {
 
     @GET
     @Path("/color/{color}")
-    @Produces("application/json")
     public List<Fruit> findByColor(@PathParam String color) {
         return fruitRepository.findByColor(color);
     }
@@ -599,7 +596,7 @@ quarkus.hibernate-orm.implicit-naming-strategy=org.springframework.boot.orm.jpa.
 
 ==== More examples
 
-An extensive list of examples can be seen in the https://github.com/quarkusio/quarkus/tree/master/integration-tests/spring-data-jpa[integration tests] directory which is located inside the Quarkus source code.
+An extensive list of examples can be seen in the https://github.com/quarkusio/quarkus/tree/main/integration-tests/spring-data-jpa[integration tests] directory which is located inside the Quarkus source code.
 
 === What is currently unsupported
 
@@ -633,3 +630,4 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
 * link:spring-cache[Quarkus - Extension for Spring Cache]
 * link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]

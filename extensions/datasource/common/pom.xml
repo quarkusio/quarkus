@@ -6,7 +6,6 @@
         <artifactId>quarkus-datasource-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,6 +16,11 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId> 
+            <artifactId>jboss-logmanager-embedded</artifactId> 
+            <scope>test</scope> 
         </dependency>
     </dependencies>
 </project>

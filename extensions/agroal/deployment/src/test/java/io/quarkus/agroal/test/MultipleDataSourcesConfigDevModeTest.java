@@ -41,7 +41,7 @@ public class MultipleDataSourcesConfigDevModeTest {
             int minSize, int maxSize) throws UnsupportedEncodingException {
         RestAssured
                 .get("/test/" + dataSourceName + "/" + URLEncoder.encode(jdbcUrl, StandardCharsets.UTF_8.name()) + "/"
-                        + username + "/" + minSize + "/" + maxSize)
+                        + username + "/" + maxSize)
                 .then()
                 .statusCode(200).body(Matchers.equalTo("ok"));
     }

@@ -43,6 +43,10 @@ public @interface Scheduled {
     /**
      * Optionally defines a unique identifier for this job.
      * <p>
+     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
+     * and use the configured value instead: {@code &#64;Scheduled(identity = "{myservice.check.identity.expr}")}.
+     *
+     * <p>
      * If the value is not given, Quarkus will generate a unique id.
      * <p>
      * 

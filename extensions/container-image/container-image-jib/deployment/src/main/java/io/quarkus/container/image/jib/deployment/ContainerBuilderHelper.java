@@ -5,7 +5,7 @@
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -84,8 +84,8 @@ final class ContainerBuilderHelper {
 
                                 // Add with default permissions
                                 if (localPath.toFile().canExecute()) {
-                                    // make sure we can execute the file in the container
-                                    builder.addEntry(localPath, pathOnContainer, FilePermissions.fromOctalString("754"),
+                                    // make sure the file or directory can be executed
+                                    builder.addEntry(localPath, pathOnContainer, FilePermissions.fromOctalString("755"),
                                             modificationTime);
                                 } else {
                                     builder.addEntry(localPath, pathOnContainer, modificationTime);

@@ -10,12 +10,15 @@ public final class BuildTimeConditionBuildItem extends MultiBuildItem {
     private final boolean enabled;
 
     public BuildTimeConditionBuildItem(AnnotationTarget target, boolean enabled) {
-        AnnotationTarget.Kind kind = target.kind();
-        if ((kind != AnnotationTarget.Kind.CLASS) && (kind != AnnotationTarget.Kind.METHOD)
-                && (kind != AnnotationTarget.Kind.FIELD)) {
-            throw new IllegalArgumentException("'target' can only be a class, a field or a method");
+        switch (target.kind()) {
+            case CLASS:
+            case METHOD:
+            case FIELD:
+                this.target = target;
+                break;
+            default:
+                throw new IllegalArgumentException("'target' can only be a class, a field or a method");
         }
-        this.target = target;
         this.enabled = enabled;
     }
 

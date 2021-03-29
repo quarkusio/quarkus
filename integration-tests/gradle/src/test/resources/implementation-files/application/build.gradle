@@ -1,0 +1,7 @@
+plugins {
+    id 'io.quarkus'
+}
+
+dependencies {
+    implementation files("../common/build/libs/common.jar")
+}

@@ -91,7 +91,8 @@ final class SummaryTableDocFormatter implements DocFormatter {
     @Override
     public void format(Writer writer, ConfigDocSection configDocSection) throws IOException {
         if (configDocSection.isShowSection()) {
-            String anchor = anchorPrefix + getAnchor(configDocSection.getName());
+            String anchor = anchorPrefix
+                    + getAnchor(configDocSection.getName() + Constants.DASH + configDocSection.getSectionDetailsTitle());
             String sectionTitle = String.format(SECTION_TITLE, anchor, anchor, configDocSection.getSectionDetailsTitle());
             final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, sectionTitle,
                     configDocSection.isOptional() ? "This configuration section is optional" : Constants.EMPTY);

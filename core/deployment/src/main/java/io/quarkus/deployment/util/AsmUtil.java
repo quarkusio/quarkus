@@ -1,7 +1,21 @@
 package io.quarkus.deployment.util;
 
+import static java.util.Arrays.asList;
+import static org.objectweb.asm.Type.BOOLEAN_TYPE;
+import static org.objectweb.asm.Type.BYTE_TYPE;
+import static org.objectweb.asm.Type.CHAR_TYPE;
+import static org.objectweb.asm.Type.DOUBLE_TYPE;
+import static org.objectweb.asm.Type.FLOAT_TYPE;
+import static org.objectweb.asm.Type.INT_TYPE;
+import static org.objectweb.asm.Type.LONG_TYPE;
+import static org.objectweb.asm.Type.SHORT_TYPE;
+import static org.objectweb.asm.Type.VOID_TYPE;
+import static org.objectweb.asm.Type.getType;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.jboss.jandex.ArrayType;
@@ -17,8 +31,42 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * A collection of ASM and Jandex utilities.
+ * NOTE: this has a copy in AsmUtilCopy in arc-processor with some extra methods for knowing if we need a
+ * signature and getting the signature of a class.
  */
 public class AsmUtil {
+
+    public static final List<org.objectweb.asm.Type> PRIMITIVES = asList(
+            VOID_TYPE,
+            BOOLEAN_TYPE,
+            CHAR_TYPE,
+            BYTE_TYPE,
+            SHORT_TYPE,
+            INT_TYPE,
+            FLOAT_TYPE,
+            LONG_TYPE,
+            DOUBLE_TYPE);
+    public static final List<org.objectweb.asm.Type> WRAPPERS = asList(
+            getType(Void.class),
+            getType(Boolean.class),
+            getType(Character.class),
+            getType(Byte.class),
+            getType(Short.class),
+            getType(Integer.class),
+            getType(Float.class),
+            getType(Long.class),
+            getType(Double.class));
+    public static final Map<org.objectweb.asm.Type, org.objectweb.asm.Type> WRAPPER_TO_PRIMITIVE = new HashMap<>();
+
+    static {
+        for (int i = 0; i < AsmUtil.PRIMITIVES.size(); i++) {
+            AsmUtil.WRAPPER_TO_PRIMITIVE.put(AsmUtil.WRAPPERS.get(i), AsmUtil.PRIMITIVES.get(i));
+        }
+    }
+
+    public static org.objectweb.asm.Type autobox(org.objectweb.asm.Type primitive) {
+        return WRAPPERS.get(primitive.getSort());
+    }
 
     /**
      * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
@@ -106,6 +154,21 @@ public class AsmUtil {
     public static String getDescriptor(Type type, Function<String, String> typeArgMapper) {
         StringBuilder sb = new StringBuilder();
         toSignature(sb, type, typeArgMapper, true);
+        return sb.toString();
+    }
+
+    /**
+     * Returns the Java bytecode signature of a given Jandex Type using the given type argument mappings.
+     * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List&lt;Ljava/lang/Integer;>;</tt> if
+     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
+     * 
+     * @param type the type you want the signature for.
+     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
+     * @return a bytecode signature for that type.
+     */
+    public static String getSignature(Type type, Function<String, String> typeArgMapper) {
+        StringBuilder sb = new StringBuilder();
+        toSignature(sb, type, typeArgMapper, false);
         return sb.toString();
     }
 
@@ -228,7 +291,7 @@ public class AsmUtil {
      * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
      * and <tt>ARETURN</tt> otherwise;
      * 
-     * @param typeDescriptor the return Jandex Type.
+     * @param jandexType the return Jandex Type.
      * @return the correct bytecode return instruction for that return type descriptor.
      */
     public static int getReturnInstruction(Type jandexType) {
@@ -431,6 +494,43 @@ public class AsmUtil {
         }
     }
 
+    /**
+     * Calls the right unboxing method for the given Jandex Type if it is a primitive.
+     *
+     * @param mv The MethodVisitor on which to visit the unboxing instructions
+     * @param type The Jandex Type to unbox if it is a primitive.
+     */
+    public static void unboxIfRequired(MethodVisitor mv, org.objectweb.asm.Type type) {
+        if (type.getSort() <= org.objectweb.asm.Type.DOUBLE) {
+            switch (type.getSort()) {
+                case org.objectweb.asm.Type.BOOLEAN:
+                    unbox(mv, "java/lang/Boolean", "booleanValue", "Z");
+                    break;
+                case org.objectweb.asm.Type.BYTE:
+                    unbox(mv, "java/lang/Byte", "byteValue", "B");
+                    break;
+                case org.objectweb.asm.Type.CHAR:
+                    unbox(mv, "java/lang/Character", "charValue", "C");
+                    break;
+                case org.objectweb.asm.Type.DOUBLE:
+                    unbox(mv, "java/lang/Double", "doubleValue", "D");
+                    break;
+                case org.objectweb.asm.Type.FLOAT:
+                    unbox(mv, "java/lang/Float", "floatValue", "F");
+                    break;
+                case org.objectweb.asm.Type.INT:
+                    unbox(mv, "java/lang/Integer", "intValue", "I");
+                    break;
+                case org.objectweb.asm.Type.LONG:
+                    unbox(mv, "java/lang/Long", "longValue", "J");
+                    break;
+                case org.objectweb.asm.Type.SHORT:
+                    unbox(mv, "java/lang/Short", "shortValue", "S");
+                    break;
+            }
+        }
+    }
+
     private static void unbox(MethodVisitor mv, String owner, String methodName, String returnTypeSignature) {
         mv.visitTypeInsn(Opcodes.CHECKCAST, owner);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, methodName, "()" + returnTypeSignature, false);
@@ -554,5 +654,23 @@ public class AsmUtil {
         valuePusher.run();
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println",
                 "(Ljava/lang/Object;)V", false);
+    }
+
+    /**
+     * Copy the parameter names to the given MethodVisitor, unless we don't have parameter name info
+     * 
+     * @param mv the visitor to copy to
+     * @param method the method to copy from
+     */
+    public static void copyParameterNames(MethodVisitor mv, MethodInfo method) {
+        int parameterSize = method.parameters().size();
+        if (parameterSize > 0) {
+            // perhaps we don't have parameter names
+            if (method.parameterName(0) == null)
+                return;
+            for (int i = 0; i < parameterSize; i++) {
+                mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
+            }
+        }
     }
 }

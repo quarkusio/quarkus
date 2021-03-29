@@ -20,7 +20,7 @@
         <dependency>
             <groupId>[=dep.groupId]</groupId>
             <artifactId>[=dep.artifactId]</artifactId>
-[#if !runtimeBomPathSet ]            <version>[=dep.version]</version>
+[#if !bomPathSet ]            <version>[=dep.version]</version>
 [/#if]
 [#if dep.type?? ]            <type>[=dep.type]</type>
 [/#if]

@@ -20,6 +20,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-client-internal</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

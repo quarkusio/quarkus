@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Amazon SNS Client
 :extension-status: preview
@@ -41,7 +41,7 @@ To complete this guide, you need:
 
 The easiest way to start working with SNS is to run a local instance as a container.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 docker run -it --publish 8009:4575 -e SERVICES=sns -e START_WEB=0 localstack/localstack:0.11.1
 ----
@@ -61,13 +61,13 @@ Default output format [None]:
 
 Create a SNS topic using AWS CLI and store in `TOPIC_ARN` environment variable
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 TOPIC_ARN=`aws sns create-topic --name=QuarksCollider --profile localstack --endpoint-url=http://localhost:8009`
 ----
 
 If you want to run the demo using SNS on your AWS account, you can create a topic using AWS default profile
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 TOPIC_ARN=`aws sns create-topic --name=QuarksCollider`
 ----
@@ -87,14 +87,14 @@ The solution is located in the `amazon-sns-quickstart` {quickstarts-tree-url}/am
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amazon-sns-quickstart \
     -DclassName="org.acme.sns.QuarksCannonSyncResource" \
     -Dpath="/sync-cannon" \
-    -Dextensions="resteasy-jsonb,amazon-sns,resteasy-mutiny"
+    -Dextensions="resteasy,resteasy-jackson,amazon-sns,resteasy-mutiny"
 cd amazon-sns-quickstart
 ----
 
@@ -611,6 +611,10 @@ And add the following dependency to the application `pom.xml`:
     <groupId>software.amazon.awssdk</groupId>
     <artifactId>apache-client</artifactId>
 </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-apache-httpclient</artifactId>
+</dependency>
 ----
 
 If you're going to use a local SNS instance, configure it as follows:
@@ -646,7 +650,7 @@ include::./amazon-credentials.adoc[]
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -Dtopic.arn=$TOPIC_ARN -jar target/amazon-sns-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -Dtopic.arn=$TOPIC_ARN -jar target/quarkus-app/quarkus-run.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.

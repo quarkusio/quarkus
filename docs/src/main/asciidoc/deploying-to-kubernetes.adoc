@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Kubernetes extension
 
@@ -27,14 +27,14 @@ To complete this guide, you need:
 
 Let's create a new project that contains both the Kubernetes and Jib extensions:
 
-[source,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kubernetes-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="kubernetes, jib"
+    -Dextensions="resteasy,kubernetes,jib"
 cd kubernetes-quickstart
 ----
 
@@ -73,7 +73,7 @@ The full source of the `kubernetes.json` file looks something like this:
       },
       "labels" : {
         "app.kubernetes.io/name" : "test-quarkus-app",
-        "app.kubernetes.io/version" : "1.0-SNAPSHOT",
+        "app.kubernetes.io/version" : "1.0.0-SNAPSHOT",
       },
       "name" : "test-quarkus-app"
     },
@@ -82,14 +82,14 @@ The full source of the `kubernetes.json` file looks something like this:
       "selector" : {
         "matchLabels" : {
           "app.kubernetes.io/name" : "test-quarkus-app",
-          "app.kubernetes.io/version" : "1.0-SNAPSHOT",
+          "app.kubernetes.io/version" : "1.0.0-SNAPSHOT",
         }
       },
       "template" : {
         "metadata" : {
           "labels" : {
             "app.kubernetes.io/name" : "test-quarkus-app",
-            "app.kubernetes.io/version" : "1.0-SNAPSHOT"
+            "app.kubernetes.io/version" : "1.0.0-SNAPSHOT"
           }
         },
         "spec" : {
@@ -102,7 +102,7 @@ The full source of the `kubernetes.json` file looks something like this:
                 }
               }
             } ],
-            "image" : "yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT",
+            "image" : "yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT",
             "imagePullPolicy" : "Always",
             "name" : "test-quarkus-app"
           } ]
@@ -120,7 +120,7 @@ The full source of the `kubernetes.json` file looks something like this:
       },
       "labels" : {
         "app.kubernetes.io/name" : "test-quarkus-app",
-        "app.kubernetes.io/version" : "1.0-SNAPSHOT",
+        "app.kubernetes.io/version" : "1.0.0-SNAPSHOT",
       },
       "name" : "test-quarkus-app"
     },
@@ -132,7 +132,7 @@ The full source of the `kubernetes.json` file looks something like this:
     } ],
     "selector" : {
       "app.kubernetes.io/name" : "test-quarkus-app",
-      "app.kubernetes.io/version" : "1.0-SNAPSHOT"
+      "app.kubernetes.io/version" : "1.0.0-SNAPSHOT"
     },
     "type" : "ClusterIP"
   }
@@ -142,17 +142,17 @@ The full source of the `kubernetes.json` file looks something like this:
 
 The generated manifest can be applied to the cluster from the project root using `kubectl`:
 
-[source]
+[source,bash]
 ----
 kubectl apply -f target/kubernetes/kubernetes.json
 ----
 
-An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT` as the container image of the `Pod`.
+An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT` as the container image of the `Pod`.
 The name of the image is controlled by the Jib extension and can be customized using the usual `application.properties`.
 
 For example with a configuration like:
 
-[source]
+[source,properties]
 ----
 quarkus.container-image.group=quarkus #optional, default to the system user name
 quarkus.container-image.name=demo-app #optional, defaults to the application name
@@ -161,11 +161,27 @@ quarkus.container-image.tag=1.0       #optional, defaults to the application ver
 
 The image that will be used in the generated manifests will be `quarkus/demo-app:1.0`
 
+=== Namespace
+
+By default Quarkus omits the namespace in the generated manifests, rather than enforce the `default` namespace. That means that you can apply the manifest to your chosen namespace when using `kubctl`, which in the example below is `test`:
+
+[source,bash]
+----
+kubectl apply -f target/kubernetes/kubernetes.json -n=test
+----
+
+To specify the namespace in your manifest customize with the following property in your `application.properties`:
+
+[source,properties]
+----
+quarkus.kubernetes.namespace=mynamespace 
+----
+
 === Defining a Docker registry
 
 The Docker registry can be specified with the following property:
 
-[source]
+[source,properties]
 ----
 quarkus.container-image.registry=my.docker-registry.net
 ----
@@ -181,12 +197,25 @@ The generated manifests use the Kubernetes link:https://kubernetes.io/docs/conce
 These labels can be customized using `quarkus.kubernetes.name`, `quarkus.kubernetes.version` and `quarkus.kubernetes.part-of`.
 For example by adding the following configuration to your `application.properties`:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.part-of=todo-app
 quarkus.kubernetes.name=todo-rest
 quarkus.kubernetes.version=1.0-rc.1
 ----
+
+[NOTE]
+====
+As is described in detail in the <<#openshift, OpenShift>> section, customizing OpenShift (or Knative) properties is done in the same way, but replacing
+`kubernetes` with `openshift` (or `knative`). The previous example for OpenShift would look like this:
+
+[source,properties]
+----
+quarkus.openshift.part-of=todo-app
+quarkus.openshift.name=todo-rest
+quarkus.openshift.version=1.0-rc.1
+----
+====
 
 The labels in generated resources will look like:
 
@@ -203,7 +232,7 @@ The labels in generated resources will look like:
 
 To add additional custom labels, for example `foo=bar` just apply the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.labels.foo=bar
 ----
@@ -226,10 +255,10 @@ Out of the box, the generated resources will be annotated with version control r
 
 Custom annotations can be added in a way similar to labels.For example to add the annotation `foo=bar` and `app.quarkus/id=42` just apply the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.annotations.foo=bar
-quarkus."app.quarkus/id"=42
+quarkus.kubernetes.annotations."app.quarkus/id"=42
 ----
 
 [#env-vars]
@@ -347,10 +376,21 @@ This would generate the following in the `env` section of your container:
 
 It's also possible to use the value from another field to add a new environment variable by specifying the path of the field to be used as a source, as follows:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.env.fields.foo=metadata.name
 ----
+
+[NOTE]
+====
+As is described in detail in the <<#openshift, OpenShift>> section, customizing OpenShift properties is done in the same way, but replacing
+`kubernetes` with `openshift`. The previous example for OpenShift would look like this:
+
+[source,properties]
+----
+quarkus.openshift.env.fields.foo=metadata.name
+----
+====
 
 ===== Validation
 
@@ -386,7 +426,7 @@ only generate an environment variable `MY_ENV_VAR=newValue` and issue a warning.
 The Kubernetes extension allows the user to configure both volumes and mounts for the application.
 Any volume can be mounted with a simple configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.mounts.my-volume.path=/where/to/mount
 ----
@@ -396,23 +436,51 @@ The volumes themselves can be configured as shown in the sections below.
 
 ===== Secret volumes
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.secret-volumes.my-volume.secret-name=my-secret
 ----
 
 ===== ConfigMap volumes
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-secret
 ----
+
+==== Passing application configuration
+
+Quarkus supports passing configuration from external locations (via Smallrye Config). This usually requires setting an additional environment variable or system propertiy.
+When you need to use a secret or a config map for the purpose of application configuration, you need to:
+
+- define a volume
+- mount the volume
+- create an environment variable for `SMALLRYE_CONFIG_LOCATIONS`
+
+To simplify things, quarkus provides single step alternative:
+
+[source,properties]
+----
+quarkus.kubernetes.app-secret=<name of the secret containing the configuration>
+----
+
+or
+
+[source,properties]
+----
+quarkus.kubernetes.app-config-map=<name of the config map containing the configuration>
+----
+
+When these properties are used, the generated manifests will contain everything required.
+The application config volumes will be created using path: `/mnt/app-secret` and `/mnt/app-config-map` for secrets and configmaps respectively.
+
+Note: Users may use both properties at the same time.
 
 === Changing the number of replicas:
 
 To change the number of replicas from 1 to 3:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.replicas=3
 ----
@@ -435,10 +503,59 @@ More information about the health extension can be found in the relevant link:mi
 === Customizing the readiness probe:
 To set the initial delay of the probe to 20 seconds and the period to 45:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.readiness-probe.initial-delay=20s
 quarkus.kubernetes.readiness-probe.period=45s
+----
+
+=== Add hostAliases
+To add entries to a Pod's `/etc/hosts` file (more information can be found in https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/[Kubernetes documentation]), just apply the following configuration:
+
+[source,properties]
+----
+quarkus.kubernetes.hostaliases."10.0.0.0".hostnames=foo.com,bar.org
+----
+
+This would generate the following `hostAliases` section in the `deployment` definition:
+
+[source,yaml]
+----
+kind: Deployment
+spec:
+  template:
+    spec:
+      hostAliases:
+      - hostnames:
+        - foo.com
+        - bar.org
+        ip: 10.0.0.0
+----
+
+=== Container Resources Management
+
+CPU & Memory limits and requests can be applied to a `Container` (more info in https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/[Kubernetes documentation]) using the following configuration:
+
+[source]
+----
+quarkus.kubernetes.resources.requests.memory=64Mi
+quarkus.kubernetes.resources.requests.cpu=250m
+quarkus.kubernetes.resources.limits.memory=512Mi
+quarkus.kubernetes.resources.limits.cpu=1000m
+----
+
+This would generate the following entry in the `container` section:
+
+[source, yaml]
+----
+containers:
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 64Mi
 ----
 
 === Using the Kubernetes client
@@ -476,7 +593,7 @@ This extension assumes a couple things:
 * Users won't be using an image registry and will instead make their container image accessible to the Kubernetes cluster by building it directly
 into Minikube's Docker daemon. To use Minikube's Docker daemon you must first execute:
 +
-[source]
+[source,bash]
 ----
 eval $(minikube -p minikube docker-env)
 ----
@@ -484,7 +601,7 @@ eval $(minikube -p minikube docker-env)
 * Applications deployed to Kubernetes won't be accessed via a Kubernetes `Ingress`, but rather as a `NodePort` `Service`.
 The advantage of doing this is that the URL of an application can be retrieved trivially by executing:
 +
-[source]
+[source,bash]
 ----
 minikube service list
 ----
@@ -513,16 +630,18 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.name                            | String                                    |             | ${quarkus.container-image.name}
 | quarkus.kubernetes.version                         | String                                    |             | ${quarkus.container-image.tag}
 | quarkus.kubernetes.part-of                         | String                                    |             |
-| quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             | 
+| quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             |
+| quarkus.kubernetes.namespace                       | String                                    |             |
 | quarkus.kubernetes.labels                          | Map                                       |             |
 | quarkus.kubernetes.annotations                     | Map                                       |             |
+| quarkus.kubernetes.app-secret                      | String                                    |             |
+| quarkus.kubernetes.app-config-map                  | String                                    |             |
 | quarkus.kubernetes.env-vars                        | Map<String, Env>                          |             |
 | quarkus.kubernetes.working-dir                     | String                                    |             |
 | quarkus.kubernetes.command                         | String[]                                  |             |
 | quarkus.kubernetes.arguments                       | String[]                                  |             |
 | quarkus.kubernetes.replicas                        | int                                       |             | 1
 | quarkus.kubernetes.service-account                 | String                                    |             |
-| quarkus.kubernetes.host                            | String                                    |             |
 | quarkus.kubernetes.ports                           | Map<String, Port>                         |             |
 | quarkus.kubernetes.service-type                    | ServiceType                               |             | ClusterIP
 | quarkus.kubernetes.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
@@ -538,14 +657,21 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.kubernetes.readiness-probe                 | Probe                                     |             | ( see Probe )
 | quarkus.kubernetes.sidecars                        | Map<String, Container>                    |             |
-| quarkus.kubernetes.expose                          | boolean                                   |             | false
+| quarkus.kubernetes.ingress.expose                  | boolean                                   |             | false
+| quarkus.kubernetes.ingress.host                    | String                                    |             |
+| quarkus.kubernetes.ingress.annotations             | Map<String, String>                       |             |
 | quarkus.kubernetes.headless                        | boolean                                   |             | false
+| quarkus.kubernetes.hostaliases                     | Map<String, HostAlias>                    |             |
+| quarkus.kubernetes.resources.requests.cpu          | String                                    |             |
+| quarkus.kubernetes.resources.requests.memory       | String                                    |             |
+| quarkus.kubernetes.resources.limits.cpu            | String                                    |             |
+| quarkus.kubernetes.resources.limits.memory         | String                                    |             |
 |====
 
 Properties that use non-standard types, can be referenced by expanding the property.
 For example to define a `kubernetes-readiness-probe` which is of type `Probe`:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.readiness-probe.initial-delay=20s
 quarkus.kubernetes.readiness-probe.period=45s
@@ -564,9 +690,9 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property  | Type   | Description | Default Value
 | value     | String |             |
-| secret    | String |             |              
-| configmap | String |             |              
-| field     | String |             |              
+| secret    | String |             |
+| configmap | String |             |
+| field     | String |             |
 |====
 
 .Probe
@@ -574,7 +700,7 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 | Property              | Type     | Description | Default Value
 | http-action-path      | String   |             |
 | exec-action           | String   |             |
-| tcp-socket-action     | String   |             |              
+| tcp-socket-action     | String   |             |
 | initial-delay         | Duration |             |             0
 | period                | Duration |             |           30s
 | timeout               | Duration |             |           10s
@@ -594,16 +720,21 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 | Property          | Type                                    | Description | Default Value
 | image             | String                                  |             |
 | env-vars          | Env[]                                   |             |
-| working-dir       | String                                  |             |                                          
+| working-dir       | String                                  |             |
 | command           | String[]                                |             |
 | arguments         | String[]                                |             |
 | ports             | Port[]                                  |             |
 | mounts            | Mount[]                                 |             |
-| image-pull-policy | ImagePullPolicy                         |             | Always                             
-| liveness-probe    | Probe                                   |             |                                          
-| readiness-probe   | Probe                                   |             |                                          
+| image-pull-policy | ImagePullPolicy                         |             | Always
+| liveness-probe    | Probe                                   |             |
+| readiness-probe   | Probe                                   |             |
 |====
 
+.HostAlias
+|====
+| Property    | Type     | Description       | Default Value
+| hostnames   | String[] | list of hostnames |
+|====
 
 ==== Mounts and Volumes
 
@@ -611,8 +742,8 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property  | Type    | Description | Default Value
 | path      | String  |             |
-| sub-path  | String  |             |               
-| read-only | boolean |             | false         
+| sub-path  | String  |             |
+| read-only | boolean |             | false
 |====
 
 .ConfigMapVolume
@@ -636,11 +767,11 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property     | Type    | Description | Default Value
 | disk-name    | String  |             |
-| disk-uri     | String  |             |               
+| disk-uri     | String  |             |
 | kind         | String  |             | Managed
-| caching-mode | String  |             | ReadWrite     
-| fs-type      | String  |             | ext4          
-| read-only    | boolean |             | false         
+| caching-mode | String  |             | ReadWrite
+| fs-type      | String  |             | ext4
+| read-only    | boolean |             | false
 |====
 
 .AwsElasticBlockStoreVolume
@@ -648,8 +779,8 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 | Property    | Type    | Description | Default Value
 | volume-id   | String  |             |
 | partition   | int     |             |
-| fs-type     | String  |             | ext4          
-| read-only   | boolean |             | false         
+| fs-type     | String  |             | ext4
+| read-only   | boolean |             | false
 |====
 
 .GitRepoVolume
@@ -664,47 +795,67 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property    | Type    | Description | Default Value
 | claim-name  | String  |             |
-| read-only   | boolean |             | false        
+| read-only   | boolean |             | false
 |====
 
 .AzureFileVolume
 |====
 | Property    | Type    | Description | Default Value
 | share-name  | String  |             |
-| secret-name | String  |             |              
-| read-only   | boolean |             | false        
+| secret-name | String  |             |
+| read-only   | boolean |             | false
 |====
 
 [#openshift]
 === OpenShift
 
+One way to deploy an application to OpenShift is to use s2i (source to image) to create an image stream from the source and then deploy the image stream:
+
+[source,bash]
+----
+./mvnw quarkus:remove-extension -Dextensions="kubernetes, jib"
+./mvnw quarkus:add-extension -Dextensions="openshift"
+
+oc new-project quarkus-project
+./mvnw clean package -Dquarkus.container-image.build=true 
+
+oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0.0-SNAPSHOT
+oc expose svc/greeting
+oc get route
+curl <route>/greeting
+----
+
+See further information in link:deploying-to-openshift[Deploying to OpenShift].
+
+A description of OpenShift resources and customisable properties is given below alongside Kubernetes resources to show similarities where applicable.   This includes an alternative to  `oc new-app ...` above, i.e. `oc apply -f target/kubernetes/openshift.json` .
+
 To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.deployment-target=openshift
 ----
 
 If you need to generate resources for both platforms (vanilla Kubernetes and OpenShift), then you need to include both (comma separated).
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.deployment-target=kubernetes,openshift
 ----
 
-Following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
+Following the execution of `./mvnw package -Dquarkus.container-image.build=true ` you will notice amongst the other files that are created, two files named
 `openshift.json` and `openshift.yml` in the `target/kubernetes/` directory.
 
 These manifests can be deployed as is to a running cluster, using `kubectl`:
 
-[source]
+[source,bash]
 ----
 kubectl apply -f target/kubernetes/openshift.json
 ----
 
-Openshift users might want to use `oc` instead of `kubectl`:
+OpenShift users might want to use `oc` instead of `kubectl`:
 
-[source]
+[source,bash]
 ----
 oc apply -f target/kubernetes/openshift.json
 ----
@@ -724,13 +875,14 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.init-containers                 | Map<String, Container>                    |             |
 | quarkus.openshift.labels                          | Map                                       |             |
 | quarkus.openshift.annotations                     | Map                                       |             |
+| quarkus.openshift.app-secret                      | String                                    |             |
+| quarkus.openshift.app-config-map                  | String                                    |             |
 | quarkus.openshift.env-vars                        | Map<String, Env>                          |             |
 | quarkus.openshift.working-dir                     | String                                    |             |
 | quarkus.openshift.command                         | String[]                                  |             |
 | quarkus.openshift.arguments                       | String[]                                  |             |
 | quarkus.openshift.replicas                        | int                                       |             | 1
 | quarkus.openshift.service-account                 | String                                    |             |
-| quarkus.openshift.host                            | String                                    |             |
 | quarkus.openshift.ports                           | Map<String, Port>                         |             |
 | quarkus.openshift.service-type                    | ServiceType                               |             | ClusterIP
 | quarkus.openshift.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
@@ -746,16 +898,18 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.openshift.readiness-probe                 | Probe                                     |             | ( see Probe )
 | quarkus.openshift.sidecars                        | Map<String, Container>                    |             |
-| quarkus.openshift.expose                          | boolean                                   |             | false
+| quarkus.openshift.route.expose                    | boolean                                   |             | false
+| quarkus.openshift.route.host                      | String                                    |             |
+| quarkus.openshift.route.annotations               | Map<String, String>                       |             |
 | quarkus.openshift.headless                        | boolean                                   |             | false
 |====
 
 [#knative]
 === Knative
-    
+
 To enable the generation of Knative resources, you need to include Knative in the target platforms:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.deployment-target=knative
 ----
@@ -780,7 +934,7 @@ The full source of the `knative.json` file looks something like this:
       },
       "labels" : {
         "app.kubernetes.io/name" : "test-quarkus-app",
-        "app.kubernetes.io/version" : "1.0-SNAPSHOT"
+        "app.kubernetes.io/version" : "1.0.0-SNAPSHOT"
       },
       "name" : "knative.
     },
@@ -790,7 +944,7 @@ The full source of the `knative.json` file looks something like this:
           "revisionTemplate" : {
             "spec" : {
               "container" : {
-                "image" : "dev.local/yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT",
+                "image" : "dev.local/yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT",
                 "imagePullPolicy" : "Always"
               }
             }
@@ -804,7 +958,7 @@ The full source of the `knative.json` file looks something like this:
 
 The generated manifest can be deployed as is to a running cluster, using `kubectl`:
 
-[source]
+[source,bash]
 ----
 kubectl apply -f target/kubernetes/knative.json
 ----
@@ -820,6 +974,8 @@ The generated service can be customized using the following properties:
 | quarkus.knative.init-containers                 | Map<String, Container>                    |             |
 | quarkus.knative.labels                          | Map                                       |             |
 | quarkus.knative.annotations                     | Map                                       |             |
+| quarkus.knative.app-secret                      | String                                    |             |
+| quarkus.knative.app-config-map                  | String                                    |             |
 | quarkus.knative.env-vars                        | Map<String, Env>                          |             |
 | quarkus.knative.working-dir                     | String                                    |             |
 | quarkus.knative.command                         | String[]                                  |             |
@@ -842,7 +998,19 @@ The generated service can be customized using the following properties:
 | quarkus.knative.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.knative.readiness-probe                 | Probe                                     |             | ( see Probe )
 | quarkus.knative.sidecars                        | Map<String, Container>                    |             |
+| quarkus.knative.revision-name                   | String                                    |             | 
+| quarkus.knative.traffic                         | Traffic[]                                 |             | ( see Traffic)
 |====
+
+.Traffic
+|====
+| Property        | Type    | Description | Default Value
+| revision-name   | String  | A specific revision to which to send this portion of traffic                                    |
+| tag             | String  | Expose a dedicated url for referncing this target                                               |
+| latest-revision | Boolean | Optionally provided to indicate that the latest revision should be used for this traffic target | false 
+| percent         | Logn    | Indicates the percent of traffic that is be routed to this revision                             | 100
+|====
+
 
 === Deployment targets
 
@@ -876,7 +1044,7 @@ Properties referring to config group arrays (e.g. `kubernetes.labels[0]`, `kuber
 
 The code below demonstrates the change in `labels` config:
 
-[source]
+[source,properties]
 ----
 # Old labels config:
 kubernetes.labels[0].name=foo
@@ -888,7 +1056,7 @@ quarkus.kubernetes.labels.foo=bar
 
 The code below demonstrates the change in `env-vars` config:
 
-[source]
+[source,properties]
 ----
 # Old env-vars config:
 kubernetes.env-vars[0].name=foo
@@ -908,7 +1076,7 @@ See <<#env-vars>> and more specifically <<env-vars-backwards>> for more details.
 To trigger building and deploying a container image you need to enable the `quarkus.kubernetes.deploy` flag (the flag is disabled by default - furthermore it has no effect during test runs or dev mode).
 This can be easily done with the command line:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.kubernetes.deploy=true
 ----
@@ -988,7 +1156,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: "kubernetes-quickstart"
-      app.kubernetes.io/version: "1.0-SNAPSHOT"
+      app.kubernetes.io/version: "1.0.0-SNAPSHOT"
   template:
     metadata:
       annotations:
@@ -1000,7 +1168,7 @@ spec:
       - env:
         - name: "FOO" <3>
           value: "BAR"
-        image: "<<yourDockerUsernmae>>/kubernetes-quickstart:1.0-SNAPSHOT" <4>
+        image: "<<yourDockerUsername>>/kubernetes-quickstart:1.0.0-SNAPSHOT" <4>
         imagePullPolicy: "Always"
         name: "kubernetes-quickstart"
         ports:
@@ -1016,4 +1184,68 @@ The provided replicas <1>, labels <2> and environment variables <3>  were retain
 ====
 If the resource name does not match the application name (or the overridden name) instead of reusing the resource a new one will be added. Same goes for the container.
 If the name of the container does not match the application name (or the overridden name), container specific configuration will be ignored.
+====
+
+== Service Binding
+
+Quarkus supports binding services to applications via the link:https://github.com/k8s-service-bindings/spec[Service Binding Specification for Kubernetes].
+Specifically Quarkus implements the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the specification, thus allowing
+applications running in appropriately configured Kubernetes clusters to consume services (such as a Database or a Broker) without the need for user configuration.
+
+Currently, the following Quarkus extensions support this feature:
+
+* quarkus-jdbc-mariadb
+* quarkus-jdbc-mssql
+* quarkus-jdbc-mysql
+* quarkus-jdbc-postgresql
+* quarkus-kafka-client
+* quarkus-smallrye-reactive-messaging-kafka
+
+This list of extensions will grow as more services with supported bindings become available on Kubernetes.
+
+To enable Service Binding support, in addition to one of the currently supported extensions, the `quarkus-kubernetes-service-binding` extension needs to be added to the application dependencies.
+
+=== Example using PostgreSQL
+
+If the Kubernetes cluster in which your Quarkus application runs supports provisioning a PostgreSQL database, one could use the following dependencies to take advantage of the Service Binding feature:
+
+[source,xml]
+----
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-service-binding</artifactId>
+        </dependency>
+
+       <!-- Hibernate isn't necessary for Service Binding, but most relational database access will benefit from using it -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
+        </dependency>
+----
+
+The configuration of the application could be as simple as:
+
+[source,properties]
+----
+quarkus.hibernate-orm.database.generation=validate
+----
+
+You'll notice that all the configuration for the datasource is absent, as it will be auto-discovered by Quarkus when the application is deployed to Kubernetes.
+
+=== How does it work?
+
+When the application is deployed to an appropriately configured Kubernetes cluster, Kubernetes will create on the filesystem a set of files containing the runtime configuration (for example a file containing the URL of the database, another for the username).
+Quarkus knows where in the file system to look for these files (as it consults the `SERVICE_BINDING_ROOT` environment variable which is set by Kubernetes) and if they exist, Quarkus knows how to map the values of these files to the appropriate extension configuration properties.
+
+An example of what the file system looks like can be seen link:https://github.com/quarkusio/quarkus/tree/e7efe6b3efba91b9c4ae26f9318f8397e23e7505/integration-tests/kubernetes-service-binding-jdbc/src/test/resources/k8s-sb[here].
+In that example, the `k8s-sb` directory is meant to be the root of all service bindings. Only one binding which exists in that case and it is named `fruit-db`. This binding has a `type` file indicating that it is a `postgresql` database
+while the other files provide the necessary connection information.
+
+[TIP]
+====
+For more details on how the discovery of the available properties works, please read the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the Service Binding specification.
 ====

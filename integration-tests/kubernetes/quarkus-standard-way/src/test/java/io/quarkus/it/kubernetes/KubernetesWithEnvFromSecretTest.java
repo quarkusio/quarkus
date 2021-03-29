@@ -45,15 +45,15 @@ public class KubernetesWithEnvFromSecretTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
-                            assertThat(container.getEnvFrom()).hasOnlyOneElementSatisfying(env -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
+                            assertThat(container.getEnvFrom()).singleElement().satisfies(env -> {
                                 assertThat(env.getSecretRef()).satisfies(secretRef -> {
                                     assertThat(secretRef.getName()).isEqualTo("my-secret");
                                 });
                             });
 
                             assertThat(container.getEnv()).filteredOn(env -> "DB_PASSWORD".equals(env.getName()))
-                                    .hasOnlyOneElementSatisfying(env -> {
+                                    .singleElement().satisfies(env -> {
                                         assertThat(env.getValueFrom()).satisfies(valueFrom -> {
                                             assertThat(valueFrom.getSecretKeyRef()).satisfies(secretKeyRef -> {
                                                 assertThat(secretKeyRef.getKey()).isEqualTo("database.password");

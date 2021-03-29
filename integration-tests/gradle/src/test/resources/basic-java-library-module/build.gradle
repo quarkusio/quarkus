@@ -1,6 +1,12 @@
 buildscript {
      repositories {
-          mavenLocal()
+          if (System.properties.containsKey('maven.repo.local')) {
+               maven {
+                    url System.properties.get('maven.repo.local')
+               }
+          } else {
+               mavenLocal()
+          }
           mavenCentral()
      }
 }
@@ -12,7 +18,13 @@ allprojects {
 
 subprojects{
      repositories {
-          mavenLocal()
+          if (System.properties.containsKey('maven.repo.local')) {
+               maven {
+                    url System.properties.get('maven.repo.local')
+               }
+          } else {
+               mavenLocal()
+          }
           mavenCentral()
      }
 }

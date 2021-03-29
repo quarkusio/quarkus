@@ -16,7 +16,7 @@ public class FlywayMultiDataSourcesDevModeTest {
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MultiDataSourcesDevModeEndpoint.class)
+                    .addClasses(MultiDataSourcesDevModeEndpoint.class, FlywayExtensionCallback.class)
                     .addAsResource("config-for-multiple-datasources.properties", "application.properties"));
 
     @Test

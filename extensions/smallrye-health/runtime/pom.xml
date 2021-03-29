@@ -6,7 +6,6 @@
         <artifactId>quarkus-smallrye-health-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,10 +17,6 @@
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-health</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-health-ui</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>

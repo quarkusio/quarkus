@@ -31,7 +31,7 @@ public class PropertyWarningsPMT {
     public void ensureProperQuarkusPropertiesLogged() {
         List<LogRecord> buildLogRecords = prodModeTestResults.getRetainedBuildLogRecords();
         assertThat(buildLogRecords).isNotEmpty();
-        assertThat(buildLogRecords).hasOnlyOneElementSatisfying(r -> {
+        assertThat(buildLogRecords).singleElement().satisfies(r -> {
             assertThat(r.getMessage()).contains("Quarkus does not support the following Spring Boot configuration properties");
             assertThat(r.getParameters()).hasOnlyOneElementSatisfying(o -> {
                 assertThat(o).isInstanceOfSatisfying(String.class, s -> {

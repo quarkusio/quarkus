@@ -23,6 +23,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
 
 //TODO: this should go away, once we decide on which one of the API's we want
@@ -86,6 +87,15 @@ class NativeImageConfigBuildStep {
         if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
         }
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void reinitHostNameUtil(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitClass) {
+        // certain libraries like JBoss logging internally use this class to determine the hostname
+        // of the system. This HostName class computes and stores the hostname as a static field in a class,
+        // so we reinitialize this to re-compute the field (and other related fields) during native application's
+        // runtime
+        runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

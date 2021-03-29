@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = OptaPlanner - Using AI to optimize a schedule with OptaPlanner
 
@@ -65,12 +65,13 @@ with the following extensions, for Maven or Gradle:
 
 Alternatively, generate it from the command line with Maven:
 
-[source,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=optaplanner-quickstart \
-    -Dextensions="resteasy, resteasy-jackson, optaplanner-quarkus, optaplanner-quarkus-jackson"
+    -Dextensions="resteasy,resteasy-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson" \
+    -DnoExamples
 cd optaplanner-quickstart
 ----
 
@@ -450,9 +451,7 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                         // ... in the same timeslot ...
                         Joiners.equal(Lesson::getTimeslot),
                         // ... in the same room ...
-                        Joiners.equal(Lesson::getRoom),
-                        // ... and the pair is unique (different id, no reverse pairs)
-                        Joiners.lessThan(Lesson::getId))
+                        Joiners.equal(Lesson::getRoom))
                 // then penalize each pair with a hard weight.
                 .penalize("Room conflict", HardSoftScore.ONE_HARD);
     }
@@ -504,7 +503,7 @@ import java.util.List;
 import org.optaplanner.core.api.domain.solution.PlanningEntityCollectionProperty;
 import org.optaplanner.core.api.domain.solution.PlanningScore;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
-import org.optaplanner.core.api.domain.solution.drools.ProblemFactCollectionProperty;
+import org.optaplanner.core.api.domain.solution.ProblemFactCollectionProperty;
 import org.optaplanner.core.api.domain.valuerange.ValueRangeProvider;
 import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 
@@ -612,19 +611,14 @@ package org.acme.optaplanner.rest;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.acme.optaplanner.domain.TimeTable;
 import org.optaplanner.core.api.solver.SolverJob;
 import org.optaplanner.core.api.solver.SolverManager;
 
 @Path("/timeTable")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class TimeTableResource {
 
     @Inject
@@ -859,9 +853,9 @@ You have just developed a Quarkus application with https://www.optaplanner.org/[
 
 Now try adding database and UI integration:
 
-. Store `Timeslot`, `Room`, and `Lesson` in the database with https://quarkus.io/guides/hibernate-orm-panache[Hibernate and Panache].
+. Store `Timeslot`, `Room`, and `Lesson` in the database with link:hibernate-orm-panache[Hibernate and Panache].
 
-. https://quarkus.io/guides/rest-json[Expose them through REST].
+. link:rest-json[Expose them through REST].
 
 . Adjust the `TimeTableResource` to read and write a `TimeTable` in a single transaction
 and use those accordingly:
@@ -885,6 +879,7 @@ import org.acme.optaplanner.domain.Room;
 import org.acme.optaplanner.domain.TimeTable;
 import org.acme.optaplanner.domain.Timeslot;
 import org.optaplanner.core.api.score.ScoreManager;
+import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 import org.optaplanner.core.api.solver.SolverManager;
 import org.optaplanner.core.api.solver.SolverStatus;
 
@@ -898,7 +893,7 @@ public class TimeTableResource {
     @Inject
     SolverManager<TimeTable, Long> solverManager;
     @Inject
-    ScoreManager<TimeTable> scoreManager;
+    ScoreManager<TimeTable, HardSoftScore> scoreManager;
 
     // To try, open http://localhost:8080/timeTable
     @GET

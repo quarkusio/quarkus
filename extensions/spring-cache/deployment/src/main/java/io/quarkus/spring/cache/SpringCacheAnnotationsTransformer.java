@@ -15,21 +15,21 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.cache.CacheInvalidate;
+import io.quarkus.cache.CacheInvalidateAll;
+import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.deployment.CacheDeploymentConstants;
-import io.quarkus.cache.runtime.CacheInvalidateAllInterceptorBinding;
-import io.quarkus.cache.runtime.CacheInvalidateInterceptorBinding;
-import io.quarkus.cache.runtime.CacheResultInterceptorBinding;
 
 public class SpringCacheAnnotationsTransformer implements AnnotationsTransformer {
 
     private static final Logger LOGGER = Logger.getLogger(SpringCacheAnnotationsTransformer.class);
 
     private static final DotName CACHE_RESULT_INTERCEPTOR_BINDING = DotName
-            .createSimple(CacheResultInterceptorBinding.class.getName());
+            .createSimple(CacheResult.class.getName());
     private static final DotName CACHE_INVALIDATE_INTERCEPTOR_BINDING = DotName
-            .createSimple(CacheInvalidateInterceptorBinding.class.getName());
+            .createSimple(CacheInvalidate.class.getName());
     private static final DotName CACHE_INVALIDATE_ALL_INTERCEPTOR_BINDING = DotName
-            .createSimple(CacheInvalidateAllInterceptorBinding.class.getName());
+            .createSimple(CacheInvalidateAll.class.getName());
 
     @Override
     public boolean appliesTo(AnnotationTarget.Kind kind) {

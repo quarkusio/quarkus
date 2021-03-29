@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Transactions in Quarkus
 
@@ -206,7 +206,7 @@ Does it work everywhere I want to?::
 Yep, it works in your Quarkus application, in your IDE, in your tests, because all of these are Quarkus applications.
 JTA has some bad press for some people.
 I don't know why.
-Let's just say that this is not your grand'pa's JTA implementation.
+Let's just say that this is not your grandpa's JTA implementation.
 What we have is perfectly embeddable and lean.
 
 Does it do 2 Phase Commit and slow down my app?::

@@ -22,7 +22,8 @@ public class WebJarLocatorRecorder {
                         endOfVersion = rest.length();
                     }
                     String nextPathEntry = rest.substring(rest.indexOf('/') + 1, endOfVersion);
-                    if (nextPathEntry.equals(webjarNameToVersionMap.get(webjar))) {
+                    if (webjarNameToVersionMap.get(webjar) == null
+                            || nextPathEntry.equals(webjarNameToVersionMap.get(webjar))) {
                         // go to the next handler (which should be the static resource handler, if one exists)
                         event.next();
                     } else {

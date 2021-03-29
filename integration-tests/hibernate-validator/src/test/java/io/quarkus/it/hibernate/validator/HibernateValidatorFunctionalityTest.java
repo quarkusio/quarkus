@@ -5,14 +5,17 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 
 /**
  * Test various Bean Validation operations running in Quarkus
  */
-
 @QuarkusTest
+@QuarkusTestResource(H2DatabaseTestResource.class)
 public class HibernateValidatorFunctionalityTest {
 
     @Test
@@ -65,6 +68,34 @@ public class HibernateValidatorFunctionalityTest {
 
         RestAssured.when()
                 .get("/hibernate-validator/test/rest-end-point-validation/42/")
+                .then()
+                .body(is("42"));
+    }
+
+    @Test
+    public void testRestEndPointInterfaceValidation() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation/plop/")
+                .then()
+                .statusCode(400)
+                .body(containsString("numeric value out of bounds"));
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation/42/")
+                .then()
+                .body(is("42"));
+    }
+
+    @Test
+    public void testRestEndPointInterfaceValidationWithAnnotationOnImplMethod() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/plop/")
+                .then()
+                .statusCode(400)
+                .body(containsString("numeric value out of bounds"));
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/42/")
                 .then()
                 .body(is("42"));
     }
@@ -159,4 +190,130 @@ public class HibernateValidatorFunctionalityTest {
                 .body(containsString("Vrijednost ne zadovoljava uzorak"));
     }
 
+    @Test
+    public void testHibernateOrmIntegration() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/test-hibernate-orm-integration")
+                .then()
+                .statusCode(500);
+    }
+
+    @Test
+    public void testInheritance() {
+        RestAssured.given()
+                .get("/books/science")
+                .then()
+                .statusCode(400)
+                .body(containsString("must not be null"));
+    }
+
+    @Test
+    public void testRestEndPointValidationGroups_parameters() {
+        // PUT: input id must be null
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body("{\"id\": 1, \"name\": \"b\"}")
+                .when()
+                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .then()
+                .statusCode(400)
+                .body(containsString("must be null"));
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body("{\"name\": \"b\"}")
+                .when()
+                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .then()
+                .statusCode(200)
+                .body(containsString("passed"));
+
+        // POST: input id must not be null
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body("{\"name\": \"b\"}")
+                .when()
+                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .then()
+                .statusCode(400)
+                .body(containsString("must not be null"));
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body("{\"id\": 1, \"name\": \"b\"}")
+                .when()
+                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .then()
+                .statusCode(200)
+                .body(containsString("passed"));
+
+        // Also check that constraints using the default group still work
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body("{}")
+                .when()
+                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .then()
+                .statusCode(400)
+                .body(containsString("must not be null"));
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body("{\"id\":1}")
+                .when()
+                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .then()
+                .statusCode(400)
+                .body(containsString("must not be null"));
+    }
+
+    @Test
+    public void testRestEndPointValidationGroups_result() {
+        // GET: deleted must be false
+        RestAssured.given()
+                .param("simulateDeleted", true)
+                .when()
+                .get("/hibernate-validator/test/rest-end-point-validation-groups/1/")
+                .then()
+                .statusCode(500)
+                .body(containsString("must be false"));
+        RestAssured.given()
+                .param("simulateDeleted", false)
+                .when()
+                .get("/hibernate-validator/test/rest-end-point-validation-groups/1/")
+                .then()
+                .statusCode(200)
+                .body(containsString("\"deleted\":false"));
+
+        // DELETE: deleted must be true
+        RestAssured.given()
+                .param("simulateDeleted", false)
+                .when()
+                .delete("/hibernate-validator/test/rest-end-point-validation-groups/1/")
+                .then()
+                .statusCode(500)
+                .body(containsString("must be true"));
+        RestAssured.given()
+                .param("simulateDeleted", true)
+                .when()
+                .delete("/hibernate-validator/test/rest-end-point-validation-groups/1/")
+                .then()
+                .statusCode(200)
+                .body(containsString("\"deleted\":true"));
+
+        // Also check that constraints using the default group still work
+        RestAssured.given()
+                .param("simulateDeleted", false)
+                .param("simulateNullName", true)
+                .when()
+                .get("/hibernate-validator/test/rest-end-point-validation-groups/1/")
+                .then()
+                .statusCode(500)
+                .body(containsString("must not be null"));
+        RestAssured.given()
+                .param("simulateDeleted", true)
+                .param("simulateNullName", true)
+                .when()
+                .delete("/hibernate-validator/test/rest-end-point-validation-groups/1/")
+                .then()
+                .statusCode(500)
+                .body(containsString("must not be null"));
+    }
 }

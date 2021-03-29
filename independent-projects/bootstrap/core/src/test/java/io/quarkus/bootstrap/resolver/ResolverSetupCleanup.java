@@ -58,7 +58,7 @@ public class ResolverSetupCleanup {
 
     protected BootstrapAppModelResolver initResolver(LocalProject currentProject) throws Exception {
         return new BootstrapAppModelResolver(MavenArtifactResolver.builder()
-                .setRepoHome(repoHome)
+                .setLocalRepository(repoHome.toString())
                 .setOffline(true)
                 .setWorkspaceDiscovery(false)
                 .setCurrentProject(currentProject)
@@ -69,8 +69,9 @@ public class ResolverSetupCleanup {
         return new TsJar(workDir.resolve(UUID.randomUUID().toString()));
     }
 
-    protected void install(TsQuarkusExt extension) {
+    protected TsQuarkusExt install(TsQuarkusExt extension) {
         extension.install(repo);
+        return extension;
     }
 
     protected TsArtifact install(TsArtifact artifact) {

@@ -5,8 +5,6 @@ import java.time.Duration;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -24,7 +22,6 @@ public class AvroEndpoint {
 
     @GET
     @Path("/confluent")
-    @Produces(MediaType.APPLICATION_JSON)
     public JsonObject getConfluent() {
         return get(AvroKafkaCreator.createConfluentConsumer("test-avro-confluent-consumer", "test-avro-confluent-consumer"));
     }
@@ -38,7 +35,6 @@ public class AvroEndpoint {
 
     @GET
     @Path("/apicurio")
-    @Produces(MediaType.APPLICATION_JSON)
     public JsonObject getApicurio() {
         return get(AvroKafkaCreator.createApicurioConsumer("test-avro-apicurio-consumer", "test-avro-apicurio-consumer"));
     }

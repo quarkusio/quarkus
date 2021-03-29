@@ -1,5 +1,7 @@
 package io.quarkus.it.kafka;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.util.Properties;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -35,4 +37,11 @@ public class KafkaConsumerTest {
         RestAssured.when().get("/kafka").then().body(Matchers.is("hi world"));
     }
 
+    @Test
+    public void metrics() throws Exception {
+        // Look for kafka consumer metrics (add .log().all() to examine what they are
+        RestAssured.when().get("/q/metrics").then()
+                .statusCode(200)
+                .body(containsString("kafka_consumer_"));
+    }
 }

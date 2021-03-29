@@ -42,6 +42,10 @@ public class ClientResource {
     RestClientBaseUriConfigKeyInterface restClientBaseUriConfigKeyInterface;
 
     @Inject
+    @RestClient
+    RestClientWithFaultToleranceInterface restClientWithFaultToleranceInterface;
+
+    @Inject
     @ConfigProperty(name = "loopback/mp-rest/url", defaultValue = "http://localhost:8080/loopback")
     Provider<String> loopbackEndpoint;
 
@@ -96,6 +100,13 @@ public class ClientResource {
     @Produces("application/json")
     public TestResource.MyData getDataCdi() {
         return restClientInterface.getData();
+    }
+
+    @GET
+    @Path("encoding")
+    public String testEmojis() {
+        return restClientInterface.echo(
+                "\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00");
     }
 
     @GET
@@ -156,7 +167,6 @@ public class ClientResource {
 
     @GET
     @Path("/jaxrs-client")
-    @Produces(MediaType.APPLICATION_JSON)
     public Greeting testJaxrsClient() throws ClassNotFoundException {
         Greeting greeting = client.target(loopbackEndpoint.get())
                 .request()
@@ -206,5 +216,11 @@ public class ClientResource {
                 emitter.complete();
             }
         });
+    }
+
+    @GET
+    @Path("/fault-tolerance")
+    public String faultTolerance() {
+        return restClientWithFaultToleranceInterface.echo();
     }
 }

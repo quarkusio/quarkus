@@ -2,8 +2,11 @@ package io.quarkus.vault.runtime;
 
 import java.util.List;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import io.quarkus.vault.VaultSystemBackendEngine;
-import io.quarkus.vault.runtime.client.VaultClient;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.sys.VaultHealthResult;
 import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultPolicyBody;
@@ -14,25 +17,20 @@ import io.quarkus.vault.sys.VaultHealthStatus;
 import io.quarkus.vault.sys.VaultInit;
 import io.quarkus.vault.sys.VaultSealStatus;
 
+@ApplicationScoped
 public class VaultSystemBackendManager implements VaultSystemBackendEngine {
 
-    private VaultClient vaultClient;
+    @Inject
     private VaultBuildTimeConfig buildTimeConfig;
+    @Inject
     private VaultAuthManager vaultAuthManager;
-
-    public VaultSystemBackendManager(VaultBuildTimeConfig buildTimeConfig, VaultAuthManager vaultAuthManager,
-            VaultClient vaultClient) {
-        this.vaultClient = vaultClient;
-        this.buildTimeConfig = buildTimeConfig;
-        this.vaultAuthManager = vaultAuthManager;
-    }
+    @Inject
+    private VaultInternalSystemBackend vaultInternalSystemBackend;
 
     @Override
     public VaultInit init(int secretShares, int secretThreshold) {
-        final VaultInitResponse init = this.vaultClient.init(secretShares, secretThreshold);
-
-        final VaultInit vaultInit = new VaultInit(init.keys, init.keysBase64, init.rootToken);
-        return vaultInit;
+        final VaultInitResponse init = vaultInternalSystemBackend.init(secretShares, secretThreshold);
+        return new VaultInit(init.keys, init.keysBase64, init.rootToken);
     }
 
     @Override
@@ -68,7 +66,7 @@ public class VaultSystemBackendManager implements VaultSystemBackendEngine {
 
     @Override
     public VaultSealStatus sealStatus() {
-        final VaultSealStatusResult vaultSealStatusResult = this.vaultClient.systemSealStatus();
+        final VaultSealStatusResult vaultSealStatusResult = vaultInternalSystemBackend.systemSealStatus();
 
         final VaultSealStatus vaultSealStatus = new VaultSealStatus();
         vaultSealStatus.setClusterId(vaultSealStatusResult.clusterId);
@@ -88,7 +86,7 @@ public class VaultSystemBackendManager implements VaultSystemBackendEngine {
     }
 
     private VaultHealthStatus healthStatus(boolean isStandByOk, boolean isPerfStandByOk) {
-        final VaultHealthResult vaultHealthResult = this.vaultClient.systemHealthStatus(isStandByOk, isPerfStandByOk);
+        final VaultHealthResult vaultHealthResult = vaultInternalSystemBackend.systemHealthStatus(isStandByOk, isPerfStandByOk);
 
         final VaultHealthStatus vaultHealthStatus = new VaultHealthStatus();
         vaultHealthStatus.setClusterId(vaultHealthResult.clusterId);
@@ -106,31 +104,31 @@ public class VaultSystemBackendManager implements VaultSystemBackendEngine {
     }
 
     private VaultHealth health(boolean isStandByOk, boolean isPerfStandByOk) {
-        final int systemHealthStatusCode = this.vaultClient.systemHealth(isStandByOk, isPerfStandByOk);
+        final int systemHealthStatusCode = vaultInternalSystemBackend.systemHealth(isStandByOk, isPerfStandByOk);
         return new VaultHealth(systemHealthStatusCode);
     }
 
     @Override
     public String getPolicyRules(String name) {
         String token = vaultAuthManager.getClientToken();
-        return vaultClient.getPolicy(token, name).data.rules;
+        return vaultInternalSystemBackend.getPolicy(token, name).data.rules;
     }
 
     @Override
     public void createUpdatePolicy(String name, String policy) {
         String token = vaultAuthManager.getClientToken();
-        vaultClient.createUpdatePolicy(token, name, new VaultPolicyBody(policy));
+        vaultInternalSystemBackend.createUpdatePolicy(token, name, new VaultPolicyBody(policy));
     }
 
     @Override
     public void deletePolicy(String name) {
         String token = vaultAuthManager.getClientToken();
-        vaultClient.deletePolicy(token, name);
+        vaultInternalSystemBackend.deletePolicy(token, name);
     }
 
     @Override
     public List<String> getPolicies() {
         String token = vaultAuthManager.getClientToken();
-        return vaultClient.listPolicies(token).data.policies;
+        return vaultInternalSystemBackend.listPolicies(token).data.policies;
     }
 }

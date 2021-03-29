@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 
-import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;

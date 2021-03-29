@@ -31,8 +31,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("kubernetes-and-minikube-with-application.properties")
             .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-minikube", Version.getVersion())));
+                    Collections.singletonList(new AppArtifact("io.quarkus", "quarkus-minikube", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -54,7 +53,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
-        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
                     assertThat(m.getName()).isEqualTo("kubernetes-and-minikube-app");
@@ -64,7 +63,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(1);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
-                            assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                            assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImagePullPolicy()).isEqualTo("Always");
                             });
                         });
@@ -73,13 +72,14 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             });
         });
 
-        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("ClusterIP", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getNodePort()).isNull();
-                        assertThat(p.getPort()).isEqualTo(9090);
+                        assertThat(p.getPort()).isEqualTo(80);
+                        assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });
                 });
             });
@@ -90,7 +90,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("minikube.yml"));
 
-        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
                     assertThat(m.getName()).isEqualTo("kubernetes-and-minikube-app");
@@ -100,7 +100,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(1);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
-                            assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                            assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
                             });
                         });
@@ -109,13 +109,14 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             });
         });
 
-        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getNodePort()).isNotNull();
-                        assertThat(p.getPort()).isEqualTo(9090);
+                        assertThat(p.getPort()).isEqualTo(80);
+                        assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });
                 });
             });

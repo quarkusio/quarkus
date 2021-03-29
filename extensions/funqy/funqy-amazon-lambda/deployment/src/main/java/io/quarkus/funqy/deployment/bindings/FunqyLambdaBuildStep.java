@@ -10,8 +10,10 @@ import io.quarkus.amazon.lambda.deployment.LambdaObjectMapperInitializedBuildIte
 import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -24,6 +26,8 @@ import io.quarkus.runtime.LaunchMode;
 
 public class FunqyLambdaBuildStep {
 
+    public static final String FUNQY_AMAZON_LAMBDA = "funqy-amazon-lambda";
+
     public static final class RuntimeComplete extends SimpleBuildItem {
     }
 
@@ -31,11 +35,13 @@ public class FunqyLambdaBuildStep {
     @Record(STATIC_INIT)
     public void init(List<FunctionBuildItem> functions,
             FunqyLambdaBindingRecorder recorder,
+            BuildProducer<FeatureBuildItem> feature,
             Optional<FunctionInitializedBuildItem> hasFunctions,
             LambdaObjectMapperInitializedBuildItem mapperDependency,
             BeanContainerBuildItem beanContainer) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
+        feature.produce(new FeatureBuildItem(FUNQY_AMAZON_LAMBDA));
         recorder.init(beanContainer.getValue());
     }
 

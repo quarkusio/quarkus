@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Security with JPA
 
@@ -45,12 +45,13 @@ The solution is located in the `security-jpa-quickstart` {quickstarts-tree-url}/
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-jpa-quickstart \
-    -Dextensions="security-jpa, jdbc-postgresql, resteasy, hibernate-orm-panache"
+    -Dextensions="security-jpa,jdbc-postgresql,resteasy,hibernate-orm-panache" \
+    -DnoExamples
 cd security-jpa-quickstart
 ----
 
@@ -142,9 +143,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
 @Path("/api/users")
@@ -153,7 +152,6 @@ public class UserResource {
     @GET
     @RolesAllowed("user")
     @Path("/me")
-    @Produces(MediaType.APPLICATION_JSON)
     public String me(@Context SecurityContext securityContext) {
         return securityContext.getUserPrincipal().getName();
     }
@@ -210,7 +208,7 @@ The `security-jpa` extension is only initialized if there is a single entity ann
 
 <1> This annotation must be present on a single entity. It can be a regular Hibernate ORM entity or a Hibernate ORM with Panache entity as in this example.
 <2> This indicates the field used for the user name.
-<3> This indicates the field used for the password. This defaults to using bcrypt hashed passwords, but you can also configure it for clear text passwords.
+<3> This indicates the field used for the password. This defaults to using bcrypt hashed passwords, but you can also configure it for clear text passwords or custom passwords.
 <4> This indicates the comma-separated list of roles added to the target Principal representation attributes.
 <5> This method allows us to add users while hashing the password with the proper bcrypt hash.
 
@@ -229,7 +227,7 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
 In our context, we are using PostgreSQL as identity store. The database schema is created by Hibernate ORM automatically
-on startup (change this in production) and we initialise the database with users and roles in the `Startup` class:
+on startup (change this in production) and we initialize the database with users and roles in the `Startup` class:
 
 [source,java]
 ----
@@ -261,6 +259,11 @@ As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
 ====
 
 == Testing the Application
+
+[NOTE]
+====
+In the following tests we use the basic authentication mechanism, you can enable it by setting `quarkus.http.auth.basic=true` in the `application.properties` file.
+====
 
 The application is now protected and the identities are provided by our database.
 The very first thing to check is to ensure the anonymous access works.
@@ -302,6 +305,7 @@ By providing the `admin:admin` credentials, the extension authenticated the user
 The `admin` user is authorized to access to the protected resources.
 
 The user `admin` should be forbidden to access a resource protected with `@RolesAllowed("user")` because it doesn't have this role.
+
 [source,shell]
 ----
 $ curl -i -X GET -u admin:admin http://localhost:8080/api/users/me
@@ -313,9 +317,10 @@ Forbidden%
 ----
 
 Finally, using the user `user` works and the security context contains the principal details (username for instance).
+
 [source,shell]
 ----
-curl -i -X GET -u user:user http://localhost:8080/api/users/me
+$ curl -i -X GET -u user:user http://localhost:8080/api/users/me
 HTTP/1.1 200 OK
 Content-Length: 4
 Content-Type: text/plain;charset=UTF-8
@@ -371,8 +376,45 @@ When you need to create such a hashed password we provide the convenient `String
 function, which defaults to creating a random salt and hashing in 10 iterations (though you can specify the iterations and salt
 too).
 
-NOTE: with MCF you don't need dedicated columns to store the hashing algo, the iterations count or the salt because
+NOTE: with MCF you don't need dedicated columns to store the hashing algorithm, the iterations count or the salt because
 they're all stored in the hashed value.
+
+You also have the possibility to store password using different hashing algorithm `@Password(value = PasswordType.CUSTOM, provider = CustomPasswordProvider.class)`:
+
+[source,java]
+----
+@UserDefinition
+@Table(name = "test_user")
+@Entity
+public class CustomPasswordUserEntity {
+    @Id
+    @GeneratedValue
+    public Long id;
+
+    @Column(name = "username")
+    @Username
+    public String name;
+
+    @Column(name = "password")
+    @Password(value = PasswordType.CUSTOM, provider = CustomPasswordProvider.class)
+    public String pass;
+
+    @Roles
+    public String role;
+}
+
+public class CustomPasswordProvider implements PasswordProvider {
+    @Override
+    public Password getPassword(String pass) {
+        byte[] digest = DatatypeConverter.parseHexBinary(pass);
+        return SimpleDigestPassword.createRaw(SimpleDigestPassword.ALGORITHM_SIMPLE_DIGEST_SHA_256, digest);
+    }
+}
+----
 
 WARN: you can also store passwords in clear text with `@Password(PasswordType.CLEAR)` but we strongly recommend against
 it in production.
+
+== References
+
+* link:security[Quarkus Security]

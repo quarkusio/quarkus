@@ -5,7 +5,7 @@ import javax.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class SuffixService {
 
-    public String getSuffix() {
+    String getSuffix() {
         return "";
     }
 }

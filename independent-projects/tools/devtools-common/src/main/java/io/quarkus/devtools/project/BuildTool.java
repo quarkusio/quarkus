@@ -1,9 +1,10 @@
 package io.quarkus.devtools.project;
 
-import io.quarkus.devtools.project.buildfile.GenericGradleBuildFile;
+import io.quarkus.devtools.project.buildfile.GroovyGradleBuildFile;
+import io.quarkus.devtools.project.buildfile.KotlinGradleBuildFile;
 import io.quarkus.devtools.project.buildfile.MavenBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.nio.file.Path;
 
 /**
@@ -19,7 +20,12 @@ public enum BuildTool {
     /** Gradle build tool */
     GRADLE("\n# Gradle\n.gradle/\nbuild/",
             "build",
-            new String[] { "build.gradle", "settings.gradle", "gradle.properties" });
+            new String[] { "build.gradle", "settings.gradle", "gradle.properties" }),
+
+    /** Gradle build tool with Kotlin DSL */
+    GRADLE_KOTLIN_DSL("\n# Gradle\n.gradle/\nbuild/",
+            "build",
+            new String[] { "build.gradle.kts", "settings.gradle.kts", "gradle.properties" });
 
     private final String gitIgnoreEntries;
 
@@ -53,14 +59,20 @@ public enum BuildTool {
     }
 
     public ExtensionManager createExtensionManager(final Path projectDirPath,
-            final QuarkusPlatformDescriptor platformDescriptor) {
+            ExtensionCatalog catalog) {
         switch (this) {
             case GRADLE:
-                return new GenericGradleBuildFile();
+                return new GroovyGradleBuildFile();
+            case GRADLE_KOTLIN_DSL:
+                return new KotlinGradleBuildFile();
             case MAVEN:
             default:
-                return new MavenBuildFile(projectDirPath, platformDescriptor);
+                return new MavenBuildFile(projectDirPath, catalog);
         }
+    }
+
+    public String getKey() {
+        return toString().toLowerCase().replace("_", "-");
     }
 
     public static BuildTool resolveExistingProject(Path path) {
@@ -68,11 +80,11 @@ public enum BuildTool {
     }
 
     public static BuildTool findTool(String tool) {
-        if ("GRADLE".equalsIgnoreCase(tool))
-            return GRADLE;
-        else if ("MAVEN".equalsIgnoreCase(tool))
-            return MAVEN;
-        else
-            return null;
+        for (BuildTool value : BuildTool.values()) {
+            if (value.toString().equalsIgnoreCase(tool) || value.getKey().equalsIgnoreCase(tool)) {
+                return value;
+            }
+        }
+        return null;
     }
 }

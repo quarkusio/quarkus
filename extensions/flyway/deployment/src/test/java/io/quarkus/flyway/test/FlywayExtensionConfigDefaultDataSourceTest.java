@@ -25,6 +25,7 @@ public class FlywayExtensionConfigDefaultDataSourceTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(FlywayExtensionConfigFixture.class)
+                    .addClasses(FlywayExtensionCallback.class, FlywayExtensionCallback2.class)
                     .addAsResource("config-for-default-datasource.properties", "application.properties"));
 
     @Test

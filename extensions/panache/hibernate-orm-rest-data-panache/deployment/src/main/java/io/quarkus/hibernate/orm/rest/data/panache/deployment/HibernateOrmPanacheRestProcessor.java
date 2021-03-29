@@ -10,15 +10,22 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.rest.data.panache.PanacheEntityResource;
 import io.quarkus.hibernate.orm.rest.data.panache.PanacheRepositoryResource;
+import io.quarkus.hibernate.orm.rest.data.panache.runtime.RestDataPanacheExceptionMapper;
+import io.quarkus.hibernate.orm.rest.data.panache.runtime.jta.TransactionalUpdateExecutor;
+import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
-import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 
 class HibernateOrmPanacheRestProcessor {
 
@@ -34,33 +41,71 @@ class HibernateOrmPanacheRestProcessor {
     }
 
     @BuildStep
-    void findEntityResources(CombinedIndexBuildItem index, BuildProducer<RestDataResourceBuildItem> resourcesProducer) {
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
-            List<Type> generics = getGenericTypes(classInfo);
-            String entityClassName = generics.get(0).toString();
-            String idClassName = generics.get(1).toString();
-            RestDataResourceInfo resourceInfo = HibernateOrmRestDataResourceInfo
-                    .withEntityAccess(classInfo, idClassName, entityClassName);
-            resourcesProducer.produce(new RestDataResourceBuildItem(resourceInfo));
-        }
+    ResteasyJaxrsProviderBuildItem registerRestDataPanacheExceptionMapper() {
+        return new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName());
     }
 
     @BuildStep
+    AdditionalBeanBuildItem registerTransactionalExecutor() {
+        return AdditionalBeanBuildItem.unremovableOf(TransactionalUpdateExecutor.class);
+    }
+
+    /**
+     * Find Panache entity resources and generate their implementations.
+     */
+    @BuildStep
+    void findEntityResources(CombinedIndexBuildItem index,
+            BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
+            BuildProducer<RestDataResourceBuildItem> restDataResourceProducer) {
+        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getIndex()));
+        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
+
+        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
+            validateResource(index.getIndex(), classInfo);
+
+            List<Type> generics = getGenericTypes(classInfo);
+            String resourceInterface = classInfo.name().toString();
+            String entityType = generics.get(0).name().toString();
+            String idType = generics.get(1).name().toString();
+
+            DataAccessImplementor dataAccessImplementor = new EntityDataAccessImplementor(entityType);
+            String resourceClass = resourceImplementor.implement(
+                    classOutput, dataAccessImplementor, resourceInterface, entityType);
+
+            restDataResourceProducer.produce(new RestDataResourceBuildItem(
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
+        }
+    }
+
+    /**
+     * Find Panache repository resources and generate their implementations.
+     */
+    @BuildStep
     void findRepositoryResources(CombinedIndexBuildItem index,
-            BuildProducer<RestDataResourceBuildItem> resourcesProducer,
+            BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
+            BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer) {
+        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getIndex()));
+        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
+
         for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_REPOSITORY_RESOURCE_INTERFACE)) {
             validateResource(index.getIndex(), classInfo);
+
             List<Type> generics = getGenericTypes(classInfo);
-            String repositoryClassName = generics.get(0).toString();
-            String entityClassName = generics.get(1).toString();
-            String idClassName = generics.get(2).toString();
-            RestDataResourceInfo resourceInfo = HibernateOrmRestDataResourceInfo
-                    .withRepositoryAccess(classInfo, idClassName, entityClassName, repositoryClassName);
-            resourcesProducer.produce(new RestDataResourceBuildItem(resourceInfo));
-            unremovableBeansProducer.produce(
-                    new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
+            String resourceInterface = classInfo.name().toString();
+            String repositoryClassName = generics.get(0).name().toString();
+            String entityType = generics.get(1).name().toString();
+            String idType = generics.get(2).name().toString();
+
+            DataAccessImplementor dataAccessImplementor = new RepositoryDataAccessImplementor(repositoryClassName);
+            String resourceClass = resourceImplementor.implement(
+                    classOutput, dataAccessImplementor, resourceInterface, entityType);
+            // Make sure that repository bean is not removed and will be injected to the generated resource
+            unremovableBeansProducer.produce(new UnremovableBeanBuildItem(
+                    new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
+
+            restDataResourceProducer.produce(new RestDataResourceBuildItem(
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
         }
     }
 

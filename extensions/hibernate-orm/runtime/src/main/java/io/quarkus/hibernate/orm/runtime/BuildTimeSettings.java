@@ -29,4 +29,8 @@ public class BuildTimeSettings {
         return settings;
     }
 
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + " {" + settings.toString() + "}";
+    }
 }

@@ -4,9 +4,11 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableBean.Kind;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.impl.ClientProxies;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.FixedValueSupplier;
 import io.quarkus.arc.impl.InjectableReferenceProviders;
@@ -14,7 +16,9 @@ import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptorInvocation;
 import io.quarkus.arc.impl.InvocationContexts;
 import io.quarkus.arc.impl.MapValueSupplier;
+import io.quarkus.arc.impl.Objects;
 import io.quarkus.arc.impl.Reflections;
+import io.quarkus.arc.impl.RemovedBeanImpl;
 import io.quarkus.gizmo.MethodDescriptor;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -75,9 +79,32 @@ public final class MethodDescriptors {
     public static final MethodDescriptor OBJECT_EQUALS = MethodDescriptor.ofMethod(Object.class, "equals", boolean.class,
             Object.class);
 
+    /**
+     * No longer used - will be deleted
+     * 
+     * @deprecated
+     */
+    @Deprecated
+    public static final MethodDescriptor OBJECT_HASH_CODE = MethodDescriptor.ofMethod(Object.class, "hashCode", int.class);
+
+    /**
+     * No longer used - will be deleted
+     * 
+     * @deprecated
+     */
+    @Deprecated
     public static final MethodDescriptor OBJECT_TO_STRING = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
 
     public static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
+
+    /**
+     * No longer used - will be deleted
+     * 
+     * @deprecated
+     */
+    @Deprecated
+    public static final MethodDescriptor OBJECTS_REFERENCE_EQUALS = MethodDescriptor.ofMethod(Objects.class, "referenceEquals",
+            boolean.class, Object.class, Object.class);
 
     public static final MethodDescriptor INTERCEPTOR_INVOCATION_POST_CONSTRUCT = MethodDescriptor.ofMethod(
             InterceptorInvocation.class,
@@ -230,6 +257,15 @@ public final class MethodDescriptors {
     public static final MethodDescriptor CL_FOR_NAME = MethodDescriptor.ofMethod(Class.class, "forName", Class.class,
             String.class,
             boolean.class, ClassLoader.class);
+
+    public static final MethodDescriptor REMOVED_BEAN_IMPL = MethodDescriptor.ofConstructor(RemovedBeanImpl.class, Kind.class,
+            String.class, Set.class, Set.class);
+
+    public static final MethodDescriptor CLIENT_PROXIES_GET_APP_SCOPED_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
+            "getApplicationScopedDelegate", Object.class, InjectableContext.class, InjectableBean.class);
+
+    public static final MethodDescriptor CLIENT_PROXIES_GET_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
+            "getDelegate", Object.class, InjectableBean.class);
 
     private MethodDescriptors() {
     }

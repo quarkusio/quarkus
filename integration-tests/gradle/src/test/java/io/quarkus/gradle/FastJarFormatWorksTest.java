@@ -39,7 +39,8 @@ public class FastJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/hello", 200));
+                        .atMost(1, TimeUnit.MINUTES)
+                        .until(() -> DevModeTestUtils.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 

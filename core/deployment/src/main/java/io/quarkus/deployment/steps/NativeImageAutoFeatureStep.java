@@ -2,26 +2,17 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
@@ -35,14 +26,16 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -57,49 +50,34 @@ public class NativeImageAutoFeatureStep {
     private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
-    private static final MethodDescriptor INITIALIZE_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
+    private static final MethodDescriptor INITIALIZE_CLASSES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class[].class);
+    private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
+            "initializeAtRunTime", void.class, String[].class);
     private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
             "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
             "rerunInitialization", void.class, Class.class, String.class);
+    private static final MethodDescriptor RESOURCES_REGISTRY_ADD_RESOURCES = ofMethod(
+            "com.oracle.svm.core.configure.ResourcesRegistry",
+            "addResources", void.class, String.class);
+    private static final MethodDescriptor RESOURCES_REGISTRY_IGNORE_RESOURCES = ofMethod(
+            "com.oracle.svm.core.configure.ResourcesRegistry",
+            "ignoreResources", void.class, String.class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
-    static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
-
-    @BuildStep
-    List<NativeImageResourceBuildItem> registerPackageResources(
-            List<NativeImageResourceDirectoryBuildItem> nativeImageResourceDirectories)
-            throws IOException, URISyntaxException {
-        List<NativeImageResourceBuildItem> resources = new ArrayList<>();
-
-        for (NativeImageResourceDirectoryBuildItem nativeImageResourceDirectory : nativeImageResourceDirectories) {
-            String path = Thread.currentThread().getContextClassLoader().getResource(nativeImageResourceDirectory.getPath())
-                    .getPath();
-            File resourceFile = Paths.get(new URL(path.substring(0, path.indexOf("!"))).toURI()).toFile();
-            try (JarFile jarFile = new JarFile(resourceFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    String resourceName = entry.getName();
-                    if (!entry.isDirectory() && resourceName.startsWith(nativeImageResourceDirectory.getPath())
-                            && !resourceName.endsWith(".class")) {
-                        resources.add(new NativeImageResourceBuildItem(resourceName));
-                    }
-                }
-            }
-        }
-
-        return resources;
-    }
+    static final String LEGACY_LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
+    static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
 
     @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
+            List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
             List<NativeImageProxyDefinitionBuildItem> proxies,
             List<NativeImageResourceBuildItem> resources,
+            List<NativeImageResourcePatternsBuildItem> resourcePatterns,
             List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<ReflectiveFieldBuildItem> reflectiveFields,
@@ -152,7 +130,20 @@ public class NativeImageAutoFeatureStep {
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
             }
-            overallCatch.invokeStaticMethod(INITIALIZE_AT_RUN_TIME, classes);
+            overallCatch.invokeStaticMethod(INITIALIZE_CLASSES_AT_RUN_TIME, classes);
+        }
+
+        if (!runtimeInitializedPackageBuildItems.isEmpty()) {
+            ResultHandle packages = overallCatch.newArray(String.class,
+                    overallCatch.load(runtimeInitializedPackageBuildItems.size()));
+            for (int i = 0; i < runtimeInitializedPackageBuildItems.size(); i++) {
+                TryBlock tc = overallCatch.tryBlock();
+                ResultHandle pkg = tc.load(runtimeInitializedPackageBuildItems.get(i).getPackageName());
+                tc.writeArrayValue(packages, i, pkg);
+                CatchBlockCreator cc = tc.addCatch(Throwable.class);
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+            }
+            overallCatch.invokeStaticMethod(INITIALIZE_PACKAGES_AT_RUN_TIME, packages);
         }
 
         // hack in reinitialization of process info classes
@@ -201,18 +192,55 @@ public class NativeImageAutoFeatureStep {
             }
         }
 
+        /* Resource includes and excludes */
+        if (!resourcePatterns.isEmpty()) {
+            ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                    overallCatch.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"));
+            TryBlock tc = overallCatch.tryBlock();
+            for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {
+                for (String pattern : resourcePatternsItem.getExcludePatterns()) {
+                    tc.invokeInterfaceMethod(RESOURCES_REGISTRY_IGNORE_RESOURCES, resourcesRegistrySingleton,
+                            overallCatch.load(pattern));
+                }
+                for (String pattern : resourcePatternsItem.getIncludePatterns()) {
+                    tc.invokeInterfaceMethod(
+                            RESOURCES_REGISTRY_ADD_RESOURCES,
+                            resourcesRegistrySingleton,
+                            tc.load(pattern));
+                }
+            }
+            CatchBlockCreator cc = tc.addCatch(Throwable.class);
+            cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+        }
+
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
             overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
                     overallCatch.load(i.serviceDescriptorFile()));
         }
 
         if (!resourceBundles.isEmpty()) {
-            ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_FEATURE);
+            AssignableResultHandle registerMethod = overallCatch.createVariable(Method.class);
+            AssignableResultHandle locClass = overallCatch.createVariable(Class.class);
+            TryBlock locTryBlock = overallCatch.tryBlock();
+            ResultHandle legacyLocClass = locTryBlock.loadClass(LEGACY_LOCALIZATION_FEATURE);
+            locTryBlock.assign(locClass, legacyLocClass);
 
-            ResultHandle params = overallCatch.marshalAsArray(Class.class, overallCatch.loadClass(String.class));
-            ResultHandle registerMethod = overallCatch.invokeVirtualMethod(
-                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass,
-                    overallCatch.load("addBundleToCache"), params);
+            ResultHandle legacyParams = locTryBlock.marshalAsArray(Class.class, locTryBlock.loadClass(String.class));
+            ResultHandle legacyRegisterMethod = locTryBlock.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), legacyLocClass,
+                    locTryBlock.load("addBundleToCache"), legacyParams);
+            locTryBlock.assign(registerMethod, legacyRegisterMethod);
+
+            CatchBlockCreator locCatchBlock = locTryBlock.addCatch(NoClassDefFoundError.class);
+            ResultHandle newLocClass = locCatchBlock.loadClass(LOCALIZATION_FEATURE);
+            locCatchBlock.assign(locClass, newLocClass);
+
+            ResultHandle newParams = locCatchBlock.marshalAsArray(Class.class, locCatchBlock.loadClass(String.class));
+            ResultHandle newRegisterMethod = locCatchBlock.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), newLocClass,
+                    locCatchBlock.load("prepareBundle"), newParams);
+            locCatchBlock.assign(registerMethod, newRegisterMethod);
+
             overallCatch.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class),
                     registerMethod, overallCatch.load(true));
 

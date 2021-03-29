@@ -13,6 +13,7 @@ public enum Capability {
      * JSR 365 compatible contexts and dependency injection
      */
     CDI,
+    CONFIG_YAML,
     /**
      * Java Servlet API
      */
@@ -28,9 +29,13 @@ public enum Capability {
     RESTEASY,
     RESTEASY_JSON,
     RESTEASY_MUTINY,
+    RESTEASY_REACTIVE,
+    RESTEASY_JACKSON,
+    RESTEASY_JSONB,
     JWT,
     TIKA,
     MONGODB_PANACHE,
+    MONGODB_PANACHE_KOTLIN,
     FLYWAY,
     LIQUIBASE,
     SECURITY,
@@ -39,17 +44,35 @@ public enum Capability {
     SECURITY_ELYTRON_LDAP,
     SECURITY_JPA,
     QUARTZ,
+    KUBERNETES_SERVICE_BINDING,
+    /**
+     * @deprecated
+     * @see io.quarkus.deployment.metrics.MetricsCapabilityBuildItem
+     */
     METRICS,
     CONTAINER_IMAGE_JIB,
     CONTAINER_IMAGE_DOCKER,
     CONTAINER_IMAGE_S2I,
+    CONTAINER_IMAGE_OPENSHIFT,
     HIBERNATE_ORM,
+    HIBERNATE_ENVERS,
     HIBERNATE_REACTIVE,
+    HIBERNATE_VALIDATOR,
+    OPENTELEMETRY_TRACER,
+    /**
+     * Presence of an io.opentracing tracer (for example, Jaeger).
+     */
+    OPENTRACING,
+    /**
+     * Presence of SmallRye OpenTracing.
+     */
     SMALLRYE_OPENTRACING,
-    SPRING_WEB;
+    SPRING_WEB,
+    SMALLRYE_OPENAPI,
+    OPENSHIFT_CLIENT;
 
     /**
-     * 
+     *
      * @return the name
      */
     public String getName() {

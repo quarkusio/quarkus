@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
@@ -213,7 +214,7 @@ class SpringDIProcessorTest {
                 throw new IllegalStateException("Failed to index: " + className, e);
             }
         }
-        return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), new BeanArchives.PersistentClassIndex(),
+        return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), new ConcurrentHashMap<>(),
                 indexer.complete());
     }
 

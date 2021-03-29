@@ -23,18 +23,15 @@ public final class ConfigDiagnostic {
 
     public static void invalidValue(String name, IllegalArgumentException ex) {
         final String message = ex.getMessage();
-        final String loggedMessage = String.format("An invalid value was given for configuration key \"%s\": %s", name,
-                message == null ? ex.toString() : message);
-        log.error(loggedMessage);
+        final String loggedMessage = message != null ? message
+                : String.format("An invalid value was given for configuration key \"%s\"", name);
         errorsMessages.add(loggedMessage);
     }
 
     public static void missingValue(String name, NoSuchElementException ex) {
         final String message = ex.getMessage();
-        final String loggedMessage = String.format("Configuration key \"%s\" is required, but its value is empty/missing: %s",
-                name,
-                message == null ? ex.toString() : message);
-        log.error(loggedMessage);
+        final String loggedMessage = message != null ? message
+                : String.format("Configuration key \"%s\" is required, but its value is empty/missing", name);
         errorsMessages.add(loggedMessage);
     }
 
@@ -49,7 +46,7 @@ public final class ConfigDiagnostic {
 
     public static void unknown(String name) {
         log.warnf(
-                "Unrecognized configuration key \"%s\" was provided; it will be ignored; verify that the dependency extension for this configuration is set or you did not make a typo",
+                "Unrecognized configuration key \"%s\" was provided; it will be ignored; verify that the dependency extension for this configuration is set or that you did not make a typo",
                 name);
     }
 
@@ -87,6 +84,12 @@ public final class ConfigDiagnostic {
     }
 
     public static String getNiceErrorMessage() {
-        return String.join("\n", errorsMessages);
+        StringBuilder b = new StringBuilder();
+        for (String errorsMessage : errorsMessages) {
+            b.append("  - ");
+            b.append(errorsMessage);
+            b.append(System.lineSeparator());
+        }
+        return b.toString();
     }
 }

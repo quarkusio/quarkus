@@ -16,5 +16,7 @@ public class GreetingTest {
         when().get("/servlet/hello").then().statusCode(200);
 
         when().get("/vertx/hello").then().statusCode(200);
+
+        when().get("/funqy").then().statusCode(200);
     }
 }

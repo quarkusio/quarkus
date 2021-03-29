@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -21,6 +22,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
@@ -40,6 +42,8 @@ final class Methods {
     public static final String CLINIT = "<clinit>";
     // copied from java.lang.reflect.Modifier.SYNTHETIC
     static final int SYNTHETIC = 0x00001000;
+    // copied from java.lang.reflect.Modifier.BRIDGE
+    static final int BRIDGE = 0x00000040;
     public static final String TO_STRING = "toString";
 
     private static final List<String> IGNORED_METHODS = initIgnoredMethods();
@@ -56,6 +60,10 @@ final class Methods {
 
     static boolean isSynthetic(MethodInfo method) {
         return (method.flags() & SYNTHETIC) != 0;
+    }
+
+    static boolean isBridge(MethodInfo method) {
+        return (method.flags() & BRIDGE) != 0;
     }
 
     static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<MethodKey, MethodInfo> methods,
@@ -134,23 +142,38 @@ final class Methods {
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses) {
+        return addInterceptedMethodCandidates(beanDeployment, classInfo, candidates, classLevelBindings,
+                bytecodeTransformerConsumer, transformUnproxyableClasses,
+                new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom), false);
+    }
+
+    static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
+            Map<MethodKey, Set<AnnotationInstance>> candidates,
+            List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            boolean transformUnproxyableClasses, SubclassSkipPredicate skipPredicate, boolean ignoreMethodLevelBindings) {
 
         Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
         Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
+        skipPredicate.startProcessing(classInfo);
+
         for (MethodInfo method : classInfo.methods()) {
-            if (skipForSubclass(method)) {
+            if (skipPredicate.test(method)) {
                 continue;
             }
-            Collection<AnnotationInstance> methodAnnnotations = beanDeployment.getAnnotations(method);
-            List<AnnotationInstance> methodLevelBindings = methodAnnnotations.stream()
-                    .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null)
-                    .collect(Collectors.toList());
             Set<AnnotationInstance> merged = new HashSet<>();
-            merged.addAll(methodLevelBindings);
-            for (AnnotationInstance classLevelBinding : classLevelBindings) {
-                if (methodLevelBindings.isEmpty()
-                        || methodLevelBindings.stream().noneMatch(a -> classLevelBinding.name().equals(a.name()))) {
-                    merged.add(classLevelBinding);
+            if (ignoreMethodLevelBindings) {
+                merged.addAll(classLevelBindings);
+            } else {
+                Collection<AnnotationInstance> methodAnnnotations = beanDeployment.getAnnotations(method);
+                List<AnnotationInstance> methodLevelBindings = methodAnnnotations.stream()
+                        .flatMap(a -> beanDeployment.extractInterceptorBindings(a).stream())
+                        .collect(Collectors.toList());
+                merged.addAll(methodLevelBindings);
+                for (AnnotationInstance classLevelBinding : classLevelBindings) {
+                    if (methodLevelBindings.isEmpty()
+                            || methodLevelBindings.stream().noneMatch(a -> classLevelBinding.name().equals(a.name()))) {
+                        merged.add(classLevelBinding);
+                    }
                 }
             }
             if (!merged.isEmpty()) {
@@ -168,24 +191,31 @@ final class Methods {
                 }
             }
         }
+        skipPredicate.methodsProcessed();
+
         if (!methodsFromWhichToRemoveFinal.isEmpty()) {
             bytecodeTransformerConsumer.accept(
                     new BytecodeTransformer(classInfo.name().toString(),
                             new RemoveFinalFromMethod(classInfo.name().toString(), methodsFromWhichToRemoveFinal)));
         }
-        if (classInfo.superClassType() != null) {
-            ClassInfo superClassInfo = getClassByName(beanDeployment.getIndex(), classInfo.superName());
+
+        if (!classInfo.superName().equals(DotNames.OBJECT)) {
+            ClassInfo superClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClassInfo != null) {
-                finalMethodsFoundAndNotChanged.addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates,
-                        classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses));
+                finalMethodsFoundAndNotChanged
+                        .addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates,
+                                classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses, skipPredicate,
+                                ignoreMethodLevelBindings));
             }
         }
+
         for (DotName i : classInfo.interfaceNames()) {
-            ClassInfo interfaceInfo = getClassByName(beanDeployment.getIndex(), i);
+            ClassInfo interfaceInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), i);
             if (interfaceInfo != null) {
                 //interfaces can't have final methods
                 addInterceptedMethodCandidates(beanDeployment, interfaceInfo, candidates,
-                        classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses);
+                        classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses,
+                        skipPredicate, true);
             }
         }
         return finalMethodsFoundAndNotChanged;
@@ -226,20 +256,6 @@ final class Methods {
         public int hashCode() {
             return Objects.hash(name, descriptor);
         }
-    }
-
-    private static boolean skipForSubclass(MethodInfo method) {
-        if (Modifier.isStatic(method.flags())) {
-            return true;
-        }
-        if (IGNORED_METHODS.contains(method.name())) {
-            return true;
-        }
-        if (method.declaringClass().name().equals(DotNames.OBJECT)) {
-            return true;
-        }
-        // We intentionally do not skip final methods here - these are handled later
-        return false;
     }
 
     static class MethodKey {
@@ -296,6 +312,10 @@ final class Methods {
             }
         }
         return false;
+    }
+
+    static boolean isOverriden(Methods.MethodKey method, Collection<Methods.MethodKey> previousMethods) {
+        return previousMethods.contains(method);
     }
 
     static boolean matchesSignature(MethodInfo method, MethodInfo subclassMethod) {
@@ -366,6 +386,157 @@ final class Methods {
                     return super.visitMethod(access, name, descriptor, signature, exceptions);
                 }
             };
+        }
+    }
+
+    /**
+     * This stateful predicate can be used to skip methods that should not be added to the generated subclass.
+     * <p>
+     * Don't forget to call {@link SubclassSkipPredicate#startProcessing(ClassInfo)} before the methods are processed and
+     * {@link SubclassSkipPredicate#methodsProcessed()} afterwards.
+     */
+    static class SubclassSkipPredicate implements Predicate<MethodInfo> {
+
+        private final BiFunction<Type, Type, Boolean> assignableFromFun;
+        private ClassInfo clazz;
+        private List<MethodInfo> regularMethods;
+        private Set<MethodInfo> bridgeMethods = new HashSet<>();
+
+        public SubclassSkipPredicate(BiFunction<Type, Type, Boolean> assignableFromFun) {
+            this.assignableFromFun = assignableFromFun;
+        }
+
+        void startProcessing(ClassInfo clazz) {
+            this.clazz = clazz;
+            this.regularMethods = new ArrayList<>();
+            for (MethodInfo method : clazz.methods()) {
+                if (!Modifier.isAbstract(method.flags()) && !method.isSynthetic() && !isBridge(method)) {
+                    regularMethods.add(method);
+                }
+            }
+        }
+
+        void methodsProcessed() {
+            for (MethodInfo method : clazz.methods()) {
+                if (isBridge(method)) {
+                    bridgeMethods.add(method);
+                }
+            }
+        }
+
+        @Override
+        public boolean test(MethodInfo method) {
+            if (isBridge(method)) {
+                // Skip bridge methods that have a corresponding "implementation method" on the same class
+                // The algorithm we use to detect these methods is best effort, i.e. there might be use cases where the detection fails
+                return hasImplementation(method);
+            }
+            if (isOverridenByBridgeMethod(method)) {
+                return true;
+            }
+            if (Modifier.isStatic(method.flags())) {
+                return true;
+            }
+            if (IGNORED_METHODS.contains(method.name())) {
+                return true;
+            }
+            if (method.declaringClass().name().equals(DotNames.OBJECT)) {
+                return true;
+            }
+            if (Modifier.isInterface(clazz.flags()) && Modifier.isInterface(method.declaringClass().flags())
+                    && Modifier.isPublic(method.flags())
+                    && !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags())) {
+                // Do not skip default methods - public non-abstract instance methods declared in an interface
+                return false;
+            }
+            // Note that we intentionally do not skip final methods here - these are handled later
+            return false;
+        }
+
+        private boolean hasImplementation(MethodInfo bridge) {
+            for (MethodInfo declaredMethod : regularMethods) {
+                if (bridge.name().equals(declaredMethod.name())) {
+                    List<Type> params = declaredMethod.parameters();
+                    List<Type> bridgeParams = bridge.parameters();
+                    if (params.size() != bridgeParams.size()) {
+                        continue;
+                    }
+                    boolean paramsNotMatching = false;
+                    for (int i = 0; i < bridgeParams.size(); i++) {
+                        Type bridgeParam = bridgeParams.get(i);
+                        Type param = params.get(i);
+                        if (assignableFromFun.apply(bridgeParam, param)) {
+                            continue;
+                        } else {
+                            paramsNotMatching = true;
+                            break;
+                        }
+                    }
+                    if (paramsNotMatching) {
+                        continue;
+                    }
+                    if (!Modifier.isInterface(clazz.flags())) {
+                        if (bridge.returnType().name().equals(DotNames.OBJECT) || Modifier.isAbstract(declaredMethod.flags())) {
+                            // bridge method with matching signature has Object as return type
+                            // or the method we compare against is abstract meaning the bridge overrides it
+                            // both cases are a match
+                            return true;
+                        } else {
+                            // as a last resort, we simply check assignability of the return type
+                            return assignableFromFun.apply(bridge.returnType(), declaredMethod.returnType());
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean isOverridenByBridgeMethod(MethodInfo method) {
+            for (MethodInfo bridge : bridgeMethods) {
+                if (method.name().equals(bridge.name()) && parametersMatch(method, bridge)) {
+                    if (Modifier.isInterface(clazz.flags())) {
+                        // For interfaces we do not consider return types when going through processed bridge methods
+                        return true;
+                    } else {
+                        // Test return type
+                        if (bridge.returnType().name().equals(DotNames.OBJECT) || Modifier.isAbstract(method.flags())) {
+                            // bridge method with matching signature has Object as return type
+                            // or the method we compare against is abstract meaning the bridge overrides it
+                            // both cases are a match
+                            return true;
+                        } else {
+                            if (bridge.returnType().kind() == Kind.CLASS
+                                    && method.returnType().kind() == Kind.TYPE_VARIABLE) {
+                                // in this case we have encountered a bridge method with specific return type in subclass
+                                // and we are observing a TypeVariable return type in superclass, this is a match
+                                return true;
+                            } else {
+                                // as a last resort, we simply check equality of return Type
+                                return bridge.returnType().equals(method.returnType());
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private boolean parametersMatch(MethodInfo method, MethodInfo bridge) {
+            List<Type> params = method.parameters();
+            List<Type> bridgeParams = bridge.parameters();
+            if (bridgeParams.size() != params.size()) {
+                return false;
+            }
+            for (int i = 0; i < params.size(); i++) {
+                Type param = params.get(i);
+                Type bridgeParam = bridgeParams.get(i);
+                // Compare the raw type names
+                if (!bridgeParam.name().equals(param.name())) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 

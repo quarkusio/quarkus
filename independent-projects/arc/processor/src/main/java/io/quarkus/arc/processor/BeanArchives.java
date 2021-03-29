@@ -16,8 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
@@ -46,7 +44,8 @@ public final class BeanArchives {
      * @param applicationIndexes
      * @return the final bean archive index
      */
-    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader, PersistentClassIndex persistentClassIndex,
+    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader,
+            Map<DotName, Optional<ClassInfo>> persistentClassIndex,
             IndexView... applicationIndexes) {
         List<IndexView> indexes = new ArrayList<>();
         Collections.addAll(indexes, applicationIndexes);
@@ -83,25 +82,16 @@ public final class BeanArchives {
         private final ClassLoader deploymentClassLoader;
         final Map<DotName, Optional<ClassInfo>> additionalClasses;
 
-        public IndexWrapper(IndexView index, ClassLoader deploymentClassLoader, PersistentClassIndex persistentClassIndex) {
+        public IndexWrapper(IndexView index, ClassLoader deploymentClassLoader,
+                Map<DotName, Optional<ClassInfo>> additionalClasses) {
             this.index = index;
             this.deploymentClassLoader = deploymentClassLoader;
-            this.additionalClasses = persistentClassIndex.additionalClasses;
+            this.additionalClasses = additionalClasses;
         }
 
         @Override
         public Collection<ClassInfo> getKnownClasses() {
-            if (additionalClasses.isEmpty()) {
-                return index.getKnownClasses();
-            }
-            Collection<ClassInfo> known = index.getKnownClasses();
-            Collection<ClassInfo> additional = additionalClasses.values().stream().filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
-            List<ClassInfo> all = new ArrayList<>(known.size() + additional.size());
-            all.addAll(known);
-            all.addAll(additional);
-            return all;
+            return index.getKnownClasses();
         }
 
         @Override
@@ -254,6 +244,9 @@ public final class BeanArchives {
 
     static boolean index(Indexer indexer, String className, ClassLoader classLoader) {
         boolean result = false;
+        if (Types.isPrimitiveClassName(className)) {
+            return false;
+        }
         try (InputStream stream = classLoader
                 .getResourceAsStream(className.replace('.', '/') + ".class")) {
             if (stream != null) {
@@ -267,10 +260,4 @@ public final class BeanArchives {
         }
         return result;
     }
-
-    public static class PersistentClassIndex {
-
-        final Map<DotName, Optional<ClassInfo>> additionalClasses = new ConcurrentHashMap<>();
-    }
-
 }

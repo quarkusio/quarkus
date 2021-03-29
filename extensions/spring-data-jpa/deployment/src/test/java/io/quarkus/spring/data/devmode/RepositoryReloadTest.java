@@ -16,7 +16,7 @@ public class RepositoryReloadTest {
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("import_books.sql", "import.sql")
                     .addClasses(Book.class, BookRepository.class, BookResource.class));
 
     @Test

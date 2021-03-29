@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ public class PomReposMirroredTest extends BootstrapMavenContextTestBase {
     @Test
     public void basicPomRepos() throws Exception {
         final BootstrapMavenContext mvn = bootstrapMavenContextWithSettings("custom-settings/pom-repos-mirrored");
+        Files.createDirectories(mvn.getCurrentProjectBaseDir().resolve("target"));
 
         final List<RemoteRepository> repos = mvn.getRemoteRepositories();
         assertEquals(1, repos.size());

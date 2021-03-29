@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Measuring Performance
 
@@ -60,15 +60,15 @@ Linux::
  The linux https://linux.die.net/man/1/pmap[pmap] and https://linux.die.net/man/1/ps[ps] tools provide a report on the native memory map for a process
 
 [source,shell]
---
+----
  $ ps -o pid,rss,command -p <pid>
 
    PID   RSS COMMAND
- 11229 12628 ./target/getting-started-1.0-SNAPSHOT-runner
---
+ 11229 12628 ./target/getting-started-1.0.0-SNAPSHOT-runner
+----
 
 [source,shell]
---
+----
  $ pmap -x <pid>
 
  13150:   /data/quarkus-application -Xmx100m -Xmn70m
@@ -84,7 +84,7 @@ Linux::
  ...
  ---------------- ------- ------- -------
  total kB         9726508  256092  220900
---
+----
 
 Each Memory region that has been allocated for the process is listed;
 
@@ -101,12 +101,12 @@ macOS::
 On macOS, you can use `ps x -o pid,rss,command -p <PID>` which list the RSS for a given process in KB (1024 bytes).
 
 [source,shell]
---
+----
 $ ps x -o pid,rss,command -p 57160
 
   PID    RSS COMMAND
 57160 288548 /Applications/IntelliJ IDEA CE.app/Contents/jdk/Contents/Home/jre/bin/java
---
+----
 
 Which means IntelliJ IDEA consumes 281,8 MB of resident memory.
 
@@ -121,7 +121,7 @@ Here is how we measure startup time in our tests.
 We create a sample application that logs timestamps for certain points in the application lifecycle.
 
 [source, java]
---
+----
 @Path("/")
 public class GreetingEndpoint {
 
@@ -129,7 +129,7 @@ public class GreetingEndpoint {
 
     @GET
     @Path("/greeting")
-    @Produces("application/json")
+    @Produces(MediaType.APPLICATION_JSON)
     public Greeting greeting(@QueryParam("name") String name) {
         System.out.println(new SimpleDateFormat("HH:mm:ss.SSS").format(new java.util.Date(System.currentTimeMillis())));
         String suffix = name != null ? name : "World";
@@ -140,27 +140,27 @@ public class GreetingEndpoint {
         System.out.println(new SimpleDateFormat("HH:mm:ss.SSS").format(new Date()));
     }
 }
---
+----
 
 We start looping in a shell, sending requests to the rest endpoint of the sample application we are testing.
 
-[source, shell]
---
+[source,shell]
+----
 $ while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/api/greeting)" != "200" ]]; do sleep .00001; done
---
+----
 
 In a separate terminal, we start the timing application that we are testing, printing the time the application starts
 
-[source, shell]
---
+[source,shell]
+----
 $ date +"%T.%3N" &&  ./target/quarkus-timing-runner
 
 10:57:32.508
 10:57:32.512
 2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.002s. Listening on: http://127.0.0.1:8080
-2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb]
+2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson]
 10:57:32.537
---
+----
 
 The difference between the final timestamp and the first timestamp is the total startup time for the application to serve the first request.
 

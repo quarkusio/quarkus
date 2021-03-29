@@ -45,9 +45,9 @@ public class KubernetesWithEnvFromFieldTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getEnv()).filteredOn(env -> "MY_NAME".equals(env.getName()))
-                                    .hasOnlyOneElementSatisfying(env -> {
+                                    .singleElement().satisfies(env -> {
                                         assertThat(env.getValueFrom()).satisfies(valueFrom -> {
                                             assertThat(valueFrom.getFieldRef().getFieldPath()).isEqualTo("metadata.name");
                                         });

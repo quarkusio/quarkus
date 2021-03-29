@@ -59,7 +59,7 @@ public abstract class AbstractJpaIdentityProvider {
     }
 
     protected Password getClearPassword(String pass) {
-        return ClearPassword.createRaw("clear", pass.toCharArray());
+        return ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, pass.toCharArray());
     }
 
     protected Password getMcfPassword(String pass) {

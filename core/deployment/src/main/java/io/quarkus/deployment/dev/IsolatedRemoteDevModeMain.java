@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -38,6 +39,7 @@ import io.quarkus.deployment.dev.remote.RemoteDevClientProvider;
 import io.quarkus.deployment.mutability.DevModeTask;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.dev.spi.RemoteDevState;
@@ -56,7 +58,6 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
     static volatile Throwable deploymentProblem;
-    static volatile RuntimeUpdatesProcessor runtimeUpdatesProcessor;
     static volatile RemoteDevClient remoteDevClient;
     static volatile Closeable remoteDevClientSession;
     private static volatile CuratedApplication curatedApplication;
@@ -130,6 +131,11 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         public void accept(DevModeContext.ModuleInfo moduleInfo, String s) {
                             copiedStaticResources.computeIfAbsent(moduleInfo, ss -> new HashSet<>()).add(s);
                         }
+                    }, new BiFunction<String, byte[], byte[]>() {
+                        @Override
+                        public byte[] apply(String s, byte[] bytes) {
+                            return ClassTransformingBuildStep.transform(s, bytes);
+                        }
                     });
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
@@ -143,14 +149,14 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
         return null;
     }
 
-    void regenerateApplication(Set<String> ignore) {
+    void regenerateApplication(Set<String> ignore, ClassScanResult ignore2) {
         generateApplication();
     }
 
     public void close() {
         try {
             try {
-                runtimeUpdatesProcessor.close();
+                RuntimeUpdatesProcessor.INSTANCE.close();
             } catch (IOException e) {
                 log.error("Failed to close compiler", e);
             }
@@ -190,11 +196,11 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
             }
 
             augmentAction = new AugmentActionImpl(curatedApplication);
-            runtimeUpdatesProcessor = setupRuntimeCompilation(context, appRoot);
+            RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, appRoot);
 
-            if (runtimeUpdatesProcessor != null) {
-                runtimeUpdatesProcessor.checkForFileChange();
-                runtimeUpdatesProcessor.checkForChangedClasses();
+            if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                RuntimeUpdatesProcessor.INSTANCE.checkForFileChange();
+                RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses();
             }
 
             JarResult result = generateApplication();
@@ -254,10 +260,10 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
         Set<String> removed = new HashSet<>();
         Map<String, byte[]> changed = new HashMap<>();
         try {
-            boolean scanResult = runtimeUpdatesProcessor.doScan(true);
+            boolean scanResult = RuntimeUpdatesProcessor.INSTANCE.doScan(true);
             if (!scanResult && !copiedStaticResources.isEmpty()) {
                 scanResult = true;
-                regenerateApplication(Collections.emptySet());
+                regenerateApplication(Collections.emptySet(), new ClassScanResult());
             }
             copiedStaticResources.clear();
             if (scanResult) {
@@ -291,7 +297,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
             @Override
             public Throwable getProblem() {
-                return runtimeUpdatesProcessor.getDeploymentProblem();
+                return RuntimeUpdatesProcessor.INSTANCE.getDeploymentProblem();
             }
 
         };

@@ -120,7 +120,16 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         PRODUCER_FIELD,
         PRODUCER_METHOD,
         SYNTHETIC,
-        INTERCEPTOR
+        INTERCEPTOR;
+
+        public static Kind from(String value) {
+            for (Kind kind : values()) {
+                if (kind.toString().equals(value)) {
+                    return kind;
+                }
+            }
+            return null;
+        }
 
     }
 

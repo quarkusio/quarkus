@@ -1,8 +1,7 @@
 package io.quarkus.arc;
 
 /**
- *
- * @author Martin Kouba
+ * Service provider interface used to colllect the runtime components.
  */
 public interface ComponentsProvider {
 

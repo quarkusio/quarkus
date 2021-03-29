@@ -99,6 +99,20 @@ public class FlatClassLoaderService implements ClassLoaderService {
     }
 
     @Override
+    public Package packageForNameOrNull(String packageName) {
+        try {
+            Class<?> aClass = Class.forName(packageName + ".package-info", false, getClassLoader());
+            return aClass == null ? null : aClass.getPackage();
+        } catch (ClassNotFoundException e) {
+            log.packageNotFound(packageName);
+            return null;
+        } catch (LinkageError e) {
+            log.warn("LinkageError while attempting to load Package named " + packageName, e);
+            return null;
+        }
+    }
+
+    @Override
     public <T> T workWithClassLoader(Work<T> work) {
         ClassLoader systemClassLoader = getClassLoader();
         return work.doWork(systemClassLoader);

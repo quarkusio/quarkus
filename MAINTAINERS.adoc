@@ -14,7 +14,7 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/oztimpower[Timothy Power]
 
 |Amazon Lambda
-|https://github.com/patriot1burke[Bill Burke], https://github.com/evanchooly[Justin Lee]
+|https://github.com/patriot1burke[Bill Burke]
 
 |Amazon Services - KMS
 |https://github.com/marcinczeczko[Marcin Czeczko]
@@ -52,6 +52,9 @@ If you think some information is outdated, either provide a pull request or send
 |Caffeine
 |https://github.com/galderz[Galder Zamarreño], https://github.com/wburns[William Burns]
 
+|https://github.com/apache/camel-quarkus[Camel]
+|https://github.com/jamesnetherton[James Netherton], https://github.com/ppalaga[Peter Palaga]
+
 |Cassandra-Quarkus
 |https://github.com/adutra[Alexandre Dutra], https://github.com/tomekl007[Tomasz Lelek], https://github.com/absurdfarce[Bret McGuire], https://github.com/emerkle826[Erik Merkle], https://github.com/olim7t[Olivier Michallat]
 
@@ -86,7 +89,7 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/stuartwdouglas[Stuart Douglas]
 
 |Flyway
-|https://github.com/gastaldi[George Gastaldi], https://github.com/geoand[Georgios Andrianakis]
+|https://github.com/cristhiank[Cristhian Lopez], https://github.com/gastaldi[George Gastaldi], https://github.com/geoand[Georgios Andrianakis]
 
 |Funqy
 |https://github.com/patriot1burke[Bill Burke]
@@ -102,6 +105,9 @@ If you think some information is outdated, either provide a pull request or send
 
 |Hibernate ORM with Panache
 |https://github.com/FroMage[Stéphane Épardaud]
+
+|Hibernate ORM with Panache for Kotlin
+|https://github.com/evanchooly[Justin Lee]
 
 |Hibernate Search
 |https://github.com/gsmet[Guillaume Smet]
@@ -158,7 +164,7 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/mariofusco[Mario Fusco], https://github.com/cristianonicolai[Cristiano Nicolai]
 
 |Kotlin
-|https://github.com/geoand[Georgios Andrianakis]
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/evanchooly[Justin Lee]
 
 |Kubernetes
 |https://github.com/geoand[Georgios Andrianakis], https://github.com/iocanel[Ioannis Canellos]
@@ -179,7 +185,7 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/cescoffier[Clément Escoffier]
 
 |MongoDB with Panache
-|https://github.com/loicmathieu[Loïc Mathieu]
+|https://github.com/loicmathieu[Loïc Mathieu], https://github.com/evanchooly[Justin Lee]
 
 |Narayana JTA
 |https://github.com/mmusgrov[Michael Musgrove], https://github.com/gsmet[Guillaume Smet]
@@ -305,7 +311,7 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/geoand[Georgios Andrianakis]
 
 |Swagger UI
-|https://github.com/stuartwdouglas[Stuart Douglas]
+|https://github.com/phillip-kruger[Phillip Kruger]
 
 |Tika
 |https://github.com/sberyozkin[Sergey Beryozkin]

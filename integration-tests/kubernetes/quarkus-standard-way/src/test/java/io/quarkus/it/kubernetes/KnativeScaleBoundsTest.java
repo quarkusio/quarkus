@@ -41,7 +41,7 @@ public class KnativeScaleBoundsTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
-        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getMetadata().getAnnotations()).contains(entry("autoscaling.knative.dev/minScale", "3"));
                 assertThat(s.getMetadata().getAnnotations()).contains(entry("autoscaling.knative.dev/maxScale", "5"));

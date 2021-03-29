@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Google Cloud Functions (Serverless) with RESTEasy, Undertow, or Vert.x Web
 :extension-status: experimental
@@ -9,9 +9,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy (JAX-RS),
-Undertow (Servlet) or Vert.x Web, and make these microservices deployable to the Google Cloud Functions runtime.
+Undertow (Servlet), Vert.x Web, or link:funqy-http[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.
 
-One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, or Vert.x Web endpoints.
+One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Vert.x Web, or link:funqy-http[Funqy HTTP] endpoints.
 
 As the Google Cloud Function Java engine is a new Beta feature of Google Cloud, this extension is flagged as experimental.
 
@@ -30,7 +30,7 @@ To complete this guide, you need:
 == Solution
 
 This guide walks you through generating a sample project followed by creating three HTTP endpoints
-written with JAX-RS APIs, Servlet APIs or Vert.x Web APIs. Once built, you will be able to deploy
+written with JAX-RS APIs, Servlet APIs, Vert.x Web, or link:funqy-http[Funqy HTTP] APIs. Once built, you will be able to deploy
 the project to Google Cloud.
 
 If you don't want to follow all these steps, you can go right to the completed example.
@@ -44,36 +44,36 @@ The solution is located in the `google-cloud-functions-http-quickstart` {quickst
 Create an application with the `quarkus-google-cloud-functions-http` extension.
 You can use the following Maven command to create it:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=google-cloud-functions-http \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="google-cloud-functions-http,resteasy-json,undertow,vertx-web"
+    -Dextensions="resteasy,google-cloud-functions-http,resteasy-json,undertow,vertx-web,funqy-http"
 ----
 
 == Login to Google Cloud
 
 Login to Google Cloud is necessary for deploying the application and it can be done as follows:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 gcloud auth login
 ----
 
 At the time of this writing, Cloud Functions are still in beta so make sure to install the `beta` command group.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 gcloud components install beta
 ----
 
 == Creating the endpoints
 
-For this example project, we will create three endpoints, one for RESTEasy (JAX-RS), one for Undertow (Servlet)
-and one for Vert.x Web (reactive routes).
+For this example project, we will create four endpoints, one for RESTEasy (JAX-RS), one for Undertow (Servlet),
+one for Vert.x Web (reactive routes) and one for link:funqy-http[Funqy HTTP].
 
 If you don't need endpoints of each type, you can remove the corresponding extensions from your `pom.xml`.
 
@@ -146,6 +146,20 @@ public class GreetingRoutes {
 }
 ----
 
+=== The Funqy HTTP endpoint
+
+[source,java]
+----
+import io.quarkus.funqy.Funq;
+
+public class GreetingFunqy {
+    @Funq
+    public String funqy() {
+        return "Make it funqy";
+    }
+}
+----
+
 == Build and Deploy to Google Cloud
 
 NOTE: Quarkus forces a packaging of type `uber-jar` for your function as Google Cloud Function deployment requires a single JAR.
@@ -155,7 +169,7 @@ The result of the previous command is a single JAR file inside the `target/deplo
 
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 
-[source]
+[source,bash]
 ----
 gcloud beta functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
@@ -185,6 +199,7 @@ You can then call your endpoints via:
 - For JAX-RS: {httpsTrigger.url}/hello
 - For servlet: {httpsTrigger.url}/servlet/hello
 - For Vert.x Web: {httpsTrigger.url}/vertx/hello
+- For Funqy: {httpsTrigger.url}/funqy
 
 == Testing locally
 
@@ -192,21 +207,25 @@ The easiest way to locally test your function is using the Cloud Function invoke
 
 You can download it via Maven using the following command:
 
-[source]
+[source,bash]
 ----
 mvn dependency:copy \
   -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-beta1' \
   -DoutputDirectory=.
 ----
 
+Before using the invoker, you first need to build your function via `mvn package`.
+
 Then you can use it to launch your function locally.
 
-[source]
+[source,bash]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/deployment/google-cloud-functions-http-1.0-SNAPSHOT-runner.jar \
+  --classpath target/deployment/google-cloud-functions-http-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.http.QuarkusHttpFunction
 ----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
 
 Your endpoints will be available on http://localhost:8080.
 

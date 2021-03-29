@@ -14,11 +14,9 @@ public class StaticResourcesHotReplacementSetup implements HotReplacementSetup {
     @Override
     public void setupHotDeployment(HotReplacementContext context) {
         List<Path> resources = new ArrayList<>();
+        addPathIfContainsStaticResources(resources, context.getClassesDir());
         for (Path resourceDir : context.getResourcesDir()) {
-            Path resource = resourceDir.resolve(StaticResourcesRecorder.META_INF_RESOURCES);
-            if (Files.exists(resource)) {
-                resources.add(resource);
-            }
+            addPathIfContainsStaticResources(resources, resourceDir);
         }
         StaticResourcesRecorder.setHotDeploymentResources(resources);
     }
@@ -31,4 +29,12 @@ public class StaticResourcesHotReplacementSetup implements HotReplacementSetup {
     public void close() {
         StaticResourcesRecorder.setHotDeploymentResources(null);
     }
+
+    private void addPathIfContainsStaticResources(List<Path> resources, Path resourceDir) {
+        Path resource = resourceDir.resolve(StaticResourcesRecorder.META_INF_RESOURCES);
+        if (Files.exists(resource)) {
+            resources.add(resource);
+        }
+    }
+
 }

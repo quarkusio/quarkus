@@ -29,6 +29,9 @@ public class PersonResource {
     @Inject
     PersonRepository personRepository;
 
+    @Inject
+    SongRepository songRepository;
+
     @Path("/new/{name}")
     @GET
     @Produces("application/json")
@@ -69,6 +72,7 @@ public class PersonResource {
     @Path("/all")
     @Produces("application/json")
     public Iterable<Person> all() {
+        personRepository.doNothingMore();
         return personRepository.findAll();
     }
 
@@ -107,6 +111,13 @@ public class PersonResource {
     @GET
     public void deleteAllByName(@PathParam("name") String name) {
         personRepository.deleteAll(personRepository.findByName(name));
+    }
+
+    @Transactional
+    @Path("/delete/age/{age}")
+    @GET
+    public void deleteByAge(@PathParam("age") Integer age) {
+        personRepository.deleteByAge(age);
     }
 
     @Path("/delete/all")
@@ -205,21 +216,41 @@ public class PersonResource {
     @Path("/addressZipCode/{zipCode}")
     @Produces("application/json")
     public List<Person> findPeopleByAddressZipCode(@PathParam("zipCode") String zipCode) {
-        return personRepository.findPeopleByAddressZipCode(zipCode);
+        return personRepository.findPeopleBySomeAddressZipCode(zipCode);
     }
 
     @GET
     @Path("/addressId/{id}")
     @Produces("application/json")
     public List<Person> findByAddressId(@PathParam("id") Long id) {
-        return personRepository.findByAddressId(id);
+        return personRepository.findBySomeAddressId(id);
     }
 
     @GET
     @Path("/addressStreetNumber/{streetNumber}")
     @Produces("application/json")
     public List<Person> findByAddressStreetNumber(@PathParam("streetNumber") String streetNumber) {
-        return personRepository.findByAddressStreetNumber(streetNumber);
+        return personRepository.findBySomeAddressStreetNumber(streetNumber);
+    }
+
+    @GET
+    @Path("/{id}/song/{idSong}")
+    @Produces("application/json")
+    public Person addLikedSongToPerson(@PathParam("id") Long id, @PathParam("idSong") Long idSong) {
+        Optional<Person> person = personRepository.findById(id);
+        Optional<Song> song = songRepository.findById(idSong);
+        if (person.isPresent() && song.isPresent()) {
+            person.get().getLikedSongs().add(song.get());
+            return personRepository.save(person.get());
+        }
+        return null;
+    }
+
+    @GET
+    @Path("/{id}/songs")
+    @Produces("application/json")
+    public List<Song> findPersonLikedSongs(@PathParam("id") Long id) {
+        return songRepository.findPersonLikedSongs(id);
     }
 
     private Date changeNow(LocalDate now, BiFunction<LocalDate, Long, LocalDate> function, long diff) {

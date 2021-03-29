@@ -18,7 +18,7 @@ import io.smallrye.mutiny.Uni;
 public class ClientAndServerCallsTest {
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);
-    private FakeServiceClient client = new FakeServiceClient();;
+    private FakeServiceClient client = new FakeServiceClient();
 
     @Test
     public void oneToOneSuccess() {

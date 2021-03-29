@@ -1,10 +1,9 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Qute Templating Engine
-:extension-status: experimental
 
 include::./attributes.adoc[]
 
@@ -15,11 +14,9 @@ In the development mode, all files located in `src/main/resources/templates` are
 Furthermore, we try to detect most of the template problems at build time.
 In this guide, you will learn how to easily render templates in your application.
 
-include::./status-include.adoc[]
-
 == Hello World with JAX-RS
 
-If you want to use Qute in your JAX-RS application, you need to add the `quarkus-qute-resteasy` extension first.
+If you want to use Qute in your JAX-RS application, you need to add the `quarkus-resteasy-qute` extension first.
 In your `pom.xml` file, add:
 
 [source,xml]
@@ -75,7 +72,7 @@ public class HelloResource {
 
 If your application is running, you can request the endpoint:
 
-[source, shell]
+[source,shell]
 ----
 $ curl -w "\n" http://localhost:8080/hello?name=Martin
 Hello Martin!
@@ -116,7 +113,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
+import io.quarkus.qute.CheckedTemplate;
 
 @Path("hello")
 public class HelloResource {
@@ -137,8 +134,7 @@ public class HelloResource {
 <2> `Templates.hello()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
  
-NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template
-from your Java code and you forgot to add it, we will let you know at build time :)
+NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template from your Java code and you forgot to add it, we will let you know at build time :)
 
 Keep in mind this style of declaration allows you to reference templates declared in other resources too:
 
@@ -165,9 +161,9 @@ public class GoodbyeResource {
 }
 ----
 
-=== Toplevel type-safe templates
+=== Top-level type-safe templates
 
-Naturally, if you want to declare templates at the toplevel, directly in `/src/main/resources/templates/hello.txt`, for example,
+Naturally, if you want to declare templates at the top-level, directly in `/src/main/resources/templates/hello.txt`, for example,
 you can declare them in a toplevel (non-nested) `Templates` class:
 
 .HelloResource.java
@@ -177,7 +173,7 @@ package org.acme.quarkus.sample;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.CheckedTemplate;
+import io.quarkus.qute.CheckedTemplate;
 
 @CheckedTemplate
 public class Templates {
@@ -240,7 +236,7 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.CheckedTemplate;
+import io.quarkus.qute.CheckedTemplate;
 
 @Path("item")
 public class ItemResource {

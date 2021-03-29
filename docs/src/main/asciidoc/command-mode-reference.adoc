@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Command Mode Applications
 
@@ -113,7 +113,7 @@ As command mode applications will often require arguments to be passed on the co
 mvn compile quarkus:dev -Dquarkus.args='--help'
 ----
 
-The same can be achived with Gradle:
+The same can be achieved with Gradle:
 
 ----
 ./gradlew quarkusDev --quarkus-args='--help'

@@ -62,12 +62,12 @@ class GenerateConfigIT extends QuarkusPlatformAwareMojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections
-                .singletonList(getPluginGroupId() + ":" + getPluginArtifactId() + ":"
-                        + getPluginVersion() + ":generate-config"));
+                .singletonList(getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":"
+                        + getMavenPluginVersion() + ":generate-config"));
         Properties properties = new Properties();
         properties.setProperty("file", filename);
         request.setProperties(properties);
-        getEnv().forEach(request::addShellEnvironment);
+
         File log = new File(testDir, "build-generate-config-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

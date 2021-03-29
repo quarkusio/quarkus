@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,6 +48,20 @@ public class BooleansTest {
         assertFalse(Booleans.isFalsy(new String[] { "foo" }));
         assertFalse(Booleans.isFalsy(new AtomicLong(10)));
         assertFalse(Booleans.isFalsy(new AtomicBoolean(true)));
+    }
+
+    @Test
+    public void testLogicalOperators() {
+        Engine engine = Engine.builder().addDefaults()
+                .addValueResolvers(ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver())
+                .build();
+        assertEquals("true", engine.parse("{foo && bar}").data("foo", true).data("bar", 1).render());
+        assertEquals("true", engine.parse("{foo && bar && baz}").data("foo", true).data("bar", 1).data("baz", true).render());
+        assertEquals("false",
+                engine.parse("{foo && bar && baz}").data("foo", true).data("bar", 1).data("baz", false).render());
+        assertEquals("true", engine.parse("{foo || bar}").data("foo", true).data("bar", 0).render());
+        assertEquals("false", engine.parse("{foo || bar || baz}").data("foo", false).data("bar", 0)
+                .data("baz", Collections.emptyList()).render());
     }
 
 }

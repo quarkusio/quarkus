@@ -2,6 +2,8 @@ package io.quarkus.it.spring.web;
 
 import static org.hamcrest.Matchers.is;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -10,6 +12,7 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 @TestSecurity(authorizationEnabled = false)
+@ApplicationScoped //see https://github.com/quarkusio/quarkus/issues/11465
 public class TestSecurityTest {
 
     @Test

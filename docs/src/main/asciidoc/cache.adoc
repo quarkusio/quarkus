@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Application Data Caching
 :extension-status: preview
@@ -36,23 +36,23 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `cache-quickstart` directory.
+The solution is located in the `cache-quickstart` {quickstarts-tree-url}/cache-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need to create a new Quarkus project using Maven with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=cache-quickstart \
     -DclassName="org.acme.cache.WeatherForecastResource" \
     -Dpath="/weather" \
-    -Dextensions="cache,resteasy-jsonb"
+    -Dextensions="resteasy,cache,resteasy-jackson"
 ----
 
-This command generates the Maven project with a REST endpoint and imports the `cache` and `resteasy-jsonb` extensions.
+This command generates the Maven project with a REST endpoint and imports the `cache` and `resteasy-jackson` extensions.
 
 If you already have your Quarkus project configured, you can add the `cache` extension
 to your project by running the following command in your project base directory:
@@ -158,7 +158,6 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
@@ -170,7 +169,6 @@ public class WeatherForecastResource {
     WeatherForecastService service;
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WeatherForecast getForecast(@QueryParam String city, @QueryParam long daysInFuture) { <1>
         long executionStart = System.currentTimeMillis();
         List<String> dailyForecasts = Arrays.asList(
@@ -193,7 +191,7 @@ First, run the application using `./mvnw compile quarkus:dev` from the project d
 Then, call `http://localhost:8080/weather?city=Raleigh` from a browser.
 After six long seconds, the application will answer something like this:
 
-[source]
+[source,json]
 ----
 {"dailyForecasts":["MONDAY will be cloudy in Raleigh","TUESDAY will be chilly in Raleigh","WEDNESDAY will be rainy in Raleigh"],"executionTimeInMs":6001}
 ----
@@ -276,6 +274,12 @@ The following sections will show you everything there is to know about it.
 
 Quarkus offers a set of annotations that can be used in a CDI managed bean to enable caching abilities.
 
+[WARNING]
+====
+Caching annotations are not allowed on private methods.
+They will work fine with any other access modifier including package-private (no explicit modifier).
+====
+
 === @CacheResult
 
 Loads a method result from the cache without executing the method body whenever possible.
@@ -283,9 +287,9 @@ Loads a method result from the cache without executing the method body whenever 
 When a method annotated with `@CacheResult` is invoked, Quarkus will compute a cache key and use it to check in the cache whether the method has been already invoked.
 If the method has one or more arguments, the key computation is done from all the method arguments if none of them is annotated with `@CacheKey`, or all the arguments annotated with `@CacheKey` otherwise.
 Each non-primitive method argument that is part of the key must implement `equals()` and `hashCode()` correctly for the cache to work as expected.
-This annotation can also be used on a method with no arguments, a default key derived from the cache name is generated in that case.
+This annotation can also be used on a method with no arguments, a default key derived from the cache name is used in that case.
 If a value is found in the cache, it is returned and the annotated method is never actually executed.
-If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed or generated key.
+If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed key.
 
 A method annotated with `CacheResult` is protected by a lock on cache miss mechanism.
 If several concurrent invocations try to retrieve a cache value from the same missing key, the method will only be invoked once.
@@ -308,13 +312,8 @@ Removes an entry from the cache.
 
 When a method annotated with `@CacheInvalidate` is invoked, Quarkus will compute a cache key and use it to try to remove an existing entry from the cache.
 If the method has one or more arguments, the key computation is done from all the method arguments if none of them is annotated with `@CacheKey`, or all the arguments annotated with `@CacheKey` otherwise.
-This annotation can also be used on a method with no arguments, a default key derived from the cache name is generated in that case.
+This annotation can also be used on a method with no arguments, a default key derived from the cache name is used in that case.
 If the key does not identify any cache entry, nothing will happen.
-
-[TIP]
-====
-If the `@CacheResult` or `@CacheInvalidate` annotations are used on a method with no parameters, a unique default cache key derived from the cache name will be generated and used.
-====
 
 === @CacheInvalidateAll
 
@@ -398,17 +397,6 @@ quarkus.cache.caffeine."bar".maximum-size=1000 <2>
 ----
 <1> The `foo` cache is being configured.
 <2> The `bar` cache is being configured.
-
-== Context propagation
-
-This extension relies on non-blocking calls internally for cache values computations.
-By default, there's no context propagation between the calling thread (from your application) and a thread that performs such a computation.
-
-The context propagation can be enabled for this extension by simply adding the `quarkus-smallrye-context-propagation` extension to your project.
-
-If you see a `javax.enterprise.context.ContextNotActiveException` in your application log during a cache computation, then you probably need to enable the context propagation.
-
-You can find more information about context propagation in Quarkus in the link:context-propagation[dedicated guide].
 
 == Annotated beans examples
 
@@ -504,7 +492,7 @@ public class CachedService {
     }
 }
 ----
-<1> A unique default cache key derived from the cache name is generated and used.
+<1> A unique default cache key derived from the cache name is used because the method has no arguments.
 
 === Multiple annotations on a single method
 
@@ -539,7 +527,7 @@ public class CachedService {
 [#negative-cache]
 == Negative caching and nulls
 
-Sometimes one wants to cache the results of an (expensive) remote call.
+Sometimes one wants to cache the result of an (expensive) remote call.
 If the remote call fails, one may not want to cache the result or exception,
 but rather re-try the remote call on the next invocation.
 
@@ -551,11 +539,11 @@ act accordingly:
 ----
     public void caller(int val) {
 
-        Integer result = callRemote(val);  //<1>
-        if (result == null) {
+        Integer result = callRemote(val); //<1>
+        if (result != null) {
             System.out.println("Result is " + result);
         else {
-           System.out.println("Got an exception");
+            System.out.println("Got an exception");
         }
     }
 
@@ -563,10 +551,10 @@ act accordingly:
     private Integer callRemote(int val)  {
 
         try {
-            Integer val = remoteWebServer.getResult(val);  //<2>
+            Integer val = remoteWebServer.getResult(val); //<2>
             return val;
         } catch (Exception e) {
-            return null;  // <3>
+            return null; // <3>
         }
     }
 ----
@@ -610,11 +598,4 @@ the exception bubble out of the called method and catch it at the caller side:
 When the call to the remote throws an exception, the cache does not store the result,
 so that a subsequent call to `callRemote()` with the same parameter value will not be
 answered out of the cache.
-It will instead result in another
-attempt to call the remote.
-
-The previous code example has the side-effect that the cache logs the thrown exception
-with a long stack trace to the console. This is done to inform developers that something
-exceptional has happened, but if you have a setup like above, you are already catching
-the exception and know what you are doing.
-
+It will instead result in another attempt to call the remote.

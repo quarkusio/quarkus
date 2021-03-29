@@ -1,68 +1,68 @@
 package io.quarkus.smallrye.graphql.runtime;
 
+import java.util.function.Consumer;
+
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
+import graphql.schema.GraphQLSchema;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.smallrye.graphql.runtime.spi.QuarkusClassloadingService;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.schema.model.Schema;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.StaticHandler;
 
 @Recorder
 public class SmallRyeGraphQLRecorder {
 
-    public void createExecutionService(BeanContainer beanContainer, Schema schema) {
+    public RuntimeValue<Boolean> createExecutionService(BeanContainer beanContainer, Schema schema) {
         GraphQLProducer graphQLProducer = beanContainer.instance(GraphQLProducer.class);
-        graphQLProducer.setSchema(schema);
-        graphQLProducer.initialize();
+        GraphQLConfig graphQLConfig = beanContainer.instance(GraphQLConfig.class);
+        GraphQLSchema graphQLSchema = graphQLProducer.initialize(schema, graphQLConfig);
+        return new RuntimeValue<>(graphQLSchema != null);
     }
 
-    public Handler<RoutingContext> executionHandler(boolean allowGet) {
-        Instance<CurrentIdentityAssociation> identityAssociations = CDI.current()
-                .select(CurrentIdentityAssociation.class);
-        CurrentIdentityAssociation association;
-        if (identityAssociations.isResolvable()) {
-            association = identityAssociations.get();
-        } else {
-            association = null;
-        }
-        return new SmallRyeGraphQLExecutionHandler(allowGet, association);
-    }
-
-    public Handler<RoutingContext> schemaHandler() {
-        return new SmallRyeGraphQLSchemaHandler();
-    }
-
-    public Handler<RoutingContext> uiHandler(String graphqlUiFinalDestination, String graphqlUiPath) {
-
-        StaticHandler staticHandler = StaticHandler.create().setAllowRootFileSystemAccess(true)
-                .setWebRoot(graphqlUiFinalDestination)
-                .setDefaultContentEncoding("UTF-8");
-
-        return new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext event) {
-                if (event.normalisedPath().length() == graphqlUiPath.length()) {
-
-                    event.response().setStatusCode(302);
-                    event.response().headers().set(HttpHeaders.LOCATION, graphqlUiPath + "/");
-                    event.response().end();
-                    return;
-                } else if (event.normalisedPath().length() == graphqlUiPath.length() + 1) {
-                    event.reroute(graphqlUiPath + "/index.html");
-                    return;
-                }
-
-                staticHandler.handle(event);
+    public Handler<RoutingContext> executionHandler(RuntimeValue<Boolean> initialized, boolean allowGet) {
+        if (initialized.getValue()) {
+            Instance<CurrentIdentityAssociation> identityAssociations = CDI.current()
+                    .select(CurrentIdentityAssociation.class);
+            CurrentIdentityAssociation association;
+            if (identityAssociations.isResolvable()) {
+                association = identityAssociations.get();
+            } else {
+                association = null;
             }
-        };
+            CurrentVertxRequest currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
+            return new SmallRyeGraphQLExecutionHandler(allowGet, association, currentVertxRequest);
+        } else {
+            return new SmallRyeGraphQLNoEndpointHandler();
+        }
+    }
+
+    public Handler<RoutingContext> schemaHandler(RuntimeValue<Boolean> initialized) {
+        if (initialized.getValue()) {
+            return new SmallRyeGraphQLSchemaHandler();
+        } else {
+            return new SmallRyeGraphQLNoEndpointHandler();
+        }
+    }
+
+    public Handler<RoutingContext> uiHandler(String graphqlUiFinalDestination,
+            String graphqlUiPath, SmallRyeGraphQLRuntimeConfig runtimeConfig) {
+
+        if (runtimeConfig.enable) {
+            return new SmallRyeGraphQLStaticHandler(graphqlUiFinalDestination, graphqlUiPath);
+        } else {
+            return new SmallRyeGraphQLNotFoundHandler();
+        }
     }
 
     public void setupClDevMode(ShutdownContext shutdownContext) {
@@ -73,5 +73,14 @@ public class SmallRyeGraphQLRecorder {
                 QuarkusClassloadingService.setClassLoader(null);
             }
         });
+    }
+
+    public Consumer<Route> routeFunction(Handler<RoutingContext> bodyHandler) {
+        return new Consumer<Route>() {
+            @Override
+            public void accept(Route route) {
+                route.handler(bodyHandler);
+            }
+        };
     }
 }

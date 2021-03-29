@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Amazon SES Client
 :extension-status: preview
@@ -38,7 +38,7 @@ To complete this guide, you need:
 The easiest way to start working with SES is to run a local instance as a container.
 However, local instance of SES is only mocks the SES APIs without the actual email sending capabilities. You can still use it for this guide to verify an API communication or integration test purposes.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 docker run --rm --name local-ses -p 8012:4579 -e SERVICES=ses -e START_WEB=0 -d localstack/localstack:0.11.1
 ----
@@ -69,7 +69,7 @@ Going production, you'd need to get your account of the sandbox following the ht
 We assume you are going to use AWS SES sandbox for the sake of this guide. But before sending any email, you must verify sender and recipient email addresses using AWS CLI.
 You can use your personal email or any temporary email service available if you wish.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 aws ses verify-email-identity --email-address <sender@email.address>
 aws ses verify-email-identity --email-address <recipient@email.address>
@@ -79,7 +79,7 @@ Now, you need to open a mailboxes of those email addresses in order to follow co
 If you are using local SES you still need to verify email addresses, otherwise your send email in order to let local SES accepting your request.
 However, no emails to be send as it only mocks the service APIs.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 aws ses verify-email-identity --email-address <sender@email.address> --profile localstack --endpoint-url=http://localhost:8012
 aws ses verify-email-identity --email-address <recipient@email.address> --profile localstack --endpoint-url=http://localhost:8012
@@ -99,14 +99,14 @@ The solution is located in the `amazon-ses-quickstart` {quickstarts-tree-url}/am
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amazon-ses-quickstart \
     -DclassName="org.acme.ses.QuarkusSesSyncResource" \
     -Dpath="/sync" \
-    -Dextensions="resteasy-jsonb,amazon-ses,resteasy-mutiny"
+    -Dextensions="resteasy,resteasy-jackson,amazon-ses,resteasy-mutiny"
 cd amazon-ses-quickstart
 ----
 
@@ -178,6 +178,10 @@ And add the following dependency to the application `pom.xml`:
     <groupId>software.amazon.awssdk</groupId>
     <artifactId>apache-client</artifactId>
 </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-apache-httpclient</artifactId>
+</dependency>
 ----
 
 If you're going to use a local SES instance, configure it as follows:
@@ -208,7 +212,7 @@ And the region from your AWS CLI profile will be used.
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -jar target/amazon-ses-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.

@@ -1,5 +1,8 @@
 package io.quarkus.hibernate.orm.panache.common.runtime;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -8,30 +11,86 @@ import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
-import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
-import io.quarkus.panache.common.exception.PanacheQueryException;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public abstract class AbstractJpaOperations<PanacheQueryType> {
+    private static volatile Map<String, String> entityToPersistenceUnit = Collections.emptyMap();
+
+    public static void setEntityToPersistenceUnit(Map<String, String> map) {
+        entityToPersistenceUnit = Collections.unmodifiableMap(map);
+    }
 
     protected abstract PanacheQueryType createPanacheQuery(EntityManager em, String query, String orderBy,
             Object paramsArrayOrMap);
 
-    protected abstract List<?> list(PanacheQueryType query);
+    public abstract List<?> list(PanacheQueryType query);
 
-    protected abstract Stream<?> stream(PanacheQueryType query);
+    public abstract Stream<?> stream(PanacheQueryType query);
 
+    /**
+     * Returns the {@link EntityManager} for the given {@link Class<?> entity}
+     *
+     * @return {@link EntityManager}
+     */
+    public static EntityManager getEntityManager(Class<?> clazz) {
+        String clazzName = clazz.getName();
+        String persistentUnitName = entityToPersistenceUnit.get(clazzName);
+        return getEntityManager(persistentUnitName);
+    }
+
+    public static EntityManager getEntityManager(String persistentUnitName) {
+        ArcContainer arcContainer = Arc.container();
+        if (persistentUnitName == null || PersistenceUnitUtil.isDefaultPersistenceUnit(persistentUnitName)) {
+            InstanceHandle<EntityManager> emHandle = arcContainer.instance(EntityManager.class);
+            if (emHandle.isAvailable()) {
+                return emHandle.get();
+            }
+            if (!arcContainer.instance(AgroalDataSource.class).isAvailable()) {
+                throw new IllegalStateException(
+                        "The default datasource has not been properly configured. See https://quarkus.io/guides/datasource#jdbc-datasource for information on how to do that.");
+            }
+            throw new IllegalStateException(
+                    "No entities were found. Did you forget to annotate your Panache Entity classes with '@Entity'?");
+        }
+
+        InstanceHandle<EntityManager> emHandle = arcContainer.instance(EntityManager.class,
+                new PersistenceUnit.PersistenceUnitLiteral(persistentUnitName));
+        if (emHandle.isAvailable()) {
+            return emHandle.get();
+        }
+        if (!arcContainer.instance(AgroalDataSource.class,
+                new DataSource.DataSourceLiteral(persistentUnitName)).isAvailable()) {
+            throw new IllegalStateException(
+                    "The named datasource '" + persistentUnitName
+                            + "' has not been properly configured. See https://quarkus.io/guides/datasource#multiple-datasources for information on how to do that.");
+        }
+        throw new IllegalStateException(
+                "No entities were attached to persistence unit '" + persistentUnitName
+                        + "'. Did you forget to annotate your Panache Entity classes with '@Entity' or improperly configure the 'quarkus.hibernate-orm.\" "
+                        + persistentUnitName + "\".packages' property?");
+    }
+
+    public static EntityManager getEntityManager() {
+        return getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME);
+    }
     //
     // Instance methods
 
     public void persist(Object entity) {
-        EntityManager em = getEntityManager();
+        EntityManager em = getEntityManager(entity.getClass());
         persist(em, entity);
     }
 
@@ -42,50 +101,42 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public void persist(Iterable<?> entities) {
-        EntityManager em = getEntityManager();
         for (Object entity : entities) {
-            persist(em, entity);
+            persist(getEntityManager(entity.getClass()), entity);
         }
     }
 
     public void persist(Object firstEntity, Object... entities) {
-        EntityManager em = getEntityManager();
         persist(firstEntity);
         for (Object entity : entities) {
-            persist(em, entity);
+            persist(entity);
         }
     }
 
     public void persist(Stream<?> entities) {
-        EntityManager em = getEntityManager();
-        entities.forEach(entity -> persist(em, entity));
+        entities.forEach(entity -> persist(entity));
     }
 
     public void delete(Object entity) {
-        EntityManager em = getEntityManager();
+        EntityManager em = getEntityManager(entity.getClass());
         em.remove(entity);
     }
 
     public boolean isPersistent(Object entity) {
-        return getEntityManager().contains(entity);
+        return getEntityManager(entity.getClass()).contains(entity);
     }
 
     public void flush() {
         getEntityManager().flush();
     }
 
+    public void flush(Object entityClass) {
+        getEntityManager(entityClass.getClass()).flush();
+    }
     //
     // Private stuff
 
-    public EntityManager getEntityManager() {
-        EntityManager entityManager = Arc.container().instance(EntityManager.class).get();
-        if (entityManager == null) {
-            throw new PersistenceException("No EntityManager found. Do you have any JPA entities defined?");
-        }
-        return entityManager;
-    }
-
-    public TransactionManager getTransactionManager() {
+    public static TransactionManager getTransactionManager() {
         return Arc.container().instance(TransactionManager.class).get();
     }
 
@@ -115,144 +166,15 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return params != null ? params.size() : 0;
     }
 
-    private String getEntityName(Class<?> entityClass) {
-        // FIXME: not true?
-        return entityClass.getName();
-    }
-
-    public String createFindQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null) {
-            return "FROM " + getEntityName(entityClass);
-        }
-
-        String trimmed = query.trim();
-        if (trimmed.isEmpty()) {
-            return "FROM " + getEntityName(entityClass);
-        }
-
-        if (isNamedQuery(query)) {
-            // we return named query as is
-            return query;
-        }
-
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("from ") || trimmedLc.startsWith("select ")) {
-            return query;
-        }
-        if (trimmedLc.startsWith("order by ")) {
-            return "FROM " + getEntityName(entityClass) + " " + query;
-        }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
-            query += " = ?1";
-        }
-        return "FROM " + getEntityName(entityClass) + " WHERE " + query;
-    }
-
-    static boolean isNamedQuery(String query) {
-        if (query == null || query.isEmpty()) {
-            return false;
-        }
-        return query.charAt(0) == '#';
-    }
-
-    private String createCountQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null)
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
-
-        String trimmed = query.trim();
-        if (trimmed.isEmpty())
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
-
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("from ")) {
-            return "SELECT COUNT(*) " + query;
-        }
-        if (trimmedLc.startsWith("order by ")) {
-            // ignore it
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
-        }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
-            query += " = ?1";
-        }
-        return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " WHERE " + query;
-    }
-
-    private String createUpdateQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null) {
-            throw new PanacheQueryException("Query string cannot be null");
-        }
-
-        String trimmed = query.trim();
-        if (trimmed.isEmpty()) {
-            throw new PanacheQueryException("Query string cannot be empty");
-        }
-
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("update ")) {
-            return query;
-        }
-        if (trimmedLc.startsWith("from ")) {
-            return "UPDATE " + query;
-        }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
-            query += " = ?1";
-        }
-        if (trimmedLc.startsWith("set ")) {
-            return "UPDATE FROM " + getEntityName(entityClass) + " " + query;
-        }
-        return "UPDATE FROM " + getEntityName(entityClass) + " SET " + query;
-    }
-
-    private String createDeleteQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null)
-            return "DELETE FROM " + getEntityName(entityClass);
-
-        String trimmed = query.trim();
-        if (trimmed.isEmpty())
-            return "DELETE FROM " + getEntityName(entityClass);
-
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("from ")) {
-            return "DELETE " + query;
-        }
-        if (trimmedLc.startsWith("order by ")) {
-            // ignore it
-            return "DELETE FROM " + getEntityName(entityClass);
-        }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
-            query += " = ?1";
-        }
-        return "DELETE FROM " + getEntityName(entityClass) + " WHERE " + query;
-    }
-
-    public String toOrderBy(Sort sort) {
-        if (sort == null) {
-            return null;
-        }
-        if (sort.getColumns().size() == 0) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder(" ORDER BY ");
-        for (int i = 0; i < sort.getColumns().size(); i++) {
-            Sort.Column column = sort.getColumns().get(i);
-            if (i > 0)
-                sb.append(" , ");
-            sb.append(column.getName());
-            if (column.getDirection() != Sort.Direction.Ascending)
-                sb.append(" DESC");
-        }
-        return sb.toString();
-    }
-
     //
     // Queries
 
     public Object findById(Class<?> entityClass, Object id) {
-        return getEntityManager().find(entityClass, id);
+        return getEntityManager(entityClass).find(entityClass, id);
     }
 
     public Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
-        return getEntityManager().find(entityClass, id, lockModeType);
+        return getEntityManager(entityClass).find(entityClass, id, lockModeType);
     }
 
     public Optional<?> findByIdOptional(Class<?> entityClass, Object id) {
@@ -268,15 +190,15 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
-        String findQuery = createFindQuery(entityClass, query, paramCount(params));
-        EntityManager em = getEntityManager();
+        String findQuery = PanacheJpaUtil.createFindQuery(entityClass, query, paramCount(params));
+        EntityManager em = getEntityManager(entityClass);
         // FIXME: check for duplicate ORDER BY clause?
-        if (isNamedQuery(query)) {
+        if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(em, query, toOrderBy(sort), params);
+            return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), params);
         }
-        return createPanacheQuery(em, findQuery, toOrderBy(sort), params);
+        return createPanacheQuery(em, findQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Map<String, Object> params) {
@@ -284,15 +206,15 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        String findQuery = createFindQuery(entityClass, query, paramCount(params));
-        EntityManager em = getEntityManager();
+        String findQuery = PanacheJpaUtil.createFindQuery(entityClass, query, paramCount(params));
+        EntityManager em = getEntityManager(entityClass);
         // FIXME: check for duplicate ORDER BY clause?
-        if (isNamedQuery(query)) {
+        if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(em, query, toOrderBy(sort), params);
+            return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), params);
         }
-        return createPanacheQuery(em, findQuery, toOrderBy(sort), params);
+        return createPanacheQuery(em, findQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Parameters params) {
@@ -352,15 +274,15 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType findAll(Class<?> entityClass) {
-        String query = "FROM " + getEntityName(entityClass);
-        EntityManager em = getEntityManager();
+        String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
+        EntityManager em = getEntityManager(entityClass);
         return createPanacheQuery(em, query, null, null);
     }
 
     public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
-        String query = "FROM " + getEntityName(entityClass);
-        EntityManager em = getEntityManager();
-        return createPanacheQuery(em, query, toOrderBy(sort), null);
+        String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
+        EntityManager em = getEntityManager(entityClass);
+        return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), null);
     }
 
     public List<?> listAll(Class<?> entityClass) {
@@ -380,16 +302,22 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public long count(Class<?> entityClass) {
-        return (long) getEntityManager().createQuery("SELECT COUNT(*) FROM " + getEntityName(entityClass)).getSingleResult();
+        return (long) getEntityManager(entityClass)
+                .createQuery("SELECT COUNT(*) FROM " + PanacheJpaUtil.getEntityName(entityClass))
+                .getSingleResult();
     }
 
     public long count(Class<?> entityClass, String query, Object... params) {
-        return (long) bindParameters(getEntityManager().createQuery(createCountQuery(entityClass, query, paramCount(params))),
+        return (long) bindParameters(
+                getEntityManager(entityClass)
+                        .createQuery(PanacheJpaUtil.createCountQuery(entityClass, query, paramCount(params))),
                 params).getSingleResult();
     }
 
     public long count(Class<?> entityClass, String query, Map<String, Object> params) {
-        return (long) bindParameters(getEntityManager().createQuery(createCountQuery(entityClass, query, paramCount(params))),
+        return (long) bindParameters(
+                getEntityManager(entityClass)
+                        .createQuery(PanacheJpaUtil.createCountQuery(entityClass, query, paramCount(params))),
                 params).getSingleResult();
     }
 
@@ -414,7 +342,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public long deleteAll(Class<?> entityClass) {
-        return (long) getEntityManager().createQuery("DELETE FROM " + getEntityName(entityClass)).executeUpdate();
+        return getEntityManager(entityClass).createQuery("DELETE FROM " + PanacheJpaUtil.getEntityName(entityClass))
+                .executeUpdate();
     }
 
     public boolean deleteById(Class<?> entityClass, Object id) {
@@ -424,49 +353,73 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         if (entity == null) {
             return false;
         }
-        getEntityManager().remove(entity);
+        getEntityManager(entityClass).remove(entity);
         return true;
     }
 
     public long delete(Class<?> entityClass, String query, Object... params) {
-        return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
-                .executeUpdate();
+        return bindParameters(
+                getEntityManager(entityClass)
+                        .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))),
+                params)
+                        .executeUpdate();
     }
 
     public long delete(Class<?> entityClass, String query, Map<String, Object> params) {
-        return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
-                .executeUpdate();
+        return bindParameters(
+                getEntityManager(entityClass)
+                        .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))),
+                params)
+                        .executeUpdate();
     }
 
     public long delete(Class<?> entityClass, String query, Parameters params) {
         return delete(entityClass, query, params.map());
     }
 
-    public IllegalStateException implementationInjectionMissing() {
+    public static IllegalStateException implementationInjectionMissing() {
         return new IllegalStateException(
                 "This method is normally automatically overridden in subclasses: did you forget to annotate your entity with @Entity?");
     }
 
-    public int executeUpdate(String query, Object... params) {
-        Query jpaQuery = getEntityManager().createQuery(query);
+    /**
+     * Execute update on default persistence unit
+     */
+    public static int executeUpdate(String query, Object... params) {
+        Query jpaQuery = getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME).createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
     }
 
-    public int executeUpdate(String query, Map<String, Object> params) {
-        Query jpaQuery = getEntityManager().createQuery(query);
+    /**
+     * Execute update on default persistence unit
+     */
+    public static int executeUpdate(String query, Map<String, Object> params) {
+        Query jpaQuery = getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME).createQuery(query);
+        bindParameters(jpaQuery, params);
+        return jpaQuery.executeUpdate();
+    }
+
+    public int executeUpdate(String query, Class<?> entityClass, Object... params) {
+        Query jpaQuery = getEntityManager(entityClass).createQuery(query);
+        bindParameters(jpaQuery, params);
+        return jpaQuery.executeUpdate();
+    }
+
+    public int executeUpdate(String query, Class<?> entityClass, Map<String, Object> params) {
+        Query jpaQuery = getEntityManager(entityClass).createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
     }
 
     public int executeUpdate(Class<?> entityClass, String query, Object... params) {
-        String updateQuery = createUpdateQuery(entityClass, query, paramCount(params));
-        return executeUpdate(updateQuery, params);
+        String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, query, paramCount(params));
+        return executeUpdate(updateQuery, entityClass, params);
     }
 
     public int executeUpdate(Class<?> entityClass, String query, Map<String, Object> params) {
-        String updateQuery = createUpdateQuery(entityClass, query, paramCount(params));
-        return executeUpdate(updateQuery, params);
+        String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, query, paramCount(params));
+        return executeUpdate(updateQuery, entityClass, params);
     }
 
     public int update(Class<?> entityClass, String query, Map<String, Object> params) {
@@ -481,12 +434,11 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return executeUpdate(entityClass, query, params);
     }
 
-    public void setRollbackOnly() {
+    public static void setRollbackOnly() {
         try {
             getTransactionManager().setRollbackOnly();
         } catch (SystemException e) {
             throw new IllegalStateException(e);
         }
     }
-
 }

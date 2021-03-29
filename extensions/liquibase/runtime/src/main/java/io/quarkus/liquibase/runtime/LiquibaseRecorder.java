@@ -1,96 +1,75 @@
 package io.quarkus.liquibase.runtime;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.sql.DataSource;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.LiquibaseFactory;
-import io.quarkus.liquibase.runtime.graal.LiquibaseServiceLoader;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
-import liquibase.exception.ServiceNotFoundException;
-import liquibase.servicelocator.ServiceLocator;
 
-/**
- * The liquibase recorder
- */
 @Recorder
 public class LiquibaseRecorder {
 
-    private static final Logger log = Logger.getLogger(LiquibaseRecorder.class);
-
-    private final List<LiquibaseContainer> liquibaseContainers = new ArrayList<>(2);
-
-    public void setServicesImplementations(Map<String, List<String>> serviceLoader) {
-        LiquibaseServiceLoader.setServicesImplementations(serviceLoader);
-    }
-
     public Supplier<LiquibaseFactory> liquibaseSupplier(String dataSourceName) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
-        LiquibaseContainerProducer liquibaseProducer = Arc.container().instance(LiquibaseContainerProducer.class).get();
-        LiquibaseContainer liquibaseContainer = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
-        liquibaseContainers.add(liquibaseContainer);
+        if (dataSource instanceof UnconfiguredDataSource) {
+            return new Supplier<LiquibaseFactory>() {
+                @Override
+                public LiquibaseFactory get() {
+                    throw new UnsatisfiedResolutionException("No datasource has been configured");
+                }
+            };
+        }
+        LiquibaseFactoryProducer liquibaseProducer = Arc.container().instance(LiquibaseFactoryProducer.class).get();
+        LiquibaseFactory liquibaseFactory = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
         return new Supplier<LiquibaseFactory>() {
             @Override
             public LiquibaseFactory get() {
-                return liquibaseContainer.getLiquibaseFactory();
+                return liquibaseFactory;
             }
         };
     }
 
     public void doStartActions() {
         try {
-            for (LiquibaseContainer liquibaseContainer : liquibaseContainers) {
-                LiquibaseFactory liquibaseFactory = liquibaseContainer.getLiquibaseFactory();
-                if (liquibaseContainer.isCleanAtStart()) {
-                    try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-                        liquibase.dropAll();
-                    }
-                }
-                if (liquibaseContainer.isMigrateAtStart()) {
-                    if (liquibaseContainer.isValidateOnMigrate()) {
+            InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container()
+                    .select(LiquibaseFactory.class, Any.Literal.INSTANCE);
+            if (liquibaseFactoryInstance.isUnsatisfied()) {
+                return;
+            }
+
+            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
+                try {
+                    LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
+                    if (liquibaseFactory.getConfiguration().cleanAtStart) {
                         try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-                            liquibase.validate();
+                            liquibase.dropAll();
                         }
                     }
-                    try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-                        liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+                    if (liquibaseFactory.getConfiguration().migrateAtStart) {
+                        if (liquibaseFactory.getConfiguration().validateOnMigrate) {
+                            try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                                liquibase.validate();
+                            }
+                        }
+                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                            liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+                        }
                     }
+                } catch (UnsatisfiedResolutionException e) {
+                    //ignore, the DS is not configured
                 }
             }
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException("Error starting Liquibase", e);
         }
-    }
-
-    public void setJvmServiceImplementations(Map<String, List<String>> services) {
-        ServiceLocator.setInstance(new ServiceLocator() {
-
-            @Override
-            public <T> Class<? extends T>[] findClasses(Class<T> requiredInterface) throws ServiceNotFoundException {
-                List<String> found = services.get(requiredInterface.getName());
-                if (found == null) {
-                    log.warnf("Failed to find pre-indexed service %s, falling back to slow classpath scanning",
-                            requiredInterface);
-                    return super.findClasses(requiredInterface);
-                }
-                List<Class<? extends T>> ret = new ArrayList<>();
-                for (String i : found) {
-                    try {
-                        ret.add((Class<? extends T>) Class.forName(i, false, Thread.currentThread().getContextClassLoader()));
-                    } catch (ClassNotFoundException e) {
-                        log.error("Failed to load Liquibase service", e);
-                    }
-                }
-                return ret.toArray(new Class[0]);
-            }
-        });
     }
 }

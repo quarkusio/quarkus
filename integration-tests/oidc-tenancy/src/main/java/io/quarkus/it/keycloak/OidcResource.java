@@ -24,6 +24,7 @@ public class OidcResource {
     private volatile boolean introspection;
     private volatile boolean rotate;
     private volatile int jwkEndpointCallCount;
+    private volatile int introspectionEndpointCallCount;
 
     @PostConstruct
     public void init() throws Exception {
@@ -40,7 +41,7 @@ public class OidcResource {
         final String baseUri = ui.getBaseUriBuilder().path("oidc").build().toString();
         return "{" +
                 "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
-                "   \"token_introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
+                "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
                 "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
                 "  }";
     }
@@ -73,12 +74,25 @@ public class OidcResource {
         return jwkEndpointCallCount;
     }
 
+    @GET
+    @Path("introspection-endpoint-call-count")
+    public int introspectionEndpointCallCount() {
+        return introspectionEndpointCallCount;
+    }
+
+    @POST
+    @Path("introspection-endpoint-call-count")
+    public int resetIntrospectionEndpointCallCount() {
+        introspectionEndpointCallCount = 0;
+        return introspectionEndpointCallCount;
+    }
+
     @POST
     @Produces("application/json")
     @Path("introspect")
     public String introspect() {
-        // Introspect call will return an active token status only when the introspection is disallowed.
-        // This is done to test that an asynchronous JWK refresh call done by Vertx Auth is effective.
+        introspectionEndpointCallCount++;
+
         return "{" +
                 "   \"active\": " + introspection + "," +
                 "   \"scope\": \"user\"," +
@@ -107,28 +121,30 @@ public class OidcResource {
     }
 
     @POST
-    @Path("introspection")
+    @Path("enable-introspection")
     public boolean setIntrospection() {
         introspection = true;
         return introspection;
     }
 
-    @GET
-    @Path("introspection-status")
-    public boolean introspectionStatus() {
+    @POST
+    @Path("disable-introspection")
+    public boolean disableIntrospection() {
+        introspection = false;
         return introspection;
     }
 
     @POST
-    @Path("rotate")
+    @Path("enable-rotate")
     public boolean setRotate() {
         rotate = true;
         return rotate;
     }
 
-    @GET
-    @Path("rotate-status")
-    public boolean rotateStatus() {
+    @POST
+    @Path("disable-rotate")
+    public boolean disableRotate() {
+        rotate = false;
         return rotate;
     }
 
@@ -138,7 +154,7 @@ public class OidcResource {
                 .upn("alice")
                 .preferredUserName("alice")
                 .groups("user")
-                .jws().signatureKeyId(kid)
+                .jws().keyId(kid)
                 .sign(key.getPrivateKey());
     }
 }

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.rest.TestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
@@ -35,6 +36,7 @@ public class JaxRSTestCase {
     }
 
     @Test
+    @DisabledOnNativeImage //the native image tests will bind to 0.0.0.0 as the image is a production image, but the test datasource in the JVM will want to use localhost
     public void testConfigInjectionOfPort() {
         String host = ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class).orElse("0.0.0.0");
         RestAssured.when().get("/test/config/host").then().body(is(host));

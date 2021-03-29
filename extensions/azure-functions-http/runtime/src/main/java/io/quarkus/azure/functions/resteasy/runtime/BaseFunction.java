@@ -34,12 +34,13 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 public class BaseFunction {
     private static final Logger log = Logger.getLogger("io.quarkus.azure");
 
-    protected static final String deploymentStatus;
+    protected static String deploymentStatus;
     protected static boolean started = false;
+    protected static boolean bootstrapError = false;
 
     private static final int BUFFER_SIZE = 8096;
 
-    static {
+    protected static void initQuarkus() {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
         if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock azure unit testing.
@@ -50,7 +51,8 @@ public class BaseFunction {
                 app.start(args);
                 errorWriter.println("Quarkus bootstrapped successfully.");
                 started = true;
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
+                bootstrapError = true;
                 errorWriter.println("Quarkus bootstrap failed.");
                 ex.printStackTrace(errorWriter);
             }
@@ -61,7 +63,7 @@ public class BaseFunction {
         deploymentStatus = error.toString();
     }
 
-    protected HttpResponseMessage dispatch(HttpRequestMessage<Optional<byte[]>> request) {
+    protected HttpResponseMessage dispatch(HttpRequestMessage<Optional<String>> request) {
         try {
             return nettyDispatch(request);
         } catch (Exception e) {
@@ -71,7 +73,7 @@ public class BaseFunction {
         }
     }
 
-    protected HttpResponseMessage nettyDispatch(HttpRequestMessage<Optional<byte[]>> request)
+    protected HttpResponseMessage nettyDispatch(HttpRequestMessage<Optional<String>> request)
             throws Exception {
         String path = request.getUri().getRawPath();
         String query = request.getUri().getRawQuery();
@@ -90,7 +92,7 @@ public class BaseFunction {
 
         HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
         if (request.getBody().isPresent()) {
-            ByteBuf body = Unpooled.wrappedBuffer(request.getBody().get());
+            ByteBuf body = Unpooled.wrappedBuffer(request.getBody().get().getBytes());
             requestContent = new DefaultLastHttpContent(body);
         }
 
@@ -117,9 +119,9 @@ public class BaseFunction {
         ByteArrayOutputStream baos;
         WritableByteChannel byteChannel;
         CompletableFuture<HttpResponseMessage> future = new CompletableFuture<>();
-        final HttpRequestMessage<Optional<byte[]>> request;
+        final HttpRequestMessage<Optional<String>> request;
 
-        public ResponseHandler(HttpRequestMessage<Optional<byte[]>> request) {
+        public ResponseHandler(HttpRequestMessage<Optional<String>> request) {
             this.request = request;
         }
 

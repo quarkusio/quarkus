@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
@@ -15,19 +16,21 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxInputStream extends InputStream {
 
+    public static final String CONTINUE = "100-continue";
     private final VertxBlockingInput exchange;
 
     private boolean closed;
     private boolean finished;
     private ByteBuf pooled;
     private final long limit;
+    private ContinueState continueState = ContinueState.NONE;
 
-    public VertxInputStream(RoutingContext request, long timeout) throws IOException {
-
+    public VertxInputStream(RoutingContext request, long timeout) {
         this.exchange = new VertxBlockingInput(request.request(), timeout);
         Long limitObj = request.get(VertxHttpRecorder.MAX_REQUEST_SIZE_KEY);
         if (limitObj == null) {
@@ -35,6 +38,21 @@ public class VertxInputStream extends InputStream {
         } else {
             limit = limitObj;
         }
+        String expect = request.request().getHeader(HttpHeaderNames.EXPECT);
+        if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
+            continueState = ContinueState.REQUIRED;
+        }
+    }
+
+    public VertxInputStream(RoutingContext request, long timeout, ByteBuf existing) {
+        this.exchange = new VertxBlockingInput(request.request(), timeout);
+        Long limitObj = request.get(VertxHttpRecorder.MAX_REQUEST_SIZE_KEY);
+        if (limitObj == null) {
+            limit = -1;
+        } else {
+            limit = limitObj;
+        }
+        this.pooled = existing;
     }
 
     @Override
@@ -56,6 +74,10 @@ public class VertxInputStream extends InputStream {
     public int read(final byte[] b, final int off, final int len) throws IOException {
         if (closed) {
             throw new IOException("Stream is closed");
+        }
+        if (continueState == ContinueState.REQUIRED) {
+            continueState = ContinueState.SENT;
+            exchange.request.response().writeContinue();
         }
         readIntoBuffer();
         if (limit > 0 && exchange.request.bytesRead() > limit) {
@@ -150,49 +172,54 @@ public class VertxInputStream extends InputStream {
         protected Throwable readException;
         private final long timeout;
 
-        public VertxBlockingInput(HttpServerRequest request, long timeout) throws IOException {
+        public VertxBlockingInput(HttpServerRequest request, long timeout) {
             this.request = request;
             this.timeout = timeout;
-            if (!request.isEnded()) {
-                request.pause();
-                request.handler(this);
-                request.endHandler(new Handler<Void>() {
-                    @Override
-                    public void handle(Void event) {
-                        synchronized (request.connection()) {
-                            eof = true;
-                            if (waiting) {
-                                request.connection().notify();
-                            }
-                        }
-                    }
-                });
-                request.exceptionHandler(new Handler<Throwable>() {
-                    @Override
-                    public void handle(Throwable event) {
-                        synchronized (request.connection()) {
-                            readException = new IOException(event);
-                            if (input1 != null) {
-                                input1.getByteBuf().release();
-                                input1 = null;
-                            }
-                            if (inputOverflow != null) {
-                                Buffer d = inputOverflow.poll();
-                                while (d != null) {
-                                    d.getByteBuf().release();
-                                    d = inputOverflow.poll();
+            final ConnectionBase connection = (ConnectionBase) request.connection();
+            synchronized (connection) {
+                if (!connection.channel().isOpen()) {
+                    readException = new ClosedChannelException();
+                } else if (!request.isEnded()) {
+                    request.pause();
+                    request.handler(this);
+                    request.endHandler(new Handler<Void>() {
+                        @Override
+                        public void handle(Void event) {
+                            synchronized (connection) {
+                                eof = true;
+                                if (waiting) {
+                                    connection.notify();
                                 }
                             }
-                            if (waiting) {
-                                request.connection().notify();
+                        }
+                    });
+                    request.exceptionHandler(new Handler<Throwable>() {
+                        @Override
+                        public void handle(Throwable event) {
+                            synchronized (connection) {
+                                readException = new IOException(event);
+                                if (input1 != null) {
+                                    input1.getByteBuf().release();
+                                    input1 = null;
+                                }
+                                if (inputOverflow != null) {
+                                    Buffer d = inputOverflow.poll();
+                                    while (d != null) {
+                                        d.getByteBuf().release();
+                                        d = inputOverflow.poll();
+                                    }
+                                }
+                                if (waiting) {
+                                    connection.notify();
+                                }
                             }
                         }
-                    }
 
-                });
-                request.fetch(1);
-            } else {
-                eof = true;
+                    });
+                    request.fetch(1);
+                } else {
+                    eof = true;
+                }
             }
         }
 
@@ -271,4 +298,9 @@ public class VertxInputStream extends InputStream {
         }
     }
 
+    enum ContinueState {
+        NONE,
+        REQUIRED,
+        SENT;
+    }
 }

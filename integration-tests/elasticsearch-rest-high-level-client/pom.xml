@@ -6,7 +6,6 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -39,9 +38,56 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elasticsearch-rest-high-level-client-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
@@ -75,7 +121,7 @@
             <id>test-elasticsearch</id>
             <activation>
                 <property>
-                    <name>test-elasticsearch</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -92,25 +138,67 @@
                             <skip>false</skip>
                         </configuration>
                     </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>docker-elasticsearch</id>
+            <activation>
+                <property>
+                    <name>start-containers</name>
+                </property>
+            </activation>
+            <properties>
+                <elasticsearch.hosts>localhost:9200</elasticsearch.hosts>
+                <elasticsearch.protocol>http</elasticsearch.protocol>
+            </properties>
+            <build>
+                <plugins>
                     <plugin>
-                        <groupId>com.github.alexcojocaru</groupId>
-                        <artifactId>elasticsearch-maven-plugin</artifactId>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
                         <configuration>
-                            <timeout>90</timeout>
-                            <pathConf>${project.build.directory}/test-classes/elasticsearch-maven-plugin/configuration/</pathConf>
-                            <autoCreateIndex>true</autoCreateIndex>
+                            <images>
+                                <image>
+                                    <name>${elasticsearch.image}</name>
+                                    <alias>elasticsearch</alias>
+                                    <run>
+                                        <env>
+                                            <discovery.type>single-node</discovery.type>
+                                        </env>
+                                        <ports>
+                                            <port>9200:9200</port>
+                                        </ports>
+                                        <log>
+                                            <prefix>Elasticsearch: </prefix>
+                                            <date>default</date>
+                                            <color>cyan</color>
+                                        </log>
+                                        <wait>
+                                            <http>
+                                                <url>http://localhost:9200</url>
+                                                <method>GET</method>
+                                                <status>200</status>
+                                            </http>
+                                            <time>20000</time>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                            <allContainers>true</allContainers>
                         </configuration>
-                        <!-- Different executions from 2.x: the "start" goal has been renamed in version 5  -->
                         <executions>
                             <execution>
-                                <id>start-elasticsearch</id>
+                                <id>docker-start</id>
                                 <phase>process-test-classes</phase>
                                 <goals>
-                                    <goal>runforked</goal>
+                                    <goal>stop</goal>
+                                    <goal>start</goal>
                                 </goals>
                             </execution>
                             <execution>
-                                <id>stop-elasticsearch</id>
+                                <id>docker-stop</id>
                                 <phase>post-integration-test</phase>
                                 <goals>
                                     <goal>stop</goal>
@@ -118,40 +206,26 @@
                             </execution>
                         </executions>
                     </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>native</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
                     <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
                         <executions>
                             <execution>
+                                <id>docker-prune</id>
+                                <phase>generate-resources</phase>
                                 <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
+                                    <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <systemProperties>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                    </systemProperties>
+                                    <executable>${docker-prune.location}</executable>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
                 </plugins>
             </build>
-            <properties>
-                <quarkus.package.type>native</quarkus.package.type>
-            </properties>
         </profile>
+
     </profiles>
 
 </project>

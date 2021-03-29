@@ -17,6 +17,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-apache-httpclient</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.amazon.alexa</groupId>
             <artifactId>ask-sdk</artifactId>
             <exclusions>
@@ -58,7 +62,11 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.slf4j</groupId>
-            <artifactId>slf4j-jboss-logging</artifactId>
+            <artifactId>slf4j-jboss-logmanager</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
         </dependency>
     </dependencies>
 

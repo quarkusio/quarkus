@@ -20,12 +20,14 @@ import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.InvokerLogger;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @DisableForNative
 class AddExtensionIT extends QuarkusPlatformAwareMojoTestBase {
 
     private static final String QUARKUS_GROUPID = "io.quarkus";
+    private static final String BOM_ARTIFACT_ID = "quarkus-bom";
     private static final String VERTX_ARTIFACT_ID = "quarkus-vertx";
     private static final String COMMONS_IO = "commons-io";
     private static final String PROJECT_SOURCE_DIR = "projects/classic";
@@ -43,6 +45,23 @@ class AddExtensionIT extends QuarkusPlatformAwareMojoTestBase {
         expected.setGroupId(QUARKUS_GROUPID);
         expected.setArtifactId(VERTX_ARTIFACT_ID);
         assertThat(contains(model.getDependencies(), expected)).isTrue();
+    }
+
+    @Test
+    @Disabled("TODO: https://github.com/quarkusio/quarkus/issues/14164")
+    void testAddExtensionWithASingleExtensionToSubmodule() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/multimodule", "projects/testAddExtensionWithASingleExtensionToSubmodule");
+        testDir = new File(testDir, "runner");
+        invoker = initInvoker(testDir);
+        addExtension(false, VERTX_ARTIFACT_ID);
+
+        Model model = loadPom(testDir);
+        Dependency expected = new Dependency();
+        expected.setGroupId(QUARKUS_GROUPID);
+        expected.setArtifactId(VERTX_ARTIFACT_ID);
+        assertThat(contains(model.getDependencies(), expected)).isTrue();
+
+        assertThat(model.getDependencyManagement().getDependencies()).isEmpty();
     }
 
     @Test
@@ -110,18 +129,18 @@ class AddExtensionIT extends QuarkusPlatformAwareMojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                getPluginGroupId() + ":" + getPluginArtifactId() + ":" + getPluginVersion() + ":add-extension"));
+                getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":add-extension"));
         Properties properties = new Properties();
-        properties.setProperty("platformGroupId", "io.quarkus");
-        properties.setProperty("platformArtifactId", "quarkus-bom");
-        properties.setProperty("platformVersion", getPluginVersion());
+        properties.setProperty("platformGroupId", QUARKUS_GROUPID);
+        properties.setProperty("platformArtifactId", BOM_ARTIFACT_ID);
+        properties.setProperty("platformVersion", getQuarkusCoreVersion());
         if (plural) {
             properties.setProperty("extensions", ext);
         } else {
             properties.setProperty("extension", ext);
         }
         request.setProperties(properties);
-        getEnv().forEach(request::addShellEnvironment);
+
         File log = new File(testDir, "build-add-extension-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

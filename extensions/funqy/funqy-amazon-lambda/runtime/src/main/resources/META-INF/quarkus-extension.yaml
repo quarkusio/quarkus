@@ -1,4 +1,3 @@
----
 name: "Funqy AWS Lambda Binding"
 metadata:
   keywords:
@@ -11,3 +10,8 @@ metadata:
   categories:
   - "cloud"
   status: "experimental"
+  codestart:
+    name: "funqy-amazon-lambda"
+    kind: "singleton-example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

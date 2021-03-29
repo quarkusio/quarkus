@@ -1,6 +1,7 @@
 package io.quarkus.gradle.tasks;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
@@ -30,8 +32,6 @@ public class QuarkusBuild extends QuarkusTask {
 
     private static final String NATIVE_PROPERTY_NAMESPACE = "quarkus.native";
 
-    private boolean uberJar;
-
     private List<String> ignoredEntries = new ArrayList<>();
 
     public QuarkusBuild() {
@@ -45,16 +45,6 @@ public class QuarkusBuild extends QuarkusTask {
             System.setProperty(expandConfigurationKey(nativeArg.getKey()), nativeArg.getValue().toString());
         }
         return this;
-    }
-
-    @Input
-    public boolean isUberJar() {
-        return uberJar;
-    }
-
-    @Option(description = "Set to true if the build task should build an uberjar", option = "uber-jar")
-    public void setUberJar(boolean uberJar) {
-        this.uberJar = uberJar;
     }
 
     @Optional
@@ -77,14 +67,47 @@ public class QuarkusBuild extends QuarkusTask {
                 .plus(mainSourceSet.getResources());
     }
 
+    @Input
+    public Map<Object, Object> getQuarkusBuildSystemProperties() {
+        Map<Object, Object> quarkusSystemProperties = new HashMap<>();
+        for (Map.Entry<Object, Object> systemProperty : System.getProperties().entrySet()) {
+            if (systemProperty.getKey().toString().startsWith("quarkus.") &&
+                    systemProperty.getValue() instanceof Serializable) {
+                quarkusSystemProperties.put(systemProperty.getKey(), systemProperty.getValue());
+            }
+        }
+        return quarkusSystemProperties;
+    }
+
+    @Input
+    public Map<String, String> getQuarkusBuildEnvProperties() {
+        Map<String, String> quarkusEnvProperties = new HashMap<>();
+        for (Map.Entry<String, String> systemProperty : System.getenv().entrySet()) {
+            if (systemProperty.getKey() != null && systemProperty.getKey().startsWith("QUARKUS_")) {
+                quarkusEnvProperties.put(systemProperty.getKey(), systemProperty.getValue());
+            }
+        }
+        return quarkusEnvProperties;
+    }
+
     @OutputFile
-    public File getOutputDir() {
+    public File getRunnerJar() {
         return new File(getProject().getBuildDir(), extension().finalName() + "-runner.jar");
+    }
+
+    @OutputFile
+    public File getNativeRunner() {
+        return new File(getProject().getBuildDir(), extension().finalName() + "-runner");
+    }
+
+    @OutputDirectory
+    public File getFastJar() {
+        return new File(getProject().getBuildDir(), "quarkus-app");
     }
 
     @TaskAction
     public void buildQuarkus() {
-        getLogger().lifecycle("building quarkus runner");
+        getLogger().lifecycle("building quarkus jar");
 
         final AppArtifact appArtifact = extension().getAppArtifact();
         appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
@@ -94,11 +117,6 @@ public class QuarkusBuild extends QuarkusTask {
         if (ignoredEntries != null && ignoredEntries.size() > 0) {
             String joinedEntries = String.join(",", ignoredEntries);
             effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
-        }
-        boolean clear = false;
-        if (uberJar && System.getProperty("quarkus.package.uber-jar") == null) {
-            System.setProperty("quarkus.package.uber-jar", "true");
-            clear = true;
         }
         try (CuratedApplication appCreationContext = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
@@ -122,10 +140,6 @@ public class QuarkusBuild extends QuarkusTask {
 
         } catch (BootstrapException e) {
             throw new GradleException("Failed to build a runnable JAR", e);
-        } finally {
-            if (clear) {
-                System.clearProperty("quarkus.package.uber-jar");
-            }
         }
     }
 

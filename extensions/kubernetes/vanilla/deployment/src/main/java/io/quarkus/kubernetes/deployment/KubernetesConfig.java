@@ -92,6 +92,8 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * The host under which the application is going to be exposed
+     * 
+     * @deprecated Use the {@code quarkus.kubernetes.ingress.host} instead
      */
     @ConfigItem
     Optional<String> host;
@@ -143,6 +145,12 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem
     ProbeConfig readinessProbe;
+
+    /**
+     * Prometheus configuration
+     */
+    @ConfigItem
+    PrometheusConfig prometheus;
 
     /**
      * Volume mounts
@@ -214,10 +222,54 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<List<String>> deploymentTarget;
 
     /**
+     * The host aliases
+     */
+    @ConfigItem(name = "hostaliases")
+    Map<String, HostAliasConfig> hostAliases;
+
+    /**
+     * Resources requirements
+     */
+    @ConfigItem
+    ResourcesConfig resources;
+
+    /**
      * If true, a Kubernetes Ingress will be created
+     * 
+     * @deprecated Use the {@code quarkus.kubernetes.ingress.expose} instead
      */
     @ConfigItem
     boolean expose;
+
+    /**
+     * Ingress configuration
+     */
+    ExpositionConfig ingress;
+
+    /**
+     * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addVersionToLabelSelectors;
+
+    /**
+     * If set to true, Quarkus will attempt to deploy the application to the target Kubernetes cluster
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean deploy;
+
+    /**
+     * If set, the secret will mounted to the application container and its contents will be used for application configuration.
+     */
+    @ConfigItem
+    Optional<String> appSecret;
+
+    /**
+     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * configuration.
+     */
+    @ConfigItem
+    Optional<String> appConfigMap;
 
     public Optional<String> getPartOf() {
         return partOf;
@@ -319,6 +371,10 @@ public class KubernetesConfig implements PlatformConfiguration {
         return serviceType;
     }
 
+    public OptionalInt getNodePort() {
+        return this.nodePort;
+    }
+
     public ImagePullPolicy getImagePullPolicy() {
         return imagePullPolicy;
     }
@@ -333,6 +389,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public ProbeConfig getReadinessProbe() {
         return readinessProbe;
+    }
+
+    public PrometheusConfig getPrometheusConfig() {
+        return prometheus;
     }
 
     public Map<String, MountConfig> getMounts() {
@@ -375,8 +435,29 @@ public class KubernetesConfig implements PlatformConfiguration {
         return sidecars;
     }
 
+    public Map<String, HostAliasConfig> getHostAliases() {
+        return hostAliases;
+    }
+
+    public ResourcesConfig getResources() {
+        return resources;
+    }
+
     @Override
     public boolean isExpose() {
         return expose;
+    }
+
+    public Optional<String> getAppSecret() {
+        return appSecret;
+    }
+
+    public Optional<String> getAppConfigMap() {
+        return appConfigMap;
+    }
+
+    @Override
+    public Optional<ExpositionConfig> getExposition() {
+        return Optional.of(ingress);
     }
 }

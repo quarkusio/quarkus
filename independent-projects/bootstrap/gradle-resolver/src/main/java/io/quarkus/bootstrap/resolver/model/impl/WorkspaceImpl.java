@@ -35,4 +35,5 @@ public class WorkspaceImpl implements Workspace, Serializable {
     public WorkspaceModule getModule(ArtifactCoords key) {
         return modules.get(key);
     }
+
 }

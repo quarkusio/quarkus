@@ -13,13 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.grpc.Channel;
-import io.grpc.examples.helloworld.GreeterGrpc;
-import io.grpc.examples.helloworld.HelloReply;
-import io.grpc.examples.helloworld.HelloReplyOrBuilder;
-import io.grpc.examples.helloworld.HelloRequest;
-import io.grpc.examples.helloworld.HelloRequestOrBuilder;
-import io.grpc.examples.helloworld.MutinyGreeterGrpc;
+import io.grpc.examples.goodbyeworld.*;
+import io.grpc.examples.helloworld.*;
 import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.server.services.GoodbyeService;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -32,7 +29,11 @@ public class MutipleStubsInjectionTest {
                             MutinyGreeterGrpc.class, GreeterGrpc.class,
                             MutinyGreeterGrpc.MutinyGreeterStub.class,
                             HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class,
+                            MutinyFarewellGrpc.class, FarewellGrpc.class,
+                            MutinyFarewellGrpc.MutinyFarewellStub.class,
+                            GoodbyeService.class, GoodbyeRequest.class, GoodbyeReply.class,
+                            GoodbyeReplyOrBuilder.class, GoodbyeRequestOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject
@@ -40,11 +41,17 @@ public class MutipleStubsInjectionTest {
 
     @Test
     public void test() {
-        String neo = service.invokeMutiny("neo-mutiny");
+        String neo = service.invokeMutinyGreeter("neo-mutiny");
         assertThat(neo).isEqualTo("Hello neo-mutiny");
 
-        neo = service.invokeBlocking("neo-blocking");
+        neo = service.invokeBlockingGreeter("neo-blocking");
         assertThat(neo).isEqualTo("Hello neo-blocking");
+
+        neo = service.invokeMutinyFarewell("neo-mutiny");
+        assertThat(neo).isEqualTo("Goodbye neo-mutiny");
+
+        neo = service.invokeBlockingFarewell("neo-blocking");
+        assertThat(neo).isEqualTo("Goodbye neo-blocking");
 
         service.validateChannel();
     }
@@ -54,24 +61,42 @@ public class MutipleStubsInjectionTest {
 
         @Inject
         @GrpcService("hello-service")
-        MutinyGreeterGrpc.MutinyGreeterStub mutiny;
+        MutinyGreeterGrpc.MutinyGreeterStub mutinyGreeter;
 
         @Inject
         @GrpcService("hello-service")
-        GreeterGrpc.GreeterBlockingStub blocking;
+        GreeterGrpc.GreeterBlockingStub blockingGreeter;
+
+        @Inject
+        @GrpcService("hello-service")
+        MutinyFarewellGrpc.MutinyFarewellStub mutinyFarewell;
+
+        @Inject
+        @GrpcService("hello-service")
+        FarewellGrpc.FarewellBlockingStub blockingFarewell;
 
         @Inject
         @GrpcService("hello-service-2")
         Channel channel;
 
-        public String invokeMutiny(String s) {
-            return mutiny.sayHello(HelloRequest.newBuilder().setName(s).build())
+        public String invokeMutinyGreeter(String s) {
+            return mutinyGreeter.sayHello(HelloRequest.newBuilder().setName(s).build())
                     .map(HelloReply::getMessage)
                     .await().atMost(Duration.ofSeconds(5));
         }
 
-        public String invokeBlocking(String s) {
-            return blocking.sayHello(HelloRequest.newBuilder().setName(s).build()).getMessage();
+        public String invokeBlockingGreeter(String s) {
+            return blockingGreeter.sayHello(HelloRequest.newBuilder().setName(s).build()).getMessage();
+        }
+
+        public String invokeMutinyFarewell(String s) {
+            return mutinyFarewell.sayGoodbye(GoodbyeRequest.newBuilder().setName(s).build())
+                    .map(GoodbyeReply::getMessage)
+                    .await().atMost(Duration.ofSeconds(5));
+        }
+
+        public String invokeBlockingFarewell(String s) {
+            return blockingFarewell.sayGoodbye(GoodbyeRequest.newBuilder().setName(s).build()).getMessage();
         }
 
         public void validateChannel() {

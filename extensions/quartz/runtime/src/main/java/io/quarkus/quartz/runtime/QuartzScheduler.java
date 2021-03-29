@@ -12,19 +12,20 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 import javax.interceptor.Interceptor;
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
-import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.quartz.ScheduleBuilder;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
@@ -42,8 +43,6 @@ import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
@@ -55,8 +54,8 @@ import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerContext;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
-import io.quarkus.scheduler.runtime.SimpleScheduler;
 import io.quarkus.scheduler.runtime.SkipConcurrentExecutionInvoker;
+import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 
 @Singleton
 public class QuartzScheduler implements Scheduler {
@@ -66,24 +65,27 @@ public class QuartzScheduler implements Scheduler {
 
     private final org.quartz.Scheduler scheduler;
     private final boolean enabled;
+    private final boolean startHalted;
 
-    @Produces
-    @Singleton
-    org.quartz.Scheduler produceQuartzScheduler() {
-        if (scheduler == null) {
-            throw new IllegalStateException(
-                    "Quartz scheduler is either explicitly disabled through quarkus.scheduler.enabled=false or no @Scheduled methods were found. If you only need to schedule a job programmatically you can force the start of the scheduler via quarkus.quartz.force-start=true");
-        }
-        return scheduler;
-    }
-
-    public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, Config config,
-            SchedulerRuntimeConfig schedulerRuntimeConfig, Event<SkippedExecution> skippedExecutionEvent) {
+    public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, SchedulerRuntimeConfig schedulerRuntimeConfig,
+            Event<SkippedExecution> skippedExecutionEvent, Instance<Job> jobs, Instance<UserTransaction> userTransaction) {
         enabled = schedulerRuntimeConfig.enabled;
+        final QuartzRuntimeConfig runtimeConfig = quartzSupport.getRuntimeConfig();
+        warnDeprecated(runtimeConfig);
+
+        boolean forceStart;
+        if (runtimeConfig.startMode != QuartzStartMode.NORMAL) {
+            startHalted = (runtimeConfig.startMode == QuartzStartMode.HALTED);
+            forceStart = startHalted || (runtimeConfig.startMode == QuartzStartMode.FORCED);
+        } else {
+            startHalted = false;
+            forceStart = runtimeConfig.forceStart.orElse(false);
+        }
+
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
             this.scheduler = null;
-        } else if (!quartzSupport.getRuntimeConfig().forceStart && context.getScheduledMethods().isEmpty()) {
+        } else if (!forceStart && context.getScheduledMethods().isEmpty()) {
             LOGGER.info("No scheduled business methods found - Quartz scheduler will not be started");
             this.scheduler = null;
         } else {
@@ -91,10 +93,10 @@ public class QuartzScheduler implements Scheduler {
             Map<String, ScheduledInvoker> invokers = new HashMap<>();
             UserTransaction transaction = null;
 
-            try (InstanceHandle<UserTransaction> handle = Arc.container().instance(UserTransaction.class)) {
+            try {
                 boolean manageTx = quartzSupport.getBuildTimeConfig().storeType.isNonManagedTxJobStore();
-                if (manageTx && handle.isAvailable()) {
-                    transaction = handle.get();
+                if (manageTx && userTransaction.isResolvable()) {
+                    transaction = userTransaction.get();
                 }
                 Properties props = getSchedulerConfigurationProperties(quartzSupport);
 
@@ -102,7 +104,7 @@ public class QuartzScheduler implements Scheduler {
                 scheduler = schedulerFactory.getScheduler();
 
                 // Set custom job factory
-                scheduler.setJobFactory(new InvokerJobFactory(invokers));
+                scheduler.setJobFactory(new InvokerJobFactory(invokers, jobs));
 
                 CronType cronType = context.getCronType();
                 CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
@@ -114,7 +116,7 @@ public class QuartzScheduler implements Scheduler {
                     int nameSequence = 0;
 
                     for (Scheduled scheduled : method.getSchedules()) {
-                        String identity = scheduled.identity().trim();
+                        String identity = SchedulerUtils.lookUpPropertyValue(scheduled.identity());
                         if (identity.isEmpty()) {
                             identity = ++nameSequence + "_" + method.getInvokerClassName();
                         }
@@ -132,11 +134,8 @@ public class QuartzScheduler implements Scheduler {
                                 .requestRecovery();
                         ScheduleBuilder<?> scheduleBuilder;
 
-                        String cron = scheduled.cron().trim();
+                        String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
                         if (!cron.isEmpty()) {
-                            if (SchedulerContext.isConfigValue(cron)) {
-                                cron = config.getValue(SchedulerContext.getConfigProperty(cron), String.class);
-                            }
                             if (!CronType.QUARTZ.equals(cronType)) {
                                 // Migrate the expression
                                 Cron cronExpr = parser.parse(cron);
@@ -154,8 +153,7 @@ public class QuartzScheduler implements Scheduler {
                             scheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
                         } else if (!scheduled.every().isEmpty()) {
                             scheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
-                                    .withIntervalInMilliseconds(
-                                            SimpleScheduler.parseDuration(scheduled, scheduled.every(), "every").toMillis())
+                                    .withIntervalInMilliseconds(SchedulerUtils.parseEveryAsMillis(scheduled))
                                     .repeatForever();
                         } else {
                             throw new IllegalArgumentException("Invalid schedule configuration: " + scheduled);
@@ -169,8 +167,7 @@ public class QuartzScheduler implements Scheduler {
                         if (scheduled.delay() > 0) {
                             millisToAdd = scheduled.delayUnit().toMillis(scheduled.delay());
                         } else if (!scheduled.delayed().isEmpty()) {
-                            millisToAdd = Math
-                                    .abs(SimpleScheduler.parseDuration(scheduled, scheduled.delayed(), "delayed").toMillis());
+                            millisToAdd = SchedulerUtils.parseDelayedAsMillis(scheduled);
                         }
                         if (millisToAdd != null) {
                             triggerBuilder.startAt(new Date(Instant.now()
@@ -178,12 +175,11 @@ public class QuartzScheduler implements Scheduler {
                         }
 
                         JobDetail job = jobBuilder.build();
-                        if (scheduler.checkExists(job.getKey())) {
-                            scheduler.deleteJob(job.getKey());
+                        if (!scheduler.checkExists(job.getKey())) {
+                            scheduler.scheduleJob(job, triggerBuilder.build());
+                            LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
+                                    scheduled);
                         }
-                        scheduler.scheduleJob(job, triggerBuilder.build());
-                        LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
-                                scheduled);
                     }
                 }
                 if (transaction != null) {
@@ -200,6 +196,28 @@ public class QuartzScheduler implements Scheduler {
                 throw new IllegalStateException("Unable to create Scheduler", e);
             }
         }
+    }
+
+    /**
+     * Warn if there's any deprecated configuration
+     *
+     * @param runtimeConfig {@link QuartzRuntimeConfig} quartz scheduler configurations
+     */
+    private static void warnDeprecated(QuartzRuntimeConfig runtimeConfig) {
+        if (runtimeConfig.forceStart.isPresent()) {
+            LOGGER.warn("`quarkus.quartz.force-start` is deprecated and will be removed in a future version - it is "
+                    + "recommended to switch to `quarkus.quartz.start-mode`");
+        }
+    }
+
+    @Produces
+    @Singleton
+    org.quartz.Scheduler produceQuartzScheduler() {
+        if (scheduler == null) {
+            throw new IllegalStateException(
+                    "Quartz scheduler is either explicitly disabled through quarkus.scheduler.enabled=false or no @Scheduled methods were found. If you only need to schedule a job programmatically you can force the start of the scheduler via quarkus.quartz.force-start=true");
+        }
+        return scheduler;
     }
 
     @Override
@@ -247,7 +265,7 @@ public class QuartzScheduler implements Scheduler {
 
     // Use Interceptor.Priority.PLATFORM_BEFORE to start the scheduler before regular StartupEvent observers
     void start(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE) StartupEvent startupEvent) {
-        if (scheduler == null) {
+        if (scheduler == null || startHalted) {
             return;
         }
         try {
@@ -263,10 +281,11 @@ public class QuartzScheduler implements Scheduler {
      *
      * @param event ignored
      */
-    void destroy(@BeforeDestroyed(ApplicationScoped.class) Object event) { //
+    void destroy(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event) {
         if (scheduler != null) {
             try {
-                scheduler.shutdown(true); // gracefully shutdown
+                // Note that this method does not return until all currently executing jobs have completed
+                scheduler.shutdown(true);
             } catch (SchedulerException e) {
                 LOGGER.warnf("Unable to gracefully shutdown the scheduler", e);
             }
@@ -291,7 +310,7 @@ public class QuartzScheduler implements Scheduler {
         QuartzBuildTimeConfig buildTimeConfig = quartzSupport.getBuildTimeConfig();
         props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, "AUTO");
         props.put("org.quartz.scheduler.skipUpdateCheck", "true");
-        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, "QuarkusQuartzScheduler");
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, quartzSupport.getRuntimeConfig().instanceName);
         props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
@@ -317,7 +336,9 @@ public class QuartzScheduler implements Scheduler {
                     QuarkusQuartzConnectionPoolProvider.class.getName());
             if (buildTimeConfig.clustered) {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".isClustered", "true");
-                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval", "20000"); // 20 seconds
+                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".acquireTriggersWithinLock", "true");
+                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval",
+                        "" + quartzSupport.getBuildTimeConfig().clusterCheckinInterval);
             }
 
             if (buildTimeConfig.storeType.isNonManagedTxJobStore()) {
@@ -333,13 +354,12 @@ public class QuartzScheduler implements Scheduler {
         return props;
     }
 
-    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzAdditionalPropsConfig> config) {
+    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzExtensionPointConfig> config) {
         Properties props = new Properties();
-        for (String key : config.keySet()) {
-            props.put(String.format("%s.%s.class", prefix, key), config.get(key).clazz);
-            for (String propsName : config.get(key).propsValue.keySet()) {
-                props.put(String.format("%s.%s.%s", prefix, key, propsName),
-                        config.get(key).propsValue.get(propsName));
+        for (Map.Entry<String, QuartzExtensionPointConfig> configEntry : config.entrySet()) {
+            props.put(String.format("%s.%s.class", prefix, configEntry.getKey()), configEntry.getValue().clazz);
+            for (Map.Entry<String, String> propsEntry : configEntry.getValue().properties.entrySet()) {
+                props.put(String.format("%s.%s.%s", prefix, configEntry.getKey(), propsEntry.getKey()), propsEntry.getValue());
             }
         }
         return props;
@@ -354,11 +374,15 @@ public class QuartzScheduler implements Scheduler {
         }
 
         @Override
-        public void execute(JobExecutionContext context) {
+        public void execute(JobExecutionContext context) throws JobExecutionException {
             QuartzTrigger trigger = new QuartzTrigger(context);
             ScheduledInvoker scheduledInvoker = invokers.get(context.getJobDetail().getKey().getName());
             if (scheduledInvoker != null) { // could be null from previous runs
-                scheduledInvoker.invoke(new QuartzScheduledExecution(trigger));
+                try {
+                    scheduledInvoker.invoke(new QuartzScheduledExecution(trigger));
+                } catch (Exception e) {
+                    throw new JobExecutionException(e);
+                }
             }
         }
     }
@@ -418,9 +442,11 @@ public class QuartzScheduler implements Scheduler {
     static class InvokerJobFactory extends SimpleJobFactory {
 
         final Map<String, ScheduledInvoker> invokers;
+        final Instance<Job> jobs;
 
-        InvokerJobFactory(Map<String, ScheduledInvoker> invokers) {
+        InvokerJobFactory(Map<String, ScheduledInvoker> invokers, Instance<Job> jobs) {
             this.invokers = invokers;
+            this.jobs = jobs;
         }
 
         @Override
@@ -428,6 +454,10 @@ public class QuartzScheduler implements Scheduler {
             Class<? extends Job> jobClass = bundle.getJobDetail().getJobClass();
             if (jobClass.equals(InvokerJob.class)) {
                 return new InvokerJob(invokers);
+            }
+            Instance<?> instance = jobs.select(jobClass);
+            if (instance.isResolvable()) {
+                return (Job) instance.get();
             }
             return super.newJob(bundle, Scheduler);
         }

@@ -1,0 +1,19 @@
+name: maven
+type: buildtool
+fallback: true
+language:
+  base:
+    shared-data:
+      buildtool:
+        build-dir: target
+        cli: mvn
+        guide: https://quarkus.io/guides/maven-tooling.html
+        guide-native: https://quarkus.io/guides/building-native-image
+        cmd:
+          dev: compile quarkus:dev
+          package: package
+          package-uber-jar: package -Dquarkus.package.type=uber-jar
+          package-legacy-jar: package -Dquarkus.package.type=legacy-jar
+          package-native: package -Pnative
+          package-native-container: package -Pnative -Dquarkus.native.container-build=true
+          build-ci: verify -B

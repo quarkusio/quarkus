@@ -6,7 +6,11 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import java.util.List;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -15,6 +19,7 @@ import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.gcp.functions.FunqyCloudFunctionsBindingRecorder;
 import io.quarkus.funqy.runtime.FunqyConfig;
+import io.quarkus.jackson.runtime.ObjectMapperProducer;
 
 public class FunqyCloudFunctionsBuildStep {
     private static final String FEATURE_NAME = "funqy-google-cloud-functions";
@@ -36,7 +41,7 @@ public class FunqyCloudFunctionsBuildStep {
             FunqyCloudFunctionsBindingRecorder recorder,
             Optional<FunctionInitializedBuildItem> hasFunctions,
             BeanContainerBuildItem beanContainer) throws Exception {
-        if (!hasFunctions.isPresent() || hasFunctions.get() == null)
+        if (!hasFunctions.isPresent())
             return;
 
         recorder.init(beanContainer.getValue());
@@ -46,5 +51,13 @@ public class FunqyCloudFunctionsBuildStep {
     @Record(RUNTIME_INIT)
     public void choose(FunqyConfig config, FunqyCloudFunctionsBindingRecorder recorder) {
         recorder.chooseInvoker(config);
+    }
+
+    @BuildStep
+    public void markObjectMapperUnremovable(BuildProducer<UnremovableBeanBuildItem> unremovable) {
+        unremovable.produce(new UnremovableBeanBuildItem(
+                new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapper.class.getName())));
+        unremovable.produce(new UnremovableBeanBuildItem(
+                new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapperProducer.class.getName())));
     }
 }

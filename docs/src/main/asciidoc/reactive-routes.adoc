@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Reactive Routes
 
@@ -101,6 +101,20 @@ public void blocking(RoutingContext rc) {
 }
 ----
 
+[NOTE]
+====
+Alternatively, you can use `@io.smallrye.common.annotation.Blocking` and omit the `type = Route.HandlerType.BLOCKING`:
+[source, java]
+----
+@Route(methods = HttpMethod.POST, path = "/post")
+@Blocking
+public void blocking(RoutingContext rc) {
+    // ...
+}
+----
+When `@Blocking` is used, it ignores the `type` attribute of `@Route`.
+====
+
 The `@Route` annotation is repeatable and so you can declare several routes for a single method:
 
 [source,java]
@@ -186,15 +200,18 @@ A route method must be a non-private non-static method of a CDI bean.
 If the annotated method returns `void` then it has to accept at least one argument - see the supported types below. 
 If the annotated method does not return `void` then the arguments are optional.
 
+NOTE: Methods that return `void` must __end__ the response or the HTTP request to this route will never end.
+Some methods of `RoutingExchange` do it for you, others not and you must call the `end()` method of the response by yourself, please refer to its JavaDoc for more information.
+
 A route method can accept arguments of the following types: 
 
 * `io.vertx.ext.web.RoutingContext`
-* `io.vertx.reactivex.ext.web.RoutingContext`
+* `io.vertx.mutiny.ext.web.RoutingContext`
 * `io.quarkus.vertx.web.RoutingExchange`
 * `io.vertx.core.http.HttpServerRequest`
 * `io.vertx.core.http.HttpServerResponse`
-* `io.vertx.reactivex.core.http.HttpServerRequest`
-* `io.vertx.reactivex.core.http.HttpServerResponse`
+* `io.vertx.mutiny.core.http.HttpServerRequest`
+* `io.vertx.mutiny.core.http.HttpServerResponse`
 
 Furthermore, it is possible to inject the `HttpServerRequest` parameters into a method parameter annotated with `@io.quarkus.vertx.web.Param`:
 
@@ -259,6 +276,18 @@ Person createPerson(@Body Person person, @Param("id") Optional<String> primaryKe
 }
 ----
 
+A failure handler can declare a single method parameter whose type extends `Throwable`. 
+The type of the parameter is used to match the result of `RoutingContext#failure()`.
+
+.Failure Handler Example
+[source,java]
+----
+@Route(type = HandlerType.FAILURE)
+void unsupported(UnsupportedOperationException e, HttpServerResponse response) {
+  response.setStatusCode(501).end(e.getMessage());
+}
+----
+
 === Returning Unis
 
 In a reactive route, you can return a `Uni` directly:
@@ -310,7 +339,7 @@ String helloSync(RoutingContext context) {
 ----
 
 Be aware, the processing must be **non-blocking** as reactive routes are invoked on the IO Thread.
-Otherwise, use the `blocking` attribute of the `@Route` annotation.
+Otherwise, set the `type` attribute of the `@Route` annotation to `Route.HandlerType.BLOCKING`, or use the `@io.smallrye.common.annotation.Blocking` annotation.
 
 The method can return:
 
@@ -475,6 +504,40 @@ id: 3
 
 ----
 
+=== Using Bean Validation
+
+You can combine reactive routes and Bean Validation.
+First, don't forget to add the `quarkus-hibernate-validator` extension to your project.
+Then, you can add constraints to your route parameter (annotated with `@Param` or `@Body`):
+
+[source,java]
+----
+@Route(produces = "application/json")
+Person createPerson(@Body @Valid Person person, @NonNull @Param("id") String primaryKey) {
+  // ...
+}
+----
+
+If the parameters do not pass the tests, it returns an HTTP 400 response.
+If the request accepts JSON payload, the response follows the https://opensource.zalando.com/problem/constraint-violation/[Problem] format.
+
+When returning an object or a `Uni`, you can also use the `@Valid` annotation:
+
+[source,java]
+----
+@Route(...)
+@Valid Uni<Person> createPerson(@Body @Valid Person person, @NonNull @Param("id") String primaryKey) {
+  // ...
+}
+----
+
+If the item produced by the route does not pass the validation, it returns a HTTP 500 response.
+If the request accepts JSON payload, the response follows the https://opensource.zalando.com/problem/constraint-violation/[Problem] format.
+
+Note that only `@Valid` is supported on the return type.
+The returned class can use any constraint.
+In the case of `Uni`, it checks the item produced asynchronously.
+
 == Using the Vert.x Web Router
 
 You can also register your route directly on the _HTTP routing layer_ by registering routes directly on the `Router` object.
@@ -547,7 +610,7 @@ This is enough to generate a basic OpenAPI schema document from your Vert.x Rout
 
 [source,bash]
 ----
-curl http://localhost:8080/openapi
+curl http://localhost:8080/q/openapi
 ----
 
 You will see the generated OpenAPI schema document:
@@ -600,7 +663,7 @@ example, adding header info, or specifying the return type on `void` methods mig
             email = "techsupport@example.com"),
         license = @License(
             name = "Apache 2.0",
-            url = "http://www.apache.org/licenses/LICENSE-2.0.html"))
+            url = "https://www.apache.org/licenses/LICENSE-2.0.html"))
 )
 @ApplicationScoped
 public class MyDeclarativeRoutes {
@@ -646,7 +709,7 @@ info:
     email: techsupport@example.com
   license:
     name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.1
 paths:
   /greetings:
@@ -683,7 +746,7 @@ paths:
 Swagger UI is included by default when running in `dev` or `test` mode, and can optionally added to `prod` mode.
 See <<openapi-swaggerui.adoc#use-swagger-ui-for-development,the Swagger UI>> Guide for more details.
 
-Navigate to link:http://localhost:8080/swagger-ui/[localhost:8080/swagger-ui/] and you will see the Swagger UI screen:
+Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
 
 image:reactive-routes-guide-screenshot01.png[alt=Swagger UI]
 

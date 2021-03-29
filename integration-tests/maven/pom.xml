@@ -21,15 +21,22 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-testing</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.spec.javax.ws.rs</groupId>
             <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom-descriptor-json</artifactId>
+            <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
             <version>${project.version}</version>
             <type>json</type>
+            <classifier>${project.version}</classifier>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -44,13 +51,21 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-project-core-extension-codestarts</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -58,10 +73,6 @@
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
-                <filtering>true</filtering>
-            </testResource>
-            <testResource>
-                <directory>src/it</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>
@@ -77,14 +88,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <!--suppress MavenModelInspection -->
-                        <maven.home>${maven.home}</maven.home>
-                        <maven.repo>${settings.localRepository}</maven.repo>
-                        <project.version>${project.version}</project.version>
-                    </systemPropertyVariables>
-                </configuration>
             </plugin>
 
             <plugin>
@@ -98,59 +101,33 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <systemPropertyVariables>
-                        <!--suppress MavenModelInspection -->
-                        <maven.home>${maven.home}</maven.home>
-                        <maven.repo>${settings.localRepository}</maven.repo>
-                        <project.version>${project.version}</project.version>
-                    </systemPropertyVariables>
-                </configuration>
             </plugin>
         </plugins>
     </build>
     <profiles>
         <profile>
             <id>native-image</id>
+            <!-- Since there is no quarkus-maven-plugin build goal in this pom,
+                 this profile will not directly yield a native image like in the other modules.
+                 Instead, there are IT classes in this module that trigger the native image compilation. -->
             <activation>
                 <property>
                     <name>native</name>
                 </property>
             </activation>
+            <!-- add some custom config, the rest comes from parent -->
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skipTests>true</skipTests>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                         <configuration>
                             <systemPropertyVariables>
-                                <!--suppress MavenModelInspection -->
-                                <maven.home>${maven.home}</maven.home>
-                                <maven.repo>${settings.localRepository}</maven.repo>
-                                <project.version>${project.version}</project.version>
-
                                 <!-- add a system property that can be used by JUnit to determine whether a native image can be built -->
                                 <quarkus.test.native>true</quarkus.test.native>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
@@ -176,8 +153,11 @@
                                 <configuration>
                                     <skip>${skipTests}</skip>
                                     <jsonGroupId>io.quarkus</jsonGroupId>
-                                    <jsonArtifactId>quarkus-bom-descriptor-json</jsonArtifactId>
+                                    <jsonArtifactId>quarkus-bom-quarkus-platform-descriptor</jsonArtifactId>
                                     <jsonVersion>${project.version}</jsonVersion>
+                                    <ignoredGroupIds>
+                                        <ignoredGroupId>software.amazon.awssdk</ignoredGroupId>
+                                    </ignoredGroupIds>
                                 </configuration>
                             </execution>
                         </executions>

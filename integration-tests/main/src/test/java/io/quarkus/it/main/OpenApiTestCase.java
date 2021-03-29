@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Iterator;
 import java.util.Set;
 
 import javax.json.Json;
@@ -17,13 +18,12 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 
-/**
- * @author Ken Finnigan
- */
 @QuarkusTest
 public class OpenApiTestCase {
 
-    @TestHTTPResource("openapi")
+    private static final String DEFAULT_MEDIA_TYPE = "application/json";
+
+    @TestHTTPResource("q/openapi")
     URL uri;
 
     @Test
@@ -63,8 +63,10 @@ public class OpenApiTestCase {
         // test RESTEasy extensions
 
         JsonObject schemasObj = obj.getJsonObject("components").getJsonObject("schemas");
-        String testSchemaType = schemaType("200", "*/*", testObj.getJsonObject("get").getJsonObject("responses"), schemasObj);
-        String rxSchemaType = schemaType("200", "*/*", injectionObj.getJsonObject("get").getJsonObject("responses"),
+        String testSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, testObj.getJsonObject("get").getJsonObject("responses"),
+                schemasObj);
+        String rxSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE,
+                injectionObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure String, CompletionStage<String> and Single<String> are detected the same
         Assertions.assertEquals(testSchemaType,
@@ -72,7 +74,7 @@ public class OpenApiTestCase {
                 "Normal and RX/Single have same schema");
         JsonObject csObj = paths.getJsonObject("/test/cs");
         Assertions.assertEquals(testSchemaType,
-                schemaType("200", "*/*", csObj.getJsonObject("get").getJsonObject("responses"), schemasObj),
+                schemaType("200", DEFAULT_MEDIA_TYPE, csObj.getJsonObject("get").getJsonObject("responses"), schemasObj),
                 "Normal and RX/CS have same schema");
 
         JsonObject paramsObj = paths.getJsonObject("/test/params/{path}");
@@ -86,7 +88,7 @@ public class OpenApiTestCase {
         Assertions.assertEquals(1, keys.size());
         Assertions.assertEquals("get", keys.iterator().next());
 
-        String uniSchemaType = schemaType("200", "*/*", uniObj.getJsonObject("get").getJsonObject("responses"),
+        String uniSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, uniObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure String, CompletionStage<String> and Uni<String> are detected the same
         Assertions.assertEquals(testSchemaType,
@@ -99,11 +101,13 @@ public class OpenApiTestCase {
         Assertions.assertEquals(1, keys.size());
         Assertions.assertEquals("get", keys.iterator().next());
 
-        String uniTypedSchemaType = schemaType("200", "*/*", uniTypedObj.getJsonObject("get").getJsonObject("responses"),
+        String uniTypedSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE,
+                uniTypedObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure ComponentType and Uni<ComponentType> are detected the same
         JsonObject ctObj = paths.getJsonObject("/test/compType");
-        String ctSchemaType = schemaType("200", "*/*", ctObj.getJsonObject("get").getJsonObject("responses"), schemasObj);
+        String ctSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, ctObj.getJsonObject("get").getJsonObject("responses"),
+                schemasObj);
         Assertions.assertEquals(ctSchemaType,
                 uniTypedSchemaType,
                 "Normal and Mutiny Uni have same schema");
@@ -116,7 +120,7 @@ public class OpenApiTestCase {
 
         // make sure Multi<String> is detected as array
         JsonObject multiSchema = multiObj.getJsonObject("get").getJsonObject("responses")
-                .getJsonObject("200").getJsonObject("content").getJsonObject("*/*").getJsonObject("schema");
+                .getJsonObject("200").getJsonObject("content").getJsonObject(DEFAULT_MEDIA_TYPE).getJsonObject("schema");
         Assertions.assertEquals("array", multiSchema.getString("type"));
         Assertions.assertEquals("string", multiSchema.getJsonObject("items").getString("type"));
 
@@ -127,13 +131,41 @@ public class OpenApiTestCase {
         Assertions.assertEquals("get", keys.iterator().next());
 
         JsonObject multiTypedSchema = multiTypedObj.getJsonObject("get").getJsonObject("responses")
-                .getJsonObject("200").getJsonObject("content").getJsonObject("*/*").getJsonObject("schema");
+                .getJsonObject("200").getJsonObject("content").getJsonObject(DEFAULT_MEDIA_TYPE).getJsonObject("schema");
         // make sure Multi<ComponentType> is detected as array
         Assertions.assertEquals("array", multiTypedSchema.getString("type"));
         String mutliTypedObjectSchema = schemaTypeFromRef(multiTypedSchema.getJsonObject("items"), schemasObj);
         Assertions.assertEquals(ctSchemaType,
                 mutliTypedObjectSchema,
                 "Normal and Mutiny Multi have same schema");
+
+        // Verify presence of Health API
+        JsonObject healthPath = paths.getJsonObject("/q/health");
+        Assertions.assertNotNull(healthPath);
+        Set<String> healthKeys = healthPath.keySet();
+        Iterator<String> healthKeysIterator = healthKeys.iterator();
+        Assertions.assertEquals(3, healthPath.size());
+        Assertions.assertEquals("summary", healthKeysIterator.next());
+        Assertions.assertEquals("description", healthKeysIterator.next());
+        Assertions.assertEquals("get", healthKeysIterator.next());
+
+        JsonObject livenessPath = paths.getJsonObject("/q/health/live");
+        Assertions.assertNotNull(livenessPath);
+        Set<String> livenessKeys = livenessPath.keySet();
+        Iterator<String> livenessKeysIterator = livenessKeys.iterator();
+        Assertions.assertEquals(3, livenessKeys.size());
+        Assertions.assertEquals("summary", livenessKeysIterator.next());
+        Assertions.assertEquals("description", livenessKeysIterator.next());
+        Assertions.assertEquals("get", livenessKeysIterator.next());
+
+        JsonObject readinessPath = paths.getJsonObject("/q/health/ready");
+        Assertions.assertNotNull(readinessPath);
+        Set<String> readinessKeys = readinessPath.keySet();
+        Iterator<String> readinessKeysIterator = readinessKeys.iterator();
+        Assertions.assertEquals(3, readinessKeys.size());
+        Assertions.assertEquals("summary", readinessKeysIterator.next());
+        Assertions.assertEquals("description", readinessKeysIterator.next());
+        Assertions.assertEquals("get", readinessKeysIterator.next());
     }
 
     protected static String schemaType(String responseCode, String mediaType, JsonObject responses, JsonObject schemas) {

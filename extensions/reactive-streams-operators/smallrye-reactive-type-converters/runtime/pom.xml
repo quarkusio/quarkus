@@ -15,6 +15,10 @@
     <description>Converters for reactive types from various reactive programming libraries</description>
     <dependencies>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-reactive-converter-api</artifactId>
         </dependency>

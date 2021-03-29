@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment.configproperties;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadOptionalValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.determineSingleGenericType;
+import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.registerImplicitConverter;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.annotation.Annotation;
@@ -15,6 +16,7 @@ import java.util.Set;
 
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -32,9 +34,12 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -45,7 +50,28 @@ import io.quarkus.runtime.util.HashUtil;
 
 final class InterfaceConfigPropertiesUtil {
 
-    private InterfaceConfigPropertiesUtil() {
+    private final IndexView index;
+    private final YamlListObjectHandler yamlListObjectHandler;
+    private final ClassOutput classOutput;
+    private final ClassCreator classCreator;
+    private final Capabilities capabilities;
+    private final BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues;
+    private final BuildProducer<ConfigPropertyBuildItem> configProperties;
+    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
+
+    InterfaceConfigPropertiesUtil(IndexView index, YamlListObjectHandler yamlListObjectHandler, ClassOutput classOutput,
+            ClassCreator classCreator,
+            Capabilities capabilities, BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
+            BuildProducer<ConfigPropertyBuildItem> configProperties,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        this.index = index;
+        this.yamlListObjectHandler = yamlListObjectHandler;
+        this.classOutput = classOutput;
+        this.classCreator = classCreator;
+        this.capabilities = capabilities;
+        this.defaultConfigValues = defaultConfigValues;
+        this.configProperties = configProperties;
+        this.reflectiveClasses = reflectiveClasses;
     }
 
     /**
@@ -58,8 +84,7 @@ final class InterfaceConfigPropertiesUtil {
      *  }
      * </pre>
      */
-    static void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, boolean needsQualifier,
-            ClassCreator classCreator,
+    void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, boolean needsQualifier,
             GeneratedClass generatedClass) {
         String methodName = "produce" + interfaceName.withoutPackagePrefix();
         if (needsQualifier) {
@@ -84,21 +109,17 @@ final class InterfaceConfigPropertiesUtil {
         }
     }
 
-    static void generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface, ClassOutput classOutput,
-            IndexView index, String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
-            BuildProducer<ConfigPropertyBuildItem> configProperties,
+    void generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface,
+            String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
-        generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface, classOutput, index,
-                prefixStr, namingStrategy, defaultConfigValues, configProperties, interfaceToGeneratedClass);
+        generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface,
+                prefixStr, namingStrategy, interfaceToGeneratedClass);
     }
 
-    private static void generateImplementationForInterfaceConfigPropertiesRec(ClassInfo originalInterface,
-            ClassInfo currentInterface, ClassOutput classOutput,
-            IndexView index, String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
-            BuildProducer<ConfigPropertyBuildItem> configProperties,
+    private String generateImplementationForInterfaceConfigPropertiesRec(ClassInfo originalInterface,
+            ClassInfo currentInterface,
+            String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
         Set<DotName> allInterfaces = new HashSet<>();
@@ -106,9 +127,11 @@ final class InterfaceConfigPropertiesUtil {
         collectInterfacesRec(currentInterface, index, allInterfaces);
 
         String generatedClassName = createName(currentInterface.name(), prefixStr);
-        // the generated class needs to be unremovable if it's not top-level interface since it will only be obtains via Arc.container().instance() in generated code
-        interfaceToGeneratedClass.put(currentInterface.name(),
-                new GeneratedClass(generatedClassName, !originalInterface.name().equals(currentInterface.name())));
+
+        // we only need to generate CDI producers for the top-level interface, not the sub-interfaces
+        if (originalInterface.name().equals(currentInterface.name())) {
+            interfaceToGeneratedClass.put(currentInterface.name(), new GeneratedClass(generatedClassName, true));
+        }
 
         try (ClassCreator interfaceImplClassCreator = ClassCreator.builder().classOutput(classOutput)
                 .interfaces(currentInterface.name().toString()).className(generatedClassName)
@@ -133,7 +156,9 @@ final class InterfaceConfigPropertiesUtil {
                 List<MethodInfo> methods = classInfo.methods();
                 for (MethodInfo method : methods) {
                     Type returnType = method.returnType();
-                    if (isDefault(method.flags())) { // don't do anything with default methods
+                    short methodModifiers = method.flags();
+                    if (isDefault(methodModifiers) || Modifier.isStatic(methodModifiers)
+                            || Modifier.isPrivate(methodModifiers)) {
                         continue;
                     }
                     if (!method.parameters().isEmpty()) {
@@ -153,25 +178,25 @@ final class InterfaceConfigPropertiesUtil {
                         if ((returnType.kind() == Type.Kind.CLASS)) {
                             ClassInfo returnTypeClassInfo = index.getClassByName(returnType.name());
                             if ((returnTypeClassInfo != null) && Modifier.isInterface(returnTypeClassInfo.flags())) {
-                                // when the return type is an interface,
-                                // 1) we generate an implementation
-                                // 2) retrieve the implementation from Arc
-
-                                generateImplementationForInterfaceConfigPropertiesRec(originalInterface, returnTypeClassInfo,
-                                        classOutput,
-                                        index, fullConfigName, namingStrategy, defaultConfigValues, configProperties,
-                                        interfaceToGeneratedClass);
+                                String generatedSubInterfaceImp = generateImplementationForInterfaceConfigPropertiesRec(
+                                        originalInterface, returnTypeClassInfo,
+                                        fullConfigName, namingStrategy, interfaceToGeneratedClass);
 
                                 ResultHandle arcContainer = methodCreator
                                         .invokeStaticMethod(
                                                 MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-                                ResultHandle instanceHandle = methodCreator.invokeInterfaceMethod(
+                                ResultHandle configInstanceHandle = methodCreator.invokeInterfaceMethod(
                                         ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                                                 Annotation[].class),
-                                        arcContainer, methodCreator.loadClass(returnTypeClassInfo.name().toString()),
+                                        arcContainer, methodCreator.loadClass(Config.class),
                                         methodCreator.newArray(Annotation.class, 0));
-                                methodCreator.returnValue(methodCreator.invokeInterfaceMethod(
-                                        MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle));
+                                ResultHandle config = methodCreator.invokeInterfaceMethod(
+                                        ofMethod(InstanceHandle.class, "get", Object.class), configInstanceHandle);
+
+                                ResultHandle interImpl = methodCreator
+                                        .newInstance(MethodDescriptor.ofConstructor(generatedSubInterfaceImp,
+                                                Config.class.getName()), config);
+                                methodCreator.returnValue(interImpl);
                                 continue;
                             }
                         }
@@ -196,6 +221,7 @@ final class InterfaceConfigPropertiesUtil {
                                     method.declaringClass().name());
 
                             if (genericType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                                registerImplicitConverter(genericType, reflectiveClasses);
                                 ResultHandle result = methodCreator.invokeInterfaceMethod(
                                         MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class,
                                                 String.class,
@@ -220,6 +246,17 @@ final class InterfaceConfigPropertiesUtil {
                                                 MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
                                                 readOptionalResponse.getValue()));
                             }
+                        } else if (ConfigPropertiesUtil.isListOfObject(method.returnType())) {
+                            if (!capabilities.isPresent(Capability.CONFIG_YAML)) {
+                                throw new DeploymentException(
+                                        "Support for List of objects in classes annotated with '@ConfigProperties' is only possible via the 'quarkus-config-yaml' extension. Offending method is '"
+                                                + method.name() + "' of interface '"
+                                                + method.declaringClass().name().toString());
+                            }
+                            ResultHandle value = yamlListObjectHandler.handle(
+                                    new YamlListObjectHandler.MethodReturnTypeMember(method), methodCreator, config,
+                                    nameAndDefaultValue.getName(), fullConfigName);
+                            methodCreator.returnValue(value);
                         } else {
                             if (defaultValueStr != null) {
                                 /*
@@ -231,19 +268,22 @@ final class InterfaceConfigPropertiesUtil {
                                         .produce(new RunTimeConfigurationDefaultBuildItem(fullConfigName, defaultValueStr));
                             }
                             // use config.getValue to obtain and return the result taking  converting it to collection if needed
+                            registerImplicitConverter(returnType, reflectiveClasses);
                             ResultHandle value = createReadMandatoryValueAndConvertIfNeeded(
                                     fullConfigName, returnType,
                                     method.declaringClass().name(), methodCreator, config);
                             methodCreator.returnValue(value);
                             if (defaultValueStr == null || ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValueStr)) {
                                 configProperties
-                                        .produce(new ConfigPropertyBuildItem(fullConfigName, returnType));
+                                        .produce(new ConfigPropertyBuildItem(fullConfigName, returnType, defaultValueStr));
                             }
                         }
                     }
                 }
             }
         }
+
+        return generatedClassName;
     }
 
     private static void collectInterfacesRec(ClassInfo current, IndexView index, Set<DotName> result) {

@@ -19,13 +19,11 @@ import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 
 /**
- * Expose the Vert.x event bus and produces Mutiny, Axle (Deprecated) and Rx Vert.x (Deprecated) instances.
+ * Expose the Vert.x event bus and produces Mutiny instances.
  * <p>
  * The original Vert.x instance is coming from the core artifact.
  *
- * IMPORTANT: The Axle and RxJava 2 API are now deprecated. It is recommended to switch to the Mutiny API.
- * 
- * IMPL NOTE: There is no need to cache the mutiny/axle/rx wrappers locally because the bean instances are stored in the
+ * IMPL NOTE: There is no need to cache the mutiny locally because the bean instances are stored in the
  * singleton context, i.e. the producer method is only called once.
  */
 @ApplicationScoped
@@ -43,46 +41,6 @@ public class VertxProducer {
     @Produces
     public io.vertx.mutiny.core.Vertx mutiny(Vertx vertx) {
         return io.vertx.mutiny.core.Vertx.newInstance(vertx);
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.axle.core.Vertx axle(Vertx vertx) {
-        LOGGER.warn(
-                "`io.vertx.axle.core.Vertx` is deprecated and will be removed in a future version - it is "
-                        + "recommended to switch to `io.vertx.mutiny.core.Vertx`");
-        return io.vertx.axle.core.Vertx.newInstance(vertx);
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.reactivex.core.Vertx rx(Vertx vertx) {
-        LOGGER.warn(
-                "`io.vertx.reactivex.core.Vertx` is deprecated  and will be removed in a future version - it is "
-                        + "recommended to switch to `io.vertx.mutiny.core.Vertx`");
-        return io.vertx.reactivex.core.Vertx.newInstance(vertx);
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.axle.core.eventbus.EventBus axleEventBus(io.vertx.axle.core.Vertx axle) {
-        LOGGER.warn(
-                "`io.vertx.axle.core.eventbus.EventBus` is deprecated and will be removed in a future version - it is "
-                        + "recommended to switch to `io.vertx.mutiny.core.eventbus.EventBus`");
-        return axle.eventBus();
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.reactivex.core.eventbus.EventBus rxEventBus(io.vertx.reactivex.core.Vertx rx) {
-        LOGGER.warn(
-                "`io.vertx.reactivex.core.eventbus.EventBus` is deprecated and will be removed in a future version - it "
-                        + "is recommended to switch to `io.vertx.mutiny.core.eventbus.EventBus`");
-        return rx.eventBus();
     }
 
     @Singleton

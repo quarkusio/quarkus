@@ -2,18 +2,18 @@ package io.quarkus.devtools.commands;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
 
-import io.quarkus.devtools.ProjectTestUtil;
+import io.quarkus.devtools.commands.AddGradleExtensionsTest.TestingGradleBuildFile;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.SnapshotTesting;
+import io.quarkus.registry.RegistryResolutionException;
 
 class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<String>> {
 
@@ -24,9 +24,8 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
 
     @Override
     protected List<String> createProject() throws IOException, QuarkusCommandException {
-        ProjectTestUtil.delete(getProjectPath().toFile());
-        new CreateProject(getProjectPath(), getPlatformDescriptor())
-                .buildTool(BuildTool.GRADLE)
+        SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
+        new CreateProject(getQuarkusProject())
                 .groupId("org.acme")
                 .artifactId("add-gradle-extension-test")
                 .version("0.0.1-SNAPSHOT")
@@ -62,11 +61,13 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
                 .count();
     }
 
-    private QuarkusProject getQuarkusProject() {
-        final Path projectPath = getProjectPath();
-        final QuarkusPlatformDescriptor platformDescriptor = getPlatformDescriptor();
-        return QuarkusProject.of(projectPath, platformDescriptor,
-                new AddGradleExtensionsTest.TestingGradleBuildFile(projectPath, platformDescriptor));
+    protected QuarkusProject getQuarkusProject() throws QuarkusCommandException {
+        try {
+            return QuarkusProjectHelper.getProject(getProjectPath(),
+                    new TestingGradleBuildFile(getProjectPath(), getExtensionsCatalog()));
+        } catch (RegistryResolutionException e) {
+            throw new QuarkusCommandException("Failed to initialize Quarkus project", e);
+        }
     }
 
     private static String getBuildFileDependencyString(final String groupId, final String artifactId, final String version) {

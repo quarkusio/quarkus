@@ -5,10 +5,12 @@ import static org.hamcrest.Matchers.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 
 /**
  * Test connecting via Neo4j Java-Driver to Neo4j.
@@ -45,11 +47,29 @@ public class Neo4jFunctionalityTest {
 
     @Test
     public void health() {
-        RestAssured.when().get("/health/ready").then()
+        RestAssured.when().get("/q/health/ready").then()
                 .log().all()
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
                         "checks.name", containsInAnyOrder("Neo4j connection health check"),
                         "checks.data.server", containsInAnyOrder(matchesRegex("Neo4j/.*@.*:\\d*")));
+    }
+
+    @Test
+    public void metrics() {
+        RestAssured.given().when().get("/neo4j/blocking").then().body(is("OK"));
+        assertMetricValue("neo4j.acquired", greaterThan(0));
+        assertMetricValue("neo4j.created", greaterThan(0));
+        assertMetricValue("neo4j.totalAcquisitionTime", greaterThan(0));
+        assertMetricValue("neo4j.totalConnectionTime", greaterThan(0));
+        assertMetricValue("neo4j.totalInUseTime", greaterThan(0));
+    }
+
+    private void assertMetricValue(String name, Matcher<Integer> valueMatcher) {
+        RestAssured
+                .given().accept(ContentType.JSON)
+                .when().get("/q/metrics/vendor/" + name)
+                .then()
+                .body("'" + name + "'", valueMatcher);
     }
 }

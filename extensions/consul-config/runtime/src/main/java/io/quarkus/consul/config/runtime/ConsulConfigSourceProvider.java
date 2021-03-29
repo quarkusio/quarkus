@@ -1,16 +1,18 @@
 package io.quarkus.consul.config.runtime;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.UniAwait;
 
 class ConsulConfigSourceProvider implements ConfigSourceProvider {
 
@@ -22,7 +24,7 @@ class ConsulConfigSourceProvider implements ConfigSourceProvider {
     private final ResponseConfigSourceUtil responseConfigSourceUtil;
 
     public ConsulConfigSourceProvider(ConsulConfig config) {
-        this(config, new DefaultConsulConfigGateway(config), new ResponseConfigSourceUtil());
+        this(config, new VertxConsulConfigGateway(config), new ResponseConfigSourceUtil());
     }
 
     // visible for testing
@@ -47,27 +49,40 @@ class ConsulConfigSourceProvider implements ConfigSourceProvider {
 
         List<ConfigSource> result = new ArrayList<>(keys.size());
 
+        List<Uni<?>> allUnis = new ArrayList<>();
+
         for (Map.Entry<String, ValueType> entry : keys.entrySet()) {
             String fullKey = config.prefix.isPresent() ? config.prefix.get() + "/" + entry.getKey() : entry.getKey();
-            log.debug("Attempting to look up value of key '" + fullKey + "' from Consul.");
-
-            try {
-                Optional<Response> optionalResponse = consulConfigGateway.getValue(fullKey);
-                if (optionalResponse.isPresent()) {
-                    result.add(
-                            responseConfigSourceUtil.toConfigSource(optionalResponse.get(), entry.getValue(), config.prefix));
-                } else {
-                    String message = "Key '" + fullKey + "' not found in Consul.";
-                    if (config.failOnMissingKey) {
-                        throw new RuntimeException(message);
+            allUnis.add(consulConfigGateway.getValue(fullKey).invoke(new Consumer<Response>() {
+                @Override
+                public void accept(Response response) {
+                    if (response != null) {
+                        result.add(
+                                responseConfigSourceUtil.toConfigSource(response, entry.getValue(),
+                                        config.prefix));
                     } else {
-                        log.info(message);
+                        String message = "Key '" + fullKey + "' not found in Consul.";
+                        if (config.failOnMissingKey) {
+                            throw new RuntimeException(message);
+                        } else {
+                            log.info(message);
+                        }
                     }
                 }
-                log.debug("Done reading value of key '" + fullKey + "'");
-            } catch (IOException e) {
-                throw new UncheckedIOException("An error occurred while attempting to fetch configuration from Consul.", e);
+            }));
+        }
+
+        try {
+            UniAwait<Void> await = Uni.combine().all().unis(allUnis).discardItems().await();
+            if (config.agent.connectionTimeout.isZero() && config.agent.readTimeout.isZero()) {
+                await.indefinitely();
+            } else {
+                await.atMost(config.agent.connectionTimeout.plus(config.agent.readTimeout.multipliedBy(2)));
             }
+        } catch (CompletionException e) {
+            throw new RuntimeException("An error occurred while attempting to fetch configuration from Consul.", e);
+        } finally {
+            consulConfigGateway.close();
         }
 
         return result;

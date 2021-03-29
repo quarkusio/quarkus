@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.entry;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.apache.commons.io.IOUtils;
@@ -21,8 +22,9 @@ class SpringCloudConfigClientGatewayTest {
     private static final int MOCK_SERVER_PORT = 9300;
     private static final WireMockServer wireMockServer = new WireMockServer(MOCK_SERVER_PORT);
 
-    private final SpringCloudConfigClientGateway sut = new DefaultSpringCloudConfigClientGateway(
-            configForTesting());
+    private static final SpringCloudConfigClientConfig springCloudConfigClientConfig = configForTesting();
+    private final SpringCloudConfigClientGateway sut = new VertxSpringCloudConfigGateway(
+            springCloudConfigClientConfig);
 
     @BeforeAll
     static void start() {
@@ -38,10 +40,12 @@ class SpringCloudConfigClientGatewayTest {
     void testBasicExchange() throws Exception {
         final String applicationName = "foo";
         final String profile = "dev";
-        wireMockServer.stubFor(WireMock.get(String.format("/%s/%s", applicationName, profile)).willReturn(WireMock
+        final String springCloudConfigUrl = String.format(
+                "/%s/%s/%s", applicationName, profile, springCloudConfigClientConfig.label.get());
+        wireMockServer.stubFor(WireMock.get(springCloudConfigUrl).willReturn(WireMock
                 .okJson(getJsonStringForApplicationAndProfile(applicationName, profile))));
 
-        final Response response = sut.exchange(applicationName, profile);
+        Response response = sut.exchange(applicationName, profile).await().indefinitely();
 
         assertThat(response).isNotNull().satisfies(r -> {
             assertThat(r.getName()).isEqualTo("foo");
@@ -72,10 +76,15 @@ class SpringCloudConfigClientGatewayTest {
     private static SpringCloudConfigClientConfig configForTesting() {
         SpringCloudConfigClientConfig springCloudConfigClientConfig = new SpringCloudConfigClientConfig();
         springCloudConfigClientConfig.url = "http://localhost:" + MOCK_SERVER_PORT;
+        springCloudConfigClientConfig.label = Optional.of("master");
         springCloudConfigClientConfig.connectionTimeout = Duration.ZERO;
         springCloudConfigClientConfig.readTimeout = Duration.ZERO;
         springCloudConfigClientConfig.username = Optional.empty();
         springCloudConfigClientConfig.password = Optional.empty();
+        springCloudConfigClientConfig.trustStore = Optional.empty();
+        springCloudConfigClientConfig.keyStore = Optional.empty();
+        springCloudConfigClientConfig.trustCerts = false;
+        springCloudConfigClientConfig.headers = new HashMap<>();
         return springCloudConfigClientConfig;
     }
 }

@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,12 +31,17 @@ import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@QuarkusTestResource(MongoTestResource.class)
+@QuarkusTestResource(MongoReplicaSetTestResource.class)
 class MongodbPanacheResourceTest {
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
     private static final TypeRef<List<Person>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<Person>>() {
     };
+
+    @Test
+    public void testAccessors() {
+        callEndpoint("/accessors");
+    }
 
     @Test
     public void testBookEntity() {
@@ -194,6 +200,21 @@ class MongodbPanacheResourceTest {
         Assertions.assertEquals(204, response.statusCode());
     }
 
+    private void callEndpoint(String endpoint) {
+        RestAssured.defaultParser = Parser.JSON;
+        RestAssured.config
+                .objectMapperConfig(new ObjectMapperConfig().jackson2ObjectMapperFactory((type, s) -> new ObjectMapper()
+                        .registerModule(new Jdk8Module())
+                        .registerModule(new JavaTimeModule())
+                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)));
+
+        Response response = RestAssured
+                .given()
+                .get(endpoint)
+                .andReturn();
+        Assertions.assertEquals(200, response.statusCode());
+    }
+
     private void callPersonEndpoint(String endpoint) {
         RestAssured.defaultParser = Parser.JSON;
         RestAssured.config
@@ -310,6 +331,15 @@ class MongodbPanacheResourceTest {
 
         count = get(endpoint + "/count").as(Long.class);
         Assertions.assertEquals(0, count);
+
+        // Test prometheus metrics gathered using micrometer metrics
+        RestAssured.given()
+                .when().get("/q/metrics")
+                .then()
+                .statusCode(200)
+                .body(CoreMatchers.containsString("mongodb_driver_pool_checkedout"))
+                .body(CoreMatchers.containsString("mongodb_driver_pool_size"))
+                .body(CoreMatchers.containsString("mongodb_driver_pool_waitqueuesize"));
     }
 
     private Date yearToDate(int year) {
@@ -353,5 +383,10 @@ class MongodbPanacheResourceTest {
     @Test
     public void testMoreRepositoryFunctionalities() {
         get("/test/imperative/repository").then().statusCode(200);
+    }
+
+    @Test
+    public void testBug13301() {
+        get("/bugs/13301").then().statusCode(200);
     }
 }

@@ -1,4 +1,4 @@
-[info] io.quarkus.bootstrap.test:test-app:jar:1
+[info] io.quarkus.bootstrap.test:test-app:pom:1
 [info] ├─ io.quarkus.bootstrap.test:artifact-with-classifier:jar:classifier:1 (compile)
 [info] ├─ io.quarkus.bootstrap.test:test-ext2-deployment:jar:1 (compile)
 [info] │  ├─ io.quarkus.bootstrap.test:test-ext2:jar:1 (compile)

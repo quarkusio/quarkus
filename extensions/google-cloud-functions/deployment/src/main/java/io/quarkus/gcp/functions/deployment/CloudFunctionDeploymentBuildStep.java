@@ -7,18 +7,26 @@ import java.util.Collections;
 
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
 
 public class CloudFunctionDeploymentBuildStep {
     @BuildStep
     public UberJarRequiredBuildItem forceUberJar() {
         // Google Cloud Function needs a single JAR inside a dedicated directory
         return new UberJarRequiredBuildItem();
+    }
+
+    @BuildStep(onlyIf = NativeSourcesBuild.class)
+    void failForNativeSources(BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+        throw new IllegalArgumentException(
+                "The Google Cloud extensions are incompatible with the 'native-sources' package type.");
     }
 
     /**
@@ -30,7 +38,7 @@ public class CloudFunctionDeploymentBuildStep {
             throws BuildException, IOException {
         if (!jar.isUberJar()) {
             throw new BuildException("Google Cloud Function deployment need to use a uberjar, " +
-                    "please set 'quarkus.package.uber-jar=true' inside your application.properties",
+                    "please set 'quarkus.package.type=uber-jar' inside your application.properties",
                     Collections.EMPTY_LIST);
         }
 

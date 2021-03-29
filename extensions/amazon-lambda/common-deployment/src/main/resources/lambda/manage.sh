@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 function cmd_create() {
   echo Creating function
@@ -55,12 +55,12 @@ RUNTIME=java11
 ZIP_FILE=${targetUri}
 
 function usage() {
-  [ "_$1" == "_" ] && echo "\nUsage (JVM): \n$0 [create|delete|invoke]\ne.g.: $0 invoke"
-  [ "_$1" == "_" ] && echo "\nUsage (Native): \n$0 native [create|delete|invoke]\ne.g.: $0 native invoke"
+  [ "_$1" == "_" ] && echo -e "\nUsage (JVM): \n$0 [create|delete|invoke]\ne.g.: $0 invoke"
+  [ "_$1" == "_" ] && echo -e "\nUsage (Native): \n$0 native [create|delete|invoke]\ne.g.: $0 native invoke"
 
-  [ "_" == "_`which aws 2>/dev/null`" ] && echo "\naws CLI not installed. Please see https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html"
-  [ ! -e $HOME/.aws/credentials ] && [ "_$AWS_ACCESS_KEY_ID" == "_" ] && echo "\naws configure not setup.  Please execute: aws configure"
-  [ "_$LAMBDA_ROLE_ARN" == "_" ] && echo "\nEnvironment variable must be set: LAMBDA_ROLE_ARN\ne.g.: export LAMBDA_ROLE_ARN=arn:aws:iam::123456789012:role/my-example-role"
+  [ "_" == "_`which aws 2>/dev/null`" ] && echo -e "\naws CLI not installed. Please see https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html"
+  [ ! -e $HOME/.aws/credentials ] && [ "_$AWS_ACCESS_KEY_ID" == "_" ] && echo -e "\naws configure not setup.  Please execute: aws configure"
+  [ "_$LAMBDA_ROLE_ARN" == "_" ] && echo -e "\nEnvironment variable must be set: LAMBDA_ROLE_ARN\ne.g.: export LAMBDA_ROLE_ARN=arn:aws:iam::123456789012:role/my-example-role"
 }
 
 if [ "_$1" == "_" ] || [ "$1" == "help" ]

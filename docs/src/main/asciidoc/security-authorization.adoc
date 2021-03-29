@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Authorization of Web Endpoints
 
@@ -152,6 +152,20 @@ That is if the security annotations do not define the access control. Defaults t
 and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
 security annotations. Defaults to `false`.
 
+=== Disabling permissions 
+
+Permissions can be disabled at build time with an `enabled` property for each declared permission, for example: 
+
+[source,properties]
+----
+quarkus.http.auth.permission.permit1.enabled=false
+quarkus.http.auth.permission.permit1.paths=/public/*,/css/*,/js/*,/robots.txt
+quarkus.http.auth.permission.permit1.policy=permit
+quarkus.http.auth.permission.permit1.methods=GET,HEAD
+----
+
+and enabled at runtime with a system property or environment variable, for example: `-Dquarkus.http.auth.permission.permit1.enabled=true`.
+
 [#standard-security-annotations]
 == Authorization using Annotations
 
@@ -211,3 +225,7 @@ public class SubjectExposingResource {
 <3> The `/subject/unsecured` endpoint allows for unauthenticated access by specifying the `@PermitAll` annotation.
 <4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
+
+== References
+
+* link:security[Quarkus Security]

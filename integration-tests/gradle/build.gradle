@@ -16,27 +16,46 @@ compileTestJava {
 }
 
 repositories {
-    mavenLocal()
+    // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
     mavenCentral()
 }
 
-configurations.all {
-    exclude group: 'io.quarkus', module: 'quarkus-bootstrap-maven-resolver'
-}
-
 dependencies {
+    testImplementation "io.quarkus:quarkus-project-core-extension-codestarts:${version}@pom"
+    testImplementation "io.quarkus:quarkus-test-devtools:${version}"
     testImplementation "io.quarkus:quarkus-bootstrap-core:${version}"
     testImplementation "io.quarkus:quarkus-core-deployment:${version}"
     testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"
     testImplementation "io.quarkus:quarkus-devtools-common:${version}"
-    testImplementation "io.quarkus:quarkus-platform-descriptor-json:${version}"
-    testImplementation "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
-    testImplementation 'org.assertj:assertj-core:3.16.1'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
+    testImplementation "io.quarkus:io.quarkus.gradle.plugin:${version}"
+    testImplementation 'org.mockito:mockito-core:3.8.0'
+    testImplementation 'org.assertj:assertj-core:3.19.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
     testImplementation 'org.awaitility:awaitility:4.0.3'
 }
 
+processTestResources {
+    filesMatching('.quarkus/config.yaml') {
+        expand(testResourcesDir: destinationDir)
+    }
+    filesMatching('test-registry-repo/**') {
+        expand(project.properties)
+    }
+}
+
 test {
+    // propagate the custom local maven repo, in case it's configured
+    if (System.properties.containsKey('maven.repo.local')) {
+        systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
+    }
+    systemProperty 'project.version', "${version}"
     useJUnitPlatform()
 
     // Kotlin compiler does not support Java 14
@@ -53,6 +72,10 @@ task nativeTest(type: Test) {
     useJUnitPlatform()
 
     systemProperties project.properties.subMap(["quarkus.native.container-build", "quarkus.native.builder-image"])
+    // propagate the custom local maven repo, in case it's configured
+    if (System.properties.containsKey('maven.repo.local')) {
+        systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
+    }
 
     // Include only native build test package
     include 'io/quarkus/gradle/nativeimage/*.class'

@@ -1,7 +1,5 @@
 package io.quarkus.platform.descriptor.loader.json;
 
-import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
-import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;

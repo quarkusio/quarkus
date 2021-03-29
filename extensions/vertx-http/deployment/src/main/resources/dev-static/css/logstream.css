@@ -1,0 +1,91 @@
+
+#logstreamFooter {
+    background: #343a40;
+    overflow-y: auto;
+    height: unset;
+}
+
+.logstreamIcon:hover {
+    color: #3366ac !important;
+    cursor: pointer;
+}
+
+.logstreamFilteredOut {
+    display: none;
+}
+
+
+#logstreamLogTerminalText {
+    font-size: 0.9em;
+}
+
+#logstreamLogTerminal {
+    padding-bottom: 5px;
+    line-height: 1.00;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-bottom: 6px;
+}
+
+#logstreamFollowLogButton {
+    position: fixed;
+    color: green;
+    margin-top: 5px;
+    right: 23px;
+    cursor: pointer;
+}
+
+#logstreamInformationSection {
+    position: fixed;
+    color: white;
+    font-size: 1.6em;
+    right: 23px;
+    bottom: 5px;
+}
+
+.logstreamStopLogHr {
+    margin-top: 10px;
+    border-top: 1px dashed #3366ac;
+}
+
+#logstreamManagerNav {
+    border-bottom: 1px solid #414850;
+    max-height: 32px;
+    position: absolute;
+    width: 100%;
+    top: 0px;
+}
+
+#logstreamManagerNavAppInfo, #logstreamManagerNavBrand {
+    display: none;
+}
+
+#logstreamViewLogButton, #logstreamHideLogButton {
+    color: #9a9da0;
+    font-size:0.73em;
+}
+
+#logstreamHideLogButton {
+    position: absolute;
+    right: 6px;
+    bottom: -3px;
+}
+
+#logstreamResizeButton {
+    position: absolute;
+    right: 50%;
+    bottom: -3px;
+}
+
+#logstreamResizeButton:hover {
+    color: #3366ac !important;
+    cursor: row-resize !important;
+}
+
+#logstreamViewLogButtonIcon:hover {
+    color: #3366ac !important;
+}
+
+.clickable-app-class:hover {
+    cursor:pointer;
+}

@@ -1,6 +1,7 @@
 package io.quarkus.it.keycloak;
 
 import java.io.IOException;
+import java.time.Instant;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,16 @@ public class ServicePublicKeyTestCase {
         // the last section of the jwt token is a signature
         Response r = RestAssured.given().auth()
                 .oauth2(jwt + "1")
+                .get("/service/tenant-public-key");
+        Assertions.assertEquals(401, r.getStatusCode());
+    }
+
+    @Test
+    public void testExpiredToken() throws IOException, InterruptedException {
+        String jwt = Jwt.claims().preferredUserName("alice").expiresAt(Instant.EPOCH).sign();
+        // the last section of the jwt token is a signature
+        Response r = RestAssured.given().auth()
+                .oauth2(jwt)
                 .get("/service/tenant-public-key");
         Assertions.assertEquals(401, r.getStatusCode());
     }

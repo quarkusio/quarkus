@@ -3,17 +3,25 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.hibernate.MultiTenancyStrategy;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
+import io.quarkus.hibernate.orm.runtime.session.ForwardingSession;
+import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -38,45 +46,9 @@ public class HibernateOrmRecorder {
         Hibernate.featureInit(enabled);
     }
 
-    /**
-     * Initializes the JPA configuration to be used at runtime.
-     * 
-     * @param jtaEnabled Should JTA be enabled?
-     * @param strategy Multitenancy strategy to use.
-     * @param multiTenancySchemaDataSource Data source to use in case of {@link MultiTenancyStrategy#SCHEMA} approach or
-     *        {@link null} in case the default data source.
-     * 
-     * @return
-     */
-    public BeanContainerListener initializeJpa(boolean jtaEnabled, MultiTenancyStrategy strategy,
-            String multiTenancySchemaDataSource) {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer beanContainer) {
-                JPAConfig instance = beanContainer.instance(JPAConfig.class);
-                instance.setJtaEnabled(jtaEnabled);
-                instance.setMultiTenancyStrategy(strategy);
-                instance.setMultiTenancySchemaDataSource(multiTenancySchemaDataSource);
-            }
-        };
-    }
-
-    public BeanContainerListener registerPersistenceUnit(String unitName) {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer beanContainer) {
-                beanContainer.instance(JPAConfig.class).registerPersistenceUnit(unitName);
-            }
-        };
-    }
-
-    public BeanContainerListener initDefaultPersistenceUnit() {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer beanContainer) {
-                beanContainer.instance(JPAConfig.class).initDefaultPersistenceUnit();
-            }
-        };
+    public void setupPersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+            Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
+        PersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors);
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
@@ -91,7 +63,60 @@ public class HibernateOrmRecorder {
         };
     }
 
+    public Supplier<JPAConfigSupport> jpaConfigSupportSupplier(JPAConfigSupport jpaConfigSupport) {
+        return new Supplier<JPAConfigSupport>() {
+            @Override
+            public JPAConfigSupport get() {
+                return jpaConfigSupport;
+            }
+        };
+    }
+
+    public Supplier<DataSourceTenantConnectionResolver> dataSourceTenantConnectionResolver(String persistenceUnitName,
+            String dataSourceName,
+            MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSourceName) {
+        return new Supplier<DataSourceTenantConnectionResolver>() {
+            @Override
+            public DataSourceTenantConnectionResolver get() {
+                return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName, multiTenancyStrategy,
+                        multiTenancySchemaDataSourceName);
+            }
+        };
+    }
+
     public void startAllPersistenceUnits(BeanContainer beanContainer) {
         beanContainer.instance(JPAConfig.class).startAll();
     }
+
+    public Supplier<SessionFactory> sessionFactorySupplier(String persistenceUnitName) {
+        return new Supplier<SessionFactory>() {
+            @Override
+            public SessionFactory get() {
+                SessionFactory sessionFactory = Arc.container().instance(JPAConfig.class).get()
+                        .getEntityManagerFactory(persistenceUnitName)
+                        .unwrap(SessionFactory.class);
+
+                return sessionFactory;
+            }
+        };
+    }
+
+    public Supplier<Session> sessionSupplier(String persistenceUnitName) {
+        return new Supplier<Session>() {
+            @Override
+            public Session get() {
+                TransactionSessions transactionSessions = Arc.container()
+                        .instance(TransactionSessions.class).get();
+                ForwardingSession session = new ForwardingSession() {
+
+                    @Override
+                    protected Session delegate() {
+                        return transactionSessions.getSession(persistenceUnitName);
+                    }
+                };
+                return session;
+            }
+        };
+    }
+
 }

@@ -2,7 +2,11 @@ package io.quarkus.liquibase.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -40,6 +44,7 @@ public class LiquibaseExtensionConfigFixture {
         assertEquals(configuration.databaseChangeLogLockTableName, databaseChangeLogLockTableName(dataSourceName));
         assertEquals(labels(configuration), labels(dataSourceName));
         assertEquals(contexts(configuration), contexts(dataSourceName));
+        assertEquals(changeLogParameters(configuration), changeLogParameters(dataSourceName));
     }
 
     public void assertDefaultConfigurationSettings(LiquibaseConfig configuration) {
@@ -56,6 +61,30 @@ public class LiquibaseExtensionConfigFixture {
         assertEquals(configuration.liquibaseCatalogName.orElse(null), globalConfiguration.getLiquibaseCatalogName());
         assertEquals(configuration.liquibaseSchemaName.orElse(null), globalConfiguration.getLiquibaseSchemaName());
 
+    }
+
+    public Map<String, String> changeLogParameters(LiquibaseConfig configuration) {
+        if (configuration.changeLogParameters == null) {
+            return Collections.emptyMap();
+        }
+        return configuration.changeLogParameters;
+    }
+
+    public Map<String, String> changeLogParameters(String datasourceName) {
+        String propertyName = fillin("quarkus.liquibase.%s.change-log-parameters", datasourceName);
+        Map<String, String> map = new HashMap<>();
+        StreamSupport.stream(config.getPropertyNames().spliterator(), false).filter(p -> p.startsWith(propertyName))
+                .forEach(p -> map.put(unquote(p.substring(propertyName.length() + 1)), config.getValue(p, String.class)));
+
+        return map;
+    }
+
+    private String unquote(String s) {
+        if (s.startsWith("\"") && s.endsWith("\"")) {
+            return s.substring(1, s.length() - 1);
+        } else {
+            return s;
+        }
     }
 
     public String contexts(LiquibaseConfig configuration) {

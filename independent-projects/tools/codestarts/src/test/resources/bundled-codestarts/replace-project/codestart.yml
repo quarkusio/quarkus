@@ -1,6 +1,0 @@
----
-name: replace
-type: project
-output-strategy:
-  "*": replace
-

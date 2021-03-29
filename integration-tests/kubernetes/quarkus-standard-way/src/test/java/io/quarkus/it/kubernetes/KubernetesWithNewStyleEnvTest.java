@@ -48,24 +48,30 @@ public class KubernetesWithNewStyleEnvTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getEnv())
                                     .filteredOn(env -> "FROMFIELD".equals(env.getName()))
-                                    .hasOnlyOneElementSatisfying(
+                                    .singleElement().satisfies(
                                             env -> assertThat(env.getValueFrom().getFieldRef().getFieldPath())
                                                     .isEqualTo("metadata.name"));
                             assertThat(container.getEnv())
                                     .filteredOn(env -> "ENVVAR".equals(env.getName()))
-                                    .hasOnlyOneElementSatisfying(env -> assertThat(env.getValue()).isEqualTo("value"));
+                                    .singleElement().satisfies(env -> assertThat(env.getValue()).isEqualTo("value"));
+                            assertThat(container.getEnv())
+                                    .filteredOn(env -> "QUARKUS_KUBERNETES_CONFIG_ENABLED".equals(env.getName()))
+                                    .singleElement().satisfies(env -> assertThat(env.getValue()).isEqualTo("true"));
+                            assertThat(container.getEnv())
+                                    .filteredOn(env -> "FOO_MP_REST_URL".equals(env.getName()))
+                                    .singleElement().satisfies(env -> assertThat(env.getValue()).isEqualTo("foo.url"));
                             final List<EnvFromSource> envFrom = container.getEnvFrom();
                             assertThat(envFrom).hasSize(2);
                             assertThat(envFrom)
                                     .filteredOn(e -> e.getSecretRef() != null)
-                                    .hasOnlyOneElementSatisfying(
+                                    .singleElement().satisfies(
                                             e -> assertThat(e.getSecretRef().getName()).isEqualTo("secretName"));
                             assertThat(envFrom)
                                     .filteredOn(e -> e.getConfigMapRef() != null)
-                                    .hasOnlyOneElementSatisfying(
+                                    .singleElement().satisfies(
                                             e -> assertThat(e.getConfigMapRef().getName()).isEqualTo("configName"));
                         });
                     });

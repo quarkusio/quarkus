@@ -27,15 +27,15 @@ final class Interceptors {
         Integer priority = 0;
         boolean priorityDeclared = false;
         for (AnnotationInstance annotation : store.getAnnotations(interceptorClass)) {
-            if (beanDeployment.getInterceptorBinding(annotation.name()) != null) {
-                bindings.add(annotation);
-                // can also be a transitive binding
-                Set<AnnotationInstance> transitiveInterceptorBindings = beanDeployment
-                        .getTransitiveInterceptorBindings(annotation.name());
-                if (transitiveInterceptorBindings != null) {
-                    bindings.addAll(transitiveInterceptorBindings);
-                }
-            } else if (annotation.name().equals(DotNames.PRIORITY)) {
+            bindings.addAll(beanDeployment.extractInterceptorBindings(annotation));
+            // can also be a transitive binding
+            Set<AnnotationInstance> transitiveInterceptorBindings = beanDeployment
+                    .getTransitiveInterceptorBindings(annotation.name());
+            if (transitiveInterceptorBindings != null) {
+                bindings.addAll(transitiveInterceptorBindings);
+            }
+
+            if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
                 priorityDeclared = true;
             }

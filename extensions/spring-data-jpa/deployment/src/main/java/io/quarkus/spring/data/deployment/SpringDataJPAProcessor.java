@@ -41,6 +41,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
+import io.quarkus.hibernate.orm.panache.deployment.JavaJpaTypeBundle;
 import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
 
 public class SpringDataJPAProcessor {
@@ -100,9 +101,25 @@ public class SpringDataJPAProcessor {
 
         addRepositoryDefinitionInstances(indexView, interfacesExtendingRepository);
 
+        addInterfacesExtendingIntermediateRepositories(indexView, interfacesExtendingRepository);
+
         removeNoRepositoryBeanClasses(interfacesExtendingRepository);
         implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
                 interfacesExtendingRepository, indexView);
+    }
+
+    private void addInterfacesExtendingIntermediateRepositories(IndexView indexView,
+            List<ClassInfo> interfacesExtendingRepository) {
+        Collection<DotName> noRepositoryBeanRepos = getAllNoRepositoryBeanInterfaces(indexView);
+        Iterator<DotName> iterator = noRepositoryBeanRepos.iterator();
+        while (iterator.hasNext()) {
+            DotName interfaceName = iterator.next();
+            if (DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)) {
+                iterator.remove();
+            }
+        }
+        List<ClassInfo> interfacesExtending = getAllInterfacesExtending(noRepositoryBeanRepos, indexView);
+        interfacesExtendingRepository.addAll(interfacesExtending);
     }
 
     // classes annotated with @RepositoryDefinition behave exactly as if they extended Repository
@@ -214,6 +231,23 @@ public class SpringDataJPAProcessor {
         return result;
     }
 
+    private Collection<DotName> getAllNoRepositoryBeanInterfaces(IndexView index) {
+        Set<DotName> result = new HashSet<>();
+        Collection<ClassInfo> knownClasses = index.getKnownClasses();
+        for (ClassInfo clazz : knownClasses) {
+            if (!Modifier.isInterface(clazz.flags())) {
+                continue;
+            }
+            boolean found = false;
+            for (ClassInfo classInfo : knownClasses) {
+                if (classInfo.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null) {
+                    result.add(classInfo.name());
+                }
+            }
+        }
+        return result;
+    }
+
     // generate a concrete class that will be used by Arc to resolve injection points
     private void implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -233,10 +267,10 @@ public class SpringDataJPAProcessor {
                     // the generated classes that implement interfaces for holding custom query results need
                     // to be registered for reflection here since this is the only point where the generated class is known
                     reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, className));
-                }));
+                }), JavaJpaTypeBundle.BUNDLE);
 
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {
-            repositoryCreator.implementCrudRepository(crudRepositoryToImplement);
+            repositoryCreator.implementCrudRepository(crudRepositoryToImplement, index);
         }
     }
 }

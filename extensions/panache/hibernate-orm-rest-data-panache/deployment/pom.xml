@@ -7,7 +7,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-hibernate-orm-rest-data-panache-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-hibernate-orm-rest-data-panache-deployment</artifactId>
@@ -38,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb</artifactId>
+            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

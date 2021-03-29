@@ -1,11 +1,8 @@
 package io.quarkus.reactive.datasource.runtime;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.StampedLock;
-
-import org.jboss.logging.Logger;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -19,34 +16,87 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Transaction;
 
+/**
+ * This Pool implementation wraps the Vert.x Pool into thread-locals,
+ * as it's otherwise not thread-safe to be exposed to all the threads
+ * possibly accessing it in Quarkus.
+ * There are two main drawbacks to this approach:
+ * <p>
+ * 1# We need to track each instance stored in a ThreadLocal
+ * so to ensure we can close also the ones started in other threads.
+ * </p>
+ * <p>
+ * 2# Having the actual number of Pools determined by the number
+ * of threads requesting one makes this not honour the limit of
+ * connections to the database.
+ * </p>
+ *
+ * In particular the second limitation will need to be addressed.
+ *
+ * @param <PoolType> useful for implementations to produce typed pools
+ */
 public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
 
-    private static final Logger log = Logger.getLogger(ThreadLocalPool.class);
+    //List of all opened pools. Access requires synchronization on the list instance.
+    private final List<PoolAndThread> allConnections = new ArrayList<>();
 
-    private final AtomicReference<ThreadLocalPoolSet> poolset = new AtomicReference<>(new ThreadLocalPoolSet());
+    //The pool instance for the current thread
+    private final ThreadLocal<PoolType> threadLocal = new ThreadLocal<>();
 
+    //Used by subclasses to create new pool instances
     protected final PoolOptions poolOptions;
+
+    //Used by subclasses to create new pool instances
     protected final Vertx vertx;
+
+    private volatile boolean closed = false;
 
     public ThreadLocalPool(Vertx vertx, PoolOptions poolOptions) {
         this.vertx = vertx;
         this.poolOptions = poolOptions;
     }
 
-    private PoolType pool() {
-        //We re-try to be nice on an extremely unlikely race condition.
-        //3 attempts should be more than enough:
-        //especially consider that if this race is triggered, then someone is trying to use the pool on shutdown,
-        //which is inherently a broken plan.
-        for (int i = 0; i < 3; i++) {
-            final ThreadLocalPoolSet currentConnections = poolset.get();
-            PoolType p = currentConnections.getPool();
-            if (p != null)
-                return p;
+    PoolType pool() {
+        checkPoolIsOpen();
+        PoolType pool = threadLocal.get();
+        if (pool == null) {
+            synchronized (allConnections) {
+                checkPoolIsOpen();
+                pool = createThreadLocalPool();
+                allConnections.add(new PoolAndThread(pool));
+                threadLocal.set(pool);
+                scanForAbandonedConnections();
+            }
         }
-        throw new IllegalStateException("Multiple attempts to reopen a new pool on a closed instance: aborting");
+        return pool;
     }
 
+    private final void scanForAbandonedConnections() {
+        ArrayList<PoolAndThread> garbage = new ArrayList<>();
+        for (PoolAndThread pair : allConnections) {
+            if (pair.isDead()) {
+                garbage.add(pair);
+            }
+        }
+        //This needs a second loop, as the close() operation
+        //will otherwise trigger a concurrent modification on the iterator.
+        for (PoolAndThread dead : garbage) {
+            //This might potentially close the connection a second time,
+            //so we need to ensure implementations allow it.
+            dead.close();
+        }
+    }
+
+    private void checkPoolIsOpen() {
+        if (closed) {
+            throw new IllegalStateException("This Pool has been closed");
+        }
+    }
+
+    /**
+     * We will need the created Pool instances to have an idempotent implementation
+     * of close()
+     */
     protected abstract PoolType createThreadLocalPool();
 
     @Override
@@ -69,81 +119,77 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
         pool().begin(handler);
     }
 
-    /**
-     * This is a bit weird because it works on all ThreadLocal pools, but it's only
-     * called from a single thread, when doing shutdown, and needs to close all the
-     * pools and reinitialise the thread local so that all newly created pools after
-     * the restart will start with an empty thread local instead of a closed one.
-     * N.B. while we take care of the pool to behave as best as we can,
-     * it's responsibility of the user of the returned pools to not use them
-     * while a close is being requested.
-     */
     @Override
     public void close() {
-        // close all the thread-local pools, then discard the current ThreadLocal pool.
-        // Atomically set a new pool to be used: useful for live-reloading.
-        final ThreadLocalPoolSet previousPool = poolset.getAndSet(new ThreadLocalPoolSet());
-        previousPool.close();
+        synchronized (allConnections) {
+            this.closed = true;
+            for (PoolAndThread pair : allConnections) {
+                pair.close();
+            }
+            allConnections.clear();
+            threadLocal.remove();
+        }
     }
 
-    private class ThreadLocalPoolSet {
-        final List<Pool> threadLocalPools = new ArrayList<>();
-        final ThreadLocal<PoolType> threadLocal = new ThreadLocal<>();
-        final StampedLock stampedLock = new StampedLock();
-        boolean isOpen = true;
+    //Useful for testing mostly
+    public int trackedSize() {
+        synchronized (allConnections) {
+            return allConnections.size();
+        }
+    }
 
-        public PoolType getPool() {
-            final long optimisticRead = stampedLock.tryOptimisticRead();
-            if (isOpen == false) {
-                //Let the caller re-try on a different instance
-                return null;
-            }
-            PoolType ret = threadLocal.get();
-            if (ret != null) {
-                if (stampedLock.validate(optimisticRead)) {
-                    return ret;
-                } else {
-                    //On invalid optimisticRead stamp, it means this pool instance was closed:
-                    //let the caller re-try on a different instance
-                    return null;
-                }
-            } else {
-                //Now acquire an exclusive readlock:
-                final long readLock = stampedLock.tryConvertToReadLock(optimisticRead);
-                //Again, on failure the pool was closed, return null in such case.
-                if (readLock == 0)
-                    return null;
-                //else, we own the exclusive read lock and can now enter our slow path:
-                try {
-                    log.debugf("Making pool for thread: %s", Thread.currentThread());
-                    ret = createThreadLocalPool();
-                    synchronized (threadLocalPools) {
-                        threadLocalPools.add(ret);
+    /**
+     * Removes references to the instance without closing it.
+     * This assumes the instance was created via this pool
+     * and that it's now closed, so no longer needing tracking.
+     * 
+     * @param instance
+     */
+    protected void removeSelfFromTracking(final PoolType instance) {
+        synchronized (allConnections) {
+            if (closed)
+                return;
+            for (PoolAndThread pair : allConnections) {
+                if (pair.pool == instance) {
+                    allConnections.remove(pair);
+                    if (pair.isCurrentThread()) {
+                        threadLocal.remove();
                     }
-                    threadLocal.set(ret);
-                    return ret;
-                } finally {
-                    stampedLock.unlockRead(readLock);
+                    return;
                 }
             }
         }
+    }
 
-        public void close() {
-            final long lock = stampedLock.writeLock();
-            try {
-                isOpen = false;
-                //While this synchronized block might take a while as we have to close all
-                //pool instances, it shouldn't block the getPool method as contention is
-                //prevented by the exclusive stamped lock.
-                synchronized (threadLocalPools) {
-                    for (Pool pool : threadLocalPools) {
-                        log.debugf("Closing pool: %s", pool);
-                        pool.close();
-                    }
-                }
-            } finally {
-                stampedLock.unlockWrite(lock);
-            }
+    private static class PoolAndThread {
+        private final Pool pool;
+        private final WeakReference<Thread> threadReference;
+
+        private PoolAndThread(Pool pool) {
+            this.pool = pool;
+            this.threadReference = new WeakReference<>(Thread.currentThread());
+        }
+
+        /**
+         * @return true if this pools is associated to a Thread which is no longer alive.
+         */
+        boolean isDead() {
+            final Thread thread = threadReference.get();
+            return thread == null || (!thread.isAlive());
+        }
+
+        /**
+         * Closes the connection
+         */
+        void close() {
+            pool.close();
+        }
+
+        /**
+         * @return if this is the pair referring to the current Thread
+         */
+        public boolean isCurrentThread() {
+            return threadReference.get() == Thread.currentThread();
         }
     }
 

@@ -18,7 +18,7 @@ public class AwsCredentialsProviderConfig {
      * Available values:
      *
      * * `default` - the provider will attempt to identify the credentials automatically using the following checks:
-     * ** Java System Properties - `aws.accessKeyId` and `aws.secretKey`
+     * ** Java System Properties - `aws.accessKeyId` and `aws.secretAccessKey`
      * ** Environment Variables - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
      * ** Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI
      * ** Credentials delivered through the Amazon EC2 container service if `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` environment variable is set and security manager has permission to access the variable.

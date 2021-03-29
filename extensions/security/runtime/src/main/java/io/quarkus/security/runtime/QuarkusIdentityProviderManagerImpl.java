@@ -37,7 +37,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     private final AuthenticationRequestContext blockingRequestContext = new AuthenticationRequestContext() {
         @Override
         public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
-            return Uni.createFrom().deferred(new Supplier<Uni<SecurityIdentity>>() {
+            return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
                 @Override
                 public Uni<SecurityIdentity> get() {
                     if (BlockingOperationControl.isBlockingAllowed()) {
@@ -86,15 +86,19 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
      * @return The first identity provider that was registered with this type
      */
     public Uni<SecurityIdentity> authenticate(AuthenticationRequest request) {
-        List<IdentityProvider> providers = this.providers.get(request.getClass());
-        if (providers == null) {
-            return Uni.createFrom().failure(new IllegalArgumentException(
-                    "No IdentityProviders were registered to handle AuthenticationRequest " + request));
+        try {
+            List<IdentityProvider> providers = this.providers.get(request.getClass());
+            if (providers == null) {
+                return Uni.createFrom().failure(new IllegalArgumentException(
+                        "No IdentityProviders were registered to handle AuthenticationRequest " + request));
+            }
+            if (providers.size() == 1) {
+                return handleSingleProvider(providers.get(0), request);
+            }
+            return handleProvider(0, (List) providers, request, blockingRequestContext);
+        } catch (Throwable t) {
+            return Uni.createFrom().failure(t);
         }
-        if (providers.size() == 1) {
-            return handleSingleProvider(providers.get(0), request);
-        }
-        return handleProvider(0, (List) providers, request, blockingRequestContext);
     }
 
     private Uni<SecurityIdentity> handleSingleProvider(IdentityProvider identityProvider, AuthenticationRequest request) {
@@ -137,7 +141,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         }
         IdentityProvider<T> current = providers.get(pos);
         Uni<SecurityIdentity> cs = current.authenticate(request, context)
-                .onItem().transformToUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
+                .onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
                         if (securityIdentity != null) {

@@ -41,7 +41,7 @@ public class KnativeWithApplicationPropertiesTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
-        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(s.getMetadata()).satisfies(m -> {
@@ -53,8 +53,8 @@ public class KnativeWithApplicationPropertiesTest {
 
                     assertThat(spec.getTemplate()).satisfies(template -> {
                         assertThat(template.getSpec()).satisfies(templateSpec -> {
-                            assertThat(templateSpec.getContainers()).hasSize(1).hasOnlyOneElementSatisfying(c -> {
-                                assertThat(c.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
+                            assertThat(templateSpec.getContainers()).hasSize(1).singleElement().satisfies(c -> {
+                                assertThat(c.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                                     assertThat(p.getName()).isEqualTo("http1");
                                 });
                             });

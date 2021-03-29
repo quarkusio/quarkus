@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment;
 
+import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.ClassInfo;
@@ -8,21 +9,29 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Makes it possible to intentionally ignore some classes when performing type-safe checking.
+ * Makes it possible to intentionally ignore some parts of an expression when performing type-safe validation.
+ * 
+ * @see TypeCheck
  */
 public final class TypeCheckExcludeBuildItem extends MultiBuildItem {
 
-    private final Predicate<Check> predicate;
+    private final Predicate<TypeCheck> predicate;
 
-    public TypeCheckExcludeBuildItem(Predicate<Check> predicate) {
-        this.predicate = predicate;
+    public TypeCheckExcludeBuildItem(Predicate<TypeCheck> predicate) {
+        this.predicate = Objects.requireNonNull(predicate);
     }
 
-    public Predicate<Check> getPredicate() {
+    public Predicate<TypeCheck> getPredicate() {
         return predicate;
     }
 
-    public static class Check {
+    /**
+     * Represents a type check of a part of an expression.
+     * <p>
+     * For example, the expression {@code item.name} has two parts, {@code item} and {@code name}, and for each part a new
+     * instance is created and tested for exclusion.
+     */
+    public static class TypeCheck {
 
         /**
          * The name of a property/method, e.g. {@code foo} and {@code ping} for expression {@code foo.ping(bar)}.
@@ -39,7 +48,7 @@ public final class TypeCheckExcludeBuildItem extends MultiBuildItem {
          */
         public final int numberOfParameters;
 
-        public Check(String name, ClassInfo clazz, int parameters) {
+        public TypeCheck(String name, ClassInfo clazz, int parameters) {
             this.name = name;
             this.clazz = clazz;
             this.numberOfParameters = parameters;

@@ -4,11 +4,11 @@ import java.util.function.Supplier;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 
 import org.hibernate.FlushMode;
 import org.jboss.logging.Logger;
 
-import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
@@ -22,7 +22,7 @@ public abstract class JpaTrustedIdentityProvider extends AbstractJpaIdentityProv
     private static Logger log = Logger.getLogger(JpaTrustedIdentityProvider.class);
 
     @Inject
-    JPAConfig jpaConfig;
+    EntityManagerFactory entityManagerFactory;
 
     @Override
     public Class<TrustedAuthenticationRequest> getRequestType() {
@@ -35,8 +35,7 @@ public abstract class JpaTrustedIdentityProvider extends AbstractJpaIdentityProv
         return context.runBlocking(new Supplier<SecurityIdentity>() {
             @Override
             public SecurityIdentity get() {
-                // FIXME: unit name
-                EntityManager em = jpaConfig.getEntityManagerFactory(null).createEntityManager();
+                EntityManager em = entityManagerFactory.createEntityManager();
                 ((org.hibernate.Session) em).setHibernateFlushMode(FlushMode.MANUAL);
                 ((org.hibernate.Session) em).setDefaultReadOnly(true);
                 try {

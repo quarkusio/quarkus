@@ -8,8 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -18,7 +18,11 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -30,18 +34,42 @@ import org.jboss.logging.Logger;
  */
 public class JarClassPathElement implements ClassPathElement {
 
+    private static final int JAVA_VERSION;
+
+    static {
+        int version = 8;
+        try {
+            Method versionMethod = Runtime.class.getMethod("version");
+            Object v = versionMethod.invoke(null);
+            List<Integer> list = (List<Integer>) v.getClass().getMethod("version").invoke(v);
+            version = list.get(0);
+        } catch (Exception e) {
+            //version 8
+        }
+        JAVA_VERSION = version;
+    }
+
     private static final Logger log = Logger.getLogger(JarClassPathElement.class);
+    public static final String META_INF_VERSIONS = "META-INF/versions/";
+
     private final File file;
     private final URL jarPath;
     private final Path root;
-    private JarFile jarFile;
-    private boolean closed;
+    private final Lock readLock;
+    private final Lock writeLock;
+
+    //Closing the jarFile requires the exclusive lock, while reading data from the jarFile requires the shared lock.
+    private final JarFile jarFile;
+    private volatile boolean closed;
 
     public JarClassPathElement(Path root) {
         try {
             jarPath = root.toUri().toURL();
             this.root = root;
             jarFile = JarFiles.create(file = root.toFile());
+            ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+            this.readLock = readWriteLock.readLock();
+            this.writeLock = readWriteLock.writeLock();
         } catch (IOException e) {
             throw new UncheckedIOException("Error while reading file as JAR: " + root, e);
         }
@@ -119,16 +147,21 @@ public class JarClassPathElement implements ClassPathElement {
     }
 
     private <T> T withJarFile(Function<JarFile, T> func) {
-        if (closed) {
-            //we still need this to work if it is closed, so shutdown hooks work
-            //once it is closed it simply does not hold on to any resources
-            try (JarFile jarFile = JarFiles.create(file)) {
+        readLock.lock();
+        try {
+            if (closed) {
+                //we still need this to work if it is closed, so shutdown hooks work
+                //once it is closed it simply does not hold on to any resources
+                try (JarFile jarFile = JarFiles.create(file)) {
+                    return func.apply(jarFile);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
                 return func.apply(jarFile);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
-        } else {
-            return func.apply(jarFile);
+        } finally {
+            readLock.unlock();
         }
     }
 
@@ -147,6 +180,26 @@ public class JarClassPathElement implements ClassPathElement {
                         paths.add(entry.getName());
                     }
                 }
+                //multi release jars can add additional entries
+                if (JarFiles.isMultiRelease(jarFile)) {
+                    Set<String> copy = new HashSet<>(paths);
+                    for (String i : copy) {
+                        if (i.startsWith(META_INF_VERSIONS)) {
+                            String part = i.substring(META_INF_VERSIONS.length());
+                            int slash = part.indexOf("/");
+                            if (slash != -1) {
+                                try {
+                                    int ver = Integer.parseInt(part.substring(0, slash));
+                                    if (ver <= JAVA_VERSION) {
+                                        paths.add(part.substring(slash + 1));
+                                    }
+                                } catch (NumberFormatException e) {
+                                    log.debug("Failed to parse META-INF/versions entry", e);
+                                }
+                            }
+                        }
+                    }
+                }
                 return paths;
             }
         }));
@@ -154,16 +207,14 @@ public class JarClassPathElement implements ClassPathElement {
 
     @Override
     public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
-        URL url = null;
+        final URL url;
         try {
-            URI uri = new URI("jar:file", null, jarPath.getPath() + "!/", null);
-            url = uri.toURL();
+            url = jarPath.toURI().toURL();
         } catch (URISyntaxException | MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
         }
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, classLoader, null);
-        return protectionDomain;
+        return new ProtectionDomain(codesource, null, classLoader, null);
     }
 
     @Override
@@ -183,8 +234,13 @@ public class JarClassPathElement implements ClassPathElement {
 
     @Override
     public void close() throws IOException {
-        closed = true;
-        jarFile.close();
+        writeLock.lock();
+        try {
+            jarFile.close();
+            closed = true;
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     public static byte[] readStreamContents(InputStream inputStream) throws IOException {

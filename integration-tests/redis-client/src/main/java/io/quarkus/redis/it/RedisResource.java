@@ -12,6 +12,7 @@ import javax.ws.rs.PathParam;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.smallrye.mutiny.Uni;
+import io.vertx.redis.client.Response;
 
 @Path("/quarkus-redis")
 @ApplicationScoped
@@ -26,7 +27,8 @@ public class RedisResource {
     @GET
     @Path("/sync/{key}")
     public String getSync(@PathParam("key") String key) {
-        return redisClient.get(key).toString();
+        Response response = redisClient.get(key);
+        return response == null ? null : response.toString();
     }
 
     @POST
@@ -41,7 +43,7 @@ public class RedisResource {
     public Uni<String> getReactive(@PathParam("key") String key) {
         return reactiveRedisClient
                 .get(key)
-                .map(response -> response.toString());
+                .map(response -> response == null ? null : response.toString());
     }
 
     @POST

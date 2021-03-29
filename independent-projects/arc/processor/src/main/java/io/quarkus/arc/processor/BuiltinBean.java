@@ -95,7 +95,7 @@ enum BuiltinBean {
                 ctx.constructor.getThis(),
                 beanProviderSupplier);
     }, ip -> {
-        return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && ip.hasDefaultedQualifier();
+        return isCdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && ip.hasDefaultedQualifier();
     }, DotNames.BEAN),
     INTERCEPTED_BEAN(ctx -> {
         if (!(ctx.targetInfo instanceof InterceptorInfo)) {
@@ -112,7 +112,7 @@ enum BuiltinBean {
                 ctx.constructor.getThis(),
                 interceptedBeanMetadataProviderSupplier);
     }, ip -> {
-        return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && !ip.hasDefaultedQualifier()
+        return isCdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && !ip.hasDefaultedQualifier()
                 && ip.getRequiredQualifiers().size() == 1
                 && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.INTERCEPTED);
     }, DotNames.BEAN),
@@ -168,7 +168,7 @@ enum BuiltinBean {
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             for (AnnotationInstance annotation : ctx.injectionPoint.getRequiredQualifiers()) {
                 // Create annotation literal first
-                ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getIndex(), annotation.name());
+                ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getBeanArchiveIndex(), annotation.name());
                 ctx.constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
                         ctx.annotationLiterals.process(ctx.constructor, ctx.classOutput,
                                 annotationClass, annotation,

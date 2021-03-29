@@ -11,7 +11,7 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
-public class AddExtensionToModuleInMultiModuleProjectTest extends QuarkusGradleWrapperTestBase {
+public class AddExtensionToModuleInMultiModuleProjectTest extends QuarkusGradleDevToolsTestBase {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 
@@ -20,17 +20,17 @@ public class AddExtensionToModuleInMultiModuleProjectTest extends QuarkusGradleW
 
         final File projectDir = getProjectDir("add-extension-multi-module");
 
-        runGradleWrapper(projectDir, ":application:addExtension", "--extensions=hibernate-orm");
+        runGradleWrapper(projectDir, ":application:addExtension", "--extensions=openshift");
 
         final Path applicationLib = projectDir.toPath().resolve("application").resolve("settings.gradle");
         assertThat(applicationLib).doesNotExist();
 
         final Path appBuild = projectDir.toPath().resolve("application").resolve("build.gradle");
         assertThat(appBuild).exists();
-        assertThat(readFile(appBuild)).contains("implementation 'io.quarkus:quarkus-hibernate-orm'");
+        assertThat(readFile(appBuild)).contains("implementation 'io.quarkus:quarkus-openshift'");
 
-        runGradleWrapper(projectDir, ":application:removeExtension", "--extensions=hibernate-orm");
-        assertThat(readFile(appBuild)).doesNotContain("implementation 'io.quarkus:quarkus-hibernate-orm'");
+        runGradleWrapper(projectDir, ":application:removeExtension", "--extensions=openshift");
+        assertThat(readFile(appBuild)).doesNotContain("implementation 'io.quarkus:quarkus-openshift'");
     }
 
     private static String readFile(Path file) throws IOException {

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - HTTP Reference
 
@@ -67,6 +67,7 @@ will be served relative to `{quarkus.http.root-path}/{quarkus.servlet.context-pa
 If REST Assured is used for testing and `quarkus.http.root-path` is set then Quarkus will automatically configure the
 base URL for use in Quarkus tests, so test URL's should not include the root path.
 
+[[ssl]]
 == Supporting secure connections with SSL
 
 In order to have Quarkus support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
@@ -101,7 +102,7 @@ As with the certificate/key file combination, Quarkus will first try to resolve 
 
 Add the following property to your `application.properties`:
 
-[source,shell]
+[source,bash]
 ----
 quarkus.http.ssl.certificate.key-store-file=/path/to/keystore
 ----
@@ -124,7 +125,7 @@ The password can be set in your `application.properties` (in plain-text) using t
 quarkus.http.ssl.certificate.key-store-password=your-password
 ----
 
-However, instead of providing the password as plain-text in the configuration file (which is considered bad practice), it can instead be supplied (using link:https://microprofile.io/project/eclipse/microprofile-config[MicroProfile config])
+However, instead of providing the password as plain-text in the configuration file (which is considered bad practice), it can instead be supplied (using link:https://github.com/eclipse/microprofile-config[MicroProfile Config])
 as the environment variable `QUARKUS_HTTP_SSL_CERTIFICATE_KEY_STORE_PASSWORD`.
 This will also work in tandem with link:https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables[Kubernetes secrets].
 
@@ -155,6 +156,19 @@ If you want to disable HTTP/2 you can set:
 quarkus.http.http2=false
 ----
 
+== Listening on a Random Port
+
+If you don't want to specify a port you can set `quarkus.http.port=0` or `quarkus.http.test-port=0`. A random open port
+will be picked by the OS, and a log message printed in the console. When the port is bound the `quarkus.http.port` system
+property will be set to the actual port that was selected, so you can use this to get the actual port number from inside
+the application. If you are in a test you can inject the URL normally and this will be configured with the actual port,
+and REST Assured will also be configured appropriately.
+
+WARNING: As this sets a system property you can access `quarkus.http.port` via MicroProfile Config, however if you use
+injection the injected value may not always be correct. This port allocation is one of the last things to happen in
+Quarkus startup, so if your object that is being injected is created eagerly before the port has opened the injected
+value will not be correct.
+
 == CORS filter
 
 link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that
@@ -175,13 +189,13 @@ following properties will be applied before passing the request on to its actual
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.http.cors.origins||The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not
-set.
-|quarkus.http.cors.methods||The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
-not set.
-|quarkus.http.cors.headers||The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
-not set.
-|quarkus.http.cors.exposed-headers||The comma-separated list of HTTP headers exposed in CORS.
+|quarkus.http.cors.origins|*|The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not set or set to '*'.
+|quarkus.http.cors.methods|*|The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
+not set or set to '*'.
+|quarkus.http.cors.headers|*|The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
+not set or set to '*'.
+|quarkus.http.cors.exposed-headers|*|The comma-separated list of HTTP headers exposed in CORS. The filter allows any headers to be exposed if this is
+not set or set to '*'.
 |quarkus.http.cors.access-control-max-age||The duration (see note below) indicating how long the results of a pre-flight request can be cached.
 This value will be returned in a `Access-Control-Max-Age` response header.
 |quarkus.http.cors.access-control-allow-credentials||Boolean value to tell the browsers to expose the response to front-end JavaScript code

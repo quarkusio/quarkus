@@ -1,21 +1,24 @@
 package io.quarkus.amazon.lambda.http;
 
+import static java.util.Optional.ofNullable;
+
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
-import java.net.URLEncoder;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.jboss.logging.Logger;
 
-import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -29,15 +32,14 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
-import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
-import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
+import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 
 @SuppressWarnings("unused")
-public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsProxyResponse> {
+public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
     private static final Logger log = Logger.getLogger("quarkus.amazon.lambda.http");
 
     private static final int BUFFER_SIZE = 8096;
@@ -47,35 +49,39 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         errorHeaders.putSingle("Content-Type", "application/json");
     }
 
-    public AwsProxyResponse handleRequest(AwsProxyRequest request, Context context) {
+    public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
         InetSocketAddress clientAddress = null;
-        if (request.getRequestContext() != null && request.getRequestContext().getIdentity() != null) {
-            if (request.getRequestContext().getIdentity().getSourceIp() != null) {
-                clientAddress = new InetSocketAddress(request.getRequestContext().getIdentity().getSourceIp(), 443);
+        if (request.getRequestContext() != null && request.getRequestContext().getHttp() != null) {
+            if (request.getRequestContext().getHttp().getSourceIp() != null) {
+                clientAddress = new InetSocketAddress(request.getRequestContext().getHttp().getSourceIp(), 443);
             }
         }
 
         try {
-            return nettyDispatch(clientAddress, request);
+            return nettyDispatch(clientAddress, request, context);
         } catch (Exception e) {
             log.error("Request Failure", e);
-            return new AwsProxyResponse(500, errorHeaders, "{ \"message\": \"Internal Server Error\" }");
+            APIGatewayV2HTTPResponse res = new APIGatewayV2HTTPResponse();
+            res.setStatusCode(500);
+            res.setBody("{ \"message\": \"Internal Server Error\" }");
+            res.setMultiValueHeaders(errorHeaders);
+            return res;
         }
 
     }
 
     private class NettyResponseHandler implements VirtualResponseHandler {
-        AwsProxyResponse responseBuilder = new AwsProxyResponse();
+        APIGatewayV2HTTPResponse responseBuilder = new APIGatewayV2HTTPResponse();
         ByteArrayOutputStream baos;
         WritableByteChannel byteChannel;
-        final AwsProxyRequest request;
-        CompletableFuture<AwsProxyResponse> future = new CompletableFuture<>();
+        final APIGatewayV2HTTPEvent request;
+        CompletableFuture<APIGatewayV2HTTPResponse> future = new CompletableFuture<>();
 
-        public NettyResponseHandler(AwsProxyRequest request) {
+        public NettyResponseHandler(APIGatewayV2HTTPEvent request) {
             this.request = request;
         }
 
-        public CompletableFuture<AwsProxyResponse> getFuture() {
+        public CompletableFuture<APIGatewayV2HTTPResponse> getFuture() {
             return future;
         }
 
@@ -88,13 +94,11 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                     HttpResponse res = (HttpResponse) msg;
                     responseBuilder.setStatusCode(res.status().code());
 
-                    if (request.getRequestSource() == AwsProxyRequest.RequestSource.ALB) {
-                        responseBuilder.setStatusDescription(res.status().reasonPhrase());
-                    }
-                    responseBuilder.setMultiValueHeaders(new Headers());
+                    Headers multiValueHeaders = new Headers();
+                    responseBuilder.setMultiValueHeaders(multiValueHeaders);
                     for (String name : res.headers().names()) {
                         for (String v : res.headers().getAll(name)) {
-                            responseBuilder.getMultiValueHeaders().add(name, v);
+                            multiValueHeaders.add(name, v);
                         }
                     }
                 }
@@ -120,8 +124,8 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                 }
                 if (msg instanceof LastHttpContent) {
                     if (baos != null) {
-                        if (isBinary(responseBuilder.getMultiValueHeaders().getFirst("Content-Type"))) {
-                            responseBuilder.setBase64Encoded(true);
+                        if (isBinary(((Headers) responseBuilder.getMultiValueHeaders()).getFirst("Content-Type"))) {
+                            responseBuilder.setIsBase64Encoded(true);
                             responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
                         } else {
                             responseBuilder.setBody(new String(baos.toByteArray(), StandardCharsets.UTF_8));
@@ -145,38 +149,23 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
     }
 
-    private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request) throws Exception {
-        String path = request.getPath();
-        //log.info("---- Got lambda request: " + path);
-        if (request.getMultiValueQueryStringParameters() != null && !request.getMultiValueQueryStringParameters().isEmpty()) {
-            StringBuilder sb = new StringBuilder(path);
-            sb.append("?");
-            boolean first = true;
-            for (Map.Entry<String, List<String>> e : request.getMultiValueQueryStringParameters().entrySet()) {
-                for (String v : e.getValue()) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        sb.append("&");
-                    }
-                    if (request.getRequestSource() == AwsProxyRequest.RequestSource.ALB) {
-                        sb.append(e.getKey());
-                        sb.append("=");
-                        sb.append(v);
-                    } else {
-                        sb.append(URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8.name()));
-                        sb.append("=");
-                        sb.append(URLEncoder.encode(v, StandardCharsets.UTF_8.name()));
-                    }
-                }
-            }
-            path = sb.toString();
-        }
+    private APIGatewayV2HTTPResponse nettyDispatch(InetSocketAddress clientAddress, APIGatewayV2HTTPEvent request,
+            Context context)
+            throws Exception {
+        QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
+        quarkusHeaders.setContextObject(Context.class, context);
+        quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.class, request);
+        quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.RequestContext.class, request.getRequestContext());
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getHttpMethod()), path);
-        if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent
-            for (Map.Entry<String, List<String>> header : request.getMultiValueHeaders().entrySet()) {
-                nettyRequest.headers().add(header.getKey(), header.getValue());
+                HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod()), ofNullable(request.getRawQueryString())
+                        .filter(q -> !q.isEmpty()).map(q -> request.getRawPath() + '?' + q).orElse(request.getRawPath()),
+                quarkusHeaders);
+        if (request.getHeaders() != null) { //apparently this can be null if no headers are sent
+            for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
+                if (header.getValue() != null) {
+                    for (String val : header.getValue().split(","))
+                        nettyRequest.headers().add(header.getKey(), val);
+                }
             }
         }
         if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
@@ -185,7 +174,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
         HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
         if (request.getBody() != null) {
-            if (request.isBase64Encoded()) {
+            if (request.getIsBase64Encoded()) {
                 ByteBuf body = Unpooled.wrappedBuffer(Base64.getMimeDecoder().decode(request.getBody()));
                 requestContent = new DefaultLastHttpContent(body);
             } else {
@@ -212,13 +201,22 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         return baos;
     }
 
+    static Set<String> binaryTypes = new HashSet<>();
+
+    static {
+        binaryTypes.add("application/octet-stream");
+        binaryTypes.add("image/jpeg");
+        binaryTypes.add("image/png");
+        binaryTypes.add("image/gif");
+    }
+
     private boolean isBinary(String contentType) {
         if (contentType != null) {
             int index = contentType.indexOf(';');
             if (index >= 0) {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType.substring(0, index));
+                return binaryTypes.contains(contentType.substring(0, index));
             } else {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType);
+                return binaryTypes.contains(contentType);
             }
         }
         return false;

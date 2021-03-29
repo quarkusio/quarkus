@@ -22,6 +22,10 @@ public interface SectionHelper {
      */
     public interface SectionResolutionContext {
 
+        /**
+         * 
+         * @return the current resolution context
+         */
         ResolutionContext resolutionContext();
 
         /**

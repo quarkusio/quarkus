@@ -3,6 +3,7 @@ package io.quarkus.test.security;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 
 import javax.enterprise.inject.spi.CDI;
 
@@ -26,18 +27,24 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
             //the usual ClassLoader hacks to get our copy of the TestSecurity annotation
             ClassLoader cl = QuarkusSecurityTestExtension.class.getClassLoader();
             Class<?> original = cl.loadClass(context.getTestMethod().getDeclaringClass().getName());
-            Class<?> test = cl.loadClass(context.getTestInstance().getClass().getName());
             Method method = original.getDeclaredMethod(context.getTestMethod().getName(),
                     Arrays.stream(context.getTestMethod().getParameterTypes()).map(s -> {
+                        if (s.isPrimitive()) {
+                            return s;
+                        }
                         try {
-                            return cl.loadClass(s.getName());
+                            return Class.forName(s.getName(), false, cl);
                         } catch (ClassNotFoundException e) {
                             throw new RuntimeException(e);
                         }
                     }).toArray(Class<?>[]::new));
             TestSecurity testSecurity = method.getAnnotation(TestSecurity.class);
             if (testSecurity == null) {
-                testSecurity = test.getAnnotation(TestSecurity.class);
+                testSecurity = original.getAnnotation(TestSecurity.class);
+                while (testSecurity == null && original != Object.class) {
+                    original = original.getSuperclass();
+                    testSecurity = original.getAnnotation(TestSecurity.class);
+                }
             }
             if (testSecurity == null) {
                 return;
@@ -48,10 +55,16 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                     throw new RuntimeException("Cannot specify roles without a username in @TestSecurity");
                 }
             } else {
-                QuarkusSecurityIdentity user = QuarkusSecurityIdentity.builder()
+                QuarkusSecurityIdentity.Builder user = QuarkusSecurityIdentity.builder()
                         .setPrincipal(new QuarkusPrincipal(testSecurity.user()))
-                        .addRoles(new HashSet<>(Arrays.asList(testSecurity.roles()))).build();
-                CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(user);
+                        .addRoles(new HashSet<>(Arrays.asList(testSecurity.roles())));
+
+                if (testSecurity.attributes() != null) {
+                    user.addAttributes(Arrays.stream(testSecurity.attributes())
+                            .collect(Collectors.toMap(s -> s.key(), s -> s.value())));
+                }
+
+                CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(user.build());
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to setup @TestSecurity", e);

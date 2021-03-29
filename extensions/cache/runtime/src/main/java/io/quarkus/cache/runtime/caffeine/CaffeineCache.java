@@ -1,20 +1,21 @@
 package io.quarkus.cache.runtime.caffeine;
 
-import static io.quarkus.cache.runtime.NullValueConverter.fromCacheValue;
-import static io.quarkus.cache.runtime.NullValueConverter.toCacheValue;
-
 import java.time.Duration;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-public class CaffeineCache {
+import io.quarkus.cache.runtime.AbstractCache;
+import io.quarkus.cache.runtime.CacheException;
+import io.quarkus.cache.runtime.NullValueConverter;
+
+/**
+ * This class is an internal Quarkus cache implementation. Do not use it explicitly from your Quarkus application. The public
+ * methods signatures may change without prior notice.
+ */
+public class CaffeineCache extends AbstractCache {
 
     private AsyncCache<Object, Object> cache;
 
@@ -28,12 +29,9 @@ public class CaffeineCache {
 
     private Duration expireAfterAccess;
 
-    public CaffeineCache(CaffeineCacheInfo cacheInfo, Executor executor) {
+    public CaffeineCache(CaffeineCacheInfo cacheInfo) {
         this.name = cacheInfo.name;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
-        if (executor != null) {
-            builder.executor(executor);
-        }
         if (cacheInfo.initialCapacity != null) {
             this.initialCapacity = cacheInfo.initialCapacity;
             builder.initialCapacity(cacheInfo.initialCapacity);
@@ -53,53 +51,72 @@ public class CaffeineCache {
         cache = builder.buildAsync();
     }
 
-    public Object get(Object key, Callable<Object> valueLoader, long lockTimeout) throws Exception {
-        if (lockTimeout <= 0) {
-            return fromCacheValue(cache.synchronous().get(key, k -> new MappingSupplier(valueLoader).get()));
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Returns a {@link CompletableFuture} holding the cache value identified by {@code key}, obtaining that value from
+     * {@code valueLoader} if necessary. The value computation is done synchronously on the calling thread and the
+     * {@link CompletableFuture} is immediately completed before being returned.
+     * 
+     * @param key cache key
+     * @param valueLoader function used to compute the cache value if {@code key} is not already associated with a value
+     * @return a {@link CompletableFuture} holding the cache value
+     * @throws CacheException if an exception is thrown during the cache value computation
+     */
+    @Override
+    public CompletableFuture<Object> get(Object key, Function<Object, Object> valueLoader) {
+        if (key == null) {
+            throw new NullPointerException(NULL_KEYS_NOT_SUPPORTED_MSG);
         }
-
-        // The lock timeout logic starts here.
-
-        /*
-         * If the current key is not already associated with a value in the Caffeine cache, there's no way to know if the
-         * current thread or another one started the missing value computation. The following variable will be used to
-         * determine whether or not a timeout should be triggered during the computation depending on which thread started it.
-         */
-        boolean[] isCurrentThreadComputation = { false };
-
-        CompletableFuture<Object> future = cache.get(key, (k, executor) -> {
-            isCurrentThreadComputation[0] = true;
-            return CompletableFuture.supplyAsync(new MappingSupplier(valueLoader), executor);
-        });
-
-        if (isCurrentThreadComputation[0]) {
-            // The value is missing and its computation was started from the current thread.
-            // We'll wait for the result no matter how long it takes.
-            return fromCacheValue(future.get());
-        } else {
-            // The value is either already present in the cache or missing and its computation was started from another thread.
-            // We want to retrieve it from the cache within the lock timeout delay.
+        CompletableFuture<Object> newCacheValue = new CompletableFuture<Object>();
+        CompletableFuture<Object> existingCacheValue = cache.asMap().putIfAbsent(key, newCacheValue);
+        if (existingCacheValue == null) {
             try {
-                return fromCacheValue(future.get(lockTimeout, TimeUnit.MILLISECONDS));
-            } catch (TimeoutException e) {
-                // Timeout triggered! We don't want to wait any longer for the value computation and we'll simply invoke the
-                // cached method and return its result without caching it.
-                // TODO: Add statistics here to monitor the timeout.
-                return valueLoader.call();
+                Object value = valueLoader.apply(key);
+                newCacheValue.complete(NullValueConverter.toCacheValue(value));
+            } catch (Throwable t) {
+                cache.asMap().remove(key, newCacheValue);
+                newCacheValue.complete(new CaffeineComputationThrowable(t));
             }
+            return unwrapCacheValueOrThrowable(newCacheValue);
+        } else {
+            return unwrapCacheValueOrThrowable(existingCacheValue);
         }
     }
 
+    private CompletableFuture<Object> unwrapCacheValueOrThrowable(CompletableFuture<Object> cacheValue) {
+        return cacheValue.thenApply(new Function<Object, Object>() {
+            @Override
+            public Object apply(Object value) {
+                // If there's a throwable encapsulated into a CaffeineComputationThrowable, it must be rethrown.
+                if (value instanceof CaffeineComputationThrowable) {
+                    Throwable cause = ((CaffeineComputationThrowable) value).getCause();
+                    if (cause instanceof RuntimeException) {
+                        throw (RuntimeException) cause;
+                    } else {
+                        throw new CacheException(cause);
+                    }
+                } else {
+                    return NullValueConverter.fromCacheValue(value);
+                }
+            }
+        });
+    }
+
+    @Override
     public void invalidate(Object key) {
+        if (key == null) {
+            throw new NullPointerException(NULL_KEYS_NOT_SUPPORTED_MSG);
+        }
         cache.synchronous().invalidate(key);
     }
 
+    @Override
     public void invalidateAll() {
         cache.synchronous().invalidateAll();
-    }
-
-    public String getName() {
-        return name;
     }
 
     // For testing purposes only.
@@ -122,23 +139,7 @@ public class CaffeineCache {
         return expireAfterAccess;
     }
 
-    private static class MappingSupplier implements Supplier<Object> {
-
-        private final Callable<?> valueLoader;
-
-        public MappingSupplier(Callable<?> valueLoader) {
-            this.valueLoader = valueLoader;
-        }
-
-        @Override
-        public Object get() {
-            try {
-                return toCacheValue(valueLoader.call());
-            } catch (RuntimeException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+    public long getSize() {
+        return cache.synchronous().estimatedSize();
     }
 }

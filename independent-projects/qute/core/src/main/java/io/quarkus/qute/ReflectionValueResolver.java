@@ -4,6 +4,9 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -22,6 +25,7 @@ public class ReflectionValueResolver implements ValueResolver {
 
     public static final String GET_PREFIX = "get";
     public static final String IS_PREFIX = "is";
+    public static final String HAS_PREFIX = "has";
 
     @Override
     public int getPriority() {
@@ -92,39 +96,48 @@ public class ReflectionValueResolver implements ValueResolver {
     }
 
     private static Method findMethod(Class<?> clazz, String name) {
-
         Objects.requireNonNull(clazz);
         Objects.requireNonNull(name);
 
         Method foundMatch = null;
-        Method foundGetMatch = null;
-        Method foundIsMatch = null;
+        Method foundGetterMatch = null;
+        Method foundBooleanMatch = null;
 
-        for (Method method : clazz.getMethods()) {
+        // Explore interface methods first...
+        List<Class<?>> classes = new ArrayList<>();
+        Collections.addAll(classes, clazz.getInterfaces());
+        Class<?> superClass = clazz.getSuperclass();
+        while (superClass != null) {
+            Collections.addAll(classes, superClass.getInterfaces());
+            superClass = superClass.getSuperclass();
+        }
+        classes.add(clazz);
 
-            if (!isMethodValid(method)) {
-                continue;
+        for (Class<?> clazzToTest : classes) {
+            for (Method method : clazzToTest.getMethods()) {
+                if (!isMethodValid(method)) {
+                    continue;
+                }
+                if (method.isBridge()) {
+                    continue;
+                }
+                if (name.equals(method.getName())) {
+                    foundMatch = method;
+                } else if (matchesPrefix(name, method.getName(),
+                        GET_PREFIX)) {
+                    foundGetterMatch = method;
+                } else if (isBoolean(method.getReturnType()) && (matchesPrefix(name, method.getName(),
+                        IS_PREFIX) || matchesPrefix(name, method.getName(), HAS_PREFIX))) {
+                    foundBooleanMatch = method;
+                }
             }
-
-            if (method.isBridge()) {
-                continue;
+            if (foundMatch == null) {
+                foundMatch = (foundGetterMatch != null ? foundGetterMatch : foundBooleanMatch);
             }
-
-            if (name.equals(method.getName())) {
-                foundMatch = method;
-            } else if (matchesPrefix(name, method.getName(),
-                    GET_PREFIX)) {
-                foundGetMatch = method;
-            } else if (matchesPrefix(name, method.getName(),
-                    IS_PREFIX)) {
-                foundIsMatch = method;
+            if (foundMatch != null) {
+                break;
             }
         }
-
-        if (foundMatch == null) {
-            foundMatch = (foundGetMatch != null ? foundGetMatch : foundIsMatch);
-        }
-
         return foundMatch;
     }
 
@@ -161,6 +174,10 @@ public class ReflectionValueResolver implements ValueResolver {
             String prefix) {
         return methodName.startsWith(prefix)
                 && decapitalize(methodName.substring(prefix.length(), methodName.length())).equals(name);
+    }
+
+    private static boolean isBoolean(Class<?> type) {
+        return type.equals(Boolean.class) || type.equals(boolean.class);
     }
 
     static String decapitalize(String name) {

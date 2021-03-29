@@ -20,7 +20,7 @@ public class CustomHttpRootTest {
 
     @Test
     public void shouldUseCustomConfig() {
-        RestAssured.when().get("/swagger-ui").then().statusCode(200).body(containsString("/foo/openapi"));
-        RestAssured.when().get("/swagger-ui/index.html").then().statusCode(200).body(containsString("/foo/openapi"));
+        RestAssured.when().get("/q/swagger-ui").then().statusCode(200).body(containsString("/q/openapi"));
+        RestAssured.when().get("/q/swagger-ui/index.html").then().statusCode(200).body(containsString("/q/openapi"));
     }
 }

@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * When applied to a bean class or producer method (or field), the bean will only be enabled
- * if the Quarkus build time profile dot not match the specified annotation value.
+ * if the Quarkus build time profile does not match the specified annotation value.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })

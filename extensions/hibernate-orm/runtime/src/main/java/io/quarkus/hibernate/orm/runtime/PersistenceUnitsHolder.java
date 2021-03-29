@@ -48,13 +48,13 @@ public final class PersistenceUnitsHolder {
         return persistenceUnits.units;
     }
 
-    public static RecordedState getRecordedState(String persistenceUnitName) {
+    public static RecordedState popRecordedState(String persistenceUnitName) {
         checkJPAInitialization();
         Object key = persistenceUnitName;
         if (persistenceUnitName == null) {
             key = NO_NAME_TOKEN;
         }
-        return persistenceUnits.recordedStates.get(key);
+        return persistenceUnits.recordedStates.remove(key);
     }
 
     private static List<PersistenceUnitDescriptor> convertPersistenceUnits(

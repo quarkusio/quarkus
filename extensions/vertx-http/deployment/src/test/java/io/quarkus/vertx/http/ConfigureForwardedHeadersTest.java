@@ -18,7 +18,7 @@ public class ConfigureForwardedHeadersTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ForwardedHandlerInitializer.class)
-                    .addAsResource(new StringAsset("quarkus.http.proxy-address-forwarding=true\n" +
+                    .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +
                             "quarkus.http.proxy.enable-forwarded-host=true\n" +
                             "quarkus.http.proxy.enable-forwarded-prefix=true\n" +
                             "quarkus.http.proxy.forwarded-host-header=X-Forwarded-Server\n" +

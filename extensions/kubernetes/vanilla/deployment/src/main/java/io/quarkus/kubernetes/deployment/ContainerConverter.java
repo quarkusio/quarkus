@@ -18,8 +18,12 @@ public class ContainerConverter {
         c.workingDir.ifPresent(b::withWorkingDir);
         c.command.ifPresent(w -> b.withCommand(w.toArray(new String[0])));
         c.arguments.ifPresent(w -> b.withArguments(w.toArray(new String[0])));
-        c.readinessProbe.ifPresent(p -> b.withReadinessProbe(ProbeConverter.convert(p)));
-        c.livenessProbe.ifPresent(p -> b.withLivenessProbe(ProbeConverter.convert(p)));
+        if (c.readinessProbe != null && c.readinessProbe.hasUserSuppliedAction()) {
+            b.withReadinessProbe(ProbeConverter.convert(c.readinessProbe));
+        }
+        if (c.livenessProbe != null && c.livenessProbe.hasUserSuppliedAction()) {
+            b.withLivenessProbe(ProbeConverter.convert(c.livenessProbe));
+        }
         b.addAllToEnvVars(c.convertToEnvs());
         c.ports.entrySet().forEach(e -> b.addToPorts(PortConverter.convert(e)));
         c.mounts.entrySet().forEach(e -> b.addToMounts(MountConverter.convert(e)));

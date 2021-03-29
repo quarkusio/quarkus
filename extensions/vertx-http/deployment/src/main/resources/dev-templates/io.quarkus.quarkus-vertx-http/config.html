@@ -1,0 +1,162 @@
+{#include main fluid=true}
+{#style}
+table {
+    table-layout:fixed;
+    width:100%;
+}
+
+td {
+  word-wrap:break-word;
+  word-break:break-all;
+}
+
+#tables{
+    padding-bottom: 40px;
+}
+
+.formInputButton:hover {
+    color: #3366ac !important;
+    cursor: pointer;
+}
+
+#filterInputGroup {
+    padding-bottom: 10px;
+}
+{/style}
+
+{#script}
+$(document).ready(function(){    
+  $("#filterInput").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $(".configTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+
+  $(".configInput").on("keyup", function(event) {
+    event.preventDefault();
+    if (event.keyCode === 13) {
+        event.preventDefault();
+        changeInputValue(event.target.id);
+    }
+  });
+
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  });
+
+});
+
+function clearFilterInput(){
+    $("#filterInput").val("");
+    $(".configTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf("") > -1)
+    });
+}
+
+function changeInputValue(name){
+    var $el = $("input[id='" + name + "']");
+    var $tr = $("tr[id='tr-" + name + "']");
+    
+    var value = $el.val();
+    $.post("",
+        {
+          name: name,
+          value: value
+        },
+        function(data, status){
+            if(status === "success"){
+                changeBackgroundColor("#76be6b", $el);
+                
+                $('#configTable1 tr:last').after($tr);
+                
+            }else{
+                changeBackgroundColor("#ff6366", $el);
+            }
+        });
+
+}
+
+function changeBackgroundColor(color, element){
+    var x = 3000;
+    var originalColor = element.css("background");
+
+    element.css("background", color);
+        setTimeout(function(){
+        element.css("background", originalColor);
+    }, x);
+}
+
+{/script}
+
+{#title}Config Editor{/title}
+{#body}
+
+<!-- Filter input -->
+<div id="filterInputGroup" class="input-group">
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="filterInputPrepend"><i class="fas fa-filter"></i></span>
+    </div>
+    <input id="filterInput" type="text" class="form-control" aria-describedby="filterInputPrepend" placeholder="Search...">
+    <div class="input-group-append">
+        <span class="input-group-text formInputButton" onclick="clearFilterInput();"><i class="fas fa-times"></i></span> 
+    </div>
+</div>
+
+<div id="tables" class="table-responsive">
+    <table class="table">
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Property</th>
+                <th scope="col">Value</th>
+                <th scope="col">Description</th>
+            </tr>
+        </thead>
+    </table>
+    
+    {#for configsource in info:config}
+
+    <div class="card">
+        <div class="card-header bg-primary text-light">
+            <h5>
+                {configsource.key}
+            </h5>
+        </div>
+        
+        <table id="configTable{count}" class="table">
+
+            <tbody class="configTable">
+
+                {#for item in configsource.value}
+                <tr id="tr-{item.configValue.name}">
+
+                    <td>
+                        {item.configValue.name}
+                    </td>
+                    <td>
+                        {#if configsource.key.editable}
+                        <div class="input-group" {#if item.defaultValue}data-toggle="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                            <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
+                            <div class="input-group-append">
+                                <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                            </div>
+                        </div>
+                        {#else}
+                            {item.configValue.value}
+                        {/if}
+                    </td>
+                    <td>
+                        {#if item.description.fmtJavadoc && item.description.fmtJavadoc != 'NOT_FOUND'}
+                            {item.description.fmtJavadoc}
+                        {/if}    
+                    </td>
+                </tr>
+                {/for}
+            </tbody>
+        </table>
+    </div>
+    {/for}
+</div>
+
+{/body}
+{/include}

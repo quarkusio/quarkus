@@ -22,14 +22,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
         </dependency>
-	<dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-io</artifactId>
-	</dependency>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -44,6 +44,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

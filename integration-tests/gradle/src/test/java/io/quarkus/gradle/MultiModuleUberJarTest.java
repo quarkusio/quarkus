@@ -38,12 +38,12 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/hello", 200));
+                        .atMost(1, TimeUnit.MINUTES)
+                        .until(() -> DevModeTestUtils.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
-
             assertThatOutputWorksCorrectly(logs);
 
             // test that the http response is correct
@@ -57,7 +57,6 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
 
     private void assertThatOutputWorksCorrectly(String logs) {
         assertThat(logs.isEmpty()).isFalse();
-        //String infoLogLevel = "INFO";
         assertThat(logs.contains("INFO")).isTrue();
         assertThat(logs.contains("cdi, resteasy")).isTrue();
     }

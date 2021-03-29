@@ -29,8 +29,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 /**
- *
- * @author Martin Kouba
+ * Represents a CDI bean at build time.
  */
 public class BeanInfo implements InjectionTargetInfo {
 
@@ -205,7 +204,7 @@ public class BeanInfo implements InjectionTargetInfo {
         return beanDeployment;
     }
 
-    Type getProviderType() {
+    public Type getProviderType() {
         return providerType;
     }
 
@@ -281,7 +280,8 @@ public class BeanInfo implements InjectionTargetInfo {
         }
         if (isClassBean()) {
             return getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                    && Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getIndex()).isEmpty();
+                    && Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getBeanArchiveIndex())
+                            .isEmpty();
         } else {
             return disposer == null && destroyerConsumer == null;
         }
@@ -338,6 +338,22 @@ public class BeanInfo implements InjectionTargetInfo {
         return defaultBean;
     }
 
+    /**
+     * @param requiredType
+     * @param requiredQualifiers
+     * @return {@code true} if this bean is assignable to the required type and qualifiers
+     */
+    public boolean isAssignableTo(Type requiredType, AnnotationInstance... requiredQualifiers) {
+        Set<AnnotationInstance> qualifiers;
+        if (requiredQualifiers.length == 0) {
+            qualifiers = Collections.emptySet();
+        } else {
+            qualifiers = new HashSet<>();
+            Collections.addAll(qualifiers, requiredQualifiers);
+        }
+        return Beans.matches(this, requiredType, qualifiers);
+    }
+
     Consumer<MethodCreator> getCreatorConsumer() {
         return creatorConsumer;
     }
@@ -351,8 +367,8 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     void validate(List<Throwable> errors, List<BeanDeploymentValidator> validators,
-            Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
-        Beans.validateBean(this, errors, validators, bytecodeTransformerConsumer);
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, Set<DotName> classesReceivingNoArgsCtor) {
+        Beans.validateBean(this, errors, validators, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
     }
 
     void init(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
@@ -450,9 +466,9 @@ public class BeanInfo implements InjectionTargetInfo {
         beanDeployment.getAnnotations(classInfo).stream()
                 .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null
                         && bindings.stream().noneMatch(e -> e.name().equals(a.name())))
-                .forEach(a -> bindings.add(a));
+                .forEach(bindings::add);
         if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
-            ClassInfo superClass = getClassByName(beanDeployment.getIndex(), classInfo.superName());
+            ClassInfo superClass = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClass != null) {
                 addClassLevelBindings(superClass, bindings);
             }
@@ -469,9 +485,8 @@ public class BeanInfo implements InjectionTargetInfo {
         }
         if (constructor != null) {
             beanDeployment.getAnnotations(constructor).stream()
-                    .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null
-                            && bindings.stream().noneMatch(e -> e.name().equals(a.name())))
-                    .forEach(a -> bindings.add(a));
+                    .flatMap(a -> beanDeployment.extractInterceptorBindings(a).stream())
+                    .forEach(bindings::add);
         }
     }
 
@@ -495,7 +510,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier);
+        return identifier.hashCode();
     }
 
     @Override
@@ -536,9 +551,9 @@ public class BeanInfo implements InjectionTargetInfo {
             case CLASS:
                 return target.asClass();
             case FIELD:
-                return getClassByName(beanDeployment.getIndex(), target.asField().type());
+                return getClassByName(beanDeployment.getBeanArchiveIndex(), target.asField().type());
             case METHOD:
-                return getClassByName(beanDeployment.getIndex(), target.asMethod().returnType());
+                return getClassByName(beanDeployment.getBeanArchiveIndex(), target.asMethod().returnType());
             default:
                 break;
         }

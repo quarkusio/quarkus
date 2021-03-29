@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Simplified Hibernate ORM with Panache and Kotlin
 
@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 Hibernate ORM is the de facto standard JPA implementation and is well-known in the Java ecosystem.  Panache offers a
 new layer atop this familiar framework.  This guide will not dive in to the specifics of either as those are already
-covered in the link:hibernate-orm-panache.adoc[Panache guide].  In this guide, we'll cover the Kotlin specific changes
+covered in the link:hibernate-orm-panache[Panache guide].  In this guide, we'll cover the Kotlin specific changes
 needed to use Panache in your Kotlin-based Quarkus applications.
 
 == First: an example
@@ -31,12 +31,12 @@ class Person: PanacheEntity {
 
 As you can see our entities remain simple.  There is, however, a slight difference from the Java version.  The Kotlin
 language doesn't support the notion of static methods in quite the same way as Java does.  Instead, we must use a
-[companion object](https://kotlinlang.org/docs/tutorials/kotlin-for-py/objects-and-companion-objects.html#companion-objects):
+https://kotlinlang.org/docs/tutorials/kotlin-for-py/objects-and-companion-objects.html#companion-objects[companion object]:
 
 [source,kotlin]
 ----
 @Entity
-class Person : PanacheEntity {
+class Person : PanacheEntity() {
     companion object: PanacheCompanion<Person> {  // <1>
         fun findByName(name: String) = find("name", name).firstResult()
         fun findAlive() = list("status", Status.Alive)
@@ -89,6 +89,7 @@ by making them implement `PanacheRepository`:
 
 [source,kotlin]
 ----
+@ApplicationScoped
 class PersonRepository: PanacheRepository<Person> {
      fun findByName(name: String) = find("name", name).firstResult()
      fun findAlive() = list("status", Status.Alive)

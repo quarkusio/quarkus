@@ -5,29 +5,16 @@
         <artifactId>quarkus-hibernate-orm-panache-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-hibernate-orm-panache-common</artifactId>
     <name>Quarkus - Hibernate ORM with Panache - Common - Runtime</name>
-    <description>Simplify your persistence code for Hibernate ORM via the active record or the repository pattern</description>
+    <description>Hibernate ORM with Panache Common module</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-panache-common</artifactId>
+            <artifactId>quarkus-panache-hibernate-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

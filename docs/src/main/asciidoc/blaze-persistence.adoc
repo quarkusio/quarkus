@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Blaze-Persistence
 
@@ -22,7 +22,7 @@ include::./platform-include.adoc[]
 
 The extension comes with default producers for `CriteriaBuilderFactory` and `EntityViewManager` that work out of the
 box given a working Hibernate ORM configuration. For customization, overriding of the default producers is possible via the
-standard mechanism as documented in the link:{quarkus-home-url}/guides/cdi-reference#default_beans[Quarkus CDI reference].
+standard mechanism as documented in the link:cdi-reference#default_beans[Quarkus CDI reference].
 This is needed if you need to set custom link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#anchor-configuration-properties[Blaze-Persistence properties].
 
 In Quarkus, you just need to:
@@ -73,7 +73,7 @@ The use in native images requires a dependency on the entity view annotation pro
 </profiles>
 ----
 
-A `CriteriaBuilderFactory` and an `EntityViewManager` will be created based on the configured `EntityManagerFactory` as provided by the link:{quarkus-home-url}/guides/hibernate-orm[Hibernate-ORM extension].
+A `CriteriaBuilderFactory` and an `EntityViewManager` will be created based on the configured `EntityManagerFactory` as provided by the link:hibernate-orm[Hibernate-ORM extension].
 
 You can then access these beans via injection:
 
@@ -92,7 +92,7 @@ public class SantaClausService {
     @Transactional <4>
     public List<GiftView> findAllGifts() {
         CriteriaBuilder<Gift> cb = cbf.create(em, Gift.class);
-        return emv.applySetting(EntityViewSetting.create(GiftView.class), cb).getResultList();
+        return evm.applySetting(EntityViewSetting.create(GiftView.class), cb).getResultList();
     }
 }
 ----
@@ -177,8 +177,6 @@ public class GiftResource {
     SantaClausService santaClausService;
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     @Transactional
     public Response createGift(GiftUpdateView view) {
         entityViewManager.save(entityManager, view);
@@ -193,8 +191,6 @@ public class GiftResource {
 
     @PUT
     @Path("{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     @Transactional
     public GiftView updateGift(@EntityViewId("id") GiftUpdateView view) {
         evm.save(em, view);

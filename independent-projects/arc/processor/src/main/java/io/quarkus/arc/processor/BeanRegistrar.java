@@ -3,7 +3,7 @@ package io.quarkus.arc.processor;
 import org.jboss.jandex.DotName;
 
 /**
- * Allows a build-time extension to register synthetic beans and observers.
+ * Allows a build-time extension to register synthetic beans.
  *
  * @author Martin Kouba
  */

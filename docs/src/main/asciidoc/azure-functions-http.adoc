@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Azure Functions (Serverless) with RESTEasy, Undertow, or Vert.x Web
 :extension-status: preview
@@ -14,6 +14,8 @@ Undertow (servlet), Vert.x Web, or link:funqy-http[Funqy HTTP] and make these mi
 One azure function deployment can represent any number of JAX-RS, servlet, Vert.x Web, or link:funqy-http[Funqy HTTP] endpoints.
 
 include::./status-include.adoc[]
+
+NOTE: Only text based media types are supported at the moment as Azure Functions HTTP Trigger for Java does not support a binary format
 
 == Prerequisites
 
@@ -36,7 +38,7 @@ to Azure.
 Create the azure maven project for your Quarkus application using our Maven Archetype.
 
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn archetype:generate \
     -DarchetypeGroupId=io.quarkus \
@@ -61,7 +63,7 @@ The values above are defined as properties in the generated `pom.xml` file.
 
 If you don't login to Azure you won't be able to deploy.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 az login
 ----
@@ -72,7 +74,7 @@ The `pom.xml` you generated in the previous step pulls in the `azure-functions-m
 generates config files and a staging directory required by the `azure-functions-maven-plugin`.  Here's
 how to execute it.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean install azure-functions:deploy
 ----

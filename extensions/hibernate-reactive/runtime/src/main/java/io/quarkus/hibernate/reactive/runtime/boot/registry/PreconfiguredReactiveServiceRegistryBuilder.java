@@ -21,13 +21,11 @@ import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
-import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
-import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
@@ -35,6 +33,7 @@ import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
+import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.DisabledBytecodeProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactoryInitiator;
@@ -43,6 +42,7 @@ import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuar
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
+import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcEnvironmentInitiator;
 
 /**
@@ -66,7 +66,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         checkIsReactive(rs);
         this.initiators = buildQuarkusServiceInitiatorList(rs);
         this.integrators = rs.getIntegrators();
-        this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata().getOriginalMetadata()
+        this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata()
                 .getMetadataBuildingOptions()
                 .getServiceRegistry();
     }
@@ -178,8 +178,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 
         //Custom for Hibernate Reactive:
-        serviceInitiators.add(NoJdbcConnectionProviderInitiator.INSTANCE);
-        //serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusNoJdbcConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
 
         // Disabled: Dialect is injected explicitly
@@ -209,7 +208,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
 
         serviceInitiators.add(TransactionCoordinatorBuilderInitiator.INSTANCE);
 
-        serviceInitiators.add(ManagedBeanRegistryInitiator.INSTANCE);
+        // Replaces ManagedBeanRegistryInitiator.INSTANCE
+        serviceInitiators.add(QuarkusManagedBeanRegistryInitiator.INSTANCE);
 
         serviceInitiators.add(EntityCopyObserverFactoryInitiator.INSTANCE);
 

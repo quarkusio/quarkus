@@ -21,8 +21,6 @@ import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 @Path("/reactive/books/repository")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class ReactiveBookRepositoryResource {
     private static final Logger LOGGER = Logger.getLogger(ReactiveBookRepositoryResource.class);
     @Inject

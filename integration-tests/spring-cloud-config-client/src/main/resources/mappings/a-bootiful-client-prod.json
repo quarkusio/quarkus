@@ -5,6 +5,17 @@
     "basicAuth" : {
       "username" : "user",
       "password" : "pass"
+    },
+    "headers" : {
+      "Accept" : {
+        "contains" : "application/json"
+      },
+      "h1": {
+        "equalTo": "v1"
+      },
+      "h2": {
+        "equalTo": "v2"
+      }
     }
   },
   "response": {

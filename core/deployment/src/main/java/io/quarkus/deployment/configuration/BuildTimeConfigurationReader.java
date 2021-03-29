@@ -24,6 +24,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
 import org.wildfly.common.Assert;
@@ -133,6 +134,11 @@ public final class BuildTimeConfigurationReader {
     private static void processClass(ClassDefinition.Builder builder, Class<?> clazz,
             final Map<Class<?>, GroupDefinition> groups) {
         builder.setConfigurationClass(clazz);
+        processClassFields(builder, clazz, groups);
+    }
+
+    private static void processClassFields(final ClassDefinition.Builder builder, final Class<?> clazz,
+            final Map<Class<?>, GroupDefinition> groups) {
         for (Field field : clazz.getDeclaredFields()) {
             int mods = field.getModifiers();
             if (Modifier.isStatic(mods)) {
@@ -148,6 +154,10 @@ public final class BuildTimeConfigurationReader {
                 field.setAccessible(true);
             }
             builder.addMember(processValue(field, field.getGenericType(), groups));
+        }
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass != null) {
+            processClassFields(builder, superclass, groups);
         }
     }
 
@@ -287,6 +297,10 @@ public final class BuildTimeConfigurationReader {
             }
             // sweep-up
             for (String propertyName : config.getPropertyNames()) {
+                if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
+                    continue;
+                }
+
                 NameIterator ni = new NameIterator(propertyName);
                 if (ni.hasNext() && ni.nextSegmentEquals("quarkus")) {
                     ni.next();

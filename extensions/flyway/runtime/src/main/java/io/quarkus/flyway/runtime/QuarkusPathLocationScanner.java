@@ -4,12 +4,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.flywaydb.core.api.Location;
+import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
-import org.flywaydb.core.internal.resource.LoadableResource;
+import org.flywaydb.core.api.resource.LoadableResource;
 import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
 import org.flywaydb.core.internal.scanner.classpath.ResourceAndClassScanner;
+import org.flywaydb.core.internal.scanner.filesystem.FileSystemScanner;
 import org.jboss.logging.Logger;
 
 /**
@@ -22,6 +25,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     private static final String LOCATION_SEPARATOR = "/";
     private static Collection<String> applicationMigrationFiles = Collections.emptyList(); // the set default to aid unit tests
     private static Collection<Class<? extends JavaMigration>> applicationMigrationClasses = Collections.emptyList(); // the set default to aid unit tests
+    private static Map<String, Collection<Callback>> applicationCallbackClasses = Collections.emptyMap(); // the set default to aid unit tests
 
     private final Collection<LoadableResource> scannedResources;
 
@@ -31,13 +35,30 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
         this.scannedResources = new ArrayList<>();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
+        FileSystemScanner fileSystemScanner = null;
         for (String migrationFile : applicationMigrationFiles) {
-            if (canHandleMigrationFile(locations, migrationFile)) {
+            if (isClassPathResource(locations, migrationFile)) {
                 LOGGER.debugf("Loading %s", migrationFile);
                 scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
+            } else if (migrationFile.startsWith(Location.FILESYSTEM_PREFIX)) {
+                if (fileSystemScanner == null) {
+                    fileSystemScanner = new FileSystemScanner(StandardCharsets.UTF_8, false);
+                }
+                LOGGER.debugf("Checking %s for migration files", migrationFile);
+                Collection<LoadableResource> resources = fileSystemScanner.scanForResources(new Location(migrationFile));
+                LOGGER.debugf("%s contains %d migration files", migrationFile, resources.size());
+                scannedResources.addAll(resources);
             }
         }
 
+    }
+
+    public static void setApplicationCallbackClasses(Map<String, Collection<Callback>> callbackClasses) {
+        QuarkusPathLocationScanner.applicationCallbackClasses = callbackClasses;
+    }
+
+    public static Collection<Callback> callbacksForDataSource(String dsName) {
+        return applicationCallbackClasses.getOrDefault(dsName, Collections.emptyList());
     }
 
     /**
@@ -49,7 +70,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
         return scannedResources;
     }
 
-    private boolean canHandleMigrationFile(Collection<Location> locations, String migrationFile) {
+    private boolean isClassPathResource(Collection<Location> locations, String migrationFile) {
         for (Location location : locations) {
             String locationPath = location.getPath();
             if (!locationPath.endsWith(LOCATION_SEPARATOR)) {

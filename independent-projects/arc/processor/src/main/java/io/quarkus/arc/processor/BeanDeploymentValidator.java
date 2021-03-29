@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import java.util.Collection;
 import java.util.List;
 import javax.enterprise.inject.spi.DeploymentException;
 
@@ -39,6 +40,10 @@ public interface BeanDeploymentValidator extends BuildExtension {
          * @return a new stream of beans that are considered {@code unused} and were removed from the deployment
          */
         BeanStream removedBeans();
+
+        default Collection<InjectionPointInfo> getInjectionPoints() {
+            return get(BuildExtension.Key.INJECTION_POINTS);
+        }
 
     }
 

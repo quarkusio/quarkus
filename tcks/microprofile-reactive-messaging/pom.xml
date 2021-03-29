@@ -22,6 +22,7 @@
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
+                        <smallrye-messaging-strict-binding>true</smallrye-messaging-strict-binding>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -32,6 +33,8 @@
                     <excludes>
                         <!-- There tests have been corrected in the next version of the TCK, some signatures are now considered invalid -->
                         <exclude>org.eclipse.microprofile.reactive.messaging.tck.invalid.InvalidConfigurationTest</exclude>
+                        <!-- The new wiring fails at the Quarkus startup because of the incorrect configuration -->
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.connector.MissingConnectorTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -50,6 +53,21 @@
             <groupId>org.eclipse.microprofile.reactive.messaging</groupId>
             <artifactId>microprofile-reactive-messaging-tck</artifactId>
             <version>${microprofile-reactive-messaging-api.version}</version>
+        </dependency>
+
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>

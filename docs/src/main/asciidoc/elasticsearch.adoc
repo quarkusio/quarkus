@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Connecting to an Elasticsearch cluster
 include::./attributes.adoc[]
@@ -49,14 +49,14 @@ The solution for the high level client is located in the `elasticsearch-rest-hig
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=elasticsearch-quickstart \
     -DclassName="org.acme.elasticsearch.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jackson,elasticsearch-rest-client"
+    -Dextensions="resteasy,resteasy-jackson,elasticsearch-rest-client"
 cd elasticsearch-quickstart
 ----
 
@@ -203,8 +203,6 @@ Now, edit the `org.acme.elasticsearch.FruitResource` class as follows:
 [source,java]
 ----
 @Path("/fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
     @Inject
     FruitService fruitService;
@@ -262,6 +260,57 @@ quarkus.elasticsearch.hosts = localhost:9200
 
 If you need a more advanced configuration, you can find the comprehensive list of supported configuration properties at the end of this guide.
 
+== Programmatically Configuring Elasticsearch
+On top of the parametric configuration, you can also programmatically apply additional configuration to the client by implementing a `RestClientBuilder.HttpClientConfigCallback` and annotating it with `ElasticsearchClientConfig`. You may provide multiple implementations and configuration provided by each implementation will be applied in a randomly ordered cascading manner.
+
+For example, when accessing an Elasticsearch cluster that is set up for TLS on the HTTP layer, the client needs to trust the certificate that Elasticsearch is using. The following is an example of setting up the client to trust the CA that has signed the certificate that Elasticsearch is using, when that CA certificate is available in a PKCS#12 keystore.
+
+[source,java]
+----
+import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContexts;
+import org.elasticsearch.client.RestClientBuilder;
+
+import javax.enterprise.context.Dependent;
+import javax.net.ssl.SSLContext;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+
+@ElasticsearchClientConfig
+public class SSLContextConfigurator implements RestClientBuilder.HttpClientConfigCallback {
+    @Override
+    public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+        try {
+            String keyStorePass = "password-for-keystore";
+            Path trustStorePath = Paths.get("/path/to/truststore.p12");
+            KeyStore truststore = KeyStore.getInstance("pkcs12");
+            try (InputStream is = Files.newInputStream(trustStorePath)) {
+                truststore.load(is, keyStorePass.toCharArray());
+            }
+            SSLContextBuilder sslBuilder = SSLContexts.custom()
+                    .loadTrustMaterial(truststore, null);
+            SSLContext sslContext = sslBuilder.build();
+            httpClientBuilder.setSSLContext(sslContext);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return httpClientBuilder;
+    }
+}
+----
+See https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/_encrypted_communication.html[Elasticsearch documentation] for more details on this particular example.
+
+[NOTE]
+====
+Classes marked with `@ElasticsearchClientConfig` are made application scoped CDI beans by default.
+You can override the scope at the class level if you prefer a different scope.
+====
 
 == Running an Elasticsearch cluster
 
@@ -270,7 +319,7 @@ if you have a local running instance on this port, there is nothing more to do b
 
 If you want to use Docker to run an Elasticsearch instance, you can use the following command to launch one:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms512m -Xmx512m"\
        --rm -p 9200:9200 docker.elastic.co/elasticsearch/elasticsearch-oss:{elasticsearch-version}
@@ -382,18 +431,18 @@ In this example you can note the following:
 
 == Hibernate Search Elasticsearch
 
-Quarkus supports Hibernate Search with Elasticsearch via the `hibernate-search-elasticsearch` extension.
+Quarkus supports Hibernate Search with Elasticsearch via the `hibernate-search-orm-elasticsearch` extension.
 
 Hibernate Search Elasticsearch allows to synchronize your JPA entities to an Elasticsearch cluster and offers a way to query your Elasticsearch cluster using the Hibernate Search API.
 
-If you're interested in it, you can read the link:hibernate-search-elasticsearch[Hibernate Search with Elasticsearch guide].
+If you're interested in it, you can read the link:hibernate-search-orm-elasticsearch[Hibernate Search with Elasticsearch guide].
 
 == Cluster Health Check
 
 If you are using the `quarkus-smallrye-health` extension, both the extension will automatically add a readiness health check
 to validate the health of the cluster.
 
-So when you access the `/health/ready` endpoint of your application you will have information about the cluster status.
+So when you access the `/q/health/ready` endpoint of your application you will have information about the cluster status.
 It uses the cluster health endpoint, the check will be down if the status of the cluster is **red**, or the cluster is not available.
 
 This behavior can be disabled by setting the `quarkus.elasticsearch.health.enabled` property to `false` in your `application.properties`.
@@ -404,7 +453,7 @@ You can use both clients in a native executable.
 
 You can build a native executable with the usual command `./mvnw package -Pnative`.
 
-Running it is as simple as executing `./target/elasticsearch-low-level-client-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/elasticsearch-low-level-client-quickstart-1.0.0-SNAPSHOT-runner`.
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
 

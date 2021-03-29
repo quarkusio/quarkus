@@ -1,13 +1,5 @@
 package io.quarkus.qute;
 
-import static io.quarkus.qute.ValueResolvers.collectionResolver;
-import static io.quarkus.qute.ValueResolvers.mapEntryResolver;
-import static io.quarkus.qute.ValueResolvers.mapResolver;
-import static io.quarkus.qute.ValueResolvers.mapperResolver;
-import static io.quarkus.qute.ValueResolvers.orResolver;
-import static io.quarkus.qute.ValueResolvers.thisResolver;
-import static io.quarkus.qute.ValueResolvers.trueResolver;
-
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,7 +54,7 @@ public final class EngineBuilder {
     public EngineBuilder addDefaultSectionHelpers() {
         return addSectionHelpers(new IfSectionHelper.Factory(), new LoopSectionHelper.Factory(),
                 new WithSectionHelper.Factory(), new IncludeSectionHelper.Factory(), new InsertSectionHelper.Factory(),
-                new SetSectionHelper.Factory());
+                new SetSectionHelper.Factory(), new WhenSectionHelper.Factory());
     }
 
     public EngineBuilder addValueResolver(Supplier<ValueResolver> resolverSupplier) {
@@ -87,8 +79,11 @@ public final class EngineBuilder {
      * @return self
      */
     public EngineBuilder addDefaultValueResolvers() {
-        return addValueResolvers(mapResolver(), mapperResolver(), mapEntryResolver(), collectionResolver(),
-                thisResolver(), orResolver(), trueResolver());
+        return addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.mapperResolver(),
+                ValueResolvers.mapEntryResolver(), ValueResolvers.collectionResolver(), ValueResolvers.listResolver(),
+                ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
+                ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver(), ValueResolvers.orEmpty(),
+                ValueResolvers.arrayResolver());
     }
 
     public EngineBuilder addDefaults() {
@@ -139,8 +134,10 @@ public final class EngineBuilder {
     }
 
     /**
-     * Specify whether the parser should remove standalone lines from the output. A standalone line is a line that contains
-     * only section tags, parameter declarations and whitespace characters.
+     * Specify whether the parser should remove standalone lines from the output.
+     * <p>
+     * A standalone line is a line that contains at least one section tag, parameter declaration, or comment but no expression
+     * and no non-whitespace character.
      * 
      * @param value
      * @return self

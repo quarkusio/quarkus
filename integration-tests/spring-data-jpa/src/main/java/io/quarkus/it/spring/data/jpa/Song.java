@@ -1,19 +1,30 @@
 package io.quarkus.it.spring.data.jpa;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToMany;
+import javax.persistence.SequenceGenerator;
 
 @Entity
 public class Song {
 
     @Id
-    @GeneratedValue
+    @SequenceGenerator(name = "songSeqGen", sequenceName = "songSeq", initialValue = 100, allocationSize = 1)
+    @GeneratedValue(generator = "songSeqGen")
     public Long id;
 
     private String title;
 
     private String author;
+
+    @JsonbTransient
+    @ManyToMany(mappedBy = "likedSongs")
+    private Set<Person> likes = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -37,5 +48,19 @@ public class Song {
 
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public Set<Person> getLikes() {
+        return likes;
+    }
+
+    public void setLikes(Set<Person> likes) {
+        this.likes = likes;
+    }
+
+    public void removePerson(Person person) {
+        this.likes.remove(person);
+        person.getLikedSongs().remove(this);
+
     }
 }

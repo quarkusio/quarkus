@@ -38,9 +38,10 @@ final public class Constants {
     public static final String COMMON = "common";
     public static final String RUNTIME = "runtime";
     public static final String DEPLOYMENT = "deployment";
+    public static final String CONFIG = "config";
 
     public static final Pattern CLASS_NAME_PATTERN = Pattern.compile("^.+[\\.$](\\w+)$");
-    public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?");
+    public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?\\.?(\\w+)?");
 
     public static final String INSTANCE_SYM = "__instance";
     public static final String QUARKUS = "quarkus";
@@ -80,7 +81,7 @@ final public class Constants {
             "%n%s Configuration property fixed at build time - All other configuration properties are overridable at runtime",
             CONFIG_PHASE_BUILD_TIME_ILLUSTRATION);
 
-    public static final String DURATION_FORMAT_NOTE = "\n[NOTE]" +
+    public static final String DURATION_FORMAT_NOTE = "\nifndef::no-duration-note[]\n[NOTE]" +
             "\n[[" + DURATION_NOTE_ANCHOR + "]]\n" +
             ".About the Duration format\n" +
             "====\n" +
@@ -91,7 +92,8 @@ final public class Constants {
             "You can also provide duration values starting with a number.\n" +
             "In this case, if the value consists only of a number, the converter treats the value as seconds.\n" +
             "Otherwise, `PT` is implicitly prepended to the value to obtain a standard `java.time.Duration` format.\n" +
-            "====\n";
+            "====\n" +
+            "endif::no-duration-note[]\n";
 
     public static final String MEMORY_SIZE_FORMAT_NOTE = "\n[NOTE]" +
             "\n[[" + MEMORY_SIZE_NOTE_ANCHOR + "]]\n" +

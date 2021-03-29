@@ -1,6 +1,5 @@
 package io.quarkus.platform.descriptor.loader.json;
 
-import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;

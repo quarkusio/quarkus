@@ -16,8 +16,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jcraft</groupId>

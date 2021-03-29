@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>36</version>
+        <version>37</version>
     </parent>
     <groupId>io.quarkus.qute</groupId>
     <artifactId>qute-parent</artifactId>
@@ -15,32 +15,32 @@
     <version>999-SNAPSHOT</version>
 
     <name>Qute - Parent</name>
-    
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
             <distribution>repo</distribution>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
         </license>
     </licenses>
-    
+
     <scm>
         <url>https://github.com/quarkusio/quarkus</url>
         <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
         <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
-    
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <version.junit>5.6.2</version.junit>
-        <version.gizmo>1.0.4.Final</version.gizmo>
+        <version.junit>5.7.1</version.junit>
+        <version.gizmo>1.0.7.Final</version.gizmo>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
-        <version.smallrye-mutiny>0.7.0</version.smallrye-mutiny>
+        <version.smallrye-mutiny>0.14.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
@@ -165,7 +165,8 @@
                                             <exclude>commons-logging:commons-logging-api</exclude>
                                             <exclude>org.springframework:spring-jcl</exclude>
                                             <exclude>org.slf4j:jcl-over-slf4j</exclude>
-                                            <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logging instead) -->
+                                            <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logmanager instead) -->
+                                            <exclude>org.jboss.slf4j:slf4j-jboss-logging</exclude>
                                             <exclude>org.slf4j:slf4j-simple</exclude>
                                             <exclude>org.slf4j:slf4j-nop</exclude>
                                             <exclude>org.slf4j:slf4j-jdk14</exclude>
@@ -191,7 +192,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.12.1</version>
+                    <version>2.14.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -200,6 +201,8 @@
                         </dependency>
                       </dependencies>
                     <configuration>
+                        <!-- store outside of target to speed up formatting when mvn clean is used -->
+                        <cachedir>.cache</cachedir>
                         <configFile>eclipse-format.xml</configFile>
                         <lineEnding>LF</lineEnding>
                         <skip>${format.skip}</skip>
@@ -208,8 +211,10 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.4.1</version>
+                    <version>1.6.0</version>
                     <configuration>
+                        <!-- store outside of target to speed up formatting when mvn clean is used -->
+                        <cachedir>.cache</cachedir>
                         <removeUnused>true</removeUnused>
                         <skip>${format.skip}</skip>
                     </configuration>
@@ -217,7 +222,7 @@
             </plugins>
         </pluginManagement>
     </build>
-    
+
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
@@ -231,6 +236,16 @@
 
     <profiles>
         <profile>
+            <id>jdk-8-classpath</id>
+            <activation>
+                <!-- activate this on any JDK from 9 onwards -->
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
+        <profile>
             <id>quick-build</id>
             <activation>
                 <property>
@@ -241,11 +256,25 @@
                 <skipTests>true</skipTests>
                 <skipITs>true</skipITs>
                 <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>
             </build>
+        </profile>
+        <profile>
+            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+            <id>quick-build-ci</id>
+            <activation>
+                <property>
+                    <name>quickly-ci</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+            </properties>
         </profile>
         <profile>
             <id>release</id>
@@ -257,7 +286,7 @@
                         <version>${version.nexus-staging-maven-plugin}</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                             <serverId>ossrh</serverId>
                             <autoReleaseAfterClose>false</autoReleaseAfterClose>
                             <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>

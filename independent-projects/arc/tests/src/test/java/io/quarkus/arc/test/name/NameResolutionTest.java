@@ -7,6 +7,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.literal.NamedLiteral;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,8 @@ public class NameResolutionTest {
         assertEquals(12345, Arc.container().instance("bongo").get());
         assertEquals("bing", Arc.container().instance("producedBing").get());
         assertEquals(1, Arc.container().beanManager().getBeans("bongo").size());
+        // Test that for defaulted name the @Named qualifier is replaced the defaulted value
+        assertEquals("bing", Arc.container().instance(String.class, NamedLiteral.of("producedBing")).get());
     }
 
     @Named("A")

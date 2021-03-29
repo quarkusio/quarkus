@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using OAuth2 RBAC
 
@@ -16,7 +16,7 @@ It can be used to implement an application authentication mechanism based on tok
 
 This extension provides a light-weight support for using the opaque Bearer Tokens and validating them by calling an introspection endpoint.
 
-If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either link:security-openid-connect[OpenId Connect] or link:security-jwt[MicroProfile JWT RBAC] extensions instead.
+If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either link:security-openid-connect[OpenId Connect] or link:security-jwt[SmallRye JWT] extensions instead.
 OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide for more information.
 
 include::./status-include.adoc[]
@@ -35,14 +35,14 @@ It contains a very simple UI to use the JAX-RS resources created here, too.
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-oauth2-quickstart \
     -DclassName="org.acme.security.oauth2.TokenSecuredResource" \
     -Dpath="/secured" \
-    -Dextensions="resteasy-jsonb, security-oauth2"
+    -Dextensions="resteasy,resteasy-jackson,security-oauth2"
 cd security-oauth2-quickstart
 ----
 
@@ -62,7 +62,6 @@ If you don't want to use the Maven plugin, you can just include the dependency i
 
 Open the `src/main/java/org/acme/security/oauth2/TokenSecuredResource.java` file and see the following content:
 
-.Basic REST Endpoint
 [source,java]
 ----
 package org.acme.security.oauth2;
@@ -124,39 +123,34 @@ public class TokenSecuredResource {
 <3> Here we obtain the current request user/caller `Principal`. For an unsecured call this will be null, so we build the user name by checking `caller` against null.
 <4> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`.
 
+
+=== Setting up application.properties
+
+You need to configure your application with the following minimal properties:
+
+[source, properties]
+----
+quarkus.oauth2.client-id=client_id
+quarkus.oauth2.client-secret=secret
+quarkus.oauth2.introspection-url=http://oauth-server/introspect
+----
+
+You need to specify the introspection URL of your authentication server and the `client-id` / `client-secret` that your application will use to authenticate itself to the authentication server. +
+The extension will then use this information to validate the token and recover the information associate with it.
+
+For all configuration properties, see the link:#config-reference[Configuration reference] section at the end of this guide.
+
 == Run the application
 
 Now we are ready to run our application. Use:
 
-[source,shell]
+[source,bash]
 ----
-./mvnw compile quarkus:dev
-----
-
-and you should see output similar to:
-
-.quarkus:dev Output
-[source,shell]
-----
-$ ./mvnw clean compile quarkus:dev
-[INFO] Scanning for projects...
-[INFO] 
-[INFO] ---------------------< org.acme:security-oauth2-quickstart >---------------------
-[INFO] Building security-oauth2-quickstart 1.0-SNAPSHOT
-[INFO] --------------------------------[ jar ]---------------------------------
-...
-[INFO] --- quarkus-maven-plugin:999-SNAPSHOT:dev (default-cli) @ security-oauth2-quickstart ---
-Listening for transport dt_socket at address: 5005
-2019-07-16 09:58:09,753 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
-2019-07-16 09:58:10,884 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 1131ms
-2019-07-16 09:58:11,385 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 1.813s. Listening on: http://[::]:8080
-2019-07-16 09:58:11,391 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, security-oauth2]
-
+./mvnw quarkus:dev
 ----
 
 Now that the REST endpoint is running, we can access it using a command line tool like curl:
 
-.curl command for /secured/permit-all
 [source,shell]
 ----
 $ curl http://127.0.0.1:8080/secured/permit-all; echo
@@ -168,6 +162,8 @@ We have not provided any token in our request, so we would not expect that there
 * user name is anonymous
 * `isSecure` is false as https is not used
 * `authScheme` is null
+
+=== Securing the endpoint
 
 So now let's actually secure something. Take a look at the new endpoint method `helloRolesAllowed` in the following:
 
@@ -219,7 +215,6 @@ public class TokenSecuredResource {
 
 After you make this addition to your `TokenSecuredResource`, try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint. Your output should be:
 
-.curl command for /secured/roles-allowed
 [source,shell]
 ----
 $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
@@ -243,34 +238,13 @@ Not authorized
 
 Excellent, we have not provided any OAuth2 token in the request, so we should not be able to access the endpoint, and we were not. Instead we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid OAuth2 token to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate the token, and 2) generating a matching token with the appropriate claims.
 
-== Configuring the {extension-name} Extension Security Information
-
-include::{generated-dir}/config/quarkus-elytron-security-oauth2.adoc[opts=optional, leveloffset=+1]
-
-=== Setting up application.properties
-
-For part A of step 1, create a `security-oauth2-quickstart/src/main/resources/application.properties` with the following content:
-
-.application.properties for TokenSecuredResource
-[source, properties]
-----
-quarkus.oauth2.client-id=client_id
-quarkus.oauth2.client-secret=secret
-quarkus.oauth2.introspection-url=http://oauth-server/introspect
-----
-
-You need to specify the introspection URL of your authentication server and the `client-id` / `client-secret` that your application will use to authenticate itself to the authentication server.
-
-The extension will then use this information to validate the token and recover the information associate with it.
-
-
 === Generating a token
 
 You need to obtain the token from a standard OAuth2 authentication server (https://www.keycloak.org/[Keycloak] for example) using the token endpoint.
 
 You can find below a curl example of such call for a `client_credential` flow:
 
-[source,shell]
+[source,bash]
 ----
 curl -X POST "http://oauth-server/token?grant_type=client_credentials" \
 -H  "Accept: application/json" -H  "Authorization: Basic Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ="
@@ -284,10 +258,9 @@ It should respond something like that...
 ----
 
 
-== Finally, Secured Access to /secured/roles-allowed
+=== Finally, make a secured request to /secured/roles-allowed
 Now let's use this to make a secured request to the `/secured/roles-allowed` endpoint
 
-.curl Command for /secured/roles-allowed With a token
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer 60acf56d-9daf-49ba-b3be-7a423d9c7288" http://127.0.0.1:8080/secured/roles-allowed; echo
@@ -307,20 +280,20 @@ You can customize the name of the claim to use for the roles with the `quarkus.o
 
 == Package and run the application
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file:
-.Runner jar Example
-[source,shell]
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file:
+
+[source,shell,subs=attributes+]
 ----
 $ ./mvnw clean package
 [INFO] Scanning for projects...
 ...
-$ java -jar target/security-oauth2-quickstart-runner.jar
-2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, security-oauth2]
+$ java -jar target/quarkus-app/quarkus-run.jar
+2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
+2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, security-oauth2]
 ----
 
 You can also generate the native executable with `./mvnw clean package -Pnative`.
-.Native Executable Example
+
 [source,shell]
 ----
 $ ./mvnw clean package -Pnative
@@ -343,7 +316,7 @@ $ ./mvnw clean package -Pnative
 
 $ ./target/security-oauth2-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, security-oauth2]
+2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, security-oauth2]
 ----
 
 [[integration-testing]]
@@ -465,3 +438,14 @@ class TokenSecuredResourceTest {
 ====
 `@QuarkusTestResource` applies to all tests, not just `TokenSecuredResourceTest`.
 ====
+
+
+== References
+
+* https://tools.ietf.org/html/rfc6749[OAuth2]
+* link:security[Quarkus Security]
+
+[[config-reference]]
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-elytron-security-oauth2.adoc[opts=optional, leveloffset=+1]

@@ -1,6 +1,8 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -99,6 +101,55 @@ public class IncludeTest {
                         + "super header\n"
                         + "{/header}\n"
                         + "{/include}").render());
+    }
+
+    @Test
+    public void testEmptyInclude() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("bar/fool.html", engine.parse("{foo} and {that}"));
+        assertEquals("1 and true", engine.parse("{#include bar/fool.html that=true /}").data("foo", 1).render());
+    }
+
+    @Test
+    public void testInsertParam() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("{#insert header}default header{/insert} and {#insert footer}{that}{/}"));
+        assertEquals("1 and 1", engine.parse("{#include 'super' that=foo}{#header}{that}{/}{/}").data("foo", 1).render());
+    }
+
+    @Test
+    public void testDefaultInsert() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("<html>"
+                + "<head>"
+                + "<meta charset=\"UTF-8\">"
+                + "<title>{#insert title}Default Title{/}</title>"
+                + "</head>"
+                + "<body>"
+                + "  {#insert}No body!{/}"
+                + "</body>"
+                + "</html>"));
+        assertEquals("<html>"
+                + "<head>"
+                + "<meta charset=\"UTF-8\">"
+                + "<title>My Title</title>"
+                + "</head>"
+                + "<body>"
+                + "  Body 1!"
+                + "</body>"
+                + "</html>", engine.parse("{#include super}{#title}My Title{/title}Body {foo}!{/}").data("foo", 1).render());
+    }
+
+    @Test
+    public void testAmbiguousInserts() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("{#insert header}default header{/insert}"));
+        try {
+            engine.parse("{#include super}{#header}1{/}{#header}2{/}{/}");
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().contains("Multiple blocks"));
+        }
     }
 
 }

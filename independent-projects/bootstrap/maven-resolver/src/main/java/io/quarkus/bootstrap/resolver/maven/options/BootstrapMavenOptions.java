@@ -14,9 +14,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.maven.shared.utils.cli.CommandLineException;
+import org.apache.maven.shared.utils.cli.CommandLineUtils;
 
 /**
  * This class resolves relevant Maven command line options in case it's called
@@ -39,12 +42,22 @@ public class BootstrapMavenOptions {
     public static final String UPDATE_SNAPSHOTS = "U";
     public static final String CHECKSUM_FAILURE_POLICY = "C";
     public static final String CHECKSUM_WARNING_POLICY = "c";
+    public static final String BATCH_MODE = "B";
+    public static final String NO_TRANSFER_PROGRESS = "ntp";
+    public static final String SYSTEM_PROPERTY = "D";
 
     public static Map<String, Object> parse(String cmdLine) {
         if (cmdLine == null) {
             return Collections.emptyMap();
         }
-        final String[] args = cmdLine.split("\\s+");
+
+        final String[] args;
+        try {
+            args = CommandLineUtils.translateCommandline(cmdLine);
+        } catch (CommandLineException e) {
+            throw new IllegalArgumentException("Invalid command line: " + cmdLine, e);
+        }
+
         if (args.length == 0) {
             return Collections.emptyMap();
         }
@@ -108,7 +121,24 @@ public class BootstrapMavenOptions {
 
     public static String getMavenCmdLine() {
         final String mvnCmd = PropertyUtils.getProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS);
-        return mvnCmd == null ? System.getenv(MAVEN_CMD_LINE_ARGS) : mvnCmd;
+        if (mvnCmd != null) {
+            return mvnCmd;
+        }
+        final String mvnLine = System.getenv(MAVEN_CMD_LINE_ARGS);
+        if (mvnLine == null) {
+            // if the maven command line isn't available we are not checking for MAVEN_OPTS
+            return null;
+        }
+        final String mvnOpts = System.getenv("MAVEN_OPTS");
+        if (mvnOpts == null || mvnOpts.isEmpty()) {
+            return mvnLine;
+        }
+        final StringBuilder buf = new StringBuilder(mvnLine.length() + mvnOpts.length() + 1);
+        buf.append(mvnOpts);
+        if (!Character.isWhitespace(mvnLine.charAt(0))) {
+            buf.append(' ');
+        }
+        return buf.append(mvnLine).toString();
     }
 
     private final Map<String, Object> options;
@@ -137,6 +167,10 @@ public class BootstrapMavenOptions {
             return (String[]) o;
         }
         return new String[] { o.toString() };
+    }
+
+    public Properties getSystemProperties() {
+        return (Properties) options.get(SYSTEM_PROPERTY);
     }
 
     public boolean isEmpty() {

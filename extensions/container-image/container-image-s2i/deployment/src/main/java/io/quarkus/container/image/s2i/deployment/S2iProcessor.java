@@ -1,10 +1,21 @@
 package io.quarkus.container.image.s2i.deployment;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -15,36 +26,40 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
-import io.dekorate.deps.kubernetes.api.model.HasMetadata;
-import io.dekorate.deps.kubernetes.api.model.KubernetesList;
-import io.dekorate.deps.kubernetes.api.model.Secret;
-import io.dekorate.deps.kubernetes.client.KubernetesClient;
-import io.dekorate.deps.kubernetes.client.dsl.LogWatch;
-import io.dekorate.deps.openshift.api.model.Build;
-import io.dekorate.deps.openshift.api.model.BuildConfig;
-import io.dekorate.deps.openshift.api.model.ImageStream;
-import io.dekorate.deps.openshift.client.OpenShiftClient;
 import io.dekorate.utils.Clients;
-import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.KubernetesList;
+import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.dsl.LogWatch;
+import io.fabric8.openshift.api.model.Build;
+import io.fabric8.openshift.api.model.BuildConfig;
+import io.fabric8.openshift.api.model.ImageStream;
+import io.fabric8.openshift.client.OpenShiftClient;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.ImageUtil;
+import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.*;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
@@ -60,12 +75,17 @@ public class S2iProcessor {
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
 
+    @BuildStep
+    public AvailableContainerImageExtensionBuildItem availability() {
+        return new AvailableContainerImageExtensionBuildItem(S2I);
+    }
+
     @BuildStep(onlyIf = S2iBuild.class)
     public CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_S2I);
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iRequirementsJvm(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -92,6 +112,7 @@ public class S2iProcessor {
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseJvmImage));
         Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(s2iConfig.baseJvmImage);
+
         baseImage.ifPresent(b -> {
             envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, OPENSHIFT));
             envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarLibEnvVar(),
@@ -106,7 +127,7 @@ public class S2iProcessor {
         }
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
     public void s2iRequirementsNative(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -134,21 +155,21 @@ public class S2iProcessor {
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseNativeImage));
         Optional<S2iBaseNativeImage> baseImage = S2iBaseNativeImage.findMatching(s2iConfig.baseNativeImage);
+        List<String> nativeArguments = s2iConfig.nativeArguments.orElse(Collections.emptyList());
         baseImage.ifPresent(b -> {
             envProducer.produce(
                     KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), s2iConfig.nativeBinaryDirectory, OPENSHIFT));
             envProducer.produce(
-                    KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(), String.join(" ", s2iConfig.nativeArguments),
+                    KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(), String.join(" ", nativeArguments),
                             OPENSHIFT));
         });
 
         if (!baseImage.isPresent()) {
-            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary,
-                    s2iConfig.nativeArguments.toArray(new String[s2iConfig.nativeArguments.size()])));
+            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary, nativeArguments.toArray(new String[0])));
         }
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iBuildFromJar(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClient,
             ContainerImageInfoBuildItem containerImage,
@@ -185,7 +206,7 @@ public class S2iProcessor {
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
     public void s2iBuildFromNative(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClient,
             ContainerImageInfoBuildItem containerImage,
@@ -216,7 +237,8 @@ public class S2iProcessor {
             return;
         }
 
-        createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(), nativeImage.getPath());
+        createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(),
+                nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }
 
@@ -228,7 +250,7 @@ public class S2iProcessor {
 
         File tar;
         try {
-            File original = Packaging.packageFile(output, additional);
+            File original = PackageUtil.packageFile(output, additional);
             //Let's rename the archive and give it a more descriptive name, as it may appear in the logs.
             tar = Files.createTempFile("quarkus-", "-s2i").toFile();
             Files.move(original.toPath(), tar.toPath(), StandardCopyOption.REPLACE_EXISTING);

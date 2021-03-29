@@ -1,0 +1,82 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-parent</artifactId>
+        <version>36</version>
+    </parent>
+    
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-revapi-config</artifactId>
+    <name>Quarkus - Revapi Configuration</name>
+    <version>999-SNAPSHOT</version>    
+    <description>Contains the configuration of the Revapi API checker and the list of the API changes 
+        in the Quarkus APIs.
+    </description>
+    <packaging>jar</packaging>
+
+    <properties>
+        <format.skip>true</format.skip>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- 
+            This is not deployed into a Maven repository. It is merely installed into the local Maven repository
+            during a local build.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>jdk-8-classpath</id>
+            <activation>
+                <!-- activate this on any JDK from 9 onwards -->
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+            <id>quick-build-ci</id>
+            <activation>
+                <property>
+                    <name>quickly-ci</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+            </properties>
+        </profile>
+    </profiles>
+</project>

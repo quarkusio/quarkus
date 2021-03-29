@@ -7,18 +7,26 @@ By default, the tests of this module are disabled.
 To run the tests in a standard JVM with SQL Server started as a Docker container, you can run the following command:
 
 ```
-mvn clean install -Ddocker -Dtest-mssql
+mvn clean install -Dstart-containers -Dtest-containers
 ```
 
 To also test as a native image, add `-Dnative`:
 
 ```
-mvn clean install -Ddocker -Dtest-mssql -Dnative
+mvn clean install -Dstart-containers -Dtest-containers -Dnative
 ```
 
 Alternatively you can connect to your own SQL Server.
 Reconfigure the connection URL with `-Dmssqldb.url=jdbc:sqlserver://...`;
 you'll probably want to change the authentication password too: `-Dmssqldb.sa-password=NotS0Secret`.
+
+### With Podman
+
+If you prefer to run the MSSQL Server container via podman, use:
+
+```
+podman run --rm=true --net=host --memory-swappiness=0 --name mssql_testing -e SA_PASSWORD=ActuallyRequired11Complexity -e ACCEPT_EULA=Y -p 1433:1433 mcr.microsoft.com/mssql/2019-CU8-ubuntu-16.04
+```
 
 ## Limitations
 

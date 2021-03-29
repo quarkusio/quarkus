@@ -7,8 +7,10 @@ import java.util.function.Function;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
+import io.quarkus.amazon.common.runtime.AmazonClientApacheTransportRecorder;
+import io.quarkus.amazon.common.runtime.AmazonClientNettyTransportRecorder;
 import io.quarkus.amazon.common.runtime.AmazonClientRecorder;
-import io.quarkus.amazon.common.runtime.AmazonClientTransportRecorder;
+import io.quarkus.amazon.common.runtime.AmazonClientUrlConnectionTransportRecorder;
 import io.quarkus.amazon.common.runtime.AwsConfig;
 import io.quarkus.amazon.common.runtime.NettyHttpClientConfig;
 import io.quarkus.amazon.common.runtime.SdkBuildTimeConfig;
@@ -72,58 +74,103 @@ abstract public class AbstractAmazonServiceProcessor {
         }
     }
 
-    public void createTransportBuilders(List<AmazonClientBuildItem> amazonClients,
-            AmazonClientTransportRecorder recorder,
+    protected void createApacheSyncTransportBuilder(List<AmazonClientBuildItem> amazonClients,
+            AmazonClientApacheTransportRecorder recorder,
             SyncHttpClientBuildTimeConfig buildSyncConfig,
             RuntimeValue<SyncHttpClientConfig> syncConfig,
-            RuntimeValue<NettyHttpClientConfig> asyncConfig,
-            BuildProducer<AmazonClientTransportsBuildItem> clientTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> clientSyncTransports) {
 
         Optional<AmazonClientBuildItem> matchingClientBuildItem = amazonClients.stream()
                 .filter(c -> c.getAwsClientName().equals(configName()))
                 .findAny();
 
         matchingClientBuildItem.ifPresent(client -> {
-            RuntimeValue<SdkHttpClient.Builder> syncTransport = null;
-            RuntimeValue<SdkAsyncHttpClient.Builder> asyncTransport = null;
-
-            if (client.getSyncClassName().isPresent()) {
-                syncTransport = recorder.configureSync(configName(), buildSyncConfig,
-                        syncConfig);
+            if (!client.getSyncClassName().isPresent()) {
+                return;
+            }
+            if (buildSyncConfig.type != SyncHttpClientBuildTimeConfig.SyncClientType.APACHE) {
+                return;
             }
 
-            if (client.getAsyncClassName().isPresent()) {
-                asyncTransport = recorder.configureAsync(configName(), asyncConfig);
-            }
-
-            clientTransports.produce(
-                    new AmazonClientTransportsBuildItem(
-                            client.getSyncClassName(), client.getAsyncClassName(),
-                            syncTransport,
-                            asyncTransport,
-                            client.getAwsClientName()));
+            clientSyncTransports.produce(
+                    new AmazonClientSyncTransportBuildItem(
+                            client.getAwsClientName(),
+                            client.getSyncClassName().get(),
+                            recorder.configureSync(configName(), syncConfig)));
         });
-
     }
 
-    protected void createClientBuilders(List<AmazonClientTransportsBuildItem> clients,
+    protected void createUrlConnectionSyncTransportBuilder(List<AmazonClientBuildItem> amazonClients,
+            AmazonClientUrlConnectionTransportRecorder recorder,
+            SyncHttpClientBuildTimeConfig buildSyncConfig,
+            RuntimeValue<SyncHttpClientConfig> syncConfig,
+            BuildProducer<AmazonClientSyncTransportBuildItem> clientSyncTransports) {
+
+        Optional<AmazonClientBuildItem> matchingClientBuildItem = amazonClients.stream()
+                .filter(c -> c.getAwsClientName().equals(configName()))
+                .findAny();
+
+        matchingClientBuildItem.ifPresent(client -> {
+            if (!client.getSyncClassName().isPresent()) {
+                return;
+            }
+            if (buildSyncConfig.type != SyncHttpClientBuildTimeConfig.SyncClientType.URL) {
+                return;
+            }
+
+            clientSyncTransports.produce(
+                    new AmazonClientSyncTransportBuildItem(
+                            client.getAwsClientName(),
+                            client.getSyncClassName().get(),
+                            recorder.configureSync(configName(), syncConfig)));
+        });
+    }
+
+    protected void createNettyAsyncTransportBuilder(List<AmazonClientBuildItem> amazonClients,
+            AmazonClientNettyTransportRecorder recorder,
+            RuntimeValue<NettyHttpClientConfig> asyncConfig,
+            BuildProducer<AmazonClientAsyncTransportBuildItem> clientAsyncTransports) {
+
+        Optional<AmazonClientBuildItem> matchingClientBuildItem = amazonClients.stream()
+                .filter(c -> c.getAwsClientName().equals(configName()))
+                .findAny();
+
+        matchingClientBuildItem.ifPresent(client -> {
+            if (!client.getAsyncClassName().isPresent()) {
+                return;
+            }
+
+            clientAsyncTransports.produce(
+                    new AmazonClientAsyncTransportBuildItem(
+                            client.getAwsClientName(),
+                            client.getAsyncClassName().get(),
+                            recorder.configureAsync(configName(), asyncConfig)));
+        });
+    }
+
+    protected void createClientBuilders(List<AmazonClientSyncTransportBuildItem> syncClientBuilders,
+            List<AmazonClientAsyncTransportBuildItem> asyncClientBuilders,
             BuildProducer<AmazonClientBuilderBuildItem> builderProducer,
             Function<RuntimeValue<SdkHttpClient.Builder>, RuntimeValue<AwsClientBuilder>> syncFunc,
             Function<RuntimeValue<SdkAsyncHttpClient.Builder>, RuntimeValue<AwsClientBuilder>> asyncFunc) {
+        String configName = configName();
 
-        for (AmazonClientTransportsBuildItem client : clients) {
-            if (configName().equals(client.getAwsClientName())) {
-                RuntimeValue<AwsClientBuilder> syncBuilder = null;
-                RuntimeValue<AwsClientBuilder> asyncBuilder = null;
-                if (client.getSyncClassName().isPresent()) {
-                    syncBuilder = syncFunc.apply(client.getSyncTransport());
-                }
-                if (client.getAsyncClassName().isPresent()) {
-                    asyncBuilder = asyncFunc.apply(client.getAsyncTransport());
-                }
-                builderProducer.produce(new AmazonClientBuilderBuildItem(client.getAwsClientName(), syncBuilder, asyncBuilder));
-            }
+        Optional<RuntimeValue<SdkHttpClient.Builder>> syncClientBuilder = syncClientBuilders.stream()
+                .filter(c -> configName.equals(c.getAwsClientName()))
+                .map(c -> c.getClientBuilder())
+                .findFirst();
+        Optional<RuntimeValue<SdkAsyncHttpClient.Builder>> asyncClientBuilder = asyncClientBuilders.stream()
+                .filter(c -> configName.equals(c.getAwsClientName()))
+                .map(c -> c.getClientBuilder())
+                .findFirst();
+
+        if (!syncClientBuilder.isPresent() && !asyncClientBuilder.isPresent()) {
+            return;
         }
+
+        builderProducer.produce(new AmazonClientBuilderBuildItem(configName,
+                syncClientBuilder.isPresent() ? syncFunc.apply(syncClientBuilder.get()) : null,
+                asyncClientBuilder.isPresent() ? asyncFunc.apply(asyncClientBuilder.get()) : null));
     }
 
     protected void buildClients(List<AmazonClientBuilderConfiguredBuildItem> configuredClients,

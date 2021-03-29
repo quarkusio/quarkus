@@ -32,16 +32,18 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
+import io.quarkus.smallrye.jwt.runtime.auth.JsonWebTokenCredentialProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtPrincipalProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
+import io.smallrye.jwt.auth.cdi.JWTCallerPrincipalFactoryProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
-import io.smallrye.jwt.build.impl.JwtProviderImpl;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
 /**
@@ -72,6 +74,7 @@ class SmallRyeJwtProcessor {
         if (config.enabled) {
             AdditionalBeanBuildItem.Builder unremovable = AdditionalBeanBuildItem.builder().setUnremovable();
             unremovable.addBeanClass(MpJwtValidator.class);
+            unremovable.addBeanClass(JsonWebTokenCredentialProducer.class);
             unremovable.addBeanClass(JWTAuthMechanism.class);
             unremovable.addBeanClass(ClaimValueProducer.class);
             additionalBeans.produce(unremovable.build());
@@ -83,11 +86,12 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(RawClaimTypeProducer.class);
         removable.addBeanClass(JsonValueProducer.class);
         removable.addBeanClass(JwtPrincipalProducer.class);
+        removable.addBeanClass(JWTCallerPrincipalFactoryProducer.class);
         removable.addBeanClass(Claim.class);
         additionalBeans.produce(removable.build());
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, SignatureAlgorithm.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, JwtProviderImpl.class));
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, KeyEncryptionAlgorithm.class));
     }
 
     /**

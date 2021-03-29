@@ -305,23 +305,23 @@ public class JandexUtilTest {
     private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, Class<?> expectedArg) {
         List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
                 index);
-        assertThat(args).extracting("name").containsOnly(name(expectedArg));
+        assertThat(args).extracting(Type::name).containsOnly(name(expectedArg));
     }
 
     private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, Class<?>... expectedArgs) {
         List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
                 index);
-        Object[] expectedArgNames = new Object[expectedArgs.length];
+        DotName[] expectedArgNames = new DotName[expectedArgs.length];
         for (int i = 0; i < expectedArgs.length; i++) {
             expectedArgNames[i] = name(expectedArgs[i]);
         }
-        assertThat(args).extracting("name").containsOnly(expectedArgNames);
+        assertThat(args).extracting(Type::name).containsOnly(expectedArgNames);
     }
 
     private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, String expectedArg) {
         List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
                 index);
-        assertThat(args).hasOnlyOneElementSatisfying(t -> {
+        assertThat(args).singleElement().satisfies(t -> {
             assertThat(t.toString()).isEqualTo(expectedArg);
         });
     }

@@ -14,7 +14,6 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ShutdownContext;
@@ -37,7 +36,6 @@ public abstract class AbstractLambdaPollLoop {
     public void startPollLoop(ShutdownContext context) {
 
         final AtomicBoolean running = new AtomicBoolean(true);
-
         final Thread pollingThread = new Thread(new Runnable() {
             @SuppressWarnings("unchecked")
             @Override
@@ -123,8 +121,11 @@ public abstract class AbstractLambdaPollLoop {
                 }
             }
         }, "Lambda Thread");
+        pollingThread.setDaemon(true);
         context.addShutdownTask(() -> {
             running.set(false);
+            //note that this does not seem to be 100% reliable in unblocking the thread
+            //which is why it is a daemon.
             pollingThread.interrupt();
         });
         pollingThread.start();
@@ -144,9 +145,9 @@ public abstract class AbstractLambdaPollLoop {
     protected abstract void processRequest(InputStream input, OutputStream output, AmazonLambdaContext context)
             throws Exception;
 
-    protected abstract ObjectReader getInputReader();
+    protected abstract LambdaInputReader getInputReader();
 
-    protected abstract ObjectWriter getOutputWriter();
+    protected abstract LambdaOutputWriter getOutputWriter();
 
     protected AmazonLambdaContext createContext(HttpURLConnection requestConnection) throws IOException {
         return new AmazonLambdaContext(requestConnection, cognitoIdReader, clientCtxReader);

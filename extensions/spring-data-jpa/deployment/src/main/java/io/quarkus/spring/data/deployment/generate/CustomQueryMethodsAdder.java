@@ -1,11 +1,15 @@
 package io.quarkus.spring.data.deployment.generate;
 
+import static io.quarkus.gizmo.FieldDescriptor.of;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,7 +24,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.gizmo.ClassCreator;
@@ -30,10 +33,10 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
-import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.spring.data.deployment.DotNames;
 import io.quarkus.spring.data.deployment.MethodNameParser;
 import io.quarkus.spring.data.runtime.TypesConverter;
@@ -46,15 +49,20 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
     private static final Pattern SELECT_CLAUSE = Pattern.compile("select\\s+(.+)\\s+from", Pattern.CASE_INSENSITIVE);
     private static final Pattern FIELD_ALIAS = Pattern.compile(".*\\s+[as|AS]+\\s+([\\w\\.]+)");
     private static final Pattern FIELD_NAME = Pattern.compile("(\\w+).*");
+    private static final Pattern NAMED_PARAMETER = Pattern.compile("\\:(\\w+)\\b");
 
     private final IndexView index;
     private final ClassOutput nonBeansClassOutput;
     private final Consumer<String> customClassCreatedCallback;
+    private final FieldDescriptor operationsField;
 
-    public CustomQueryMethodsAdder(IndexView index, ClassOutput classOutput, Consumer<String> customClassCreatedCallback) {
+    public CustomQueryMethodsAdder(IndexView index, ClassOutput classOutput, Consumer<String> customClassCreatedCallback,
+            TypeBundle typeBundle) {
         this.index = index;
         this.nonBeansClassOutput = classOutput;
         this.customClassCreatedCallback = customClassCreatedCallback;
+        String operationsName = typeBundle.operations().dotName().toString();
+        operationsField = of(operationsName, "INSTANCE", operationsName);
     }
 
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor, ClassInfo repositoryClassInfo,
@@ -143,8 +151,23 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             try (MethodCreator methodCreator = classCreator.getMethodCreator(method.name(), methodReturnTypeDotName.toString(),
                     methodParameterTypesStr)) {
 
+                Set<String> usedNamedParameters = extractNamedParameters(queryString);
+                if (!usedNamedParameters.isEmpty()) {
+                    Set<String> missingParameters = new LinkedHashSet<>(usedNamedParameters);
+                    missingParameters.removeAll(namedParameterToIndex.keySet());
+                    if (!missingParameters.isEmpty()) {
+                        throw new IllegalArgumentException(
+                                method.name() + " of Repository " + repositoryClassInfo
+                                        + " is missing the named parameters " + missingParameters
+                                        + ", provided are " + namedParameterToIndex.keySet()
+                                        + ". Ensure that the parameters are correctly annotated with @Param.");
+                    }
+                }
                 if (isModifying) {
                     methodCreator.addAnnotation(Transactional.class);
+                    AnnotationInstance modifyingAnnotation = method.annotation(DotNames.SPRING_DATA_MODIFYING);
+                    handleFlushAutomatically(modifyingAnnotation, methodCreator, entityClassFieldDescriptor);
+
                     if (queryString.toLowerCase().startsWith("delete")) {
                         if (!DotNames.PRIMITIVE_LONG.equals(methodReturnTypeDotName)
                                 && !DotNames.LONG.equals(methodReturnTypeDotName)
@@ -161,21 +184,24 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                             ResultHandle parameters = generateParametersObject(namedParameterToIndex, methodCreator);
 
                             // call JpaOperations.delete
-                            deleteCount = methodCreator.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(JpaOperations.class, "delete", long.class,
+                            deleteCount = methodCreator.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(AbstractJpaOperations.class, "delete", long.class,
                                             Class.class, String.class, Parameters.class),
+                                    methodCreator.readStaticField(operationsField),
                                     methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                                     methodCreator.load(deleteQueryString), parameters);
                         } else {
                             ResultHandle paramsArray = generateParamsArray(queryParameterIndexes, methodCreator);
 
                             // call JpaOperations.delete
-                            deleteCount = methodCreator.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(JpaOperations.class, "delete", long.class,
+                            deleteCount = methodCreator.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(AbstractJpaOperations.class, "delete", long.class,
                                             Class.class, String.class, Object[].class),
+                                    methodCreator.readStaticField(operationsField),
                                     methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                                     methodCreator.load(deleteQueryString), paramsArray);
                         }
+                        handleClearAutomatically(modifyingAnnotation, methodCreator, entityClassFieldDescriptor);
 
                         if (DotNames.VOID.equals(methodReturnTypeDotName)) {
                             methodCreator.returnValue(null);
@@ -200,18 +226,21 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                             // call JpaOperations.executeUpdate
                             updateCount = methodCreator.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(JpaOperations.class, "executeUpdate", int.class,
+                                    MethodDescriptor.ofMethod(AbstractJpaOperations.class, "executeUpdate", int.class,
                                             String.class, Map.class),
-                                    methodCreator.load(queryString), parametersMap);
+                                    methodCreator.load(queryString),
+                                    parametersMap);
                         } else {
                             ResultHandle paramsArray = generateParamsArray(queryParameterIndexes, methodCreator);
 
                             // call JpaOperations.executeUpdate
                             updateCount = methodCreator.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(JpaOperations.class, "executeUpdate", int.class,
-                                            String.class, Object[].class),
-                                    methodCreator.load(queryString), paramsArray);
+                                    MethodDescriptor.ofMethod(AbstractJpaOperations.class, "executeUpdate",
+                                            int.class, String.class, Object[].class),
+                                    methodCreator.load(queryString),
+                                    paramsArray);
                         }
+                        handleClearAutomatically(modifyingAnnotation, methodCreator, entityClassFieldDescriptor);
 
                         if (DotNames.VOID.equals(methodReturnTypeDotName)) {
                             methodCreator.returnValue(null);
@@ -244,12 +273,11 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                     // Find the type of data used in the result
                     // e.g. method.returnType() is a List that may contain non-entity elements
-                    Type resultType = verifyQueryResultType(method.returnType());
+                    Type resultType = verifyQueryResultType(method.returnType(), index);
                     DotName customResultTypeName = resultType.name();
 
                     if (customResultTypeName.equals(entityClassInfo.name())
-                            || customResultTypeName.equals(DotNames.OBJECT)
-                            || isIntLongOrBoolean(customResultTypeName)) {
+                            || isHibernateSupportedReturnType(customResultTypeName)) {
                         // no special handling needed
                         customResultTypeName = null;
                     } else {
@@ -261,11 +289,11 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         if (Modifier.isInterface(resultClassInfo.flags())) {
                             // Find the implementation name, and use that for subsequent query result generation
                             customResultTypeName = customResultTypeNames.computeIfAbsent(customResultTypeName,
-                                    k -> createImplDotName(resultType.name()));
+                                    k -> createSimpleInterfaceImpl(resultType.name()));
 
                             // Remember the parameters for this usage of the custom type, we'll deal with it later
                             customResultTypes.computeIfAbsent(customResultTypeName,
-                                    k -> new HashMap<String, List<String>>()).put(methodName, fieldNames);
+                                    k -> new HashMap<>()).put(methodName, fieldNames);
                         } else {
                             throw new IllegalArgumentException(
                                     "Query annotations may only use interfaces to map results to non-entity types. "
@@ -280,9 +308,10 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                         // call JpaOperations.find()
                         panacheQuery = methodCreator.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "find", PanacheQuery.class,
-                                        Class.class, String.class, String.class, io.quarkus.panache.common.Sort.class,
-                                        Parameters.class),
+                                MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "find",
+                                        PanacheQuery.class, AbstractJpaOperations.class, Class.class, String.class,
+                                        String.class, io.quarkus.panache.common.Sort.class, Parameters.class),
+                                methodCreator.readStaticField(operationsField),
                                 methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                                 methodCreator.load(queryString), methodCreator.load(countQueryString),
                                 generateSort(sortParameterIndex, methodCreator), parameters);
@@ -292,16 +321,18 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                         // call JpaOperations.find()
                         panacheQuery = methodCreator.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "find", PanacheQuery.class,
-                                        Class.class, String.class, String.class, io.quarkus.panache.common.Sort.class,
-                                        Object[].class),
+                                MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "find",
+                                        PanacheQuery.class, AbstractJpaOperations.class, Class.class, String.class,
+                                        String.class, io.quarkus.panache.common.Sort.class, Object[].class),
+                                methodCreator.readStaticField(operationsField),
                                 methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                                 methodCreator.load(queryString), methodCreator.load(countQueryString),
                                 generateSort(sortParameterIndex, methodCreator), paramsArray);
                     }
 
                     generateFindQueryResultHandling(methodCreator, panacheQuery, pageableParameterIndex, repositoryClassInfo,
-                            entityClassInfo, methodReturnTypeDotName, null, method.name(), customResultTypeName);
+                            entityClassInfo, methodReturnTypeDotName, null, method.name(), customResultTypeName,
+                            Object[].class.getName());
                 }
 
             }
@@ -313,6 +344,15 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             generateCustomResultTypes(interfaceName, implName, customResultTypes.get(implName));
             customClassCreatedCallback.accept(implName.toString());
         }
+    }
+
+    private Set<String> extractNamedParameters(String queryString) {
+        Set<String> namedParameters = new LinkedHashSet<>();
+        final Matcher matcher = NAMED_PARAMETER.matcher(queryString);
+        while (matcher.find()) {
+            namedParameters.add(matcher.group(1));
+        }
+        return namedParameters;
     }
 
     // we currently only support the 'value' attribute of @Query
@@ -363,35 +403,6 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
         return sort;
     }
 
-    // Make sure the return type is referencing a class we have indexed 
-    // somewhere along the way (e.g. non-entity return types in @Query methods)
-    // Unless it is some kind of collection containing multiple types, 
-    // return the type used in the query result.
-    private Type verifyQueryResultType(Type t) {
-        if (isIntLongOrBoolean(t.name())) {
-            return t;
-        }
-        if (t.kind() == Kind.ARRAY) {
-            return verifyQueryResultType(t.asArrayType().component());
-        } else if (t.kind() == Kind.PARAMETERIZED_TYPE) {
-            List<Type> list = t.asParameterizedType().arguments();
-            if (list.size() == 1) {
-                return verifyQueryResultType(list.get(0));
-            } else {
-                for (Type x : list) {
-                    verifyQueryResultType(x);
-                }
-                return t;
-            }
-        } else if (!DotNames.OBJECT.equals(t.name())) {
-            ClassInfo typeClassInfo = index.getClassByName(t.name());
-            if (typeClassInfo == null) {
-                throw new IllegalStateException(t.name() + " was not part of the Quarkus index");
-            }
-        }
-        return t;
-    }
-
     private List<String> getFieldNames(String queryString) {
         Matcher matcher = SELECT_CLAUSE.matcher(queryString);
         if (matcher.find()) {
@@ -416,21 +427,6 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
         }
 
         return Collections.emptyList();
-    }
-
-    private DotName createImplDotName(DotName ifaceName) {
-        String fullName = ifaceName.toString();
-
-        // package name: must be in the same package as the interface
-        final int index = fullName.lastIndexOf('.');
-        String packageName = "";
-        if (index > 0 && index < fullName.length() - 1) {
-            packageName = fullName.substring(0, index) + ".";
-        }
-
-        return DotName.createSimple(packageName
-                + (ifaceName.isInner() ? ifaceName.local() : ifaceName.withoutPackagePrefix()) + "_"
-                + HashUtil.sha1(ifaceName.toString()));
     }
 
     private void generateCustomResultTypes(DotName interfaceName, DotName implName, Map<String, List<String>> queryMethods) {
@@ -511,18 +507,4 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
         }
         return resultHandle;
     }
-
-    private DotName getPrimitiveTypeName(DotName returnTypeName) {
-        if (DotNames.LONG.equals(returnTypeName)) {
-            return DotNames.PRIMITIVE_LONG;
-        }
-        if (DotNames.INTEGER.equals(returnTypeName)) {
-            return DotNames.PRIMITIVE_INTEGER;
-        }
-        if (DotNames.BOOLEAN.equals(returnTypeName)) {
-            return DotNames.PRIMITIVE_BOOLEAN;
-        }
-        return returnTypeName;
-    }
-
 }

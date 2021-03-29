@@ -1,11 +1,15 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
+import org.assertj.core.api.AbstractObjectAssert;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -39,19 +43,32 @@ public class BasicOpenshiftTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("basic-openshift");
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
                 assertThat(m.getNamespace()).isNull();
             });
-            assertThat(h).extracting("spec").extracting("replicas").isEqualTo(1);
+            AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
+            specAssert.extracting("replicas").isEqualTo(1);
+            specAssert.extracting("triggers").isInstanceOfSatisfying(Collection.class, c -> {
+                assertThat(c).isEmpty();
+            });
+            specAssert.extracting("selector").isInstanceOfSatisfying(Map.class, selectorsMap -> {
+                assertThat(selectorsMap).containsOnly(entry("app.kubernetes.io/name", "basic-openshift"),
+                        entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
+            });
         });
 
-        assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
                     assertThat(m.getNamespace()).isNull();
+                });
+
+                assertThat(s.getSpec()).satisfies(spec -> {
+                    assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "basic-openshift"),
+                            entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
                 });
             });
         });

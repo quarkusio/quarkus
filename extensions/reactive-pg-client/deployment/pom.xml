@@ -8,7 +8,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-reactive-pg-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-reactive-pg-client-deployment</artifactId>
@@ -16,7 +15,7 @@
     <name>Quarkus - Reactive PostgreSQL Client - Deployment</name>
 
     <properties>
-        <postgres.image>postgres:10.5</postgres.image>
+        <postgres.image>postgres:13.1</postgres.image>
         <reactive-postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</reactive-postgres.url>
     </properties>
 
@@ -24,6 +23,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-postgresql</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -44,7 +47,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -93,7 +96,7 @@
             <id>test-postgresql</id>
             <activation>
                 <property>
-                    <name>test-postgresql</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -112,7 +115,7 @@
             <id>docker-postgresql</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>
@@ -149,7 +152,7 @@
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all postgres:10.5 images currently running, not just those we just started.
+                            <!--Stops all postgres images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>
@@ -182,7 +185,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${basedir}/../../../.github/docker-prune.sh</executable>
+                                    <executable>${docker-prune.location}</executable>
                                 </configuration>
                             </execution>
                         </executions>

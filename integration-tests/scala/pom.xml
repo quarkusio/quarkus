@@ -8,7 +8,6 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-integration-test-scala</artifactId>
@@ -21,17 +20,17 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-platform-descriptor-json</artifactId>
+            <artifactId>quarkus-project-core-extension-codestarts</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-maven</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-model</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -73,9 +72,6 @@
                 </executions>
                 <configuration>
                     <systemPropertyVariables>
-                        <!--suppress MavenModelInspection -->
-                        <maven.home>${maven.home}</maven.home>
-                        <maven.repo>${settings.localRepository}</maven.repo>
                         <project.version>${project.version}</project.version>
                     </systemPropertyVariables>
                 </configuration>

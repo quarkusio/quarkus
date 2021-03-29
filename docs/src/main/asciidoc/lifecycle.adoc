@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Application Initialization and Termination
 
@@ -37,7 +37,7 @@ The solution is located in the `lifecycle-quickstart` {quickstarts-tree-url}/lif
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -58,7 +58,7 @@ It generates:
 
 == The main method
 
-By default Quarkus will automatically generate a main method, that will boostrap Quarkus and then just wait for
+By default Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
 shutdown to be initiated. Let's provide our own main method:
 [source,java]
 ----
@@ -214,7 +214,7 @@ TIP: If a class is annotated with `@Startup` but with no scope annotation then `
 Run the application with: `./mvnw compile quarkus:dev`, the logged message is printed.
 When the application is stopped, the second log message is printed.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable using `./mvnw clean package -Pnative`.
 
 == Launch Modes

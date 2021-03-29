@@ -24,7 +24,7 @@ public @interface DataSource {
 
     String value();
 
-    class DataSourceLiteral extends AnnotationLiteral<DataSource> implements DataSource {
+    public class DataSourceLiteral extends AnnotationLiteral<DataSource> implements DataSource {
 
         private String name;
 

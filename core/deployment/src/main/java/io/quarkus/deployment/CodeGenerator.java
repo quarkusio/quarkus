@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -23,10 +24,11 @@ public class CodeGenerator {
     public static void initAndRun(ClassLoader classLoader,
             Set<Path> sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar,
-            AppModel appModel) throws CodeGenException {
+            AppModel appModel, Map<String, String> properties) throws CodeGenException {
         List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir, sourceRegistrar);
         for (CodeGenData generator : generators) {
-            trigger(classLoader, generator, appModel);
+            generator.setRedirectIO(true);
+            trigger(classLoader, generator, appModel, properties);
         }
     }
 
@@ -45,7 +47,7 @@ public class CodeGenerator {
             } catch (ClassNotFoundException e) {
                 throw new CodeGenException("Failde to load CodeGenProvider class from deployment classloader", e);
             }
-            for (CodeGenProvider provider : ServiceLoader.load(codeGenProviderClass)) {
+            for (CodeGenProvider provider : ServiceLoader.load(codeGenProviderClass, deploymentClassLoader)) {
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);
                 for (Path sourceParentDir : sourceParentDirs) {
                     result.add(
@@ -74,19 +76,21 @@ public class CodeGenerator {
      * @param deploymentClassLoader deployment classloader
      * @param data code gen
      * @param appModel app model
+     * @param properties custom code generation properties
      * @return true if sources have been created
      * @throws CodeGenException on failure
      */
     public static boolean trigger(ClassLoader deploymentClassLoader,
             CodeGenData data,
-            AppModel appModel) throws CodeGenException {
+            AppModel appModel,
+            Map<String, String> properties) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
-            Thread.currentThread().setContextClassLoader(deploymentClassLoader);
-
             CodeGenProvider provider = data.provider;
 
             return Files.isDirectory(data.sourceDir)
-                    && provider.trigger(new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir));
+                    && provider.trigger(
+                            new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO,
+                                    properties));
         });
     }
 

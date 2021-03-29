@@ -15,6 +15,7 @@ import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
+import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.hql.internal.QueryTranslatorFactoryInitiator;
@@ -22,13 +23,12 @@ import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
-import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
+import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.DisabledBytecodeProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
@@ -38,8 +38,9 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
-import io.quarkus.hibernate.orm.runtime.service.QuarkusJdbcEnvironmentInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticDialectFactoryInitiator;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -62,7 +63,7 @@ public class PreconfiguredServiceRegistryBuilder {
         checkIsNotReactive(rs);
         this.initiators = buildQuarkusServiceInitiatorList(rs);
         this.integrators = rs.getIntegrators();
-        this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata().getOriginalMetadata()
+        this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata()
                 .getMetadataBuildingOptions()
                 .getServiceRegistry();
     }
@@ -135,7 +136,7 @@ public class PreconfiguredServiceRegistryBuilder {
     /**
      * Modified copy from
      * org.hibernate.service.StandardServiceInitiators#buildStandardServiceInitiatorList
-     *
+     * <p>
      * N.B. not to be confused with
      * org.hibernate.service.internal.StandardSessionFactoryServiceInitiators#buildStandardServiceInitiatorList()
      *
@@ -161,14 +162,14 @@ public class PreconfiguredServiceRegistryBuilder {
         // TODO (optional): assume entities are already enhanced?
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);
 
-        // TODO (optional): not a priority
-        serviceInitiators.add(ImportSqlCommandExtractorInitiator.INSTANCE);
+        // Custom one!
+        serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
 
         // TODO disable?
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
 
-        // Replaces JdbcEnvironmentInitiator.INSTANCE :
-        serviceInitiators.add(new QuarkusJdbcEnvironmentInitiator(rs.getDialect()));
+        // Useful as-is: it performs detection of driver capabilities in particular
+        serviceInitiators.add(JdbcEnvironmentInitiator.INSTANCE);
 
         // Custom one!
         serviceInitiators.add(QuarkusJndiServiceInitiator.INSTANCE);
@@ -186,8 +187,8 @@ public class PreconfiguredServiceRegistryBuilder {
         // Disabled: Dialect is injected explicitly
         // serviceInitiators.add( DialectResolverInitiator.INSTANCE );
 
-        // Disabled: Dialect is injected explicitly
-        // serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
+        // Custom one: Dialect is injected explicitly
+        serviceInitiators.add(new QuarkusStaticDialectFactoryInitiator(rs.getDialect()));
 
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
@@ -207,7 +208,8 @@ public class PreconfiguredServiceRegistryBuilder {
 
         serviceInitiators.add(TransactionCoordinatorBuilderInitiator.INSTANCE);
 
-        serviceInitiators.add(ManagedBeanRegistryInitiator.INSTANCE);
+        // Replaces ManagedBeanRegistryInitiator.INSTANCE
+        serviceInitiators.add(QuarkusManagedBeanRegistryInitiator.INSTANCE);
 
         serviceInitiators.add(EntityCopyObserverFactoryInitiator.INSTANCE);
 

@@ -1,0 +1,11 @@
+name: "Micrometer metrics"
+metadata:
+  keywords:
+  - "micrometer"
+  - "metrics"
+  - "metric"
+  - "monitoring"
+  guide: "https://quarkus.io/guides/micrometer-metrics"
+  categories:
+  - "observability"
+  status: "stable"

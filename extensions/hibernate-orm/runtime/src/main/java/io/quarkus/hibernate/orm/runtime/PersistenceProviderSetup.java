@@ -1,14 +1,25 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.List;
+import java.util.Map;
+
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
+
 public final class PersistenceProviderSetup {
 
     private PersistenceProviderSetup() {
         // not to be constructed
     }
 
-    public static void registerPersistenceProvider() {
+    public static void registerStaticInitPersistenceProvider() {
         javax.persistence.spi.PersistenceProviderResolverHolder
-                .setPersistenceProviderResolver(new FastBootHibernatePersistenceProviderResolver());
+                .setPersistenceProviderResolver(new StaticInitHibernatePersistenceProviderResolver());
     }
 
+    public static void registerRuntimePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+            Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
+        javax.persistence.spi.PersistenceProviderResolverHolder.setPersistenceProviderResolver(
+                new SingletonPersistenceProviderResolver(
+                        new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors)));
+    }
 }

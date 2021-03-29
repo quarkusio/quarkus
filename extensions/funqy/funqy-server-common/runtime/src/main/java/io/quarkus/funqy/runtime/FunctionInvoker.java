@@ -14,9 +14,8 @@ public class FunctionInvoker {
     protected Method method;
     protected FunctionConstructor<?> constructor;
     protected ArrayList<ValueInjector> parameterInjectors;
-    protected Class<?> inputType;
-    protected Type inputGenericType;
-    protected Class<?> outputType;
+    protected Type inputType;
+    protected Type outputType;
     protected boolean isAsync;
 
     protected Map<String, Object> bindingContext = new ConcurrentHashMap<>();
@@ -33,8 +32,7 @@ public class FunctionInvoker {
                 Annotation[] annotations = method.getParameterAnnotations()[i];
                 ValueInjector injector = ParameterInjector.createInjector(type, clz, annotations);
                 if (injector instanceof InputValueInjector) {
-                    inputType = clz;
-                    inputGenericType = method.getGenericParameterTypes()[i];
+                    inputType = type;
                 }
                 parameterInjectors.add(injector);
             }
@@ -48,8 +46,8 @@ public class FunctionInvoker {
                 Type genericReturnType = method.getGenericReturnType();
                 if (genericReturnType instanceof ParameterizedType) {
                     Type[] actualParams = ((ParameterizedType) genericReturnType).getActualTypeArguments();
-                    if (actualParams.length == 1 && actualParams[0] instanceof Class<?>) {
-                        outputType = (Class<?>) actualParams[0];
+                    if (actualParams.length == 1) {
+                        outputType = actualParams[0];
                     }
                 }
                 if (outputType == null) {
@@ -57,7 +55,7 @@ public class FunctionInvoker {
                             "Uni must be used with type parameter (e.g. Uni<String>).");
                 }
             } else {
-                outputType = returnType;
+                outputType = method.getGenericReturnType();
             }
         }
     }
@@ -76,15 +74,11 @@ public class FunctionInvoker {
         return inputType != null;
     }
 
-    public Class getInputType() {
+    public Type getInputType() {
         return inputType;
     }
 
-    public Type getInputGenericType() {
-        return inputGenericType;
-    }
-
-    public Class getOutputType() {
+    public Type getOutputType() {
         return outputType;
     }
 

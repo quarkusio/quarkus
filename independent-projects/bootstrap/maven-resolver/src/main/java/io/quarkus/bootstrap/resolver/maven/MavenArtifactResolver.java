@@ -4,6 +4,8 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.util.PropertyUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -19,15 +21,16 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.DefaultDependencyNode;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
-import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
@@ -44,6 +47,7 @@ import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
+import org.eclipse.aether.version.Version;
 
 /**
  *
@@ -51,36 +55,18 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
  */
 public class MavenArtifactResolver {
 
+    private static final String SECONDARY_LOCAL_REPO_PROP = "io.quarkus.maven.secondary-local-repo";
+
     public static class Builder extends BootstrapMavenContextConfig<Builder> {
 
-        private boolean reTryFailedResolutionsAgainstDefaultLocalRepo;
+        private Path secondaryLocalRepo;
 
         private Builder() {
             super();
         }
 
-        /**
-         * In case custom local repository location is configured using {@link #setRepoHome(Path)},
-         * this method can be used to enable artifact resolutions that failed for the configured
-         * custom local repository to be re-tried against the default user local repository before
-         * failing.
-         * <p>
-         * NOTE: the default behavior is <b>not</b> to use the default user local repository as the fallback one.
-         *
-         * @param value true if the failed resolution requests should be re-tried against the default
-         *        user local repo before failing
-         *
-         * @return this builder instance
-         */
-        public Builder setReTryFailedResolutionsAgainstDefaultLocalRepo(boolean value) {
-            this.reTryFailedResolutionsAgainstDefaultLocalRepo = value;
-            return this;
-        }
-
-        public Builder setRepoHome(Path home) {
-            if (home != null) {
-                setLocalRepository(home.toString());
-            }
+        public Builder setSecondaryLocalRepo(Path secondaryLocalRepo) {
+            this.secondaryLocalRepo = secondaryLocalRepo;
             return this;
         }
 
@@ -93,6 +79,7 @@ public class MavenArtifactResolver {
         return new Builder();
     }
 
+    protected final BootstrapMavenContext context;
     protected final RepositorySystem repoSystem;
     protected final RepositorySystemSession repoSession;
     protected final List<RemoteRepository> remoteRepos;
@@ -100,30 +87,43 @@ public class MavenArtifactResolver {
     protected final RemoteRepositoryManager remoteRepoManager;
 
     private MavenArtifactResolver(Builder builder) throws BootstrapMavenException {
-        final BootstrapMavenContext mvnSettings = new BootstrapMavenContext(builder);
-        this.repoSystem = mvnSettings.getRepositorySystem();
+        this.context = new BootstrapMavenContext(builder);
+        this.repoSystem = context.getRepositorySystem();
 
-        final RepositorySystemSession session = mvnSettings.getRepositorySystemSession();
-        if (builder.localRepo != null && builder.reTryFailedResolutionsAgainstDefaultLocalRepo) {
+        final RepositorySystemSession session = context.getRepositorySystemSession();
+        final String secondaryRepo = PropertyUtils.getProperty(SECONDARY_LOCAL_REPO_PROP);
+        if (secondaryRepo != null) {
+            builder.secondaryLocalRepo = Paths.get(secondaryRepo);
+        }
+        if (builder.secondaryLocalRepo != null) {
             localRepoManager = new MavenLocalRepositoryManager(
-                    repoSystem.newLocalRepositoryManager(session, new LocalRepository(builder.localRepo)),
-                    Paths.get(BootstrapMavenContext.resolveLocalRepo(mvnSettings.getEffectiveSettings())));
+                    session.getLocalRepositoryManager(),
+                    builder.secondaryLocalRepo);
             this.repoSession = new DefaultRepositorySystemSession(session).setLocalRepositoryManager(localRepoManager);
         } else {
             this.repoSession = session;
             localRepoManager = null;
         }
 
-        this.remoteRepos = mvnSettings.getRemoteRepositories();
-        this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
+        this.remoteRepos = context.getRemoteRepositories();
+        this.remoteRepoManager = context.getRemoteRepositoryManager();
     }
 
     public MavenArtifactResolver(BootstrapMavenContext mvnSettings) throws BootstrapMavenException {
+        this.context = mvnSettings;
         this.repoSystem = mvnSettings.getRepositorySystem();
         this.repoSession = mvnSettings.getRepositorySystemSession();
         localRepoManager = null;
         this.remoteRepos = mvnSettings.getRemoteRepositories();
         this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
+    }
+
+    public BootstrapMavenContext getMavenContext() {
+        return context;
+    }
+
+    public RemoteRepositoryManager getRemoteRepositoryManager() {
+        return remoteRepoManager;
     }
 
     public MavenLocalRepositoryManager getLocalRepositoryManager() {
@@ -208,13 +208,38 @@ public class MavenArtifactResolver {
         }
     }
 
+    public String getLatestVersionFromRange(Artifact artifact, String range) throws AppModelResolverException {
+        return getLatest(resolveVersionRange(new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
+                artifact.getClassifier(), artifact.getExtension(), range)));
+    }
+
+    private String getLatest(final VersionRangeResult rangeResult) {
+        final List<Version> versions = rangeResult.getVersions();
+        if (versions.isEmpty()) {
+            return null;
+        }
+        Version next = versions.get(0);
+        for (int i = 1; i < versions.size(); ++i) {
+            final Version candidate = versions.get(i);
+            if (candidate.compareTo(next) > 0) {
+                next = candidate;
+            }
+        }
+        return next.toString();
+    }
+
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws BootstrapMavenException {
         return collectDependencies(artifact, deps, Collections.emptyList());
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos)
             throws BootstrapMavenException {
-        final CollectRequest request = newCollectRequest(artifact, mainRepos);
+        return collectDependencies(artifact, deps, mainRepos, Collections.emptyList());
+    }
+
+    public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos,
+            Collection<Exclusion> exclusions) throws BootstrapMavenException {
+        final CollectRequest request = newCollectRequest(artifact, mainRepos, exclusions);
         request.setDependencies(deps);
         try {
             return repoSystem.collectDependencies(repoSession, request);
@@ -274,10 +299,11 @@ public class MavenArtifactResolver {
     }
 
     public CollectResult collectManagedDependencies(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
+            List<RemoteRepository> mainRepos, Collection<Exclusion> exclusions, String... excludedScopes)
+            throws BootstrapMavenException {
         try {
             return repoSystem.collectDependencies(repoSession,
-                    newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, excludedScopes));
+                    newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, exclusions, excludedScopes));
         } catch (DependencyCollectionException e) {
             throw new BootstrapMavenException("Failed to collect dependencies for " + artifact, e);
         }
@@ -285,6 +311,12 @@ public class MavenArtifactResolver {
 
     private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
             List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
+        return newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, Collections.emptyList(), excludedScopes);
+    }
+
+    private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
+            List<RemoteRepository> mainRepos, Collection<Exclusion> exclusions, String... excludedScopes)
+            throws BootstrapMavenException {
         final List<RemoteRepository> aggregatedRepos = aggregateRepositories(mainRepos, remoteRepos);
         final ArtifactDescriptorResult descr = resolveDescriptorInternal(artifact, aggregatedRepos);
         Collection<String> excluded;
@@ -325,11 +357,16 @@ public class MavenArtifactResolver {
             }
         }
 
-        return new CollectRequest()
-                .setRootArtifact(artifact)
+        final CollectRequest request = new CollectRequest()
                 .setDependencies(mergeDeps(deps, originalDeps, managedVersions))
                 .setManagedDependencies(mergedManagedDeps)
                 .setRepositories(aggregateRepositories(aggregatedRepos, newResolutionRepositories(descr.getRepositories())));
+        if (exclusions.isEmpty()) {
+            request.setRootArtifact(artifact);
+        } else {
+            request.setRoot(new Dependency(artifact, JavaScopes.COMPILE, false, exclusions));
+        }
+        return request;
     }
 
     public List<RemoteRepository> newResolutionRepositories(List<RemoteRepository> repos) {
@@ -349,10 +386,14 @@ public class MavenArtifactResolver {
         }
     }
 
-    private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos)
-            throws BootstrapMavenException {
+    private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos) {
+        return newCollectRequest(artifact, mainRepos, Collections.emptyList());
+    }
+
+    private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos,
+            Collection<Exclusion> exclusions) {
         return new CollectRequest()
-                .setRoot(new Dependency(artifact, JavaScopes.RUNTIME))
+                .setRoot(new Dependency(artifact, JavaScopes.RUNTIME, false, exclusions))
                 .setRepositories(aggregateRepositories(mainRepos, remoteRepos));
     }
 

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Configuring Logging
 
@@ -50,6 +50,32 @@ public class ExampleResource {
 ----
 
 NOTE: If you use JBoss Logging but one of your libraries uses a different logging API, you may need to configure a link:#logging-adapters[Logging Adapter].
+
+You can also inject a configured `org.jboss.logging.Logger` instance in your beans and resource classes.
+
+[source, java]
+----
+import org.jboss.logging.Logger;
+
+@ApplicationScoped
+class SimpleBean {
+
+   @Inject
+   Logger log; <1>
+
+   @LoggerName("foo")
+   Logger fooLog; <2>
+
+   public void ping() {
+     log.info("Simple!");
+     fooLog.info("Goes to _foo_ logger!");
+   }
+}
+----
+<1> The FQCN of the declaring class is used as a logger name, i.e. `org.jboss.logging.Logger.getLogger(SimpleBean.class)` will be used.
+<2> In this case, the name _foo_ is used as a logger name, i.e. `org.jboss.logging.Logger.getLogger("foo")` will be used.
+
+NOTE: The logger instances are cached internally. Therefore, a logger injected e.g. into a `@RequestScoped` bean is shared for all bean instances to avoid possible performance penalty associated with logger instantiation.
 
 === What about Apache Log4j ?
 
@@ -105,10 +131,19 @@ quarkus.log.level=INFO
 quarkus.log.category."org.hibernate".level=DEBUG
 ----
 
+Setting a log level below `DEBUG` requires the minimum log level to be adjusted,
+either globally via the `quarkus.log.min-level` property or per-category as shown in the example above,
+as well as adjusting the log level itself.
+
+Minimum logging level sets a floor level that Quarkus will be needed to potentially generate,
+opening the door to optimization opportunities.
+As an example, in native execution the minimum level enables lower level checks (e.g. `isTraceEnabled`) to be folded to `false`,
+resulting in dead code elimination for code that will never to be executed.
+
 All possible properties are listed in <<loggingConfigurationReference, the logging configuration reference>>.
 
 NOTE: If you are adding these properties via command line make sure `"` is escaped.
-For example `-Dquarkus.log.category.\"org.hibernate\".level=DEBUG`.
+For example `-Dquarkus.log.category.\"org.hibernate\".level=TRACE`.
 
 === Logging categories
 
@@ -122,6 +157,7 @@ These can also be overridden by attaching a one or more named handlers to a cate
 |===
 |Property Name|Default|Description
 |quarkus.log.category."<category-name>".level|INFO footnote:[Some extensions may define customized default log levels for certain categories, in order to reduce log noise by default.  Setting the log level in configuration will override any extension-defined log levels.]|The level to use to configure the category named `<category-name>`.  The quotes are necessary.
+|quarkus.log.category."<category-name>".min-level|DEBUG |The minimum logging level to use to configure the category named `<category-name>`.  The quotes are necessary.
 |quarkus.log.category."<category-name>".use-parent-handlers|true|Specify whether or not this logger should send its output to its parent logger.
 |quarkus.log.category."<category-name>".handlers=[<handler>]|empty footnote:[By default the configured category gets the same handlers attached as the one on the root logger.]|The names of the handlers that you want to attach to a specific category.
 |===
@@ -136,7 +172,8 @@ The root logger category is handled separately, and is configured via the follow
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.log.level|INFO|The default minimum log level for every log category.
+|quarkus.log.level|INFO|The default log level for every log category.
+|quarkus.log.min-level|DEBUG|The default minimum log level for every log category.
 |===
 
 If no level configuration exists for a given logger category, the enclosing (parent) category is examined. If no categories are configured which enclose the category in question, then the root logger configuration is used.
@@ -281,6 +318,7 @@ quarkus.log.file.path=/tmp/trace.log
 quarkus.log.file.level=TRACE
 quarkus.log.file.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 # Set 2 categories (io.quarkus.smallrye.jwt, io.undertow.request.security) to TRACE level
+quarkus.log.min-level=TRACE
 quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
 quarkus.log.category."io.undertow.request.security".level=TRACE
 ----
@@ -373,23 +411,13 @@ These adapters are available for most of the common Open Source logging componen
 </dependency>
 ----
 
-JDK Logging:
-
-[source, xml]
-----
-<dependency>
-    <groupId>org.jboss.logging</groupId>
-    <artifactId>jboss-logging-jdk</artifactId>
-</dependency>
-----
-
 Log4j:
 
 [source, xml]
 ----
 <dependency>
-    <groupId>org.jboss.logging</groupId>
-    <artifactId>jboss-logging-log4j</artifactId>
+    <groupId>org.jboss.logmanager</groupId>
+    <artifactId>log4j-jboss-logmanager</artifactId>
 </dependency>
 ----
 
@@ -398,7 +426,7 @@ Log4j2:
 [source, xml]
 ----
 <dependency>
-    <groupId>org.jboss.logging</groupId>
+    <groupId>org.jboss.logmanager</groupId>
     <artifactId>log4j2-jboss-logmanager</artifactId>
 </dependency>
 ----
@@ -409,7 +437,7 @@ And Slf4j:
 ----
 <dependency>
     <groupId>org.jboss.slf4j</groupId>
-    <artifactId>slf4j-jboss-logging</artifactId>
+    <artifactId>slf4j-jboss-logmanager</artifactId>
 </dependency>
 ----
 

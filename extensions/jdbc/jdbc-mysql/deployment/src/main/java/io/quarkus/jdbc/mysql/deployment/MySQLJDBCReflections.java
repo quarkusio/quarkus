@@ -41,7 +41,6 @@ import com.mysql.cj.jdbc.Driver;
 import com.mysql.cj.jdbc.ha.NdbLoadBalanceExceptionChecker;
 import com.mysql.cj.jdbc.ha.StandardLoadBalanceExceptionChecker;
 import com.mysql.cj.log.StandardLogger;
-import com.mysql.cj.protocol.AsyncSocketFactory;
 import com.mysql.cj.protocol.NamedPipeSocketFactory;
 import com.mysql.cj.protocol.SocksProxySocketFactory;
 import com.mysql.cj.protocol.StandardSocketFactory;
@@ -78,6 +77,7 @@ public final class MySQLJDBCReflections {
                 com.mysql.cj.jdbc.ha.LoadBalancedAutoCommitInterceptor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StandardLogger.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, Wrapper.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.mysql.cj.jdbc.MysqlDataSource.class.getName()));
     }
 
     @BuildStep
@@ -85,7 +85,6 @@ public final class MySQLJDBCReflections {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, NamedPipeSocketFactory.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StandardSocketFactory.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, SocksProxySocketFactory.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, AsyncSocketFactory.class.getName()));
     }
 
     @BuildStep

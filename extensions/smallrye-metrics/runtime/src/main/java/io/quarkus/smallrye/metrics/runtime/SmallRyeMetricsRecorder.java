@@ -14,9 +14,9 @@ import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.metrics.ConcurrentGauge;
 import org.eclipse.microprofile.metrics.Counter;
@@ -43,13 +43,12 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 import io.smallrye.metrics.ExtendedMetadata;
 import io.smallrye.metrics.ExtendedMetadataBuilder;
 import io.smallrye.metrics.MetricRegistries;
+import io.smallrye.metrics.MetricsRequestHandler;
 import io.smallrye.metrics.TagsUtils;
 import io.smallrye.metrics.elementdesc.BeanInfo;
 import io.smallrye.metrics.elementdesc.MemberInfo;
 import io.smallrye.metrics.interceptors.MetricResolver;
 import io.smallrye.metrics.setup.MetricsMetadata;
-import io.vertx.ext.web.Route;
-import io.vertx.ext.web.Router;
 
 @Recorder
 public class SmallRyeMetricsRecorder {
@@ -88,18 +87,12 @@ public class SmallRyeMetricsRecorder {
 
     private static final SmallRyeMetricsFactory factory = new SmallRyeMetricsFactory();
 
-    public Function<Router, Route> route(String name) {
-        return new Function<Router, Route>() {
-            @Override
-            public Route apply(Router router) {
-                return router.route(name);
-            }
-        };
-    }
-
     public SmallRyeMetricsHandler handler(String metricsPath) {
         SmallRyeMetricsHandler handler = new SmallRyeMetricsHandler();
         handler.setMetricsPath(metricsPath);
+        // tell the metrics internal handler to not append CORS headers
+        // these will be handled by the Quarkus CORS filter, if enabled
+        CDI.current().select(MetricsRequestHandler.class).get().appendCorsHeaders(false);
         return handler;
     }
 
@@ -214,7 +207,9 @@ public class SmallRyeMetricsRecorder {
     }
 
     public void registerMetrics(Consumer<MetricsFactory> consumer) {
-        consumer.accept(factory);
+        if (consumer != null) {
+            consumer.accept(factory);
+        }
     }
 
     public void createRegistries(BeanContainer container) {

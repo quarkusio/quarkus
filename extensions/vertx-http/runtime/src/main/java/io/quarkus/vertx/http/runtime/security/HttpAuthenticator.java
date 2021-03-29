@@ -100,7 +100,7 @@ public class HttpAuthenticator {
         Uni<SecurityIdentity> result = mechanisms[0].authenticate(routingContext, identityProviderManager);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().transformToUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
+            result = result.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                 @Override
                 public Uni<SecurityIdentity> apply(SecurityIdentity data) {
                     if (data != null) {

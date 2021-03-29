@@ -8,6 +8,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -22,9 +23,9 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,6 +47,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -62,66 +65,116 @@ public class ValueResolverGenerator {
     public static final DotName TEMPLATE_DATA = DotName.createSimple(TemplateData.class.getName());
     public static final DotName TEMPLATE_DATA_CONTAINER = DotName.createSimple(TemplateData.Container.class.getName());
 
-    private static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
-    private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
-
     public static final String SUFFIX = "_ValueResolver";
     public static final String NESTED_SEPARATOR = "$_";
 
     private static final Logger LOGGER = Logger.getLogger(ValueResolverGenerator.class);
 
-    private static final String GET_PREFIX = "get";
-    private static final String IS_PREFIX = "is";
+    public static final String GET_PREFIX = "get";
+    public static final String IS_PREFIX = "is";
+    public static final String HAS_PREFIX = "has";
 
+    public static final String TARGET = "target";
     public static final String IGNORE_SUPERCLASSES = "ignoreSuperclasses";
     public static final String IGNORE = "ignore";
     public static final String PROPERTIES = "properties";
 
     public static final int DEFAULT_PRIORITY = 10;
 
-    private final Set<String> analyzedTypes;
     private final Set<String> generatedTypes;
     private final IndexView index;
     private final ClassOutput classOutput;
-    private final Map<DotName, AnnotationInstance> uncontrolled;
+    private final Map<DotName, ClassInfo> nameToClass;
+    private final Map<DotName, AnnotationInstance> nameToTemplateData;
 
-    /**
-     * 
-     * @param index
-     * @param classOutput
-     * @param uncontrolled The map of {@link TemplateData} metadata for classes that are not controlled by the client
-     */
-    ValueResolverGenerator(IndexView index, ClassOutput classOutput, Map<DotName, AnnotationInstance> uncontrolled) {
-        this.analyzedTypes = new HashSet<>();
+    private Function<ClassInfo, Function<FieldInfo, String>> forceGettersFunction;
+
+    ValueResolverGenerator(IndexView index, ClassOutput classOutput, Map<DotName, ClassInfo> nameToClass,
+            Map<DotName, AnnotationInstance> nameToTemplateData,
+            Function<ClassInfo, Function<FieldInfo, String>> forceGettersFunction) {
         this.generatedTypes = new HashSet<>();
         this.classOutput = classOutput;
         this.index = index;
-        this.uncontrolled = uncontrolled != null ? uncontrolled : Collections.emptyMap();
+        this.nameToClass = new HashMap<>(nameToClass);
+        this.nameToTemplateData = new HashMap<>(nameToTemplateData);
+        this.forceGettersFunction = forceGettersFunction;
     }
 
     public Set<String> getGeneratedTypes() {
         return generatedTypes;
     }
 
-    public Set<String> getAnalyzedTypes() {
-        return analyzedTypes;
+    /**
+     * Generate value resolvers for all classes added via {@link Builder#addClass(ClassInfo, AnnotationInstance)}.
+     */
+    public void generate() {
+
+        // Map superclasses to direct subclasses
+        // Foo extends Baz, Bar extends Baz = Baz -> Foo, Bar
+        Map<DotName, Set<DotName>> superToSub = new HashMap<>();
+        for (Entry<DotName, ClassInfo> entry : nameToClass.entrySet()) {
+            DotName superName = entry.getValue().superName();
+            if (superName != null && !DotNames.OBJECT.equals(superName)) {
+                superToSub.computeIfAbsent(superName, name -> new HashSet<>()).add(entry.getKey());
+            }
+        }
+
+        // We do not expect more than 10 levels...
+        int priority = DEFAULT_PRIORITY;
+        // Remaining classes to process
+        Map<DotName, ClassInfo> remaining = new HashMap<>(this.nameToClass);
+
+        while (!remaining.isEmpty()) {
+            // Generate resolvers for classes not extended in the current set
+            Map<DotName, Set<DotName>> superToSubRemovals = new HashMap<>();
+            for (Iterator<Entry<DotName, ClassInfo>> it = remaining.entrySet().iterator(); it.hasNext();) {
+                Entry<DotName, ClassInfo> entry = it.next();
+                if (!superToSub.containsKey(entry.getKey())) {
+                    // Generate the resolver
+                    generate(entry.getKey(), priority);
+                    // Queue a class removal
+                    DotName superName = entry.getValue().superName();
+                    if (superName != null && !DotNames.OBJECT.equals(superName)) {
+                        superToSubRemovals.computeIfAbsent(superName, name -> new HashSet<>()).add(entry.getKey());
+                    }
+                    // Remove the processed binding
+                    it.remove();
+                }
+            }
+            // Remove the processed classes from the map
+            for (Entry<DotName, Set<DotName>> entry : superToSubRemovals.entrySet()) {
+                Set<DotName> subs = superToSub.get(entry.getKey());
+                if (subs != null) {
+                    subs.removeAll(entry.getValue());
+                    if (subs.isEmpty()) {
+                        superToSub.remove(entry.getKey());
+                    }
+                }
+            }
+            // Lower the priority for extended classes
+            priority--;
+        }
     }
 
-    public void generate(ClassInfo clazz) {
-        Objects.requireNonNull(clazz);
-        String clazzName = clazz.name().toString();
-        if (analyzedTypes.contains(clazzName)) {
-            return;
-        }
-        analyzedTypes.add(clazzName);
+    private void generate(DotName className, int priority) {
+
+        ClassInfo clazz = nameToClass.get(className);
+        String clazzName = className.toString();
         boolean ignoreSuperclasses = false;
 
-        // @TemplateData declared on class takes precedence
-        AnnotationInstance templateData = clazz.classAnnotation(TEMPLATE_DATA);
+        AnnotationInstance templateData = nameToTemplateData.get(className);
         if (templateData == null) {
-            // Try to find @TemplateData declared on other classes
-            templateData = uncontrolled.get(clazz.name());
-        } else {
+            // @TemplateData declared on the class
+            for (AnnotationInstance annotation : clazz.classAnnotations()) {
+                if (annotation.name().equals(TEMPLATE_DATA)) {
+                    AnnotationValue targetValue = annotation.value(TARGET);
+                    if (targetValue == null || targetValue.asClass().name().equals(className)) {
+                        templateData = annotation;
+                    }
+                }
+            }
+        }
+        if (templateData != null) {
             AnnotationValue ignoreSuperclassesValue = templateData.value(IGNORE_SUPERCLASSES);
             if (ignoreSuperclassesValue != null) {
                 ignoreSuperclasses = ignoreSuperclassesValue.asBoolean();
@@ -145,31 +198,21 @@ public class ValueResolverGenerator {
         ClassCreator valueResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(ValueResolver.class).build();
 
-        implementGetPriority(valueResolver);
+        implementGetPriority(valueResolver, priority);
         implementAppliesTo(valueResolver, clazz);
-        implementResolve(valueResolver, clazzName, clazz, filters);
+        implementResolve(valueResolver, clazzName, clazz, filters, ignoreSuperclasses);
 
         valueResolver.close();
-
-        DotName superName = clazz.superName();
-        if (!ignoreSuperclasses && (superName != null && !superName.equals(OBJECT))) {
-            ClassInfo superClass = index.getClassByName(clazz.superClassType().name());
-            if (superClass != null) {
-                generate(superClass);
-            } else {
-                LOGGER.warnf("Skipping super class %s - not found in the index", clazz.superClassType());
-            }
-        }
     }
 
-    private void implementGetPriority(ClassCreator valueResolver) {
+    private void implementGetPriority(ClassCreator valueResolver, int priority) {
         MethodCreator getPriority = valueResolver.getMethodCreator("getPriority", int.class)
                 .setModifiers(ACC_PUBLIC);
-        getPriority.returnValue(getPriority.load(DEFAULT_PRIORITY));
+        getPriority.returnValue(getPriority.load(priority));
     }
 
     private void implementResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz,
-            Predicate<AnnotationTarget> filter) {
+            Predicate<AnnotationTarget> filter, boolean ignoreSuperclasses) {
         MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
                 .setModifiers(ACC_PUBLIC);
 
@@ -178,46 +221,82 @@ public class ValueResolverGenerator {
         ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
         ResultHandle params = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
         ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
+        Function<FieldInfo, String> fieldToGetterFun = forceGettersFunction != null ? forceGettersFunction.apply(clazz) : null;
 
-        // Fields
+        // First collect and sort methods (getters must come before is/has properties, etc.)
+        List<MethodKey> methods = clazz.methods().stream().filter(filter::test).map(MethodKey::new).sorted()
+                .collect(Collectors.toList());
+        if (!ignoreSuperclasses) {
+            DotName superName = clazz.superName();
+            while (superName != null && !superName.equals(DotNames.OBJECT)) {
+                ClassInfo superClass = index.getClassByName(superName);
+                if (superClass != null) {
+                    methods.addAll(
+                            superClass.methods().stream().filter(filter::test).map(MethodKey::new).collect(Collectors.toSet()));
+                    superName = superClass.superName();
+                } else {
+                    superName = null;
+                    LOGGER.warnf("Skipping super class %s - not found in the index", clazz.superClassType());
+                }
+            }
+        }
+
         List<FieldInfo> fields = clazz.fields().stream().filter(filter::test).collect(Collectors.toList());
         if (!fields.isEmpty()) {
             BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
             for (FieldInfo field : fields) {
-                LOGGER.debugf("Field added: %s", field);
-                // Match field name
-                BytecodeCreator fieldMatch = zeroParamsBranch
-                        .ifNonZero(
-                                zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
-                                        resolve.load(field.name()), name))
-                        .trueBranch();
-                ResultHandle value;
-                if (Modifier.isStatic(field.flags())) {
-                    value = fieldMatch
-                            .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
+                String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
+                if (getterName != null && noneMethodMatches(methods, getterName)) {
+                    LOGGER.debugf("Forced getter added: %s", field);
+                    BytecodeCreator getterMatch = zeroParamsBranch.createScope();
+                    // Match the getter name
+                    BytecodeCreator notMatched = getterMatch.ifNonZero(getterMatch.invokeVirtualMethod(Descriptors.EQUALS,
+                            getterMatch.load(getterName),
+                            name))
+                            .falseBranch();
+                    // Match the property name
+                    notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
+                            notMatched.load(field.name()),
+                            name)).falseBranch().breakScope(getterMatch);
+                    ResultHandle value = getterMatch.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
+                                    DescriptorUtils.typeToString(field.type())),
+                            base);
+                    getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, value));
                 } else {
-                    value = fieldMatch
-                            .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
-                                    base);
+                    LOGGER.debugf("Field added: %s", field);
+                    // Match field name
+                    BytecodeCreator fieldMatch = zeroParamsBranch
+                            .ifNonZero(
+                                    zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
+                                            resolve.load(field.name()), name))
+                            .trueBranch();
+                    ResultHandle value;
+                    if (Modifier.isStatic(field.flags())) {
+                        value = fieldMatch
+                                .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
+                    } else {
+                        value = fieldMatch
+                                .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
+                                        base);
+                    }
+                    fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, value));
                 }
-                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, value));
             }
         }
 
-        List<MethodInfo> methods = clazz.methods().stream().filter(filter::test).collect(Collectors.toList());
         if (!methods.isEmpty()) {
-
             // name, number of params -> list of methods
             Map<Match, List<MethodInfo>> matches = new HashMap<>();
             Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
 
-            for (MethodInfo method : methods) {
-
+            for (MethodKey methodKey : methods) {
+                MethodInfo method = methodKey.method;
                 List<Type> methodParams = method.parameters();
                 if (methodParams.isEmpty()) {
                     // No params - just invoke the method
                     LOGGER.debugf("Method added %s", method);
-                    try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), 0, name,
+                    try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), 0, method.returnType(), name,
                             params, paramsCount)) {
                         ResultHandle ret;
                         boolean hasCompletionStage = !skipMemberType(method.returnType())
@@ -304,7 +383,8 @@ public class ValueResolverGenerator {
 
         LOGGER.debugf("Method added %s", method);
 
-        BytecodeCreator matchScope = createMatchScope(resolve, method.name(), methodParams.size(), name, params,
+        BytecodeCreator matchScope = createMatchScope(resolve, method.name(), methodParams.size(), method.returnType(), name,
+                params,
                 paramsCount);
 
         // Invoke the method
@@ -420,7 +500,7 @@ public class ValueResolverGenerator {
             ResultHandle evalContext) {
 
         LOGGER.debugf("Methods added %s", methods);
-        BytecodeCreator matchScope = createMatchScope(resolve, matchName, matchParamsCount,
+        BytecodeCreator matchScope = createMatchScope(resolve, matchName, matchParamsCount, null,
                 name, params,
                 paramsCount);
         ResultHandle ret = matchScope
@@ -587,7 +667,7 @@ public class ValueResolverGenerator {
     }
 
     private BytecodeCreator createMatchScope(BytecodeCreator bytecodeCreator, String methodName, int methodParams,
-            ResultHandle name, ResultHandle params, ResultHandle paramsCount) {
+            Type returnType, ResultHandle name, ResultHandle params, ResultHandle paramsCount) {
 
         BytecodeCreator matchScope = bytecodeCreator.createScope();
         // Match name
@@ -596,7 +676,7 @@ public class ValueResolverGenerator {
                 name))
                 .falseBranch();
         // Match the property name for getters,  ie. "foo" for "getFoo"
-        if (methodParams == 0 && isGetterName(methodName)) {
+        if (methodParams == 0 && isGetterName(methodName, returnType)) {
             notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
                     notMatched.load(getPropertyName(methodName)),
                     name)).falseBranch().breakScope(matchScope);
@@ -606,7 +686,6 @@ public class ValueResolverGenerator {
         // Match number of params
         if (methodParams >= 0) {
             matchScope.ifIntegerEqual(matchScope.load(methodParams), paramsCount).falseBranch().breakScope(matchScope);
-
         }
         return matchScope;
     }
@@ -633,7 +712,9 @@ public class ValueResolverGenerator {
 
         private IndexView index;
         private ClassOutput classOutput;
-        private Map<DotName, AnnotationInstance> uncontrolled;
+        private final Map<DotName, ClassInfo> nameToClass = new HashMap<>();
+        private final Map<DotName, AnnotationInstance> nameToTemplateData = new HashMap<>();
+        private Function<ClassInfo, Function<FieldInfo, String>> forceGettersFunction;
 
         public Builder setIndex(IndexView index) {
             this.index = index;
@@ -645,13 +726,36 @@ public class ValueResolverGenerator {
             return this;
         }
 
-        public Builder setUncontrolled(Map<DotName, AnnotationInstance> uncontrolled) {
-            this.uncontrolled = uncontrolled;
+        /**
+         * The function returns:
+         * <ul>
+         * <li>a function that returns the getter name for a specific field or {@code null} if getter should not be forced for
+         * the given field</li>
+         * <li>{@code null} if getters are not forced for the given class</li>
+         * </ul>
+         * 
+         * @param forceGettersFunction
+         * @return self
+         */
+        public Builder setForceGettersFunction(Function<ClassInfo, Function<FieldInfo, String>> forceGettersFunction) {
+            this.forceGettersFunction = forceGettersFunction;
+            return this;
+        }
+
+        public Builder addClass(ClassInfo clazz) {
+            return addClass(clazz, null);
+        }
+
+        public Builder addClass(ClassInfo clazz, AnnotationInstance templateData) {
+            this.nameToClass.put(clazz.name(), clazz);
+            if (templateData != null) {
+                this.nameToTemplateData.put(clazz.name(), templateData);
+            }
             return this;
         }
 
         public ValueResolverGenerator build() {
-            return new ValueResolverGenerator(index, classOutput, uncontrolled);
+            return new ValueResolverGenerator(index, classOutput, nameToClass, nameToTemplateData, forceGettersFunction);
         }
 
     }
@@ -714,7 +818,7 @@ public class ValueResolverGenerator {
                         && !method.name().equals("<clinit>");
             case FIELD:
                 FieldInfo field = target.asField();
-                return Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags());
+                return Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags()) && !isSynthetic(field.flags());
             default:
                 throw new IllegalArgumentException("Unsupported annotation target");
         }
@@ -724,17 +828,27 @@ public class ValueResolverGenerator {
         return (mod & 0x00001000) != 0;
     }
 
-    static boolean isGetterName(String name) {
-        return name.startsWith(GET_PREFIX) || name.startsWith(IS_PREFIX);
+    static boolean isGetterName(String name, Type returnType) {
+        if (name.startsWith(GET_PREFIX)) {
+            return true;
+        }
+        if (returnType == null
+                || (returnType.name().equals(PrimitiveType.BOOLEAN.name()) || returnType.name().equals(DotNames.BOOLEAN))) {
+            return name.startsWith(IS_PREFIX) || name.startsWith(HAS_PREFIX);
+        }
+        return false;
     }
 
     public static String getPropertyName(String methodName) {
+        String propertyName = methodName;
         if (methodName.startsWith(GET_PREFIX)) {
-            return decapitalize(methodName.substring(GET_PREFIX.length(), methodName.length()));
+            propertyName = methodName.substring(GET_PREFIX.length(), methodName.length());
         } else if (methodName.startsWith(IS_PREFIX)) {
-            return decapitalize(methodName.substring(IS_PREFIX.length(), methodName.length()));
+            propertyName = methodName.substring(IS_PREFIX.length(), methodName.length());
+        } else if (methodName.startsWith(HAS_PREFIX)) {
+            propertyName = methodName.substring(HAS_PREFIX.length(), methodName.length());
         }
-        return methodName;
+        return decapitalize(propertyName);
     }
 
     static String decapitalize(String name) {
@@ -747,6 +861,18 @@ public class ValueResolverGenerator {
         }
         char chars[] = name.toCharArray();
         chars[0] = Character.toLowerCase(chars[0]);
+        return new String(chars);
+    }
+
+    public static String capitalize(String name) {
+        if (name == null || name.length() == 0) {
+            return name;
+        }
+        if (Character.isUpperCase(name.charAt(0))) {
+            return name;
+        }
+        char chars[] = name.toCharArray();
+        chars[0] = Character.toUpperCase(chars[0]);
         return new String(chars);
     }
 
@@ -807,14 +933,28 @@ public class ValueResolverGenerator {
         }
     }
 
-    static boolean hasCompletionStageInTypeClosure(ClassInfo classInfo,
+    private static boolean noneMethodMatches(List<MethodKey> methods, String name) {
+        for (MethodKey method : methods) {
+            if (method.name.equals(name)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean hasCompletionStageInTypeClosure(ClassInfo classInfo,
+            IndexView index) {
+        return hasClassInTypeClosure(classInfo, DotNames.COMPLETION_STAGE, index);
+    }
+
+    public static boolean hasClassInTypeClosure(ClassInfo classInfo, DotName className,
             IndexView index) {
 
         if (classInfo == null) {
             // TODO cannot perform analysis
             return false;
         }
-        if (classInfo.name().equals(COMPLETION_STAGE)) {
+        if (classInfo.name().equals(className)) {
             return true;
         }
         // Interfaces
@@ -827,7 +967,7 @@ public class ValueResolverGenerator {
         // Superclass
         if (classInfo.superClassType() != null) {
             ClassInfo superClassInfo = index.getClassByName(classInfo.superName());
-            if (superClassInfo != null && hasCompletionStageInTypeClosure(superClassInfo, index)) {
+            if (superClassInfo != null && hasClassInTypeClosure(superClassInfo, className, index)) {
                 return true;
             }
         }
@@ -866,6 +1006,75 @@ public class ValueResolverGenerator {
             }
             Match other = (Match) obj;
             return Objects.equals(name, other.name) && paramsCount == other.paramsCount;
+        }
+
+    }
+
+    static class MethodKey implements Comparable<MethodKey> {
+
+        final String name;
+        final List<DotName> params;
+        final MethodInfo method;
+
+        public MethodKey(MethodInfo method) {
+            this.method = method;
+            this.name = method.name();
+            this.params = new ArrayList<>();
+            for (Type i : method.parameters()) {
+                params.add(i.name());
+            }
+        }
+
+        public MethodInfo getMethod() {
+            return method;
+        }
+
+        @Override
+        public int compareTo(MethodKey other) {
+            // compare the name, then number of params and param type names 
+            int res = name.compareTo(other.name);
+            if (res == 0) {
+                res = Integer.compare(params.size(), other.params.size());
+                if (res == 0) {
+                    for (int i = 0; i < params.size(); i++) {
+                        res = params.get(i).compareTo(other.params.get(i));
+                        if (res != 0) {
+                            break;
+                        }
+                    }
+                }
+            }
+            return res;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((name == null) ? 0 : name.hashCode());
+            result = prime * result + ((params == null) ? 0 : params.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (!(obj instanceof MethodKey)) {
+                return false;
+            }
+            MethodKey other = (MethodKey) obj;
+            if (!name.equals(other.name)) {
+                return false;
+            }
+            if (!params.equals(other.params)) {
+                return false;
+            }
+            return true;
         }
 
     }

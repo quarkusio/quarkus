@@ -20,6 +20,7 @@ import java.util.stream.StreamSupport;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 
 import io.dekorate.utils.Strings;
 
@@ -33,6 +34,8 @@ public class KubernetesConfigUtil {
 
     private static final String EXPOSE_PROPERTY_NAME = "expose";
     private static final String[] EXPOSABLE_GENERATORS = { OPENSHIFT, KUBERNETES };
+
+    private static final Logger log = Logger.getLogger(KubernetesConfigUtil.class);
 
     public static List<String> getUserSpecifiedDeploymentTargets() {
         Config config = ConfigProvider.getConfig();
@@ -83,7 +86,6 @@ public class KubernetesConfigUtil {
             }
         }
 
-        // hard-coded support for exposed
         handleExpose(config, unPrefixed, platformConfigurations);
 
         result.putAll(unPrefixed);
@@ -92,6 +94,7 @@ public class KubernetesConfigUtil {
         return result;
     }
 
+    @Deprecated
     private static void handleExpose(Config config, Map<String, Object> unPrefixed,
             PlatformConfiguration... platformConfigurations) {
         for (String generator : EXPOSABLE_GENERATORS) {
@@ -101,11 +104,25 @@ public class KubernetesConfigUtil {
                     .getOptionalValue(QUARKUS_PREFIX + generator + "." + EXPOSE_PROPERTY_NAME, Boolean.class)
                     .orElse(false);
             if (unprefixedExpose || prefixedExpose) {
+                if (generator == KUBERNETES) {
+                    log.warn("Usage of quarkus.kubernetes.expose is deprecated in favor of quarkus.kubernetes.ingress.expose");
+                } else {
+                    log.warn("Usage of quarkus.openshift.expose is deprecated in favor of quarkus.openshift.route.expose");
+                }
                 unPrefixed.put(DEKORATE_PREFIX + generator + "." + EXPOSE_PROPERTY_NAME, true);
                 for (PlatformConfiguration platformConfiguration : platformConfigurations) {
                     if (platformConfiguration.getConfigName().equals(generator)) {
                         platformConfiguration.getHost()
-                                .ifPresent(h -> unPrefixed.put(DEKORATE_PREFIX + generator + ".host", h));
+                                .ifPresent(h -> {
+                                    unPrefixed.put(DEKORATE_PREFIX + generator + ".host", h);
+                                    if (generator == KUBERNETES) {
+                                        log.warn(
+                                                "Usage of quarkus.kubernetes.host is deprecated in favor of quarkus.kubernetes.ingress.host");
+                                    } else {
+                                        log.warn(
+                                                "Usage of quarkus.openshift.host is deprecated in favor of quarkus.openshift.route.host");
+                                    }
+                                });
                         break;
                     }
                 }

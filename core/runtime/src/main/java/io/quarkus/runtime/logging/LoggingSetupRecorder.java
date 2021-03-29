@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.logging.ErrorManager;
@@ -46,7 +47,9 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 @Recorder
 public class LoggingSetupRecorder {
 
-    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("win");
+    private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
+
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
     /**
      * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
@@ -75,11 +78,14 @@ public class LoggingSetupRecorder {
     public static void handleFailedStart() {
         LogConfig config = new LogConfig();
         ConfigInstantiator.handleObject(config);
-        new LoggingSetupRecorder().initializeLogging(config, Collections.emptyList(), Collections.emptyList(),
+        LogBuildTimeConfig buildConfig = new LogBuildTimeConfig();
+        ConfigInstantiator.handleObject(buildConfig);
+        new LoggingSetupRecorder().initializeLogging(config, buildConfig, Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList(), null);
     }
 
-    public void initializeLogging(LogConfig config, final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
+    public void initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
+            final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
             final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier) {
@@ -131,6 +137,21 @@ public class LoggingSetupRecorder {
         namedHandlers.putAll(additionalNamedHandlersMap);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
+            final CategoryBuildTimeConfig buildCategory = isSubsetOf(entry.getKey(), buildConfig.categories);
+            final Level logLevel = getLogLevel(entry.getKey(), entry.getValue(), categories, buildConfig.minLevel);
+            final Level minLogLevel = buildCategory == null
+                    ? buildConfig.minLevel
+                    : buildCategory.minLevel.getLevel();
+
+            if (logLevel.intValue() < minLogLevel.intValue()) {
+                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
+                        entry.getKey(), minLogLevel, minLogLevel);
+
+                entry.getValue().level = InheritableLevel.of(minLogLevel.toString());
+            }
+        }
+
+        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final String name = entry.getKey();
             final Logger categoryLogger = logContext.getLogger(name);
             final CategoryConfig categoryConfig = entry.getValue();
@@ -155,6 +176,89 @@ public class LoggingSetupRecorder {
 
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    public static void initializeBuildTimeLogging(LogConfig config, LogBuildTimeConfig buildConfig) {
+
+        final Map<String, CategoryConfig> categories = config.categories;
+        final LogContext logContext = LogContext.getLogContext();
+        final Logger rootLogger = logContext.getLogger("");
+
+        rootLogger.setLevel(config.level);
+
+        ErrorManager errorManager = new OnlyOnceErrorManager();
+        final Map<String, CleanupFilterConfig> filters = config.filters;
+        List<LogCleanupFilterElement> filterElements = new ArrayList<>(filters.size());
+        for (Entry<String, CleanupFilterConfig> entry : filters.entrySet()) {
+            filterElements.add(
+                    new LogCleanupFilterElement(entry.getKey(), entry.getValue().targetLevel, entry.getValue().ifStartsWith));
+        }
+
+        final ArrayList<Handler> handlers = new ArrayList<>(3);
+
+        if (config.console.enable) {
+            final Handler consoleHandler = configureConsoleHandler(config.console, errorManager, filterElements,
+                    Collections.emptyList(), new RuntimeValue<>(Optional.empty()));
+            errorManager = consoleHandler.getErrorManager();
+            handlers.add(consoleHandler);
+        }
+
+        Map<String, Handler> namedHandlers = createNamedHandlers(config, Collections.emptyList(), errorManager, filterElements);
+
+        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
+            final CategoryBuildTimeConfig buildCategory = isSubsetOf(entry.getKey(), buildConfig.categories);
+            final Level logLevel = getLogLevel(entry.getKey(), entry.getValue(), categories, buildConfig.minLevel);
+            final Level minLogLevel = buildCategory == null
+                    ? buildConfig.minLevel
+                    : buildCategory.minLevel.getLevel();
+
+            if (logLevel.intValue() < minLogLevel.intValue()) {
+                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
+                        entry.getKey(), minLogLevel, minLogLevel);
+
+                entry.getValue().level = InheritableLevel.of(minLogLevel.toString());
+            }
+        }
+
+        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
+            final String name = entry.getKey();
+            final Logger categoryLogger = logContext.getLogger(name);
+            final CategoryConfig categoryConfig = entry.getValue();
+            if (!categoryConfig.level.isInherited()) {
+                categoryLogger.setLevel(categoryConfig.level.getLevel());
+            }
+            categoryLogger.setUseParentHandlers(categoryConfig.useParentHandlers);
+            if (categoryConfig.handlers.isPresent()) {
+                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager);
+            }
+        }
+        InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
+        InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    private static Level getLogLevel(String categoryName, CategoryConfig categoryConfig, Map<String, CategoryConfig> categories,
+            Level rootMinLevel) {
+        if (Objects.isNull(categoryConfig))
+            return rootMinLevel;
+
+        final InheritableLevel inheritableLevel = categoryConfig.level;
+        if (!inheritableLevel.isInherited())
+            return inheritableLevel.getLevel();
+
+        int lastDotIndex = categoryName.lastIndexOf('.');
+        if (lastDotIndex == -1)
+            return rootMinLevel;
+
+        String parent = categoryName.substring(0, lastDotIndex);
+        return getLogLevel(parent, categories.get(parent), categories, rootMinLevel);
+    }
+
+    private static CategoryBuildTimeConfig isSubsetOf(String categoryName, Map<String, CategoryBuildTimeConfig> categories) {
+        return categories.entrySet().stream()
+                .filter(buildCategoryEntry -> categoryName.startsWith(buildCategoryEntry.getKey()))
+                .map(Entry::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
     private static Map<String, Handler> createNamedHandlers(LogConfig config,
@@ -185,14 +289,27 @@ public class LoggingSetupRecorder {
                     handlerName));
         }
         namedHandlers.put(handlerName, handler);
+        InitialConfigurator.DELAYED_HANDLER.addLoggingCloseTask(new Runnable() {
+            @Override
+            public void run() {
+                handler.close();
+            }
+        });
     }
 
-    private void addNamedHandlersToCategory(CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
+    private static void addNamedHandlersToCategory(CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
             Logger categoryLogger,
             ErrorManager errorManager) {
         for (String categoryNamedHandler : categoryConfig.handlers.get()) {
-            if (namedHandlers.get(categoryNamedHandler) != null) {
-                categoryLogger.addHandler(namedHandlers.get(categoryNamedHandler));
+            Handler handler = namedHandlers.get(categoryNamedHandler);
+            if (handler != null) {
+                categoryLogger.addHandler(handler);
+                InitialConfigurator.DELAYED_HANDLER.addLoggingCloseTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        categoryLogger.removeHandler(handler);
+                    }
+                });
             } else {
                 errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
                         categoryNamedHandler), null, ErrorManager.GENERIC_FAILURE);

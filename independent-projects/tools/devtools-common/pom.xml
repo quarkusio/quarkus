@@ -28,7 +28,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+            <artifactId>quarkus-devtools-registry-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -42,9 +42,10 @@
             <groupId>io.quarkus.qute</groupId>
             <artifactId>qute-generator</artifactId>
         </dependency>
+        <!-- user prompt -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-platform-descriptor-api</artifactId>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -125,12 +126,6 @@
         <dependency>
             <groupId>jakarta.websocket</groupId>
             <artifactId>jakarta.websocket-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.immutables</groupId>
-            <artifactId>value</artifactId>
-            <version>2.8.8</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

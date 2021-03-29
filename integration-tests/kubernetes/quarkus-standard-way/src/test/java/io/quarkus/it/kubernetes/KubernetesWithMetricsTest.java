@@ -29,7 +29,7 @@ public class KubernetesWithMetricsTest {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("health")
+            .setApplicationName("metrics")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
@@ -66,14 +66,15 @@ public class KubernetesWithMetricsTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("health");
+                assertThat(m.getName()).isEqualTo("metrics");
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getMetadata()).satisfies(meta -> {
                         assertThat(meta.getAnnotations()).contains(entry("prometheus.io/scrape", "true"),
-                                entry("prometheus.io/path", "/met"), entry("prometheus.io/port", "9090"));
+                                entry("prometheus.io/path", "/q/metrics"), entry("prometheus.io/port", "9090"),
+                                entry("prometheus.io/scheme", "http"));
                     });
                 });
             });

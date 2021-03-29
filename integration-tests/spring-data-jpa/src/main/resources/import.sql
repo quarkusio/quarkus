@@ -48,6 +48,17 @@ INSERT INTO song(id, title, author) VALUES (4, 'Whatever it takes' , 'Imagine Dr
 INSERT INTO song(id, title, author) VALUES (5, 'Santos que yo te pinte' , 'Los planetas');
 INSERT INTO song(id, title, author) VALUES (6, 'Drinkee' , 'Sofi Tukker');
 
+INSERT INTO liked_songs(person_id, song_id) VALUES (1,1);
+INSERT INTO liked_songs(person_id, song_id) VALUES (1,3);
+INSERT INTO liked_songs(person_id, song_id) VALUES (1,4);
+INSERT INTO liked_songs(person_id, song_id) VALUES (2,5);
+INSERT INTO liked_songs(person_id, song_id) VALUES (2,6);
+INSERT INTO liked_songs(person_id, song_id) VALUES (3,1);
+INSERT INTO liked_songs(person_id, song_id) VALUES (4,3);
+INSERT INTO liked_songs(person_id, song_id) VALUES (4,4);
+INSERT INTO liked_songs(person_id, song_id) VALUES (5,5);
+INSERT INTO liked_songs(person_id, song_id) VALUES (6,6);
+
 INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (1, 'Jason', 'Bourne',  'jason.bourne@mail.com', '0102030405', TRUE);
 INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (2, 'Homer', 'Simpson', 'homer.simpson@mail.com',  '0605040302', TRUE);
 INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (3, 'Peter', 'Quin', 'pater.quin@mail.com',  '0706050403', FALSE);
@@ -58,3 +69,15 @@ INSERT INTO cart(id, customer_id, status) VALUES (3, 3, 'CANCELED');
 
 INSERT INTO orders(id, cart_id) VALUES (1, 1);
 INSERT INTO orders(id, cart_id) VALUES (2, 2);
+
+INSERT INTO unit(id, name) VALUES (1, 'Delivery Unit');
+INSERT INTO unit(id, name) VALUES (2, 'Sales and Marketing Unit');
+INSERT INTO team(id, name, unit_id) VALUES (10, 'Development Team', 1);
+INSERT INTO team(id, name, unit_id) VALUES (11, 'Sales Team', 2);
+INSERT INTO employee(id, user_id, first_name, last_name, team_id) VALUES (100, 'johdoe', 'John', 'Doe', 10);
+INSERT INTO employee(id, user_id, first_name, last_name, team_id) VALUES (101, 'petdig', 'Peter', 'Digger', 10);
+INSERT INTO employee(id, user_id, first_name, last_name, team_id) VALUES (102, 'stesmi', 'Stella', 'Smith', 11);
+
+INSERT INTO MotorCar(id, brand, model) VALUES (1, 'Monteverdi', 'Hai 450');
+INSERT INTO MotorCar(id, brand, model) VALUES (2, 'Rinspeed', 'iChange');
+INSERT INTO MotorCar(id, brand, model) VALUES (3, 'Rinspeed', 'Oasis');

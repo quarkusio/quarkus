@@ -12,7 +12,7 @@
     <artifactId>quarkus-jdbc-db2</artifactId>
     <name>Quarkus - JDBC - DB2 - Runtime</name>
 	<description>Connect to the DB2 database via JDBC</description>
-	
+
     <dependencies>
         <dependency>
             <groupId>com.ibm.db2</groupId>
@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -30,6 +30,12 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-service-binding</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -38,6 +44,11 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>com.ibm.db2:jcc</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

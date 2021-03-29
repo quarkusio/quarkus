@@ -11,6 +11,7 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -27,7 +28,7 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.bool-with-default=true\ndummy.optional-int=100\ndummy.optional-int-list=1,2"),
+                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.bool-with-default=true\ndummy.optional-int=100\ndummy.opt-int-lst=1,2"),
                             "application.properties"));
 
     @Inject
@@ -39,6 +40,7 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
         assertEquals(Arrays.asList(1, 2, 3, 4), dummyBean.getNumbers());
         assertEquals("default", dummyBean.getUnset());
         assertTrue(dummyBean.isBoolWithDefault());
+        assertFalse(dummyBean.isUnsetBoolean());
         assertTrue(dummyBean.getOptionalInt().isPresent());
         assertEquals(100, dummyBean.getOptionalInt().get());
         assertFalse(dummyBean.getOptionalString().isPresent());
@@ -68,6 +70,10 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
             return dummyProperties.boolWithDefault;
         }
 
+        boolean isUnsetBoolean() {
+            return dummyProperties.unsetBoolean;
+        }
+
         Optional<Integer> getOptionalInt() {
             return dummyProperties.optionalInt;
         }
@@ -91,10 +97,13 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
         public String name;
         public String unset = "default";
         public boolean boolWithDefault = false;
+        public boolean unsetBoolean;
         public List<Integer> numbers;
         public Optional<Integer> optionalInt;
         public Optional<String> optionalString;
+        @ConfigProperty(name = "opt-str-lst")
         public Optional<List<String>> optionalStringList;
+        @ConfigProperty(name = "opt-int-lst")
         public Optional<List<Integer>> optionalIntList;
     }
 }

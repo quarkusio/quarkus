@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 /**
  * When applied to a bean class or producer method (or field), the bean will only be enabled
  * if the Quarkus build time property matches the provided value.
+ * <p>
  * By default, the bean is not enabled when the build time property is not defined at all, but this behavior is configurable
  * via the {#code enableIfMissing} property.
  */

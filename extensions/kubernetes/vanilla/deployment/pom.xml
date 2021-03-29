@@ -27,11 +27,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-client-deployment-internal</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-metrics-spi</artifactId>
+            <artifactId>quarkus-kubernetes-client-internal-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.dekorate</groupId>

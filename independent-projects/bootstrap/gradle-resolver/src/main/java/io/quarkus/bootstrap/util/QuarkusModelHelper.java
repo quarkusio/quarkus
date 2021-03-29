@@ -15,6 +15,8 @@ import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -22,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +38,11 @@ public class QuarkusModelHelper {
 
     }
 
+    public final static String SERIALIZED_QUARKUS_MODEL = "quarkus-internal.serialized-quarkus-model.path";
     public final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
+    public final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses" };
+    public final static List<String> ENABLE_JAR_PACKAGING = Collections
+            .singletonList("-Dorg.gradle.java.compile-classpath-packaging=true");
 
     public static void exportModel(QuarkusModel model) throws AppModelResolverException, IOException {
         Path serializedModel = QuarkusModelHelper
@@ -53,6 +60,28 @@ public class QuarkusModelHelper {
             out.writeObject(QuarkusModelHelper.convert(model, appArtifact));
         }
         return serializedModel;
+    }
+
+    public static Path serializeQuarkusModel(QuarkusModel model) throws IOException {
+        final Path serializedModel = File.createTempFile("quarkus-model", ".dat").toPath();
+        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
+            out.writeObject(model);
+        }
+        return serializedModel;
+    }
+
+    public static QuarkusModel deserializeQuarkusModel(Path modelPath) throws BootstrapGradleException {
+        if (Files.exists(modelPath)) {
+            try (InputStream existing = Files.newInputStream(modelPath);
+                    ObjectInputStream object = new ObjectInputStream(existing)) {
+                QuarkusModel model = (QuarkusModel) object.readObject();
+                IoUtils.recursiveDelete(modelPath);
+                return model;
+            } catch (IOException | ClassNotFoundException e) {
+                throw new BootstrapGradleException("Failed to deserialize quarkus model", e);
+            }
+        }
+        throw new BootstrapGradleException("Unable to locate quarkus model");
     }
 
     public static Path getClassPath(WorkspaceModule model) throws BootstrapGradleException {
@@ -109,10 +138,21 @@ public class QuarkusModelHelper {
             WorkspaceModule module = model.getWorkspace().getMainModule();
             module.getSourceSet().getSourceDirectories().stream().filter(File::exists).map(File::toPath)
                     .forEach(paths::add);
-            if (module.getSourceSet().getResourceDirectory().exists()) {
-                paths.add(module.getSourceSet().getResourceDirectory().toPath());
+            File resourceDirectory = module.getSourceSet().getResourceDirectory();
+            if (resourceDirectory != null && resourceDirectory.exists()) {
+                paths.add(resourceDirectory.toPath());
             }
             appArtifact.setPaths(paths.build());
+        }
+
+        for (WorkspaceModule module : model.getWorkspace().getAllModules()) {
+            final ArtifactCoords coords = module.getArtifactCoords();
+            appBuilder.addLocalProjectArtifact(
+                    new AppArtifactKey(coords.getGroupId(), coords.getArtifactId(), null, coords.getType()));
+        }
+
+        if (!model.getPlatformProperties().isEmpty()) {
+            appBuilder.addPlatformProperties(model.getPlatformProperties());
         }
 
         appBuilder.addRuntimeDeps(userDeps)
@@ -123,10 +163,14 @@ public class QuarkusModelHelper {
     }
 
     public static AppDependency toAppDependency(Dependency dependency) {
+        return new AppDependency(toAppArtifact(dependency), "runtime");
+    }
+
+    private static AppArtifact toAppArtifact(Dependency dependency) {
         AppArtifact artifact = new AppArtifact(dependency.getGroupId(), dependency.getName(), dependency.getClassifier(),
                 dependency.getType(), dependency.getVersion());
         artifact.setPaths(QuarkusModelHelper.toPathsCollection(dependency.getPaths()));
-        return new AppDependency(artifact, "runtime");
+        return artifact;
     }
 
     public static PathsCollection toPathsCollection(Collection<File> files) {

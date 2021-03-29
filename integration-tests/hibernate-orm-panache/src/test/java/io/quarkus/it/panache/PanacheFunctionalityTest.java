@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -89,7 +91,7 @@ public class PanacheFunctionalityTest {
     /**
      * _PanacheEntityBase_ has the method _isPersistent_. This method is used by Jackson to serialize the attribute *peristent*
      * in the JSON which is not intended. This test ensures that the attribute *persistent* is not generated when using Jackson.
-     * 
+     *
      * This test does not interact with the Quarkus application itself. It is just using the Jackson ObjectMapper with a
      * PanacheEntity. Thus this test is disabled in native mode. The test code runs the JVM and not native.
      */
@@ -104,7 +106,7 @@ public class PanacheFunctionalityTest {
         // make sure the Jaxb module is loaded
         objectMapper.findAndRegisterModules();
         String personAsString = objectMapper.writeValueAsString(person);
-        // check 
+        // check
         // hence no 'persistence'-attribute
         assertEquals(
                 "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
@@ -134,7 +136,7 @@ public class PanacheFunctionalityTest {
     /**
      * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
      */
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void jsonbDeserializationHasAllFields() throws JsonProcessingException {
         // set Up
@@ -180,9 +182,10 @@ public class PanacheFunctionalityTest {
     @Test
     public void testMetrics() {
         RestAssured.when()
-                .get("/metrics")
+                .get("/q/metrics")
                 .then()
-                .body(containsString("vendor_hibernate_orm_timestamps_cache_hits_total{entityManagerFactory=\"default\"}"));
+                .body(containsString("vendor_hibernate_cache_update_timestamps_requests_total{entityManagerFactory=\""
+                        + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME + "\",result=\"miss\"}"));
     }
 
     @DisabledOnNativeImage

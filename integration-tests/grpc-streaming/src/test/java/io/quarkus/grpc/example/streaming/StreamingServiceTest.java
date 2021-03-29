@@ -29,7 +29,7 @@ public class StreamingServiceTest {
 
     @BeforeEach
     public void getChannel() {
-        channel = ManagedChannelBuilder.forAddress("localhost", 9000).usePlaintext().build();
+        channel = ManagedChannelBuilder.forAddress("localhost", 9001).usePlaintext().build();
     }
 
     @AfterEach

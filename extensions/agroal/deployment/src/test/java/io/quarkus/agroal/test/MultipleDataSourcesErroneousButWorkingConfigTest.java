@@ -36,9 +36,9 @@ public class MultipleDataSourcesErroneousButWorkingConfigTest {
 
     @Test
     public void testDataSourceInjection() throws SQLException {
-        testDataSource("default", defaultDataSource, "jdbc:h2:tcp://localhost/mem:default", "username-default", 3, 13);
-        testDataSource("users", dataSource1, "jdbc:h2:tcp://localhost/mem:users", "username1", 1, 11);
-        testDataSource("inventory", dataSource2, "jdbc:h2:tcp://localhost/mem:inventory", "username2", 2, 12);
+        testDataSource("default", defaultDataSource, "jdbc:h2:tcp://localhost/mem:default", "username-default", 13);
+        testDataSource("users", dataSource1, "jdbc:h2:tcp://localhost/mem:users", "username1", 11);
+        testDataSource("inventory", dataSource2, "jdbc:h2:tcp://localhost/mem:inventory", "username2", 12);
     }
 
 }

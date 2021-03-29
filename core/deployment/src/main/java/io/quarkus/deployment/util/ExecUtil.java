@@ -15,20 +15,20 @@ public class ExecUtil {
     private static final Logger LOG = Logger.getLogger(ExecUtil.class);
 
     private static final Function<InputStream, Runnable> PRINT_OUTPUT = i -> new HandleOutput(i);
-    private static final Function<InputStream, Runnable> SILENT = i -> new HandleOutput(i, false);
+    private static final Function<InputStream, Runnable> SILENT = i -> new HandleOutput(i, Logger.Level.DEBUG);
 
     private static class HandleOutput implements Runnable {
 
         private final InputStream is;
-        private final Boolean logEnabled;
+        private final Logger.Level logLevel;
 
         HandleOutput(InputStream is) {
-            this(is, true);
+            this(is, Logger.Level.INFO);
         }
 
-        HandleOutput(InputStream is, Boolean logEnabled) {
+        HandleOutput(InputStream is, Logger.Level logLevel) {
             this.is = is;
-            this.logEnabled = logEnabled;
+            this.logLevel = LOG.isEnabled(logLevel) ? logLevel : null;
         }
 
         @Override
@@ -37,18 +37,21 @@ public class ExecUtil {
                     BufferedReader reader = new BufferedReader(isr)) {
 
                 for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                    if (logEnabled) {
-                        LOG.info(line);
+                    if (logLevel != null) {
+                        LOG.log(logLevel, line);
                     }
                 }
             } catch (IOException e) {
+                if (logLevel != null) {
+                    LOG.log(logLevel, "Failed to handle output", e);
+                }
             }
         }
     }
 
     /**
      * Execute the specified command from within the current directory.
-     * 
+     *
      * @param command The command
      * @param args The command arguments
      * @return true if commands where executed successfully
@@ -59,7 +62,7 @@ public class ExecUtil {
 
     /**
      * Execute the specified command from within the current directory and hide the output.
-     * 
+     *
      * @param command The command
      * @param args The command arguments
      * @return true if commands where executed successfully
@@ -70,7 +73,7 @@ public class ExecUtil {
 
     /**
      * Execute the specified command from within the specified directory.
-     * 
+     *
      * @param directory The directory
      * @param command The command
      * @param args The command arguments
@@ -82,7 +85,7 @@ public class ExecUtil {
 
     /**
      * Execute the specified command from within the specified directory and hide the output.
-     * 
+     *
      * @param directory The directory
      * @param command The command
      * @param args The command arguments
@@ -95,7 +98,7 @@ public class ExecUtil {
     /**
      * Execute the specified command from within the specified directory.
      * The method allows specifying an output filter that processes the command output.
-     * 
+     *
      * @param directory The directory
      * @param outputFilterFunction A {@link Function} that gets an {@link InputStream} and returns an outputFilter.
      * @param command The command

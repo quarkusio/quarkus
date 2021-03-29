@@ -20,18 +20,18 @@ jobs:
         run: sudo systemctl stop mysql
 
       - name: Pull docker image
-        run: docker pull quay.io/quarkus/ubi-quarkus-native-image:20.1.0-java${{ matrix.java }}
+        run: docker pull quay.io/quarkus/ubi-quarkus-native-image:20.2.0-java${{ matrix.java }}
 
       - name: Set up JDK ${{ matrix.java }}
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         if: matrix.java != '8'
         with:
           java-version: ${{ matrix.java }}
 
       - name: Set up JDK ${{ matrix.java }}
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         if: matrix.java == '8'
         with:
           java-version: ${{ matrix.java }}
@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: quarkusio/quarkus
-          ref: master
+          ref: main
 
       - uses: actions/cache@v1
         with:
@@ -55,7 +55,7 @@ jobs:
         run: mvn -B install -DskipTests -DskipITs -Dformat.skip
 
       - name: Run integration tests in native
-        run: mvn -B --settings .github/mvn-settings.xml verify -f integration-tests/pom.xml --fail-at-end -Dno-format -Ddocker -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.1.0-java${{ matrix.java }} -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-db2 -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dtest-kafka -Dtest-mssql -Dtest-mariadb -Dmariadb.url="jdbc:mariadb://localhost:3308/hibernate_orm_test" -pl '!io.quarkus:quarkus-integration-test-google-cloud-functions-http,!io.quarkus:quarkus-integration-test-google-cloud-functions,!io.quarkus:quarkus-integration-test-funqy-google-cloud-functions'
+        run: mvn -B --settings .github/mvn-settings.xml verify -f integration-tests/pom.xml --fail-at-end -Dno-format -Dtest-containers -Dstart-containers -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.2.0-java${{ matrix.java }} -pl '!io.quarkus:quarkus-integration-test-google-cloud-functions-http,!io.quarkus:quarkus-integration-test-google-cloud-functions,!io.quarkus:quarkus-integration-test-funqy-google-cloud-functions'
 
       - name: Report
         if: always()

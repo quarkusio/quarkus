@@ -14,6 +14,8 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
     private final Closeable closeTask;
     private final ClassLoader classLoader;
 
+    private boolean closing;
+
     public RunningQuarkusApplicationImpl(Closeable closeTask, ClassLoader classLoader) {
         this.closeTask = closeTask;
         this.classLoader = classLoader;
@@ -26,7 +28,10 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
 
     @Override
     public void close() throws Exception {
-        closeTask.close();
+        if (!closing) {
+            closing = true;
+            closeTask.close();
+        }
     }
 
     @Override

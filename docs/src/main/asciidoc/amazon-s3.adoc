@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Amazon S3 Client
 
@@ -37,11 +37,14 @@ To complete this guide, you need:
 
 The easiest way to start working with S3 is to run a local instance as a container.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
-docker run -it --publish 8008:4572 -e SERVICES=s3 -e START_WEB=0 localstack/localstack
+docker run -it --publish 8008:4566 -e SERVICES=s3 -e START_WEB=0 localstack/localstack:0.11.5
 ----
 This starts a S3 instance that is accessible on port `8008`.
+
+
+NOTE: Versions of localstack newer than v0.11.5 require port `4566` instead of port `4572`. See this https://github.com/localstack/localstack/issues/2983[GitHub issue] for details on this change.
 
 Create an AWS profile for your local instance using AWS CLI:
 [source,shell,subs="verbatim,attributes"]
@@ -57,7 +60,7 @@ Default output format [None]:
 
 Create a S3 bucket using AWS CLI
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 aws s3 mb s3://quarkus.s3.quickstart --profile localstack --endpoint-url=http://localhost:8008
 ----
@@ -77,14 +80,14 @@ The solution is located in the `amazon-s3-quickstart` {quickstarts-tree-url}/ama
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amazon-s3-quickstart \
     -DclassName="org.acme.s3.S3SyncClientResource" \
     -Dpath="/s3" \
-    -Dextensions="resteasy-jsonb,amazon-s3"
+    -Dextensions="resteasy,resteasy-jackson,amazon-s3"
 cd amazon-s3-quickstart
 ----
 
@@ -96,10 +99,12 @@ Then, we'll add the following dependency to support `multipart/form-data` reques
 [source,xml]
 ----
 <dependency>
-    <groupId>org.jboss.resteasy</groupId>
-    <artifactId>resteasy-multipart-provider</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-multipart</artifactId>
 </dependency>
 ----
+
+NOTE: The default setting for `quarkus.http.limits.max-body-size` is 10240K. This may limit your ability to upload multipart files larger than the default. If you want to upload larger files, you will need to set this limit explicitly.
 
 == Setting up the model
 
@@ -329,7 +334,6 @@ public class S3SyncClientResource extends CommonResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public List<FileObject> listFiles() {
         ListObjectsRequest listRequest = ListObjectsRequest.builder().bucket(bucketName).build();
 
@@ -367,6 +371,10 @@ And add following dependency to the application `pom.xml`:
 <dependency>
     <groupId>software.amazon.awssdk</groupId>
     <artifactId>apache-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-apache-httpclient</artifactId>
 </dependency>
 ----
 
@@ -424,7 +432,7 @@ You can now interact with your REST service:
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -jar target/amazon-s3-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.
@@ -509,7 +517,6 @@ public class S3AsyncClientResource extends CommonResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<FileObject>> listFiles() {
         ListObjectsRequest listRequest = ListObjectsRequest.builder()
                 .bucket(bucketName)

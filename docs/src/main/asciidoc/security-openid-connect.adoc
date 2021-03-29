@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization
 
@@ -13,6 +13,8 @@ This guide demonstrates how to use Quarkus OpenID Connect Extension to protect y
 Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token which provides valuable information to determine the subject of the call as well as whether or not an HTTP resource can be accessed.
 
 Please read the link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize the users using OpenId Connect Authorization Code Flow.
+
+If you use Keycloak and Bearer tokens then also see the link:security-keycloak-authorization[Using Keycloak to Centralize Authorization] guide.
 
 Please read the link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
 
@@ -55,12 +57,13 @@ The solution is located in the `security-openid-connect-quickstart` {quickstarts
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-openid-connect-quickstart \
-    -Dextensions="oidc, resteasy-jsonb"
+    -Dextensions="resteasy,oidc,resteasy-jackson" \
+    -DnoExamples
 cd security-openid-connect-quickstart
 ----
 
@@ -97,8 +100,6 @@ import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -112,7 +113,6 @@ public class UsersResource {
     @GET
     @Path("/me")
     @RolesAllowed("user")
-    @Produces(MediaType.APPLICATION_JSON)
     @NoCache
     public User me() {
         return new User(securityIdentity);
@@ -168,7 +168,7 @@ If you need to access `JsonWebToken` claims, you may simply inject the token its
 package org.acme.security.openid.connect;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-
+import javax.inject.Inject;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -251,7 +251,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/security-openid-connect-quickstart-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 === Running in Native Mode
@@ -329,6 +329,18 @@ export access_token=$(\
  )
 ----
 
+[[user-info]]
+== User Info
+
+Set `quarkus.oidc.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
+A request will be sent to the OpenId Provider UserInfo endpoint and  an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created.
+`io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
+
+[[config-metadata]]
+== Configuration Metadata
+
+The discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenId Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
+
 == Token Claims And SecurityIdentity Roles
 
 SecurityIdentity roles can be mapped from the verified JWT access tokens as follows:
@@ -341,9 +353,11 @@ SecurityIdentity roles can be mapped from the verified JWT access tokens as foll
 
 If the token is opaque (binary) then a `scope` property from the remote token introspection response will be used.
 
+If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
+
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
 
-[[oidc-single-page-applications]]
+[[single-page-applications]]
 == Single Page Applications
 
 Single Page Application (SPA) typically uses `XMLHttpRequest`(XHR) and the Java Script utility code provided by the OpenId Connect provider to acquire a bearer token and use it
@@ -391,9 +405,137 @@ For example, here is how you can use `keycloak.js` to authenticate the users and
 </html>
 ----
 
+== Provider Endpoint configuration
+
+OIDC `service` application needs to know OpenId Connect provider's token, `JsonWebKey` (JWK) set and possibly `UserInfo` and introspection endpoint addresses.
+
+By default they are discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc.auth-server-url`.
+
+Alternatively, if the discovery endpoint is not available or you would like to save on the discovery endpoint roundtrip, you can disable the discovery and configure them with relative path values, for example:
+
+[source, properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.discovery-enabled=false
+# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens
+quarkus.oidc.token-path=/protocol/openid-connect/tokens
+# JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
+quarkus.oidc.jwks-path=/protocol/openid-connect/certs
+# UserInfo endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
+quarkus.oidc.user-info-path=/protocol/openid-connect/userinfo
+# Token Introspection endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
+----
+
+== Token Propagation
+
+Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+
+[[integration-testing]]
+== Testing
+
+=== Wiremock
+
+Add the following dependencies to your test project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-oidc-server</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+   <groupId>io.rest-assured</groupId>
+   <artifactId>rest-assured</artifactId>
+   <scope>test</scope>
+</dependency>
+----
+
+Prepare the REST test endpoint, set `application.properties`, for example:
+
+[source, properties]
+----
+# keycloak.url is set by OidcWiremockTestResource
+quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc.client-id=quarkus-service-app
+quarkus.oidc.application-type=service
+# required to sign the tokens
+smallrye.jwt.sign.key.location=privateKey.jwk
+----
+
+and finally write the test code, for example:
+
+[source, java]
+----
+import static org.hamcrest.Matchers.equalTo;
+
+import java.util.Arrays;
+import java.util.HashSet;
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.server.OidcWiremockTestResource;
+import io.restassured.RestAssured;
+import io.smallrye.jwt.build.Jwt;
+
+@QuarkusTest
+@QuarkusTestResource(OidcWiremockTestResource.class)
+public class BearerTokenAuthorizationTest {
+
+    @Test
+    public void testBearerToken() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice", new HashSet<>(Arrays.asList("user"))))
+            .when().get("/api/users/preferredUserName")
+            .then()
+            .statusCode(200)
+            // the test endpoint returns the name extracted from the injected SecurityIdentity Principal
+            .body("userName", equalTo("alice"));
+    }
+
+    private String getAccessToken(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws()
+                .keyId("1")
+                .sign();
+    }
+}
+----
+
+Testing your `quarkus-oidc` `service` application with `OidcWiremockTestResource` provides the best coverage as even the communication channel is tested against the Wiremock HTTP stubs.
+`OidcWiremockTestResource` will be enhanced going forward to support more complex Bearer token test scenarios.
+
+=== Local Public Key
+
+You can also use a local inlined public key for testing your `quarkus-oidc` `service` applications:
+
+[source,properties]
+----
+quarkus.oidc.client-id=test
+quarkus.oidc.public-key=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlivFI8qB4D0y2jy0CfEqFyy46R0o7S8TKpsx5xbHKoU1VWg6QkQm+ntyIv1p4kE1sPEQO73+HY8+Bzs75XwRTYL1BmR1w8J5hmjVWjc6R2BTBGAYRPFRhor3kpM6ni2SPmNNhurEAHw7TaqszP5eUF/F9+KEBWkwVta+PZ37bwqSE4sCb1soZFrVz/UT/LF4tYpuVYt3YbqToZ3pZOZ9AX2o1GCG3xwOjkc4x0W7ezbQZdC9iftPxVHR8irOijJRRjcPDtA6vPKpzLl6CyYnsIYPd99ltwxTHjr3npfv/3Lw50bAkbT4HeLFxTx4flEoZLKO/g0bAoV2uqBhkA9xnQIDAQAB
+
+smallrye.jwt.sign.key-location=/privateKey.pem
+----
+
+copy `privateKey.pem` from the `integration-tests/oidc-tenancy` in the `main` Quarkus repository and use a test code similar to the one in the `Wiremock` section above to generate JWT tokens. You can use your own test keys if preferred.
+
+This approach provides a more limited coverage compared to the Wiremock approach - for example, the remote communication code is not covered.
 
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
+* link:security[Quarkus Security]

@@ -9,9 +9,9 @@ import io.quarkus.gizmo.Gizmo;
 
 public class PanacheFieldAccessEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-    private MetamodelInfo<?> modelInfo;
+    private MetamodelInfo modelInfo;
 
-    public PanacheFieldAccessEnhancer(MetamodelInfo<?> modelInfo) {
+    public PanacheFieldAccessEnhancer(MetamodelInfo modelInfo) {
         this.modelInfo = modelInfo;
     }
 
@@ -23,9 +23,9 @@ public class PanacheFieldAccessEnhancer implements BiFunction<String, ClassVisit
     static class FieldAccessClassVisitor extends ClassVisitor {
 
         private String classBinaryName;
-        private MetamodelInfo<?> modelInfo;
+        private MetamodelInfo modelInfo;
 
-        public FieldAccessClassVisitor(String className, ClassVisitor outputClassVisitor, MetamodelInfo<?> modelInfo) {
+        public FieldAccessClassVisitor(String className, ClassVisitor outputClassVisitor, MetamodelInfo modelInfo) {
             super(Gizmo.ASM_API_VERSION, outputClassVisitor);
             this.modelInfo = modelInfo;
             this.classBinaryName = className.replace('.', '/');

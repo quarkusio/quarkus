@@ -40,7 +40,7 @@ public class Sort {
         Descending;
     }
 
-    public class Column {
+    public static class Column {
         private String name;
         private Direction direction;
 

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Building a Custom SubstrateVM
 
@@ -22,7 +22,7 @@ auth param.
 
 After obtaining the download install it and set `JAVA_HOME`
 
-[source,shell]
+[source,bash]
 ----
 wget -O jvmci.tgz http://download.oracle.com/otn/utilities_drivers/oracle-labs/labsjdk-8u202-jvmci-0.56-darwin-amd64.tar.gz?AuthParam=[GENERATED AUTH TOKEN HERE]
 tar -xzvf jvmci.tgz -C /opt
@@ -39,7 +39,7 @@ the minimum requirements.
 
 Now you need to install Graal’s special build tool, `mx`.
 
-[source,shell]
+[source,bash]
 ----
 git clone https://github.com/graalvm/mx.git
 export PATH=`pwd`/mx:$PATH
@@ -49,7 +49,7 @@ export PATH=`pwd`/mx:$PATH
 
 You can now check-out and build Substrate:
 
-[source,shell]
+[source,bash]
 ----
 git clone https://github.com/oracle/graal.git
 cd graal/substratevm
@@ -58,7 +58,7 @@ mx build
 
 Once built, you can quickly run the tools in place
 
-[source,shell]
+[source,bash]
 ----
 echo "public class HelloWorld { public static void main(String[] args) { System.out.println(\"Hello World\"); } }" > HelloWorld.java
 javac HelloWorld.java
@@ -75,7 +75,7 @@ build options to pick the modules in your distribution.
 For a simple subset VM with just substrate and its native tools execute
 the following:
 
-[source,shell]
+[source,bash]
 ----
  cd ../vm
  mx --dy /substratevm,/tools build
@@ -84,7 +84,7 @@ the following:
 
 For a stock CE build the following will do:
 
-[source,shell]
+[source,bash]
 ----
 mx --dy /substratevm,/tools,/sulong,/graal-nodejs build
 tar -czvf my-custom-graal.tgz -C latest_graalvm .

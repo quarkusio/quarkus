@@ -32,13 +32,16 @@
             <artifactId>quarkus-jsonb</artifactId>    
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-metrics</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-graphql-cdi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-context-propagation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.metrics</groupId>
+            <artifactId>microprofile-metrics-api</artifactId>
         </dependency>
     </dependencies>
 

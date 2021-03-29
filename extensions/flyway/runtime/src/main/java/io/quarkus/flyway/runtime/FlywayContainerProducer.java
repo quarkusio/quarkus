@@ -1,10 +1,11 @@
 package io.quarkus.flyway.runtime;
 
+import java.util.Collection;
+
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
-
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import org.flywaydb.core.api.callback.Callback;
 
 /**
  * This class is sort of a producer for {@link Flyway}.
@@ -28,13 +29,12 @@ public class FlywayContainerProducer {
     }
 
     public FlywayContainer createFlyway(DataSource dataSource, String dataSourceName) {
-        FlywayDataSourceRuntimeConfig matchingRuntimeConfig = DataSourceUtil.isDefault(dataSourceName)
-                ? flywayRuntimeConfig.defaultDataSource
-                : flywayRuntimeConfig.getConfigForDataSourceName(dataSourceName);
-        FlywayDataSourceBuildTimeConfig matchingBuildTimeConfig = DataSourceUtil.isDefault(dataSourceName)
-                ? flywayBuildConfig.defaultDataSource
-                : flywayBuildConfig.getConfigForDataSourceName(dataSourceName);
-        Flyway flyway = new FlywayCreator(matchingRuntimeConfig, matchingBuildTimeConfig).createFlyway(dataSource);
-        return new FlywayContainer(flyway, matchingRuntimeConfig.cleanAtStart, matchingRuntimeConfig.migrateAtStart);
+        FlywayDataSourceRuntimeConfig matchingRuntimeConfig = flywayRuntimeConfig.getConfigForDataSourceName(dataSourceName);
+        FlywayDataSourceBuildTimeConfig matchingBuildTimeConfig = flywayBuildConfig.getConfigForDataSourceName(dataSourceName);
+        final Collection<Callback> callbacks = QuarkusPathLocationScanner.callbacksForDataSource(dataSourceName);
+        final Flyway flyway = new FlywayCreator(matchingRuntimeConfig, matchingBuildTimeConfig).withCallbacks(callbacks)
+                .createFlyway(dataSource);
+        return new FlywayContainer(flyway, matchingRuntimeConfig.cleanAtStart, matchingRuntimeConfig.migrateAtStart,
+                dataSourceName);
     }
 }

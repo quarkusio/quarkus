@@ -8,6 +8,8 @@ import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 import static io.quarkus.vault.test.VaultTestExtension.APP_SECRET_PATH;
 import static io.quarkus.vault.test.VaultTestExtension.DB_PASSWORD;
 import static io.quarkus.vault.test.VaultTestExtension.ENCRYPTION_KEY_NAME;
+import static io.quarkus.vault.test.VaultTestExtension.EXPECTED_SUB_PATHS;
+import static io.quarkus.vault.test.VaultTestExtension.LIST_PATH;
 import static io.quarkus.vault.test.VaultTestExtension.SECRET_KEY;
 import static io.quarkus.vault.test.VaultTestExtension.SECRET_PATH_V1;
 import static io.quarkus.vault.test.VaultTestExtension.SECRET_PATH_V2;
@@ -24,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import javax.inject.Inject;
 
@@ -33,6 +36,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -42,15 +46,18 @@ import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.vault.runtime.Base64String;
-import io.quarkus.vault.runtime.VaultManager;
-import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalAppRoleAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalTokenAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalUserpassAuthMethod;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.VaultModel;
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvListSecrets;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
@@ -70,7 +77,12 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerify;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBatchInput;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalDatabaseSecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV1SecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV2SecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalTransitSecretEngine;
 import io.quarkus.vault.runtime.config.VaultAuthenticationType;
+import io.quarkus.vault.runtime.config.VaultConfigSource;
 import io.quarkus.vault.test.VaultTestExtension;
 import io.quarkus.vault.test.VaultTestLifecycleManager;
 import io.quarkus.vault.test.client.TestVaultClient;
@@ -84,8 +96,6 @@ public class VaultITCase {
     private static final Logger log = Logger.getLogger(VaultITCase.class);
 
     public static final String MY_PASSWORD = "my-password";
-
-    public static final String CRUD_PATH = "crud";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -104,6 +114,23 @@ public class VaultITCase {
     @ConfigProperty(name = MY_PASSWORD)
     String someSecretThroughIndirection;
 
+    @Inject
+    VaultInternalKvV1SecretEngine vaultInternalKvV1SecretEngine;
+    @Inject
+    VaultInternalKvV2SecretEngine vaultInternalKvV2SecretEngine;
+    @Inject
+    VaultInternalTransitSecretEngine vaultInternalTransitSecretEngine;
+    @Inject
+    VaultInternalSystemBackend vaultInternalSystemBackend;
+    @Inject
+    VaultInternalAppRoleAuthMethod vaultInternalAppRoleAuthMethod;
+    @Inject
+    VaultInternalUserpassAuthMethod vaultInternalUserpassAuthMethod;
+    @Inject
+    VaultInternalTokenAuthMethod vaultInternalTokenAuthMethod;
+    @Inject
+    VaultInternalDatabaseSecretEngine vaultInternalDatabaseSecretEngine;
+
     @Test
     public void credentialsProvider() {
         Map<String, String> staticCredentials = credentialsProvider.getCredentials("static");
@@ -121,6 +148,14 @@ public class VaultITCase {
         Config config = ConfigProviderResolver.instance().getConfig();
         String value = config.getValue(PASSWORD_PROPERTY_NAME, String.class);
         assertEquals(DB_PASSWORD, value);
+
+        int ordinal = StreamSupport.stream(config.getConfigSources().spliterator(), false)
+                .filter(cs -> cs instanceof VaultConfigSource)
+                .findAny()
+                .orElseThrow(() -> new RuntimeException("vault config source not found"))
+                .getOrdinal();
+
+        Assertions.assertEquals(300, ordinal);
     }
 
     @Test
@@ -133,13 +168,13 @@ public class VaultITCase {
     }
 
     @Test
-    public void secretV1() {
+    public void secret() {
         Map<String, String> secrets = kvSecretEngine.readSecret(APP_SECRET_PATH);
         assertEquals("{" + SECRET_KEY + "=" + SECRET_VALUE + "}", secrets.toString());
     }
 
     @Test
-    public void crudSecretV1() {
+    public void crudSecret() {
         VaultTestExtension.assertCrudSecret(kvSecretEngine);
     }
 
@@ -151,13 +186,11 @@ public class VaultITCase {
     @Test
     public void httpclient() {
 
-        VaultClient vaultClient = VaultManager.getInstance().getVaultClient();
-
         String anotherWrappingToken = System.getProperty("vault-test.another-password-kv-v2-wrapping-token");
-        VaultKvSecretV2 unwrap = vaultClient.unwrap(anotherWrappingToken, VaultKvSecretV2.class);
+        VaultKvSecretV2 unwrap = vaultInternalSystemBackend.unwrap(anotherWrappingToken, VaultKvSecretV2.class);
         assertEquals(VAULT_AUTH_USERPASS_PASSWORD, unwrap.data.data.get(USERPASS_WRAPPING_TOKEN_PASSWORD_KEY));
         try {
-            vaultClient.unwrap(anotherWrappingToken, VaultKvSecretV2.class);
+            vaultInternalSystemBackend.unwrap(anotherWrappingToken, VaultKvSecretV2.class);
             fail("expected error 400: wrapping token is not valid or does not exist");
         } catch (VaultClientException e) {
             // fails on second unwrap attempt
@@ -166,52 +199,53 @@ public class VaultITCase {
 
         String appRoleRoleId = System.getProperty("vault-test.role-id");
         String appRoleSecretId = System.getProperty("vault-test.secret-id");
-        VaultAppRoleAuth vaultAppRoleAuth = vaultClient.loginAppRole(appRoleRoleId, appRoleSecretId);
+        VaultAppRoleAuth vaultAppRoleAuth = vaultInternalAppRoleAuthMethod.login(appRoleRoleId, appRoleSecretId);
         String appRoleClientToken = vaultAppRoleAuth.auth.clientToken;
         assertNotNull(appRoleClientToken);
         log.info("appRoleClientToken = " + appRoleClientToken);
 
-        assertTokenAppRole(vaultClient, appRoleClientToken);
-        assertKvSecrets(vaultClient, appRoleClientToken);
-        assertDynamicCredentials(vaultClient, appRoleClientToken, APPROLE);
-        assertWrap(vaultClient, appRoleClientToken);
+        assertTokenAppRole(appRoleClientToken);
+        assertKvSecrets(appRoleClientToken);
+        assertDynamicCredentials(appRoleClientToken, APPROLE);
+        assertWrap(appRoleClientToken);
 
-        VaultUserPassAuth vaultUserPassAuth = vaultClient.loginUserPass(VAULT_AUTH_USERPASS_USER, VAULT_AUTH_USERPASS_PASSWORD);
+        VaultUserPassAuth vaultUserPassAuth = vaultInternalUserpassAuthMethod.login(VAULT_AUTH_USERPASS_USER,
+                VAULT_AUTH_USERPASS_PASSWORD);
         String userPassClientToken = vaultUserPassAuth.auth.clientToken;
         log.info("userPassClientToken = " + userPassClientToken);
         assertNotNull(userPassClientToken);
 
-        assertTransit(vaultClient, appRoleClientToken);
+        assertTransit(appRoleClientToken);
 
-        assertTokenUserPass(vaultClient, userPassClientToken);
-        assertKvSecrets(vaultClient, userPassClientToken);
-        assertDynamicCredentials(vaultClient, userPassClientToken, USERPASS);
-        assertWrap(vaultClient, userPassClientToken);
+        assertTokenUserPass(userPassClientToken);
+        assertKvSecrets(userPassClientToken);
+        assertDynamicCredentials(userPassClientToken, USERPASS);
+        assertWrap(userPassClientToken);
     }
 
-    private void assertWrap(VaultClient vaultClient, String token) {
-        VaultWrapResult wrapResult = vaultClient.wrap(token, 60, new WrapExample());
-        WrapExample unwrapExample = vaultClient.unwrap(wrapResult.wrapInfo.token, WrapExample.class);
+    private void assertWrap(String token) {
+        VaultWrapResult wrapResult = vaultInternalSystemBackend.wrap(token, 60, new WrapExample());
+        WrapExample unwrapExample = vaultInternalSystemBackend.unwrap(wrapResult.wrapInfo.token, WrapExample.class);
         assertEquals("bar", unwrapExample.foo);
         assertEquals("zap", unwrapExample.zip);
     }
 
-    private void assertTransit(VaultClient vaultClient, String token) {
+    private void assertTransit(String token) {
 
         Base64String context = Base64String.from("mycontext");
 
-        assertTransitEncryption(vaultClient, token, ENCRYPTION_KEY_NAME, null);
-        assertTransitEncryption(vaultClient, token, ENCRYPTION_KEY_NAME, context);
+        assertTransitEncryption(token, ENCRYPTION_KEY_NAME, null);
+        assertTransitEncryption(token, ENCRYPTION_KEY_NAME, context);
 
-        assertTransitSign(vaultClient, token, SIGN_KEY_NAME, null);
-        assertTransitSign(vaultClient, token, SIGN_KEY_NAME, context);
+        assertTransitSign(token, SIGN_KEY_NAME, null);
+        assertTransitSign(token, SIGN_KEY_NAME, context);
 
         new TestVaultClient().rotate(token, ENCRYPTION_KEY_NAME);
 
-        assertHash(vaultClient, token);
+        assertHash(token);
     }
 
-    private void assertHash(VaultClient vaultClient, String token) {
+    private void assertHash(String token) {
         VaultTransitHashBody body = new VaultTransitHashBody();
         body.input = Base64String.from("coucou");
         body.format = "base64";
@@ -221,92 +255,98 @@ public class VaultITCase {
         assertEquals(expected, sum.getValue());
     }
 
-    private void assertTransitSign(VaultClient vaultClient, String token, String keyName, Base64String context) {
+    private void assertTransitSign(String token, String keyName, Base64String context) {
 
         String data = "coucou";
 
         VaultTransitSignBody batchBody = new VaultTransitSignBody();
         batchBody.batchInput = singletonList(new VaultTransitSignBatchInput(Base64String.from(data), context));
 
-        VaultTransitSign batchSign = vaultClient.sign(token, keyName, null, batchBody);
+        VaultTransitSign batchSign = vaultInternalTransitSecretEngine.sign(token, keyName, null, batchBody);
 
         VaultTransitVerifyBody verifyBody = new VaultTransitVerifyBody();
         VaultTransitVerifyBatchInput batchInput = new VaultTransitVerifyBatchInput(Base64String.from(data), context);
         batchInput.signature = batchSign.data.batchResults.get(0).signature;
         verifyBody.batchInput = singletonList(batchInput);
 
-        VaultTransitVerify verify = vaultClient.verify(token, keyName, null, verifyBody);
+        VaultTransitVerify verify = vaultInternalTransitSecretEngine.verify(token, keyName, null, verifyBody);
         assertEquals(1, verify.data.batchResults.size());
         assertTrue(verify.data.batchResults.get(0).valid);
-
     }
 
-    private void assertTransitEncryption(VaultClient vaultClient, String token, String keyName, Base64String context) {
+    private void assertTransitEncryption(String token, String keyName, Base64String context) {
 
         String data = "coucou";
 
         VaultTransitEncryptBatchInput encryptBatchInput = new VaultTransitEncryptBatchInput(Base64String.from(data), context);
         VaultTransitEncryptBody encryptBody = new VaultTransitEncryptBody();
         encryptBody.batchInput = singletonList(encryptBatchInput);
-        VaultTransitEncrypt encryptBatchResult = vaultClient.encrypt(token, keyName, encryptBody);
+        VaultTransitEncrypt encryptBatchResult = vaultInternalTransitSecretEngine.encrypt(token, keyName, encryptBody);
         String ciphertext = encryptBatchResult.data.batchResults.get(0).ciphertext;
 
-        String batchDecryptedString = decrypt(vaultClient, token, keyName, ciphertext, context);
+        String batchDecryptedString = decrypt(token, keyName, ciphertext, context);
         assertEquals(data, batchDecryptedString);
 
         VaultTransitRewrapBatchInput rewrapBatchInput = new VaultTransitRewrapBatchInput(ciphertext, context);
         VaultTransitRewrapBody rewrapBody = new VaultTransitRewrapBody();
         rewrapBody.batchInput = singletonList(rewrapBatchInput);
-        VaultTransitEncrypt rewrap = vaultClient.rewrap(token, keyName, rewrapBody);
+        VaultTransitEncrypt rewrap = vaultInternalTransitSecretEngine.rewrap(token, keyName, rewrapBody);
         assertEquals(1, rewrap.data.batchResults.size());
         String rewrappedCiphertext = rewrap.data.batchResults.get(0).ciphertext;
 
-        batchDecryptedString = decrypt(vaultClient, token, keyName, rewrappedCiphertext, context);
+        batchDecryptedString = decrypt(token, keyName, rewrappedCiphertext, context);
         assertEquals(data, batchDecryptedString);
-
     }
 
-    private String decrypt(VaultClient vaultClient, String token, String keyName, String ciphertext, Base64String context) {
+    private String decrypt(String token, String keyName, String ciphertext, Base64String context) {
         VaultTransitDecryptBatchInput decryptBatchInput = new VaultTransitDecryptBatchInput(ciphertext, context);
         VaultTransitDecryptBody decryptBody = new VaultTransitDecryptBody();
         decryptBody.batchInput = singletonList(decryptBatchInput);
-        VaultTransitDecrypt decryptBatchResult = vaultClient.decrypt(token, keyName, decryptBody);
+        VaultTransitDecrypt decryptBatchResult = vaultInternalTransitSecretEngine.decrypt(token, keyName, decryptBody);
         return decryptBatchResult.data.batchResults.get(0).plaintext.decodeAsString();
     }
 
-    private void assertDynamicCredentials(VaultClient vaultClient, String clientToken, VaultAuthenticationType authType) {
-        VaultDatabaseCredentials vaultDatabaseCredentials = vaultClient.generateDatabaseCredentials(clientToken, VAULT_DBROLE);
+    private void assertDynamicCredentials(String clientToken, VaultAuthenticationType authType) {
+        VaultDatabaseCredentials vaultDatabaseCredentials = vaultInternalDatabaseSecretEngine.generateCredentials(clientToken,
+                VAULT_DBROLE);
         String username = vaultDatabaseCredentials.data.username;
         assertTrue(username.startsWith("v-" + authType.name().toLowerCase() + "-" + VAULT_DBROLE + "-"));
 
-        VaultLeasesLookup vaultLeasesLookup = vaultClient.lookupLease(clientToken, vaultDatabaseCredentials.leaseId);
+        VaultLeasesLookup vaultLeasesLookup = vaultInternalSystemBackend.lookupLease(clientToken,
+                vaultDatabaseCredentials.leaseId);
         assertEquals(vaultDatabaseCredentials.leaseId, vaultLeasesLookup.data.id);
 
-        VaultRenewLease vaultRenewLease = vaultClient.renewLease(clientToken, vaultDatabaseCredentials.leaseId);
+        VaultRenewLease vaultRenewLease = vaultInternalSystemBackend.renewLease(clientToken, vaultDatabaseCredentials.leaseId);
         assertEquals(vaultDatabaseCredentials.leaseId, vaultRenewLease.leaseId);
     }
 
-    private void assertKvSecrets(VaultClient vaultClient, String clientToken) {
-        VaultKvSecretV1 secretV1 = vaultClient.getSecretV1(clientToken, SECRET_PATH_V1, APP_SECRET_PATH);
+    private void assertKvSecrets(String clientToken) {
+        VaultKvSecretV1 secretV1 = vaultInternalKvV1SecretEngine.getSecret(clientToken, SECRET_PATH_V1, APP_SECRET_PATH);
         assertEquals(SECRET_VALUE, secretV1.data.get(SECRET_KEY));
+        VaultKvListSecrets vaultKvListSecretsV1 = vaultInternalKvV1SecretEngine.listSecrets(clientToken, SECRET_PATH_V1,
+                LIST_PATH);
+        assertEquals(EXPECTED_SUB_PATHS, vaultKvListSecretsV1.data.keys.toString());
 
-        VaultKvSecretV2 secretV2 = vaultClient.getSecretV2(clientToken, SECRET_PATH_V2, APP_SECRET_PATH);
+        VaultKvSecretV2 secretV2 = vaultInternalKvV2SecretEngine.getSecret(clientToken, SECRET_PATH_V2, APP_SECRET_PATH);
         assertEquals(SECRET_VALUE, secretV2.data.data.get(SECRET_KEY));
+        VaultKvListSecrets vaultKvListSecretsV2 = vaultInternalKvV2SecretEngine.listSecrets(clientToken, SECRET_PATH_V2,
+                LIST_PATH);
+        assertEquals(EXPECTED_SUB_PATHS, vaultKvListSecretsV2.data.keys.toString());
     }
 
-    private void assertTokenUserPass(VaultClient vaultClient, String clientToken) {
-        VaultLookupSelf vaultLookupSelf = vaultClient.lookupSelf(clientToken);
+    private void assertTokenUserPass(String clientToken) {
+        VaultLookupSelf vaultLookupSelf = vaultInternalTokenAuthMethod.lookupSelf(clientToken);
         assertEquals("auth/" + USERPASS.name().toLowerCase() + "/login/" + VAULT_AUTH_USERPASS_USER, vaultLookupSelf.data.path);
 
-        VaultRenewSelf vaultRenewSelf = vaultClient.renewSelf(clientToken, "1h");
+        VaultRenewSelf vaultRenewSelf = vaultInternalTokenAuthMethod.renewSelf(clientToken, "1h");
         assertEquals(VAULT_AUTH_USERPASS_USER, vaultRenewSelf.auth.metadata.get("username"));
     }
 
-    private void assertTokenAppRole(VaultClient vaultClient, String clientToken) {
-        VaultLookupSelf vaultLookupSelf = vaultClient.lookupSelf(clientToken);
+    private void assertTokenAppRole(String clientToken) {
+        VaultLookupSelf vaultLookupSelf = vaultInternalTokenAuthMethod.lookupSelf(clientToken);
         assertEquals("auth/approle/login", vaultLookupSelf.data.path);
 
-        VaultRenewSelf vaultRenewSelf = vaultClient.renewSelf(clientToken, "1h");
+        VaultRenewSelf vaultRenewSelf = vaultInternalTokenAuthMethod.renewSelf(clientToken, "1h");
         assertEquals(VAULT_AUTH_APPROLE, vaultRenewSelf.auth.metadata.get("role_name"));
     }
 

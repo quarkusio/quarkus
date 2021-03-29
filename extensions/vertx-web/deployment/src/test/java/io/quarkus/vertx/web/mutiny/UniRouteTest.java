@@ -28,7 +28,6 @@ public class UniRouteTest {
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-buffer").then().statusCode(200).body(is("Buffer"));
         when().get("/hello-on-pool").then().statusCode(200).body(is("Pool"));
-        when().get("/hello-rx-buffer").then().statusCode(200).body(is("RX Buffer"));
         when().get("/hello-mutiny-buffer").then().statusCode(200).body(is("Mutiny Buffer"));
 
         when().get("/person").then().statusCode(200)
@@ -59,11 +58,6 @@ public class UniRouteTest {
         @Route(path = "hello-buffer")
         Uni<Buffer> helloWithBuffer(RoutingContext context) {
             return Uni.createFrom().item(Buffer.buffer("Buffer"));
-        }
-
-        @Route(path = "hello-rx-buffer")
-        Uni<io.vertx.reactivex.core.buffer.Buffer> helloWithRxBuffer(RoutingContext context) {
-            return Uni.createFrom().item(io.vertx.reactivex.core.buffer.Buffer.buffer("RX Buffer"));
         }
 
         @Route(path = "hello-mutiny-buffer")

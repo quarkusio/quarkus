@@ -33,6 +33,13 @@ public abstract class LdapSecurityRealmTest {
     }
 
     @Test()
+    public void testNotSearchingRecursiveFailure() {
+        RestAssured.given().auth().preemptive().basic("subUser", "subUserPassword")
+                .when().get("/servlet-secured").then()
+                .statusCode(401);
+    }
+
+    @Test()
     public void testSecureRoleFailure() {
         RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUserPassword")
                 .when().get("/servlet-secured").then()

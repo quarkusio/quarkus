@@ -1,6 +1,5 @@
 package io.quarkus.it.envers;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -15,9 +14,10 @@ import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.query.AuditEntity;
 
 import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Blocking;
 
 @Path("/project")
-@ApplicationScoped
+@Blocking
 public class ProjectResource {
 
     @Inject

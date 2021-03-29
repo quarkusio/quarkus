@@ -26,6 +26,7 @@ public class MappingTest {
     public void testMapping() {
         RestAssured.given().contentType("application/json")
                 .header("ce-id", UUID.randomUUID().toString())
+                .header("ce-specversion", "1.0")
                 .header("ce-type", "tolower")
                 .header("ce-source", "test")
                 .body("\"HELLO\"")
@@ -41,6 +42,7 @@ public class MappingTest {
     public void testAnnotatedMapping() {
         RestAssured.given().contentType("application/json")
                 .header("ce-id", UUID.randomUUID().toString())
+                .header("ce-specversion", "1.0")
                 .header("ce-type", "echo")
                 .header("ce-source", "test")
                 .body("\"HELLO\"")
@@ -59,6 +61,7 @@ public class MappingTest {
                         EncoderConfig.encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
                 .contentType("")
                 .header("ce-id", UUID.randomUUID().toString())
+                .header("ce-specversion", "1.0")
                 .header("ce-type", "noop")
                 .header("ce-source", "test")
                 .post("/")
@@ -75,6 +78,7 @@ public class MappingTest {
                         EncoderConfig.encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
                 .contentType("")
                 .header("ce-id", UUID.randomUUID().toString())
+                .header("ce-specversion", "1.0")
                 .header("ce-type", "noop")
                 .header("ce-source", "test")
                 .get("/")
@@ -101,6 +105,7 @@ public class MappingTest {
     public void testDefaultMapping() {
         RestAssured.given().contentType("application/json")
                 .header("ce-id", UUID.randomUUID().toString())
+                .header("ce-specversion", "1.0")
                 .header("ce-type", "doubleIt")
                 .header("ce-source", "test")
                 .body("2")
@@ -128,6 +133,7 @@ public class MappingTest {
     public void testNoTrigger() {
         RestAssured.given().contentType("application/json")
                 .header("ce-id", UUID.randomUUID().toString())
+                .header("ce-specversion", "1.0")
                 .header("ce-type", "foo")
                 .header("ce-source", "test")
                 .body("2")

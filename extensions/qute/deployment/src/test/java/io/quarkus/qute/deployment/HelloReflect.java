@@ -8,4 +8,16 @@ public class HelloReflect {
         return "pong";
     }
 
+    public boolean isActive() {
+        return true;
+    }
+
+    public Long getAge2() {
+        return age;
+    }
+
+    public boolean hasItem() {
+        return false;
+    }
+
 }

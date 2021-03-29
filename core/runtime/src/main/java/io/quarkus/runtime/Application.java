@@ -228,16 +228,15 @@ public abstract class Application implements Closeable {
         stateLock.lock();
         try {
             for (;;) {
-                switch (state) {
-                    case ST_STOPPED:
-                        return; // all good
-                    default:
-                        try {
-                            stateCond.await();
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            throw interruptedOnAwaitStop();
-                        }
+                if (state == ST_STOPPED) {
+                    return; // all good
+                } else {
+                    try {
+                        stateCond.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw interruptedOnAwaitStop();
+                    }
                 }
             }
         } finally {

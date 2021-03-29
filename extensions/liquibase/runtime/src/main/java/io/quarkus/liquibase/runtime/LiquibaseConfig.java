@@ -5,6 +5,7 @@ import static io.quarkus.liquibase.runtime.LiquibaseDataSourceRuntimeConfig.DEFA
 import static io.quarkus.liquibase.runtime.LiquibaseDataSourceRuntimeConfig.DEFAULT_LOG_TABLE;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -41,6 +42,8 @@ public class LiquibaseConfig {
      * The list of labels
      */
     public List<String> labels = null;
+
+    public Map<String, String> changeLogParameters = null;
 
     /**
      * The database change log lock table name

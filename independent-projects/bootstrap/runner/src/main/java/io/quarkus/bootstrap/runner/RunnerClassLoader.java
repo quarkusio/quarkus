@@ -1,22 +1,27 @@
 package io.quarkus.bootstrap.runner;
 
-import java.io.IOException;
 import java.net.URL;
-import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 
 /**
- * Classloader used for production application, using the multi jar strategy
+ * Classloader used with the fast-jar package type.
+ *
+ * This ClassLoader takes advantage of the fact that Quarkus knows the entire classpath when the application is built,
+ * and thus can index the location of classes and resources (with the result being written during the build to a binary file and
+ * read at application startup).
+ * The advantage this has over the JDK's default System ClassLoader is that it knows which jars contain the requested
+ * classes and resources and thus does not have to iterate over all the jars on the classpath
+ * (which is slow and takes up heap space as the jars need to be kept open), but instead can go directly to the
+ * jar(s) containing the requested class or resource.
+ * The implementation also contains optimizations that allow the ClassLoader to keep a minimum number of jars open
+ * while also preventing the lookup of the entire classpath for missing resources in known directories (like META-INF/services).
  */
-public class RunnerClassLoader extends ClassLoader {
+public final class RunnerClassLoader extends ClassLoader {
 
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
@@ -24,18 +29,30 @@ public class RunnerClassLoader extends ClassLoader {
     private final Map<String, ClassLoadingResource[]> resourceDirectoryMap;
 
     private final Set<String> parentFirstPackages;
+    private final Set<String> nonExistentResources;
+    // the following two fields go hand in hand - they need to both be populated from the same data
+    // in order for the resource loading to work properly
+    private final Set<String> fullyIndexedDirectories;
+    private final Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap;
 
-    private final ConcurrentMap<ClassLoadingResource, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
+    //Mutations protected by synchronization on the field value itself:
+    private final ClassLoadingResource[] currentlyBufferedResources = new ClassLoadingResource[4];//Experimentally found to be a reasonable number
+    //Protected by synchronization on the above field, as they are related.
+    private boolean postBootPhase = false;
 
     static {
         registerAsParallelCapable();
     }
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
-            Set<String> parentFirstPackages) {
+            Set<String> parentFirstPackages, Set<String> nonExistentResources,
+            Set<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
+        this.nonExistentResources = nonExistentResources;
+        this.fullyIndexedDirectories = fullyIndexedDirectories;
+        this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
     }
 
     @Override
@@ -53,49 +70,84 @@ public class RunnerClassLoader extends ClassLoader {
         }
         String packageName = getPackageNameFromClassName(name);
         if (parentFirstPackages.contains(packageName)) {
-            return getParent().loadClass(name);
+            try {
+                return getParent().loadClass(name);
+            } catch (ClassNotFoundException e) {
+                //fall through
+            }
         }
         synchronized (getClassLoadingLock(name)) {
             Class<?> loaded = findLoadedClass(name);
             if (loaded != null) {
                 return loaded;
             }
-            ClassLoadingResource[] resources;
+            final ClassLoadingResource[] resources;
             if (packageName == null) {
                 resources = resourceDirectoryMap.get("");
             } else {
-                String dirName = packageName.replace(".", "/");
+                String dirName = packageName.replace('.', '/');
                 resources = resourceDirectoryMap.get(dirName);
             }
             if (resources != null) {
-                String classResource = name.replace(".", "/") + ".class";
+                String classResource = name.replace('.', '/') + ".class";
                 for (ClassLoadingResource resource : resources) {
+                    accessingResource(resource);
                     byte[] data = resource.getResourceData(classResource);
                     if (data == null) {
                         continue;
                     }
                     definePackage(packageName, resources);
-                    return defineClass(name, data, 0, data.length,
-                            protectionDomains.computeIfAbsent(resource, new Function<ClassLoadingResource, ProtectionDomain>() {
-                                @Override
-                                public ProtectionDomain apply(ClassLoadingResource ce) {
-                                    return ce.getProtectionDomain(RunnerClassLoader.this);
-                                }
-                            }));
+                    return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
                 }
             }
         }
         return getParent().loadClass(name);
+    }
 
+    private void accessingResource(final ClassLoadingResource resource) {
+        final ClassLoadingResource toEvict;
+        synchronized (this.currentlyBufferedResources) {
+            if (!postBootPhase) {
+                //We only want to limit the jar buffers after the initial bootstrap has been completed
+                return;
+            }
+            // This is not a cache aiming to accurately retain the most hot resources:
+            // it's too small to benefit from traditional hit metrics,
+            // we rather prefer to keep it very light.
+            if (currentlyBufferedResources[0] == resource) {
+                //it's already on the head of the cache: nothing to be done.
+                return;
+            }
+            for (int i = 1; i < currentlyBufferedResources.length; i++) {
+                final ClassLoadingResource currentI = currentlyBufferedResources[i];
+                if (currentI == resource || currentI == null) {
+                    //it was already cached, or we found an empty slot: bubble it up by one position to give it a boost
+                    final ClassLoadingResource previous = currentlyBufferedResources[i - 1];
+                    currentlyBufferedResources[i - 1] = resource;
+                    currentlyBufferedResources[i] = previous;
+                    return;
+                }
+            }
+            // else, we drop one element from the cache,
+            // and inserting the latest resource on the tail:
+            toEvict = currentlyBufferedResources[currentlyBufferedResources.length - 1];
+            currentlyBufferedResources[currentlyBufferedResources.length - 1] = resource;
+        }
+        // Finally, release the cache for the dropped element:
+        toEvict.resetInternalCaches();
     }
 
     @Override
     protected URL findResource(String name) {
         name = sanitizeName(name);
+        if (nonExistentResources.contains(name)) {
+            return null;
+        }
         ClassLoadingResource[] resources = getClassLoadingResources(name);
         if (resources == null)
             return null;
         for (ClassLoadingResource resource : resources) {
+            accessingResource(resource);
             URL data = resource.getResourceURL(name);
             if (data != null) {
                 return data;
@@ -104,21 +156,28 @@ public class RunnerClassLoader extends ClassLoader {
         return null;
     }
 
-    private String sanitizeName(String name) {
-        if (name.startsWith("/")) {
+    private String sanitizeName(final String name) {
+        if (name.length() > 0 && name.charAt(0) == '/') {
             return name.substring(1);
         }
         return name;
     }
 
-    private ClassLoadingResource[] getClassLoadingResources(String name) {
-        String dirName = getDirNameFromResourceName(name);
-        ClassLoadingResource[] resources;
-        if (dirName == null) {
-            resources = resourceDirectoryMap.get("");
-        } else {
-            resources = resourceDirectoryMap.get(dirName);
+    private ClassLoadingResource[] getClassLoadingResources(final String name) {
+        ClassLoadingResource[] resources = directlyIndexedResourcesIndexMap.get(name);
+        if (resources != null) {
+            return resources;
         }
+        String dirName = getDirNameFromResourceName(name);
+        if (dirName == null) {
+            dirName = "";
+        }
+        if (!dirName.equals(name) && fullyIndexedDirectories.contains(dirName)) {
+            // If we arrive here, we know that resource being queried belongs to one of the fully indexed directories
+            // Had that resource existed however, it would have been present in directlyIndexedResourcesIndexMap
+            return null;
+        }
+        resources = resourceDirectoryMap.get(dirName);
         if (resources == null) {
             // the resource could itself be a directory
             resources = resourceDirectoryMap.get(name);
@@ -127,13 +186,17 @@ public class RunnerClassLoader extends ClassLoader {
     }
 
     @Override
-    protected Enumeration<URL> findResources(String name) throws IOException {
+    protected Enumeration<URL> findResources(String name) {
         name = sanitizeName(name);
+        if (nonExistentResources.contains(name)) {
+            return Collections.emptyEnumeration();
+        }
         ClassLoadingResource[] resources = getClassLoadingResources(name);
         if (resources == null)
-            return null;
+            return Collections.emptyEnumeration();
         List<URL> urls = new ArrayList<>();
         for (ClassLoadingResource resource : resources) {
+            accessingResource(resource);
             URL data = resource.getResourceURL(name);
             if (data != null) {
                 urls.add(data);
@@ -208,6 +271,17 @@ public class RunnerClassLoader extends ClassLoader {
             for (ClassLoadingResource i : entry.getValue()) {
                 i.close();
             }
+        }
+    }
+
+    public void resetInternalCaches() {
+        synchronized (this.currentlyBufferedResources) {
+            for (Map.Entry<String, ClassLoadingResource[]> entry : resourceDirectoryMap.entrySet()) {
+                for (ClassLoadingResource i : entry.getValue()) {
+                    i.resetInternalCaches();
+                }
+            }
+            this.postBootPhase = true;
         }
     }
 }

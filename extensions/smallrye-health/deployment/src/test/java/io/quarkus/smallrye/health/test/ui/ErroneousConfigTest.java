@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.graphql.deployment.ui;
+package io.quarkus.smallrye.health.test.ui;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

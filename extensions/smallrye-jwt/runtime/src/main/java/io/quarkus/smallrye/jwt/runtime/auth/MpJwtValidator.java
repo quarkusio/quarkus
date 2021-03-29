@@ -52,6 +52,7 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
                 try {
                     JsonWebToken jwtPrincipal = parser.parse(request.getToken().getToken());
                     uniEmitter.complete(QuarkusSecurityIdentity.builder().setPrincipal(jwtPrincipal)
+                            .addCredential(request.getToken())
                             .addRoles(jwtPrincipal.getGroups())
                             .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwtPrincipal).build());
 

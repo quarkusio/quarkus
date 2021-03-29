@@ -5,12 +5,16 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
+import de.flapdoodle.embed.mongo.Command;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
 import de.flapdoodle.embed.mongo.config.IMongodConfig;
 import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
 import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder;
 import de.flapdoodle.embed.mongo.distribution.Version;
+import de.flapdoodle.embed.process.config.IRuntimeConfig;
+import de.flapdoodle.embed.process.config.io.ProcessOutput;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
@@ -21,6 +25,13 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public Map<String, String> start() {
+        try {
+            //JDK bug workaround
+            //https://github.com/quarkusio/quarkus/issues/14424
+            //force class init to prevent possible deadlock when done by mongo threads
+            Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
+        } catch (ClassNotFoundException e) {
+        }
         try {
             Version.Main version = Version.Main.V4_0;
             int port = 27018;
@@ -59,7 +70,11 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
     }
 
     private MongodExecutable doGetExecutable(IMongodConfig config) {
-        return MongodStarter.getDefaultInstance().prepare(config);
+        IRuntimeConfig runtimeConfig = new RuntimeConfigBuilder()
+                .defaults(Command.MongoD)
+                .processOutput(ProcessOutput.getDefaultInstanceSilent())
+                .build();
+        return MongodStarter.getInstance(runtimeConfig).prepare(config);
     }
 
     @Override

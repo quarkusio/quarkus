@@ -22,11 +22,11 @@ public class PanacheMock {
     private final static Map<Class<?>, Object> mocks = new ConcurrentHashMap<>();
 
     @SuppressWarnings("unchecked")
-    public static <T> T getMock(Class<T> klass) {
+    public static synchronized <T> T getMock(Class<T> klass) {
         return (T) mocks.get(klass);
     }
 
-    public static Object[] getMocks(Class<?>... classes) {
+    public static synchronized Object[] getMocks(Class<?>... classes) {
         Object[] mocks = new Object[classes.length];
         for (int i = 0; i < classes.length; i++) {
             mocks[i] = getMock(classes[i]);
@@ -34,19 +34,19 @@ public class PanacheMock {
         return mocks;
     }
 
-    public static void mock(Class<?>... classes) {
+    public static synchronized void mock(Class<?>... classes) {
         for (Class<?> klass : classes) {
             mocks.computeIfAbsent(klass, v -> Mockito.mock(klass));
         }
         IsMockEnabled = !mocks.isEmpty();
     }
 
-    public static void reset() {
+    public static synchronized void reset() {
         mocks.clear();
         IsMockEnabled = false;
     }
 
-    public static boolean isMocked(Class<?> klass) {
+    public static synchronized boolean isMocked(Class<?> klass) {
         return mocks.containsKey(klass);
     }
 

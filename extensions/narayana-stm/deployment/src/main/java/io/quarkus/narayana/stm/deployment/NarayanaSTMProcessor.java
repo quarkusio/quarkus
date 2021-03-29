@@ -18,6 +18,7 @@ import org.jboss.stm.annotations.Transactional;
 
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
+import com.arjuna.ats.internal.arjuna.utils.SocketProcessId;
 import com.arjuna.ats.txoj.Lock;
 
 import io.quarkus.deployment.Feature;
@@ -30,6 +31,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.narayana.stm.runtime.NarayanaSTMRecorder;
 
 class NarayanaSTMProcessor {
@@ -37,12 +39,6 @@ class NarayanaSTMProcessor {
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
-
-    @Inject
-    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass;
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     // register classes in need of reflection
     @BuildStep
@@ -66,13 +62,18 @@ class NarayanaSTMProcessor {
     // so disable it at runtime
     @BuildStep()
     @Record(RUNTIME_INIT)
-    public void configureRuntimeProperties(NarayanaSTMRecorder recorder) {
+    public void configureRuntimeProperties(NarayanaSTMRecorder recorder,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit) {
         recorder.disableTransactionStatusManager();
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(SocketProcessId.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(Lock.class.getName()));
     }
 
     // register STM dynamic proxies
     @BuildStep
-    NativeImageProxyDefinitionBuildItem stmProxies() {
+    NativeImageProxyDefinitionBuildItem stmProxies(
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         final DotName TRANSACTIONAL = DotName.createSimple(Transactional.class.getName());
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<String> proxies = new ArrayList<>();
@@ -87,7 +88,10 @@ class NarayanaSTMProcessor {
 
                 for (ClassInfo ci : index.getAllKnownImplementors(name)) {
                     reflectiveHierarchyClass.produce(
-                            new ReflectiveHierarchyBuildItem(Type.create(ci.name(), Type.Kind.CLASS)));
+                            new ReflectiveHierarchyBuildItem.Builder()
+                                    .type(Type.create(ci.name(), Type.Kind.CLASS))
+                                    .source(getClass().getSimpleName() + " > " + ci.name())
+                                    .build());
                 }
             }
         }

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Security with an LDAP Realm
 
@@ -44,17 +44,18 @@ The solution is located in the `security-ldap-quickstart` {quickstarts-tree-url}
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-ldap-quickstart \
-    -Dextensions="elytron-security-ldap, resteasy"
+    -Dextensions="elytron-security-ldap,resteasy" \
+    -DnoExamples
 cd security-ldap-quickstart
 ----
 
 This command generates a Maven project, importing the `elytron-security-ldap` extension
-which is a https://docs.wildfly.org/19/WildFly_Elytron_Security.html#ldap-security-realm[`wildfly-elytron-realm-ldap`] adapter for Quarkus applications.
+which is a `wildfly-elytron-realm-ldap` adapter for Quarkus applications.
 
 If you already have your Quarkus project configured, you can add the `elytron-security-ldap` extension
 to your project by running the following command in your project base directory:
@@ -136,9 +137,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
 @Path("/api/users")
@@ -147,7 +146,6 @@ public class UserResource {
     @GET
     @RolesAllowed("standardRole")
     @Path("/me")
-    @Produces(MediaType.APPLICATION_JSON)
     public String me(@Context SecurityContext securityContext) {
         return securityContext.getUserPrincipal().getName();
     }
@@ -172,6 +170,8 @@ quarkus.security.ldap.identity-mapping.attribute-mappings."0".to=groups
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0})
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=roles,ou=tool,o=YourCompany,c=DE
 ----
+
+`{0}` is substituted by the `uid`, whereas `{1}` will be substituted by the `dn` of the user entry.
 
 The `elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
 
@@ -217,6 +217,7 @@ By providing the `adminUser:adminUserPassword` credentials, the extension authen
 The `adminUser` user is authorized to access to the protected resources.
 
 The user `adminUser` should be forbidden to access a resource protected with `@RolesAllowed("standardRole")` because it doesn't have this role.
+
 [source,shell]
 ----
 $ curl -i -X GET -u adminUser:adminUserPassword http://localhost:8080/api/users/me
@@ -228,9 +229,10 @@ Forbidden%
 ----
 
 Finally, using the user `standardUser` works and the security context contains the principal details (username for instance).
+
 [source,shell]
 ----
-curl -i -X GET -u standardUser:standardUserPassword http://localhost:8080/api/users/me
+$ curl -i -X GET -u standardUser:standardUserPassword http://localhost:8080/api/users/me
 HTTP/1.1 200 OK
 Content-Length: 4
 Content-Type: text/plain;charset=UTF-8
@@ -242,3 +244,8 @@ user%
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-elytron-security-ldap.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol[LDAP]
+* link:security[Quarkus Security]

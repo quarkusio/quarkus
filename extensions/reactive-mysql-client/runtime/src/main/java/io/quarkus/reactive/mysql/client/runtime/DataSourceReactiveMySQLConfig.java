@@ -2,12 +2,11 @@ package io.quarkus.reactive.mysql.client.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
 import io.vertx.mysqlclient.SslMode;
 
-@ConfigRoot(name = "datasource.reactive.mysql", phase = ConfigPhase.RUN_TIME)
+@ConfigGroup
 public class DataSourceReactiveMySQLConfig {
 
     /**
@@ -17,19 +16,19 @@ public class DataSourceReactiveMySQLConfig {
      */
     @ConfigItem
     @Deprecated
-    public Optional<Boolean> cachePreparedStatements;
+    public Optional<Boolean> cachePreparedStatements = Optional.empty();
 
     /**
      * Charset for connections.
      */
     @ConfigItem
-    public Optional<String> charset;
+    public Optional<String> charset = Optional.empty();
 
     /**
      * Collation for connections.
      */
     @ConfigItem
-    public Optional<String> collation;
+    public Optional<String> collation = Optional.empty();
 
     /**
      * Desired security state of the connection to the server.
@@ -38,5 +37,5 @@ public class DataSourceReactiveMySQLConfig {
      * Manual</a>.
      */
     @ConfigItem(defaultValueDocumentation = "disabled")
-    public Optional<SslMode> sslMode;
+    public Optional<SslMode> sslMode = Optional.empty();
 }

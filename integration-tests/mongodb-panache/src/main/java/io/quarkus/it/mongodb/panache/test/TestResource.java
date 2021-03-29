@@ -149,12 +149,18 @@ public class TestResource {
         updated = TestImperativeEntity.update("{'category' : :category}", Parameters.with("category", "newCategory2"))
                 .where("{'category' : :category}", Parameters.with("category", "newCategory"));
         Assertions.assertEquals(5, updated);
-        Assertions.assertEquals(5, TestImperativeEntity.count("category = ?1", "newCategory2"));
+        updated = TestImperativeEntity.update("{'$set': {'category' : :category}}", Parameters.with("category", "newCategory3"))
+                .where("{'category' : :category}", Parameters.with("category", "newCategory2"));
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, TestImperativeEntity.count("category = ?1", "newCategory3"));
         updated = TestImperativeEntity.update("newField", "newValue").all();
         Assertions.assertEquals(10, updated);
+        updated = TestImperativeEntity.update("{'$inc': {'cpt': 1}}").all();
+        Assertions.assertEquals(10, updated);
+        Assertions.assertEquals(10, TestImperativeEntity.count("cpt = ?1", 2));
 
         // delete
-        TestImperativeEntity.delete("category = ?1", "newCategory2");
+        TestImperativeEntity.delete("category = ?1", "newCategory3");
         TestImperativeEntity.delete("{'category' : ?1}", "category1");
         Assertions.assertEquals(0, TestImperativeEntity.count());
         TestImperativeEntity.persist(entities.stream());
@@ -292,12 +298,19 @@ public class TestResource {
         updated = testImperativeRepository.update("{'category' : :category}", Parameters.with("category", "newCategory2"))
                 .where("{'category' : :category}", Parameters.with("category", "newCategory"));
         Assertions.assertEquals(5, updated);
-        Assertions.assertEquals(5, testImperativeRepository.count("category = ?1", "newCategory2"));
+        updated = testImperativeRepository
+                .update("{'$set': {'category' : :category}}", Parameters.with("category", "newCategory3"))
+                .where("{'category' : :category}", Parameters.with("category", "newCategory2"));
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, testImperativeRepository.count("category = ?1", "newCategory3"));
         updated = testImperativeRepository.update("newField", "newValue").all();
         Assertions.assertEquals(10, updated);
+        updated = testImperativeRepository.update("{'$inc': {'cpt': 1}}").all();
+        Assertions.assertEquals(10, updated);
+        Assertions.assertEquals(10, testImperativeRepository.count("cpt = ?1", 2));
 
         // delete
-        testImperativeRepository.delete("category = ?1", "newCategory2");
+        testImperativeRepository.delete("category = ?1", "newCategory3");
         testImperativeRepository.delete("{'category' : ?1}", "category1");
         Assertions.assertEquals(0, testImperativeRepository.count());
         testImperativeRepository.persist(entities.stream());
@@ -515,12 +528,18 @@ public class TestResource {
         updated = TestReactiveEntity.update("{'category' : :category}", Parameters.with("category", "newCategory2"))
                 .where("{'category' : :category}", Parameters.with("category", "newCategory")).await().indefinitely();
         Assertions.assertEquals(5, updated);
-        Assertions.assertEquals(5, TestReactiveEntity.count("category = ?1", "newCategory2").await().indefinitely());
+        updated = TestReactiveEntity.update("{'$set': {'category' : :category}}", Parameters.with("category", "newCategory3"))
+                .where("{'category' : :category}", Parameters.with("category", "newCategory2")).await().indefinitely();
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, TestReactiveEntity.count("category = ?1", "newCategory3").await().indefinitely());
         updated = TestReactiveEntity.update("newField", "newValue").all().await().indefinitely();
         Assertions.assertEquals(10, updated);
+        updated = TestReactiveEntity.update("{'$inc': {'cpt': 1}}").all().await().indefinitely();
+        Assertions.assertEquals(10, updated);
+        Assertions.assertEquals(10, TestReactiveEntity.count("cpt = ?1", 2).await().indefinitely());
 
         // delete
-        TestReactiveEntity.delete("category = ?1", "newCategory2").await().indefinitely();
+        TestReactiveEntity.delete("category = ?1", "newCategory3").await().indefinitely();
         TestReactiveEntity.delete("{'category' : ?1}", "category1").await().indefinitely();
         Assertions.assertEquals(0, TestReactiveEntity.count().await().indefinitely());
         TestReactiveEntity.persist(entities.stream()).await().indefinitely();
@@ -668,12 +687,19 @@ public class TestResource {
         updated = testReactiveRepository.update("{'category' : :category}", Parameters.with("category", "newCategory2"))
                 .where("{'category' : :category}", Parameters.with("category", "newCategory")).await().indefinitely();
         Assertions.assertEquals(5, updated);
-        Assertions.assertEquals(5, testReactiveRepository.count("category = ?1", "newCategory2").await().indefinitely());
+        updated = testReactiveRepository
+                .update("{'$set': {'category' : :category}}", Parameters.with("category", "newCategory3"))
+                .where("{'category' : :category}", Parameters.with("category", "newCategory2")).await().indefinitely();
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, testReactiveRepository.count("category = ?1", "newCategory3").await().indefinitely());
         updated = testReactiveRepository.update("newField", "newValue").all().await().indefinitely();
         Assertions.assertEquals(10, updated);
+        updated = testReactiveRepository.update("{'$inc': {'cpt': 1}}").all().await().indefinitely();
+        Assertions.assertEquals(10, updated);
+        Assertions.assertEquals(10, testReactiveRepository.count("cpt = ?1", 2).await().indefinitely());
 
         // delete
-        testReactiveRepository.delete("category = ?1", "newCategory2").await().indefinitely();
+        testReactiveRepository.delete("category = ?1", "newCategory3").await().indefinitely();
         testReactiveRepository.delete("{'category' : ?1}", "category1").await().indefinitely();
         Assertions.assertEquals(0, testReactiveRepository.count().await().indefinitely());
         testReactiveRepository.persist(entities.stream()).await().indefinitely();

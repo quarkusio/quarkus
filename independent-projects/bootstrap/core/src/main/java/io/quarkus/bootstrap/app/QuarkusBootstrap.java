@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.app;
 
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
@@ -12,7 +13,10 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
 import io.quarkus.bootstrap.resolver.update.VersionUpdate;
 import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,7 +31,6 @@ import java.util.Set;
  * The entry point for starting/building a Quarkus application. This class sets up the base class loading
  * architecture. Once this has been established control is passed into the new class loaders
  * to allow for customisation of the boot process.
- *
  */
 public class QuarkusBootstrap implements Serializable {
 
@@ -85,6 +88,7 @@ public class QuarkusBootstrap implements Serializable {
     private final AppModel existingModel;
     private final boolean rebuild;
     private final Set<AppArtifactKey> localArtifacts;
+    private final List<ClassLoaderEventListener> classLoadListeners;
 
     private QuarkusBootstrap(Builder builder) {
         this.applicationRoot = builder.applicationRoot;
@@ -113,6 +117,7 @@ public class QuarkusBootstrap implements Serializable {
         this.existingModel = builder.existingModel;
         this.rebuild = builder.rebuild;
         this.localArtifacts = new HashSet<>(builder.localArtifacts);
+        this.classLoadListeners = builder.classLoadListeners;
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
@@ -120,7 +125,7 @@ public class QuarkusBootstrap implements Serializable {
         //once we have this it is up to augment to set up the class loader to actually use them
 
         if (existingModel != null) {
-            return new CuratedApplication(this, new CurationResult(existingModel));
+            return new CuratedApplication(this, new CurationResult(existingModel), createClassLoadingConfig());
         }
         //first we check for updates
         if (mode != Mode.PROD) {
@@ -155,7 +160,48 @@ public class QuarkusBootstrap implements Serializable {
                 appModelFactory.setEnableClasspathCache(true);
             }
         }
-        return new CuratedApplication(this, appModelFactory.resolveAppModel());
+        return new CuratedApplication(this, appModelFactory.resolveAppModel(), createClassLoadingConfig());
+    }
+
+    private ConfiguredClassLoading createClassLoadingConfig() {
+        //look for an application.properties
+        for (Path path : applicationRoot) {
+            Path props = path.resolve("application.properties");
+            if (Files.exists(props)) {
+                try (InputStream in = Files.newInputStream(props)) {
+                    Properties p = new Properties();
+                    p.load(in);
+                    Set<AppArtifactKey> parentFirst = toArtifactSet(
+                            p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p)));
+                    Set<AppArtifactKey> liveReloadable = toArtifactSet(
+                            p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p)));
+                    return new ConfiguredClassLoading(parentFirst, liveReloadable);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to load bootstrap classloading config from application.properties", e);
+                }
+            }
+        }
+        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet());
+    }
+
+    private String selectKey(String base, Properties p) {
+        String profile = BootstrapProfile.getActiveProfile(mode);
+        String profileKey = "%" + profile + "." + base;
+        if (p.containsKey(profileKey)) {
+            return profileKey;
+        }
+        return base;
+    }
+
+    private Set<AppArtifactKey> toArtifactSet(String config) {
+        if (config == null) {
+            return new HashSet<>();
+        }
+        Set<AppArtifactKey> ret = new HashSet<>();
+        for (String i : config.split(",")) {
+            ret.add(new AppArtifactKey(i.split(":")));
+        }
+        return ret;
     }
 
     public AppModelResolver getAppModelResolver() {
@@ -219,7 +265,48 @@ public class QuarkusBootstrap implements Serializable {
         return rebuild;
     }
 
+    public List<ClassLoaderEventListener> getClassLoaderEventListeners() {
+        return this.classLoadListeners;
+    }
+
+    public Builder clonedBuilder() {
+        Builder builder = new Builder()
+                .setBaseName(baseName)
+                .setProjectRoot(projectRoot)
+                .setBaseClassLoader(baseClassLoader)
+                .setBuildSystemProperties(buildSystemProperties)
+                .setMode(mode)
+                .setTest(test)
+                .setLocalProjectDiscovery(localProjectDiscovery)
+                .setTargetDirectory(targetDirectory)
+                .setAppModelResolver(appModelResolver)
+                .setVersionUpdateNumber(versionUpdateNumber)
+                .setVersionUpdate(versionUpdate)
+                .setDependenciesOrigin(dependenciesOrigin)
+                .setIsolateDeployment(isolateDeployment)
+                .setMavenArtifactResolver(mavenArtifactResolver)
+                .setManagingProject(managingProject)
+                .setForcedDependencies(new ArrayList<>(forcedDependencies))
+                .setDisableClasspathCache(disableClasspathCache)
+                .addClassLoaderEventListeners(classLoadListeners)
+                .setExistingModel(existingModel);
+        if (appArtifact != null) {
+            builder.setAppArtifact(appArtifact);
+        } else {
+            builder.setApplicationRoot(applicationRoot);
+        }
+        if (offline != null) {
+            builder.setOffline(offline);
+        }
+        builder.additionalApplicationArchives.addAll(additionalApplicationArchives);
+        builder.additionalDeploymentArchives.addAll(additionalDeploymentArchives);
+        builder.excludeFromClassPath.addAll(excludeFromClassPath);
+        builder.localArtifacts.addAll(localArtifacts);
+        return builder;
+    }
+
     public static class Builder {
+        public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
         boolean rebuild;
         PathsCollection applicationRoot;
         String baseName;
@@ -379,10 +466,10 @@ public class QuarkusBootstrap implements Serializable {
 
         /**
          * If the deployment should use an isolated (aka parent last) classloader.
-         *
+         * <p>
          * For tests this is generally false, as we want to share the base class path so that the
          * test extension code can integrate with the deployment.
-         *
+         * <p>
          * TODO: should this always be true?
          *
          * @param isolateDeployment
@@ -433,11 +520,18 @@ public class QuarkusBootstrap implements Serializable {
             this.rebuild = value;
             return this;
         }
+
+        public Builder addClassLoaderEventListeners(List<ClassLoaderEventListener> classLoadListeners) {
+            this.classLoadListeners.addAll(classLoadListeners);
+            return this;
+        }
     }
 
     public enum Mode {
         DEV,
         TEST,
-        PROD;
+        PROD,
+        REMOTE_DEV_SERVER,
+        REMOTE_DEV_CLIENT;
     }
 }

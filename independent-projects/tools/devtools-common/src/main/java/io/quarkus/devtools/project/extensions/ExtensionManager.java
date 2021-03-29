@@ -2,7 +2,6 @@ package io.quarkus.devtools.project.extensions;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.project.BuildTool;
 import java.io.IOException;
 import java.util.Collection;

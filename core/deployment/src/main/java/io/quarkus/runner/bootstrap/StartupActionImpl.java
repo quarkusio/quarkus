@@ -9,20 +9,15 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import org.jboss.logging.Logger;
-import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -32,12 +27,11 @@ import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
-import io.quarkus.deployment.index.ConstPoolScanner;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.runtime.Quarkus;
 
@@ -49,35 +43,30 @@ public class StartupActionImpl implements StartupAction {
     private final BuildResult buildResult;
     private final QuarkusClassLoader runtimeClassLoader;
 
-    public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult,
-            ClassLoader deploymentClassLoader) {
+    public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
         this.buildResult = buildResult;
         Set<String> eagerClasses = new HashSet<>();
-        Map<String, Predicate<byte[]>> transformerPredicates = new HashMap<>();
-        Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = extractTransformers(
-                eagerClasses, transformerPredicates);
+        Map<String, byte[]> transformedClasses = extractTransformers(eagerClasses);
         QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
         //so we have some differences between dev and test mode here.
         //test mode only has a single class loader, while dev uses a disposable runtime class loader
         //that is discarded between restarts
-        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.DEV) {
-            baseClassLoader.reset(extractGeneratedResources(false), bytecodeTransformers, transformerPredicates,
-                    deploymentClassLoader);
-            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
-                    bytecodeTransformers, transformerPredicates,
-                    deploymentClassLoader, extractGeneratedResources(true));
-        } else {
-            Map<String, byte[]> resources = new HashMap<>();
+        Map<String, byte[]> resources = new HashMap<>();
+        resources.putAll(extractGeneratedResources(true));
+        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
             resources.putAll(extractGeneratedResources(false));
-            resources.putAll(extractGeneratedResources(true));
-            baseClassLoader.reset(resources, bytecodeTransformers, transformerPredicates, deploymentClassLoader);
+            baseClassLoader.reset(resources, transformedClasses);
             runtimeClassLoader = baseClassLoader;
+        } else {
+            baseClassLoader.reset(extractGeneratedResources(false),
+                    transformedClasses);
+            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
+                    resources, transformedClasses);
         }
         this.runtimeClassLoader = runtimeClassLoader;
-        handleEagerClasses(runtimeClassLoader, eagerClasses);
     }
 
     private void handleEagerClasses(QuarkusClassLoader runtimeClassLoader, Set<String> eagerClasses) {
@@ -117,7 +106,7 @@ public class StartupActionImpl implements StartupAction {
     /**
      * Runs the application by running the main method of the main class. As this is a blocking method a new
      * thread is created to run this task.
-     *
+     * <p>
      * Before this method is called an appropriate exit handler will likely need to
      * be set in {@link io.quarkus.runtime.ApplicationLifecycleManager#setDefaultExitCodeHandler(Consumer)}
      * of the JVM will exit when the app stops.
@@ -262,40 +251,18 @@ public class StartupActionImpl implements StartupAction {
         return runtimeClassLoader;
     }
 
-    private Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> extractTransformers(Set<String> eagerClasses,
-            Map<String, Predicate<byte[]>> transformerPredicates) {
-        Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>();
-        Set<String> noConstScanning = new HashSet<>();
-        Map<String, Set<String>> constScanning = new HashMap<>();
-        List<BytecodeTransformerBuildItem> transformers = buildResult.consumeMulti(BytecodeTransformerBuildItem.class);
-        for (BytecodeTransformerBuildItem i : transformers) {
-            List<BiFunction<String, ClassVisitor, ClassVisitor>> list = bytecodeTransformers.get(i.getClassToTransform());
-            if (list == null) {
-                bytecodeTransformers.put(i.getClassToTransform(), list = new ArrayList<>());
-            }
-            list.add(i.getVisitorFunction());
-            if (i.isEager()) {
-                eagerClasses.add(i.getClassToTransform());
-            }
-            if (i.getRequireConstPoolEntry() == null || i.getRequireConstPoolEntry().isEmpty()) {
-                noConstScanning.add(i.getClassToTransform());
-            } else {
-                constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
-                        .addAll(i.getRequireConstPoolEntry());
-            }
-        }
-        for (String i : noConstScanning) {
-            constScanning.remove(i);
-        }
-        for (Map.Entry<String, Set<String>> entry : constScanning.entrySet()) {
-            transformerPredicates.put(entry.getKey(), new Predicate<byte[]>() {
-                @Override
-                public boolean test(byte[] bytes) {
-                    return ConstPoolScanner.constPoolEntryPresent(bytes, entry.getValue());
+    private Map<String, byte[]> extractTransformers(Set<String> eagerClasses) {
+        Map<String, byte[]> ret = new HashMap<>();
+        TransformedClassesBuildItem transformers = buildResult.consume(TransformedClassesBuildItem.class);
+        for (Set<TransformedClassesBuildItem.TransformedClass> i : transformers.getTransformedClassesByJar().values()) {
+            for (TransformedClassesBuildItem.TransformedClass clazz : i) {
+                ret.put(clazz.getFileName(), clazz.getData());
+                if (clazz.isEager()) {
+                    eagerClasses.add(clazz.getClassName());
                 }
-            });
+            }
         }
-        return bytecodeTransformers;
+        return ret;
     }
 
     private Map<String, byte[]> extractGeneratedResources(boolean applicationClasses) {

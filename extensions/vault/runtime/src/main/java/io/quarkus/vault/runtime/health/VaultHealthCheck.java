@@ -1,7 +1,7 @@
 package io.quarkus.vault.runtime.health;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -12,7 +12,7 @@ import io.quarkus.vault.VaultSystemBackendEngine;
 import io.quarkus.vault.sys.VaultHealth;
 
 @Readiness
-@ApplicationScoped
+@Singleton
 public class VaultHealthCheck implements HealthCheck {
 
     @Inject

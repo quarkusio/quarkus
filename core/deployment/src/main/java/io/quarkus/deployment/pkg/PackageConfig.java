@@ -3,6 +3,7 @@ package io.quarkus.deployment.pkg;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -11,32 +12,26 @@ public class PackageConfig {
 
     public static final String JAR = "jar";
     public static final String UBER_JAR = "uber-jar";
-    /**
-     * This is the new packaging format, it is intended to become the default soonish, so it will just
-     * be referred to as 'jar'.
-     */
     public static final String FAST_JAR = "fast-jar";
     public static final String MUTABLE_JAR = "mutable-jar";
+    /**
+     * @deprecated use 'legacy-jar' instead
+     */
+    @Deprecated
     public static final String LEGACY = "legacy";
+    public static final String LEGACY_JAR = "legacy-jar";
     public static final String NATIVE = "native";
+    // does everything 'native' but stops short of actually executing the 'native-image' command
+    public static final String NATIVE_SOURCES = "native-sources";
 
     /**
      * The requested output type.
-     *
-     * The default built in types are 'jar', 'fast-jar' (a prototype more performant version of the default 'jar' type),
-     * 'uber-jar' and 'native'.
+     * <p>
+     * The default built in types are 'jar' (which will use 'fast-jar'), 'legacy-jar' for the pre-1.12 default jar
+     * packaging, 'uber-jar', 'native' and 'native-sources'.
      */
     @ConfigItem(defaultValue = JAR)
     public String type;
-
-    /**
-     * If the java runner should be packed as an uberjar
-     *
-     * This is deprecated, you should use quarkus.package.type=uber-jar instead
-     */
-    @Deprecated
-    @ConfigItem(defaultValue = "false")
-    public boolean uberJar;
 
     /**
      * Manifest configuration of the runner jar.
@@ -47,7 +42,7 @@ public class PackageConfig {
     /**
      * The entry point of the application. This can either be a a fully qualified name of a standard Java
      * class with a main method, or {@link io.quarkus.runtime.QuarkusApplication}.
-     *
+     * <p>
      * If your application has main classes annotated with {@link io.quarkus.runtime.annotations.QuarkusMain}
      * then this can also reference the name given in the annotation, to avoid the need to specify fully qualified
      * names in the config.
@@ -90,33 +85,85 @@ public class PackageConfig {
     public boolean createAppcds;
 
     /**
+     * When AppCDS generation is enabled, if this property is set, then the JVM used to generate the AppCDS file
+     * will be the JVM present in the container image. The builder image is expected to have have the 'java' binary
+     * on its PATH.
+     * This flag is useful when the JVM to be used at runtime is not the same exact JVM version as the one used to build
+     * the jar.
+     * Note that this property is consulted only when {@code quarkus.package.create-appcds=true} and it requires having
+     * docker available during the build.
+     */
+    @ConfigItem
+    public Optional<String> appcdsBuilderImage;
+
+    /**
      * This is an advanced option that only takes effect for the mutable-jar format.
-     *
+     * <p>
      * If this is specified a directory of this name will be created in the jar distribution. Users can place
      * jar files in this directory, and when re-augmentation is performed these will be processed and added to the
      * class-path.
-     *
+     * <p>
      * Note that before reaugmentation has been performed these jars will be ignored, and if they are updated the app
      * should be reaugmented again.
      */
     @ConfigItem
     public Optional<String> userProvidersDirectory;
 
+    /**
+     * This option only applies when using fast-jar or mutable-jar. If this option is true
+     * then a list of all the coordinates of the artifacts that made up this image will be included
+     * in the quarkus-app directory. This list can be used by vulnerability scanners to determine
+     * if your application has any vulnerable dependencies.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean includeDependencyList;
+
+    /**
+     * Fernflower Decompiler configuration
+     */
+    @ConfigItem
+    public FernflowerConfig fernflower;
+
     public boolean isAnyJarType() {
-        return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
-                type.equalsIgnoreCase(PackageConfig.JAR) ||
+        return (type.equalsIgnoreCase(PackageConfig.JAR) ||
                 type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
                 type.equalsIgnoreCase(PackageConfig.UBER_JAR)) ||
+                type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
+                type.equalsIgnoreCase(PackageConfig.LEGACY) ||
                 type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
     }
 
     public boolean isFastJar() {
-        return type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
+        return type.equalsIgnoreCase(PackageConfig.JAR) ||
+                type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
                 type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
     }
 
     public boolean isLegacyJar() {
-        return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
-                type.equalsIgnoreCase(PackageConfig.JAR));
+        return (type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
+                type.equalsIgnoreCase(PackageConfig.LEGACY));
+    }
+
+    @ConfigGroup
+    public static class FernflowerConfig {
+
+        /**
+         * An advanced option that will decompile generated and transformed bytecode into the 'decompiled' directory.
+         * This is only taken into account when fast-jar is used.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean enabled;
+
+        /**
+         * The git hash to use to download the fernflower tool from https://jitpack.io/com/github/fesh0r/fernflower/
+         */
+        @ConfigItem(defaultValue = "dbf407a655")
+        public String hash;
+
+        /**
+         * The directory into which to save the fernflower tool if it doesn't exist
+         */
+        @ConfigItem(defaultValue = "${user.home}/.quarkus")
+        public String jarDirectory;
     }
 }

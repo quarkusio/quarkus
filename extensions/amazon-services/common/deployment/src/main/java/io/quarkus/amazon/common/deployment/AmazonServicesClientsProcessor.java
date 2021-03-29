@@ -19,6 +19,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
@@ -27,10 +28,7 @@ import software.amazon.awssdk.http.async.SdkAsyncHttpService;
 
 public class AmazonServicesClientsProcessor {
     public static final String AWS_SDK_APPLICATION_ARCHIVE_MARKERS = "software/amazon/awssdk";
-
-    private static final String APACHE_HTTP_SERVICE = "software.amazon.awssdk.http.apache.ApacheSdkHttpService";
-    private static final String NETTY_HTTP_SERVICE = "software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService";
-    private static final String URL_HTTP_SERVICE = "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService";
+    public static final String AWS_SDK_XRAY_ARCHIVE_MARKER = "com/amazonaws/xray";
 
     private static final DotName EXECUTION_INTERCEPTOR_NAME = DotName.createSimple(ExecutionInterceptor.class.getName());
 
@@ -41,8 +39,16 @@ public class AmazonServicesClientsProcessor {
     }
 
     @BuildStep
-    AdditionalApplicationArchiveMarkerBuildItem awsAppArchiveMarkers() {
-        return new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_APPLICATION_ARCHIVE_MARKERS);
+    void awsAppArchiveMarkers(BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> archiveMarker) {
+        archiveMarker.produce(new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_APPLICATION_ARCHIVE_MARKERS));
+        archiveMarker.produce(new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_XRAY_ARCHIVE_MARKER));
+    }
+
+    @BuildStep
+    void runtimeInitialize(BuildProducer<RuntimeInitializedClassBuildItem> producer) {
+        // FullJitterBackoffStrategy uses j.u.Ramdom, so needs to be runtime-initialized
+        producer.produce(
+                new RuntimeInitializedClassBuildItem("software.amazon.awssdk.core.retry.backoff.FullJitterBackoffStrategy"));
     }
 
     @BuildStep
@@ -67,8 +73,9 @@ public class AmazonServicesClientsProcessor {
         for (AmazonClientBuildItem client : amazonClients) {
             SdkBuildTimeConfig clientSdkConfig = client.getBuildTimeSdkConfig();
             if (clientSdkConfig != null) {
-                clientSdkConfig.interceptors.orElse(Collections.emptyList()).forEach(interceptorClass -> {
-                    if (!knownInterceptorImpls.contains(interceptorClass.getName())) {
+                clientSdkConfig.interceptors.orElse(Collections.emptyList()).forEach(interceptorClassName -> {
+                    interceptorClassName = interceptorClassName.trim();
+                    if (!knownInterceptorImpls.contains(interceptorClassName)) {
                         throw new ConfigurationError(
                                 String.format(
                                         "quarkus.%s.interceptors (%s) - must list only existing implementations of software.amazon.awssdk.core.interceptor.ExecutionInterceptor",
@@ -92,39 +99,75 @@ public class AmazonServicesClientsProcessor {
         final Predicate<AmazonClientBuildItem> isSyncApache = client -> client
                 .getBuildTimeSyncConfig().type == SyncClientType.APACHE;
 
-        //Register only clients that are used
+        // Register what's needed depending on the clients in the classpath and the configuration.
+        // We use the configuration to guide us but if we don't have any clients configured,
+        // we still register what's needed depending on what is in the classpath.
+        boolean isSyncApacheInClasspath = isInClasspath(AmazonHttpClients.APACHE_HTTP_SERVICE);
+        boolean isSyncUrlConnectionInClasspath = isInClasspath(AmazonHttpClients.URL_CONNECTION_HTTP_SERVICE);
+        boolean isAsyncInClasspath = isInClasspath(AmazonHttpClients.NETTY_HTTP_SERVICE);
+
+        // Check that the clients required by the configuration are available
         if (syncTransportNeeded) {
             if (amazonClients.stream().filter(isSyncApache).findAny().isPresent()) {
-                checkClasspath(APACHE_HTTP_SERVICE, "apache-client");
-                //Register Apache client as sync client
-                proxyDefinition
-                        .produce(new NativeImageProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
-                                "org.apache.http.pool.ConnPoolControl",
-                                "software.amazon.awssdk.http.apache.internal.conn.Wrapped"));
-
-                serviceProvider.produce(
-                        new ServiceProviderBuildItem(SdkHttpService.class.getName(), APACHE_HTTP_SERVICE));
+                if (isSyncApacheInClasspath) {
+                    registerSyncApacheClient(proxyDefinition, serviceProvider);
+                } else {
+                    throw missingDependencyException("apache-client");
+                }
+            } else if (isSyncUrlConnectionInClasspath) {
+                registerSyncUrlConnectionClient(serviceProvider);
             } else {
-                checkClasspath(URL_HTTP_SERVICE, "url-connection-client");
-                serviceProvider.produce(new ServiceProviderBuildItem(SdkHttpService.class.getName(), URL_HTTP_SERVICE));
+                throw missingDependencyException("url-connection-client");
+            }
+        } else {
+            // even if we don't register any clients via configuration, we still register the clients
+            // but this time only based on the classpath.
+            if (isSyncApacheInClasspath) {
+                registerSyncApacheClient(proxyDefinition, serviceProvider);
+            } else if (isSyncUrlConnectionInClasspath) {
+                registerSyncUrlConnectionClient(serviceProvider);
             }
         }
 
-        if (asyncTransportNeeded) {
-            checkClasspath(NETTY_HTTP_SERVICE, "netty-nio-client");
-            //Register netty as async client
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem(SdkAsyncHttpService.class.getName(),
-                            NETTY_HTTP_SERVICE));
+        if (isAsyncInClasspath) {
+            registerAsyncNettyClient(serviceProvider);
+        } else if (asyncTransportNeeded) {
+            throw missingDependencyException("netty-nio-client");
         }
     }
 
-    private void checkClasspath(String className, String dependencyName) {
+    private static void registerSyncApacheClient(BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
+            BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        proxyDefinition
+                .produce(new NativeImageProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
+                        "org.apache.http.pool.ConnPoolControl",
+                        "software.amazon.awssdk.http.apache.internal.conn.Wrapped"));
+
+        serviceProvider.produce(
+                new ServiceProviderBuildItem(SdkHttpService.class.getName(), AmazonHttpClients.APACHE_HTTP_SERVICE));
+    }
+
+    private static void registerSyncUrlConnectionClient(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(
+                new ServiceProviderBuildItem(SdkHttpService.class.getName(), AmazonHttpClients.URL_CONNECTION_HTTP_SERVICE));
+    }
+
+    private static void registerAsyncNettyClient(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(
+                new ServiceProviderBuildItem(SdkAsyncHttpService.class.getName(),
+                        AmazonHttpClients.NETTY_HTTP_SERVICE));
+    }
+
+    private static boolean isInClasspath(String className) {
         try {
             Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+            return true;
         } catch (ClassNotFoundException e) {
-            throw new DeploymentException(
-                    "Missing 'software.amazon.awssdk:" + dependencyName + "' dependency on the classpath");
+            return false;
         }
+    }
+
+    private DeploymentException missingDependencyException(String dependencyName) {
+        return new DeploymentException("Missing 'software.amazon.awssdk:" + dependencyName + "' dependency on the classpath");
     }
 }

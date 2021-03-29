@@ -8,6 +8,8 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
@@ -42,6 +44,36 @@ public class NativeConfig {
     @Deprecated
     @ConfigItem(defaultValue = "true")
     public boolean enableJni;
+
+    /**
+     * Defines the user language used for building the native executable.
+     * <p>
+     * Defaults to the system one.
+     */
+    @ConfigItem(defaultValue = "${user.language:}")
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> userLanguage;
+
+    /**
+     * Defines the user country used for building the native executable.
+     * <p>
+     * Defaults to the system one.
+     */
+    @ConfigItem(defaultValue = "${user.country:}")
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> userCountry;
+
+    /**
+     * Defines the file encoding as in -Dfile.encoding=...
+     *
+     * Native image runtime uses the host's (i.e. build time) value of file.encoding
+     * system property. We intentionally default this to UTF-8 to avoid platform specific
+     * defaults to be picked up which can then result in inconsistent behavior in the
+     * generated native executable.
+     */
+    @ConfigItem(defaultValue = "UTF-8")
+    @ConvertWith(TrimmedStringConverter.class)
+    public String fileEncoding;
 
     /**
      * If all character sets should be added to the native image. This increases image size
@@ -126,9 +158,15 @@ public class NativeConfig {
     public boolean containerBuild;
 
     /**
+     * If this build is done using a remote docker daemon.
+     */
+    @ConfigItem
+    public boolean remoteContainerBuild;
+
+    /**
      * The docker image to use to do the image build
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/ubi-quarkus-native-image:20.1.0-java11")
+    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
     public String builderImage;
 
     /**
@@ -136,7 +174,7 @@ public class NativeConfig {
      * a container build is always done.
      */
     @ConfigItem
-    public Optional<String> containerRuntime;
+    public Optional<ContainerRuntime> containerRuntime;
 
     /**
      * Options to pass to the container runtime
@@ -263,6 +301,29 @@ public class NativeConfig {
         @ConfigItem
         public Optional<List<String>> includes;
 
+        /**
+         * A comma separated list of globs to match resource paths that should <b>not</b> be added to the native image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash.
+         * <p>
+         * Please refer to {@link #includes} for details about the glob syntax.
+         * <p>
+         * By default, no resources are excluded.
+         * <p>
+         * Example: Given that you have {@code src/main/resources/red.png}
+         * and {@code src/main/resources/foo/green.png} in your source tree and one of your dependency JARs contains
+         * {@code bar/blue.png} file, with the following configuration
+         *
+         * <pre>
+         * quarkus.native.resources.includes = **&#47;*.png
+         * quarkus.native.resources.excludes = foo/**,**&#47;green.png
+         * </pre>
+         *
+         * the resource {@code red.png} will be available in the native image while the resources {@code foo/green.png}
+         * and {@code bar/blue.png} will not be available in the native image.
+         */
+        @ConfigItem
+        public Optional<List<String>> excludes;
     }
 
     /**
@@ -279,5 +340,23 @@ public class NativeConfig {
          */
         @ConfigItem
         public boolean enabled;
+    }
+
+    /**
+     * Generate the report files for GraalVM Dashboard.
+     */
+    @ConfigItem
+    public boolean enableDashboardDump;
+
+    /**
+     * Supported Container runtimes
+     */
+    public static enum ContainerRuntime {
+        DOCKER,
+        PODMAN;
+
+        public String getExecutableName() {
+            return this.name().toLowerCase();
+        }
     }
 }

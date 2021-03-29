@@ -88,5 +88,9 @@ public class MultipleInterfaceConfigPrefixTest {
         default String nameWithSuffix() {
             return getFirstName() + "!";
         }
+
+        static void someStatic() {
+
+        }
     }
 }

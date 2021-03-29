@@ -4,6 +4,7 @@ import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
 import io.quarkus.bootstrap.classloading.JarClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.util.IoUtils;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,6 +49,36 @@ public class ClassLoadingResourceUrlTestCase {
 
         } finally {
             IoUtils.recursiveDelete(path);
+        }
+    }
+
+    /**
+     * Test that {@link QuarkusClassLoader#getResourceAsStream(String)} returns a stream for directory
+     * resources
+     *
+     * @throws Exception
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/11707"/>
+     */
+    @Test
+    public void testResourceAsStreamForDirectory() throws Exception {
+        final JavaArchive jar = ShrinkWrap.create(JavaArchive.class)
+                .add(new StringAsset("a"), "a.txt")
+                .add(new StringAsset("b"), "b/b.txt");
+        final Path tmpDir = Files.createTempDirectory("test");
+        try {
+            jar.as(ExplodedExporter.class).exportExploded(tmpDir.toFile(), "tmpcltest");
+            final ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+                    .addElement(new DirectoryClassPathElement(tmpDir.resolve("tmpcltest")))
+                    .build();
+
+            try (final InputStream is = cl.getResourceAsStream("b/")) {
+                Assertions.assertNotNull(is, "InputStream is null for a directory resource");
+            }
+            try (final InputStream is = cl.getResourceAsStream("b")) {
+                Assertions.assertNotNull(is, "InputStream is null for a directory resource");
+            }
+        } finally {
+            IoUtils.recursiveDelete(tmpDir);
         }
     }
 

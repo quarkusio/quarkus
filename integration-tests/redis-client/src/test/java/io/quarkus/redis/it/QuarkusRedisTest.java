@@ -8,14 +8,19 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 class QuarkusRedisTest {
-    private static final String SYNC_KEY = "sync-key";
-    private static final String SYNC_VALUE = "sync-value";
-
-    private static final String REACTIVE_KEY = "reactive-key";
-    private static final String REACTIVE_VALUE = "reactive-value";
+    static final String SYNC_KEY = "sync-key";
+    static final String SYNC_VALUE = "sync-value";
+    static final String REACTIVE_KEY = "reactive-key";
+    static final String REACTIVE_VALUE = "reactive-value";
 
     @Test
     public void sync() {
+        RestAssured.given()
+                .when()
+                .get("/quarkus-redis/sync/" + SYNC_KEY)
+                .then()
+                .statusCode(204); // the key is not set yet
+
         RestAssured.given()
                 .body(SYNC_VALUE)
                 .when()
@@ -33,6 +38,12 @@ class QuarkusRedisTest {
 
     @Test
     public void reactive() {
+        RestAssured.given()
+                .when()
+                .get("/quarkus-redis/reactive/" + REACTIVE_KEY)
+                .then()
+                .statusCode(204); // the reactive key is not set yet
+
         RestAssured.given()
                 .body(REACTIVE_VALUE)
                 .when()

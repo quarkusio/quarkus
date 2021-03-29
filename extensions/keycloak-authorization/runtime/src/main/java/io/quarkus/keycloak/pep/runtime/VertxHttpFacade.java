@@ -19,11 +19,7 @@ import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.representations.AccessToken;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.quarkus.oidc.AccessTokenCredential;
-import io.quarkus.security.credential.TokenCredential;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.VertxInputStream;
-import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -35,13 +31,15 @@ public class VertxHttpFacade implements OIDCHttpFacade {
     private final Response response;
     private final RoutingContext routingContext;
     private final Request request;
+    private final String token;
     private final long readTimeout;
 
-    public VertxHttpFacade(RoutingContext routingContext, long readTimeout) {
+    public VertxHttpFacade(RoutingContext routingContext, String token, long readTimeout) {
         this.routingContext = routingContext;
+        this.token = token;
         this.readTimeout = readTimeout;
-        request = createRequest(routingContext);
-        response = createResponse(routingContext);
+        this.request = createRequest(routingContext);
+        this.response = createResponse(routingContext);
     }
 
     @Override
@@ -222,18 +220,6 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
     @Override
     public KeycloakSecurityContext getSecurityContext() {
-        SecurityIdentity identity = QuarkusHttpUser.getSecurityIdentityBlocking(routingContext, null);
-        if (identity == null) {
-            return null;
-        }
-        TokenCredential credential = identity.getCredential(AccessTokenCredential.class);
-
-        if (credential == null) {
-            return null;
-        }
-
-        String token = credential.getToken();
-
         try {
             return new KeycloakSecurityContext(token, new JWSInput(token).readJsonContent(AccessToken.class), null, null);
         } catch (JWSInputException e) {

@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-container-image-spi</artifactId>
-    <name>Quarkus - Container - Image - SPI</name>
+    <name>Quarkus - Container Image - SPI</name>
     <description>Extensions that provide Container features should include this module and the corresponding BuildItems</description>
 
     <dependencies>

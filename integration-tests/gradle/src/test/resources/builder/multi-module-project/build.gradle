@@ -1,0 +1,23 @@
+
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusPlatformVersion}")
+    }
+
+}
+
+group 'org.acme'
+version '1.0-SNAPSHOT'

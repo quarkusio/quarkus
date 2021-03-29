@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Amazon SQS Client
 :extension-status: preview
@@ -14,7 +14,7 @@ services to be available.
 SQS offers two types of message queues. Standard queues offer maximum throughput, best-effort ordering and at-least-once delivery.
 SQS FIFO queues are designed to guarantee that messages are processes exactly once, on the exact order that they were sent.
 
-You can find more information about SQS at https://aws.amazon.com/sws/[the Amazon SQS website].
+You can find more information about SQS at https://aws.amazon.com/sqs/[the Amazon SQS website].
 
 NOTE: The SQS extension is based on https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/welcome.html[AWS Java SDK 2.x].
 It's a major rewrite of the 1.x code base that offers two programming models (Blocking & Async).
@@ -42,7 +42,7 @@ To complete this guide, you need:
 
 The easiest way to start working with SQS is to run a local instance as a container.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 docker run --rm --name local-sqs -p 8010:4576 -e SERVICES=sqs -e START_WEB=0 -d localstack/localstack:0.11.1
 ----
@@ -62,13 +62,13 @@ Default output format [None]:
 
 Create a SQS queue using AWS CLI and store in `QUEUE_URL` environment variable.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 QUEUE_URL=`aws sqs create-queue --queue-name=ColliderQueue --profile localstack --endpoint-url=http://localhost:8010`
 ----
 
 Or, if you want to use your SQS queue on your AWS account create a queue using your default profile
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 QUEUE_URL=`aws sqs create-queue --queue-name=ColliderQueue`
 ----
@@ -88,14 +88,14 @@ The solution is located in the `amazon-sqs-quickstart` {quickstarts-tree-url}/am
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amazon-sqs-quickstart \
     -DclassName="org.acme.sqs.QuarksCannonSyncResource" \
     -Dpath="/sync-cannon" \
-    -Dextensions="resteasy-jsonb,amazon-sqs,resteasy-mutiny"
+    -Dextensions="resteasy,resteasy-jackson,amazon-sqs,resteasy-mutiny"
 cd amazon-sqs-quickstart
 ----
 
@@ -242,8 +242,6 @@ public class QuarksShieldSyncResource {
     static ObjectReader QUARK_READER = new ObjectMapper().readerFor(Quark.class);
 
     @GET
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public List<Quark> receive() {
         List<Message> messages = sqs.receiveMessage(m -> m.maxNumberOfMessages(10).queueUrl(queueUrl)).messages();
 
@@ -295,6 +293,10 @@ And add the following dependency to the application `pom.xml`:
     <groupId>software.amazon.awssdk</groupId>
     <artifactId>apache-client</artifactId>
 </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-apache-httpclient</artifactId>
+</dependency>
 ----
 
 If you're going to use a local SQS instance, configure it as follows:
@@ -325,7 +327,7 @@ And the region from your AWS CLI profile will be used.
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -Dqueue.url=$QUEUE_URL -jar target/amazon-sqs-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -Dqueue.url=$QUEUE_URL -jar target/quarkus-app/quarkus-run.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.
@@ -423,8 +425,6 @@ public class QuarksShieldAsyncResource {
     static ObjectReader QUARK_READER = new ObjectMapper().readerFor(Quark.class);
 
     @GET
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<Quark>> receive() {
         return Uni.createFrom()
             .completionStage(sqs.receiveMessage(m -> m.maxNumberOfMessages(10).queueUrl(queueUrl)))

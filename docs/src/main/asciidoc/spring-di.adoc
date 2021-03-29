@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Quarkus Extension for Spring DI API
 
@@ -37,14 +37,14 @@ The solution is located in the `spring-di-quickstart` {quickstarts-tree-url}/spr
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=spring-di-quickstart \
     -DclassName="org.acme.spring.di.GreeterResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-di"
+    -Dextensions="resteasy,spring-di"
 cd spring-di-quickstart
 ----
 
@@ -106,6 +106,8 @@ public class AppConfiguration {
     }
 }
 ----
+As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs link:cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
+In the same vein, Quarkus does not support the Spring `@Import` annotation.
 
 Now we define another bean that will implement `StringFunction` using Spring's stereotype annotation style.
 This bean will effectively be a no-op bean that simply returns the input as is.
@@ -130,7 +132,7 @@ public class NoOpSingleStringFunction implements StringFunction {
 Quarkus also provides support for injecting configuration values using Spring's `@Value` annotation.
 To see that in action, first edit the `src/main/resources/application.properties` with the following content:
 
-[source,java]
+[source,properties]
 ----
 # Your configuration properties
 greeting.message = hello
@@ -275,7 +277,9 @@ You can of course create a native image using instructions similar to link:build
 Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
-classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
+classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `org.springframework.context.ApplicationContext` for example) will not be executed.
+Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the link:cdi[Quarkus introduction to CDI] and the link:cdi-reference#arc-configuration-reference[CDI reference guide]
+The various Spring Boot test features are not supported by Quarkus. For testing purposes, please, check the link:getting-started-testing[Quarkus testing guide].
 
 == Conversion Table
 
@@ -319,6 +323,14 @@ The following table shows how Spring DI annotations can be converted to CDI and 
 |@Scope
 |
 |Doesn't have a one-to-one mapping to a CDI annotation. Depending on the value of @Scope, one of the @Singleton, @ApplicationScoped, @SessionScoped, @RequestScoped, @Dependent could be used
+
+|@ComponentScan
+|
+|Doesn't have a one-to-one mapping to a CDI annotation. It is not used in Quarkus because Quarkus does all classpath scanning at build time.
+
+|@Import
+|
+|Doesn't have a one-to-one mapping to a CDI annotation.
 |===
 
 == More Spring guides
@@ -327,6 +339,7 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
 * link:spring-security[Quarkus - Extension for Spring Security]
 * link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
 * link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]

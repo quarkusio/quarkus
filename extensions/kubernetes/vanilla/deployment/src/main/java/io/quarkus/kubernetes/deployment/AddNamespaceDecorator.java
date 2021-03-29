@@ -2,13 +2,12 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Objects;
 
-import io.dekorate.deps.kubernetes.api.model.ObjectMeta;
-import io.dekorate.deps.kubernetes.api.model.ObjectMetaBuilder;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
-import io.dekorate.kubernetes.decorator.ContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 
 public class AddNamespaceDecorator extends NamedResourceDecorator<ObjectMetaBuilder> {
 
@@ -25,7 +24,7 @@ public class AddNamespaceDecorator extends NamedResourceDecorator<ObjectMetaBuil
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { ResourceProvidingDecorator.class, ContainerDecorator.class, AddSidecarDecorator.class };
+        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class };
     }
 
     @Override

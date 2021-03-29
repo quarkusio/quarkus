@@ -2,7 +2,6 @@ package io.quarkus.flyway.test;
 
 import java.util.function.Function;
 
-import org.flywaydb.core.Flyway;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
@@ -36,8 +35,7 @@ public class FlywayDevModeTest {
                 return "quarkus.datasource.db-kind=h2\n" +
                         "quarkus.datasource.username=sa\n" +
                         "quarkus.datasource.password=sa\n" +
-                        "quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1\n"
-                        +
+                        "quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:test-quarkus-dev-mode;DB_CLOSE_DELAY=-1\n" +
                         "quarkus.flyway.migrate-at-start=true";
             }
         });

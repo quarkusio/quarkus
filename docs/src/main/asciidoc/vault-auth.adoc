@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Working with HashiCorp Vault’s Authentication
 
@@ -51,14 +51,14 @@ To complete this guide, you need:
 We assume there is a Vault container and a PostgreSQL container running from the {base-guide}, and the root token is known.
 
 First, create a new shell, `docker exec` into the container and set the root token:
-[source, shell, subs=attributes+]
+[source,shell, subs=attributes+]
 ----
 docker exec -it dev-vault sh
 / # export VAULT_TOKEN={root-token}
 ----
 
 Create a token for the `vault-quickstart-policy` policy:
-[source, shell, subs=attributes+]
+[source,shell, subs=attributes+]
 ----
 / # vault token create -policy=vault-quickstart-policy
 Key                  Value
@@ -79,14 +79,14 @@ quarkus.vault.authentication.client-token={client-token}
 ----
 
 Compile and start the application:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 ./mvnw clean install
-java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 Finally test the application endpoint:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 curl http://localhost:8080/hello/private-key
 ----
@@ -111,7 +111,7 @@ If the _Wrapping Token_ gets stolen and unwrapped, we will notice immediately be
 will get an error saying that the token is invalid.
 
 With that in mind, let’s create a new token and wrap it inside a _Wrapping Token_ with a TTL of 1 minute:
-[source, shell, subs=attributes+]
+[source,shell, subs=attributes+]
 ----
 / # vault token create -wrap-ttl=60s -policy=vault-quickstart-policy
 Key                              Value
@@ -133,7 +133,7 @@ quarkus.vault.authentication.client-token-wrapping-token={client-token-wrapping-
 Compile and run the application *without the tests*, you should be able now to curl the private key `{private-key}` as before.
 
 Stop the application, and execute tests with `./mvnw test`. They should fail with the following error:
-[source, shell, subs=attributes+]
+[source,text, subs=attributes+]
 ----
 ERROR: Failed to start application
 io.quarkus.vault.VaultException: wrapping token is not valid or does not exist; this means that the token has already expired (if so you can increase the TTL on the wrapping token) or has been consumed by somebody else (potentially indicating that the wrapping token has been stolen)
@@ -143,7 +143,7 @@ io.quarkus.vault.VaultException: wrapping token is not valid or does not exist; 
 
 Normally the `userpass` auth method should already be enabled from the {base-guide}. If not, execute the following
 commands now:
-[source, shell]
+[source,bash]
 ----
 vault auth enable userpass
 vault write auth/userpass/users/bob password=sinclair policies=vault-quickstart-policy
@@ -157,7 +157,7 @@ quarkus.vault.authentication.userpass.password=sinclair
 ----
 
 Test the application endpoint after compiling and starting the application again:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 curl http://localhost:8080/hello/private-key
 ----
@@ -180,7 +180,7 @@ _Approle_ is an authentication method suited for technical workflows. It relies 
 
 To set up _Approle_ you need to enable the `approle` auth method, create an app role,
 and generate a role id and secret id:
-[source, shell, subs=attributes+]
+[source,shell, subs=attributes+]
 ----
 / # vault auth enable approle
 / # vault write auth/approle/role/myapprole policies=vault-quickstart-policy
@@ -210,7 +210,7 @@ After compiling and running the application you should be able to curl it on the
 === Approle using Response Wrapping
 
 Similarly to direct client token authentication, it is possible to wrap the `secret-id`:
-[source, shell, subs=attributes+]
+[source,shell, subs=attributes+]
 ----
 / # vault write -wrap-ttl=60s -f auth/approle/role/myapprole/secret-id
 Key                              Value
@@ -271,7 +271,7 @@ And apply it: `kubectl apply -f vault-auth-k8s.yml`.
 
 Once the objects are created, we need to capture the JWT token of this service account,
 and grab the public certificate of the cluster:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 secret_name=$(kubectl get sa vault-auth-sa -o json | jq -r '.secrets[0].name')
 token=$(kubectl get secret $secret_name -o json | jq -r '.data.token' | base64 --decode)
@@ -283,7 +283,7 @@ kubectl get secret $secret_name -o json | jq -r '.data."ca.crt"' | base64 -D > /
 
 The next step requires to exec interactively with the root token into the Vault container
 to configure the Kubernetes auth method:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 docker exec -it dev-vault sh
 export VAULT_TOKEN={root-token}
@@ -292,7 +292,7 @@ export VAULT_TOKEN={root-token}
 Once inside the pod, set the token variable to the value that was just printed in the console before, and
 recreate `ca.crt` with the same content as `/tmp/ca.crt` outside the container. Finally use `kubectl config view`
 to assess the url of your Kubernetes cluster:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 token=...       => set the value printed in the console just before
 vi ca.crt       => copy/paste /tmp/ca.crt from outside the container
@@ -300,7 +300,7 @@ kubernetes_host => url from the kubectl config view (e.g. https://kubernetes.doc
 ----
 
 Now we have all the information we need to configure Vault:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 vault auth enable kubernetes
 
@@ -327,7 +327,10 @@ such that they will be accessible from the pod):
 [source, properties, subs=attributes+]
 ----
 quarkus.vault.url=http://<host>:8200
-quarkus.datasource.url = jdbc:postgresql://<host>:5432/mydatabase
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=<your username>
+quarkus.datasource.password=<your password>
+quarkus.datasource.jdbc.url = jdbc:postgresql://<host>:5432/mydatabase
 
 quarkus.vault.authentication.kubernetes.role=vault-quickstart-role
 
@@ -335,7 +338,7 @@ quarkus.log.category."io.quarkus.vault".level=DEBUG
 ----
 
 Now build the application:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 ./mvnw package -DskipTests
 docker build -f src/main/docker/Dockerfile.jvm -t quarkus/vault-quickstart-jvm .
@@ -397,7 +400,7 @@ And apply it: `kubectl apply -f vault-quickstart-k8s.yml`.
 This will deploy the application, and make it available on port `30400` of the Kubernetes host.
 
 You can check that the application has started from the logs:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 kubectl get pods
 pod=$(kubectl get pod -l app=vaultapp -o json | jq -r '.items[0].metadata.name')
@@ -405,7 +408,7 @@ kubectl logs $pod
 ----
 
 You should see:
-[source, shell, subs=attributes+]
+[source,text, subs=attributes+]
 ----
 exec java -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:+ExitOnOutOfMemoryError -cp . -jar /deployments/app.jar
 __  ____  __  _____   ___  __ ____  ______
@@ -419,19 +422,19 @@ __  ____  __  _____   ___  __ ____  ______
 2020-04-15 18:30:01,779 DEBUG [io.qua.vau.run.VaultAuthManager] (main) created new login token: {clientToken: ***, renewable: true, leaseDuration: 3600s, valid_until: Wed Apr 15 19:30:01 GMT 2020}
 2020-04-15 18:30:01,802 DEBUG [io.qua.vau.run.con.VaultConfigSource] (main) loaded 1 properties from vault
 2020-04-15 18:30:02,722 DEBUG [io.qua.vau.run.VaultAuthManager] (Agroal_7305849841) extended login token: {clientToken: ***, renewable: true, leaseDuration: 3600s, valid_until: Wed Apr 15 19:30:02 GMT 2020}
-2020-04-15 18:30:03,274 INFO  [io.quarkus] (main) vault-quickstart 1.0-SNAPSHOT (powered by Quarkus 999-SNAPSHOT) started in 4.255s. Listening on: http://0.0.0.0:8080
+2020-04-15 18:30:03,274 INFO  [io.quarkus] (main) vault-quickstart 1.0.0-SNAPSHOT (powered by Quarkus 999-SNAPSHOT) started in 4.255s. Listening on: http://0.0.0.0:8080
 2020-04-15 18:30:03,276 INFO  [io.quarkus] (main) Profile prod activated.
 2020-04-15 18:30:03,276 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, hibernate-orm, jdbc-postgresql, narayana-jta, resteasy, vault]
 ----
 
 Notice in particular the following log line:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 authenticate with jwt at: /var/run/secrets/kubernetes.io/serviceaccount/token => ***
 ----
 
 Finally curl the `private-key` endpoint to make sure you can retrieve your secret:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 curl http://localhost:30400/hello/private-key
 ----

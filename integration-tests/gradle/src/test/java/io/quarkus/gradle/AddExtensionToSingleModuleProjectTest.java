@@ -10,21 +10,24 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
-public class AddExtensionToSingleModuleProjectTest extends QuarkusGradleWrapperTestBase {
+public class AddExtensionToSingleModuleProjectTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void testAddAndRemoveExtension() throws IOException, URISyntaxException, InterruptedException {
 
         final File projectDir = getProjectDir("add-remove-extension-single-module");
 
-        runGradleWrapper(projectDir, ":addExtension", "--extensions=hibernate-orm");
+        runGradleWrapper(projectDir, ":addExtension", "--extensions=openshift");
 
         final Path build = projectDir.toPath().resolve("build.gradle");
         assertThat(build).exists();
-        assertThat(new String(Files.readAllBytes(build))).contains("implementation 'io.quarkus:quarkus-hibernate-orm'");
+        assertThat(new String(Files.readAllBytes(build)))
+                .contains("implementation 'io.quarkus:quarkus-openshift'")
+                .doesNotContain("implementation enforcedPlatform('io.quarkus:quarkus-bom:")
+                .doesNotContain("implementation 'io.quarkus:quarkus-bom:");
 
-        runGradleWrapper(projectDir, ":removeExtension", "--extensions=hibernate-orm");
-        assertThat(new String(Files.readAllBytes(build))).doesNotContain("implementation 'io.quarkus:quarkus-hibernate-orm'");
+        runGradleWrapper(projectDir, ":removeExtension", "--extensions=openshift");
+        assertThat(new String(Files.readAllBytes(build))).doesNotContain("implementation 'io.quarkus:quarkus-openshift'");
 
     }
 
@@ -33,7 +36,8 @@ public class AddExtensionToSingleModuleProjectTest extends QuarkusGradleWrapperT
 
         final File projectDir = getProjectDir("add-remove-extension-single-module");
 
-        runGradleWrapper(projectDir, "clean", "build");
+        BuildResult buildResult = runGradleWrapper(projectDir, "clean", "build");
+        assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
 
         final Path build = projectDir.toPath().resolve("build.gradle");
         assertThat(build).exists();

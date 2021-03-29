@@ -1,0 +1,55 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Funqy HTTP Binding with Google Cloud Functions
+:extension-status: experimental
+
+include::./attributes.adoc[]
+
+If you want to allow HTTP clients to invoke your Funqy functions on Google Cloud Functions, Quarkus allows you to expose multiple
+Funqy functions through HTTP deployed as one Google Cloud Function.  This approach does add overhead over the
+regular Funqy Google Cloud Function integration.
+
+include::./status-include.adoc[]
+
+Follow the link:gcp-functions-http[Google Cloud Functions Http Guide].  It walks through using a variety of HTTP
+frameworks on Google Cloud Functions, including Funqy.
+
+WARNING: The Funqy HTTP + Google Cloud Functions binding is not a replacement for REST over HTTP.  Because Funqy
+needs to be portable across a lot of different protocols and function providers its HTTP binding
+is very minimalistic and you will lose REST features like linking and the ability to leverage
+HTTP features like cache-control and conditional GETs.  You may want to consider using Quarkus's
+JAX-RS, Spring MVC, or Vert.x Web Reactive Route link:gcp-functions-http[support] instead.  They also work with Quarkus and Google Cloud Functions.
+
+== An additional Quickstart
+
+Beyond generating a Google Cloud Functions project that is covered in the link:gcp-functions-http[Google Cloud Functions HTTP Guide],
+there's also a quickstart for running Funqy HTTP on Google Cloud Functions.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `funqy-google-cloud-functions-http-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-google-cloud-functions-http-quickstart[directory].
+
+== The Code
+
+There is nothing special about the code and more importantly nothing Google Cloud specific.  Funqy functions can be deployed to many different
+environments and Google Cloud Functions is one of them.  The Java code is actually the same exact code as the {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart[funqy-http-quickstart].
+
+== Getting Started
+
+The steps to get this quickstart running are exactly the same as defined in the link:gcp-functions-http[Google Cloud Functions HTTP Guide].
+This differences are that you are running from a quickstart and the Maven dependencies are slightly different.
+
+[source, xml]
+----
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-funqy-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-google-cloud-functions-http</artifactId>
+        </dependency>
+----

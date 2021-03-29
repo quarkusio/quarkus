@@ -8,3 +8,8 @@ metadata:
   - "cloud"
   guide: "https://quarkus.io/guides/azure-functions-http"
   status: "preview"
+  codestart:
+    name: "azure-functions-http"
+    kind: "singleton-example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

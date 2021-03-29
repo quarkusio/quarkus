@@ -15,13 +15,18 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
+import io.quarkus.deployment.index.IndexWrapper;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.PersistentClassIndex;
 
 public class CombinedIndexBuildStep {
 
     @BuildStep
     CombinedIndexBuildItem build(ApplicationArchivesBuildItem archives,
-            List<AdditionalIndexedClassesBuildItem> additionalIndexedClassesItems) {
+            List<AdditionalIndexedClassesBuildItem> additionalIndexedClassesItems,
+            LiveReloadBuildItem liveReloadBuildItem) {
         List<IndexView> archiveIndexes = new ArrayList<>();
 
         for (ApplicationArchive i : archives.getAllApplicationArchives()) {
@@ -40,7 +45,16 @@ public class CombinedIndexBuildStep {
             }
         }
 
-        return new CombinedIndexBuildItem(CompositeIndex.create(archivesIndex, indexer.complete()));
+        PersistentClassIndex index = liveReloadBuildItem.getContextObject(PersistentClassIndex.class);
+        if (index == null) {
+            index = new PersistentClassIndex();
+            liveReloadBuildItem.setContextObject(PersistentClassIndex.class, index);
+        }
+
+        CompositeIndex compositeIndex = CompositeIndex.create(archivesIndex, indexer.complete());
+        RuntimeUpdatesProcessor.setLastStartIndex(compositeIndex);
+        return new CombinedIndexBuildItem(compositeIndex,
+                new IndexWrapper(compositeIndex, Thread.currentThread().getContextClassLoader(), index));
     }
 
 }

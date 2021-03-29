@@ -9,4 +9,5 @@ bar:
       baz: foo
 hello:
   world
-
+list:
+  - baz

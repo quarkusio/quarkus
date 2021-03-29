@@ -21,8 +21,8 @@ import io.restassured.RestAssured;
 
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
-    private static final String KEYCLOAK_REALM = "quarkus";
+    public static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
+    public static final String KEYCLOAK_REALM = "quarkus";
     private List<RealmRepresentation> realms = new ArrayList<>();
 
     @Override

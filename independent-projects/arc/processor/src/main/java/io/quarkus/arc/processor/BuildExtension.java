@@ -59,7 +59,7 @@ public interface BuildExtension {
         static Key<Collection<ScopeInfo>> SCOPES = new SimpleKey<>(BUILT_IN_PREFIX + "scopes");
         static Key<Map<DotName, ClassInfo>> QUALIFIERS = new SimpleKey<>(BUILT_IN_PREFIX + "qualifiers");
         static Key<Map<DotName, ClassInfo>> INTERCEPTOR_BINDINGS = new SimpleKey<>(BUILT_IN_PREFIX + "interceptorBindings");
-        static Key<Map<DotName, ClassInfo>> STEREOTYPES = new SimpleKey<>(BUILT_IN_PREFIX + "stereotypes");
+        static Key<Map<DotName, StereotypeInfo>> STEREOTYPES = new SimpleKey<>(BUILT_IN_PREFIX + "stereotypes");
 
         String asString();
     }

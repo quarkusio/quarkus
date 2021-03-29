@@ -2,16 +2,29 @@ package io.quarkus.grpc.deployment;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
+import static org.codehaus.plexus.util.FileUtils.copyStreamToFile;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.codehaus.plexus.util.io.RawInputStreamFacade;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -21,13 +34,23 @@ import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.bootstrap.prebuild.CodeGenFailureException;
 import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
+import io.quarkus.deployment.util.ProcessUtil;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.utilities.JavaBinFinder;
 import io.quarkus.utilities.OS;
 
+/**
+ * Code generation for gRPC. Generates java classes from proto files placed in either src/main/proto or src/test/proto
+ * Inspired by <a href="https://github.com/xolstice/protobuf-maven-plugin">Protobuf Maven Plugin</a>
+ */
 public class GrpcCodeGen implements CodeGenProvider {
     private static final Logger log = Logger.getLogger(GrpcCodeGen.class);
 
     private static final String quarkusProtocPluginMain = "io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator";
+    private static final String EXE = "exe";
+    private static final String PROTO = ".proto";
+    private static final String PROTOC = "protoc";
+    private static final String PROTOC_GROUPID = "com.google.protobuf";
 
     private Executables executables;
 
@@ -58,35 +81,42 @@ public class GrpcCodeGen implements CodeGenProvider {
 
         try {
             if (Files.isDirectory(protoDir)) {
-                List<String> protoFiles = Files.walk(protoDir)
-                        .filter(Files::isRegularFile)
-                        .filter(path -> path.toString().endsWith(".proto"))
-                        .map(Path::toString)
-                        .map(this::escapeWhitespace)
-                        .collect(Collectors.toList());
-                if (!protoFiles.isEmpty()) {
-                    initExecutables(workDir, context.appModel());
+                try (Stream<Path> protoFilesPaths = Files.walk(protoDir)) {
+                    List<String> protoFiles = protoFilesPaths
+                            .filter(Files::isRegularFile)
+                            .map(Path::toString)
+                            .filter(s -> s.endsWith(PROTO))
+                            .map(this::escapeWhitespace)
+                            .collect(Collectors.toList());
+                    if (!protoFiles.isEmpty()) {
+                        initExecutables(workDir, context.appModel());
 
-                    List<String> command = new ArrayList<>();
-                    command.addAll(asList(executables.protoc.toString(),
-                            "-I=" + escapeWhitespace(protoDir.toString()),
-                            "--plugin=protoc-gen-grpc=" + executables.grpc,
-                            "--plugin=protoc-gen-q-grpc=" + executables.quarkusGrpc,
-                            "--q-grpc_out=" + outDir,
-                            "--grpc_out=" + outDir,
-                            "--java_out=" + outDir));
-                    command.addAll(protoFiles);
+                        Collection<String> protosToImport = gatherImports(workDir.resolve("protoc-dependencies"), context);
 
-                    Process process = new ProcessBuilder()
-                            .command(command)
-                            .inheritIO()
-                            .start();
-                    int resultCode = process.waitFor();
-                    if (resultCode != 0) {
-                        throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
-                                " to " + outDir.toAbsolutePath().toString());
+                        List<String> command = new ArrayList<>();
+                        command.add(executables.protoc.toString());
+                        for (String protoImportDir : protosToImport) {
+                            command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
+                        }
+
+                        command.addAll(asList("-I=" + escapeWhitespace(protoDir.toString()),
+                                "--plugin=protoc-gen-grpc=" + executables.grpc,
+                                "--plugin=protoc-gen-q-grpc=" + executables.quarkusGrpc,
+                                "--q-grpc_out=" + outDir,
+                                "--grpc_out=" + outDir,
+                                "--java_out=" + outDir));
+                        command.addAll(protoFiles);
+
+                        ProcessBuilder processBuilder = new ProcessBuilder(command);
+
+                        final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
+                        int resultCode = process.waitFor();
+                        if (resultCode != 0) {
+                            throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
+                                    " to " + outDir.toAbsolutePath().toString());
+                        }
+                        return true;
                     }
-                    return true;
                 }
             }
         } catch (IOException | InterruptedException e) {
@@ -95,9 +125,71 @@ public class GrpcCodeGen implements CodeGenProvider {
         return false;
     }
 
+    private Collection<String> gatherImports(Path workDir, CodeGenContext context) throws CodeGenException {
+        Map<String, String> properties = context.properties();
+
+        String scanForImports = properties.getOrDefault("quarkus.generate-code.grpc.scan-for-imports",
+                "com.google.protobuf:protobuf-java");
+
+        if ("none".equals(scanForImports.toLowerCase(Locale.getDefault()))) {
+            return Collections.emptyList();
+        }
+
+        boolean scanAll = "all".equals(scanForImports.toLowerCase(Locale.getDefault()));
+        List<String> dependenciesToScan = Arrays.asList(scanForImports.split(","));
+
+        Set<String> importDirectories = new HashSet<>();
+        AppModel appModel = context.appModel();
+        for (AppDependency dependency : appModel.getUserDependencies()) {
+            AppArtifact artifact = dependency.getArtifact();
+            if (scanAll
+                    || dependenciesToScan.contains(String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
+                for (Path path : artifact.getPaths()) {
+                    Path jarName = path.getFileName();
+                    if (jarName.toString().endsWith(".jar")) {
+                        final JarFile jar;
+                        try {
+                            jar = new JarFile(path.toFile());
+                        } catch (final IOException e) {
+                            throw new CodeGenException("Failed to read Jar: " + path.normalize().toAbsolutePath(), e);
+                        }
+
+                        for (JarEntry jarEntry : jar.stream().collect(Collectors.toList())) {
+                            String jarEntryName = jarEntry.getName();
+                            if (jarEntryName.endsWith(PROTO)) {
+                                Path protoUnzipDir = workDir.resolve(HashUtil.sha1(jar.getName())).normalize().toAbsolutePath();
+                                try {
+                                    Files.createDirectories(protoUnzipDir);
+                                    importDirectories.add(protoUnzipDir.toString());
+                                } catch (IOException e) {
+                                    throw new CodeGenException(
+                                            "Failed to create directory: " + protoUnzipDir, e);
+                                }
+                                // checking for https://snyk.io/research/zip-slip-vulnerability
+                                Path unzippedProto = protoUnzipDir.resolve(jarEntryName);
+                                if (!unzippedProto.normalize().toAbsolutePath().startsWith(workDir.toAbsolutePath())) {
+                                    throw new CodeGenException("Attempted to unzip " + jarEntryName
+                                            + " to a location outside the working directory");
+                                }
+                                try {
+                                    copyStreamToFile(new RawInputStreamFacade(jar.getInputStream(jarEntry)),
+                                            unzippedProto.toFile());
+                                } catch (IOException e) {
+                                    throw new CodeGenException("Failed to create input stream for reading " + jarEntryName
+                                            + " from " + jar.getName(), e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return importDirectories;
+    }
+
     private String escapeWhitespace(String path) {
         if (OS.determineOS() == OS.LINUX) {
-            return path.replaceAll(" ", "\\ ");
+            return path.replace(" ", "\\ ");
         } else {
             return path;
         }
@@ -105,10 +197,18 @@ public class GrpcCodeGen implements CodeGenProvider {
 
     private void initExecutables(Path workDir, AppModel model) throws CodeGenException {
         if (executables == null) {
-            Path protocExe = prepareExecutable(workDir, model,
-                    "com.google.protobuf", "protoc", osClassifier(), "exe");
+            Path protocPath;
+            String protocPathProperty = System.getProperty("quarkus.grpc.protoc-path");
+            String classifier = osClassifier();
+            if (protocPathProperty == null) {
+                protocPath = findArtifactPath(model, PROTOC_GROUPID, PROTOC, classifier, EXE);
+            } else {
+                protocPath = Paths.get(protocPathProperty);
+            }
+            Path protocExe = makeExecutableFromPath(workDir, PROTOC_GROUPID, PROTOC, classifier, "exe", protocPath);
+
             Path protocGrpcPluginExe = prepareExecutable(workDir, model,
-                    "io.grpc", "protoc-gen-grpc-java", osClassifier(), "exe");
+                    "io.grpc", "protoc-gen-grpc-java", classifier, "exe");
 
             Path quarkusGrpcPluginExe = prepareQuarkusGrpcExecutable(model, workDir);
 
@@ -120,6 +220,11 @@ public class GrpcCodeGen implements CodeGenProvider {
             String groupId, String artifactId, String classifier, String packaging) throws CodeGenException {
         Path artifactPath = findArtifactPath(model, groupId, artifactId, classifier, packaging);
 
+        return makeExecutableFromPath(buildDir, groupId, artifactId, classifier, packaging, artifactPath);
+    }
+
+    private Path makeExecutableFromPath(Path buildDir, String groupId, String artifactId, String classifier, String packaging,
+            Path artifactPath) throws CodeGenException {
         Path exe = buildDir.resolve(String.format("%s-%s-%s-%s", groupId, artifactId, classifier, packaging));
 
         if (Files.exists(exe)) {
@@ -204,7 +309,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private static void writePluginExeCmd(Path pluginPath, BufferedWriter writer) throws IOException {
-        writer.write(JavaBinFinder.findBin() + " -cp \"" +
+        writer.write("\"" + JavaBinFinder.findBin() + "\" -cp \"" +
                 pluginPath.toAbsolutePath().toString() + "\" " + quarkusProtocPluginMain);
         writer.newLine();
     }

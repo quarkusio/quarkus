@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.graphql.deployment.ui;
+package io.quarkus.smallrye.health.test.ui;
 
 import static org.hamcrest.Matchers.containsString;
 

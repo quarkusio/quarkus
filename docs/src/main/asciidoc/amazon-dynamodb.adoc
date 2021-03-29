@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Amazon DynamoDB Client
 :extension-status: preview
@@ -40,7 +40,7 @@ To complete this guide, you need:
 
 The easiest way to start working with DynamoDB is to run a local instance as a container.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 docker run --publish 8000:8000 amazon/dynamodb-local:1.11.477 -jar DynamoDBLocal.jar -inMemory -sharedDb
 ----
@@ -76,7 +76,7 @@ For more information, see https://docs.aws.amazon.com/amazondynamodb/latest/deve
 
 We recommend to use the AWS CLI to provision the table:
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 aws dynamodb create-table --table-name QuarkusFruits \
                           --attribute-definitions AttributeName=fruitName,AttributeType=S \
@@ -98,14 +98,14 @@ The solution is located in the `amazon-dynamodb-quickstart` {quickstarts-tree-ur
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amazon-dynamodb-quickstart \
     -DclassName="org.acme.dynamodb.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb,amazon-dynamodb,resteasy-mutiny"
+    -Dextensions="resteasy,resteasy-jackson,amazon-dynamodb,resteasy-mutiny"
 cd amazon-dynamodb-quickstart
 ----
 
@@ -281,17 +281,13 @@ package org.acme.dynamodb;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("/fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     @Inject
@@ -321,7 +317,7 @@ The implementation is pretty straightforward and you just need to define your en
 == Configuring DynamoDB clients
 
 Both DynamoDB clients (sync and async) are configurable via the `application.properties` file that can be provided in the `src/main/resources` directory.
-Additionally, you need to added to the classpath a proper implementation of the sync client. By default the extension uses URL connection HTTP client, so
+Additionally, you need to add to the classpath a proper implementation of the sync client. By default the extension uses the `java.net.URLConnection` HTTP client, so
 you need to add a URL connection client dependency to the `pom.xml` file:
 
 [source,xml]
@@ -332,7 +328,7 @@ you need to add a URL connection client dependency to the `pom.xml` file:
 </dependency>
 ----
 
-If you want to use Apache HTTP client instead, configure it as follows:
+If you want to use the Apache HTTP client instead, configure it as follows:
 [source,properties]
 ----
 quarkus.dynamodb.sync-client.type=apache
@@ -344,6 +340,10 @@ And add following dependency to the application `pom.xml`:
 <dependency>
     <groupId>software.amazon.awssdk</groupId>
     <artifactId>apache-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-apache-httpclient</artifactId>
 </dependency>
 ----
 
@@ -380,7 +380,7 @@ include::./amazon-credentials.adoc[]
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -jar target/amazon-dynamodb-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.

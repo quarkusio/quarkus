@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Reactive SQL Clients
 
@@ -49,7 +49,7 @@ public class Fruit {
 ====
 Do you need a ready-to-use PostgreSQL server to try out the examples?
 
-[source,shell]
+[source,bash]
 ----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:10.5
 ----
@@ -62,18 +62,20 @@ docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name qua
 First, make sure your project has the `quarkus-reactive-pg-client` extension enabled.
 If you are creating a new project, set the `extensions` parameter as follows:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=reactive-pg-client-quickstart \
-    -Dextensions="reactive-pg-client"
+    -DclassName="org.acme.vertx.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy,reactive-pg-client,resteasy-mutiny"
 cd reactive-pg-client-quickstart
 ----
 
 If you have an already created project, the `reactive-pg-client` extension can be added to an existing Quarkus project with the `add-extension` command:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="reactive-pg-client"
 ----
@@ -88,8 +90,16 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 </dependency>
 ----
 
+=== Mutiny
+
+Reactive REST endpoints in your application that return Uni or Multi need `Mutiny support for RESTEasy` extension (`io.quarkus:quarkus-resteasy-mutiny`) to work properly:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
+----
+
 [TIP]
-.Mutiny
 ====
 In this guide, we will use the Mutiny API of the Reactive PostgreSQL Client.
 If you're not familiar with Mutiny reactive types, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
@@ -98,11 +108,11 @@ If you're not familiar with Mutiny reactive types, read the link:getting-started
 === JSON Binding
 
 We will expose `Fruit` instances over HTTP in the JSON format.
-Consequently, you also need to add the `quarkus-resteasy-jsonb` extension:
+Consequently, you also need to add the `quarkus-resteasy-jackson` extension:
 
-[source,shell]
+[source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="resteasy-jsonb"
+./mvnw quarkus:add-extension -Dextensions="resteasy-jackson"
 ----
 
 If you prefer not to use the command line, manually add this to the dependencies section of your `pom.xml` file:
@@ -111,7 +121,7 @@ If you prefer not to use the command line, manually add this to the dependencies
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jsonb</artifactId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
 </dependency>
 ----
 
@@ -121,7 +131,7 @@ Of course, this is only a requirement for this guide, not any application using 
 
 The Reactive PostgreSQL Client can be configured with standard Quarkus datasource properties and a reactive URL:
 
-[source]
+[source,properties]
 .src/main/resources/application.properties
 ----
 quarkus.datasource.db-kind=postgresql
@@ -136,8 +146,6 @@ With that you may create your `FruitResource` skeleton and `@Inject` a `io.vertx
 .src/main/java/org/acme/vertx/FruitResource.java
 ----
 @Path("fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     @Inject
@@ -261,14 +269,14 @@ public Multi<Fruit> get() {
 
 Now start Quarkus in `dev` mode with:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
 
 Lastly, open your browser and navigate to http://localhost:8080/fruits, you should see:
 
-[source, shell]
+[source,json]
 ----
 [{"id":3,"name":"Apple"},{"id":1,"name":"Orange"},{"id":2,"name":"Pear"}]
 ----
@@ -322,7 +330,7 @@ The same logic applies when saving a `Fruit`:
 .src/main/java/org/acme/vertx/Fruit.java
 ----
 public Uni<Long> save(PgPool client) {
-    return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)").execute(Tuple.of(name))
+    return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id").execute(Tuple.of(name))
             .onItem().transform(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
 }
 ----
@@ -494,9 +502,9 @@ The following snippet shows how to run 2 insertions in the same transaction:
 ----
 public static Uni<Void> insertTwoFruits(PgPool client, Fruit fruit1, Fruit fruit2) {
     return SqlClientHelper.inTransactionUni(client, tx -> {
-        Uni<RowSet<Row>> insertOne = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)")
+        Uni<RowSet<Row>> insertOne = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit1.name));
-        Uni<RowSet<Row>> insertTwo = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)")
+        Uni<RowSet<Row>> insertTwo = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit2.name));
 
         return insertOne.and(insertTwo)
@@ -514,7 +522,7 @@ You can also create dependent actions as follows:
 ----
 return SqlClientHelper.inTransactionUni(client, tx -> tx
 
-        .preparedQuery("INSERT INTO person (firstname,lastname) VALUES ($1,$2) RETURNING (id)")
+        .preparedQuery("INSERT INTO person (firstname,lastname) VALUES ($1,$2) RETURNING id")
                 .execute(Tuple.of(person.getFirstName(), person.getLastName()))
 
         .onItem().transformToUni(id -> tx.preparedQuery("INSERT INTO addr (person_id,addrline1) VALUES ($1,$2)")
@@ -522,6 +530,124 @@ return SqlClientHelper.inTransactionUni(client, tx -> tx
 
         .onItem().ignore().andContinueWithNull());
 ----
+
+== Multiple Datasources
+
+The reactive SQL clients support defining several datasources.
+
+A typical configuration with several datasources would look like:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql <1>
+quarkus.datasource.username=user-default
+quarkus.datasource.password=password-default
+quarkus.datasource.reactive.url=postgresql://localhost:5432/default
+
+quarkus.datasource."additional1".db-kind=postgresql <2>
+quarkus.datasource."additional1".username=user-additional1
+quarkus.datasource."additional1".password=password-additional1
+quarkus.datasource."additional1".reactive.url=postgresql://localhost:5432/additional1
+
+quarkus.datasource."additional2".db-kind=mysql <3>
+quarkus.datasource."additional2".username=user-additional2
+quarkus.datasource."additional2".password=password-additional2
+quarkus.datasource."additional2".reactive.url=mysql://localhost:3306/additional2
+----
+<1> The default datasource - using PostgreSQL.
+<2> A named datasource called `additional1` - using PostgreSQL.
+<3> A named datasource called `additional2` - using MySQL.
+
+You can then inject the clients as follows:
+
+[source,java]
+----
+@Inject <1>
+PgPool defaultClient;
+
+@Inject
+@ReactiveDataSource("additional1") <2>
+PgPool additional1Client;
+
+@Inject
+@ReactiveDataSource("additional2")
+MySQLPool additional2Client;
+----
+<1> Injecting the client for the default datasource does not require anything special.
+<2> For a named datasource, you use the `@ReactiveDataSource` CDI qualifier with the datasource name as its value.
+
+== UNIX Domain Socket connections
+
+The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
+
+First make sure that link:vertx#native-transport[native transport support] is enabled.
+
+Then configure the database connection url.
+This step depends on the database type.
+
+=== PostgreSQL
+
+PostgresSQL domain socket paths have the following form: `<directory>/.s.PGSQL.<port>`
+
+The database connection url must be configured so that:
+
+* the `host` is the `directory` in the socket path
+* the `port` is the `port` in the socket path
+
+Consider the following socket path: `/var/run/postgresql/.s.PGSQL.5432`.
+
+In `application.properties` add:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url=postgresql://:5432/quarkus_test?host=/var/run/postgresql
+----
+
+=== MariaDB/MySQL
+
+The database connection url must be configured so that the `host` is the socket path.
+
+Consider the following socket path: `/var/run/mysqld/mysqld.sock`.
+
+In `application.properties` add:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url=mysql:///quarkus_test?host=/var/run/mysqld/mysqld.sock
+----
+
+== TCP Connection `idle-timeout`
+
+Reactive datasources can be configured with an `idle-timeout` (in milliseconds) that applies at the TCP connection level.
+
+NOTE: The `idle-timeout` is disabled by default.
+
+For example, you could expire idle connections after 60 minutes:
+
+[source,properties]
+----
+quarkus.datasource.reactive.idle-timeout=PT60M
+----
+
+[WARNING]
+====
+This timeout does not apply to the pool, but to the TCP connection.
+
+If it expires while the connection is idle in the pool, the connection is closed and removed from the pool.
+
+If it expires immediately after your borrowed the connection from the pool and before you execute a query, you will get an error.
+
+
+While this is unlikely to happen, you must be prepared for such eventuality:
+
+[source,java]
+----
+// Run a query, retry at most 3 times if it fails
+Uni<RowSet<Row>> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC")
+                            .execute()
+                            .onFailure().retry().atMost(3);
+----
+====
 
 == Configuration Reference
 

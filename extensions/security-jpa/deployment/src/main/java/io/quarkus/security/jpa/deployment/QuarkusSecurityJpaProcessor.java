@@ -37,14 +37,17 @@ import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.security.jpa.Password;
+import io.quarkus.security.jpa.PasswordProvider;
 import io.quarkus.security.jpa.PasswordType;
 import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.RolesValue;
@@ -109,9 +112,10 @@ class QuarkusSecurityJpaProcessor {
                     annotatedRoles);
             AnnotationInstance passAnnotation = jpaSecurityDefinition.password.annotation(DOTNAME_PASSWORD);
             AnnotationValue passwordType = passAnnotation.value();
+            AnnotationValue customPasswordProvider = passAnnotation.value("provider");
+
             generateIdentityProvider(index.getIndex(), jpaSecurityDefinition,
-                    passwordType != null ? passwordType.asEnum() : PasswordType.MCF.name(),
-                    beanProducer, panacheEntities);
+                    passwordType, customPasswordProvider, beanProducer, panacheEntities);
 
             generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition,
                     beanProducer, panacheEntities);
@@ -140,7 +144,8 @@ class QuarkusSecurityJpaProcessor {
         return annotations.get(0).target();
     }
 
-    private void generateIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition, String passwordType,
+    private void generateIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
+            AnnotationValue passwordTypeValue, AnnotationValue passwordProviderValue,
             BuildProducer<GeneratedBeanBuildItem> beanProducer, Set<String> panacheClasses) {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
@@ -151,6 +156,10 @@ class QuarkusSecurityJpaProcessor {
                 .classOutput(gizmoAdaptor)
                 .build()) {
             classCreator.addAnnotation(Singleton.class);
+            FieldDescriptor passwordProviderField = classCreator.getFieldCreator("passwordProvider", PasswordProvider.class)
+                    .setModifiers(Modifier.PRIVATE)
+                    .getFieldDescriptor();
+
             try (MethodCreator methodCreator = classCreator.getMethodCreator("authenticate", SecurityIdentity.class,
                     EntityManager.class, UsernamePasswordAuthenticationRequest.class)) {
                 methodCreator.setModifiers(Modifier.PUBLIC);
@@ -168,32 +177,59 @@ class QuarkusSecurityJpaProcessor {
                 AssignableResultHandle userVar = methodCreator.createVariable(declaringClassTypeDescriptor);
                 methodCreator.assign(userVar, methodCreator.checkCast(user, declaringClassName));
 
-                // if(user == null) return null;
+                // if(user == null) throw new AuthenticationFailedException();
                 try (BytecodeCreator trueBranch = methodCreator.ifNull(userVar).trueBranch()) {
-                    trueBranch.returnValue(trueBranch.loadNull());
+                    ResultHandle exceptionInstance = trueBranch
+                            .newInstance(MethodDescriptor.ofConstructor(AuthenticationFailedException.class));
+                    trueBranch.throwException(exceptionInstance);
                 }
 
                 // :pass = user.pass | user.getPass()
                 ResultHandle pass = jpaSecurityDefinition.password.readValue(methodCreator, userVar);
-                String getPasswordMethod;
-                if (passwordType == null) {
-                    passwordType = PasswordType.MCF.name();
+
+                PasswordType passwordType = passwordTypeValue != null ? PasswordType.valueOf(passwordTypeValue.asEnum())
+                        : PasswordType.MCF;
+
+                if (passwordType == PasswordType.CUSTOM && passwordProviderValue == null) {
+                    throw new RuntimeException("Missing password provider for password type: " + passwordType);
                 }
-                switch (PasswordType.valueOf(passwordType)) {
+
+                ResultHandle objectToInvokeOn;
+                String passwordProviderClassStr;
+                String passwordProviderMethod;
+                switch (passwordType) {
+                    case CUSTOM:
+                        passwordProviderClassStr = passwordProviderValue.asString();
+                        passwordProviderMethod = "getPassword";
+                        ResultHandle passwordProviderInstanceField = methodCreator.readInstanceField(passwordProviderField,
+                                methodCreator.getThis());
+                        BytecodeCreator trueBranch = methodCreator.ifNull(passwordProviderInstanceField).trueBranch();
+                        ResultHandle passwordProviderInstance = trueBranch
+                                .newInstance(MethodDescriptor.ofConstructor(passwordProviderClassStr));
+                        trueBranch.writeInstanceField(passwordProviderField, trueBranch.getThis(), passwordProviderInstance);
+                        trueBranch.close();
+                        objectToInvokeOn = methodCreator.readInstanceField(passwordProviderField, methodCreator.getThis());
+                        break;
                     case CLEAR:
-                        getPasswordMethod = "getClearPassword";
+                        passwordProviderClassStr = name;
+                        passwordProviderMethod = "getClearPassword";
+                        objectToInvokeOn = methodCreator.getThis();
                         break;
                     case MCF:
-                        getPasswordMethod = "getMcfPassword";
+                        passwordProviderClassStr = name;
+                        passwordProviderMethod = "getMcfPassword";
+                        objectToInvokeOn = methodCreator.getThis();
                         break;
                     default:
                         throw new RuntimeException("Unknown password type: " + passwordType);
                 }
+
                 // :getPasswordMethod(:pass);
                 ResultHandle storedPassword = methodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(name, getPasswordMethod, org.wildfly.security.password.Password.class,
+                        MethodDescriptor.ofMethod(passwordProviderClassStr, passwordProviderMethod,
+                                org.wildfly.security.password.Password.class,
                                 String.class),
-                        methodCreator.getThis(), pass);
+                        objectToInvokeOn, pass);
 
                 // Builder builder = checkPassword(storedPassword, request);
                 ResultHandle builder = methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(name, "checkPassword",

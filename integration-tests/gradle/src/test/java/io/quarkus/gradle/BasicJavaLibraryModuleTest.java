@@ -20,7 +20,8 @@ public class BasicJavaLibraryModuleTest extends QuarkusGradleWrapperTestBase {
         assertThat(commonLibs).exists();
         assertThat(commonLibs.resolve("library-1.0.0-SNAPSHOT.jar")).exists();
 
-        final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("lib");
+        final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("quarkus-app")
+                .resolve("lib").resolve("main");
         assertThat(applicationLib).exists();
         assertThat(applicationLib.resolve("org.acme.library-1.0.0-SNAPSHOT.jar")).exists();
     }

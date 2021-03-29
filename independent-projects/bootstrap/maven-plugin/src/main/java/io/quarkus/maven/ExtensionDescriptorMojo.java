@@ -1,18 +1,23 @@
 package io.quarkus.maven;
 
-import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -23,12 +28,14 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Set;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -39,6 +46,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -47,12 +55,14 @@ import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResult;
+import org.eclipse.aether.util.artifact.JavaScopes;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
@@ -64,11 +74,12 @@ import org.eclipse.aether.resolution.DependencyResult;
  *
  * @author Alexey Loubyansky
  */
-@Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
+    private static final String METADATA = "metadata";
 
     /**
      * The entry point to Aether, i.e. the component doing all the work.
@@ -77,6 +88,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
      */
     @Component
     private RepositorySystem repoSystem;
+
+    @Component
+    RemoteRepositoryManager remoteRepoManager;
+
+    @Component
+    BootstrapWorkspaceProvider workspaceProvider;
 
     /**
      * The current repository/network configuration of Maven.
@@ -131,6 +148,15 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     List<String> parentFirstArtifacts;
 
     /**
+     * Artifacts that are always loaded parent when the fast-jar is used. This is an advanced option
+     * and should only be used if you are sure that this is the correct solution for the use case.
+     *
+     * A possible example of this would be logging libraries, as these need to be loaded by the system class loader.
+     */
+    @Parameter
+    List<String> runnerParentFirstArtifacts;
+
+    /**
      * Artifacts that will only be used to load a class or resource if no other normal element exists.
      * This is an advanced option that should only be used when there is a case of multiple jars
      * containing the same classes and we need to control which jars is actually used to load the classes.
@@ -141,6 +167,23 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(required = false, defaultValue = "${skipExtensionValidation}")
     private boolean skipExtensionValidation;
 
+    @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion")
+    boolean ignoreNotDetectedQuarkusCoreVersion;
+
+    @Parameter
+    private List<String> conditionalDependencies = new ArrayList<>(0);
+
+    @Parameter
+    private List<String> dependencyCondition = new ArrayList<>(0);
+
+    @Parameter(property = "skipCodestartValidation")
+    boolean skipCodestartValidation;
+
+    AppArtifactCoords deploymentCoords;
+    CollectResult collectedDeploymentDeps;
+
+    MavenArtifactResolver resolver;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -148,13 +191,71 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             validateExtensionDeps();
         }
 
+        if (conditionalDependencies.isEmpty()) {
+            // if conditional dependencies haven't been configured
+            // we check whether there are direct optional dependencies on extensions
+            // that are configured with a dependency condition
+            // such dependencies will be registered as conditional
+            StringBuilder buf = null;
+            for (org.apache.maven.model.Dependency d : project.getDependencies()) {
+                if (!d.isOptional()) {
+                    continue;
+                }
+                if (!d.getScope().isEmpty()
+                        && !(d.getScope().equals(JavaScopes.COMPILE) || d.getScope().equals(JavaScopes.RUNTIME))) {
+                    continue;
+                }
+                final Properties props = getExtensionDescriptor(
+                        new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()),
+                        false);
+                if (props == null || !props.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
+                    continue;
+                }
+                if (buf == null) {
+                    buf = new StringBuilder();
+                } else {
+                    buf.setLength(0);
+                }
+                buf.append(d.getGroupId()).append(':').append(d.getArtifactId()).append(':');
+                if (d.getClassifier() != null) {
+                    buf.append(d.getClassifier());
+                }
+                buf.append(':').append(d.getType()).append(':').append(d.getVersion());
+                conditionalDependencies.add(buf.toString());
+            }
+        }
+
         final Properties props = new Properties();
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment);
+        if (!conditionalDependencies.isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            int i = 0;
+            buf.append(AppArtifactCoords.fromString(conditionalDependencies.get(i++)).toString());
+            while (i < conditionalDependencies.size()) {
+                buf.append(' ').append(AppArtifactCoords.fromString(conditionalDependencies.get(i++)).toString());
+            }
+            props.setProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES, buf.toString());
+        }
+        if (!dependencyCondition.isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            int i = 0;
+            buf.append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+            while (i < dependencyCondition.size()) {
+                buf.append(' ').append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+            }
+            props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
+
+        }
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
 
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);
             props.put(AppModel.PARENT_FIRST_ARTIFACTS, val);
+        }
+
+        if (runnerParentFirstArtifacts != null && !runnerParentFirstArtifacts.isEmpty()) {
+            String val = String.join(",", runnerParentFirstArtifacts);
+            props.put(AppModel.RUNNER_PARENT_FIRST_ARTIFACTS, val);
         }
 
         if (excludedArtifacts != null && !excludedArtifacts.isEmpty()) {
@@ -253,6 +354,10 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.put("description", project.getDescription());
         }
 
+        setBuiltWithQuarkusCoreVersion(mapper, extObject);
+
+        completeCodestartArtifact(mapper, extObject);
+
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
 
@@ -265,129 +370,378 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
+    private void completeCodestartArtifact(ObjectMapper mapper, ObjectNode extObject) throws MojoExecutionException {
+        JsonNode mvalue = getJsonElement(extObject, METADATA, "codestart");
+        if (mvalue == null || !mvalue.isObject()) {
+            return;
+        }
+        final ObjectNode codestartObject = (ObjectNode) mvalue;
+        mvalue = mvalue.get("artifact");
+        if (mvalue == null) {
+            if (!skipCodestartValidation) {
+                throw new MojoExecutionException("Codestart artifact is missing from the " + extensionFile);
+            }
+            return;
+        }
+        org.eclipse.aether.artifact.Artifact codestartArtifact = DependencyNodeUtils.toArtifact(mvalue.asText());
+
+        if (codestartArtifact.getVersion() == null || codestartArtifact.getVersion().isEmpty()) {
+            codestartArtifact = codestartArtifact.setVersion(project.getVersion());
+            codestartObject.put("artifact",
+                    codestartArtifact.getGroupId() + ":" + codestartArtifact.getArtifactId() + ":"
+                            + codestartArtifact.getClassifier() + ":" + codestartArtifact.getExtension() + ":"
+                            + codestartArtifact.getVersion());
+        }
+        if (!skipCodestartValidation) {
+            // first we look for it in the workspace, if it's in there we don't need to actually resolve the artifact, because it might not have been built yet
+            if (workspaceProvider.workspace().getProject(codestartArtifact.getGroupId(),
+                    codestartArtifact.getArtifactId()) == null) {
+                try {
+                    resolve(codestartArtifact);
+                } catch (MojoExecutionException e) {
+                    throw new MojoExecutionException("Failed to resolve codestart artifact " + codestartArtifact, e);
+                }
+            }
+        }
+    }
+
+    private static JsonNode getJsonElement(ObjectNode extObject, String... elements) {
+        JsonNode mvalue = extObject.get(elements[0]);
+        int i = 1;
+        while (i < elements.length) {
+            if (mvalue == null || !mvalue.isObject()) {
+                return null;
+            }
+            final String element = elements[i++];
+            extObject = (ObjectNode) mvalue;
+            mvalue = extObject.get(element);
+        }
+        return mvalue;
+    }
+
+    private void setBuiltWithQuarkusCoreVersion(ObjectMapper mapper, ObjectNode extObject) throws MojoExecutionException {
+        final QuarkusCoreDeploymentVersionLocator coreVersionLocator = new QuarkusCoreDeploymentVersionLocator();
+        final DependencyNode root;
+        try {
+            root = repoSystem.collectDependencies(repoSession, newCollectRuntimeDepsRequest()).getRoot();
+        } catch (MojoExecutionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to collect runtime dependencies of " + project.getArtifact(), e);
+        }
+        root.accept(coreVersionLocator);
+        if (coreVersionLocator.coreVersion != null) {
+            ObjectNode metadata;
+            JsonNode mvalue = extObject.get(METADATA);
+            if (mvalue != null && mvalue.isObject()) {
+                metadata = (ObjectNode) mvalue;
+            } else {
+                metadata = mapper.createObjectNode();
+            }
+            metadata.put("built-with-quarkus-core", coreVersionLocator.coreVersion);
+            extObject.set(METADATA, metadata);
+        } else if (!ignoreNotDetectedQuarkusCoreVersion) {
+            throw new MojoExecutionException("Failed to determine the Quarkus core version used to build the extension");
+        }
+
+    }
+
     private void validateExtensionDeps() throws MojoExecutionException {
 
-        final AppArtifactCoords deploymentCoords = AppArtifactCoords.fromString(deployment);
-
-        final AppArtifactKey rootDeploymentGact = deploymentCoords.getKey();
-        final Node rootDeployment = new Node(null, rootDeploymentGact, 2);
+        final AppArtifactKey rootDeploymentGact = getDeploymentCoords().getKey();
+        final RootNode rootDeployment = new RootNode(rootDeploymentGact, 2);
         final Artifact artifact = project.getArtifact();
         final Node rootRuntime = rootDeployment.newChild(new AppArtifactKey(artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(), artifact.getType()), 1);
 
-        final Map<AppArtifactKey, Node> expectedExtensionDeps = new HashMap<>();
-        expectedExtensionDeps.put(rootDeploymentGact, rootDeployment);
-        expectedExtensionDeps.put(rootRuntime.gact, rootRuntime);
+        rootDeployment.expectedDeploymentNodes.put(rootDeployment.gact, rootDeployment);
+        rootDeployment.expectedDeploymentNodes.put(rootRuntime.gact, rootRuntime);
         // collect transitive extension deps
         final DependencyResult resolvedDeps;
 
         try {
             resolvedDeps = repoSystem.resolveDependencies(repoSession,
-                    new DependencyRequest()
-                            .setCollectRequest(newCollectRequest(new DefaultArtifact(project.getArtifact().getGroupId(),
-                                    project.getArtifact().getArtifactId(),
-                                    project.getArtifact().getClassifier(),
-                                    project.getArtifact().getArtifactHandler().getExtension(),
-                                    project.getArtifact().getVersion()))));
+                    new DependencyRequest().setCollectRequest(newCollectRuntimeDepsRequest()));
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve dependencies of " + project.getArtifact(), e);
         }
 
-        final AtomicInteger extDepsTotal = new AtomicInteger(2);
-        resolvedDeps.getRoot().accept(new DependencyVisitor() {
-            Node currentNode = rootDeployment;
-            int currentNodeId = rootDeployment.id;
-
-            @Override
-            public boolean visitEnter(DependencyNode node) {
-                ++currentNodeId;
-                org.eclipse.aether.artifact.Artifact a = node.getArtifact();
-                final File f = a.getFile();
-                // if it hasn't been packaged yet, we skip it, we are not packaging yet
-                if (isAnalyzable(f)) {
-                    try (FileSystem fs = FileSystems.newFileSystem(f.toPath(), (ClassLoader) null)) {
-                        final Path extDescr = fs.getPath(BootstrapConstants.DESCRIPTOR_PATH);
-                        if (Files.exists(extDescr)) {
-                            final Properties props = new Properties();
-                            try (BufferedReader reader = Files.newBufferedReader(extDescr)) {
-                                props.load(reader);
-                            }
-                            final String deploymentStr = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-                            if (deploymentStr == null) {
-                                throw new IllegalStateException("Quarkus extension runtime artifact " + a + " is missing "
-                                        + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT + " property in its "
-                                        + BootstrapConstants.DESCRIPTOR_PATH);
-                            }
-                            currentNode = currentNode.newChild(AppArtifactCoords.fromString(deploymentStr).getKey(),
-                                    currentNodeId);
-                            expectedExtensionDeps.put(currentNode.gact, currentNode);
-                            extDepsTotal.incrementAndGet();
-                        }
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Failed to read " + f, e);
-                    }
-                }
-                return true;
-            }
-
-            @Override
-            public boolean visitLeave(DependencyNode node) {
-                if (currentNodeId == currentNode.id && currentNode.parent != null) {
-                    currentNode = currentNode.parent;
-                }
-                --currentNodeId;
-                return true;
-            }
-        });
-
-        final CollectResult collectedDeploymentDeps;
-        try {
-            collectedDeploymentDeps = repoSystem.collectDependencies(repoSession,
-                    newCollectRequest(new DefaultArtifact(deploymentCoords.getGroupId(), deploymentCoords.getArtifactId(),
-                            deploymentCoords.getClassifier(), deploymentCoords.getType(), deploymentCoords.getVersion())));
-        } catch (Exception e) {
-            throw new MojoExecutionException("Failed to collect dependencies of deployment artifact " + deploymentCoords, e);
+        for (DependencyNode node : resolvedDeps.getRoot().getChildren()) {
+            rootDeployment.directRuntimeDeps.add(toKey(node.getArtifact()));
         }
+        visitRuntimeDeps(rootDeployment, rootDeployment, rootDeployment.id, resolvedDeps.getRoot());
 
-        collectedDeploymentDeps.getRoot().accept(new DependencyVisitor() {
-            @Override
-            public boolean visitEnter(DependencyNode dep) {
-                org.eclipse.aether.artifact.Artifact artifact = dep.getArtifact();
-                if (artifact == null) {
-                    return true;
-                }
-                final Node node = expectedExtensionDeps.get(new AppArtifactKey(artifact.getGroupId(), artifact.getArtifactId(),
-                        artifact.getClassifier(), artifact.getExtension()));
-                if (node != null && !node.included) {
-                    node.included = true;
-                    extDepsTotal.decrementAndGet();
-                }
-                return true;
-            }
+        final DependencyNode deploymentNode = collectDeploymentDeps().getRoot();
+        visitDeploymentDeps(rootDeployment, deploymentNode);
 
-            @Override
-            public boolean visitLeave(DependencyNode node) {
-                return true;
-            }
-        });
-
-        if (extDepsTotal.intValue() != 0) {
+        if (rootDeployment.hasErrors()) {
             final Log log = getLog();
             log.error("Quarkus Extension Dependency Verification Error");
-            log.error("Deployment artifact " + deploymentCoords +
-                    " was found to be missing dependencies on Quarkus extension artifacts marked with '-' below:");
-            final List<AppArtifactKey> missing = rootDeployment.collectMissing(log);
+
             final StringBuilder buf = new StringBuilder();
-            buf.append("Deployment artifact ");
-            buf.append(deploymentCoords);
-            buf.append(" is missing the following dependencies from its configuration: ");
-            final Iterator<AppArtifactKey> i = missing.iterator();
-            buf.append(i.next());
-            while (i.hasNext()) {
-                buf.append(", ").append(i.next());
+
+            if (rootDeployment.deploymentDepsTotal != 0) {
+                log.error("Deployment artifact " + getDeploymentCoords() +
+                        " was found to be missing dependencies on the Quarkus extension artifacts marked with '-' below:");
+                final List<AppArtifactKey> missing = rootDeployment.collectMissingDeploymentDeps(log);
+                buf.append("Deployment artifact ");
+                buf.append(getDeploymentCoords());
+                buf.append(" is missing the following dependencies from its configuration: ");
+                final Iterator<AppArtifactKey> i = missing.iterator();
+                buf.append(i.next());
+                while (i.hasNext()) {
+                    buf.append(", ").append(i.next());
+                }
             }
+
+            if (!rootDeployment.deploymentsOnRtCp.isEmpty()) {
+                if (rootDeployment.runtimeCp > 0) {
+                    log.error("The following deployment artifact(s) appear on the runtime classpath: ");
+                    rootDeployment.collectDeploymentsOnRtCp(log);
+                }
+                if (buf.length() > 0) {
+                    buf.append(System.lineSeparator());
+                }
+                buf.append("The following deployment artifact(s) appear on the runtime classpath: ");
+                final Iterator<AppArtifactKey> i = rootDeployment.deploymentsOnRtCp.iterator();
+                buf.append(i.next());
+                while (i.hasNext()) {
+                    buf.append(", ").append(i.next());
+                }
+            }
+
+            if (!rootDeployment.unexpectedDeploymentDeps.isEmpty()) {
+                final List<AppArtifactKey> unexpectedRtDeps = new ArrayList<>(0);
+                final List<AppArtifactKey> unexpectedDeploymentDeps = new ArrayList<>(0);
+                for (Map.Entry<AppArtifactKey, org.eclipse.aether.artifact.Artifact> e : rootDeployment.unexpectedDeploymentDeps
+                        .entrySet()) {
+                    if (rootDeployment.allDeploymentDeps.contains(e.getKey())) {
+                        unexpectedDeploymentDeps.add(e.getKey());
+                    } else {
+                        unexpectedRtDeps.add(toKey(e.getValue()));
+                    }
+                }
+
+                if (!unexpectedRtDeps.isEmpty()) {
+                    if (buf.length() > 0) {
+                        buf.append(System.lineSeparator());
+                    }
+                    buf.append("The deployment artifact " + rootDeploymentGact
+                            + " depends on the following Quarkus extension runtime artifacts that weren't found among the dependencies of "
+                            + project.getArtifact() + ":");
+                    for (AppArtifactKey a : unexpectedRtDeps) {
+                        buf.append(' ').append(a);
+                    }
+                    log.error("The deployment artifact " + rootDeploymentGact
+                            + " depends on the following Quarkus extension runtime artifacts that weren't found among the dependencies of "
+                            + project.getArtifact() + ":");
+                    highlightInTree(deploymentNode, unexpectedRtDeps);
+                }
+
+                if (!unexpectedDeploymentDeps.isEmpty()) {
+                    if (buf.length() > 0) {
+                        buf.append(System.lineSeparator());
+                    }
+                    buf.append("The deployment artifact " + rootDeploymentGact
+                            + " depends on the following Quarkus extension deployment artifacts whose corresponding runtime artifacts were not found among the dependencies of "
+                            + project.getArtifact() + ":");
+                    for (AppArtifactKey a : unexpectedDeploymentDeps) {
+                        buf.append(' ').append(a);
+                    }
+                    log.error("The deployment artifact " + rootDeploymentGact
+                            + " depends on the following Quarkus extension deployment artifacts whose corresponding runtime artifacts were not found among the dependencies of "
+                            + project.getArtifact() + ":");
+                    highlightInTree(deploymentNode, unexpectedDeploymentDeps);
+                }
+            }
+
             throw new MojoExecutionException(buf.toString());
         }
+
+    }
+
+    private void highlightInTree(DependencyNode node, Collection<AppArtifactKey> keys) {
+        highlightInTree(0, node, keys, new HashSet<>(), new StringBuilder(), new ArrayList<>());
+    }
+
+    private void highlightInTree(int depth, DependencyNode node, Collection<AppArtifactKey> keysToHighlight,
+            Set<AppArtifactKey> visited, StringBuilder buf, List<String> branch) {
+        final AppArtifactKey key = toKey(node.getArtifact());
+        if (!visited.add(key)) {
+            return;
+        }
+        buf.setLength(0);
+        final boolean highlighted = keysToHighlight.contains(key);
+        if (highlighted) {
+            buf.append('*');
+        } else {
+            buf.append(' ');
+        }
+        for (int i = 0; i < depth; ++i) {
+            buf.append("  ");
+        }
+        buf.append(node.getArtifact());
+        branch.add(buf.toString());
+        if (!highlighted) {
+            for (DependencyNode child : node.getChildren()) {
+                highlightInTree(depth + 1, child, keysToHighlight, visited, buf, branch);
+            }
+        } else {
+            for (String line : branch) {
+                getLog().error(line);
+            }
+        }
+        branch.remove(branch.size() - 1);
+    }
+
+    private void visitDeploymentDeps(RootNode rootDeployment, DependencyNode dep) throws MojoExecutionException {
+        for (DependencyNode child : dep.getChildren()) {
+            visitDeploymentDep(rootDeployment, child);
+        }
+    }
+
+    private void visitDeploymentDep(RootNode rootDeployment, DependencyNode dep) throws MojoExecutionException {
+        org.eclipse.aether.artifact.Artifact artifact = dep.getArtifact();
+        if (artifact == null) {
+            return;
+        }
+        final AppArtifactKey key = toKey(artifact);
+        if (!rootDeployment.allDeploymentDeps.add(key)) {
+            return;
+        }
+        final Node node = rootDeployment.expectedDeploymentNodes.get(key);
+        if (node != null && !node.present) {
+            node.present = true;
+            --rootDeployment.deploymentDepsTotal;
+        } else if (!rootDeployment.allRtDeps.contains(key)) {
+            final AppArtifactKey deployment = getDeploymentKey(artifact);
+            if (deployment != null) {
+                rootDeployment.unexpectedDeploymentDeps.put(deployment, artifact);
+            }
+        }
+        visitDeploymentDeps(rootDeployment, dep);
+    }
+
+    private void visitRuntimeDep(RootNode root, Node currentNode, int currentId,
+            DependencyNode node) throws MojoExecutionException {
+        final org.eclipse.aether.artifact.Artifact a = node.getArtifact();
+        root.allRtDeps.add(toKey(a));
+        final AppArtifactKey deployment = getDeploymentKey(a);
+        if (deployment != null) {
+            currentNode = currentNode.newChild(deployment, ++currentId);
+            root.expectedDeploymentNodes.put(currentNode.gact, currentNode);
+            ++root.deploymentDepsTotal;
+            if (root.allRtDeps.contains(deployment)) {
+                root.deploymentsOnRtCp.add(deployment);
+                if (root.directRuntimeDeps.contains(deployment)) {
+                    currentNode.runtimeCp = 2; // actual rt dep
+                    Node n = currentNode.parent;
+                    while (n != null) {
+                        if (n.runtimeCp != 0) {
+                            break;
+                        } else {
+                            n.runtimeCp = 1; // path to the actual rt dep
+                        }
+                        n = n.parent;
+                    }
+                }
+            }
+        }
+        visitRuntimeDeps(root, currentNode, currentId, node);
+    }
+
+    private void visitRuntimeDeps(RootNode root, Node currentNode, int currentId, DependencyNode node)
+            throws MojoExecutionException {
+        for (DependencyNode child : node.getChildren()) {
+            visitRuntimeDep(root, currentNode, currentId, child);
+        }
+    }
+
+    private AppArtifactKey getDeploymentKey(org.eclipse.aether.artifact.Artifact a) throws MojoExecutionException {
+        final org.eclipse.aether.artifact.Artifact deployment = getDeploymentArtifact(a);
+        return deployment == null ? null : toKey(deployment);
+    }
+
+    private org.eclipse.aether.artifact.Artifact getDeploymentArtifact(org.eclipse.aether.artifact.Artifact a)
+            throws MojoExecutionException {
+        final Properties props = getExtensionDescriptor(a, true);
+        if (props == null) {
+            return null;
+        }
+        final String deploymentStr = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
+        if (deploymentStr == null) {
+            throw new IllegalStateException("Quarkus extension runtime artifact " + a + " is missing "
+                    + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT + " property in its "
+                    + BootstrapConstants.DESCRIPTOR_PATH);
+        }
+        return DependencyNodeUtils.toArtifact(deploymentStr);
+    }
+
+    private Properties getExtensionDescriptor(org.eclipse.aether.artifact.Artifact a, boolean packaged) {
+        final File f;
+        try {
+            f = resolve(a);
+        } catch (Exception e) {
+            getLog().warn("Failed to resolve " + a);
+            return null;
+        }
+        // if it hasn't been packaged yet, we skip it, we are not packaging yet
+        if (packaged && !isJarFile(f)) {
+            return null;
+        }
+        try {
+            if (f.isDirectory()) {
+                return readExtensionDescriptor(f.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH));
+            } else {
+                try (FileSystem fs = FileSystems.newFileSystem(f.toPath(), (ClassLoader) null)) {
+                    return readExtensionDescriptor(fs.getPath(BootstrapConstants.DESCRIPTOR_PATH));
+                }
+            }
+        } catch (Throwable e) {
+            throw new IllegalStateException("Failed to read " + f, e);
+        }
+    }
+
+    private Properties readExtensionDescriptor(final Path extDescr) throws IOException {
+        if (!Files.exists(extDescr)) {
+            return null;
+        }
+        final Properties props = new Properties();
+        try (BufferedReader reader = Files.newBufferedReader(extDescr)) {
+            props.load(reader);
+        }
+        return props;
+    }
+
+    private static AppArtifactKey toKey(org.eclipse.aether.artifact.Artifact a) {
+        return DependencyNodeUtils.toKey(a);
+    }
+
+    private CollectResult collectDeploymentDeps() throws MojoExecutionException {
+        if (collectedDeploymentDeps == null) {
+            final AppArtifactCoords deploymentCoords = getDeploymentCoords();
+            try {
+                collectedDeploymentDeps = repoSystem.collectDependencies(repoSession,
+                        newCollectRequest(new DefaultArtifact(deploymentCoords.getGroupId(), deploymentCoords.getArtifactId(),
+                                deploymentCoords.getClassifier(), deploymentCoords.getType(), deploymentCoords.getVersion())));
+            } catch (Exception e) {
+                throw new MojoExecutionException("Failed to collect dependencies of deployment artifact " + deploymentCoords,
+                        e);
+            }
+        }
+        return collectedDeploymentDeps;
+    }
+
+    private AppArtifactCoords getDeploymentCoords() {
+        return deploymentCoords == null ? deploymentCoords = AppArtifactCoords.fromString(deployment) : deploymentCoords;
+    }
+
+    private CollectRequest newCollectRuntimeDepsRequest() throws MojoExecutionException {
+        return newCollectRequest(new DefaultArtifact(project.getArtifact().getGroupId(),
+                project.getArtifact().getArtifactId(),
+                project.getArtifact().getClassifier(),
+                project.getArtifact().getArtifactHandler().getExtension(),
+                project.getArtifact().getVersion()));
     }
 
     private CollectRequest newCollectRequest(DefaultArtifact projectArtifact) throws MojoExecutionException {
@@ -415,7 +769,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         return request;
     }
 
-    private boolean isAnalyzable(final File f) {
+    private boolean isJarFile(final File f) {
         return f != null && f.getName().endsWith(".jar") && f.exists() && !f.isDirectory();
     }
 
@@ -436,7 +790,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.remove("artifactId");
         }
 
-        JsonNode mvalue = extObject.get("metadata");
+        JsonNode mvalue = extObject.get(METADATA);
         if (mvalue != null && mvalue.isObject()) {
             metadata = (ObjectNode) mvalue;
         } else {
@@ -458,7 +812,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.remove("shortName");
         }
 
-        extObject.set("metadata", metadata);
+        extObject.set(METADATA, metadata);
 
     }
 
@@ -480,11 +834,59 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (yaml) {
             YAMLFactory yf = new YAMLFactory();
             return new ObjectMapper(yf)
-                    .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
+                    .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
         } else {
-            return new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
-                    .enable(JsonParser.Feature.ALLOW_COMMENTS).enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
-                    .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
+            return JsonMapper.builder()
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                    .enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS)
+                    .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                    .build();
+        }
+    }
+
+    private static final class QuarkusCoreDeploymentVersionLocator implements DependencyVisitor {
+        String coreVersion;
+        private boolean skipTheRest;
+
+        @Override
+        public boolean visitEnter(DependencyNode dep) {
+            if (skipTheRest) {
+                return false;
+            }
+            org.eclipse.aether.artifact.Artifact artifact = dep.getArtifact();
+            if (artifact != null && artifact.getArtifactId().equals("quarkus-core")) {
+                coreVersion = artifact.getVersion();
+                if ("io.quarkus".equals(artifact.getGroupId())) {
+                    skipTheRest = true;
+                }
+            }
+            return skipTheRest ? false : true;
+        }
+
+        @Override
+        public boolean visitLeave(DependencyNode node) {
+            return skipTheRest ? false : true;
+        }
+    }
+
+    private static class RootNode extends Node {
+
+        final Map<AppArtifactKey, Node> expectedDeploymentNodes = new HashMap<>();
+        final Set<AppArtifactKey> directRuntimeDeps = new HashSet<>();
+        final Set<AppArtifactKey> allRtDeps = new HashSet<>();
+        final Set<AppArtifactKey> allDeploymentDeps = new HashSet<>();
+        final Map<AppArtifactKey, org.eclipse.aether.artifact.Artifact> unexpectedDeploymentDeps = new HashMap<>(0);
+
+        int deploymentDepsTotal = 1;
+        List<AppArtifactKey> deploymentsOnRtCp = new ArrayList<>(0);
+
+        RootNode(AppArtifactKey gact, int id) {
+            super(null, gact, id);
+        }
+
+        boolean hasErrors() {
+            return deploymentDepsTotal != 0 || runtimeCp != 0 || !unexpectedDeploymentDeps.isEmpty();
         }
     }
 
@@ -492,7 +894,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         final Node parent;
         final AppArtifactKey gact;
         final int id;
-        boolean included;
+        boolean present;
+        int runtimeCp;
         List<Node> children = new ArrayList<>(0);
 
         Node(Node parent, AppArtifactKey gact, int id) {
@@ -507,29 +910,91 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return child;
         }
 
-        List<AppArtifactKey> collectMissing(Log log) {
+        List<AppArtifactKey> collectMissingDeploymentDeps(Log log) {
             final List<AppArtifactKey> missing = new ArrayList<>();
-            collectMissing(log, 0, missing);
+            handleChildren(log, 0, missing, (log1, depth, n, collected) -> {
+                final StringBuilder buf = new StringBuilder();
+                if (n.present) {
+                    buf.append('+');
+                } else {
+                    buf.append('-');
+                    collected.add(n.gact);
+                }
+                buf.append(' ');
+                for (int i = 0; i < depth; ++i) {
+                    buf.append("    ");
+                }
+                buf.append(n.gact);
+                log1.error(buf.toString());
+            });
             return missing;
         }
 
-        private void collectMissing(Log log, int depth, List<AppArtifactKey> missing) {
-            final StringBuilder buf = new StringBuilder();
-            if (included) {
-                buf.append('+');
-            } else {
-                buf.append('-');
-                missing.add(gact);
-            }
-            buf.append(' ');
-            for (int i = 0; i < depth; ++i) {
-                buf.append("    ");
-            }
-            buf.append(gact);
-            log.error(buf.toString());
+        List<AppArtifactKey> collectDeploymentsOnRtCp(Log log) {
+            final List<AppArtifactKey> missing = new ArrayList<>();
+            handleChildren(log, 0, missing, (log1, depth, n, collected) -> {
+                if (n.runtimeCp == 0) {
+                    return;
+                }
+                final StringBuilder buf = new StringBuilder();
+                if (n.runtimeCp == 1) {
+                    buf.append(' ');
+                } else {
+                    buf.append('*');
+                    collected.add(n.gact);
+                }
+                buf.append(' ');
+                for (int i = 0; i < depth; ++i) {
+                    buf.append("    ");
+                }
+                buf.append(n.gact);
+                log1.error(buf.toString());
+            });
+            return missing;
+        }
+
+        private void handle(Log log, int depth, List<AppArtifactKey> collected, NodeHandler handler) {
+            handler.handle(log, depth, this, collected);
+            handleChildren(log, depth, collected, handler);
+        }
+
+        private void handleChildren(Log log, int depth, List<AppArtifactKey> collected, NodeHandler handler) {
             for (Node child : children) {
-                child.collectMissing(log, depth + 1, missing);
+                child.handle(log, depth + 1, collected, handler);
             }
+        }
+    }
+
+    private static interface NodeHandler {
+        void handle(Log log, int depth, Node n, List<AppArtifactKey> collected);
+    }
+
+    private MavenArtifactResolver resolver() throws MojoExecutionException {
+        if (resolver == null) {
+            final DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(repoSession);
+            session.setWorkspaceReader(workspaceProvider.workspace());
+            try {
+                final BootstrapMavenContext ctx = new BootstrapMavenContext(BootstrapMavenContext.config()
+                        .setRepositorySystem(repoSystem)
+                        .setRemoteRepositoryManager(remoteRepoManager)
+                        .setRepositorySystemSession(session)
+                        .setRemoteRepositories(repos)
+                        .setCurrentProject(workspaceProvider.origin()));
+                resolver = new MavenArtifactResolver(ctx);
+            } catch (BootstrapMavenException e) {
+                throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
+            }
+        }
+        return resolver;
+    }
+
+    private File resolve(org.eclipse.aether.artifact.Artifact a) throws MojoExecutionException {
+        try {
+            return resolver().resolve(a).getArtifact().getFile();
+        } catch (MojoExecutionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to resolve " + a, e);
         }
     }
 }

@@ -32,7 +32,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 @RequestScoped
 @RolesAllowed("Tester")
 public class PrincipalInjectionEndpoint {
-    private static final JsonString ANOYNMOUS = Json.createValue("anonymous");
 
     @Inject
     Principal principal;

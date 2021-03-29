@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Reading properties from Consul
 
@@ -35,7 +35,7 @@ This Key-Value store is what the `quarkus-consul-config` extension interacts wit
 
 There are various ways to start Consul that vary in complexity, but for the purposes of this guide, we elect to start a single Consul server with no persistence via Docker, like so:
 
-[source]
+[source,bash]
 ----
 docker run --rm --name consul -p 8500:8500 -p 8501:8501 consul:1.7 agent -dev -ui -client=0.0.0.0 -bind=0.0.0.0 --https-port=8501
 ----
@@ -46,7 +46,7 @@ Please consult the https://www.consul.io/docs/install[documentation] to learn mo
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \

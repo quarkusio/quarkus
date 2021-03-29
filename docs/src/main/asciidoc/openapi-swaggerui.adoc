@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using OpenAPI and Swagger UI
 
@@ -37,14 +37,14 @@ The solution is located in the `openapi-swaggerui-quickstart` {quickstarts-tree-
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=openapi-swaggerui-quickstart \
     -DclassName="org.acme.openapi.swaggerui.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb"
+    -Dextensions="resteasy,resteasy-jackson"
 cd openapi-swaggerui-quickstart
 ----
 
@@ -82,16 +82,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
 @Path("/fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     private Set<Fruit> fruits = Collections.newSetFromMap(Collections.synchronizedMap(new LinkedHashMap<>()));
@@ -178,12 +173,14 @@ public class FruitResourceTest {
 
 == Expose OpenAPI Specifications
 
-Quarkus proposes a `smallrye-openapi` extension compliant with the https://github.com/eclipse/microprofile-open-api/[Eclipse MicroProfile OpenAPI]
-specification in order to generate your API https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md[OpenAPI v3 specification].
+Quarkus provides the https://github.com/smallrye/smallrye-open-api/[Smallrye OpenAPI] extension compliant with the
+https://github.com/eclipse/microprofile-open-api/[MicroProfile OpenAPI]
+specification in order to generate your API
+https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md[OpenAPI v3 specification].
 
 You just need to add the `openapi` extension to your Quarkus application:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="quarkus-smallrye-openapi"
 ----
@@ -200,16 +197,16 @@ This will add the following to your `pom.xml`:
 
 Now, we are ready to run our application:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
 
-Once your application is started, you can make a request to the default `/openapi` endpoint:
+Once your application is started, you can make a request to the default `/q/openapi` endpoint:
 
-[source, shell]
+[source,shell]
 ----
-$ curl http://localhost:8080/openapi
+$ curl http://localhost:8080/q/openapi
 openapi: 3.0.3
 info:
   title: Generated API
@@ -256,7 +253,7 @@ components:
 
 [NOTE]
 ====
-If you do not like the default endpoint location `/openapi`, you can change it by adding the following configuration to your `application.properties`:
+If you do not like the default endpoint location `/q/openapi`, you can change it by adding the following configuration to your `application.properties`:
 [source, properties]
 ----
 quarkus.smallrye-openapi.path=/swagger
@@ -296,7 +293,7 @@ empty class can then be annotated with various OpenAPI annotations such as `@Ope
             email = "techsupport@example.com"),
         license = @License(
             name = "Apache 2.0",
-            url = "http://www.apache.org/licenses/LICENSE-2.0.html"))
+            url = "https://www.apache.org/licenses/LICENSE-2.0.html"))
 )
 public class ExampleApiApplication extends Application {
 }
@@ -319,7 +316,7 @@ mp.openapi.extensions.smallrye.info.contact.email=techsupport@example.com
 mp.openapi.extensions.smallrye.info.contact.name=Example API Support
 mp.openapi.extensions.smallrye.info.contact.url=http://exampleurl.com/contact
 mp.openapi.extensions.smallrye.info.license.name=Apache 2.0
-mp.openapi.extensions.smallrye.info.license.url=http://www.apache.org/licenses/LICENSE-2.0.html
+mp.openapi.extensions.smallrye.info.license.url=https://www.apache.org/licenses/LICENSE-2.0.html
 ----
 
 This will give you similar information as the `@OpenAPIDefinition` example above.
@@ -333,7 +330,7 @@ An OpenAPI document that conforms to the  OpenAPI Specification is itself a vali
 To see this in action, we'll put OpenAPI documentation under `META-INF/openapi.yaml` for our `/fruits` endpoints.
 Quarkus also supports alternative <<open-document-paths, OpenAPI document paths>> if you prefer.
 
-[source, shell]
+[source,yaml]
 ----
 openapi: 3.0.1
 info:
@@ -342,7 +339,7 @@ info:
   version: "1.0"
 
 servers:
-  - url: http://localhost:8080/openapi
+  - url: http://localhost:8080/q/openapi
     description: Optional dev mode server description
 
 paths:
@@ -384,10 +381,10 @@ components:
         name:
           type: string
 ----
-By default, a request to `/openapi` will serve the combined OpenAPI document from the static file and the model generated from application endpoints code.
+By default, a request to `/q/openapi` will serve the combined OpenAPI document from the static file and the model generated from application endpoints code.
 We can however change this to only serve the static OpenAPI document by adding `mp.openapi.scan.disable=true` configuration into `application.properties`.
 
-Now, a request to `/openapi` endpoint will serve the static OpenAPI document instead of the generated one.
+Now, a request to `/q/openapi` endpoint will serve the static OpenAPI document instead of the generated one.
 
 [[open-document-paths]]
 [TIP]
@@ -416,7 +413,7 @@ will be used. You can also define the version in SmallRye using the following co
 mp.openapi.extensions.smallrye.openapi=3.0.2
 ----
 
-This might be useful if your API go through a Gateway that needs a certain version.
+This might be useful if your API goes through a Gateway that needs a certain version.
 
 == Auto-generation of Operation Id
 
@@ -444,6 +441,7 @@ Now you do not need to use the `@Operation` annotation. While generating the doc
 |Use the class name plus the method name.
 |===
 
+[[dev-mode]]]
 == Use Swagger UI for development
 
 When building APIs, developers want to test them quickly. https://swagger.io/tools/swagger-ui/[Swagger UI] is a great tool
@@ -466,23 +464,24 @@ This is a build time property, it cannot be changed at runtime after your applic
 
 ====
 
-By default, Swagger UI is accessible at `/swagger-ui`.
+By default, Swagger UI is accessible at `/q/swagger-ui`.
 
-You can update this path by setting the `quarkus.swagger-ui.path` property in your `application.properties`:
+You can update the `/swagger-ui` sub path by setting the `quarkus.swagger-ui.path` property in your `application.properties`:
 
 [source, properties]
 ----
-quarkus.swagger-ui.path=/my-custom-path
+quarkus.swagger-ui.path=my-custom-path
 ----
 
 [WARNING]
 ====
 The value `/` is not allowed as it blocks the application from serving anything else.
+A value prefixed with '/' makes it absolute and not relative.
 ====
 
 Now, we are ready to run our application:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -491,10 +490,10 @@ You can check the Swagger UI path in your application's log:
 
 [source]
 ----
-00:00:00,000 INFO  [io.qua.swa.run.SwaggerUiServletExtension] Swagger UI available at /swagger-ui
+00:00:00,000 INFO  [io.qua.swa.run.SwaggerUiServletExtension] Swagger UI available at /q/swagger-ui
 ----
 
-Once your application is started, you can go to http://localhost:8080/swagger-ui and play with your API.
+Once your application is started, you can go to http://localhost:8080/q/swagger-ui and play with your API.
 
 You can visualize your API's operations and schemas.
 image:openapi-swaggerui-guide-screenshot01.png[alt=Visualize your API]

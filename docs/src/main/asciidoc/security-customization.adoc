@@ -1,11 +1,26 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Security Tips and Tricks
 
 include::./attributes.adoc[]
+
+== Quarkus Security Dependency
+
+`io.quarkus:quarkus-security` module contains the core Quarkus security classes.
+
+In most cases it does not have to be added directly to your project's `pom.xml` as it is already provided by all of the security extensions.
+However if you need to write your own custom security code (for example, register a <<jaxrs-security-context, Custom JAX-RS SecurityContext>>) or use <<bouncy-castle, BouncyCastle>> libraries, then please make sure it is included:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-security</artifactId>
+</dependency>
+----
 
 == HttpAuthenticationMechanism Customization
 
@@ -48,6 +63,7 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 }
 ----
 
+[[security-identity-customization]]
 == Security Identity Customization
 
 Internally, the identity providers create and update an instance of the `io.quarkus.security.identity.SecurityIdentity` class which holds the principal, roles, credentials which were used to authenticate the client (user) and other security attributes. An easy option to customize `SecurityIdentity` is to register a custom `SecurityIdentityAugmentor`. For example, the augmentor below adds an addition role:
@@ -67,25 +83,19 @@ import java.util.function.Supplier;
 public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Override
-    public int priority() {
-        return 0;
-    }
-
-    @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        return context.runBlocking(build(identity));
+        return Uni.createFrom().item(build(identity));
+
+        // Do 'return context.runBlocking(build(identity));'
+        // if a blocking call is required to customize the identity
     }
 
     private Supplier<SecurityIdentity> build(SecurityIdentity identity) {
         if(identity.isAnonymous()) {
             return () -> identity;
         } else {
-            // create a new builder and copy principal, attributes, credentials and roles from the original
-            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder()
-                    .setPrincipal(identity.getPrincipal())
-                    .addAttributes(identity.getAttributes())
-                    .addCredentials(identity.getCredentials())
-                    .addRoles(identity.getRoles());
+            // create a new builder and copy principal, attributes, credentials and roles from the original identity
+            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
 
             // add custom role source here
             builder.addRole("dummy");
@@ -95,6 +105,63 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 }
 ----
 
+Here is another example showing how to use the client certificate available in the current link:security-built-in-authentication#mutual-tls[Mutual TLS] request to add more roles:
+
+[source,java]
+----
+import java.security.cert.X509Certificate;
+import io.quarkus.security.credential.CertificateCredential;
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
+import javax.enterprise.context.ApplicationScoped;
+import java.util.function.Supplier;
+import java.util.Set;
+
+@ApplicationScoped
+public class RolesAugmentor implements SecurityIdentityAugmentor {
+
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
+        return Uni.createFrom().item(build(identity));
+    }
+
+    private Supplier<SecurityIdentity> build(SecurityIdentity identity) {
+        // create a new builder and copy principal, attributes, credentials and roles from the original identity
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
+
+        CertificateCredential certificate = identity.getCredential(CertificateCredential.class);
+        if (certificate != null) {
+            builder.addRoles(extractRoles(certificate.getCertificate()));
+        }
+        return builder::build;
+    }
+
+    private Set<String> extractRoles(X509Certificate certificate) {
+        String name = certificate.getSubjectX500Principal().getName();
+
+        switch (name) {
+            case "CN=client":
+                return Collections.singleton("user");
+            case "CN=guest-client":
+                return Collections.singleton("guest");
+            default:
+                return Collections.emptySet();
+        }
+    }
+}
+----
+
+[NOTE]
+===
+If more than one custom `SecurityIdentityAugmentor` is registered then they will be considered equal candidates and invoked in random order.
+You can enforce the order by implementing a default `SecurityIdentityAugmentor#priority` method. Augmentors with higher priorities will be invoked first.
+===
+
+[[jaxrs-security-context]]
 == Custom JAX-RS SecurityContext
 
 If you use JAX-RS `ContainerRequestFilter` to set a custom JAX-RS `SecurityContext` then make sure `ContainerRequestFilter` runs in the JAX-RS pre-match phase by adding a `@PreMatching` annotation to it for this custom security context to be linked with Quarkus `SecurityIdentity`, for example:
@@ -159,17 +226,19 @@ If you have a good reason to disable the authorization (for example, when testin
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
 @ApplicationScoped
 public class DisabledAuthController extends AuthorizationController {
-    @ConfigProperty(name = "disable.authorization")
+    @ConfigProperty(name = "disable.authorization", defaultValue = "false")
     boolean disableAuthorization;
 
     @Override
     public boolean isAuthorizationEnabled() {
-        return disableAuthorization;
+        return !disableAuthorization;
     }
 }
 ----
 
 == Registering Security Providers
+
+=== Default providers
 
 When running in native mode, the default behavior for GraalVM native executable generation is to only include the main "SUN" provider
 unless you have enabled SSL, in which case all security providers are registered. If you are not using SSL, then you can selectively
@@ -180,6 +249,118 @@ configuration to register the "SunRsaSign" and "SunJCE" security providers:
 [source,properties]
 ----
 quarkus.security.security-providers=SunRsaSign,SunJCE
+----
+
+[[bouncy-castle]]
+=== BouncyCastle
+
+If you need to register an `org.bouncycastle.jce.provider.BouncyCastleProvider` JCE provider then please set a `BC` provider name:
+
+.Example Security Providers BouncyCastle Configuration
+[source,properties]
+----
+quarkus.security.security-providers=BC
+----
+
+and add the BouncyCastle provider dependency:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bcprov-jdk15on</artifactId>
+</dependency>
+----
+
+=== BouncyCastle JSSE
+
+If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use it instead of the default SunJSSE provider then please set a `BCJSSE` provider name:
+
+.Example Security Providers BouncyCastle JSSE Configuration
+[source,properties]
+----
+quarkus.security.security-providers=BCJSSE
+
+quarkus.http.ssl.client-auth=REQUIRED
+
+quarkus.http.ssl.certificate.key-store-file=server-keystore.jks
+quarkus.http.ssl.certificate.key-store-password=password
+quarkus.http.ssl.certificate.trust-store-file=server-truststore.jks
+quarkus.http.ssl.certificate.trust-store-password=password
+----
+
+and add the BouncyCastle TLS dependency:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bctls-jdk15on</artifactId>
+</dependency>
+----
+
+=== BouncyCastle FIPS
+
+If you need to register an `org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider` JCE provider then please set a `BCFIPS` provider name:
+
+.Example Security Providers BouncyCastle FIPS Configuration
+[source,properties]
+----
+quarkus.security.security-providers=BCFIPS
+----
+
+and add the BouncyCastle FIPS provider dependency:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bc-fips</artifactId>
+</dependency>
+----
+
+=== BouncyCastle JSSE FIPS
+
+If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use it in combination with `org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider` instead of the default SunJSSE provider then please set a `BCFIPSJSSE` provider name:
+
+.Example Security Providers BouncyCastle FIPS JSSE Configuration
+[source,properties]
+----
+quarkus.security.security-providers=BCFIPSJSSE
+
+quarkus.http.ssl.client-auth=REQUIRED
+
+quarkus.http.ssl.certificate.key-store-file=server-keystore.jks
+quarkus.http.ssl.certificate.key-store-password=password
+quarkus.http.ssl.certificate.key-store-file-type=BCFKS
+quarkus.http.ssl.certificate.key-store-provider=BCFIPS
+quarkus.http.ssl.certificate.trust-store-file=server-truststore.jks
+quarkus.http.ssl.certificate.trust-store-password=password
+quarkus.http.ssl.certificate.trust-store-file-type=BCFKS
+quarkus.http.ssl.certificate.trust-store-provider=BCFIPS
+----
+
+and the BouncyCastle TLS dependency optimized for using the BouncyCastle FIPS provider:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bctls-fips</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bc-fips</artifactId>
+</dependency>
+----
+
+Note that the keystore and truststore type and provider are set to `BCFKS` and `BCFIPS`.
+One can generate a keystore with this type and provider like this:
+
+[source,shell]
+----
+keytool -genkey -alias server -keyalg RSA -keystore server-keystore.jks -keysize 2048 -keypass password -provider org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider -providerpath $PATH_TO_BC_FIPS_JAR -storetype BCFKS
 ----
 
 == Reactive Security
@@ -196,6 +377,9 @@ If you are going to use security in a reactive environment, you will likely need
 
 This will allow you to propagate the identity throughout the reactive callbacks. You also need to make sure you
 are using an executor that is capable of propagating the identity (e.g. no `CompletableFuture.supplyAsync`),
-to make sure that quarkus can propagate it. For more information see the
+to make sure that Quarkus can propagate it. For more information see the
 link:context-propagation[Context Propagation Guide].
 
+== References
+
+* link:security[Quarkus Security]

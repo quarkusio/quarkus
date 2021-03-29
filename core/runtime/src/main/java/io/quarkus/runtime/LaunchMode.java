@@ -22,6 +22,13 @@ public enum LaunchMode {
         return this != NORMAL;
     }
 
+    /**
+     * Returns true if the current launch is the server side of remote dev.
+     */
+    public static boolean isRemoteDev() {
+        return (current() == DEVELOPMENT) && "true".equals(System.getenv("QUARKUS_LAUNCH_DEVMODE"));
+    }
+
     private final String defaultProfile;
 
     LaunchMode(String defaultProfile) {

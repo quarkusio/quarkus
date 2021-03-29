@@ -20,6 +20,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
@@ -49,10 +50,10 @@ public class EngineProducer {
     private final String basePath;
     private final String tagPath;
 
-    public EngineProducer(QuteContext context, Event<EngineBuilder> builderReady, Event<Engine> engineReady,
-            ContentTypes contentTypes) {
+    public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
+            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes) {
         this.contentTypes = contentTypes;
-        this.suffixes = context.getConfig().suffixes;
+        this.suffixes = config.suffixes;
         this.basePath = "templates/";
         this.tagPath = basePath + TAGS;
         this.tags = context.getTags();
@@ -73,6 +74,27 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.mapEntryResolver());
         // foo.string.raw returns a RawString which is never escaped
         builder.addValueResolver(ValueResolvers.rawResolver());
+        builder.addValueResolver(ValueResolvers.logicalAndResolver());
+        builder.addValueResolver(ValueResolvers.logicalOrResolver());
+        builder.addValueResolver(ValueResolvers.orEmpty());
+        // Note that arrays are handled specifically during validation
+        builder.addValueResolver(ValueResolvers.arrayResolver());
+
+        // If needed use a specific result mapper for the selected strategy  
+        switch (runtimeConfig.propertyNotFoundStrategy) {
+            case THROW_EXCEPTION:
+                builder.addResultMapper(new PropertyNotFoundThrowException());
+                break;
+            case NOOP:
+                builder.addResultMapper(new PropertyNotFoundNoop());
+                break;
+            case OUTPUT_ORIGINAL:
+                builder.addResultMapper(new PropertyNotFoundOutputOriginal());
+                break;
+            default:
+                // Use the default strategy
+                break;
+        }
 
         // Escape some characters for HTML templates
         builder.addResultMapper(new HtmlEscaper());
@@ -81,7 +103,7 @@ public class EngineProducer {
         builder.addValueResolver(new ReflectionValueResolver());
 
         // Remove standalone lines if desired
-        builder.removeStandaloneLines(context.getConfig().removeStandaloneLines);
+        builder.removeStandaloneLines(runtimeConfig.removeStandaloneLines);
 
         // Allow anyone to customize the builder
         builderReady.fire(builder);

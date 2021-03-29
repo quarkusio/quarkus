@@ -1,0 +1,41 @@
+{#include main}
+  {#title}Schedules{/title}
+  {#body}
+  <table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Schedule</th>
+      <th scope="col">Source</th>
+      <th scope="col">Actions</th>
+    </tr>
+   </thead>
+   <tbody>
+   {#for scheduledMethod in info:schedulerContext.scheduledMethods}
+    <tr>
+      <td>{count}.</td>
+      <td>
+       {#if scheduledMethod.schedules.size > 1}
+         <ol type="a">
+         {#for schedule in scheduledMethod.schedules}
+           <li>{#scheduleInfo schedule /}</li>
+         {/for}
+         </ol>
+       {#else}
+         {#scheduleInfo scheduledMethod.schedules.iterator.next /}
+       {/if}
+      </td>
+      <td>
+        {scheduledMethod.methodDescription}
+      </td>
+      <td>
+       <form method="post"  enctype="application/x-www-form-urlencoded">
+        <input type="hidden" name="name" value="{scheduledMethod.methodDescription}">
+        <input id="invoke" type="submit" value="Invoke" class="btn btn-primary btn-sm">
+       </form>
+      </td>
+    {/for}
+   </tbody>
+  </table>
+  {/body}
+{/include}

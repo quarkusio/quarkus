@@ -6,7 +6,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-core-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -16,6 +15,7 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
 
     <modules>
@@ -25,12 +25,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>

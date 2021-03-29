@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
@@ -114,6 +115,27 @@ public class LocalWorkspaceDiscoveryTest {
     @AfterAll
     public static void cleanup() {
         IoUtils.recursiveDelete(workDir);
+    }
+
+    @Test
+    public void loadWorkspaceWithDirBreaks() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-with-dir-breaks/root");
+        assertNotNull(projectUrl);
+        final Path rootProjectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(rootProjectDir));
+        final Path nestedProjectDir = rootProjectDir.resolve("module1/break/nested-project/module1");
+        assertTrue(Files.exists(nestedProjectDir));
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setRootProjectDir(rootProjectDir)
+                .setCurrentProject(nestedProjectDir.toString()))
+                        .getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "nested-project-module1"));
+        assertNotNull(ws.getProject("org.acme", "nested-project-parent"));
+        assertNotNull(ws.getProject("org.acme", "root-module1"));
+        assertNotNull(ws.getProject("org.acme", "root"));
+        assertEquals(4, ws.getProjects().size());
     }
 
     @Test

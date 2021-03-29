@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-tck-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-tck-microprofile-rest-client-reactive</artifactId>
+    <name>Quarkus - TCK - MicroProfile REST Client - RestEasy Reactive</name>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- Disable quarkus optimization -->
+                        <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
+                        <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
+                        <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
+                        <quarkus.rest-client.scope>javax.enterprise.context.Dependent</quarkus.rest-client.scope>
+                    </systemPropertyVariables>
+                    <!-- This workaround allows us to run a single test using
+                        the "test" system property -->
+                    <!-- https://issues.apache.org/jira/browse/SUREFIRE-569 -->
+                    <dependenciesToScan>
+                        <dependency>org.eclipse.microprofile.rest.client:microprofile-rest-client-tck</dependency>
+                    </dependenciesToScan>
+                    <reuseForks>false</reuseForks>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <excludes>
+                        <!-- Not actually tests that should be run -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.WiremockArquillianTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.ssl.AbstractSslTest</exclude>
+
+                        <!-- ConversationScope not supported in Quarkus -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.cditests.HasConversationScopeTest</exclude>
+
+                        <!-- we have a newer version of the test in the code -->
+                        <!-- remove our test and remove this once https://github.com/eclipse/microprofile-rest-client/pull/300 gets -->
+                        <!-- into a release -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.cditests.CDIInterceptorTest</exclude>
+
+                        <!-- We have our own version of these tests which set up a config environment -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonBProviderTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonPProviderTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.InvalidInterfaceTest</exclude>
+
+                        <!-- currently not supported or unapplicable for non-blocking implementation: -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.ssl.SslContextTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.ssl.SslHostnameVerifierTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.asynctests.AsyncMethodTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.SubResourceTest</exclude>
+
+                        <!-- The connection timeout is too small -->
+                        <exclude>org/eclipse/microprofile/rest/client/tck/timeout/*.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>uk.co.automatictester</groupId>
+                <artifactId>wiremock-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <dir>target/classes</dir>
+                            <params>--port=${wiremock.server.port} --verbose</params>
+                            <skip>${skipTests}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jboss.jandex</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+                <version>1.0.8</version>
+                <executions>
+                    <execution>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arquillian</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
+        </dependency>
+        <!-- TCKs are adding SessionScope to some beans, so we need this capability to support it -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-servlet-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.rest.client</groupId>
+            <artifactId>microprofile-rest-client-tck</artifactId>
+            <version>${microprofile-rest-client-api.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>jetty-servlet</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>jetty-servlets</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+        </dependency>
+    </dependencies>
+    <properties>
+        <wiremock.server.port>8766</wiremock.server.port>
+    </properties>
+</project>

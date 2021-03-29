@@ -35,33 +35,6 @@ public final class ImageUtil {
         return sb.toString();
     }
 
-    /*
-     * Checks if the specified image has a registry part.
-     * 
-     * @param image the image
-     * 
-     * @return true if registry is part of the image, false otherwise
-     */
-    public static boolean hasRegistry(String image) {
-        String r = getRegistry(image);
-        return r != null && !r.isEmpty();
-    }
-
-    /**
-     * Return the registry part of the docker image.
-     * 
-     * @param image The actual docker image.
-     * @return The registry or null, if not registry was found.
-     */
-    public static String getRegistry(String image) {
-        String[] parts = image.split(SLASH);
-        if (parts.length <= 2) {
-            return null;
-        } else {
-            return parts[0];
-        }
-    }
-
     /**
      * Return the docker image repository.
      * 

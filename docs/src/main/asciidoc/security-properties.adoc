@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Security with .properties File
 
@@ -134,3 +134,7 @@ quarkus.security.users.embedded.roles.noadmin=user
 ----
 <1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
 <2> User `stuart` has roles `admin` and `user`
+
+== References
+
+* link:security[Quarkus Security]

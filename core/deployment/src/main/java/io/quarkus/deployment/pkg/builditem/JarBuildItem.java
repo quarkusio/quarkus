@@ -11,12 +11,14 @@ public final class JarBuildItem extends SimpleBuildItem {
     private final Path originalArtifact;
     private final Path libraryDir;
     private final String type;
+    private final String classifier;
 
-    public JarBuildItem(Path path, Path originalArtifact, Path libraryDir, String type) {
+    public JarBuildItem(Path path, Path originalArtifact, Path libraryDir, String type, String classifier) {
         this.path = path;
         this.originalArtifact = originalArtifact;
         this.libraryDir = libraryDir;
         this.type = type;
+        this.classifier = classifier;
     }
 
     public boolean isUberJar() {
@@ -39,7 +41,11 @@ public final class JarBuildItem extends SimpleBuildItem {
         return type;
     }
 
+    public String getClassifier() {
+        return classifier;
+    }
+
     public JarResult toJarResult() {
-        return new JarResult(path, originalArtifact, libraryDir, type);
+        return new JarResult(path, originalArtifact, libraryDir, type, classifier);
     }
 }

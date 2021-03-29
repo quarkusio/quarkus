@@ -34,8 +34,14 @@ public class HttpConfiguration {
 
     /**
      * The HTTP host
+     *
+     * In dev/test mode this defaults to localhost, in prod mode this defaults to 0.0.0.0
+     *
+     * Defaulting to 0.0.0.0 makes it easier to deploy Quarkus to container, however it
+     * is not suitable for dev/test mode as other people on the network can connect to your
+     * development machine.
      */
-    @ConfigItem(defaultValue = "0.0.0.0")
+    @ConfigItem
     public String host;
 
     /**
@@ -202,6 +208,19 @@ public class HttpConfiguration {
      */
     @ConfigItem
     public Map<String, SameSiteCookieConfig> sameSiteCookie;
+
+    /**
+     * If responses should be compressed.
+     *
+     * Note that this will attempt to compress all responses, to avoid compressing
+     * already compressed content (such as images) you need to set the following header:
+     * 
+     * Content-Encoding: identity
+     * 
+     * Which will tell vert.x not to compress the response.
+     */
+    @ConfigItem
+    public boolean enableCompression;
 
     public ProxyConfig proxy;
 

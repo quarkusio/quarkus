@@ -66,12 +66,6 @@ public class ArcContextProvider implements ThreadContextProvider {
         return ThreadContext.CDI;
     }
 
-    // see ThreadContextController#endContext()
-    private static void deactivateRequestContext() throws IllegalStateException {
-        // Only deactivate the context
-        Arc.container().requestContext().deactivate();
-    }
-
     private static final class ClearContextSnapshot implements ThreadContextSnapshot {
 
         @Override
@@ -92,7 +86,7 @@ public class ArcContextProvider implements ThreadContextProvider {
             } else {
                 // context not active, activate blank one, deactivate afterwards
                 requestContext.activate();
-                return ArcContextProvider::deactivateRequestContext;
+                return requestContext::deactivate;
             }
         }
     }
@@ -155,7 +149,7 @@ public class ArcContextProvider implements ThreadContextProvider {
             } else {
                 // context not active, activate and pass it new instance, deactivate afterwards
                 requestContext.activate(state);
-                return ArcContextProvider::deactivateRequestContext;
+                return requestContext::deactivate;
             }
         }
 

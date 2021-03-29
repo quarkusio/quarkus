@@ -1,6 +1,7 @@
 package io.quarkus.scheduler.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -9,8 +10,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -30,21 +29,19 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
-import io.quarkus.arc.processor.AnnotationStore;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.runtime.BeanLookupSupplier;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -57,6 +54,8 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -71,6 +70,8 @@ import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerContext;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
+import io.quarkus.scheduler.runtime.devconsole.SchedulerDevConsoleRecorder;
+import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 
 /**
  * @author Martin Kouba
@@ -95,54 +96,35 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer(CustomScopeAnnotationsBuildItem scopes) {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-            }
-
-            @Override
-            public void transform(TransformationContext context) {
-                ClassInfo target = context.getTarget().asClass();
-                if (!scopes.isScopeIn(context.getAnnotations())
-                        && (target.annotations().containsKey(SCHEDULED_NAME)
-                                || target.annotations().containsKey(SCHEDULES_NAME))) {
-                    // Class with no scope annotation but with @Scheduled method
-                    LOGGER.debugf("Found scheduled business methods on a class %s with no scope defined - adding @Singleton",
-                            context.getTarget());
-                    context.transform().add(Singleton.class).done();
-                }
-            }
-        });
+    AutoAddScopeBuildItem autoAddScope() {
+        return AutoAddScopeBuildItem.builder().containsAnnotations(SCHEDULED_NAME, SCHEDULES_NAME)
+                .defaultScope(BuiltinScope.SINGLETON)
+                .reason("Found scheduled business methods").build();
     }
 
     @BuildStep
-    void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods,
-            BuildProducer<BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem> beans) {
-
-        AnnotationStore annotationStore = beanRegistrationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
+    void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanDiscoveryFinishedBuildItem beanDiscovery,
+            TransformedAnnotationsBuildItem transformedAnnotations,
+            BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         // We need to collect all business methods annotated with @Scheduled first
-        for (BeanInfo bean : beanRegistrationPhase.getContext().beans().classBeans()) {
-            collectScheduledMethods(beanArchives.getIndex(), annotationStore, bean,
+        for (BeanInfo bean : beanDiscovery.beanStream().classBeans()) {
+            collectScheduledMethods(beanArchives.getIndex(), transformedAnnotations, bean,
                     bean.getTarget().get().asClass(),
                     scheduledBusinessMethods);
         }
     }
 
-    private void collectScheduledMethods(IndexView index, AnnotationStore annotationStore, BeanInfo bean,
+    private void collectScheduledMethods(IndexView index, TransformedAnnotationsBuildItem transformedAnnotations, BeanInfo bean,
             ClassInfo beanClass, BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         for (MethodInfo method : beanClass.methods()) {
             List<AnnotationInstance> schedules = null;
-            AnnotationInstance scheduledAnnotation = annotationStore.getAnnotation(method, SCHEDULED_NAME);
+            AnnotationInstance scheduledAnnotation = transformedAnnotations.getAnnotation(method, SCHEDULED_NAME);
             if (scheduledAnnotation != null) {
                 schedules = Collections.singletonList(scheduledAnnotation);
             } else {
-                AnnotationInstance schedulesAnnotation = annotationStore.getAnnotation(method, SCHEDULES_NAME);
+                AnnotationInstance schedulesAnnotation = transformedAnnotations.getAnnotation(method, SCHEDULES_NAME);
                 if (schedulesAnnotation != null) {
                     schedules = new ArrayList<>();
                     for (AnnotationInstance scheduledInstance : schedulesAnnotation.value().asNestedArray()) {
@@ -162,7 +144,7 @@ public class SchedulerProcessor {
         if (superClassName != null) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                collectScheduledMethods(index, annotationStore, bean, superClass, scheduledBusinessMethods);
+                collectScheduledMethods(index, transformedAnnotations, bean, superClass, scheduledBusinessMethods);
             }
         }
     }
@@ -244,6 +226,18 @@ public class SchedulerProcessor {
         return new FeatureBuildItem(Feature.SCHEDULER);
     }
 
+    @BuildStep
+    public DevConsoleRuntimeTemplateInfoBuildItem devConsoleInfo() {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
+                new BeanLookupSupplier(SchedulerContext.class));
+    }
+
+    @BuildStep
+    @Record(value = STATIC_INIT, optional = true)
+    DevConsoleRouteBuildItem invokeEndpoint(SchedulerDevConsoleRecorder recorder) {
+        return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
+    }
+
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {
 
         BeanInfo bean = scheduledMethod.getBean();
@@ -261,8 +255,8 @@ public class SchedulerProcessor {
         for (Type i : method.parameters()) {
             sigBuilder.append(i.name().toString());
         }
-        String targetPackage = DotNames.packageName(bean.getImplClazz().name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + "_" + method.name() + "_"
+        String generatedName = DotNames.internalPackageNameWithTrailingSlash(bean.getImplClazz().name()) + baseName
+                + INVOKER_SUFFIX + "_" + method.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -270,7 +264,8 @@ public class SchedulerProcessor {
                 .build();
 
         // The descriptor is: void invokeBean(Object execution)
-        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class);
+        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class)
+                .addException(Exception.class);
         // InjectableBean<Foo: bean = Arc.container().bean("1");
         // InstanceHandle<Foo> handle = Arc.container().instance(bean);
         // handle.get().ping();
@@ -312,7 +307,7 @@ public class SchedulerProcessor {
         AnnotationValue everyValue = schedule.value("every");
         if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
             String cron = cronValue.asString().trim();
-            if (SchedulerContext.isConfigValue(cron)) {
+            if (SchedulerUtils.isConfigValue(cron)) {
                 // Don't validate config property
                 return null;
             }
@@ -329,7 +324,7 @@ public class SchedulerProcessor {
         } else {
             if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                 String every = everyValue.asString().trim();
-                if (SchedulerContext.isConfigValue(every)) {
+                if (SchedulerUtils.isConfigValue(every)) {
                     return null;
                 }
                 if (Character.isDigit(every.charAt(0))) {
@@ -349,7 +344,7 @@ public class SchedulerProcessor {
         if (delay == null || delay.asLong() <= 0) {
             if (delayedValue != null && !delayedValue.asString().trim().isEmpty()) {
                 String delayed = delayedValue.asString().trim();
-                if (SchedulerContext.isConfigValue(delayed)) {
+                if (SchedulerUtils.isConfigValue(delayed)) {
                     return null;
                 }
                 if (Character.isDigit(delayed.charAt(0))) {
@@ -371,7 +366,7 @@ public class SchedulerProcessor {
 
         AnnotationValue identityValue = schedule.value("identity");
         if (identityValue != null) {
-            String identity = identityValue.asString().trim();
+            String identity = SchedulerUtils.lookUpPropertyValue(identityValue.asString());
             AnnotationInstance previousInstanceWithSameIdentity = encounteredIdentities.get(identity);
             if (previousInstanceWithSameIdentity != null) {
                 String message = String.format("The identity: \"%s\" on: %s is not unique and it has already bean used by : %s",

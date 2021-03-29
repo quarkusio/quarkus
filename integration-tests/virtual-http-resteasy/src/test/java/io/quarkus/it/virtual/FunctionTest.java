@@ -29,7 +29,7 @@ public class FunctionTest {
     @Test
     public void testSwagger() {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
-        req.setUri(URI.create("https://foo.com/swagger-ui/"));
+        req.setUri(URI.create("https://foo.com/q/swagger-ui/"));
         req.setHttpMethod(HttpMethod.GET);
 
         // Invoke
@@ -38,7 +38,7 @@ public class FunctionTest {
         // Verify
         Assertions.assertEquals(ret.getStatus(), HttpStatus.OK);
         String body = new String((byte[]) ret.getBody(), StandardCharsets.UTF_8);
-        Assertions.assertTrue(body.contains("Swagger UI"));
+        Assertions.assertTrue(body.contains("OpenAPI UI"));
     }
 
     private ExecutionContext createContext() {
@@ -112,7 +112,7 @@ public class FunctionTest {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
         req.setUri(URI.create(uri));
         req.setHttpMethod(HttpMethod.POST);
-        req.setBody("Bill".getBytes());
+        req.setBody("Bill");
         req.getHeaders().put("Content-Type", "text/plain");
 
         // Invoke

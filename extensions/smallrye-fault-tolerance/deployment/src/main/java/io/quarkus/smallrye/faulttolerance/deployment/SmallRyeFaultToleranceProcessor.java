@@ -2,6 +2,7 @@ package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
@@ -35,8 +36,6 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -49,6 +48,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.NoopMetricRegistry;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
@@ -80,7 +80,7 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<FeatureBuildItem> feature, BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<BeanDefiningAnnotationBuildItem> additionalBda,
-            Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -150,7 +150,7 @@ public class SmallRyeFaultToleranceProcessor {
                 MetricsCollectorFactory.class);
         additionalBean.produce(builder.build());
 
-        if (!capabilities.isPresent(Capability.METRICS)) {
+        if (!metricsCapability.isPresent()) {
             //disable fault tolerance metrics with the MP sys props and provides a No-op metric registry.
             additionalBean.produce(AdditionalBeanBuildItem.builder().addBeanClass(NoopMetricRegistry.class).setRemovable()
                     .setDefaultScope(DotName.createSimple(Singleton.class.getName())).build());

@@ -257,6 +257,17 @@ public class DocGeneratorUtil {
         return target.toString();
     }
 
+    static String normalizeDurationValue(String value) {
+        if (!value.isEmpty() && Character.isDigit(value.charAt(value.length() - 1))) {
+            try {
+                value = Integer.parseInt(value) + "S";
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        value = value.toUpperCase(Locale.ROOT);
+        return value;
+    }
+
     static String joinAcceptedValues(List<String> acceptedValues) {
         if (acceptedValues == null || acceptedValues.isEmpty()) {
             return "";
@@ -293,28 +304,29 @@ public class DocGeneratorUtil {
             extensionNameBuilder.append(configRoot);
         } else {
             String extensionName = matcher.group(1);
-            final String subgroup = matcher.group(2);
             extensionNameBuilder.append(Constants.QUARKUS);
             extensionNameBuilder.append(Constants.DASH);
 
             if (Constants.DEPLOYMENT.equals(extensionName) || Constants.RUNTIME.equals(extensionName)) {
                 extensionNameBuilder.append(CORE);
-            } else if (subgroup != null && !Constants.DEPLOYMENT.equals(subgroup)
-                    && !Constants.RUNTIME.equals(subgroup) && !Constants.COMMON.equals(subgroup)
-                    && subgroup.matches(Constants.DIGIT_OR_LOWERCASE)) {
-                extensionNameBuilder.append(extensionName);
-                extensionNameBuilder.append(Constants.DASH);
-                extensionNameBuilder.append(subgroup);
-
-                final String qualifier = matcher.group(3);
-                if (qualifier != null && !Constants.DEPLOYMENT.equals(qualifier)
-                        && !Constants.RUNTIME.equals(qualifier) && !Constants.COMMON.equals(qualifier)
-                        && qualifier.matches(Constants.DIGIT_OR_LOWERCASE)) {
-                    extensionNameBuilder.append(Constants.DASH);
-                    extensionNameBuilder.append(qualifier);
-                }
             } else {
                 extensionNameBuilder.append(extensionName);
+                for (int i = 2; i <= matcher.groupCount(); i++) {
+                    String subgroup = matcher.group(i);
+                    if (Constants.DEPLOYMENT.equals(subgroup)
+                            || Constants.RUNTIME.equals(subgroup)
+                            || Constants.COMMON.equals(subgroup)
+                            || !subgroup.matches(Constants.DIGIT_OR_LOWERCASE)) {
+                        break;
+                    }
+                    if (i > 3 && Constants.CONFIG.equals(subgroup)) {
+                        // this is a bit dark magic but we have config packages as valid extension names
+                        // and config packages where the configuration is stored
+                        break;
+                    }
+                    extensionNameBuilder.append(Constants.DASH);
+                    extensionNameBuilder.append(matcher.group(i));
+                }
             }
         }
 
@@ -441,7 +453,7 @@ public class DocGeneratorUtil {
 
             ConfigDocSection configDocSection = configDocItem.getConfigDocSection();
             if (configDocSection.equals(section)) {
-                configDocSection.addConfigDocItems(section.getConfigDocItems());
+                appendConfigItemsIntoExistingOnes(configDocSection.getConfigDocItems(), section.getConfigDocItems());
                 return true;
             } else {
                 boolean configSectionMerged = mergeSectionIntoPreviousExistingConfigItems(section,

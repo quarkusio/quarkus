@@ -54,7 +54,7 @@ public class ExecutorRecorder {
             executor = devModeExecutor;
             Runtime.getRuntime().addShutdownHook(new Thread(shutdownTask, "Executor shutdown thread"));
         } else {
-            shutdownContext.addShutdownTask(shutdownTask);
+            shutdownContext.addLastShutdownTask(shutdownTask);
             executor = underlying;
         }
         if (threadPoolConfig.prefill) {
@@ -94,7 +94,7 @@ public class ExecutorRecorder {
                 long start = System.nanoTime();
                 for (;;)
                     try {
-                        if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.MILLISECONDS)) {
+                        if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.NANOSECONDS)) {
                             long elapsed = System.nanoTime() - start;
                             intervalRemaining -= elapsed;
                             remaining -= elapsed;

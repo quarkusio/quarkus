@@ -35,7 +35,7 @@ public class BeanInfoTypesTest {
                 Collection.class, List.class,
                 Iterable.class, Object.class, String.class);
 
-        BeanDeployment deployment = BeanProcessor.builder().setIndex(index).build().getBeanDeployment();
+        BeanDeployment deployment = BeanProcessor.builder().setBeanArchiveIndex(index).build().getBeanDeployment();
         DotName fooName = name(Foo.class);
 
         ClassInfo fooClass = index.getClassByName(fooName);

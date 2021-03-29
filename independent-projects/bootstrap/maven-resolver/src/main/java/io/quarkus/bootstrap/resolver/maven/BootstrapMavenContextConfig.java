@@ -26,6 +26,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected File userSettings;
     protected boolean artifactTransferLogging = true;
     protected BootstrapMavenOptions cliOptions;
+    protected Path rootProjectDir;
 
     /**
      * Local repository location
@@ -181,6 +182,18 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
                 ? getInitializedCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_POM_FILE)
                 : alternatePomName;
         return BootstrapMavenContext.getPomForDirOrNull(basedir, altPom == null ? null : Paths.get(altPom));
+    }
+
+    /**
+     * Root project directory.
+     *
+     * @param rootProjectDir root project directory
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setRootProjectDir(Path rootProjectDir) {
+        this.rootProjectDir = rootProjectDir;
+        return (T) this;
     }
 
     private BootstrapMavenOptions getInitializedCliOptions() {

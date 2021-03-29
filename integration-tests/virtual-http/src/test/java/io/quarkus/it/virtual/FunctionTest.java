@@ -32,7 +32,7 @@ public class FunctionTest {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
         req.setUri(URI.create("https://foo.com/funqy"));
         req.setHttpMethod(HttpMethod.POST);
-        req.setBody("\"Bill\"".getBytes(StandardCharsets.UTF_8));
+        req.setBody("\"Bill\"");
         req.getHeaders().put("Content-Type", "application/json");
 
         // Invoke
@@ -78,9 +78,6 @@ public class FunctionTest {
     @Test
     public void testVertx() throws Exception {
         String uri = "https://foo.com/vertx/hello";
-        testGET(uri);
-        testPOST(uri);
-        uri = "https://foo.com/vertx/rx/hello";
         testGET(uri);
         testPOST(uri);
         uri = "https://foo.com/vertx/exchange/hello";
@@ -162,7 +159,7 @@ public class FunctionTest {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
         req.setUri(URI.create(uri));
         req.setHttpMethod(HttpMethod.POST);
-        req.setBody("Bill".getBytes(StandardCharsets.UTF_8));
+        req.setBody("Bill");
         req.getHeaders().put("Content-Type", "text/plain");
 
         // Invoke

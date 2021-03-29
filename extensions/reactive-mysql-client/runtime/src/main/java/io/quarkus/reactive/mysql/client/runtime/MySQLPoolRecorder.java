@@ -10,6 +10,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
@@ -17,9 +18,8 @@ import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.datasource.runtime.LegacyDataSourceRuntimeConfig;
-import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -35,26 +35,23 @@ public class MySQLPoolRecorder {
     private static final Logger log = Logger.getLogger(MySQLPoolRecorder.class);
 
     public RuntimeValue<MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx,
+            String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
-            LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
-            LegacyDataSourceReactiveMySQLConfig legacyDataSourceReactiveMySQLConfig,
-            boolean isLegacy,
+            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
+            DataSourcesReactiveMySQLConfig dataSourcesReactiveMySQLConfig,
             ShutdownContext shutdown) {
 
-        MySQLPool mysqlPool;
-        if (!isLegacy) {
-            mysqlPool = initialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
-                    dataSourceReactiveRuntimeConfig,
-                    dataSourceReactiveMySQLConfig);
-        } else {
-            mysqlPool = legacyInitialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
-                    legacyDataSourcesRuntimeConfig.defaultDataSource, legacyDataSourceReactiveMySQLConfig);
-        }
+        MySQLPool mysqlPool = initialize(vertx.getValue(),
+                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
+                dataSourcesReactiveMySQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
 
         shutdown.addShutdownTask(mysqlPool::close);
         return new RuntimeValue<>(mysqlPool);
+    }
+
+    public RuntimeValue<io.vertx.mutiny.mysqlclient.MySQLPool> mutinyMySQLPool(RuntimeValue<MySQLPool> mysqlPool) {
+        return new RuntimeValue<>(io.vertx.mutiny.mysqlclient.MySQLPool.newInstance(mysqlPool.getValue()));
     }
 
     private MySQLPool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -64,11 +61,11 @@ public class MySQLPoolRecorder {
                 dataSourceReactiveMySQLConfig);
         MySQLConnectOptions mysqlConnectOptions = toMySQLConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent() &&
-                dataSourceReactiveRuntimeConfig.threadLocal.get()) {
-            return new ThreadLocalMySQLPool(vertx, mysqlConnectOptions, poolOptions);
+        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
+            log.warn(
+                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return MySQLPool.pool(vertx, mysqlConnectOptions, poolOptions);
+        return new ThreadLocalMySQLPool(vertx, mysqlConnectOptions, poolOptions);
     }
 
     private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -152,63 +149,16 @@ public class MySQLPoolRecorder {
         configureJksKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
         configurePfxKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
 
-        return mysqlConnectOptions;
-    }
+        mysqlConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
 
-    // Legacy configuration
+        mysqlConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
 
-    private MySQLPool legacyInitialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
-            LegacyDataSourceReactiveMySQLConfig legacyDataSourceReactiveMySQLConfig) {
-        PoolOptions poolOptions = legacyToPoolOptionsLegacy(legacyDataSourceRuntimeConfig);
-        MySQLConnectOptions mysqlConnectOptions = legacyToMySQLConnectOptions(dataSourceRuntimeConfig,
-                legacyDataSourceRuntimeConfig, legacyDataSourceReactiveMySQLConfig);
-        return MySQLPool.pool(vertx, mysqlConnectOptions, poolOptions);
-    }
-
-    private PoolOptions legacyToPoolOptionsLegacy(LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig) {
-        PoolOptions poolOptions;
-        poolOptions = new PoolOptions();
-
-        // Slight change of behavior compared to the legacy code: the default max size is set to 20
-        poolOptions.setMaxSize(legacyDataSourceRuntimeConfig.maxSize);
-
-        return poolOptions;
-    }
-
-    private MySQLConnectOptions legacyToMySQLConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
-            LegacyDataSourceReactiveMySQLConfig legacyDataSourceReactiveMySQLConfig) {
-        MySQLConnectOptions mysqlConnectOptions;
-        if (legacyDataSourceRuntimeConfig.url.isPresent()) {
-            String url = legacyDataSourceRuntimeConfig.url.get();
-            // clean up the URL to make migrations easier
-            if (url.startsWith("vertx-reactive:mysql://")) {
-                url = url.substring("vertx-reactive:".length());
-            }
-            mysqlConnectOptions = MySQLConnectOptions.fromUri(url);
-        } else {
-            mysqlConnectOptions = new MySQLConnectOptions();
-        }
-
-        if (dataSourceRuntimeConfig.username.isPresent()) {
-            mysqlConnectOptions.setUser(dataSourceRuntimeConfig.username.get());
-        }
-
-        if (dataSourceRuntimeConfig.password.isPresent()) {
-            mysqlConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
-        }
-
-        if (legacyDataSourceReactiveMySQLConfig.cachePreparedStatements.isPresent()) {
-            mysqlConnectOptions.setCachePreparedStatements(legacyDataSourceReactiveMySQLConfig.cachePreparedStatements.get());
-        }
-        if (legacyDataSourceReactiveMySQLConfig.charset.isPresent()) {
-            mysqlConnectOptions.setCharset(legacyDataSourceReactiveMySQLConfig.charset.get());
-        }
-        if (legacyDataSourceReactiveMySQLConfig.collation.isPresent()) {
-            mysqlConnectOptions.setCollation(legacyDataSourceReactiveMySQLConfig.collation.get());
+        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
+            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
+            mysqlConnectOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
 
         return mysqlConnectOptions;
     }
+
 }

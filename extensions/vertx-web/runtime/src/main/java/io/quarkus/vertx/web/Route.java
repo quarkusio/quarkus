@@ -19,12 +19,12 @@ import io.vertx.ext.web.RoutingContext;
  * The annotated method can accept arguments of the following types:
  * <ul>
  * <li>{@code io.vertx.ext.web.RoutingContext}</li>
- * <li>{@code io.vertx.reactivex.ext.web.RoutingContext}</li>
+ * <li>{@code io.vertx.mutiny.ext.web.RoutingContext}</li>
  * <li>{@code io.quarkus.vertx.web.RoutingExchange}</li>
  * <li>{@code io.vertx.core.http.HttpServerRequest}</li>
  * <li>{@code io.vertx.core.http.HttpServerResponse}</li>
- * <li>{@code io.vertx.reactivex.core.http.HttpServerRequest}</li>
- * <li>{@code io.vertx.reactivex.core.http.HttpServerResponse}</li>
+ * <li>{@code io.vertx.mutiny.core.http.HttpServerRequest}</li>
+ * <li>{@code io.vertx.mutiny.core.http.HttpServerResponse}</li>
  * </ul>
  * Furthermore, it is possible to inject the request parameters into a method parameter annotated with
  * {@link io.quarkus.vertx.web.Param}:
@@ -67,13 +67,16 @@ import io.vertx.ext.web.RoutingContext;
  *  </code>
  * </pre>
  * 
- * If the annotated method returns {@code void} then it has to accept at least one argument.
+ * If the annotated method returns {@code void} then it has to accept at least one argument that makes it possible to end the
+ * response, for example {@link RoutingContext}.
  * If the annotated method does not return {@code void} then the arguments are optional.
  * <p>
  * If both {@link #path()} and {@link #regex()} are set the regular expression is used for matching.
  * <p>
- * If neither {@link #path()} nor {@link #regex()} is set the route will match a path derived from the name of the
- * method. This is done by de-camel-casing the name and then joining the segments with hyphens.
+ * If neither {@link #path()} nor {@link #regex()} is specified and the handler type is not {@link HandlerType#FAILURE} then the
+ * route will match a path derived from the name of the method. This is done by de-camel-casing the name and then joining the
+ * segments
+ * with hyphens.
  */
 @Repeatable(Routes.class)
 @Retention(RetentionPolicy.RUNTIME)
@@ -139,7 +142,7 @@ public @interface Route {
     enum HandlerType {
 
         /**
-         * A request handler.
+         * A non-blocking request handler.
          *
          * @see io.vertx.ext.web.Route#handler(Handler)
          */
@@ -151,11 +154,35 @@ public @interface Route {
          */
         BLOCKING,
         /**
-         * A failure handler.
-         *
+         * A failure handler can declare a single method parameter whose type extends {@link Throwable}. The type of the
+         * parameter is used to match the result of {@link RoutingContext#failure()}.
+         * 
+         * <pre>
+         * <code>
+         *  class Routes {
+         *     {@literal @Route(type = HandlerType.FAILURE)}
+         *     void unsupported(UnsupportedOperationException e, HttpServerResponse response) {
+         *        response.setStatusCode(501).end(e.getMessage());
+         *     }
+         *  }
+         *  </code>
+         * </pre>
+         * 
+         * <p>
+         * If a failure handler declares neither a path nor a regex then the route matches all requests.
+         * 
          * @see io.vertx.ext.web.Route#failureHandler(Handler)
          */
-        FAILURE
+        FAILURE;
+
+        public static HandlerType from(String value) {
+            for (HandlerType handlerType : values()) {
+                if (handlerType.toString().equals(value)) {
+                    return handlerType;
+                }
+            }
+            return null;
+        }
 
     }
 

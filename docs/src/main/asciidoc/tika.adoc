@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Apache Tika
 
@@ -13,25 +13,13 @@ https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is use
 
 [NOTE]
 ====
-If you are planning to run the application as a native executable and parse documents that may have been created with charsets different than the standard ones supported in Java such as `UTF-8` then you should configure Quarkus Maven Plugin to get the native image generator include all the charsets available to the JVM:
+If you are planning to run the application as a native executable and parse documents that may have been created with charsets different than the standard ones supported in Java such as `UTF-8` then you should configure Quarkus to get the native image generator include all the charsets available to the JVM:
 [source,xml]
 ----
-<plugin>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-maven-plugin</artifactId>
-    <executions>
-        <execution>
-            <id>native-image</id>
-            <goals>
-                <goal>native-image</goal>
-            </goals>
-            <configuration>
-                <addAllCharsets>true</addAllCharsets>
-                ...
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
+<properties>
+    <quarkus.package.type>native</quarkus.package.type>
+    <quarkus.native.add-all-charsets>true</quarkus.native.add-all-charsets>
+<properties>
 ----
 ====
 
@@ -66,7 +54,7 @@ The provided solution contains a few additional elements such as tests and testi
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme.example \
@@ -178,7 +166,7 @@ As you can see the JAX-RS resource method was renamed to `extractText`, `@GET` a
 
 Now we are ready to run our application. Use:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -192,7 +180,7 @@ $ ./mvnw clean compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO]
 INFO] --------------------< org.acme.example:apache-tika >--------------------
-[INFO] Building apache-tika 1.0-SNAPSHOT
+[INFO] Building apache-tika 1.0.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 ...
 Listening for transport dt_socket at address: 5005
@@ -224,7 +212,7 @@ Hello Quarkus
 == Building a native executable
 
 You can build a native executable with the usual command `./mvnw package -Pnative`.
-Running it is as simple as executing `./target/tika-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/tika-quickstart-1.0.0-SNAPSHOT-runner`.
 
 == Configuration Reference
 

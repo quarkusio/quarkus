@@ -1,9 +1,9 @@
 package io.quarkus.kubernetes.deployment;
 
-import io.dekorate.deps.kubernetes.api.model.ConfigMapEnvSourceFluent;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
+import io.fabric8.kubernetes.api.model.ConfigMapEnvSourceFluent;
 
 public class RemoveOptionalFromConfigMapEnvSourceDecorator extends ApplicationContainerDecorator<ConfigMapEnvSourceFluent> {
 

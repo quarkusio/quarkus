@@ -8,13 +8,14 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
-@QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
+@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedClass = true)
 @QuarkusTest
 public class SecretPropertiesTest {
 
     @Test
     public void testPropertiesReadFromConfigMap() {
         assertProperty("dummysecret", "dummysecret");
+        assertProperty("overriddensecret", "secret");
         assertProperty("secretProp1", "val1");
         assertProperty("secretProp2", "val2");
         assertProperty("secretProp3", "val3");

@@ -9,10 +9,10 @@ import org.hibernate.engine.spi.SelfDirtinessTracker
 import org.hibernate.jpa.QueryHints
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.fail
-import org.wildfly.common.Assert
 import java.lang.UnsupportedOperationException
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.util.UUID
 import java.util.stream.Collectors
 import java.util.stream.Stream
 import javax.inject.Inject
@@ -38,6 +38,16 @@ class TestEndpoint {
     @Path("model")
     @Transactional
     fun testModel(): String {
+        Assertions.assertDoesNotThrow {
+            Person.findById(Long.MIN_VALUE)
+        }
+        Assertions.assertDoesNotThrow {
+            Person.find("name = ?1", UUID.randomUUID().toString()).firstResult()
+        }
+        Assertions.assertThrows(NoResultException::class.java, {
+            Person.find("name = ?1", UUID.randomUUID().toString()).singleResult()
+        })
+
         var persons: List<Person> = Person.findAll().list()
         Assertions.assertEquals(0, persons.size)
 
@@ -848,17 +858,9 @@ class TestEndpoint {
         Assertions.assertEquals(2, entity.getBCalls)
         Assertions.assertEquals(2, entity.setICalls)
 
-        try {
-            entity.l
-            fail("This call should have invoked getL() which throws an exception")
-        } catch(_ : UnsupportedOperationException) {
-        }
+        Assertions.assertThrows(UnsupportedOperationException::class.java) { entity.l }
+        Assertions.assertThrows(UnsupportedOperationException::class.java) { entity.l = 42 }
 
-        try {
-            entity.l = 42
-            fail("This call should have invoked setL() which throws an exception")
-        } catch(_ : UnsupportedOperationException) {
-        }
         return "OK"
     }
 
@@ -874,7 +876,7 @@ class TestEndpoint {
         Person.deleteAll()
         Assertions.assertEquals(0, Person.count())
 
-        val person: Person = makeSavedPerson()
+        val person: Person = makeSavedPerson("")
         val trackingPerson = person as SelfDirtinessTracker
 
         var dirtyAttributes = trackingPerson.`$$_hibernate_getDirtyAttributes`()
@@ -970,15 +972,15 @@ class TestEndpoint {
 
         // Ensure that any JAX-B annotations are properly moved to generated getters
         var m: Method = JAXBEntity::class.java.getMethod("getNamedAnnotatedProp")
-        var anno = m.getAnnotation(XmlAttribute::class.java)
-        Assertions.assertNotNull(anno)
-        Assertions.assertEquals("Named", anno.name)
+        var annotation = m.getAnnotation(XmlAttribute::class.java)
+        Assertions.assertNotNull(annotation)
+        Assertions.assertEquals("Named", annotation.name)
         Assertions.assertNull(m.getAnnotation(XmlTransient::class.java))
 
         m = JAXBEntity::class.java.getMethod("getDefaultAnnotatedProp")
-        anno = m.getAnnotation(XmlAttribute::class.java)
-        Assertions.assertNotNull(anno)
-        Assertions.assertEquals("##default", anno.name)
+        annotation = m.getAnnotation(XmlAttribute::class.java)
+        Assertions.assertNotNull(annotation)
+        Assertions.assertEquals("##default", annotation.name)
         Assertions.assertNull(m.getAnnotation(XmlTransient::class.java))
 
         m = JAXBEntity::class.java.getMethod("getUnAnnotatedProp")
@@ -991,12 +993,12 @@ class TestEndpoint {
 
         m = JAXBEntity::class.java.getMethod("getArrayAnnotatedProp")
         Assertions.assertNull(m.getAnnotation(XmlTransient::class.java))
-        val elementsAnno = m.getAnnotation(XmlElements::class.java)
-        Assertions.assertNotNull(elementsAnno)
-        Assertions.assertNotNull(elementsAnno.value)
-        Assertions.assertEquals(2, elementsAnno.value.size)
-        Assertions.assertEquals("array1", elementsAnno.value.get(0).name)
-        Assertions.assertEquals("array2", elementsAnno.value.get(1).name)
+        val elementsAnnotation = m.getAnnotation(XmlElements::class.java)
+        Assertions.assertNotNull(elementsAnnotation)
+        Assertions.assertNotNull(elementsAnnotation.value)
+        Assertions.assertEquals(2, elementsAnnotation.value.size)
+        Assertions.assertEquals("array1", elementsAnnotation.value[0].name)
+        Assertions.assertEquals("array2", elementsAnnotation.value[1].name)
 
         // Ensure that all original fields were labeled @XmlTransient and had their original JAX-B annotations removed
         ensureFieldSanitized("namedAnnotatedProp")

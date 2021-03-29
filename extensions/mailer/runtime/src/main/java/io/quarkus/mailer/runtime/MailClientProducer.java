@@ -7,6 +7,7 @@ import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.TlsConfig;
 import io.vertx.core.Vertx;
 import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailClient;
@@ -23,8 +24,8 @@ public class MailClientProducer {
     private final io.vertx.mutiny.ext.mail.MailClient mutinyClient;
     private final MailClient client;
 
-    public MailClientProducer(Vertx vertx, MailConfig config) {
-        this.client = mailClient(vertx, config);
+    public MailClientProducer(Vertx vertx, MailConfig config, TlsConfig tlsConfig) {
+        this.client = mailClient(vertx, config, tlsConfig);
         this.mutinyClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(this.client);
     }
 
@@ -40,37 +41,17 @@ public class MailClientProducer {
         return mutinyClient;
     }
 
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.axle.ext.mail.MailClient axleMailClient() {
-        LOGGER.warn(
-                "`io.vertx.axle.ext.mail.MailClient` is deprecated and will be removed in a future version - it is "
-                        + "recommended to switch to `io.vertx.mutiny.ext.mail.MailClient`");
-        return io.vertx.axle.ext.mail.MailClient.newInstance(client);
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.reactivex.ext.mail.MailClient rxMailClient() {
-        LOGGER.warn(
-                "`io.vertx.reactivex.ext.mail.MailClient` is deprecated and will be removed in a future version - it is "
-                        + "recommended to switch to `io.vertx.mutiny.ext.mail.MailClient`");
-        return io.vertx.reactivex.ext.mail.MailClient.newInstance(client);
-    }
-
     @PreDestroy
     public void stop() {
         client.close();
     }
 
-    private MailClient mailClient(Vertx vertx, MailConfig config) {
-        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config);
+    private MailClient mailClient(Vertx vertx, MailConfig config, TlsConfig tlsConfig) {
+        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config, tlsConfig);
         return MailClient.createShared(vertx, cfg);
     }
 
-    private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailConfig config) {
+    private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailConfig config, TlsConfig tlsConfig) {
         io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
         if (config.authMethods.isPresent()) {
             cfg.setAuthMethods(config.authMethods.get());
@@ -106,7 +87,8 @@ public class MailClientProducer {
         if (config.startTLS.isPresent()) {
             cfg.setStarttls(StartTLSOptions.valueOf(config.startTLS.get().toUpperCase()));
         }
-        cfg.setTrustAll(config.trustAll);
+        boolean trustAll = config.trustAll.isPresent() ? config.trustAll.get() : tlsConfig.trustAll;
+        cfg.setTrustAll(trustAll);
         return cfg;
     }
 

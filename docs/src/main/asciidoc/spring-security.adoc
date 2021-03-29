@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Quarkus Extension for Spring Security API
 
@@ -38,14 +38,14 @@ The solution is located in the `spring-security-quickstart` {quickstarts-tree-ur
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=spring-security-quickstart \
     -DclassName="org.acme.spring.security.GreetingController" \
     -Dpath="/greeting" \
-    -Dextensions="spring-web, spring-security, quarkus-elytron-security-properties-file"
+    -Dextensions="spring-web,spring-security,quarkus-elytron-security-properties-file"
 cd spring-security-quickstart
 ----
 
@@ -56,7 +56,7 @@ to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="spring-web, spring-security, quarkus-elytron-security-properties-file"
+./mvnw quarkus:add-extension -Dextensions="spring-web,spring-security,quarkus-elytron-security-properties-file"
 ----
 
 This will add the following to your `pom.xml`:
@@ -91,7 +91,6 @@ package org.acme.spring.security;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/greeting")
@@ -149,10 +148,10 @@ The updated controller will be:
 ----
 package org.acme.spring.security;
 
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/greeting")
@@ -402,7 +401,7 @@ Some examples of allowed expressions are:
 
     @PreAuthorize("hasAnyRole('view1', 'view2') OR isAnonymous() OR hasRole('test')")
     public void allowedForAdminOrAnonymous() {
-        
+
     }
 ----
 
@@ -435,6 +434,7 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * link:spring-di[Quarkus - Extension for Spring DI]
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
 * link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
 * link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
 * link:spring-cache[Quarkus - Extension for Spring Cache]

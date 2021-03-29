@@ -1,12 +1,14 @@
 package io.quarkus.bootstrap.resolver;
 
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Supplier;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
@@ -63,6 +65,8 @@ public class TsArtifact {
     protected Properties pomProps;
     protected List<Profile> pomProfiles = Collections.emptyList();
 
+    private boolean installed;
+
     public TsArtifact(String artifactId) {
         this(artifactId, DEFAULT_VERSION);
     }
@@ -81,6 +85,10 @@ public class TsArtifact {
         this.classifier = classifier;
         this.type = type;
         this.version = version;
+    }
+
+    public AppArtifactKey getKey() {
+        return new AppArtifactKey(groupId, artifactId);
     }
 
     public String getGroupId() {
@@ -112,12 +120,28 @@ public class TsArtifact {
         return addDependency(new TsDependency(dep));
     }
 
+    public TsArtifact addDependency(TsArtifact dep, TsArtifact... excludes) {
+        return addDependency(new TsDependency(dep).exclude(excludes));
+    }
+
     public TsArtifact addDependency(TsQuarkusExt dep) {
+        return addDependency(dep, false);
+    }
+
+    public TsArtifact addDependency(TsQuarkusExt dep, boolean optional) {
+        return addDependency(dep, () -> new TsDependency(dep.getRuntime(), optional));
+    }
+
+    public TsArtifact addDependency(TsQuarkusExt dep, TsArtifact... excludes) {
+        return addDependency(dep, () -> new TsDependency(dep.getRuntime(), false).exclude(excludes));
+    }
+
+    private TsArtifact addDependency(TsQuarkusExt dep, Supplier<TsDependency> dependencyFactory) {
         if (extDeps.isEmpty()) {
             extDeps = new ArrayList<>(1);
         }
         extDeps.add(dep);
-        return addDependency(new TsDependency(dep.getRuntime()));
+        return addDependency(dependencyFactory.get());
     }
 
     public TsArtifact addDependency(TsDependency dep) {
@@ -209,16 +233,20 @@ public class TsArtifact {
      * @param repoBuilder
      */
     public void install(TsRepoBuilder repoBuilder) {
+        if (installed) {
+            return;
+        }
+        installed = true;
+        if (!extDeps.isEmpty()) {
+            for (TsQuarkusExt ext : extDeps) {
+                ext.install(repoBuilder);
+            }
+        }
         if (!deps.isEmpty()) {
             for (TsDependency dep : deps) {
                 if (dep.artifact.getVersion() != null) {
                     dep.artifact.install(repoBuilder);
                 }
-            }
-        }
-        if (!extDeps.isEmpty()) {
-            for (TsQuarkusExt ext : extDeps) {
-                ext.deployment.install(repoBuilder);
             }
         }
         try {

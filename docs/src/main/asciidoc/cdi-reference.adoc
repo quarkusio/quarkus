@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Contexts and Dependency Injection
 
@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 :sectnumlevels: 4
 :toc:
 
-Quarkus DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+Quarkus DI solution (also called ArC) is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
@@ -67,6 +67,15 @@ To generate the index just add the following to your `pom.xml`:
 </build>
 ----
 
+If you are are using gradle, you can apply the following plugin to your `build.gradle`:
+
+[source,groovy]
+----
+plugins {
+    id 'org.kordamp.gradle.jandex' version '0.6.0'
+}
+----
+
 If you can't modify the dependency, you can still index it by adding `quarkus.index-dependency` entries to your `application.properties`:
 
 [source,properties]
@@ -77,6 +86,15 @@ quarkus.index-dependency.<name>.classifier=(this one is optional)
 ----
 
 For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
+
+.Example application.properties
+[source,properties]
+----
+quarkus.index-dependency.acme.group-id=org.acme <1>
+quarkus.index-dependency.acme.artifact-id=acme-api <2>
+----
+<1> Value is a group id for a dependency identified by name `acme`.
+<2> Value is an artifact id for a dependency identified by name `acme`.
 
 === How To Exclude Types and Dependencies from Discovery
 
@@ -118,7 +136,7 @@ quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 == Native Executables and Private Members
 
 Quarkus is using GraalVM to build a native executable.
-One of the limitations of GraalVM is the usage of https://github.com/oracle/graal/blob/master/substratevm/LIMITATIONS.md#user-content-reflection[Reflection, window="_blank"].
+One of the limitations of GraalVM is the usage of https://github.com/oracle/graal/blob/master/substratevm/Limitations.md#reflection[Reflection, window="_blank"].
 Reflective operations are supported but all relevant members must be registered for reflection explicitly.
 Those registrations result in a bigger native executable.
 
@@ -250,6 +268,7 @@ public class PingResource {
 <2> Injection itself does not result in the instantiation of `CoolService`. A client proxy is injected. 
 <3> The first invocation upon the injected proxy triggers the instantiation of `CoolService`.
 
+[[startup_event]]
 ==== Startup Event
 
 However, if you really need to instantiate a bean eagerly you can:
@@ -483,7 +502,7 @@ Quarkus adds a capability that CDI currently does not support which is to condit
 via the `@io.quarkus.arc.profile.IfBuildProfile` and `@io.quarkus.arc.profile.UnlessBuildProfile` annotations.
 When used in conjunction with `@io.quarkus.arc.DefaultBean`, these annotations allow for the creation of different bean configurations for different build profiles.
 
-Imagine for instance that an application contains a bean named `Tracer`, which needs to be do nothing when in tests or dev-mode, but work in its normal capacity for the production artifact.
+Imagine for instance that an application contains a bean named `Tracer`, which needs to be do nothing when in tests or dev-mode, but works in its normal capacity for the production artifact.
 An elegant way to create such beans is the following:
 
 [source,java]
@@ -505,7 +524,7 @@ public class TracerConfiguration {
 }
 ----
 
-If instead, it is required that the `Tracer` bean also work in dev-mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
+If instead, it is required that the `Tracer` bean also works in dev-mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
 
 [source,java]
 ----
@@ -513,13 +532,13 @@ If instead, it is required that the `Tracer` bean also work in dev-mode and only
 public class TracerConfiguration {
 
     @Produces
-    @DefaultBean
+    @UnlessBuildProfile("test") // this will be enabled for both prod and dev build time profiles
     public Tracer realTracer(Reporter reporter, Configuration configuration) {
         return new RealTracer(reporter, configuration);
     }
 
     @Produces
-    @UnlessBuildProfile("prod") // this will be enabled for both test and dev build time profiles
+    @DefaultBean
     public Tracer noopTracer() {
         return new NoopTracer();
     }
@@ -531,7 +550,7 @@ NOTE: The runtime profile has absolutely no effect on the bean resolution using 
 === Enabling Beans for Quarkus Build Properties
 
 Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time property has a specific value,
-via the `@io.quarkus.arc.properties.IfBuildProperty` annotation.
+via the `@io.quarkus.arc.properties.IfBuildProperty` and `@io.quarkus.arc.properties.UnlessBuildProperty` annotation.
 When used in conjunction with `@io.quarkus.arc.DefaultBean`, this annotation allow for the creation of different bean configurations for different build properties.
 
 The scenario we mentioned above with `Tracer` could also be implemented in the following way:
@@ -543,6 +562,27 @@ public class TracerConfiguration {
 
     @Produces
     @IfBuildProperty(name = "some.tracer.enabled", stringValue = "true")
+    public Tracer realTracer(Reporter reporter, Configuration configuration) {
+        return new RealTracer(reporter, configuration);
+    }
+
+    @Produces
+    @DefaultBean
+    public Tracer noopTracer() {
+        return new NoopTracer();
+    }
+}
+----
+
+If instead, it is required that the `RealTracer` bean is only used if the `some.tracer.enabled` property is not `false`, then `@UnlessBuildProperty` would be ideal. The code would look like:
+
+[source,java]
+----
+@Dependent
+public class TracerConfiguration {
+
+    @Produces
+    @UnlessBuildProperty(name = "some.tracer.enabled", stringValue = "false")
     public Tracer realTracer(Reporter reporter, Configuration configuration) {
         return new RealTracer(reporter, configuration);
     }
@@ -635,7 +675,7 @@ It's possible to annotate a non-private static method with an interceptor bindin
 class Services {
 
   @Logged <1>
-  static BigDecimal computePrice(long amout) { <2>
+  static BigDecimal computePrice(long amount) { <2>
     BigDecimal price;
     // Perform computations...
     return price;
@@ -681,7 +721,7 @@ import io.quarkus.arc.Lock;
 @ApplicationScoped
 class SharedService {
 
-  void addAmount(BigDecimal amout) {
+  void addAmount(BigDecimal amount) {
     // ...changes some internal state of the bean
   }
   
@@ -695,368 +735,75 @@ class SharedService {
 <2> `@Lock(Lock.Type.READ)` overrides the value specified at class level. It means that any number of clients can invoke the method concurrently, unless the bean instance is locked by `@Lock(Lock.Type.WRITE)`. 
 <3> You can also specify the "wait time". If it's not possible to acquire the lock in the given time a `LockException` is thrown.
 
-[[build_time_apis]]
-== Build Time Extension Points
+=== Repeatable interceptor bindings
 
-[[portable_extensions]]
-=== Portable Extensions
+Quarkus has limited support for `@Repeatable` interceptor binding annotations.
+
+When binding an interceptor to a component, you can declare multiple `@Repeatable` annotations on methods.
+Repeatable interceptor bindings declared on classes and stereotypes are not supported, because there are some open questions around interactions with the Interceptors specification.
+This might be added in the future.
+
+As an example, suppose we have an interceptor that clears a cache.
+The corresponding interceptor binding would be called `@CacheInvalidateAll` and would be declared as `@Repeatable`.
+If we wanted to clear two caches at the same time, we would add `@CacheInvalidateAll` twice:
+
+[source,java]
+----
+@ApplicationScoped
+class CachingService {
+  @CacheInvalidateAll(cacheName = "foo")
+  @CacheInvalidateAll(cacheName = "bar")
+  void heavyComputation() {
+    // ...
+    // some computation that updates a lot of data
+    // and requires 2 caches to be invalidated
+    // ...
+  }
+}
+----
+
+This is how interceptors are used.
+What about creating an interceptor?
+
+When declaring interceptor bindings of an interceptor, you can add multiple `@Repeatable` annotations to the interceptor class as usual.
+This is useless when the annotation members are `@Nonbinding`, as would be the case for the `@Cached` annotation, but is important otherwise.
+
+For example, suppose we have an interceptor that can automatically log method invocations to certain targets.
+The interceptor binding annotation `@Logged` would have a member called `target`, which specifies where to store the log.
+Our implementation could be restricted to console logging and file logging:
+
+[source,java]
+----
+@Interceptor
+@Logged(target = "console")
+@Logged(target = "file")
+class NaiveLoggingInterceptor {
+  // ...
+}
+----
+
+Other interceptors could be provided to log method invocations to different targets.
+
+[[build_time_apis]]
+== Build Time Extensions
 
 Quarkus incorporates build-time optimizations in order to provide instant startup and low memory footprint.
 The downside of this approach is that CDI Portable Extensions cannot be supported.
 Nevertheless, most of the functionality can be achieved using Quarkus link:writing-extensions[extensions].
+See the link:cdi-integration[integration guide] for more information.
 
-=== Additional Bean Defining Annotations
-
-As described in <<bean_discovery>> bean classes that don’t have a bean defining annotation are not discovered.
-However, `BeanDefiningAnnotationBuildItem` can be used to extend the set of default bean defining annotations (`@Dependent`, `@Singleton`, `@ApplicationScoped`, `@RequestScoped` and `@Stereotype` annotations):
-
-[source,java]
-----
-@BuildStep
-BeanDefiningAnnotationBuildItem additionalBeanDefiningAnnotation() {
-    return new BeanDefiningAnnotationBuildItem(DotName.createSimple("javax.ws.rs.Path")));
-}
-----
-
-NOTE: Bean registrations that are result of a `BeanDefiningAnnotationBuildItem` are unremovable by default. See also <<remove_unused_beans>>.
-
-=== Resource Annotations
-
-`ResourceAnnotationBuildItem` is used to specify resource annotations  that make it possible to resolve non-CDI injection points, such as Java EE resources.
-
-NOTE: An integrator must also provide a corresponding `io.quarkus.arc.ResourceReferenceProvider` implementation. 
-
-[source,java]
-----
-@BuildStep
-void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations, BuildProducer<GeneratedResourceBuildItem> resources) {
-    resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
-        JPAResourceReferenceProvider.class.getName().getBytes()));
-    resourceAnnotations.produce(new ResourceAnnotationBuildItem(DotName.createSimple(PersistenceContext.class.getName())));
-}
-----
-
-[[additional_beans]]
-=== Additional Beans
-
-`AdditionalBeanBuildItem` is used to specify additional bean classes to be analyzed during discovery.
-Additional bean classes are transparently added to the application index processed by the container.
-
-[source,java]
-----
-@BuildStep
-List<AdditionalBeanBuildItem> additionalBeans() {
-     return Arrays.asList(
-          new AdditionalBeanBuildItem(SmallRyeHealthReporter.class),
-          new AdditionalBeanBuildItem(HealthServlet.class));
-}
-----
-
-NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is removable by default. See also <<remove_unused_beans>>.
-
-[[synthetic_beans]]
-=== Synthetic Beans
-
-Sometimes it is very useful to be able to register a synthetic bean.
-Bean attributes of a synthetic bean are not derived from a java class, method or field.
-Instead, the attributes are specified by an extension.
-In CDI, this could be achieved using the `AfterBeanDiscovery.addBean()` methods.
-In Quarkus, there are three ways to register a synthetic bean.
-
-==== `BeanRegistrarBuildItem`
-
-A build step can produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
-
-.`BeanRegistrarBuildItem` Example
-[source,java]
-----
-@BuildStep
-BeanRegistrarBuildItem syntheticBean() {
-     return new BeanRegistrarBuildItem(new BeanRegistrar() {
-
-            @Override
-            public void register(RegistrationContext registrationContext) {
-                 registrationContext.configure(String.class).types(String.class).qualifiers(new MyQualifierLiteral()).creator(mc -> mc.returnValue(mc.load("foo"))).done();
-            }
-        }));
-}
-----
-
-NOTE: The output of a `BeanConfigurator` is recorded as bytecode. Therefore there are some limitations in how a synthetic bean instance is created. See also `BeanConfigurator.creator()` methods.
-
-TIP: You can easily filter all class-based beans via the convenient `BeanStream` returned from the `RegistrationContext.beans()` method.
-
-==== `BeanRegistrationPhaseBuildItem`
-
-If a build step *needs to produce other build items during the registration* it should use the `BeanRegistrationPhaseBuildItem`.
-The reason is that injected objects are only valid during a `@BuildStep` method invocation.
-
-.`BeanRegistrationPhaseBuildItem` Example
-[source,java]
-----
-@BuildStep
-void syntheticBean(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            BuildProducer<MyBuildItem> myBuildItem, 
-            BuildProducer<BeanConfiguratorBuildItem> beanConfigurators) {
-   beanConfigurators.produce(new BeanConfiguratorBuildItem(beanRegistrationPhase.getContext().configure(String.class).types(String.class).qualifiers(new MyQualifierLiteral()).creator(mc -> mc.returnValue(mc.load("foo")))));
-   myBuildItem.produce(new MyBuildItem());
-}
-----
-
-NOTE: See the `BeanRegistrationPhaseBuildItem` javadoc for more information.
-
-==== `SyntheticBeanBuildItem`
-
-Finally, a build step can produce a `SyntheticBeanBuildItem` to register a synthetic bean whose instance can be easily *produced through a <<writing-extensions.adoc#bytecode-recording,recorder>>*.
-The extended `BeanConfigurator` accepts either a `io.quarkus.runtime.RuntimeValue` or a `java.util.function.Supplier`.
-
-.`SyntheticBeanBuildItem` Example
-[source,java]
-----
-@BuildStep
-@Record(STATIC_INIT)
-SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
-   return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
-                .runtimeValue(recorder.createFoo())
-                .done();
-}
-----
-
-
-=== Annotation Transformations
-
-A very common task is to override the annotations found on the bean classes.
-For example you might want to add an interceptor binding to a specific bean class.
-Here is how to do it - use the `AnnotationsTransformerBuildItem`:
-
-[source,java]
-----
-@BuildStep
-AnnotationsTransformerBuildItem transform() {
-    return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-        public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-            return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-        }
-
-        public void transform(TransformationContext context) {
-            if (context.getTarget().asClass().name().toString().equals("com.foo.Bar")) {
-                context.transform().add(MyInterceptorBinding.class).done();
-            }
-        }
-    });
-}
-----
-
-=== Additional Interceptor Bindings
-
-In rare cases it might be handy to programmatically register an existing annotation as interceptor binding.
-This is similar to what pure CDI achieves through `BeforeBeanDiscovery#addInterceptorBinding()`.
-Though here we are going to use `InterceptorBindingRegistrarBuildItem` to get it done.
-Note that you can register multiple annotations in one go:
-
-[source,java]
-----
-@BuildStep
-InterceptorBindingRegistrarBuildItem addInterceptorBindings() {
-    InterceptorBindingRegistrarBuildItem additionalBindingsRegistrar = new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
-        @Override
-        public Collection<DotName> registerAdditionalBindings() {
-            Collection<DotName> result = new HashSet<>();
-            result.add(DotName.createSimple(MyAnnotation.class.getName()));
-            result.add(DotName.createSimple(MyOtherAnnotation.class.getName()));
-            return result;
-        }
-    });
-    return additionalBindingsRegistrar;
-}
-----
-
-=== Injection Point Transformation
-
-Every now and then it is handy to be able to change qualifiers of an injection point programmatically.
-You can do just that with `InjectionPointTransformerBuildItem`.
-The following sample shows how to apply transformation to injection points with type `Foo` that contain qualifier `MyQualifier`:
-
-[source,java]
-----
-@BuildStep
-InjectionPointTransformerBuildItem transformer() {
-    return new InjectionPointTransformerBuildItem(new InjectionPointsTransformer() {
-
-        public boolean appliesTo(Type requiredType) {
-            return requiredType.name().equals(DotName.createSimple(Foo.class.getName()));
-        }
-
-        public void transform(TransformationContext context) {
-            if (context.getQualifiers().stream()
-                    .anyMatch(a -> a.name().equals(DotName.createSimple(MyQualifier.class.getName())))) {
-                context.transform()
-                        .removeAll()
-                        .add(DotName.createSimple(MyOtherQualifier.class.getName()))
-                        .done();
-            }
-        }
-    });
-}
-----
-
-=== Observer Transformation
-
-Any https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#observer_methods[observer method] definition can be vetoed or transformed using an `ObserverTransformerBuildItem`.
-The attributes that can be transformed include:
-
-- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getObservedQualifiers--[qualifiers] 
-- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getReception--[reception] 
-- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getPriority--[priority] 
-- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getTransactionPhase--[transaction phase] 
-- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#isAsync--[asynchronous] 
-
-[source,java]
-----
-@BuildStep
-ObserverTransformerBuildItem transformer() {
-    return new ObserverTransformerBuildItem(new ObserverTransformer() {
-
-        public boolean appliesTo(Type observedType, Set<AnnotationInstance> qualifiers) {
-            return observedType.name.equals(DotName.createSimple(MyEvent.class.getName()));
-        }
-
-        public void transform(TransformationContext context) {
-            // Veto all observers of MyEvent
-            context.veto();
-        }
-    });
-}
-----
-
-=== Bean Deployment Validation
-
-Once the bean deployment is ready an extension can perform additional validations and inspect the found beans, observers and injection points.
-Register a `BeanDeploymentValidatorBuildItem`:
-
-[source,java]
-----
-@BuildStep
-BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
-    return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
-         public void validate(ValidationContext validationContext) {
-             for (InjectionPointInfo injectionPoint : validationContext.get(Key.INJECTION_POINTS)) {
-                 System.out.println("Injection point: " + injectionPoint);
-             }
-         }
-    });
-}
-----
-
-TIP: You can easily filter all registered beans via the convenient `BeanStream` returned from the `ValidationContext.beans()` method.
-
-If an extension needs to produce other build items during the "validation" phase it should use the `ValidationPhaseBuildItem` instead.
-The reason is that injected objects are only valid during a `@BuildStep` method invocation.
-
-[source,java]
-----
-@BuildStep
-void validate(ValidationPhaseBuildItem validationPhase,
-            BuildProducer<MyBuildItem> myBuildItem, 
-            BuildProducer<ValidationErrorBuildItem> errors) {
-   if (someCondition) {
-     errors.produce(new ValidationErrorBuildItem(new IllegalStateException()));
-     myBuildItem.produce(new MyBuildItem());
-   }
-}
-----
-
-NOTE: See `ValidationPhaseBuildItem` javadoc for more information.
-
-
-=== Custom Contexts
-
-An extension can register a custom `InjectableContext` implementation by means of a `ContextRegistrarBuildItem`:
-
-[source,java]
-----
-@BuildStep
-ContextRegistrarBuildItem customContext() {
-    return new ContextRegistrarBuildItem(new ContextRegistrar() {
-         public void register(RegistrationContext registrationContext) {
-            registrationContext.configure(CustomScoped.class).normal().contextClass(MyCustomContext.class).done();
-         }
-    });
-}
-----
-
-If an extension needs to produce other build items during the "context registration" phase it should use the `ContextRegistrationPhaseBuildItem` instead.
-The reason is that injected objects are only valid during a `@BuildStep` method invocation.
-
-[source,java]
-----
-@BuildStep
-void addContext(ContextRegistrationPhaseBuildItem contextRegistrationPhase,
-            BuildProducer<MyBuildItem> myBuildItem, 
-            BuildProducer<ContextConfiguratorBuildItem> contexts) {
-   contexts.produce(new ContextConfiguratorBuildItem(contextRegistrationPhase.getContext().configure(CustomScoped.class).normal().contextClass(MyCustomContext.class)));
-   myBuildItem.produce(new MyBuildItem());
-}
-----
-
-NOTE: See `ContextRegistrationPhaseBuildItem` javadoc for more information.
-
-
-[[build_metadata]]
-=== Available Build Time Metadata
-
-Any of the above extensions that operates with `BuildExtension.BuildContext` can leverage certain build time metadata that are generated during build.
-The built-in keys located in `io.quarkus.arc.processor.BuildExtension.Key` are:
-
-* `ANNOTATION_STORE`
-** Contains an `AnnotationStore` that keeps information about all `AnnotationTarget` annotations after application of annotation transformers
-* `INJECTION_POINTS`
-** `Collection<InjectionPointInfo>` containing all injection points
-* `BEANS`
-** `Collection<BeanInfo>` containing all beans
-* `REMOVED_BEANS`
-** `Collection<BeanInfo>` containing all the removed beans; see <<remove_unused_beans>> for more information
-* `OBSERVERS`
-** `Collection<ObserverInfo>` containing all observers
-* `SCOPES`
-** `Collection<ScopeInfo>` containing all scopes, including custom ones
-* `QUALIFIERS`
-** `Map<DotName, ClassInfo>` containing all qualifiers
-* `INTERCEPTOR_BINDINGS`
-** `Map<DotName, ClassInfo>` containing all interceptor bindings
-* `STEREOTYPES`
-** `Map<DotName, ClassInfo>` containing all stereotypes
-
-To get hold of these, simply query the extension context object for given key.
-Note that these metadata are made available as build proceeds which means that extensions can only leverage metadata that were build before they are invoked.
-If your extension attempts to retrieve metadata that wasn't yet produced, `null` will be returned.
-Here is a summary of which extensions can access which metadata:
-
-* `AnnotationsTransformer`
-** Shouldn't rely on any metadata as this is one of the first CDI extensions invoked
-* `ContextRegistrar`
-** Has access to `ANNOTATION_STORE`
-* `InjectionPointsTransformer`
-** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
-* `ObserverTransformer`
-** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
-* `BeanRegistrar`
-** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`, `BEANS`
-* `BeanDeploymentValidator`
-** Has access to all build metadata
-
-[[dev-mode]]
 == Development Mode
 
 In the development mode, two special endpoints are registered automatically to provide some basic debug info in the JSON format:
 
-* HTTP GET `/quarkus/arc/beans` - returns the list of all beans
+* HTTP GET `/q/arc` - returns the summary; number of beans, config properties, etc.
+* HTTP GET `/q/arc/beans` - returns the list of all beans
 ** You can use query params to filter the output:
-*** `scope` - include beans with scope that ends with the given value, i.e. `http://localhost:8080/quarkus/arc/beans?scope=ApplicationScoped`
-*** `beanClass` - include beans with bean class that starts with the given value, i.e. `http://localhost:8080/quarkus/arc/beans?beanClass=org.acme.Foo`
-*** `kind` - include beans of the specified kind (`CLASS`, `PRODUCER_FIELD`, `PRODUCER_METHOD`, `INTERCEPTOR` or `SYNTHETIC`), i.e. `http://localhost:8080/quarkus/arc/beans?kind=PRODUCER_METHOD`
-* HTTP GET `/quarkus/arc/observers` - returns the list of all observer methods
+*** `scope` - include beans with scope that ends with the given value, i.e. `http://localhost:8080/q/arc/beans?scope=ApplicationScoped`
+*** `beanClass` - include beans with bean class that starts with the given value, i.e. `http://localhost:8080/q/arc/beans?beanClass=org.acme.Foo`
+*** `kind` - include beans of the specified kind (`CLASS`, `PRODUCER_FIELD`, `PRODUCER_METHOD`, `INTERCEPTOR` or `SYNTHETIC`), i.e. `http://localhost:8080/q/arc/beans?kind=PRODUCER_METHOD`
+* HTTP GET `/q/arc/removed-beans` - returns the list of unused beans removed during build
+* HTTP GET `/q/arc/observers` - returns the list of all observer methods
 
 NOTE: These endpoints are only available in the development mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).
 

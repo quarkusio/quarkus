@@ -8,7 +8,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-core-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-core</artifactId>
@@ -72,7 +71,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.slf4j</groupId>
-            <artifactId>slf4j-jboss-logging</artifactId>
+            <artifactId>slf4j-jboss-logmanager</artifactId>
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
@@ -81,6 +80,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.wildfly.common</groupId>
@@ -118,18 +118,22 @@
                 <configuration>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-io</parentFirstArtifact>
                         <parentFirstArtifact>org.wildfly.common:wildfly-common</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:graal-sdk</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.nativeimage:svm</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-app-model</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-maven-resolver</parentFirstArtifact>
+                        <parentFirstArtifact>org.slf4j:slf4j-api</parentFirstArtifact>
+                        <parentFirstArtifact>org.jboss.slf4j:slf4j-jboss-logmanager</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
-                        <parentFirstArtifact>org.ow2.asm:asm</parentFirstArtifact>
-                        <parentFirstArtifact>org.ow2.asm:asm-commons</parentFirstArtifact>
                         <parentFirstArtifact>org.apache.maven:maven-model</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.maven.resolver:maven-resolver-api</parentFirstArtifact>
                         <parentFirstArtifact>org.codehaus.plexus:plexus-utils</parentFirstArtifact>
+                        <parentFirstArtifact>xml-apis:xml-apis</parentFirstArtifact>
                         <!--
                         This is a temporary fix, we need a better way to be able to
                         add these exclusions outside the quarkus-extension.properties file.
@@ -144,7 +148,25 @@
                         <parentFirstArtifact>org.junit.jupiter:junit-jupiter-params</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-engine</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
+                        <parentFirstArtifact>org.jacoco:org.jacoco.agent:runtime</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
                     </parentFirstArtifacts>
+                    <runnerParentFirstArtifacts>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-development-mode-spi</runnerParentFirstArtifact>
+                        <!-- logging dependencies always need to be loaded by the JDK ClassLoader -->
+                        <runnerParentFirstArtifact>org.jboss.logging:jboss-logging</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</runnerParentFirstArtifact>
+                        <!-- This is needed as it's a dependency of the JBoss Logging so it too needs to be loaded by the JDK ClassLoader -->
+                        <runnerParentFirstArtifact>org.wildfly.common:wildfly-common</runnerParentFirstArtifact>
+                        <!-- This is needed because it contains some jar handling classes -->
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
+                        <!-- RestAssured uses groovy, which seems to do some things with soft references that
+                        prevent the ClassLoader from being GC'ed, see https://github.com/quarkusio/quarkus/issues/12498 -->
+                        <runnerParentFirstArtifact>org.codehaus.groovy:groovy</runnerParentFirstArtifact>
+                    </runnerParentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>
                         <excludedArtifact>javax.enterprise:cdi-api</excludedArtifact>

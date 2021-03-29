@@ -6,6 +6,7 @@ public class TestImperativeEntity extends PanacheMongoEntity {
     public String title;
     public String category;
     public String description;
+    public int cpt = 1;
 
     public TestImperativeEntity() {
     }

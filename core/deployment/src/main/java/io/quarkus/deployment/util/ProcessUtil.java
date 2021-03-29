@@ -6,11 +6,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 import org.jboss.logging.Logger;
-
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 
 /**
  * Utility for {@link Process} related operations
@@ -21,19 +18,19 @@ public class ProcessUtil {
 
     /**
      * Launches and returns a {@link Process} built from the {@link ProcessBuilder builder}.
-     * Before launching the process, this method checks if {@link ProcessInheritIODisabled inherit IO is disabled}
-     * and if so, streams both the {@code STDOUT} and {@code STDERR} of the launched process using
+     * Before launching the process, this method checks if inherit IO is disabled and if so,
+     * streams both the {@code STDOUT} and {@code STDERR} of the launched process using
      * {@link #streamToSysOutSysErr(Process)}. Else, it launches the process with {@link ProcessBuilder#inheritIO()}
      *
      * @param builder The process builder
-     * @param processInheritIODisabled Whether or not {@link java.lang.ProcessBuilder.Redirect#INHERIT} can be used for
+     * @param shouldRedirectIO Whether or not {@link java.lang.ProcessBuilder.Redirect#INHERIT} can be used for
      *        launching the process
      * @return Returns the newly launched process
      * @throws IOException
      */
     public static Process launchProcess(final ProcessBuilder builder,
-            final Optional<ProcessInheritIODisabled> processInheritIODisabled) throws IOException {
-        if (!processInheritIODisabled.isPresent()) {
+            final boolean shouldRedirectIO) throws IOException {
+        if (!shouldRedirectIO) {
             return builder.inheritIO().start();
         }
         final Process process = builder.redirectOutput(ProcessBuilder.Redirect.PIPE)
@@ -46,19 +43,19 @@ public class ProcessUtil {
 
     /**
      * Launches and returns a {@link Process} built from the {@link ProcessBuilder builder}.
-     * Before launching the process, this method checks if {@link ProcessInheritIODisabled inherit IO is disabled}
+     * Before launching the process, this method checks if inheritIO is disabled
      * and if so, streams (only) the {@code STDOUT} of the launched process using {@link #streamOutputToSysOut(Process)}
      * (Process)}. Else, it launches the process with {@link ProcessBuilder#inheritIO()}
      *
      * @param builder The process builder
-     * @param processInheritIODisabled Whether or not {@link java.lang.ProcessBuilder.Redirect#INHERIT} can be used for
+     * @param shouldRedirectIO Whether or not {@link java.lang.ProcessBuilder.Redirect#INHERIT} can be used for
      *        launching the process
      * @return Returns the newly launched process
      * @throws IOException
      */
     public static Process launchProcessStreamStdOut(final ProcessBuilder builder,
-            final Optional<ProcessInheritIODisabled> processInheritIODisabled) throws IOException {
-        if (!processInheritIODisabled.isPresent()) {
+            boolean shouldRedirectIO) throws IOException {
+        if (!shouldRedirectIO) {
             return builder.inheritIO().start();
         }
         final Process process = builder.redirectOutput(ProcessBuilder.Redirect.PIPE)

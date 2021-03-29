@@ -1,9 +1,0 @@
----
-name: kotlin
-type: language
-language:
-  base:
-    shared-data:
-      language:
-        dir:
-          code: src/main/kotlin

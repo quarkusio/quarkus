@@ -92,7 +92,7 @@ public class QuarkusHttpFunction implements HttpFunction {
         String path = request.getPath();
         Optional<String> host = request.getFirstHeader("Host");
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getMethod()), path);
+                HttpMethod.valueOf(request.getMethod()), request.getQuery().map(q -> path + "?" + q).orElse(path));
         if (host.isPresent()) {
             nettyRequest.headers().set("Host", host.get());
         }
@@ -142,6 +142,7 @@ public class QuarkusHttpFunction implements HttpFunction {
             try {
                 if (msg instanceof io.netty.handler.codec.http.HttpResponse) {
                     io.netty.handler.codec.http.HttpResponse res = (io.netty.handler.codec.http.HttpResponse) msg;
+                    response.setStatusCode(res.status().code(), res.status().reasonPhrase());
                     for (Map.Entry<String, String> entry : res.headers()) {
                         response.appendHeader(entry.getKey(), entry.getValue());
                     }

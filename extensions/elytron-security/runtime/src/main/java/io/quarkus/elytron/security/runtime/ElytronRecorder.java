@@ -5,6 +5,7 @@ import java.security.Permission;
 import javax.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
+import org.wildfly.security.auth.server.RealmMapper;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityRealm;
 import org.wildfly.security.authz.AuthorizationIdentity;
@@ -68,6 +69,9 @@ public class ElytronRecorder {
                         };
                     }
                 });
+        if (CDI.current().select(RealmMapper.class).isResolvable()) {
+            domain.setRealmMapper(CDI.current().select(RealmMapper.class).get());
+        }
 
         return new RuntimeValue<>(domain);
     }
@@ -81,7 +85,12 @@ public class ElytronRecorder {
      * @param realm - the runtime value for the SecurityRealm
      */
     public void addRealm(RuntimeValue<SecurityDomain.Builder> builder, String realmName, RuntimeValue<SecurityRealm> realm) {
-        builder.getValue().addRealm(realmName, realm.getValue());
+        builder.getValue().addRealm(realmName, realm.getValue()).setRoleDecoder(new RoleDecoder() {
+            @Override
+            public Roles decodeRoles(AuthorizationIdentity authorizationIdentity) {
+                return CDI.current().select(DefaultRoleDecoder.class).get().decodeRoles(authorizationIdentity);
+            }
+        }).build();
     }
 
     /**

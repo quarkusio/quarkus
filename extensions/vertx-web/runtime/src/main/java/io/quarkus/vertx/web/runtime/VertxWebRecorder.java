@@ -3,7 +3,6 @@ package io.quarkus.vertx.web.runtime;
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Function;
 
-import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.vertx.core.Handler;
@@ -68,15 +67,6 @@ public class VertxWebRecorder {
                 return route;
             }
         };
-    }
-
-    public void clearCacheOnShutdown(ShutdownContext shutdown) {
-        shutdown.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                RouteHandlers.clear();
-            }
-        });
     }
 
 }

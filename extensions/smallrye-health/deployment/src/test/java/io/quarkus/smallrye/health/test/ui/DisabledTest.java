@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.graphql.deployment.ui;
+package io.quarkus.smallrye.health.test.ui;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -18,6 +18,6 @@ public class DisabledTest {
 
     @Test
     public void shouldUseDefaultConfig() {
-        RestAssured.when().get("/health-ui").then().statusCode(404);
+        RestAssured.when().get("/q/health-ui").then().statusCode(404);
     }
 }

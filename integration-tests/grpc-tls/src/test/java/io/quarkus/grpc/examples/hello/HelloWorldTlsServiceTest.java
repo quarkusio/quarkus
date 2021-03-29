@@ -33,7 +33,7 @@ class HelloWorldTlsServiceTest {
         builder.trustManager(new File("src/main/resources/tls/ca.pem"));
         SslContext context = builder.build();
 
-        channel = NettyChannelBuilder.forAddress("localhost", 9000)
+        channel = NettyChannelBuilder.forAddress("localhost", 9001)
                 .sslContext(context)
                 .build();
     }

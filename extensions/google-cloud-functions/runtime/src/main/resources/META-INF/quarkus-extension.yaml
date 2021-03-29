@@ -1,4 +1,3 @@
----
 name: "Google Cloud Functions"
 metadata:
   keywords:
@@ -10,3 +9,8 @@ metadata:
   - "cloud"
   guide: "https://quarkus.io/guides/gcp-functions"
   status: "experimental"
+  codestart:
+    name: "google-cloud-functions"
+    kind: "singleton-example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

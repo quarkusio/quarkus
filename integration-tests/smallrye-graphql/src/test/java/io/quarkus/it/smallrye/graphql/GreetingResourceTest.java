@@ -16,10 +16,19 @@ class GreetingResourceTest {
     void testEndpoint() {
 
         String helloRequest = getPayload("{\n" +
-                "  hello {\n" +
+                "  greeting:hello {\n" +
                 "    time\n" +
                 "    message\n" +
+                "    options{\n" +
+                "       message\n" +
+                "    }\n" +
+                "    options2{\n" +
+                "       message\n" +
+                "    }\n" +
                 "  }\n" +
+                "  farewell:farewell{\n" +
+                "    type\n" +
+                "   }\n" +
                 "}");
 
         given()
@@ -32,7 +41,9 @@ class GreetingResourceTest {
                 .statusCode(200)
                 .and()
                 .body(containsString("hello"))
-                .body(containsString("11:34"));
+                .body(containsString("11:34"))
+                .body(containsString("Morning"))
+                .body(containsString("Farewell"));
     }
 
 }

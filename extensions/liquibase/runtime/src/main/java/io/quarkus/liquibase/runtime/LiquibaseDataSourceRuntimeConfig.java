@@ -1,6 +1,8 @@
 package io.quarkus.liquibase.runtime;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -67,6 +69,12 @@ public final class LiquibaseDataSourceRuntimeConfig {
      */
     @ConfigItem
     public Optional<List<String>> labels = Optional.empty();
+
+    /**
+     * Map of parameters that can be used inside Liquibase changeLog files.
+     */
+    @ConfigItem
+    public Map<String, String> changeLogParameters = new HashMap<>();
 
     /**
      * The liquibase change log lock table name. Name of table to use for tracking concurrent Liquibase usage.

@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Kogito to add business automation capabilities to an application
 
@@ -80,12 +80,13 @@ The solution is located in the `kogito-quickstart` {quickstarts-tree-url}/kogito
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kogito-quickstart \
-    -Dextensions="kogito"
+    -Dextensions="kogito" \
+    -DnoExamples
 cd kogito-quickstart
 ----
 
@@ -242,7 +243,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/kogito-quickstart-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 === Running in Native Mode

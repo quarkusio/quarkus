@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using the REST Client with Multipart
 
@@ -10,8 +10,8 @@ include::./attributes.adoc[]
 RESTEasy has rich support for the `multipart/*` and `multipart/form-data` mime types. The multipart mime format is used to pass lists of content bodies. Multiple content bodies are embedded in one message. `multipart/form-data` is often found in web application HTML Form documents and is generally used to upload files. The form-data format is the same as other multipart formats, except that each inlined piece of content has a name associated with it.
 
 
-This guide explains how to use the MicroProfile REST Client with Multipart in order to interact with REST APIs
-requiring multipart/form-data content-type with very little effort.
+This guide explains how to use the RESTEasy REST Client with Multipart in order to interact with REST APIs
+requiring `multipart/form-data` content-type with very little effort.
 
 == Prerequisites
 
@@ -35,37 +35,28 @@ The solution is located in the `rest-client-multipart-quickstart` {quickstarts-t
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-client-multipart-quickstart \
     -DclassName="org.acme.rest.client.multipart.MultipartClientResource" \
     -Dpath="/client" \
-    -Dextensions="rest-client, resteasy"
+    -Dextensions="rest-client, resteasy, resteasy-multipart"
 cd rest-client-multipart-quickstart
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `rest-client` and `resteasy` extensions.
-
-Then, we'll add the following dependency to support `multipart/form-data` requests:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.jboss.resteasy</groupId>
-    <artifactId>resteasy-multipart-provider</artifactId>
-</dependency>
-----
+It also adds the `resteasy-multipart` extension to support `multipart/form-data` requests.
 
 == Setting up the model
 
-In this guide we will be demonstrating how to invoke a REST service accepting multipart/form-data input.
+In this guide we will be demonstrating how to invoke a REST service accepting `multipart/form-data` input.
 We are assuming the payload is well-known before the request is sent, so we can model as a POJO.
 
 [NOTE]
 ====
-If the payload is unknown, you can also use the RESTEasy custom API instead. If that's the case, see the RESTEasy Multipart Providers link in the end of the guide.
+If the payload is unknown, you can also use the RESTEasy custom API instead. If that's the case, see the RESTEasy Multipart Providers link at the end of the guide.
 ====
 
 Our first order of business is to setup the model we will be using to define the `multipart/form-data` payload, in the form of a `MultipartBody` POJO.
@@ -102,7 +93,7 @@ The purpose of the annotations in the code above is the following:
 
 == Create the interface
 
-Using the MicroProfile REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/multipart/MultipartService.java` and have the following content:
+Using the RESTEasy REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/multipart/MultipartService.java` and have the following content:
 
 [source, java]
 ----
@@ -156,7 +147,7 @@ It will allow to narrow down the number of JAX-RS providers (which can be seen a
 In order to determine the base URL to which REST calls will be made, the REST Client uses configuration from `application.properties`.
 The name of the property needs to follow a certain convention which is best displayed in the following code:
 
-[source,shell]
+[source,properties]
 ----
 # Your configuration properties
 org.acme.rest.client.multipart.MultipartService/mp-rest/url=http://localhost:8080/
@@ -274,7 +265,7 @@ The code above uses link:http://rest-assured.io/[REST Assured] to assert that th
 
 Because the test runs in a different port, we also need to include an `application.properties` in our `src/test/resources` with the following content:
 
-[source,shell]
+[source,properties]
 ----
 # Your configuration properties
 org.acme.rest.client.multipart.MultipartService/mp-rest/url=http://localhost:8081/
@@ -287,7 +278,7 @@ org.acme.rest.client.multipart.MultipartService/mp-rest/url=http://localhost:808
 
 You should see an output similar to:
 
-[source,shell]
+[source,text]
 ----
 --89d288bd-960f-460c-b266-64c5b4d170fa
 Content-Disposition: form-data; name="fileName"
@@ -302,10 +293,10 @@ HELLO WORLD
 --89d288bd-960f-460c-b266-64c5b4d170fa--
 ----
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
 == Further reading
 
- * link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.2.1/microprofile-rest-client-1.2.1.html[MicroProfile Rest Client specification]
- * link:https://docs.jboss.org/resteasy/docs/4.3.1.Final/userguide/html/Multipart.html[RESTEasy Multipart Providers]
+* link:https://docs.jboss.org/resteasy/docs/4.5.6.Final/userguide/html/Multipart.html[RESTEasy Multipart Provider]
+* link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.4.1/microprofile-rest-client-1.4.1.html[MicroProfile Rest Client specification]

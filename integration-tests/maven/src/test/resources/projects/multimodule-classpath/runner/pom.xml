@@ -5,7 +5,6 @@
         <groupId>cp.acme</groupId>
         <artifactId>multimodule-cp-resources</artifactId>
         <version>1.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <artifactId>multimodule-cp-resources-main</artifactId>
     <version>1.0-SNAPSHOT</version>
@@ -72,6 +71,9 @@
                     <name>native</name>
                 </property>
             </activation>
+            <properties>
+                <quarkus.package.type>native</quarkus.package.type>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -80,21 +82,6 @@
                         <configuration>
                             <skipTests>${native.surefire.skip}</skipTests>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${quarkus-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>

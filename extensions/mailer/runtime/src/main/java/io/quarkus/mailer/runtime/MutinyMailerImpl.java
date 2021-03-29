@@ -51,7 +51,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
         public Void apply(List<?> results) {
             return null;
         }
-    };;
+    };
 
     @Override
     public Uni<Void> send(Mail... mails) {

@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -15,7 +16,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
-import org.apache.commons.codec.Charsets;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -48,7 +48,7 @@ public class MultipartConfigTestCase {
     @ParameterizedTest
     @ValueSource(strings = { "/foo", "/servlet-item" })
     public void testMultipartConfig(String path) {
-        given().multiPart("file", "random.txt", "Some random file".getBytes(Charsets.UTF_8))
+        given().multiPart("file", "random.txt", "Some random file".getBytes(StandardCharsets.UTF_8))
                 .when().post(path).then()
                 .statusCode(201)
                 .body(is("OK"));

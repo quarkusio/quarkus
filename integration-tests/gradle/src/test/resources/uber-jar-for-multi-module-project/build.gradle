@@ -1,12 +1,16 @@
 buildscript {
-
     repositories {
-        jcenter()
-        mavenLocal()
+        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
         mavenCentral()
         gradlePluginPortal()
     }
-
 }
 
 apply plugin: 'java'
@@ -26,19 +30,13 @@ subprojects {
     }
 
     repositories {
-        jcenter()
         mavenLocal()
         mavenCentral()
     }
 
     dependencies {
-
         implementation 'io.quarkus:quarkus-resteasy'
 
-        testImplementation 'io.quarkus:quarkus-junit5'
-        testImplementation 'io.rest-assured:rest-assured'
-
         implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-
     }
 }

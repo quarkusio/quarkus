@@ -1,0 +1,35 @@
+{#include main}
+{#style}
+.annotation {
+color: gray;
+}
+{/style}
+{#title}Caches{/title}
+{#body}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Size</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for cacheInfo in info:cacheInfos}
+    <tr>
+        <td>
+            {cacheInfo.name}
+        </td>
+        <td>
+            <form method="post"  enctype="application/x-www-form-urlencoded">
+                <label class="form-check-label" for="clear">
+                    {cacheInfo.size}
+                </label>
+                <input type="hidden" name="name" value="{cacheInfo.name}">
+                <input id="clear" type="submit" class="btn btn-primary btn-sm" value="Clear" >
+            </form>
+        </td>
+    {/for}
+    </tbody>
+</table>
+{/body}
+{/include}

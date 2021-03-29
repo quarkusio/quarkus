@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Amazon KMS Client
 :extension-status: preview
@@ -39,9 +39,9 @@ To complete this guide, you need:
 
 The easiest way to start working with KMS is to run a local instance as a container.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
-docker run --rm --name local-kms 8011:4599 -e SERVICES=kms -e START_WEB=0 -d localstack/localstack:0.11.1
+docker run --rm --name local-kms --publish 8011:4599 -e SERVICES=kms -e START_WEB=0 -d localstack/localstack:0.11.1
 ----
 This starts a KMS instance that is accessible on port `8011`.
 
@@ -59,18 +59,18 @@ Default output format [None]:
 
 Create a KMS master key queue using AWS CLI and store in `MASTER_KEY_ARN` environment variable.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 MASTER_KEY_ARN=`aws kms create-key --profile localstack --endpoint-url=http://localhost:8011 | cut -f3`
 ----
 Generate a key data as 256-bit symmetric key (AES 256)
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 aws kms generate-data-key --key-id $MASTER_KEY_ARN --key-spec AES_256 --profile localstack --endpoint-url=http://localhost:8011
 ----
 
 Or, if you want to use your AWS account create a key using your default profile
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 MASTER_KEY_ARN=`aws kms create-key | cut -f3`
 aws kms generate-data-key --key-id $MASTER_KEY_ARN --key-spec AES_256
@@ -90,14 +90,14 @@ The solution is located in the `amazon-kms-quickstart` {quickstarts-tree-url}/am
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amazon-kms-quickstart \
     -DclassName="org.acme.kms.QuarkusKmsSyncResource" \
     -Dpath="/sync" \
-    -Dextensions="resteasy-jsonb,amazon-kms,resteasy-mutiny"
+    -Dextensions="resteasy,resteasy-jackson,amazon-kms,resteasy-mutiny"
 cd amazon-kms-quickstart
 ----
 
@@ -186,6 +186,10 @@ And add the following dependency to the application `pom.xml`:
     <groupId>software.amazon.awssdk</groupId>
     <artifactId>apache-client</artifactId>
 </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-apache-httpclient</artifactId>
+</dependency>
 ----
 
 If you're going to use a local KMS instance, configure it as follows:
@@ -216,7 +220,7 @@ And the region from your AWS CLI profile will be used.
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -Dkey.arn=$MASTER_KEY_ARN -jar target/amazon-kms-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -Dkey.arn=$MASTER_KEY_ARN -jar target/quarkus-app/quarkus-run.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.

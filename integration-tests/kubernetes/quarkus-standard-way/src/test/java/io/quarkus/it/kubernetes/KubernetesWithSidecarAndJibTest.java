@@ -63,33 +63,36 @@ public class KubernetesWithSidecarAndJibTest {
 
     private void assertApplicationContainer(io.fabric8.kubernetes.api.model.PodSpec podSpec) {
         assertThat(podSpec.getContainers()).filteredOn(ps -> "sidecar-test".equals(ps.getName()))
-                .hasOnlyOneElementSatisfying(c -> {
+                .singleElement().satisfies(c -> {
                     assertThat(c.getImage()).isEqualTo("docker.io/somegrp/sidecar-test:0.1-SNAPSHOT");
                     assertThat(c.getImagePullPolicy()).isEqualTo("Always");
                     assertThat(c.getCommand()).isEmpty();
                     assertThat(c.getArgs()).isEmpty();
                     assertThat(c.getWorkingDir()).isNull();
                     assertThat(c.getVolumeMounts()).isEmpty();
-                    assertThat(c.getPorts()).hasOnlyOneElementSatisfying(p -> {
-                        assertThat(p.getContainerPort()).isEqualTo(8080);
-                    });
+                    assertThat(c.getPorts()).singleElement().satisfies(p -> assertThat(p.getContainerPort()).isEqualTo(8080));
+                    assertThat(c.getEnv()).allSatisfy(e -> assertThat(e.getName()).isNotEqualToIgnoringCase("foo"));
                 });
     }
 
     private void assertSidecar(io.fabric8.kubernetes.api.model.PodSpec podSpec) {
         assertThat(podSpec.getContainers()).filteredOn(ps -> "sc".equals(ps.getName()))
-                .hasOnlyOneElementSatisfying(c -> {
+                .singleElement().satisfies(c -> {
                     assertThat(c.getImage()).isEqualTo("quay.io/sidecar/image:2.1");
                     assertThat(c.getImagePullPolicy()).isEqualTo("IfNotPresent");
                     assertThat(c.getCommand()).containsOnly("ls");
                     assertThat(c.getArgs()).containsOnly("-l");
                     assertThat(c.getWorkingDir()).isEqualTo("/work");
-                    assertThat(c.getVolumeMounts()).hasOnlyOneElementSatisfying(volumeMount -> {
+                    assertThat(c.getVolumeMounts()).singleElement().satisfies(volumeMount -> {
                         assertThat(volumeMount.getName()).isEqualTo("app-config");
                         assertThat(volumeMount.getMountPath()).isEqualTo("/deployments/config");
                     });
-                    assertThat(c.getPorts()).hasOnlyOneElementSatisfying(p -> {
+                    assertThat(c.getPorts()).singleElement().satisfies(p -> {
                         assertThat(p.getContainerPort()).isEqualTo(3000);
+                    });
+                    assertThat(c.getEnv()).singleElement().satisfies(e -> {
+                        assertThat(e.getName()).isEqualTo("FOO");
+                        assertThat(e.getValue()).isEqualTo("bar");
                     });
                 });
     }

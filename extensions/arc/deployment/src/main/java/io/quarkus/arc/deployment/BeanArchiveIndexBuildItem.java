@@ -1,6 +1,5 @@
 package io.quarkus.arc.deployment;
 
-import java.util.List;
 import java.util.Set;
 
 import org.jboss.jandex.DotName;
@@ -25,13 +24,10 @@ public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
 
     private final IndexView index;
     private final Set<DotName> generatedClassNames;
-    private final List<String> additionalBeans;
 
-    public BeanArchiveIndexBuildItem(IndexView index, Set<DotName> generatedClassNames,
-            List<String> additionalBeans) {
+    public BeanArchiveIndexBuildItem(IndexView index, Set<DotName> generatedClassNames) {
         this.index = index;
         this.generatedClassNames = generatedClassNames;
-        this.additionalBeans = additionalBeans;
     }
 
     public IndexView getIndex() {
@@ -40,10 +36,6 @@ public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
 
     public Set<DotName> getGeneratedClassNames() {
         return generatedClassNames;
-    }
-
-    public List<String> getAdditionalBeans() {
-        return additionalBeans;
     }
 
 }

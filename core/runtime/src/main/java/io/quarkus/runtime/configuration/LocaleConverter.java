@@ -30,7 +30,7 @@ public class LocaleConverter implements Converter<Locale>, Serializable {
         }
 
         Locale locale = Locale.forLanguageTag(NORMALIZE_LOCALE_PATTERN.matcher(localeValue).replaceAll("-"));
-        if (locale.getLanguage() == null || locale.getLanguage().isEmpty()) {
+        if (locale != Locale.ROOT && (locale.getLanguage() == null || locale.getLanguage().isEmpty())) {
             throw new IllegalArgumentException("Unable to resolve locale: " + value);
         }
 

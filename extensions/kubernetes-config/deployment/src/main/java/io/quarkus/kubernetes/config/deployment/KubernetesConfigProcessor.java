@@ -17,15 +17,18 @@ import io.quarkus.kubernetes.client.runtime.KubernetesConfigRecorder;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigSourceConfig;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.runtime.TlsConfig;
 
 public class KubernetesConfigProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public RunTimeConfigurationSourceValueBuildItem configure(KubernetesConfigRecorder recorder,
-            KubernetesConfigSourceConfig config, KubernetesClientBuildConfig clientConfig) {
+            KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig,
+            KubernetesClientBuildConfig clientConfig,
+            TlsConfig tlsConfig) {
         return new RunTimeConfigurationSourceValueBuildItem(
-                recorder.configSources(config, clientConfig));
+                recorder.configSources(config, buildTimeConfig, clientConfig, tlsConfig));
     }
 
     @BuildStep
@@ -40,7 +43,7 @@ public class KubernetesConfigProcessor {
                     new KubernetesRoleBuildItem.PolicyRule(
                             Collections.singletonList(""),
                             Collections.singletonList("secrets"),
-                            Arrays.asList("get", "list", "watch")))));
+                            Arrays.asList("get")))));
             roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view-secrets", false));
         }
 

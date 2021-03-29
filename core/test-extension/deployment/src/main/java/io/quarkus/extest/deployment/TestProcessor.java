@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
@@ -52,6 +51,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.extest.runtime.FinalFieldReflectionObject;
 import io.quarkus.extest.runtime.IConfigConsumer;
 import io.quarkus.extest.runtime.RuntimeXmlConfigService;
@@ -68,6 +68,7 @@ import io.quarkus.extest.runtime.config.TestConfigRoot;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.XmlConfig;
 import io.quarkus.extest.runtime.logging.AdditionalLogHandlerValueFactory;
+import io.quarkus.extest.runtime.runtimeinitializedpackage.RuntimeInitializedClass;
 import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
 import io.quarkus.extest.runtime.subst.KeyProxy;
 import io.quarkus.runtime.RuntimeValue;
@@ -80,9 +81,6 @@ public final class TestProcessor {
     static final Logger log = Logger.getLogger(TestProcessor.class);
     static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
     static DotName TEST_ANNOTATION_SCOPE = DotName.createSimple(ApplicationScoped.class.getName());
-
-    @Inject
-    BuildProducer<NativeImageResourceBuildItem> resource;
 
     TestConfigRoot configRoot;
     TestBuildTimeConfig buildTimeConfig;
@@ -125,7 +123,7 @@ public final class TestProcessor {
     }
 
     @BuildStep
-    void registerNativeImageResources() {
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource) {
         resource.produce(new NativeImageResourceBuildItem("/DSAPublicKey.encoded"));
     }
 
@@ -275,14 +273,14 @@ public final class TestProcessor {
                     + buildTimeConfig.btStringOptWithDefault);
         }
         if (!buildTimeConfig.allValues.oov.equals(new ObjectOfValue("configPart1", "configPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oov != configPart1+onfigPart2; " + buildTimeConfig.allValues.oov);
+            throw new IllegalStateException("buildTimeConfig.oov != configPart1+configPart2; " + buildTimeConfig.allValues.oov);
         }
         if (!buildTimeConfig.allValues.oovWithDefault.equals(new ObjectOfValue("defaultPart1", "defaultPart2"))) {
             throw new IllegalStateException(
                     "buildTimeConfig.oovWithDefault != defaultPart1+defaultPart2; " + buildTimeConfig.allValues.oovWithDefault);
         }
         if (!buildTimeConfig.allValues.ovo.equals(new ObjectValueOf("configPart1", "configPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oov != configPart1+onfigPart2; " + buildTimeConfig.allValues.oov);
+            throw new IllegalStateException("buildTimeConfig.oov != configPart1+configPart2; " + buildTimeConfig.allValues.oov);
         }
         if (!buildTimeConfig.allValues.ovoWithDefault.equals(new ObjectValueOf("defaultPart1", "defaultPart2"))) {
             throw new IllegalStateException(
@@ -470,6 +468,11 @@ public final class TestProcessor {
         if (!Objects.equals("1234", bt.mapMap.get("outer-key").get("inner-key"))) {
             throw new AssertionError("BT map map failed");
         }
+    }
+
+    @BuildStep
+    RuntimeInitializedPackageBuildItem runtimeInitializedPackage() {
+        return new RuntimeInitializedPackageBuildItem(RuntimeInitializedClass.class.getPackage().getName());
     }
 
     @BuildStep(onlyIf = Never.class)

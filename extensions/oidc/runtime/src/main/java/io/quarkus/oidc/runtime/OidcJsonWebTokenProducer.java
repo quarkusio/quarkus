@@ -8,6 +8,7 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.logging.Logger;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
@@ -24,6 +25,7 @@ import io.smallrye.jwt.auth.cdi.NullJsonWebToken;
 @Alternative
 @RequestScoped
 public class OidcJsonWebTokenProducer {
+    private static final Logger LOG = Logger.getLogger(OidcJsonWebTokenProducer.class);
 
     @Inject
     SecurityIdentity identity;
@@ -60,7 +62,7 @@ public class OidcJsonWebTokenProducer {
             return (JsonWebToken) identity.getPrincipal();
         }
         TokenCredential credential = identity.getCredential(type);
-        if (credential != null) {
+        if (credential != null && credential.getToken() != null) {
             if (credential instanceof AccessTokenCredential && ((AccessTokenCredential) credential).isOpaque()) {
                 throw new OIDCException("Opaque access token can not be converted to JsonWebToken");
             }
@@ -77,6 +79,7 @@ public class OidcJsonWebTokenProducer {
             return new OidcJwtCallerPrincipal(jwtClaims, credential);
         }
         String tokenType = type == AccessTokenCredential.class ? "access" : "ID";
-        throw new OIDCException("Current identity is not associated with an " + tokenType + " token");
+        LOG.tracef("Current identity is not associated with an %s token", tokenType);
+        return new NullJsonWebToken();
     }
 }

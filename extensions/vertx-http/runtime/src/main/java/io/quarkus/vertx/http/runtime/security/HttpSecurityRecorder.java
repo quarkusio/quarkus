@@ -16,7 +16,9 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
@@ -70,7 +72,9 @@ public class HttpSecurityRecorder {
                             authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
                                 @Override
                                 public void accept(Boolean aBoolean) {
-                                    event.response().end();
+                                    if (!event.response().ended()) {
+                                        event.response().end();
+                                    }
                                 }
                             }, new Consumer<Throwable>() {
                                 @Override
@@ -94,7 +98,7 @@ public class HttpSecurityRecorder {
                     }
                 });
 
-                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).cache();
+                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
                 if (proactiveAuthentication) {
                     potentialUser
                             .subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
@@ -164,7 +168,7 @@ public class HttpSecurityRecorder {
                                     }
                                     return Uni.createFrom().item(securityIdentity);
                                 }
-                            }).on().termination(new Functions.TriConsumer<SecurityIdentity, Throwable, Boolean>() {
+                            }).onTermination().invoke(new Functions.TriConsumer<SecurityIdentity, Throwable, Boolean>() {
                                 @Override
                                 public void accept(SecurityIdentity identity, Throwable throwable, Boolean aBoolean) {
                                     if (identity != null) {
@@ -182,7 +186,7 @@ public class HttpSecurityRecorder {
                                         }
                                     }
                                 }
-                            }).cache();
+                            }).memoize().indefinitely();
                     event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, lazyUser);
                     event.next();
                 }
@@ -252,8 +256,13 @@ public class HttpSecurityRecorder {
                 String loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
                 String errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
                 String landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;
+                String postLocation = form.postLocation.startsWith("/") ? form.postLocation : "/" + form.postLocation;
+                String usernameParameter = form.usernameParameter;
+                String passwordParameter = form.passwordParameter;
+                String locationCookie = form.locationCookie;
                 boolean redirectAfterLogin = form.redirectAfterLogin;
-                return new FormAuthenticationMechanism(loginPage, errorPage, landingPage, redirectAfterLogin, loginManager);
+                return new FormAuthenticationMechanism(loginPage, postLocation, usernameParameter, passwordParameter,
+                        errorPage, landingPage, redirectAfterLogin, locationCookie, loginManager);
             }
         };
     }

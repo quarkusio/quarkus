@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Eclipse Vert.x
 
@@ -22,19 +22,21 @@ You can also use various Vert.x APIs in your Quarkus application, such as deploy
 To access Vert.x, well, you need to enable the `vertx` extension to use this feature.
 If you are creating a new project, set the `extensions` parameter are follows:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
-    -Dextensions="vertx"
+    -DclassName="org.acme.vertx.GreetingResource" \
+    -Dpath="/hello" \
+    -Dextensions="resteasy,vertx"
 cd vertx-quickstart
 ----
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
 the `add-extension` command:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="vertx"
 ----
@@ -73,7 +75,7 @@ to use the correct one, that includes none at all on unsupported platforms:
 
 You will also have to explicitly configure Vert.x to use the native transport. In `application.properties` add:
 
-[source]
+[source,properties]
 ----
 quarkus.vertx.prefer-native-transport=true
 ----
@@ -133,9 +135,9 @@ Once the extension has been added, you can access the _managed_ Vert.x instance 
 ----
 
 If you are familiar with Vert.x, you know that Vert.x provides different API models.
-For instance _bare_ Vert.x uses callbacks, the Mutiny variants uses `Uni` and `Multi`, the RX Java 2 version uses `Single`, `Maybe`, `Completable`, `Observable` and `Flowable`...
+The _bare_ Vert.x uses callbacks, while the Mutiny variant uses `Uni` and `Multi`.
 
-Quarkus provides 4 Vert.x APIs:
+Quarkus provides 2 Vert.x APIs:
 
 [options="header"]
 |===
@@ -146,21 +148,15 @@ Quarkus provides 4 Vert.x APIs:
 
 | https://smallrye.io/smallrye-mutiny/[Mutiny] | `@Inject io.vertx.mutiny.core.Vertx vertx` | The Mutiny API for Vert.x.
 
-| RX Java 2 | `@Inject io.vertx.reactivex.core.Vertx vertx` | RX Java 2 Vert.x, the API uses RX Java 2 types (deprecated).
-
-| _Axle_ | `@Inject io.vertx.axle.core.Vertx vertx` | Axle Vert.x, the API uses `CompletionStage` and `Reactive Streams` (deprecated).
-
 |===
 
-TIP: You may inject any of the 4 flavors of `Vertx` as well as the `EventBus` in your Quarkus application beans: `bare`, `Mutiny`, `Axle`, `RxJava2`.
+TIP: You may inject any of the 2 flavors of `Vertx` as well as the `EventBus` in your Quarkus application beans: `bare` and `Mutiny`.
 They are just shims and rely on a single _managed_ Vert.x instance.
 
 You will pick one or the other depending on your use cases.
 
 - `bare`: for advanced usage or if you have existing Vert.x code you want to reuse in your Quarkus application
 - `mutiny`: Mutiny is an event-driven reactive programming API. It uses 2 types: `Uni` and `Multi`. This is the recommended API.
-- `Axle`: works well with Quarkus and MicroProfile APIs (`CompletionStage` for single results and `Publisher` for streams) - deprecated, it is recommended to switch to Mutiny
-- `Rx Java 2`: when you need support for a wide range of data transformation operators on your streams - deprecated, it is recommended to switch to Mutiny
 
 The following snippets illustrate the difference between these 4 APIs:
 
@@ -183,25 +179,6 @@ vertx.fileSystem().readFile("lorem-ipsum.txt")
             content -> System.out.println("Content: " + content),
             err -> System.out.println("Cannot read the file: " + err.getMessage())
     );
-
-// Rx Java 2 Vert.x
-vertx.fileSystem().rxReadFile("lorem-ipsum.txt")
-    .map(buffer -> buffer.toString("UTF-8"))
-    .subscribe(
-            content -> System.out.println("Content: " + content),
-            err -> System.out.println("Cannot read the file: " + err.getMessage())
-    );
-
-// Axle API:
-vertx.fileSystem().readFile("lorem-ipsum.txt")
-    .thenApply(buffer -> buffer.toString("UTF-8"))
-    .whenComplete((content, err) -> {
-        if (err != null) {
-            System.out.println("Cannot read the file: " + err.getMessage());
-        } else {
-            System.out.println("Content: " + content);
-        }
-    });
 ----
 
 [TIP]
@@ -235,7 +212,7 @@ public class GreetingResource {
 ----
 
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -465,21 +442,7 @@ Depending on the API model you want to use you need to add the right dependency 
   <groupId>io.smallrye.reactive</groupId>
   <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
 </dependency>
-
-<!-- Axle API -->
-<dependency>
-  <groupId>io.smallrye.reactive</groupId>
-  <artifactId>smallrye-axle-web-client</artifactId>
-</dependency>
-
-<!-- RX Java 2 API -->
-<dependency>
-  <groupId>io.vertx</groupId>
-  <artifactId>vertx-rx-java2</artifactId>
-</dependency>
 ----
-
-NOTE: The `vertx-rx-java2` provides the RX Java 2 API for the whole Vert.x stack, not only the web client.
 
 In this guide, we are going to use the Mutiny API, so:
 
@@ -556,7 +519,7 @@ The `WebClient` is obviously asynchronous (and non-blocking), to the endpoint re
 
 Run the application with:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -567,14 +530,14 @@ The application can also run as a native executable.
 But, first, we need to instruct Quarkus to enable _ssl_.
 Open the `src/main/resources/application.properties` and add:
 
-[source]
+[source,properties]
 ----
 quarkus.ssl.native=true
 ----
 
 Then, create the native executable with:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw package -Pnative
 ----
@@ -701,8 +664,9 @@ In environments with read only file systems you may receive errors of the form:
 java.lang.IllegalStateException: Failed to create cache dir
 ----
 
-Assuming `/tmp/` is writeable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
+Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
 
+[[reverse-proxy]]
 == Running behind a reverse proxy
 
 Quarkus could be accessed through proxies that additionally generate headers (e.g. `X-Forwarded-Host`) to keep
@@ -714,28 +678,27 @@ IMPORTANT: Activating this feature makes the server exposed to several security 
 Consider activate it only when running behind a reverse proxy.
 
 To setup this feature, please include the following lines in `src/main/resources/application.properties`:
-[source]
+[source,properties]
 ----
 quarkus.http.proxy-address-forwarding=true
 ----
 
 To consider only de-facto standard header (`Forwarded` header), please include the following lines in `src/main/resources/application.properties`:
-[source]
+[source,properties]
 ----
-quarkus.http.allow-forwarded=true
+quarkus.http.proxy.allow-forwarded=true
 ----
 
 To consider only non-standard headers, please include the following lines instead in `src/main/resources/application.properties`:
 
-[source]
+[source,properties]
 ----
-quarkus.http.proxy-address-forwarding=true
+quarkus.http.proxy.proxy-address-forwarding=true
 quarkus.http.proxy.enable-forwarded-host=true
 quarkus.http.proxy.enable-forwarded-prefix=true
 ----
 
-Both configurations related with standard and non-standard headers can be combine.
-In this case, the `Forwarded` header will have precedence in presence of both set of headers.
+Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence.
 
 Supported forwarding address headers are:
 
@@ -746,6 +709,18 @@ Supported forwarding address headers are:
 * `X-Forwarded-Ssl`
 * `X-Forwarded-Prefix`
 
+[[same-site-cookie]]
+== SameSite cookies
+
+One can easily add a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint by listing a cookie name and a `SameSite` attribute, for example:
+
+[source]
+----
+quarkus.http.same-site-cookie.jwt.value=Lax
+quarkus.http.same-site-cookie.session.value=Strict
+----
+
+Given this configuration, the `jwt` cookie will have a `SameSite=Lax` attribute and the `session` cookie will have a `SameSite=Strict` attribute.
 
 == Going further
 
@@ -755,7 +730,7 @@ There are many other facets of Quarkus using Vert.x underneath:
 Quarkus integrates it so different beans can interact with asynchronous messages.
 This part is covered in the link:reactive-event-bus[event bus documentation].
 
-* Data streaming and Apache Kafka are a important parts of modern systems.
+* Data streaming and Apache Kafka are an important part of modern systems.
 Quarkus integrates data streaming using Reactive Messaging.
 More details on link:kafka[Interacting with Kafka].
 

@@ -3,9 +3,6 @@ package io.quarkus.consul.config.runtime;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * Represent (part of) the JSON response from Consul
  *
@@ -16,8 +13,7 @@ public class Response {
     private final String key;
     private final String value;
 
-    @JsonCreator
-    public Response(@JsonProperty("Key") String key, @JsonProperty("Value") String value) {
+    public Response(String key, String value) {
         this.key = key;
         this.value = value;
     }

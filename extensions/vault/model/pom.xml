@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-vault-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+    This module contains all jaxrs parameter and result classes used to call Vault endpoints.
+    They need to be in a separate module so that they can be indexed, without the VaultHealthCheck,
+    which is an optional dependency of the runtime moduée.
+    All model classes should be enabled for reflection, as they will be managed by jackson.
+    -->
+    <artifactId>quarkus-vault-model</artifactId>
+    <name>Quarkus - Vault - Model</name>
+    <description>Hashicorp Vault API model classes</description>
+    <dependencies>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>

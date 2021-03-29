@@ -39,14 +39,15 @@ public class KubernetesWithDefaultsTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
-        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(1);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
-                            assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                            assertThat(podSpec.getServiceAccount()).isNull();
+                            assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImagePullPolicy()).isEqualTo("Always");
                             });
                         });
@@ -55,7 +56,7 @@ public class KubernetesWithDefaultsTest {
             });
         });
 
-        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("ClusterIP", spec.getType());

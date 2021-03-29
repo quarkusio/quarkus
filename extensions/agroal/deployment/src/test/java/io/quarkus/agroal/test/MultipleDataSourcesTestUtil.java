@@ -15,7 +15,7 @@ final class MultipleDataSourcesTestUtil {
     }
 
     static void testDataSource(String dataSourceName, AgroalDataSource dataSource, String jdbcUrl, String username,
-            int minSize, int maxSize)
+            int maxSize)
             throws SQLException {
         AgroalConnectionPoolConfiguration configuration = null;
 
@@ -27,7 +27,6 @@ final class MultipleDataSourcesTestUtil {
         }
         assertEquals(jdbcUrl, configuration.connectionFactoryConfiguration().jdbcUrl());
         assertEquals(username, configuration.connectionFactoryConfiguration().principal().getName());
-        assertEquals(minSize, configuration.minSize());
         assertEquals(maxSize, configuration.maxSize());
 
         try (Connection connection = dataSource.getConnection()) {

@@ -11,7 +11,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 import io.quarkus.deployment.QuarkusClassWriter;
-import net.bytebuddy.utility.OpenedClassReader;
+import io.quarkus.gizmo.Gizmo;
+import net.bytebuddy.ClassFileVersion;
 
 /**
  * Used to transform bytecode by registering to
@@ -27,7 +28,8 @@ import net.bytebuddy.utility.OpenedClassReader;
  */
 public final class HibernateEntityEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-    private static final BytecodeProvider PROVIDER = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl();
+    private static final BytecodeProvider PROVIDER = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl(
+            ClassFileVersion.JAVA_V8);
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
@@ -41,7 +43,9 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
         private final Enhancer enhancer;
 
         public HibernateEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
-            super(OpenedClassReader.ASM_API, new QuarkusClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
+            //Careful: the ASM API version needs to match the ASM version of Gizmo, not the one from Byte Buddy.
+            //Most often these match - but occasionally they will diverge which is acceptable as Byte Buddy is shading ASM.
+            super(Gizmo.ASM_API_VERSION, new QuarkusClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
             this.className = className;
             this.outputClassVisitor = outputClassVisitor;
             //note that as getLoadingClassLoader is resolved immediately this can't be created until transform time

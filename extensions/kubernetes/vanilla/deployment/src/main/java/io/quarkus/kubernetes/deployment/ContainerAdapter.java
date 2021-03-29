@@ -1,17 +1,18 @@
 package io.quarkus.kubernetes.deployment;
 
-import io.dekorate.deps.kubernetes.api.model.Container;
-import io.dekorate.deps.kubernetes.api.model.ContainerBuilder;
 import io.dekorate.kubernetes.config.Env;
 import io.dekorate.kubernetes.config.Mount;
 import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddMountDecorator;
+import io.dekorate.kubernetes.decorator.AddPortDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.utils.Images;
 import io.dekorate.utils.Strings;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
 
 /**
  * Copied from dekorate in order to fix some issues
@@ -37,14 +38,13 @@ public class ContainerAdapter {
         }
         for (Port port : container.getPorts()) {
             // this was changed to use our patched port decorator
-            builder.accept(new AddContainerPortDecorator(port));
+            builder.accept(new AddPortDecorator(port));
         }
         for (Mount mount : container.getMounts()) {
             builder.accept(new AddMountDecorator(mount));
         }
 
-        builder.accept(new ApplyImagePullPolicyDecorator(container.getImagePullPolicy()));
-
+        builder.accept(new ApplyImagePullPolicyDecorator(name, container.getImagePullPolicy()));
         builder.accept(new AddLivenessProbeDecorator(name, container.getLivenessProbe()));
         builder.accept(new AddReadinessProbeDecorator(name, container.getReadinessProbe()));
         return builder.build();

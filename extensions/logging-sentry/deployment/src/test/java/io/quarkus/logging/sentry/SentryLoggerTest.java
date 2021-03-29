@@ -1,6 +1,5 @@
 package io.quarkus.logging.sentry;
 
-import static io.sentry.jvmti.ResetFrameCache.resetFrameCache;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
@@ -9,16 +8,16 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-import org.jboss.logmanager.handlers.DelayedHandler;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.test.QuarkusUnitTest;
+import io.sentry.HubAdapter;
 import io.sentry.Sentry;
+import io.sentry.SentryOptions;
 import io.sentry.jul.SentryHandler;
-import io.sentry.jvmti.FrameCache;
 
 public class SentryLoggerTest {
 
@@ -29,30 +28,27 @@ public class SentryLoggerTest {
 
     @Test
     public void sentryLoggerDefaultTest() {
-        final SentryHandler sentryHandler = getSentryHandler();
+        final Handler sentryHandler = getSentryHandler();
+        final SentryOptions options = HubAdapter.getInstance().getOptions();
         assertThat(sentryHandler).isNotNull();
+        assertThat(options.getInAppIncludes()).isEmpty();
+        assertThat(options.getDsn()).isEqualTo("https://123@default.com/22222");
         assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.WARN);
-        assertThat(FrameCache.shouldCacheThrowable(new IllegalStateException("Test frame"), 1)).isFalse();
-        assertThat(Sentry.getStoredClient()).isNotNull();
-        assertThat(Sentry.isInitialized()).isTrue();
+        assertThat(Sentry.isEnabled()).isTrue();
     }
 
-    public static SentryHandler getSentryHandler() {
+    public static Handler getSentryHandler() {
         LogManager logManager = LogManager.getLogManager();
         assertThat(logManager).isInstanceOf(org.jboss.logmanager.LogManager.class);
 
-        DelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
+        QuarkusDelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 
         Handler handler = Arrays.stream(delayedHandler.getHandlers())
-                .filter(h -> (h instanceof SentryHandler))
+                .filter(h -> SentryHandler.class.getName().equals(h.getClass().getName()))
                 .findFirst().orElse(null);
-        return (SentryHandler) handler;
+        return handler;
     }
 
-    @AfterAll
-    public static void reset() {
-        resetFrameCache();
-    }
 }

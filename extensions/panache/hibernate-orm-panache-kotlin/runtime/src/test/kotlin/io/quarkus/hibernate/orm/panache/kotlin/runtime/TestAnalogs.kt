@@ -128,8 +128,7 @@ class AnalogVisitor : ClassVisitor(Gizmo.ASM_API_VERSION) {
     }
 }
 
-class Method(val access: Int, val name: String, val type: String, val parameters: String/*,
-                      val signature: String?*/) {
+class Method(val access: Int, val name: String, val type: String, val parameters: String) {
     fun isStatic() = access.matches(Opcodes.ACC_STATIC)
 
     override fun toString(): String {

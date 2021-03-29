@@ -11,8 +11,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class DefaultMethodInterceptorTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(ABinding.class, DefaultMethodBean.class,
-            DefaultMethodInterface.class, MessageInterceptor.class);
+    public ArcTestContainer container = new ArcTestContainer(ABinding.class, NextBinding.class, DefaultMethodBean.class,
+            DefaultMethodInterface.class, MessageInterceptor.class, NextInterceptor.class);
 
     @Test
     public void testInterception() {
@@ -20,8 +20,9 @@ public class DefaultMethodInterceptorTest {
 
         InstanceHandle<DefaultMethodBean> handle = arc.instance(DefaultMethodBean.class);
         DefaultMethodBean simpleBean = handle.get();
-        Assertions.assertEquals("intercepted:hello", simpleBean.hello());
+        Assertions.assertEquals("intercepted:next:hello", simpleBean.hello());
         Assertions.assertEquals("intercepted:default method", simpleBean.defaultMethod());
+        Assertions.assertEquals("intercepted:pong", simpleBean.ping());
     }
 
 }

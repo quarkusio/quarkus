@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-extensions-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-resteasy-parent-aggregator</artifactId>
+    <name>Quarkus - RESTEasy - Parent - Aggregator</name>
+    <packaging>pom</packaging>
+    <modules>
+        <module>resteasy-common</module>
+        <module>resteasy-server-common</module>
+        <module>resteasy</module>
+        <module>resteasy-jsonb</module>
+        <module>resteasy-jackson</module>
+        <module>resteasy-jaxb</module>
+        <module>resteasy-mutiny-common</module>
+        <module>resteasy-mutiny</module>
+        <module>resteasy-qute</module>
+        <module>resteasy-multipart</module>
+        <module>rest-client</module>
+        <module>rest-client-jackson</module>
+        <module>rest-client-jsonb</module>
+        <module>rest-client-jaxb</module>
+        <module>rest-client-mutiny</module>
+    </modules>
+
+</project>

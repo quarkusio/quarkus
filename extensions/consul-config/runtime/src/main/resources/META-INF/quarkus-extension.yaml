@@ -7,5 +7,5 @@ metadata:
   - "configuration"
   - "consul"
   categories:
-  - "configuration"
+  - "core"
   status: "preview"

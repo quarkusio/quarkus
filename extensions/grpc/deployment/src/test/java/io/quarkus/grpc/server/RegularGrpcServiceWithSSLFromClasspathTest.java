@@ -26,6 +26,7 @@ import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.MutinyTestServiceGrpc;
 import io.grpc.testing.integration.TestServiceGrpc;
 import io.netty.handler.ssl.SslContext;
+import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.grpc.server.services.TestService;
 import io.quarkus.test.QuarkusUnitTest;
@@ -39,7 +40,7 @@ public class RegularGrpcServiceWithSSLFromClasspathTest extends GrpcServiceTestB
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloService.class, TestService.class,
+                    .addClasses(HelloService.class, TestService.class, AssertHelper.class,
                             GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
                             HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
                             EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
@@ -53,7 +54,7 @@ public class RegularGrpcServiceWithSSLFromClasspathTest extends GrpcServiceTestB
         SslContext sslcontext = GrpcSslContexts.forClient()
                 .trustManager(createTrustAllTrustManager())
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9000)
+        channel = NettyChannelBuilder.forAddress("localhost", 9001)
                 .sslContext(sslcontext)
                 .build();
     }

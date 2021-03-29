@@ -7,15 +7,11 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
-
-import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
-import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
@@ -24,7 +20,6 @@ import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
-import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.Cookie;
@@ -42,18 +37,13 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
     @Inject
     private JWTAuthContextInfo authContextInfo;
 
-    private void preparePrincipalProducer(JsonWebToken jwtPrincipal) {
-        PrincipalProducer principalProducer = CDI.current().select(PrincipalProducer.class).get();
-        principalProducer.setJsonWebToken(jwtPrincipal);
-    }
-
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         String jwtToken = new VertxBearerTokenExtractor(authContextInfo, context).getBearerToken();
         if (jwtToken != null) {
             return identityProviderManager
-                    .authenticate(new TokenAuthenticationRequest(new TokenCredential(jwtToken, "bearer")));
+                    .authenticate(new TokenAuthenticationRequest(new JsonWebTokenCredential(jwtToken)));
         }
         return Uni.createFrom().optional(Optional.empty());
     }

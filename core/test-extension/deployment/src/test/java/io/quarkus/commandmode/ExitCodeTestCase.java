@@ -2,7 +2,7 @@ package io.quarkus.commandmode;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -25,12 +25,13 @@ public class ExitCodeTestCase {
     @Test
     public void testReturnedExitCode() throws ExecutionException, InterruptedException {
         CompletableFuture<Integer> future = new CompletableFuture<>();
-        ApplicationLifecycleManager.run(Application.currentApplication(), ExitCodeApplication.class, new Consumer<Integer>() {
-            @Override
-            public void accept(Integer integer) {
-                future.complete(integer);
-            }
-        }, "5");
+        ApplicationLifecycleManager.run(Application.currentApplication(), ExitCodeApplication.class,
+                new BiConsumer<Integer, Throwable>() {
+                    @Override
+                    public void accept(Integer integer, Throwable cause) {
+                        future.complete(integer);
+                    }
+                }, "5");
         Assertions.assertEquals(5, future.get());
     }
 
@@ -41,9 +42,9 @@ public class ExitCodeTestCase {
             @Override
             public void run() {
                 ApplicationLifecycleManager.run(Application.currentApplication(), WaitToExitApplication.class,
-                        new Consumer<Integer>() {
+                        new BiConsumer<Integer, Throwable>() {
                             @Override
-                            public void accept(Integer integer) {
+                            public void accept(Integer integer, Throwable cause) {
                                 future.complete(integer);
                             }
                         });
@@ -62,9 +63,9 @@ public class ExitCodeTestCase {
             @Override
             public void run() {
                 ApplicationLifecycleManager.run(Application.currentApplication(), WaitToExitApplication.class,
-                        new Consumer<Integer>() {
+                        new BiConsumer<Integer, Throwable>() {
                             @Override
-                            public void accept(Integer integer) {
+                            public void accept(Integer integer, Throwable cause) {
                                 future.complete(integer);
                             }
                         });

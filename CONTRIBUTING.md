@@ -5,6 +5,42 @@ We try to make it easy, and all contributions, even the smaller ones, are more t
 This includes bug reports, fixes, documentation, examples... 
 But first, read this page (including the small print at the end).
 
+* [Legal](#legal)
+* [Reporting an issue](#reporting-an-issue)
+* [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
+  + [Using snapshots](#using-snapshots)
+  + [Building main](#building-main)
+  + [Updating the version](#updating-the-version)
+* [Before you contribute](#before-you-contribute)
+  + [Code reviews](#code-reviews)
+  + [Coding Guidelines](#coding-guidelines)
+  + [Continuous Integration](#continuous-integration)
+  + [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
+* [Setup](#setup)
+  + [IDE Config and Code Style](#ide-config-and-code-style)
+    - [Eclipse Setup](#eclipse-setup)
+    - [IDEA Setup](#idea-setup)
+* [Build](#build)
+  + [Workflow tips](#workflow-tips)
+    - [Building all modules of an extension](#building-all-modules-of-an-extension)
+    - [Building a single module of an extension](#building-a-single-module-of-an-extension)
+    - [Running a single test](#running-a-single-test)
+    - [Automatic incremental build](#automatic-incremental-build)
+      * [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
+      * [Usage by CI](#usage-by-ci)
+* [Usage](#usage)
+    - [With Maven](#with-maven)
+    - [With Gradle](#with-gradle)
+  + [MicroProfile TCK's](#microprofile-tck-s)
+  + [Test Coverage](#test-coverage)
+* [Extensions](#extensions)
+  + [Descriptions](#descriptions)
+  + [Update dependencies to extensions](#update-dependencies-to-extensions)
+* [The small print](#the-small-print)
+* [Frequently Asked Questions](#frequently-asked-questions)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 ## Legal
 
 All original contributions to Quarkus are licensed under the
@@ -22,15 +58,15 @@ This project uses GitHub issues to manage the issues. Open an issue directly in 
 If you believe you found a bug, and it's likely possible, please indicate a way to reproduce it, what you are seeing and what you would expect to see.
 Don't forget to indicate your Quarkus, Java, Maven/Gradle and GraalVM version. 
 
-## Checking an issue is fixed in master
+## Checking an issue is fixed in main
 
-Sometimes a bug has been fixed in the `master` branch of Quarkus and you want to confirm it is fixed for your own application.
-Testing the `master` branch is easy and you have two options:
+Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own application.
+Testing the `main` branch is easy and you have two options:
 
 * either use the snapshots we publish daily on https://oss.sonatype.org/content/repositories/snapshots/
 * or build Quarkus all by yourself
 
-This is a quick summary to get you to quickly test master.
+This is a quick summary to get you to quickly test main.
 If you are interested in having more details, refer to the [Build section](#build) and the [Usage section](#usage).
 
 ### Using snapshots
@@ -41,7 +77,7 @@ Then just add https://oss.sonatype.org/content/repositories/snapshots/ as a Mave
 
 You can check the last publication date here: https://oss.sonatype.org/content/repositories/snapshots/io/quarkus/ .
 
-### Building master
+### Building main
 
 Just do the following:
 
@@ -56,7 +92,7 @@ Wait for a bit and you're done.
 
 ### Updating the version
 
-Be careful, when using the `master` branch, you need to use the `quarkus-bom` instead of the `quarkus-universe-bom`.
+Be careful, when using the `main` branch, you need to use the `quarkus-bom` instead of the `quarkus-universe-bom`.
 
 Update both the versions of the `quarkus-bom` and the Quarkus Maven plugin to `999-SNAPSHOT`.
 
@@ -65,6 +101,17 @@ You can now test your application.
 ## Before you contribute
 
 To contribute, use GitHub Pull Requests, from your **own** fork.
+
+Also, make sure you have set up your Git authorship correctly:
+
+```
+git config --global user.name "Your Full Name"
+git config --global user.email your.email@example.com
+```
+
+If you use different computers to contribute, please make sure the name is the same on all your computers.
+
+We use this information to acknowledge your contributions in release announcements.
 
 ### Code reviews
 
@@ -82,6 +129,8 @@ Because we are all humans, and to ensure Quarkus is stable for everyone, all cha
 
 The process requires only one additional step to enable Actions on your fork (clicking the green button in the actions tab). [See the full video walkthrough](https://youtu.be/egqbx-Q-Cbg) for more details on how to do this.
 
+To keep the caching of non-Quarkus artifacts efficient (speeding up CI), you should occasionally sync the `main` branch of your fork with `main` of this repo (e.g. monthly).
+
 ### Tests and documentation are not optional
 
 Don't forget to include tests in your pull requests. 
@@ -97,7 +146,7 @@ Be sure to test your pull request in:
 If you have not done so on this machine, you need to:
  
 * Install Git and configure your GitHub access
-* Install Java SDK (OpenJDK recommended)
+* Install Java SDK 8 or 11+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:
     * Linux
@@ -132,7 +181,34 @@ Next navigate to _Java_ -> _Code Style_ -> _Organize Imports_. Click _Import_ an
 
 #### IDEA Setup
 
-Open the _Preferences_ window (or _Settings_ depending on your edition) , navigate to _Plugins_ and install the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the Marketplace.
+##### How to work
+
+Quarkus is a large project and IDEA will have a hard time compiling the whole of it.
+Before you start coding, make sure to build the project using Maven from the commandline
+with `./mvnw -Dquickly`.
+
+##### `OutOfMemoryError` while importing
+
+After creating an IDEA project, the first import will most likely fail with an `OutOfMemoryError`.
+
+To fix that, open the _Preferences_ window (or _Settings_ depending on your edition),
+then navigate to _Build, Execution, Deployment_ > _Build Tools_ > _Maven_ > _Importing_.
+In _VM options for importer_, raise the heap to at least 2 GB, e.g. `-Xmx2g -Xms2g`.
+
+##### `package sun.misc does not exist` while building
+
+You may get an error like this during the build:
+
+```
+Error:(46, 56) java: package sun.misc does not exist
+```
+
+To fix this go to _Settings_ > _Build, Execution, Deployment_ > _Compiler_ > _Java Compiler_
+and disable _Use '--release' option for cross compilation (java 9 and later)_.
+
+##### Formatting
+
+Open the _Preferences_ window (or _Settings_ depending on your edition), navigate to _Plugins_ and install the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the Marketplace.
 
 Restart your IDE, open the *Preferences* (or *Settings*) window again and navigate to _Other Settings_ -> _Eclipse Code Formatter_.
 
@@ -140,6 +216,10 @@ Select _Use the Eclipse Code Formatter_, then change the _Eclipse Java Formatter
 `eclipse-format.xml` file in the `independent-projects/ide-config` directory. Make sure the _Optimize Imports_ box is ticked, and
 select the `eclipse.importorder` file as the import order config file.
 
+Next, disable wildcard imports:
+navigate to _Editor_ -> _Code Style_ -> _Java_ -> _Imports_
+and set _Class count to use import with '\*'_ to `999`.
+Do the same with _Names count to use static import with '\*'_.
 
 ## Build
 
@@ -202,12 +282,49 @@ In this command we use the groupId and artifactId of the module to identify it.
 
 #### Running a single test
 
-Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found [here](https://github.com/quarkusio/quarkus/blob/master/integration-tests/resteasy-jackson)).
+Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found [here](https://github.com/quarkusio/quarkus/blob/main/integration-tests/resteasy-jackson)).
 One way to accomplish this is by executing the following command:
 
 ```
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
+
+#### Automatic incremental build
+
+:information_source: This feature is currently in testing mode. You're invited to give it a go and please reach out via [Zulip](https://quarkusio.zulipchat.com/#narrow/stream/187038-dev) or GitHub in case something doesn't work as expected or you have ideas to improve things.
+
+Instead of _manually_ specifying the modules to build as in the previous examples, you can tell [gitflow-incremental-builder (GIB)](https://github.com/gitflow-incremental-builder/gitflow-incremental-builder) to only build the modules that have been changed or depend on modules that have been changed (downstream).
+E.g.:
+```
+./mvnw install -Dincremental
+```
+This will build all modules (and their downstream modules) that have been changed compared to your _local_ `main`, including untracked and uncommitted changes.
+
+If you just want to build the changes since the last commit on the current branch, you can switch off the branch comparison via `-Dgib.disableBranchComparison` (or short: `-Dgib.dbc`).
+
+There are many more configuration options in GIB you can use to customize its behaviour: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
+
+Parallel builds (`-T...`) should work without problems but parallel test execution is not yet supported (in general, not a GIB limitation).
+
+##### Special case `bom-descriptor-json`
+
+Without going too much into details (`devtools/bom-descriptor-json/pom.xml` has more info), you should build this module _without_ `-Dincremental` _if you changed any extension "metadata"_:
+
+* Addition/renaming/removal of an extension
+* Any other changes to any `quarkus-extension.yaml`
+
+##### Usage by CI
+
+The GitHub Actions based Quarkus CI is using GIB to reduce the average build time of pull request builds and builds of branches in your fork.
+
+CI is using a slighty different GIB config than locally:
+
+* [Special handling of "Explicitly selected projects"](https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#explicitly-selected-projects) is deactivated
+* Untracked/uncommitted changes are not considered
+* Branch comparison is more complex due to distributed GitHub forks
+* Certain "critical" branches like `main` are not built incrementally
+
+For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
 
 ## Usage
 
@@ -248,7 +365,6 @@ quarkusPlatformGroupId=io.quarkus
 pluginManagement {
     repositories {
         mavenLocal() // add mavenLocal() to first position
-        jcenter()
         mavenCentral()
         gradlePluginPortal()
     }
@@ -263,7 +379,6 @@ pluginManagement {
 ```
 repositories {
     mavenLocal() // add mavenLocal() to first position
-    jcenter()
     mavenCentral()
 }
 ```
@@ -292,6 +407,8 @@ then change into the `coverage-report` directory and run `mvn package`. The code
 This currently does not work on Windows as it uses a shell script to copy all the classes and files into the code coverage
 module.
 
+If you just need a report for a single module, run `mvn install jacoco:report -Ptest-coverage` in that module (or with `-f ...`).
+
 ## Extensions
 
 ### Descriptions
@@ -317,6 +434,14 @@ Bad examples and the corresponding good example:
 - "PostgreSQL database connector" (use "Connect to the PostgreSQL database via JDBC")
 - "Asynchronous messaging for Reactive Streams" (use "Produce and consume messages and implement event driven and data streaming applications")
 
+### Update dependencies to extensions
+
+When adding a new extension you should run `update-extension-dependencies.sh` so that special modules like `devtools/bom-descriptor-json`
+that are consuming this extension are built *after* the respective extension. Simply add to your commit the files that were changed by the script.
+
+When removing an extension make sure to also remove all dependencies to it from all `pom.xml`.
+It's easy to miss this as long as the extension artifact is still present in your local Maven repository.
+
 ## The small print
 
 This project is an open source project, please act responsibly, be nice, polite and enjoy!
@@ -325,29 +450,43 @@ This project is an open source project, please act responsibly, be nice, polite 
 
 * The Maven build fails with `OutOfMemoryException`
 
-Set Maven options to use 1.5GB of heap: `export MAVEN_OPTS="-Xmx1563m"`.
+  Set Maven options to use 1.5GB of heap: `export MAVEN_OPTS="-Xmx1563m"`.
 
 * IntelliJ fails to import Quarkus Maven project with `java.lang.OutOfMemoryError: GC overhead limit exceeded` 
 
-In IntelliJ IDEA (version older than `2019.2`) if you see problems in the Maven view claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
-  
-To fix the issue, you need to update the Maven importing settings:  
-`Build, Execution, Deployment` > `Build Tools`> `Maven` > `Importing` > `VM options for importer`
-To import Quarkus you need to define the JVM Max Heap Size (E.g. `-Xmx1g`)
+  In IntelliJ IDEA (version older than `2019.2`) if you see problems in the Maven view claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
 
-**Note** As for now, we can't provide a unique Max Heap Size value. We have been reported to require from 768M to more than 3G to import Quarkus properly.
+  To fix the issue, you need to update the Maven importing settings:
+  `Build, Execution, Deployment` > `Build Tools`> `Maven` > `Importing` > `VM options for importer`
+  To import Quarkus you need to define the JVM Max Heap Size (E.g. `-Xmx1g`)
 
-* Build hangs with DevMojoIT running infinitely 
-```
-./mvnw clean install
-# Wait...
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.192 s - in io.quarkus.maven.it.GenerateConfigIT
-[INFO] Running io.quarkus.maven.it.DevMojoIT
+  **Note** As for now, we can't provide a unique Max Heap Size value. We have been reported to require from 768M to more than 3G to import Quarkus properly.
 
-```
-DevMojoIT require a few minutes to run but anything more than that is not expected. Make sure that nothing is running on 8080.
+* Build hangs with DevMojoIT running infinitely
+  ```
+  ./mvnw clean install
+  # Wait...
+  [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.192 s - in io.quarkus.maven.it.GenerateConfigIT
+  [INFO] Running io.quarkus.maven.it.DevMojoIT
+  ```
+  DevMojoIT require a few minutes to run but anything more than that is not expected. Make sure that nothing is running on 8080.
 
 * The native integration test for my extension didn't run in the CI
 
-In the interest of speeding up CI, the native build stage `run_native_tests_stage` have been split into multiple steps. 
-This means that each new extension needs to be configured explicitly in `azure-pipelines.yml` to have it's integration tests run in native mode
+  In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which are run in parallel.
+  This means that each new extension needs to be configured explicitly in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.
+
+* Build aborts complaining about missing (or superfluous) `minimal *-deployment dependencies` or `illegal runtime dependencies`
+
+  To ensure a consistent build order, even when building in parallel (`./mvnw -T...`) or building incrementally/partially (`./mvnw -pl...`), the build enforces the presence of certain dependencies.
+  If those dependencies are not present, your local build will most likely use possibly outdated artifacts from you local repo and CI build might even fail not finding certain artifacts.
+
+  Just do what the failing enforcer rule is telling you and you should be fine.
+
+* Build fails with multiple `This project has been banned from the build due to previous failures` messages
+
+  Just scroll up, there should be an error or warning somewhere. Failing enforcer rules are known to cause such effects and in this case there'll be something like:
+  ```
+  [WARNING] Rule 0: ... failed with message:
+  ...
+  ```

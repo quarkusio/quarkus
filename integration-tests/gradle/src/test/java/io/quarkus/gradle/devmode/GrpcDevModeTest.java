@@ -2,8 +2,11 @@ package io.quarkus.gradle.devmode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Disabled;
+
 import com.google.common.collect.ImmutableMap;
 
+@Disabled
 public class GrpcDevModeTest extends QuarkusDevGradleTestBase {
     @Override
     protected String projectDirectoryName() {

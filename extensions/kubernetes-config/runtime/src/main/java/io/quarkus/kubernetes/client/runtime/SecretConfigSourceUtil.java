@@ -21,6 +21,11 @@ public class SecretConfigSourceUtil extends AbstractKubernetesConfigSourceUtil {
     }
 
     @Override
+    OrdinalData ordinalData() {
+        return OrdinalData.SECRET;
+    }
+
+    @Override
     ConfigSource createLiteralDataConfigSource(String kubernetesConfigSourceName, Map<String, String> propertyMap,
             int ordinal) {
         return new SecretLiteralDataPropertiesConfigSource(kubernetesConfigSourceName, propertyMap, ordinal);

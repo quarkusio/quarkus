@@ -8,7 +8,6 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-integration-test-vault</artifactId>
@@ -24,6 +23,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-vault</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -33,6 +42,11 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -53,7 +67,7 @@
             <id>test-vault</id>
             <activation>
                 <property>
-                    <name>test-vault</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -68,7 +82,6 @@
                                 </goals>
                                 <configuration>
                                     <skip>false</skip>
-                                    <trimStackTrace>false</trimStackTrace>
                                 </configuration>
                             </execution>
                         </executions>

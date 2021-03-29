@@ -62,64 +62,6 @@ public class OidcUtilsTest {
     }
 
     @Test
-    public void testTokenWithCorrectIssuer() throws Exception {
-        OidcTenantConfig.Token tokenClaims = OidcTenantConfig.Token.fromIssuer("https://server.example.com");
-        InputStream is = getClass().getResourceAsStream("/tokenIssuer.json");
-        assertTrue(OidcUtils.validateClaims(tokenClaims, read(is)));
-    }
-
-    @Test
-    public void testTokenWithWrongIssuer() throws Exception {
-        OidcTenantConfig.Token tokenClaims = OidcTenantConfig.Token.fromIssuer("https://servers.example.com");
-        InputStream is = getClass().getResourceAsStream("/tokenIssuer.json");
-        try {
-            OidcUtils.validateClaims(tokenClaims, read(is));
-            fail("Exception expected: wrong issuer");
-        } catch (OIDCException ex) {
-            // expected
-        }
-    }
-
-    @Test
-    public void testTokenWithCorrectStringAudience() throws Exception {
-        OidcTenantConfig.Token tokenClaims = OidcTenantConfig.Token.fromAudience("https://quarkus.example.com");
-        InputStream is = getClass().getResourceAsStream("/tokenStringAudience.json");
-        assertTrue(OidcUtils.validateClaims(tokenClaims, read(is)));
-    }
-
-    @Test
-    public void testTokenWithWrongStringAudience() throws Exception {
-        OidcTenantConfig.Token tokenClaims = OidcTenantConfig.Token.fromIssuer("https://quarkus.examples.com");
-        InputStream is = getClass().getResourceAsStream("/tokenStringAudience.json");
-        try {
-            OidcUtils.validateClaims(tokenClaims, read(is));
-            fail("Exception expected: wrong audience");
-        } catch (OIDCException ex) {
-            // expected
-        }
-    }
-
-    @Test
-    public void testTokenWithCorrectArrayAudience() throws Exception {
-        OidcTenantConfig.Token tokenClaims = OidcTenantConfig.Token.fromAudience("https://quarkus.example.com",
-                "frontend_client_id");
-        InputStream is = getClass().getResourceAsStream("/tokenArrayAudience.json");
-        assertTrue(OidcUtils.validateClaims(tokenClaims, read(is)));
-    }
-
-    @Test
-    public void testTokenWithWrongArrayAudience() throws Exception {
-        OidcTenantConfig.Token tokenClaims = OidcTenantConfig.Token.fromAudience("service_client_id");
-        InputStream is = getClass().getResourceAsStream("/tokenArrayAudience.json");
-        try {
-            OidcUtils.validateClaims(tokenClaims, read(is));
-            fail("Exception expected: wrong array audience");
-        } catch (OIDCException ex) {
-            // expected
-        }
-    }
-
-    @Test
     public void testKeycloakRealmAccessToken() throws Exception {
         OidcTenantConfig.Roles rolesCfg = OidcTenantConfig.Roles.fromClaimPath(null);
         List<String> roles = OidcUtils.findRoles(null, rolesCfg,

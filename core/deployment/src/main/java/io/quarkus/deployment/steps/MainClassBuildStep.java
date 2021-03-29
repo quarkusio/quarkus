@@ -25,9 +25,9 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-import org.jboss.logmanager.handlers.DelayedHandler;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -94,7 +94,6 @@ public class MainClassBuildStep {
             JAVAX_NET_SSL_TRUST_STORE_PASSWORD));
 
     public static final String GENERATE_APP_CDS_SYSTEM_PROPERTY = "quarkus.appcds.generate";
-    public static final String PRINT_STARTUP_TIMES_PROPERTY = "quarkus.debug.print-startup-times";
 
     private static final FieldDescriptor STARTUP_CONTEXT_FIELD = FieldDescriptor.of(Application.APP_CLASS_NAME, STARTUP_CONTEXT,
             StartupContext.class);
@@ -286,19 +285,17 @@ public class MainClassBuildStep {
                 activeProfile,
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
         cb = tryBlock.addCatch(Throwable.class);
-        cb.invokeVirtualMethod(ofMethod(Logger.class, "errorv", void.class, Throwable.class, String.class, Object.class),
-                cb.readStaticField(logField.getFieldDescriptor()), cb.getCaughtException(),
-                cb.load("Failed to start application (with profile {0})"), activeProfile);
 
         // an exception was thrown before logging was actually setup, we simply dump everything to the console
         ResultHandle delayedHandler = cb
-                .readStaticField(FieldDescriptor.of(InitialConfigurator.class, "DELAYED_HANDLER", DelayedHandler.class));
-        ResultHandle isActivated = cb.invokeVirtualMethod(ofMethod(DelayedHandler.class, "isActivated", boolean.class),
+                .readStaticField(FieldDescriptor.of(InitialConfigurator.class, "DELAYED_HANDLER", QuarkusDelayedHandler.class));
+        ResultHandle isActivated = cb.invokeVirtualMethod(ofMethod(QuarkusDelayedHandler.class, "isActivated", boolean.class),
                 delayedHandler);
         BytecodeCreator isActivatedFalse = cb.ifNonZero(isActivated).falseBranch();
         ResultHandle handlersArray = isActivatedFalse.newArray(Handler.class, 1);
         isActivatedFalse.writeArrayValue(handlersArray, 0, isActivatedFalse.newInstance(ofConstructor(ConsoleHandler.class)));
-        isActivatedFalse.invokeVirtualMethod(ofMethod(DelayedHandler.class, "setHandlers", Handler[].class, Handler[].class),
+        isActivatedFalse.invokeVirtualMethod(
+                ofMethod(QuarkusDelayedHandler.class, "setHandlers", Handler[].class, Handler[].class),
                 delayedHandler, handlersArray);
         isActivatedFalse.breakScope();
 

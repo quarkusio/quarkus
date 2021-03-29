@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
@@ -253,6 +254,17 @@ public final class BeanStream implements Iterable<BeanInfo> {
      */
     public BeanStream alternativeBeans() {
         stream = stream.filter(BeanInfo::isAlternative);
+        return this;
+    }
+
+    /**
+     * 
+     * @param requiredType
+     * @param requiredQualifiers
+     * @return the new stream of beans assignable to the required type and qualifiers
+     */
+    public BeanStream assignableTo(Type requiredType, AnnotationInstance... requiredQualifiers) {
+        stream = stream.filter(bean -> bean.isAssignableTo(requiredType, requiredQualifiers));
         return this;
     }
 

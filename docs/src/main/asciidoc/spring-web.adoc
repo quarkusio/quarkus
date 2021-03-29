@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Quarkus Extension for Spring Web API
 
@@ -37,7 +37,7 @@ The solution is located in the `spring-web-quickstart` {quickstarts-tree-url}/sp
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -221,7 +221,7 @@ This is enough to generate a basic OpenAPI schema document from your REST Endpoi
 
 [source,bash]
 ----
-curl http://localhost:8080/openapi
+curl http://localhost:8080/q/openapi
 ----
 
 You will see the generated OpenAPI schema document:
@@ -255,7 +255,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: '#/components/schemas/Greeting'
 components:
@@ -267,11 +267,11 @@ components:
           type: string
 ----
 
-Also see link:https://quarkus.io/guides/openapi-swaggerui[the OpenAPI Guide]
+Also see link:openapi-swaggerui[the OpenAPI Guide]
 
 === Adding MicroProfile OpenAPI Annotations
 
-You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema, 
+You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema,
 example, adding the following to the class level of the `GreetingController`:
 
 [source, java]
@@ -286,7 +286,7 @@ example, adding the following to the class level of the `GreetingController`:
             email = "techsupport@example.com"),
         license = @License(
             name = "Apache 2.0",
-            url = "http://www.apache.org/licenses/LICENSE-2.0.html"))
+            url = "https://www.apache.org/licenses/LICENSE-2.0.html"))
 )
 ----
 
@@ -321,7 +321,7 @@ info:
     email: techsupport@example.com
   license:
     name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.1
 tags:
 - name: Hello
@@ -369,9 +369,9 @@ components:
 === Using Swagger UI
 
 Swagger UI is included by default when running in `Dev` or `Test` mode, and can optionally added to `Prod` mode.
-See link:https://quarkus.io/guides/openapi-swaggerui#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
+See link:openapi-swaggerui#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
 
-Navigate to link:http://localhost:8080/swagger-ui/[localhost:8080/swagger-ui/] and you will see the Swagger UI screen:
+Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
 
 image:spring-web-guide-screenshot01.png[alt=Swagger UI]
 
@@ -443,7 +443,7 @@ For this to function however, users need to add the `quarkus-undertow` dependenc
 The following method return types are supported:
 
 * `org.springframework.http.ResponseEntity`
-* `java.util.Map` 
+* `java.util.Map`
 
 Other return types mentioned in the Spring `https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html[ExceptionHandler javadoc]` are not supported.
 
@@ -453,7 +453,7 @@ The following parameter types are supported, in arbitrary order:
 
 * An exception argument: declared as a general `Exception` or as a more specific exception. This also serves as a mapping hint if the annotation itself does not narrow the exception types through its `value()`.
 * Request and/or response objects (typically from the Servlet API). You may choose any specific request/response type, e.g. `ServletRequest` / `HttpServletRequest`. To use Servlet API, the `quarkus-undertow` dependency needs to be added.
- 
+
 Other parameter types mentioned in the Spring `https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html[ExceptionHandler javadoc]` are not supported.
 
 == Important Technical Note
@@ -470,7 +470,7 @@ The following table shows how Spring Web annotations can be converted to JAX-RS 
 |===
 |Spring |JAX-RS |Comments
 
-|@RequestController
+|@RestController
 |
 |There is no equivalent in JAX-RS. Annotating a class with @Path suffices
 
@@ -517,6 +517,7 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 
 * link:spring-di[Quarkus - Extension for Spring DI]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
 * link:spring-security[Quarkus - Extension for Spring Security]
 * link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
 * link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]

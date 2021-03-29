@@ -32,7 +32,7 @@ public class InsertSectionHelper implements SectionHelper {
 
         @Override
         public ParametersInfo getParameters() {
-            return ParametersInfo.builder().addParameter("name").build();
+            return ParametersInfo.builder().addParameter("name", IncludeSectionHelper.DEFAULT_NAME).build();
         }
 
         @Override

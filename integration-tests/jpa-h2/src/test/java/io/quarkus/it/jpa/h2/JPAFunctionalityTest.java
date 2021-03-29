@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.ResetDatabase;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -13,6 +14,7 @@ import io.restassured.RestAssured;
  * is run in both JVM mode and native mode (see also test in subclass).
  */
 @QuarkusTest
+@ResetDatabase
 public class JPAFunctionalityTest {
 
     @Test

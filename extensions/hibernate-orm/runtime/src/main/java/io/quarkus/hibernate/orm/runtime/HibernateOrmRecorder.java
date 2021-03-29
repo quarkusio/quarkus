@@ -20,6 +20,7 @@ import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
+import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.session.ForwardingSession;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.annotations.Recorder;
@@ -54,6 +55,10 @@ public class HibernateOrmRecorder {
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies proxyDefinitions) {
+        SchemaManagementIntegrator.clearDsMap();
+        for (QuarkusPersistenceUnitDefinition i : parsedPersistenceXmlDescriptors) {
+            SchemaManagementIntegrator.mapDatasource(i.getDataSource(), i.getName());
+        }
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
@@ -118,5 +123,4 @@ public class HibernateOrmRecorder {
             }
         };
     }
-
 }

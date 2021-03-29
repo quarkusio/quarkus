@@ -471,6 +471,11 @@ TIP: It is possible to read annotations from the test class or method to control
 WARNING: While it is possible to use JUnit Jupiter callback interfaces like `BeforeEachCallback`, you might run into classloading issues because Quarkus has
          to run tests in a custom classloader which JUnit is not aware of.
 
+== Reset the Database after tests
+
+You can use the `@io.quarkus.test.ResetDatabase` annotation to reset the database after a test has run. This will drop the database,
+and recreate the schema. Quarkus can use Liqibase, FlyWay or Hibernate ORM to reset the schema, depending on what is configured.
+
 [[testing_different_profiles]]
 == Testing Different Profiles
 

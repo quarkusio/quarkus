@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-client-deployment-internal</artifactId>
+            <artifactId>quarkus-kubernetes-client-internal-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

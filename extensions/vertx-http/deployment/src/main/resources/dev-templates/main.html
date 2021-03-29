@@ -132,7 +132,12 @@
         console.error("Unable to determine file name of class: '" + className + "'");
         return;
       }
-      var fileName = className.replaceAll(".", "/") + "." + langToExt[lang];
+      var effectiveClassName = className;
+      var dollarIndex = className.indexOf("$");
+      if (dollarIndex > -1) {
+        effectiveClassName = className.substring(0, dollarIndex);
+      }
+      var fileName = effectiveClassName.replaceAll(".", "/") + "." + langToExt[lang];
       if (ideLinkType == "client") {
         var location = ideClientLinkFormat.replace("{0}", srcMainPath + "/" + lang + "/" + fileName);
         if (line) {

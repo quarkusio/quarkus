@@ -240,7 +240,7 @@ It's also possible to inject a mail template, where the message body is created 
 public class MailingResource {
 
     @CheckedTemplate
-    class Templates {
+    static class Templates {
         public static native MailTemplateInstance hello(String name); <1>
     }
     

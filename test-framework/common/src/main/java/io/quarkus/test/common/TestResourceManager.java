@@ -30,6 +30,8 @@ import org.jboss.jandex.IndexView;
 
 public class TestResourceManager implements Closeable {
 
+    private static final int ANNOTATION = 0x00002000;
+
     private final List<TestResourceEntry> sequentialTestResourceEntries;
     private final List<TestResourceEntry> parallelTestResourceEntries;
     private final List<TestResourceEntry> allTestResourceEntries;
@@ -387,11 +389,19 @@ public class TestResourceManager implements Closeable {
     }
 
     private boolean keepTestResourceAnnotation(AnnotationInstance annotation, ClassInfo targetClass, Set<String> testClasses) {
+        if (isAnnotation(targetClass)) {
+            // meta-annotations have already been handled in collectMetaAnnotations
+            return false;
+        }
         AnnotationValue restrict = annotation.value("restrictToAnnotatedClass");
         if (restrict != null && restrict.asBoolean()) {
             return testClasses.contains(targetClass.name().toString('.'));
         }
         return true;
+    }
+
+    private boolean isAnnotation(ClassInfo info) {
+        return (info.flags() & ANNOTATION) != 0;
     }
 
     public static class TestResourceClassEntry {

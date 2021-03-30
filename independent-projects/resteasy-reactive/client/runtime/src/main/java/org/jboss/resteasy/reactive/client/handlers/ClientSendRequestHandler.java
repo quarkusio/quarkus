@@ -8,6 +8,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.RequestOptions;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -24,6 +25,11 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
+    private final boolean followRedirects;
+
+    public ClientSendRequestHandler(boolean followRedirects) {
+        this.followRedirects = followRedirects;
+    }
 
     @Override
     public void handle(RestClientRequestContext requestContext) {
@@ -111,9 +117,13 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     public Future<HttpClientRequest> createRequest(RestClientRequestContext state) {
         HttpClient httpClient = state.getHttpClient();
         URI uri = state.getUri();
-        return httpClient.request(HttpMethod.valueOf(state.getHttpMethod()), uri.getPort(),
-                uri.getHost(),
-                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
+        RequestOptions requestOptions = new RequestOptions();
+        requestOptions.setHost(uri.getHost());
+        requestOptions.setPort(uri.getPort());
+        requestOptions.setMethod(HttpMethod.valueOf(state.getHttpMethod()));
+        requestOptions.setURI(uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
+        requestOptions.setFollowRedirects(followRedirects);
+        return httpClient.request(requestOptions);
     }
 
     private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,

@@ -6,6 +6,7 @@ import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.ProxyOptions;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.KeyStore;
@@ -23,6 +24,7 @@ import javax.ws.rs.core.Configuration;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 
 public class ClientBuilderImpl extends ClientBuilder {
 
@@ -37,6 +39,12 @@ public class ClientBuilderImpl extends ClientBuilder {
     private char[] keystorePassword;
     private SSLContext sslContext;
     private KeyStore trustStore;
+
+    private String proxyHost;
+    private int proxyPort;
+    private boolean followRedirects;
+    private MultiQueryParamMode multiQueryParamMode;
+
     private HttpClientOptions httpClientOptions = new HttpClientOptions();
 
     @Override
@@ -92,8 +100,24 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder proxy(String proxyHost, int proxyPort) {
+        this.proxyPort = proxyPort;
+        this.proxyHost = proxyHost;
+        return this;
+    }
+
     public ClientBuilder httpClientOptions(HttpClientOptions httpClientOptions) {
         this.httpClientOptions = httpClientOptions;
+        return this;
+    }
+
+    public ClientBuilder followRedirects(boolean followRedirects) {
+        this.followRedirects = followRedirects;
+        return this;
+    }
+
+    public ClientBuilder multiQueryParamMode(MultiQueryParamMode multiQueryParamMode) {
+        this.multiQueryParamMode = multiQueryParamMode;
         return this;
     }
 
@@ -120,11 +144,20 @@ public class ClientBuilderImpl extends ClientBuilder {
             }
         }
 
+        if (proxyHost != null) {
+            options.setProxyOptions(
+                    new ProxyOptions()
+                            .setHost(proxyHost)
+                            .setPort(proxyPort));
+        }
+
         return new ClientImpl(httpClientOptions,
                 configuration,
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),
                 hostnameVerifier,
-                sslContext);
+                sslContext,
+                followRedirects,
+                multiQueryParamMode);
 
     }
 

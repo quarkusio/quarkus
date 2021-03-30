@@ -29,11 +29,12 @@ public class BeanParamParser {
                 if (target.kind() == AnnotationTarget.Kind.FIELD) {
                     FieldInfo fieldInfo = target.asField();
                     resultList.add(new QueryParamItem(annotation.value().asString(),
-                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())));
+                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
+                            fieldInfo.type()));
                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo getterMethod = getGetterMethod(beanParamClass, target.asMethod());
                     resultList.add(new QueryParamItem(annotation.value().asString(),
-                            new GetterExtractor(getterMethod)));
+                            new GetterExtractor(getterMethod), getterMethod.returnType()));
                 }
             }
         }
@@ -115,5 +116,8 @@ public class BeanParamParser {
                     "No getter corresponding to " + methodInfo.declaringClass().name() + "#" + methodInfo.name() + " found");
         }
         return getter;
+    }
+
+    private BeanParamParser() {
     }
 }

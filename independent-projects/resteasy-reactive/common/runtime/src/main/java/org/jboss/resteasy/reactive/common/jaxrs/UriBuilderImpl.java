@@ -65,6 +65,8 @@ public class UriBuilderImpl extends UriBuilder {
     private String ssp;
     private String authority;
 
+    private MultiQueryParamMode queryParamMode = MultiQueryParamMode.MULTI_PAIRS;
+
     public UriBuilder clone() {
         UriBuilderImpl impl = new UriBuilderImpl();
         impl.host = host;
@@ -76,6 +78,7 @@ public class UriBuilderImpl extends UriBuilder {
         impl.fragment = fragment;
         impl.ssp = ssp;
         impl.authority = authority;
+        impl.queryParamMode = queryParamMode;
 
         return impl;
     }
@@ -901,12 +904,29 @@ public class UriBuilderImpl extends UriBuilder {
             throw new IllegalArgumentException("Name parameter is null");
         if (values == null)
             throw new IllegalArgumentException("Values parameter is null");
+
+        if (queryParamMode == MultiQueryParamMode.COMMA_SEPARATED) {
+            sb.append(Encode.encodeQueryParam(name)).append("=");
+        }
         for (Object value : values) {
             if (value == null)
                 throw new IllegalArgumentException("Value is null");
+
             sb.append(prefix);
-            prefix = "&";
-            sb.append(Encode.encodeQueryParam(name)).append("=").append(Encode.encodeQueryParam(value.toString()));
+            switch (queryParamMode) {
+                case MULTI_PAIRS:
+                    prefix = "&";
+                    sb.append(Encode.encodeQueryParam(name)).append("=").append(Encode.encodeQueryParam(value.toString()));
+                    break;
+                case COMMA_SEPARATED:
+                    prefix = ",";
+                    sb.append(Encode.encodeQueryParam(value.toString()));
+                    break;
+                case ARRAY_PAIRS:
+                    prefix = "&";
+                    sb.append(Encode.encodeQueryParam(name)).append("[]=").append(Encode.encodeQueryParam(value.toString()));
+                    break;
+            }
         }
 
         query = sb.toString();
@@ -1066,5 +1086,10 @@ public class UriBuilderImpl extends UriBuilder {
         if (templateValues.containsKey(null))
             throw new IllegalArgumentException("map key null");
         return uriTemplate(buildCharSequence(templateValues, true, true, true));
+    }
+
+    public UriBuilder multiQueryParamMode(MultiQueryParamMode mode) {
+        queryParamMode = mode;
+        return this;
     }
 }

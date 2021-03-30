@@ -49,10 +49,12 @@
                         <!-- into a release -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.cditests.CDIInterceptorTest</exclude>
 
-                        <!-- We have our own version of these tests which set up a config environment -->
-                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonBProviderTest</exclude>
-                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonPProviderTest</exclude>
+                        <!-- We have our own version of this test, the original doesn't failing the build -->
+                        <!-- on invalid interfaces -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.InvalidInterfaceTest</exclude>
+
+                        <!--TODO: at the moment we don't support providing serializers with @Provider:-->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonPProviderTest</exclude>
 
                         <!-- currently not supported or unapplicable for non-blocking implementation: -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.ssl.SslContextTest</exclude>

@@ -241,6 +241,7 @@ public class ResteasyReactiveProcessor {
             List<ServerDefaultProducesHandlerBuildItem> serverDefaultProducesHandlers,
             Optional<RequestContextFactoryBuildItem> requestContextFactoryBuildItem,
             Optional<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers,
+            BuildProducer<ResteasyReactiveDeploymentInfoBuildItem> quarkusRestDeploymentInfoBuildItemBuildProducer,
             BuildProducer<ResteasyReactiveDeploymentBuildItem> quarkusRestDeploymentBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -510,7 +511,7 @@ public class ResteasyReactiveProcessor {
             // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
             // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
             Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
-            RuntimeValue<Deployment> deployment = recorder.createDeployment(new DeploymentInfo()
+            DeploymentInfo deploymentInfo = new DeploymentInfo()
                     .setInterceptors(interceptors.sort())
                     .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
                             config.inputBufferSize.asLongValue(), config.singleDefaultProduces, config.defaultProduces))
@@ -525,7 +526,11 @@ public class ResteasyReactiveProcessor {
                     .setApplicationPath(applicationPath)
                     .setResourceClasses(resourceClasses)
                     .setLocatableResourceClasses(subResourceClasses)
-                    .setParamConverterProviders(paramConverterProviders),
+                    .setParamConverterProviders(paramConverterProviders);
+            quarkusRestDeploymentInfoBuildItemBuildProducer
+                    .produce(new ResteasyReactiveDeploymentInfoBuildItem(deploymentInfo));
+
+            RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                     beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                     requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
                     initClassFactory);

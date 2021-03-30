@@ -221,6 +221,12 @@ $(document).ready(function(){
                             
                         </div>
                     {/if}
+                    <div class="col-2" style="text-align: right;">
+                        Resource Class:
+                    </div>
+                    <div class="col-10">
+                        <a class="text-primary" onclick="openInIDE('{endpoint.className}')">{endpoint.className}</a>
+                    </div>
                 </div>
             </div>
         </div>

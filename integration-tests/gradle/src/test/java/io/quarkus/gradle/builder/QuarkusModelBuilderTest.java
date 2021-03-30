@@ -54,6 +54,8 @@ class QuarkusModelBuilderTest {
     @Test
     public void shouldLoadMultiModuleModel() throws URISyntaxException, IOException {
         File projectDir = getResourcesProject("builder/multi-module-project");
+        createFakeBuildOutput(projectDir);
+
         final QuarkusModel quarkusModel = QuarkusGradleModelFactory.create(new File(projectDir, "application"), "TEST");
 
         assertNotNull(quarkusModel);
@@ -96,6 +98,14 @@ class QuarkusModelBuilderTest {
         return projectDir;
     }
 
+    private void createFakeBuildOutput(File projectDir) {
+        String[] modules = new String[] { "application", "common" };
+        for (String module : modules) {
+            new File(projectDir, module + "/build/classes/java/main").mkdirs();
+            new File(projectDir, module + "/build/classes/java/main").mkdirs();
+        }
+    }
+
     protected String getQuarkusVersion() throws IOException {
         final Path curDir = Paths.get("").toAbsolutePath().normalize();
         final Path gradlePropsFile = curDir.resolve("gradle.properties");
@@ -109,5 +119,4 @@ class QuarkusModelBuilderTest {
         }
         return quarkusVersion;
     }
-
 }

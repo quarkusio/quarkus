@@ -176,6 +176,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter
     private List<String> dependencyCondition = new ArrayList<>(0);
 
+    @Parameter(property = "skipCodestartValidation")
+    boolean skipCodestartValidation;
+
     AppArtifactCoords deploymentCoords;
     CollectResult collectedDeploymentDeps;
 
@@ -353,6 +356,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         setBuiltWithQuarkusCoreVersion(mapper, extObject);
 
+        completeCodestartArtifact(mapper, extObject);
+
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
 
@@ -365,9 +370,66 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
+    private void completeCodestartArtifact(ObjectMapper mapper, ObjectNode extObject) throws MojoExecutionException {
+        JsonNode mvalue = getJsonElement(extObject, METADATA, "codestart");
+        if (mvalue == null || !mvalue.isObject()) {
+            return;
+        }
+        final ObjectNode codestartObject = (ObjectNode) mvalue;
+        mvalue = mvalue.get("artifact");
+        if (mvalue == null) {
+            if (!skipCodestartValidation) {
+                throw new MojoExecutionException("Codestart artifact is missing from the " + extensionFile);
+            }
+            return;
+        }
+        org.eclipse.aether.artifact.Artifact codestartArtifact = DependencyNodeUtils.toArtifact(mvalue.asText());
+
+        if (codestartArtifact.getVersion() == null || codestartArtifact.getVersion().isEmpty()) {
+            codestartArtifact = codestartArtifact.setVersion(project.getVersion());
+            codestartObject.put("artifact",
+                    codestartArtifact.getGroupId() + ":" + codestartArtifact.getArtifactId() + ":"
+                            + codestartArtifact.getClassifier() + ":" + codestartArtifact.getExtension() + ":"
+                            + codestartArtifact.getVersion());
+        }
+        if (!skipCodestartValidation) {
+            // first we look for it in the workspace, if it's in there we don't need to actually resolve the artifact, because it might not have been built yet
+            if (workspaceProvider.workspace().getProject(codestartArtifact.getGroupId(),
+                    codestartArtifact.getArtifactId()) == null) {
+                try {
+                    resolve(codestartArtifact);
+                } catch (MojoExecutionException e) {
+                    throw new MojoExecutionException("Failed to resolve codestart artifact " + codestartArtifact, e);
+                }
+            }
+        }
+    }
+
+    private static JsonNode getJsonElement(ObjectNode extObject, String... elements) {
+        JsonNode mvalue = extObject.get(elements[0]);
+        int i = 1;
+        while (i < elements.length) {
+            if (mvalue == null || !mvalue.isObject()) {
+                return null;
+            }
+            final String element = elements[i++];
+            extObject = (ObjectNode) mvalue;
+            mvalue = extObject.get(element);
+        }
+        return mvalue;
+    }
+
     private void setBuiltWithQuarkusCoreVersion(ObjectMapper mapper, ObjectNode extObject) throws MojoExecutionException {
         final QuarkusCoreDeploymentVersionLocator coreVersionLocator = new QuarkusCoreDeploymentVersionLocator();
-        collectDeploymentDeps().getRoot().accept(coreVersionLocator);
+        final DependencyNode root;
+        try {
+            root = repoSystem.collectDependencies(repoSession, newCollectRuntimeDepsRequest()).getRoot();
+        } catch (MojoExecutionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to collect runtime dependencies of " + project.getArtifact(), e);
+        }
+        root.accept(coreVersionLocator);
         if (coreVersionLocator.coreVersion != null) {
             ObjectNode metadata;
             JsonNode mvalue = extObject.get(METADATA);
@@ -399,12 +461,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         try {
             resolvedDeps = repoSystem.resolveDependencies(repoSession,
-                    new DependencyRequest()
-                            .setCollectRequest(newCollectRequest(new DefaultArtifact(project.getArtifact().getGroupId(),
-                                    project.getArtifact().getArtifactId(),
-                                    project.getArtifact().getClassifier(),
-                                    project.getArtifact().getArtifactHandler().getExtension(),
-                                    project.getArtifact().getVersion()))));
+                    new DependencyRequest().setCollectRequest(newCollectRuntimeDepsRequest()));
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve dependencies of " + project.getArtifact(), e);
         }
@@ -677,6 +734,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private AppArtifactCoords getDeploymentCoords() {
         return deploymentCoords == null ? deploymentCoords = AppArtifactCoords.fromString(deployment) : deploymentCoords;
+    }
+
+    private CollectRequest newCollectRuntimeDepsRequest() throws MojoExecutionException {
+        return newCollectRequest(new DefaultArtifact(project.getArtifact().getGroupId(),
+                project.getArtifact().getArtifactId(),
+                project.getArtifact().getClassifier(),
+                project.getArtifact().getArtifactHandler().getExtension(),
+                project.getArtifact().getVersion()));
     }
 
     private CollectRequest newCollectRequest(DefaultArtifact projectArtifact) throws MojoExecutionException {

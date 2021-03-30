@@ -101,7 +101,7 @@ public class QuarkusGradleUtils {
             }
         }
         if (classesDir == null) {
-            throw new IllegalStateException("Failed to locate classes directory in the project");
+            return null;
         }
         return classesDir.toString();
     }

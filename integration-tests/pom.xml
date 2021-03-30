@@ -253,18 +253,8 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-platform-descriptor-json</artifactId>
+                <artifactId>quarkus-project-core-extension-codestarts</artifactId>
                 <version>${project.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-bootstrap-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.maven</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>

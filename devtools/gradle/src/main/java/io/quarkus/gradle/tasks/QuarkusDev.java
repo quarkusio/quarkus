@@ -345,6 +345,14 @@ public class QuarkusDev extends QuarkusTask {
         }
 
         String classesDir = QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir());
+        if (classesDir == null) {
+            return;
+        } else {
+            File classesDirFile = new File(classesDir);
+            if (!classesDirFile.exists()) {
+                return;
+            }
+        }
 
         final String resourcesOutputPath;
         if (resourcesOutputDir.exists()) {

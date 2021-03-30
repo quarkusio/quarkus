@@ -290,8 +290,10 @@ triage:
         - extensions/cache/
         - integration-tests/cache/
     - labels: [area/cli]
+      title: "cli |qs "
       directories:
         - devtools/cli/
+      notify: [maxandersen,ebullient,gsmet]
     - labels: [area/config]
       directories:
         - extensions/config-yaml/
@@ -437,3 +439,5 @@ triage:
     - labels: [kind/extension-proposal]
       title: quarkiverse
       notify: [gastaldi, gsmet, aloubyansky]
+  qe:
+    notify: [rsvoboda, mjurc]

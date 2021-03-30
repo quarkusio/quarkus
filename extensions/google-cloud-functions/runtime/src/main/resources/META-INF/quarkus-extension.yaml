@@ -13,4 +13,4 @@ metadata:
     name: "google-cloud-functions"
     kind: "singleton-example"
     languages: "java"
-    artifact: "io.quarkus:quarkus-descriptor-json"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

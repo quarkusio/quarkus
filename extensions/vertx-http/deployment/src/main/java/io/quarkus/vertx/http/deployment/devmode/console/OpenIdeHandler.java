@@ -3,7 +3,6 @@ package io.quarkus.vertx.http.deployment.devmode.console;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -45,7 +44,7 @@ public class OpenIdeHandler extends DevConsolePostHandler {
         }
 
         if (ide != null) {
-            typicalProcessLaunch(routingContext, className, lang, srcMainPath, line, ide.getExecutable());
+            typicalProcessLaunch(routingContext, className, lang, srcMainPath, line, ide);
         } else {
             log.debug("Unhandled IDE : " + ide);
             routingContext.fail(500);
@@ -53,12 +52,12 @@ public class OpenIdeHandler extends DevConsolePostHandler {
     }
 
     private void typicalProcessLaunch(RoutingContext routingContext, String className, String lang, String srcMainPath,
-            String line, String binary) {
+            String line, Ide ide) {
         String arg = toFileName(className, lang, srcMainPath);
         if (!isNullOrEmpty(line)) {
             arg = arg + ":" + line;
         }
-        launchInIDE(Arrays.asList(binary, arg), routingContext);
+        launchInIDE(ide, arg, routingContext);
     }
 
     private String toFileName(String className, String lang, String srcMainPath) {
@@ -74,11 +73,12 @@ public class OpenIdeHandler extends DevConsolePostHandler {
 
     }
 
-    protected void launchInIDE(List<String> command, RoutingContext routingContext) {
+    protected void launchInIDE(Ide ide, String arg, RoutingContext routingContext) {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    new ProcessBuilder(command).inheritIO().start().waitFor(10, TimeUnit.SECONDS);
+                    new ProcessBuilder(Arrays.asList(ide.getEffectiveCommand(), arg)).inheritIO().start().waitFor(10,
+                            TimeUnit.SECONDS);
                     routingContext.response().setStatusCode(200).end();
                 } catch (Exception e) {
                     routingContext.fail(e);

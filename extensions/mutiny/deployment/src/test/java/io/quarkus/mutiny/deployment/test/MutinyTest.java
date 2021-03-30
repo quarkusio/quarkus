@@ -103,6 +103,24 @@ public class MutinyTest {
         Assertions.assertTrue(exception.getMessage().contains("The current thread cannot be blocked"));
     }
 
+    @Test
+    public void testOperatorLogging() {
+        TestingJulHandler julHandler = new TestingJulHandler();
+        Logger logger = LogManager.getLogManager().getLogger("io.quarkus.mutiny.runtime.MutinyInfrastructure");
+        logger.addHandler(julHandler);
+
+        AtomicReference<String> value = new AtomicReference<>();
+        bean.loggingOperator().subscribe().with(value::set);
+
+        Assertions.assertEquals("HELLO", value.get());
+
+        Assertions.assertEquals(2, julHandler.logRecords.size());
+        LogRecord logRecord = julHandler.logRecords.get(0);
+        Assertions.assertEquals("check.0 | onSubscribe()", logRecord.getMessage());
+        logRecord = julHandler.logRecords.get(1);
+        Assertions.assertEquals("check.0 | onItem(HELLO)", logRecord.getMessage());
+    }
+
     @ApplicationScoped
     public static class BeanUsingMutiny {
 
@@ -122,6 +140,12 @@ public class MutinyTest {
                         // Do not emit anything
                     })
                     .onCancellation().call(() -> Uni.createFrom().failure(new IOException("boom")));
+        }
+
+        public Uni<String> loggingOperator() {
+            return Uni.createFrom().item("hello")
+                    .onItem().transform(String::toUpperCase)
+                    .log("check");
         }
     }
 

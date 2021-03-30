@@ -19,14 +19,16 @@ public class MutinyProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void initExecutor(ExecutorBuildItem executorBuildItem, MutinyInfrastructure recorder) {
+    public void runtimeInit(ExecutorBuildItem executorBuildItem, MutinyInfrastructure recorder) {
         ExecutorService executor = executorBuildItem.getExecutorProxy();
         recorder.configureMutinyInfrastructure(executor);
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void configureDroppedExceptionHandlerAndThreadBlockingChecker(MutinyInfrastructure recorder) {
-        recorder.configureDroppedExceptionHandlerAndThreadBlockingChecker();
+    public void buildTimeInit(MutinyInfrastructure recorder) {
+        recorder.configureDroppedExceptionHandler();
+        recorder.configureThreadBlockingChecker();
+        recorder.configureOperatorLogger();
     }
 }

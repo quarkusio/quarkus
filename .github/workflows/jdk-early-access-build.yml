@@ -68,25 +68,27 @@ jobs:
           # also add JDK version to key to avoid poisioning of the CI cache
           key: q2maven-${{ steps.get-date.outputs.date }}-${{ env.JDK_VERSION }}
       - name: Build with Maven
-        # try to gather as many failures as possible, test reports are evaluated in subsequent actions
+        # -fae to try to gather as many failures as possible
+        # (but not maven.test.failure.ignore because test report generation is buggy)
         run: |
-          mvn $JVM_TEST_MAVEN_OPTS -Dtcks install -fae -Dmaven.test.failure.ignore=true
-      - name: Publish Test Report
-        if: always()
-        uses: scacap/action-surefire-report@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          # fail required to upload failure archive in subsequent actions
-          fail_on_test_failures: true
-      - name: Publish Gradle Test Report
-        if: always()
-        uses: scacap/action-surefire-report@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          # fail required to upload failure archive in subsequent actions
-          fail_on_test_failures: true
-          check_name: 'Test Report for Gradle'
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          mvn $JVM_TEST_MAVEN_OPTS -Dtcks install -fae
+      # Test reports disabled due to: https://github.com/ScaCap/action-surefire-report/issues/39
+      #- name: Publish Test Report
+      #  if: always()
+      #  uses: scacap/action-surefire-report@v1
+      #  with:
+      #    github_token: ${{ secrets.GITHUB_TOKEN }}
+      #    # fail required to upload failure archive in subsequent actions
+      #    fail_on_test_failures: true
+      #- name: Publish Gradle Test Report
+      #  if: always()
+      #  uses: scacap/action-surefire-report@v1
+      #  with:
+      #    github_token: ${{ secrets.GITHUB_TOKEN }}
+      #    # fail required to upload failure archive in subsequent actions
+      #    fail_on_test_failures: true
+      #    check_name: 'Test Report for Gradle'
+      #    report_paths: '**/build/test-results/test/TEST-*.xml'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -102,7 +104,7 @@ jobs:
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
       - name: Report status
-        uses: jbangdev/jbang-action@v0.69.1
+        uses: jbangdev/jbang-action@v0.69.2
         if: "always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
         with:
           script: .github/NativeBuildReport.java

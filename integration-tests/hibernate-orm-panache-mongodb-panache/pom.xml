@@ -9,8 +9,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-hibernate-orm-mongodb-panache</artifactId>
-    <name>Quarkus - Integration Tests - Hibernate ORM + MongoDb with Panache</name>
+    <artifactId>quarkus-integration-test-hibernate-orm-panache-mongodb-panache</artifactId>
+    <name>Quarkus - Integration Tests - Hibernate ORM Panache + MongoDb Panache</name>
 
     <dependencies>
         <dependency>

@@ -45,7 +45,7 @@
         {
             "category": "Data4",
             "timeout": 60,
-            "test-modules": "mongodb-client mongodb-panache mongodb-rest-data-panache mongodb-panache-kotlin redis-client neo4j hibernate-orm-rest-data-panache hibernate-orm-mongodb-panache"
+            "test-modules": "mongodb-client mongodb-panache mongodb-rest-data-panache mongodb-panache-kotlin redis-client neo4j hibernate-orm-rest-data-panache hibernate-orm-panache-mongodb-panache"
         },
         {
             "category": "Data5",

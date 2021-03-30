@@ -108,7 +108,7 @@ public class LocalWorkspaceDiscoveryTest {
     @AfterEach
     public void restoreSystemProperties() {
         if (systemPropertiesBackup != null) {
-            System.setProperties(systemPropertiesBackup);
+            System.setProperties((Properties) systemPropertiesBackup.clone());
         }
     }
 
@@ -134,6 +134,26 @@ public class LocalWorkspaceDiscoveryTest {
         assertNotNull(ws.getProject("org.acme", "nested-project-module1"));
         assertNotNull(ws.getProject("org.acme", "nested-project-parent"));
         assertNotNull(ws.getProject("org.acme", "root-module1"));
+        assertNotNull(ws.getProject("org.acme", "root"));
+        assertEquals(4, ws.getProjects().size());
+    }
+
+    @Test
+    public void loadWorkspaceRootWithNoModules() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-root-no-module/root");
+        assertNotNull(projectUrl);
+        final Path rootProjectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(rootProjectDir));
+        final Path nestedProjectDir = rootProjectDir.resolve("module1/module2");
+        assertTrue(Files.exists(nestedProjectDir));
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setCurrentProject(nestedProjectDir.toString()))
+                        .getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "module3"));
+        assertNotNull(ws.getProject("org.acme", "module2"));
+        assertNotNull(ws.getProject("org.acme", "module1"));
         assertNotNull(ws.getProject("org.acme", "root"));
         assertEquals(4, ws.getProjects().size());
     }

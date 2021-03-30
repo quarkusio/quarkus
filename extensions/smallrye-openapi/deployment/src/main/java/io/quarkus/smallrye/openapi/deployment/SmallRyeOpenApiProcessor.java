@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -124,6 +125,58 @@ public class SmallRyeOpenApiProcessor {
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.SMALLRYE_OPENAPI);
+    }
+
+    @BuildStep
+    void mapConfig(SmallRyeOpenApiConfig openApiConfig,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+
+        if (openApiConfig.openApiVersion.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(
+                    io.smallrye.openapi.api.constants.OpenApiConstants.OPEN_API_VERSION, openApiConfig.openApiVersion.get()));
+        }
+        if (openApiConfig.infoTitle.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(io.smallrye.openapi.api.constants.OpenApiConstants.INFO_TITLE,
+                    openApiConfig.infoTitle.get()));
+        }
+        if (openApiConfig.infoVersion.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(
+                    io.smallrye.openapi.api.constants.OpenApiConstants.INFO_VERSION, openApiConfig.infoVersion.get()));
+        }
+        if (openApiConfig.infoDescription.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(
+                    io.smallrye.openapi.api.constants.OpenApiConstants.INFO_DESCRIPTION, openApiConfig.infoDescription.get()));
+        }
+        if (openApiConfig.infoTermsOfService.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(io.smallrye.openapi.api.constants.OpenApiConstants.INFO_TERMS,
+                    openApiConfig.infoTermsOfService.get()));
+        }
+        if (openApiConfig.infoContactEmail.isPresent()) {
+            systemProperties
+                    .produce(new SystemPropertyBuildItem(io.smallrye.openapi.api.constants.OpenApiConstants.INFO_CONTACT_EMAIL,
+                            openApiConfig.infoContactEmail.get()));
+        }
+        if (openApiConfig.infoContactName.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(
+                    io.smallrye.openapi.api.constants.OpenApiConstants.INFO_CONTACT_NAME, openApiConfig.infoContactName.get()));
+        }
+        if (openApiConfig.infoContactUrl.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(
+                    io.smallrye.openapi.api.constants.OpenApiConstants.INFO_CONTACT_URL, openApiConfig.infoContactUrl.get()));
+        }
+        if (openApiConfig.infoLicenseName.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(
+                    io.smallrye.openapi.api.constants.OpenApiConstants.INFO_LICENSE_NAME, openApiConfig.infoLicenseName.get()));
+        }
+        if (openApiConfig.infoLicenseUrl.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(
+                    io.smallrye.openapi.api.constants.OpenApiConstants.INFO_LICENSE_URL, openApiConfig.infoLicenseUrl.get()));
+        }
+        if (openApiConfig.operationIdStrategy.isPresent()) {
+            systemProperties.produce(
+                    new SystemPropertyBuildItem(io.smallrye.openapi.api.constants.OpenApiConstants.OPERATION_ID_STRAGEGY,
+                            openApiConfig.operationIdStrategy.get().name()));
+        }
     }
 
     @BuildStep

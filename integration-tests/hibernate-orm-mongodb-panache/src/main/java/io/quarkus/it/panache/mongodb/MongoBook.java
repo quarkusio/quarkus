@@ -5,7 +5,7 @@ import org.bson.types.ObjectId;
 
 import io.quarkus.mongodb.panache.MongoEntity;
 
-@MongoEntity(collection = "TheBook", clientName = "cl2")
+@MongoEntity(collection = "TheBook")
 public class MongoBook {
     @BsonProperty("bookTitle")
     private String title;

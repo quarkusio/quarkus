@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Parameter.EMPTY;
 
+import io.quarkus.qute.Results.Result;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -34,7 +35,7 @@ public class LoopSectionHelper implements SectionHelper {
         return context.resolutionContext().evaluate(iterable).thenCompose(it -> {
             if (it == null) {
                 throw new TemplateException(String.format(
-                        "Loop section error in template %s on line %s: [%s] resolved to [null] which is not iterable",
+                        "Loop error in template [%s] on line %s: {%s} resolved to null, use {%<s.orEmpty} to ignore this error",
                         iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString()));
             }
             List<CompletionStage<ResultNode>> results = new ArrayList<>();
@@ -89,10 +90,18 @@ public class LoopSectionHelper implements SectionHelper {
             }
             return elements.iterator();
         } else {
-            throw new TemplateException(String.format(
-                    "Loop section error in template %s on line %s: [%s] resolved to [%s] which is not iterable",
-                    iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString(),
-                    it.getClass().getName()));
+            String msg;
+            if (Result.NOT_FOUND.equals(it)) {
+                msg = String.format(
+                        "Loop error in template [%s] on line %s: {%s} not found, use {%<s.orEmpty} to ignore this error",
+                        iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString());
+            } else {
+                msg = String.format(
+                        "Loop error in template [%s] on line %s: {%s} resolved to [%s] which is not iterable",
+                        iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString(),
+                        it.getClass().getName());
+            }
+            throw new TemplateException(msg);
         }
     }
 

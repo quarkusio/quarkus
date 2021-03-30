@@ -102,10 +102,17 @@ public class DefaultTenantConfigResolver {
         TenantConfigContext configContext = tenantId != null ? tenantConfigBean.getStaticTenantsConfig().get(tenantId) : null;
         if (configContext == null) {
             if (tenantId != null && !tenantId.isEmpty()) {
-                LOG.debugf("No configuration with a tenant id '%s' has been found, using the default configuration");
+                LOG.debugf(
+                        "Registered TenantResolver has not provided the configuration for tenant '%s', using the default tenant",
+                        tenantId);
             }
             configContext = tenantConfigBean.getDefaultTenant();
         }
+        if (!configContext.ready) {
+            LOG.debugf("Tenant '%s' is not initialized", tenantId);
+            configContext = null;
+        }
+
         return configContext;
     }
 

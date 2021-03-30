@@ -51,6 +51,36 @@ Likewise, don't fall into the trap of only measuring private memory which is wha
 While private memory might be useful in a environment deploying many different applications (and thus sharing memory a lot),
 it is very misleading in environments like Kubernetes/OpenShift.
 
+=== Measuring Memory Correctly on Docker
+
+In order to measure memory correctly **DO NOT use docker stat or anything derived from it** (e.g. ctop). This approach only measures a subset of the in-use resident pages, while the Linux Kernel, cgroups and cloud orchestration providers will utilize the full resident set in their accounting (determining whether a process is over the limits and should be killed). 
+
+To measure accurately, a similar set of steps for measuring RSS on Linux should be performed. The docker `top` command allows running a `ps` command on the container host machine against the processes in the container instance. By utilizing this in combination with formatting output parameters, the rss value can be returned:
+
+  docker top <CONTAINER ID> -o pid,rss,args
+
+For example:
+
+[source,shell]
+----
+ $ docker top $(docker ps -q --filter ancestor=quarkus/myapp) -o pid,rss,args
+
+PID                 RSS                 COMMAND
+2531                27m                 ./application -Dquarkus.http.host=0.0.0.0
+----
+ 
+Alternatively, one can jump directly into a privileged shell (root on the host), and execute a `ps` command directly:
+
+[source,shell]
+----
+ $ docker run -it --rm --privileged --pid=host justincormack/nsenter1 /bin/ps -e -o pid,rss,args | grep application
+ 2531  27m ./application -Dquarkus.http.host=0.0.0.0
+----
+
+If you happen to be running on Linux, you can execute the `ps` command directly, since your shell is the same as the container host:
+
+  ps -e -o pid,rss,args | grep application
+
 === Platform Specific Memory Reporting
 
 In order to not incur the performance overhead of running with NVM enabled, we measure the total RSS of an JVM application using tools specific to each platform.
@@ -211,5 +241,4 @@ circumstances one could observe non negligible impact from the other flags too.
 
 If you're to investigate some differences in detail make sure to check what Quarkus is invoking exactly: when the build
 plugin is producing a native image, the full command lines are logged.
-
 

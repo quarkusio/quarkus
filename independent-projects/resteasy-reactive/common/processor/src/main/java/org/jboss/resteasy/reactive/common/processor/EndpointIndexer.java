@@ -840,7 +840,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             builder.setType(ParameterType.HEADER);
             convertible = true;
         } else if (restHeaderParam != null) {
-            builder.setName(valueOrDefault(restHeaderParam.value(), sourceName));
+            if (restHeaderParam.value() == null || restHeaderParam.value().asString().isEmpty()) {
+                builder.setName(StringUtil.hyphenate(sourceName));
+            } else {
+                builder.setName(restHeaderParam.value().asString());
+            }
             builder.setType(ParameterType.HEADER);
             convertible = true;
         } else if (formParam != null) {

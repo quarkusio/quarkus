@@ -49,10 +49,16 @@ public class NewParamsRestResource {
             @RestQuery Optional<String> q2,
             @RestQuery Optional<Integer> q3,
             @RestHeader int h,
+            @RestHeader String xMyHeader,
+            @RestHeader("Test-Header-Param") String testHeaderParam,
+            @RestHeader("") String paramEmpty,
             @RestForm String f,
             @RestMatrix String m,
             @RestCookie String c) {
-        return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f + ", m: " + m + ", c: " + c + ", q2: "
+        return "params: p: " + p + ", q: " + q + ", h: " + h + ", xMyHeader: " + xMyHeader + ", testHeaderParam: "
+                + testHeaderParam + ", paramEmpty: "
+                + paramEmpty + ", f: " + f + ", m: " + m + ", c: "
+                + c + ", q2: "
                 + q2.orElse("empty") + ", q3: " + q3.orElse(-1);
     }
 

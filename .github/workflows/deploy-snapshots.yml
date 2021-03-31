@@ -3,6 +3,7 @@ name: Quarkus Deploy Snapshots
 on:
   schedule:
     - cron: '0 2 * * *'
+  workflow_dispatch:
 
 env:
   LANG: en_US.UTF-8
@@ -11,6 +12,8 @@ jobs:
     name: "Build and deploy"
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
+    env:
+      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
     steps:
       - uses: actions/checkout@v2
         with:

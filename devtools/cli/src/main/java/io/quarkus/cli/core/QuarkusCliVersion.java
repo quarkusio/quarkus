@@ -17,22 +17,35 @@ public class QuarkusCliVersion implements CommandLine.IVersionProvider {
         if (version != null) {
             return version;
         }
-        final URL quarkusPropsUrl = Thread.currentThread().getContextClassLoader().getResource("quarkus.properties");
-        if (quarkusPropsUrl == null) {
+
+        final Properties props = new Properties();
+        final URL quarkusPropertiesUrl = Thread.currentThread().getContextClassLoader().getResource("quarkus.properties");
+        if (quarkusPropertiesUrl == null) {
             throw new RuntimeException("Failed to locate quarkus.properties on the classpath");
         }
-        final Properties props = new Properties();
-        ClassPathUtils.consumeAsPath(quarkusPropsUrl, p -> {
-            try (BufferedReader reader = Files.newBufferedReader(p)) {
-                props.load(reader);
+
+        // we have a special case for file and jar as using getResourceAsStream() on Windows might cause file locks
+        if ("file".equals(quarkusPropertiesUrl.getProtocol()) || "jar".equals(quarkusPropertiesUrl.getProtocol())) {
+            ClassPathUtils.consumeAsPath(quarkusPropertiesUrl, p -> {
+                try (BufferedReader reader = Files.newBufferedReader(p)) {
+                    props.load(reader);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to load quarkus.properties", e);
+                }
+            });
+        } else {
+            try {
+                props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("quarkus.properties"));
             } catch (IOException e) {
-                throw new RuntimeException("Failed to load quarkus.properties", e);
+                throw new IllegalStateException("Failed to load quarkus.properties", e);
             }
-        });
+        }
+
         version = props.getProperty("quarkus-core-version");
         if (version == null) {
             throw new RuntimeException("Failed to locate quarkus-core-version property in the bundled quarkus.properties");
         }
+
         return version;
     }
 

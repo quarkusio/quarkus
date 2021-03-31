@@ -44,7 +44,7 @@ final class Interceptors {
             throw new DefinitionException("Interceptor has no bindings: " + interceptorClass);
         }
         if (!priorityDeclared) {
-            LOGGER.info("An interceptor " + interceptorClass + " does not declare any @Priority. " +
+            LOGGER.info("The interceptor " + interceptorClass + " does not declare any @Priority. " +
                     "It will be assigned a default priority value of 0.");
         }
         return new InterceptorInfo(interceptorClass, beanDeployment,

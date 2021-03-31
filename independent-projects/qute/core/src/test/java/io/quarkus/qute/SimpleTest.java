@@ -82,6 +82,7 @@ public class SimpleTest {
         assertEquals("John Bug", engine.parse("{name ?: 'John'} {surname or 'John'}").render(data));
         assertEquals("John Bug", engine.parse("{name ?: \"John Bug\"}").render(data));
         assertEquals("Is null", engine.parse("{foo ?: 'Is null'}").render(data));
+        assertEquals("10", engine.parse("{foo.age.limit ?: 10}").render(data));
     }
 
     @Test

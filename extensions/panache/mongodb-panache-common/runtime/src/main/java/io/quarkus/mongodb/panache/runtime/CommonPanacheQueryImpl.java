@@ -6,10 +6,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.ReadPreference;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -21,6 +23,7 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class CommonPanacheQueryImpl<Entity> {
     private MongoCollection collection;
+    private ClientSession clientSession;
     private Bson mongoQuery;
     private Bson sort;
     private Bson projections;
@@ -32,14 +35,17 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private Collation collation;
 
-    public CommonPanacheQueryImpl(MongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
+    public CommonPanacheQueryImpl(MongoCollection<? extends Entity> collection, ClientSession session, Bson mongoQuery,
+            Bson sort) {
         this.collection = collection;
+        this.clientSession = session;
         this.mongoQuery = mongoQuery;
         this.sort = sort;
     }
 
     private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, Bson projections, Class<?> documentClass) {
         this.collection = previousQuery.collection.withDocumentClass(documentClass);
+        this.clientSession = previousQuery.clientSession;
         this.mongoQuery = previousQuery.mongoQuery;
         this.sort = previousQuery.sort;
         this.projections = projections;
@@ -150,7 +156,8 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public long count() {
         if (count == null) {
-            count = mongoQuery == null ? collection.countDocuments() : collection.countDocuments(mongoQuery);
+            Bson query = getQuery();
+            count = clientSession == null ? collection.countDocuments(query) : collection.countDocuments(clientSession, query);
         }
         return count;
     }
@@ -162,7 +169,8 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     private <T extends Entity> List<T> list(Integer limit) {
         List<T> list = new ArrayList<>();
-        FindIterable find = mongoQuery == null ? collection.find() : collection.find(mongoQuery);
+        Bson query = getQuery();
+        FindIterable find = clientSession == null ? collection.find(query) : collection.find(clientSession, query);
         if (this.projections != null) {
             find.projection(projections);
         }
@@ -170,15 +178,12 @@ public class CommonPanacheQueryImpl<Entity> {
             find.collation(collation);
         }
         manageOffsets(find, limit);
-        MongoCursor<T> cursor = find.sort(sort).iterator();
 
-        try {
+        try (MongoCursor<T> cursor = find.sort(sort).iterator()) {
             while (cursor.hasNext()) {
                 T entity = cursor.next();
                 list.add(entity);
             }
-        } finally {
-            cursor.close();
         }
         return list;
     }
@@ -231,5 +236,9 @@ public class CommonPanacheQueryImpl<Entity> {
         if (limit != null) {
             find.limit(limit);
         }
+    }
+
+    private Bson getQuery() {
+        return mongoQuery == null ? new BsonDocument() : mongoQuery;
     }
 }

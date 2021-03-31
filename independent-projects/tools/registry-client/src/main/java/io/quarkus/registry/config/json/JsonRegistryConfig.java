@@ -1,5 +1,7 @@
 package io.quarkus.registry.config.json;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -9,6 +11,9 @@ import io.quarkus.registry.config.RegistryMavenConfig;
 import io.quarkus.registry.config.RegistryNonPlatformExtensionsConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
 import io.quarkus.registry.config.RegistryQuarkusVersionsConfig;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -22,6 +27,7 @@ public class JsonRegistryConfig implements RegistryConfig {
     private RegistryNonPlatformExtensionsConfig nonPlatformExtensions;
     private RegistryMavenConfig mavenConfig;
     private RegistryQuarkusVersionsConfig versionsConfig;
+    private Map<String, Object> extra;
 
     public JsonRegistryConfig() {
     }
@@ -110,6 +116,24 @@ public class JsonRegistryConfig implements RegistryConfig {
 
     public void setQuarkusVersions(RegistryQuarkusVersionsConfig quarkusVersions) {
         this.versionsConfig = quarkusVersions;
+    }
+
+    @JsonAnyGetter
+    @Override
+    public Map<String, Object> getExtra() {
+        return extra == null ? Collections.emptyMap() : extra;
+    }
+
+    public void setExtra(Map<String, Object> extra) {
+        this.extra = extra;
+    }
+
+    @JsonAnySetter
+    public void setAny(String name, Object value) {
+        if (extra == null) {
+            extra = new HashMap<>();
+        }
+        extra.put(name, value);
     }
 
     public String toString() {

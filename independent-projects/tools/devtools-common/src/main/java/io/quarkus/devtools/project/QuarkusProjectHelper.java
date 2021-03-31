@@ -1,26 +1,27 @@
 package io.quarkus.devtools.project;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.platform.descriptor.loader.json.ClassPathResourceLoader;
-import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class QuarkusProjectHelper {
 
@@ -99,30 +100,34 @@ public class QuarkusProjectHelper {
     }
 
     public static ClassPathResourceLoader getResourceLoader(ExtensionCatalog catalog, MavenArtifactResolver mvn) {
+        final Map<String, Artifact> codestartArtifacts = new LinkedHashMap<>();
+        for (Extension e : catalog.getExtensions()) {
+            final String artifactCoords = ExtensionProcessor.of(e).getCodestartArtifact();
+            if (artifactCoords == null || codestartArtifacts.containsKey(artifactCoords)) {
+                continue;
+            }
+            codestartArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
+        }
         Object o = catalog.getMetadata().get(CODESTARTS_ARTIFACTS);
-        final List<Artifact> codestartsArtifacts;
-        if (o == null) {
-            // This is hardcoded temporarily
-            codestartsArtifacts = Arrays
-                    .asList(new DefaultArtifact(ToolsConstants.IO_QUARKUS, "quarkus-platform-descriptor-json", "", "jar",
-                            catalog.getQuarkusCoreVersion()));
-        } else {
+        if (o != null) {
             @SuppressWarnings({ "unchecked" })
             final List<Object> list = o instanceof List ? (List<Object>) o : Arrays.asList(o);
-            codestartsArtifacts = new ArrayList<>(list.size());
             for (Object i : list) {
-                AppArtifactCoords coords = AppArtifactCoords.fromString(i.toString());
-                codestartsArtifacts.add(new DefaultArtifact(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(),
-                        coords.getType(), coords.getVersion()));
+                final String artifactCoords = i.toString();
+                if (codestartArtifacts.containsKey(artifactCoords)) {
+                    continue;
+                }
+                codestartArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
             }
         }
 
-        final URL[] urls = new URL[codestartsArtifacts.size()];
-        for (int i = 0; i < codestartsArtifacts.size(); ++i) {
+        final URL[] urls = new URL[codestartArtifacts.size()];
+        int i = 0;
+        for (Artifact a : codestartArtifacts.values()) {
             try {
-                urls[i] = mvn.resolve(codestartsArtifacts.get(i)).getArtifact().getFile().toURI().toURL();
+                urls[i++] = mvn.resolve(a).getArtifact().getFile().toURI().toURL();
             } catch (Exception e) {
-                throw new RuntimeException("Failed to resolve codestart artifact " + codestartsArtifacts.get(i), e);
+                throw new RuntimeException("Failed to resolve codestart artifact " + a, e);
             }
         }
 

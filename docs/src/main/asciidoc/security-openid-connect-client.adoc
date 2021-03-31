@@ -10,8 +10,8 @@ include::./attributes.adoc[]
 
 This guide explains how to use:
 
- * `quarkus-oidc-client` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak]
- * `quarkus-oidc-token-propagation` extension to propagate the current bearer or authorization code flow access tokens
+ - `quarkus-oidc-client` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak]
+ - `quarkus-oidc-token-propagation` extension to propagate the current bearer or authorization code flow access tokens
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
 
@@ -25,7 +25,7 @@ Here is how `OidcClient` can be configured to use the `client_credentials` grant
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=${keycloak.url}/realms/quarkus2/
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.secret=secret
 ----
@@ -34,7 +34,7 @@ Here is how `OidcClient` can be configured to use the `password` grant:
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=${keycloak.url}/realms/quarkus2/
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.secret=secret
 quarkus.oidc-client.grant.type=password
@@ -167,7 +167,7 @@ Please note that some OpenId Connect Providers will not return a refresh token i
 ----
 quarkus.oidc-client.client-enabled=false
 
-quarkus.oidc-client.jwt-secret.auth-server-url=${keycloak.url}/realms/quarkus2/
+quarkus.oidc-client.jwt-secret.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.jwt-secret.client-id=quarkus-app
 quarkus.oidc-client.jwt-secret.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
 ----
@@ -273,7 +273,7 @@ All the https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthenticati
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.secret=mysecret
 ----
@@ -282,7 +282,7 @@ quarkus.oidc-client.credentials.secret=mysecret
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.client-secret.value=mysecret
 quarkus.oidc-client.credentials.client-secret.method=post
@@ -292,7 +292,7 @@ quarkus.oidc-client.credentials.client-secret.method=post
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
 ----
@@ -301,7 +301,7 @@ quarkus.oidc-client.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-Es
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.jwt.key-file=privateKey.pem
 ----
@@ -310,7 +310,7 @@ quarkus.oidc-client.credentials.jwt.key-file=privateKey.pem
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.jwt.key-store-file=keystore.jks
 quarkus.oidc-client.credentials.jwt.key-store-password=mypassword
@@ -414,6 +414,7 @@ Set `application.properties`, for example:
 
 [source, properties]
 ----
+# Use 'keycloak.url' property set by the test KeycloakRealmResourceManager
 quarkus.oidc-client.auth-server-url=${keycloak.url}
 quarkus.oidc-client.discovery-enabled=false
 quarkus.oidc-client.token-path=/tokens
@@ -425,6 +426,20 @@ quarkus.oidc-client.grant-options.password.password=alice
 ----
 
 and finally write the test code. Given the Wiremock-based resource above, the first test invocation should return `access_token_1` access token which will expire in 4 seconds. Use `awaitility` to wait for about 5 seconds, and now the next test invocation should return `access_token_2` access token which confirms the expired `access_token_1` access token has been refreshed.
+
+== Token endpoint configuration
+
+By default the token endpoint address is discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc-client.auth-server-url`.
+
+Alternatively, if the discovery endpoint is not available or you would like to save on the discovery endpoint roundtrip, you can disable the discovery and configure the token endpoint address with a relative path value, for example:
+
+[source, properties]
+----
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc-client.discovery-enabled=false
+# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens
+quarkus.oidc-client.token-path=/protocol/openid-connect/tokens
+----
 
 [[token-propagation]]
 == Token Propagation in MicroProfile RestClient client filter

@@ -12,9 +12,14 @@ import io.quarkus.registry.catalog.json.JsonCatalogMerger;
 import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
 import io.quarkus.registry.client.RegistryClientFactory;
 import io.quarkus.registry.client.maven.MavenRegistryClientFactory;
+import io.quarkus.registry.client.spi.RegistryClientEnvironment;
+import io.quarkus.registry.client.spi.RegistryClientFactoryProvider;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
+import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,8 +29,10 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
+import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class ExtensionCatalogResolver {
 
@@ -44,6 +51,9 @@ public class ExtensionCatalogResolver {
         private MavenArtifactResolver artifactResolver;
         private RegistriesConfig config;
         private boolean built;
+
+        private RegistryClientFactory defaultClientFactory;
+        private RegistryClientEnvironment clientEnv;
 
         private Builder() {
         }
@@ -95,20 +105,89 @@ public class ExtensionCatalogResolver {
 
         private void buildRegistryClients() {
             registries = new ArrayList<>(config.getRegistries().size());
-            final RegistryClientFactory defaultClientFactory = new MavenRegistryClientFactory(artifactResolver,
-                    log);
             for (RegistryConfig config : config.getRegistries()) {
                 if (config.isDisabled()) {
                     continue;
                 }
+                final RegistryClientFactory clientFactory = getClientFactory(config);
                 try {
-                    registries.add(new RegistryExtensionResolver(defaultClientFactory.buildRegistryClient(config), log));
+                    registries.add(new RegistryExtensionResolver(clientFactory.buildRegistryClient(config), log));
                 } catch (RegistryResolutionException e) {
                     // TODO this should be enabled once the registry comes to life
                     log.debug(e.getMessage());
                     continue;
                 }
             }
+        }
+
+        private RegistryClientFactory getClientFactory(RegistryConfig config) {
+            final Object providerValue = config.getExtra().get("client-factory-artifact");
+            if (providerValue == null) {
+                return getDefaultClientFactory();
+            }
+            ArtifactCoords providerArtifact = null;
+            try {
+                final String providerStr = (String) providerValue;
+                providerArtifact = ArtifactCoords.fromString(providerStr);
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to process configuration of " + config.getId()
+                        + " registry: failed to cast " + providerValue + " to String", e);
+            }
+            final File providerJar;
+            try {
+                providerJar = artifactResolver.resolve(new DefaultArtifact(providerArtifact.getGroupId(),
+                        providerArtifact.getArtifactId(), providerArtifact.getClassifier(),
+                        providerArtifact.getType(), providerArtifact.getVersion())).getArtifact().getFile();
+            } catch (BootstrapMavenException e) {
+                throw new IllegalStateException(
+                        "Failed to resolve the registry client factory provider artifact " + providerArtifact, e);
+            }
+            log.debug("Loading registry client factory for %s from %s", config.getId(), providerArtifact);
+            final ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
+            try {
+                ClassLoader providerCl = new URLClassLoader(new URL[] { providerJar.toURI().toURL() }, originalCl);
+                final Iterator<RegistryClientFactoryProvider> i = ServiceLoader
+                        .load(RegistryClientFactoryProvider.class, providerCl).iterator();
+                if (!i.hasNext()) {
+                    throw new Exception("Failed to locate an implementation of " + RegistryClientFactoryProvider.class.getName()
+                            + " service provider");
+                }
+                final RegistryClientFactoryProvider provider = i.next();
+                if (i.hasNext()) {
+                    final StringBuilder buf = new StringBuilder();
+                    buf.append("Found more than one registry client factory provider "
+                            + provider.getClass().getName());
+                    while (i.hasNext()) {
+                        buf.append(", ").append(i.next().getClass().getName());
+                    }
+                    throw new Exception(buf.toString());
+                }
+                return provider.newRegistryClientFactory(getClientEnv());
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to load registry client factory from " + providerJar, e);
+            } finally {
+                Thread.currentThread().setContextClassLoader(originalCl);
+            }
+        }
+
+        private RegistryClientFactory getDefaultClientFactory() {
+            return defaultClientFactory == null ? defaultClientFactory = new MavenRegistryClientFactory(artifactResolver, log)
+                    : defaultClientFactory;
+        }
+
+        private RegistryClientEnvironment getClientEnv() {
+            return clientEnv == null ? clientEnv = new RegistryClientEnvironment() {
+
+                @Override
+                public MessageWriter log() {
+                    return log;
+                }
+
+                @Override
+                public MavenArtifactResolver resolver() {
+                    return artifactResolver;
+                }
+            } : clientEnv;
         }
 
         private void assertNotBuilt() {

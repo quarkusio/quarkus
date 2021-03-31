@@ -1,5 +1,6 @@
 package io.quarkus.deployment.ide;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -41,23 +42,35 @@ public class IdeProcessor {
 
         IDE_MARKER_FILES = Collections.unmodifiableMap(IDE_MARKER_FILES);
 
-        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("idea")), Ide.IDEA);
+        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("idea") && processInfo.command.endsWith("java")),
+                Ide.IDEA);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);
         IDE_PROCESSES.put(
-                (processInfo -> processInfo.containInCommandWithArgument("java", "netbeans")),
+                (processInfo -> processInfo.containInArguments("netbeans")),
                 Ide.NETBEANS);
 
         IDE_ARGUMENTS_EXEC_INDICATOR.put(Ide.NETBEANS, (ProcessInfo processInfo) -> {
-            String platform = processInfo.getArgumentValue("-Dnetbeans.home");
+            String platform = processInfo.getArgumentThatContains("nbexec");
             if (platform != null && !platform.isEmpty()) {
-                String os = System.getProperty("os.name");
-                if (os.startsWith("Windows") || os.startsWith("windows")) {
-                    platform = platform.replace("platform", "bin/netbeans.exe");
+                platform = platform.substring(0, platform.indexOf("platform")).concat("bin").concat(File.separator);
+                if (IdeUtil.isWindows()) {
+                    platform = platform.concat("netbeans.exe");
                 } else {
-                    platform = platform.replace("platform", "bin/netbeans");
+                    platform = platform.concat("netbeans");
                 }
                 return platform;
+            }
+            return null;
+        });
+        IDE_ARGUMENTS_EXEC_INDICATOR.put(Ide.IDEA, (ProcessInfo processInfo) -> {
+            // converts something like '/home/test/software/idea/ideaIU-x.y.z/idea-IU-x.y.z/jbr/bin/java ....'
+            // into '/home/test/software/idea/ideaIU-203.5981.114/idea-IU-203.5981.114/bin/idea.sh'
+            String command = processInfo.getCommand();
+            int jbrIndex = command.indexOf("jbr");
+            if ((jbrIndex > -1) && command.endsWith("java")) {
+                String ideaHome = command.substring(0, jbrIndex);
+                return (ideaHome + "bin" + File.separator + "idea") + (IdeUtil.isWindows() ? ".exe" : ".sh");
             }
             return null;
         });
@@ -150,12 +163,11 @@ public class IdeProcessor {
             for (Map.Entry<Predicate<ProcessInfo>, Ide> entry : IDE_PROCESSES.entrySet()) {
                 if (entry.getKey().test(processInfo)) {
                     Ide ide = entry.getValue();
-
                     if (IDE_ARGUMENTS_EXEC_INDICATOR.containsKey(ide)) {
                         Function<ProcessInfo, String> execIndicator = IDE_ARGUMENTS_EXEC_INDICATOR.get(ide);
-                        String executeLine = execIndicator.apply(processInfo);
-                        if (executeLine != null) {
-                            ide.setExecutable(executeLine);
+                        String machineSpecificCommand = execIndicator.apply(processInfo);
+                        if (machineSpecificCommand != null) {
+                            ide.setMachineSpecificCommand(machineSpecificCommand);
                         }
                     }
                     result.add(ide);
@@ -226,15 +238,11 @@ public class IdeProcessor {
             return arguments;
         }
 
-        public boolean containInCommandWithArgument(String command, String argument) {
-            return containInCommand(command) && containInArguments(argument);
-        }
-
-        public boolean containInCommand(String value) {
+        private boolean containInCommand(String value) {
             return this.command.contains(value);
         }
 
-        public boolean containInArguments(String value) {
+        private boolean containInArguments(String value) {
             if (arguments != null) {
                 for (String argument : arguments) {
                     if (argument.contains(value)) {
@@ -245,11 +253,11 @@ public class IdeProcessor {
             return false;
         }
 
-        public String getArgumentValue(String argumentKey) {
+        private String getArgumentThatContains(String contain) {
             if (arguments != null) {
                 for (String argument : arguments) {
-                    if (argument.startsWith(argumentKey) && argument.contains("=")) {
-                        return argument.substring(argument.indexOf("=") + 1);
+                    if (argument.contains(contain)) {
+                        return argument;
                     }
                 }
             }

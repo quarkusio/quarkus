@@ -473,6 +473,17 @@ If a part of an expression resolves to a `CompletionStage`, the resolution conti
 For example, if there is an expression `{foo.size}` and `foo` resolves to `CompletionStage<List<String>>` then `size` is resolved against the completed result, i.e. `List<String>`.
 If a part of an expression resolves to a `Uni`, a `CompletionStage` is first created from `Uni` using `Uni#subscribeAsCompletionStage()` and then evaluated as described above.
 
+==== Missing Properties
+
+It can happen that an expression may not be evaluated at runtime.
+For example, if there is an expression `{person.age}` and there is no property `age` declared on the `Person` class.
+Qute outputs the special constant `NOT_FOUND` in this case by default.
+However, it's possible to change the default strategy via the `quarkus.qute.property-not-found-strategy` as described in the <<configuration-reference>>.
+
+NOTE: Similar errors are detected at build time if <<typesafe_expressions>> and <<typesafe_templates>> are used.
+
+TIP: Alternatively, the _elvis operator_ can be used to output the default value in case the property cannot be resolved or resolves to `null`: `{person.age ?: 10}` would output `10`. And for the loop section, the `orEmpty` resolver can be used. See also <<built-in-resolvers>>.
+
 [[sections]]
 === Sections
 
@@ -506,7 +517,7 @@ A section helper that defines the logic of a section can "execute" any of the bl
 [[loop_section]]
 ==== Loop Section
 
-The loop section makes it possible to iterate over an instance of `Iterable`, `Map` 's entry set, `Stream` and an Integer.
+The loop section makes it possible to iterate over an instance of `Iterable`, `Map` 's entry set, `Stream` and an `Integer`.
 It has two flavors.
 The first one is using the `each` name alias.
 
@@ -535,7 +546,7 @@ It's also possible to access the iteration metadata inside the loop:
   {count}. {it.name} <1>
 {/each}
 ----
-<1> `count` represents one-based index. Metadata also include zero-based `index`, `hasNext`, `odd`, `even`.
+<1> `count` represents one-based index. Metadata also include zero-based `index`, `hasNext`, `odd` and `even`.
 
 The `for` statement also works with integers, starting from 1. In the example below, considering that `total = 3`:
 

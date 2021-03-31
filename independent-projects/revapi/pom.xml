@@ -58,7 +58,6 @@
                 <skipTests>true</skipTests>
                 <skipITs>true</skipITs>
                 <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>

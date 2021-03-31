@@ -37,6 +37,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mongodb-panache-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-narayana-jta-deployment</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

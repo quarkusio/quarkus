@@ -16,13 +16,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
@@ -32,33 +28,10 @@ class BeanResolverImpl implements BeanResolver {
 
     private final BeanDeployment beanDeployment;
 
-    private final ConcurrentMap<DotName, Set<DotName>> assignableFromMap;
-
-    private final Function<DotName, Set<DotName>> assignableFromMapFunction;
-
     private final Map<TypeAndQualifiers, List<BeanInfo>> resolved;
 
     BeanResolverImpl(BeanDeployment beanDeployment) {
         this.beanDeployment = beanDeployment;
-        this.assignableFromMap = new ConcurrentHashMap<>();
-        this.assignableFromMapFunction = name -> {
-            Set<DotName> assignables = new HashSet<>();
-            for (ClassInfo subclass : beanDeployment.getBeanArchiveIndex().getAllKnownSubclasses(name)) {
-                assignables.add(subclass.name());
-            }
-            for (ClassInfo implementor : beanDeployment.getBeanArchiveIndex().getAllKnownImplementors(name)) {
-                assignables.add(implementor.name());
-            }
-            if (beanDeployment.hasApplicationIndex()) {
-                for (ClassInfo subclass : beanDeployment.getApplicationIndex().getAllKnownSubclasses(name)) {
-                    assignables.add(subclass.name());
-                }
-                for (ClassInfo implementor : beanDeployment.getApplicationIndex().getAllKnownImplementors(name)) {
-                    assignables.add(implementor.name());
-                }
-            }
-            return assignables;
-        };
         this.resolved = new ConcurrentHashMap<>();
     }
 
@@ -248,7 +221,7 @@ class BeanResolverImpl implements BeanResolver {
 
     boolean parametersMatch(Type requiredParameter, TypeVariable beanParameter) {
         for (Type bound : getUppermostTypeVariableBounds(beanParameter)) {
-            if (!isAssignableFrom(bound, requiredParameter)) {
+            if (!beanDeployment.getAssignabilityCheck().isAssignableFrom(bound, requiredParameter)) {
                 return false;
             }
         }
@@ -271,25 +244,12 @@ class BeanResolverImpl implements BeanResolver {
         stricterBounds = getUppermostBounds(stricterBounds);
         for (Type bound : bounds) {
             for (Type stricterBound : stricterBounds) {
-                if (!isAssignableFrom(bound, stricterBound)) {
+                if (!beanDeployment.getAssignabilityCheck().isAssignableFrom(bound, stricterBound)) {
                     return false;
                 }
             }
         }
         return true;
-    }
-
-    boolean isAssignableFrom(Type type1, Type type2) {
-        // java.lang.Object is assignable from any type
-        if (type1.name().equals(DotNames.OBJECT)) {
-            return true;
-        }
-        // type1 is the same as type2
-        if (type1.name().equals(type2.name())) {
-            return true;
-        }
-        // type1 is a superclass
-        return assignableFromMap.computeIfAbsent(type1.name(), assignableFromMapFunction).contains(type2.name());
     }
 
     boolean lowerBoundsOfWildcardMatch(Type parameter, WildcardType requiredParameter) {

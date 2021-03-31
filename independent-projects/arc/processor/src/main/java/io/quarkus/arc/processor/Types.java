@@ -9,6 +9,7 @@ import io.quarkus.arc.impl.WildcardTypeImpl;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -252,6 +253,39 @@ public final class Types {
         return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo));
     }
 
+    static List<Type> getResolvedParameters(ClassInfo classInfo, MethodInfo method, IndexView index) {
+        return getResolvedParameters(classInfo, Collections.emptyMap(), method, index);
+    }
+
+    static List<Type> getResolvedParameters(ClassInfo classInfo, Map<TypeVariable, Type> resolvedMap,
+            MethodInfo method, IndexView index) {
+        List<TypeVariable> typeParameters = classInfo.typeParameters();
+        // E.g. Foo, T, List<String>
+        List<Type> parameters = method.parameters();
+        if (typeParameters.isEmpty()) {
+            return parameters;
+        } else {
+            resolvedMap = buildResolvedMap(typeParameters, typeParameters,
+                    resolvedMap, index);
+            List<Type> resolved = new ArrayList<>();
+            for (Type param : parameters) {
+                switch (param.kind()) {
+                    case ARRAY:
+                    case PRIMITIVE:
+                    case CLASS:
+                        resolved.add(param);
+                        break;
+                    case TYPE_VARIABLE:
+                    case PARAMETERIZED_TYPE:
+                        resolved.add(resolveTypeParam(param, resolvedMap, index));
+                    default:
+                        break;
+                }
+            }
+            return resolved;
+        }
+    }
+
     static Set<Type> getTypeClosure(ClassInfo classInfo, AnnotationTarget producerFieldOrMethod,
             Map<TypeVariable, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariablesConsumer) {
@@ -318,6 +352,32 @@ public final class Types {
                 types.addAll(getTypeClosure(superClassInfo, producerFieldOrMethod, resolved, beanDeployment,
                         resolvedTypeVariablesConsumer));
             }
+        }
+        return types;
+    }
+
+    static Set<Type> getDelegateTypeClosure(InjectionPointInfo delegateInjectionPoint, BeanDeployment beanDeployment) {
+        Set<Type> types;
+        Type delegateType = delegateInjectionPoint.getRequiredType();
+        if (delegateType.kind() == Kind.TYPE_VARIABLE
+                || delegateType.kind() == Kind.PRIMITIVE
+                || delegateType.kind() == Kind.ARRAY) {
+            throw new DefinitionException("Illegal delegate type declared:" + delegateInjectionPoint.getTargetInfo());
+        }
+        ClassInfo delegateTypeClass = getClassByName(beanDeployment.getBeanArchiveIndex(), delegateType);
+        if (delegateTypeClass == null) {
+            throw new IllegalArgumentException("Delegate type not found in index: " + delegateType);
+        }
+        if (Kind.CLASS.equals(delegateType.kind())) {
+            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getTarget(), Collections.emptyMap(),
+                    beanDeployment, null);
+        } else if (Kind.PARAMETERIZED_TYPE.equals(delegateType.kind())) {
+            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getTarget(),
+                    buildResolvedMap(delegateType.asParameterizedType().arguments(), delegateTypeClass.typeParameters(),
+                            Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()),
+                    beanDeployment, null);
+        } else {
+            throw new IllegalArgumentException("Unsupported return type");
         }
         return types;
     }
@@ -425,6 +485,19 @@ public final class Types {
 
     static boolean isPrimitiveClassName(String className) {
         return PRIMITIVE_CLASS_NAMES.contains(className);
+    }
+
+    static boolean containsTypeVariable(Type type) {
+        if (type.kind() == Kind.TYPE_VARIABLE) {
+            return true;
+        } else if (type.kind() == Kind.PARAMETERIZED_TYPE) {
+            for (Type arg : type.asParameterizedType().arguments()) {
+                if (containsTypeVariable(arg)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 }

@@ -33,7 +33,7 @@ public class Create extends BaseSubCommand implements Callable<Integer> {
             "--no-examples" }, order = 4, description = "Generate without example code.")
     boolean noExamples = false;
 
-    @CommandLine.Option(names = { "-e",
+    @CommandLine.Option(names = { "-x",
             "--examples" }, order = 4, description = "Choose which example(s) you want in the generated Quarkus application.")
     Set<String> examples;
 

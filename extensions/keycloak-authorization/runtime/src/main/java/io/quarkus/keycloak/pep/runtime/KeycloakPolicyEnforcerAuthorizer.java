@@ -8,9 +8,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.jboss.logging.Logger;
 import org.keycloak.AuthorizationContext;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.authorization.KeycloakAdapterPolicyEnforcer;
@@ -18,14 +19,11 @@ import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
-import io.quarkus.oidc.runtime.OidcConfig;
-import io.quarkus.runtime.TlsConfig;
-import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -33,10 +31,10 @@ import io.vertx.ext.web.RoutingContext;
 @Singleton
 public class KeycloakPolicyEnforcerAuthorizer
         implements HttpSecurityPolicy, BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> {
-    private static final Logger LOG = Logger.getLogger(KeycloakPolicyEnforcerAuthorizer.class);
 
-    private volatile KeycloakAdapterPolicyEnforcer delegate;
-    private volatile long readTimeout;
+    @Inject
+    KeycloakPolicyEnforcerConfigBean configBean;
+    private KeycloakAdapterPolicyEnforcer delegate;
 
     @Override
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
@@ -46,12 +44,18 @@ public class KeycloakPolicyEnforcerAuthorizer
 
     @Override
     public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
-        if (delegate == null) {
-            LOG.debug(
-                    "Keycloak Policy Enforcer has not been initialized - please make sure 'quarkus.oidc.enabled' is not set to 'false'");
-            throw new AuthenticationFailedException();
+
+        AccessTokenCredential credential = identity.getCredential(AccessTokenCredential.class);
+
+        if (credential == null) {
+            // If SecurityIdentity has been created by the authentication mechanism other than quarkus-oidc then do not block
+            // the request.
+            return CheckResult.PERMIT;
         }
-        VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, readTimeout);
+
+        String token = credential.getToken();
+        VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, token,
+                configBean.httpConfiguration.readTimeout.toMillis());
         AuthorizationContext result = delegate.authorize(httpFacade);
 
         if (result.isGranted()) {
@@ -99,10 +103,10 @@ public class KeycloakPolicyEnforcerAuthorizer
                 }).build();
     }
 
-    public void init(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config, TlsConfig tlsConfig,
-            HttpConfiguration httpConfiguration) {
+    @PostConstruct
+    public void init() {
         AdapterConfig adapterConfig = new AdapterConfig();
-        String authServerUrl = oidcConfig.defaultTenant.getAuthServerUrl().get();
+        String authServerUrl = configBean.oidcConfig.defaultTenant.getAuthServerUrl().get();
 
         try {
             adapterConfig.setRealm(authServerUrl.substring(authServerUrl.lastIndexOf('/') + 1));
@@ -111,22 +115,24 @@ public class KeycloakPolicyEnforcerAuthorizer
             throw new RuntimeException("Failed to parse the realm name.", cause);
         }
 
-        adapterConfig.setResource(oidcConfig.defaultTenant.getClientId().get());
-        adapterConfig.setCredentials(getCredentials(oidcConfig.defaultTenant));
+        adapterConfig.setResource(configBean.oidcConfig.defaultTenant.getClientId().get());
+        adapterConfig.setCredentials(getCredentials(configBean.oidcConfig.defaultTenant));
 
-        boolean trustAll = oidcConfig.defaultTenant.tls.getVerification().isPresent()
-                ? oidcConfig.defaultTenant.tls.getVerification().get() == Verification.NONE
-                : tlsConfig.trustAll;
+        boolean trustAll = configBean.oidcConfig.defaultTenant.tls.getVerification().isPresent()
+                ? configBean.oidcConfig.defaultTenant.tls.getVerification().get() == Verification.NONE
+                : configBean.tlsConfig.trustAll;
         if (trustAll) {
             adapterConfig.setDisableTrustManager(true);
             adapterConfig.setAllowAnyHostname(true);
         }
 
-        if (oidcConfig.defaultTenant.proxy.host.isPresent()) {
-            adapterConfig.setProxyUrl(oidcConfig.defaultTenant.proxy.host.get() + ":" + oidcConfig.defaultTenant.proxy.port);
+        if (configBean.oidcConfig.defaultTenant.proxy.host.isPresent()) {
+            adapterConfig.setProxyUrl(configBean.oidcConfig.defaultTenant.proxy.host.get() + ":"
+                    + configBean.oidcConfig.defaultTenant.proxy.port);
         }
 
-        PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(config, adapterConfig);
+        PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(configBean.keycloakPolicyEnforcerConfig,
+                adapterConfig);
 
         if (enforcerConfig == null) {
             return;
@@ -134,7 +140,6 @@ public class KeycloakPolicyEnforcerAuthorizer
 
         adapterConfig.setPolicyEnforcerConfig(enforcerConfig);
 
-        this.readTimeout = httpConfiguration.readTimeout.toMillis();
         this.delegate = new KeycloakAdapterPolicyEnforcer(
                 new PolicyEnforcer(KeycloakDeploymentBuilder.build(adapterConfig), adapterConfig));
     }

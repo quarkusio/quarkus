@@ -32,7 +32,8 @@ public class PolicyEnforcerTest {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addAsResource("application.properties")
-                            .addClasses(ProtectedResource.class, PublicResource.class, UsersResource.class);
+                            .addClasses(ProtectedResource.class, ProtectedResource2.class, PublicResource.class,
+                                    UsersResource.class);
                 }
             });
 

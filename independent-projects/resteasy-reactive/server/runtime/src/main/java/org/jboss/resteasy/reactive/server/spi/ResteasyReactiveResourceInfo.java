@@ -17,16 +17,19 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
     private final String name;
     private final Class<?> declaringClass;
     private final Class[] parameterTypes;
+    private final Set<String> classAnnotationNames;
     private final Set<String> methodAnnotationNames;
+    private volatile Annotation[] classAnnotations;
     private volatile Method method;
     private volatile Annotation[] annotations;
     private volatile Type returnType;
 
     public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes,
-            Set<String> methodAnnotationNames) {
+            Set<String> classAnnotationNames, Set<String> methodAnnotationNames) {
         this.name = name;
         this.declaringClass = declaringClass;
         this.parameterTypes = parameterTypes;
+        this.classAnnotationNames = classAnnotationNames;
         this.methodAnnotationNames = methodAnnotationNames;
     }
 
@@ -36,6 +39,10 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
 
     public Class[] getParameterTypes() {
         return parameterTypes;
+    }
+
+    public Set<String> getClassAnnotationNames() {
+        return classAnnotationNames;
     }
 
     public Set<String> getMethodAnnotationNames() {
@@ -58,6 +65,13 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
             }
         }
         return method;
+    }
+
+    public Annotation[] getClassAnnotations() {
+        if (classAnnotations == null) {
+            classAnnotations = declaringClass.getAnnotations();
+        }
+        return classAnnotations;
     }
 
     public Annotation[] getAnnotations() {

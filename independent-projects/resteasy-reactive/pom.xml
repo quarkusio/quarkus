@@ -51,7 +51,7 @@
         <jakarta.json.version>1.1.6</jakarta.json.version>
         <mutiny.version>0.14.0</mutiny.version>
         <smallrye-common-annotation.version>1.5.0</smallrye-common-annotation.version>
-        <vertx.version>3.9.5</vertx.version>
+        <vertx.version>3.9.6</vertx.version>
         <rest-assured.version>4.3.3</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
@@ -376,6 +376,8 @@
                         </dependency>
                       </dependencies>
                     <configuration>
+                        <!-- store outside of target to speed up formatting when mvn clean is used -->
+                        <cachedir>.cache</cachedir>
                         <configFile>eclipse-format.xml</configFile>
                         <lineEnding>LF</lineEnding>
                         <skip>${format.skip}</skip>
@@ -386,6 +388,8 @@
                     <artifactId>impsort-maven-plugin</artifactId>
                     <version>1.6.0</version>
                     <configuration>
+                        <!-- store outside of target to speed up formatting when mvn clean is used -->
+                        <cachedir>.cache</cachedir>
                         <removeUnused>true</removeUnused>
                         <skip>${format.skip}</skip>
                     </configuration>
@@ -427,7 +431,6 @@
                 <skipTests>true</skipTests>
                 <skipITs>true</skipITs>
                 <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>

@@ -88,18 +88,18 @@ public class InterceptorGenerator extends BeanGenerator {
                 .setModifiers(ACC_PRIVATE | ACC_FINAL);
 
         Map<InjectionPointInfo, String> injectionPointToProviderField = new HashMap<>();
-        Map<InterceptorInfo, String> interceptorToProviderField = new HashMap<>();
-        initMaps(interceptor, injectionPointToProviderField, interceptorToProviderField);
+        initMaps(interceptor, injectionPointToProviderField, Collections.emptyMap(), Collections.emptyMap());
 
-        createProviderFields(interceptorCreator, interceptor, injectionPointToProviderField, interceptorToProviderField);
-        createConstructor(classOutput, interceptorCreator, interceptor, baseName, injectionPointToProviderField,
-                interceptorToProviderField, bindings.getFieldDescriptor(), reflectionRegistration);
+        createProviderFields(interceptorCreator, interceptor, injectionPointToProviderField, Collections.emptyMap(),
+                Collections.emptyMap());
+        createConstructor(classOutput, interceptorCreator, interceptor, injectionPointToProviderField,
+                bindings.getFieldDescriptor(), reflectionRegistration);
 
         implementGetIdentifier(interceptor, interceptorCreator);
         implementSupplierGet(interceptorCreator);
         implementCreate(classOutput, interceptorCreator, interceptor, providerType, baseName,
                 injectionPointToProviderField,
-                interceptorToProviderField,
+                Collections.emptyMap(), Collections.emptyMap(),
                 reflectionRegistration, targetPackage, isApplicationClass);
         implementGet(interceptor, interceptorCreator, providerType, baseName);
         implementGetTypes(interceptorCreator, beanTypes.getFieldDescriptor());
@@ -121,13 +121,11 @@ public class InterceptorGenerator extends BeanGenerator {
     }
 
     protected void createConstructor(ClassOutput classOutput, ClassCreator creator, InterceptorInfo interceptor,
-            String baseName,
             Map<InjectionPointInfo, String> injectionPointToProviderField,
-            Map<InterceptorInfo, String> interceptorToProviderField, FieldDescriptor bindings,
-            ReflectionRegistration reflectionRegistration) {
+            FieldDescriptor bindings, ReflectionRegistration reflectionRegistration) {
 
-        MethodCreator constructor = initConstructor(classOutput, creator, interceptor, baseName, injectionPointToProviderField,
-                interceptorToProviderField, annotationLiterals, reflectionRegistration);
+        MethodCreator constructor = initConstructor(classOutput, creator, interceptor, injectionPointToProviderField,
+                Collections.emptyMap(), Collections.emptyMap(), annotationLiterals, reflectionRegistration);
 
         // Bindings
         // bindings = new HashSet<>()

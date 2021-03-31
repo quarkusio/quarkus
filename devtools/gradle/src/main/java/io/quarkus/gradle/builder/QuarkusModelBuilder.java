@@ -409,10 +409,16 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
             dep.addPath(a.getFile());
             return;
         }
-
-        final File classesDir = new File(QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false));
-        if (classesDir.exists()) {
-            dep.addPath(classesDir);
+        final String classes = QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false);
+        if (classes == null) {
+            dep.addPath(a.getFile());
+        } else {
+            final File classesDir = new File(classes);
+            if (classesDir.exists()) {
+                dep.addPath(classesDir);
+            } else {
+                dep.addPath(a.getFile());
+            }
         }
         for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
             if (resourcesDir.exists()) {
@@ -458,13 +464,18 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
     }
 
     private SourceSetImpl convert(SourceSet sourceSet) {
+        Set<File> existingSrcDirs = new HashSet<>();
+        for (File srcDir : sourceSet.getOutput().getClassesDirs().getFiles()) {
+            if (srcDir.exists()) {
+                existingSrcDirs.add(srcDir);
+            }
+        }
         if (sourceSet.getOutput().getResourcesDir().exists()) {
             return new SourceSetImpl(
-                    sourceSet.getOutput().getClassesDirs().getFiles(),
+                    existingSrcDirs,
                     sourceSet.getOutput().getResourcesDir());
         }
-        return new SourceSetImpl(
-                sourceSet.getOutput().getClassesDirs().getFiles());
+        return new SourceSetImpl(existingSrcDirs);
     }
 
     private io.quarkus.bootstrap.resolver.model.SourceSet getSourceSourceSet(SourceSet sourceSet) {

@@ -51,6 +51,7 @@ jobs:
       - uses: n1hility/cancel-previous-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: jdk-early-access-build.yml
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Get Date
@@ -101,8 +102,8 @@ jobs:
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
       - name: Report status
-        uses: jbangdev/jbang-action@v0.68.0
-        if: "github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
+        uses: jbangdev/jbang-action@v0.69.1
+        if: "always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
         with:
           script: .github/NativeBuildReport.java
           scriptargs: |

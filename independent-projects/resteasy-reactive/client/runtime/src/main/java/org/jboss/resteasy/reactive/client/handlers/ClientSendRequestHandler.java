@@ -7,6 +7,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.RequestOptions;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -82,9 +83,15 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     public <T> HttpClientRequest createRequest(RestClientRequestContext state) {
         HttpClient httpClient = state.getHttpClient();
         URI uri = state.getUri();
-        HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(state.getHttpMethod()), uri.getPort(),
-                uri.getHost(),
-                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
+        boolean isHttps = "https".equals(uri.getScheme());
+        int port = uri.getPort() != -1 ? uri.getPort() : (isHttps ? 443 : 80);
+        HttpClientRequest httpClientRequest = httpClient.request(
+                HttpMethod.valueOf(state.getHttpMethod()),
+                new RequestOptions()
+                        .setHost(uri.getHost())
+                        .setURI(uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()))
+                        .setPort(port)
+                        .setSsl(isHttps));
         state.setHttpClientRequest(httpClientRequest);
         return httpClientRequest;
     }

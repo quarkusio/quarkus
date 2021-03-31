@@ -5,6 +5,7 @@ import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.impl.ComputingCache;
+import java.io.Serializable;
 import java.lang.annotation.Repeatable;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -13,6 +14,8 @@ import java.util.OptionalLong;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
+import javax.decorator.Decorator;
+import javax.decorator.Delegate;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.control.ActivateRequestContext;
@@ -103,6 +106,9 @@ public final class DotNames {
     public static final DotName INITIALIZED = create(Initialized.class);
     public static final DotName TRANSIENT_REFERENCE = create(TransientReference.class);
     public static final DotName INVOCATION_CONTEXT = create(InvocationContext.class);
+    public static final DotName DECORATOR = create(Decorator.class);
+    public static final DotName DELEGATE = create(Delegate.class);
+    public static final DotName SERIALIZABLE = create(Serializable.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

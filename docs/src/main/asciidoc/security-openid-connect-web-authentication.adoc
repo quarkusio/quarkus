@@ -519,7 +519,7 @@ In such cases configuring Quarkus to recognize the original headers forwarded by
 
 === Google Cloud
 
-You can have Quarkus OIDC `web-app` applications access **Google Cloud services** such as **BigQuery** on behalf of the currently authenticated users who have enabled OpendId Connect (Authorization Code Flow) permissions to such services in their Google Developer Consoles.
+You can have Quarkus OIDC `web-app` applications access **Google Cloud services** such as **BigQuery** on behalf of the currently authenticated users who have enabled OpenID  Connect (Authorization Code Flow) permissions to such services in their Google Developer Consoles.
 
 It is super easy to do with https://github.com/quarkiverse[Quarkiverse] https://github.com/quarkiverse/quarkiverse-google-cloud-services[Google Cloud Services], only add
 the https://github.com/quarkiverse/quarkiverse-google-cloud-services/releases/latest[latest tag] service dependency, for example:
@@ -542,6 +542,32 @@ quarkus.oidc.application-type=web-app
 quarkus.oidc.client-id={GOOGLE_CLIENT_ID}
 quarkus.oidc.credentials.secret={GOOGLE_CLIENT_SECRET}
 quarkus.oidc.token.issuer=https://accounts.google.com
+----
+
+== Provider Endpoint configuration
+
+OIDC `web-app` application needs to know OpenId Connect provider's authorization, token, `JsonWebKey` (JWK) set and possibly `UserInfo`, introspection and end session (RP-initiated logout) endpoint addresses.
+
+By default they are discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc.auth-server-url`.
+
+Alternatively, if the discovery endpoint is not available or you would like to save on the discovery endpoint roundtrip, you can disable the discovery and configure them with relative path values, for example:
+
+[source, properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.discovery-enabled=false
+# Authorization endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/auth
+quarkus.oidc.authorization-path=/protocol/openid-connect/auth
+# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token
+quarkus.oidc.token-path=/protocol/openid-connect/token
+# JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
+quarkus.oidc.jwks-path=/protocol/openid-connect/certs
+# UserInfo endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
+quarkus.oidc.user-info-path=/protocol/openid-connect/userinfo
+# Token Introspection endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token/introspect
+quarkus.oidc.introspection-path=/protocol/openid-connect/token/introspect
+# End session endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/logout
+quarkus.oidc.end-session-path=/protocol/openid-connect/logout
 ----
 
 == Token Propagation

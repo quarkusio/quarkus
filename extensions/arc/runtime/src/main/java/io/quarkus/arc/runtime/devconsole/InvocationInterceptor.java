@@ -16,6 +16,7 @@ import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.devconsole.Invocation.Builder;
@@ -37,7 +38,12 @@ public class InvocationInterceptor {
 
     @AroundInvoke
     public Object monitor(InvocationContext context) throws Exception {
-        ManagedContext requestContext = Arc.container().requestContext();
+        ArcContainer container = Arc.container();
+        if (container == null) {
+            // If the container is not available then just proceed 
+            return context.proceed();
+        }
+        ManagedContext requestContext = container.requestContext();
         if (requestContext.isActive()) {
             InvocationTree tree = invocationTree.get();
             return proceed(tree.invocationStarted(bean, context.getMethod(), getKind(context)), context, requestContext, tree);

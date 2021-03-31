@@ -1,7 +1,9 @@
 package io.quarkus.oidc.runtime;
 
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Duration;
 
 import org.jboss.logging.Logger;
 
@@ -23,6 +25,8 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcProviderClient {
     private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
+
+    private static final Duration REQUEST_RETRY_BACKOFF_DURATION = Duration.ofSeconds(1);
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
     private final WebClient client;
@@ -104,7 +108,12 @@ public class OidcProviderClient {
         } else {
             reqBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
         }
-        return request.sendForm(reqBody).onItem();
+        // Retry up to three times with a one second delay between the retries if the connection is closed.
+        Uni<HttpResponse<Buffer>> response = request.sendForm(reqBody)
+                .onFailure(ConnectException.class)
+                .retry()
+                .atMost(3);
+        return response.onItem();
     }
 
     private AuthorizationCodeTokens getAuthorizationCodeTokens(HttpResponse<Buffer> resp) {

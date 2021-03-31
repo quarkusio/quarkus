@@ -1,6 +1,8 @@
 package io.quarkus.it.rest.client;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -18,26 +20,36 @@ import io.vertx.ext.web.handler.BodyHandler;
 public class ClientCallingResource {
     private static final ObjectMapper mapper = new JsonMapper();
 
+    private static final String[] RESPONSES = { "cortland", "cortland2" };
+    private final AtomicInteger count = new AtomicInteger(0);
+
     void init(@Observes Router router) {
         router.post().handler(BodyHandler.create());
 
-        router.post("/apples").handler(rc -> rc.response().putHeader("content-type", "application/json")
-                .end("{\"cultivar\": \"cortland\"}"));
+        router.post("/apples").handler(rc -> {
+            int count = this.count.getAndIncrement();
+            rc.response().putHeader("content-type", "application/json")
+                    .end(String.format("{\"cultivar\": \"%s\"}", RESPONSES[count % RESPONSES.length]));
+        });
 
         router.route("/call-client").blockingHandler(rc -> {
             String url = rc.getBody().toString();
             SimpleClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(SimpleClient.class);
             Apple swappedApple = client.swapApple(new Apple("lobo"));
-            rc.response().end(jsonAsString(swappedApple));
+            client.completionApple(new Apple("lobo2")).whenComplete((apple2, t) -> {
+                if (t == null) {
+                    try {
+                        rc.response().putHeader("content-type", "application/json")
+                                .end(mapper.writeValueAsString(Arrays.asList(swappedApple, apple2)));
+                        return;
+                    } catch (JsonProcessingException e) {
+                        t = e;
+                    }
+                }
+                rc.response().putHeader("content-type", "text/plain").setStatusCode(500).end(t.getMessage());
+            });
         });
     }
 
-    private String jsonAsString(Apple apple) {
-        try {
-            return mapper.writerFor(Apple.class).writeValueAsString(apple);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Unable to stringify apple", e);
-        }
-    }
 }

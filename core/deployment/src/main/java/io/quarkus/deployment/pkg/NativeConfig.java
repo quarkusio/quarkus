@@ -39,6 +39,12 @@ public class NativeConfig {
     public boolean enableAllSecurityServices;
 
     /**
+     * If {@code -H:+InlineBeforeAnalysis} flag will be added to the native-image run
+     */
+    @ConfigItem
+    public boolean inlineBeforeAnalysis;
+
+    /**
      * @deprecated JNI is always enabled starting from GraalVM 19.3.1.
      */
     @Deprecated

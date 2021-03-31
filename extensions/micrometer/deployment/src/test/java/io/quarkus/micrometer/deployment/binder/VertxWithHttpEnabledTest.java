@@ -2,11 +2,9 @@ package io.quarkus.micrometer.deployment.binder;
 
 import static io.restassured.RestAssured.when;
 
-import java.net.URL;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -17,13 +15,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
-import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
 import io.quarkus.micrometer.test.PingPongResource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.http.TestHTTPResource;
-import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.net.SocketAddress;
-import io.vertx.core.spi.metrics.HttpServerMetrics;
 
 public class VertxWithHttpEnabledTest {
     @RegisterExtension
@@ -40,12 +33,6 @@ public class VertxWithHttpEnabledTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));
 
-    @TestHTTPResource
-    URL url;
-
-    @Inject
-    Instance<VertxMeterBinderAdapter> vertxMeterBinderAdapterInstance;
-
     @Inject
     HttpBinderConfiguration httpBinderConfiguration;
 
@@ -53,32 +40,8 @@ public class VertxWithHttpEnabledTest {
     MeterRegistry registry;
 
     @Test
-    public void testMetricFactoryCreatedMetrics() throws Exception {
+    public void testVertxMetricsWithHttp() throws Exception {
         Assertions.assertTrue(httpBinderConfiguration.isClientEnabled());
-        Assertions.assertTrue(httpBinderConfiguration.isServerEnabled());
-
-        // Vertx Binder should exist
-        Assertions.assertTrue(vertxMeterBinderAdapterInstance.isResolvable());
-        VertxMeterBinderAdapter adapter = vertxMeterBinderAdapterInstance.get();
-
-        HttpServerMetrics metrics = adapter.createHttpServerMetrics(new HttpServerOptions(), new SocketAddress() {
-            @Override
-            public String host() {
-                return "a.b.c";
-            }
-
-            @Override
-            public int port() {
-                return 0;
-            }
-
-            @Override
-            public String path() {
-                return null;
-            }
-        });
-
-        Assertions.assertNotNull(metrics);
         Assertions.assertTrue(httpBinderConfiguration.isServerEnabled());
 
         // prefer http-server.ignore-patterns

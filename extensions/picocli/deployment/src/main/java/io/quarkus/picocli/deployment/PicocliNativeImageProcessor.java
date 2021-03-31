@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -25,23 +24,14 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 import picocli.CommandLine;
 
 public class PicocliNativeImageProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(PicocliNativeImageProcessor.class);
 
-    static class NativeImageProcessingEnabled implements BooleanSupplier {
-
-        PicocliDeploymentConfiguration deploymentConfiguration;
-
-        public boolean getAsBoolean() {
-            return deploymentConfiguration.nativeImageProcessingEnabled;
-        }
-
-    }
-
-    @BuildStep(onlyIf = NativeImageProcessingEnabled.class)
+    @BuildStep(onlyIf = NativeBuild.class)
     void reflectionConfiguration(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -104,7 +94,7 @@ public class PicocliNativeImageProcessor {
         foundFields.forEach(fieldInfo -> reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo)));
     }
 
-    @BuildStep(onlyIf = NativeImageProcessingEnabled.class)
+    @BuildStep(onlyIf = NativeBuild.class)
     void resourceBundlesConfiguration(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundles) {
         combinedIndexBuildItem.getIndex().getAnnotations(DotName.createSimple(CommandLine.Command.class.getName()))

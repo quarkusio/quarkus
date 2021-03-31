@@ -74,6 +74,7 @@ public interface ResourceOutput {
         enum SpecialType {
             BEAN,
             INTERCEPTOR_BEAN,
+            DECORATOR_BEAN,
             OBSERVER;
         }
 

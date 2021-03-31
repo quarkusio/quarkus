@@ -160,6 +160,9 @@ public class BeanProcessor {
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
                 privateMembers, generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
                 injectionPointAnnotationsPredicate);
+        DecoratorGenerator decoratorGenerator = new DecoratorGenerator(annotationLiterals, applicationClassPredicate,
+                privateMembers, generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
+                injectionPointAnnotationsPredicate);
         SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate,
                 generateSources, reflectionRegistration, existingClasses);
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
@@ -175,7 +178,12 @@ public class BeanProcessor {
                 resources.add(resource);
             }
         }
-
+        // Generate decorators
+        for (DecoratorInfo decorator : beanDeployment.getDecorators()) {
+            for (Resource resource : decoratorGenerator.generate(decorator)) {
+                resources.add(resource);
+            }
+        }
         // Generate beans
         for (BeanInfo bean : beanDeployment.getBeans()) {
             for (Resource resource : beanGenerator.generate(bean)) {

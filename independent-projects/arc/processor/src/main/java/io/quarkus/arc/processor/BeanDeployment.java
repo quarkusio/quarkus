@@ -74,6 +74,7 @@ public class BeanDeployment {
     private final List<BeanInfo> beans;
 
     private final List<InterceptorInfo> interceptors;
+    private final List<DecoratorInfo> decorators;
 
     private final List<ObserverInfo> observers;
 
@@ -178,6 +179,7 @@ public class BeanDeployment {
 
         this.injectionPoints = new CopyOnWriteArrayList<>();
         this.interceptors = new CopyOnWriteArrayList<>();
+        this.decorators = new CopyOnWriteArrayList<>();
         this.beans = new CopyOnWriteArrayList<>();
         this.observers = new CopyOnWriteArrayList<>();
 
@@ -233,6 +235,7 @@ public class BeanDeployment {
         buildContextPut(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
 
         this.interceptors.addAll(findInterceptors(injectionPoints));
+        this.decorators.addAll(findDecorators(injectionPoints));
         this.injectionPoints.addAll(injectionPoints);
         buildContextPut(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(this.injectionPoints));
 
@@ -254,6 +257,10 @@ public class BeanDeployment {
         for (InterceptorInfo interceptor : interceptors) {
             interceptor.init(errors, bytecodeTransformerConsumer, transformUnproxyableClasses);
         }
+        for (DecoratorInfo decorator : decorators) {
+            decorator.init(errors, bytecodeTransformerConsumer, transformUnproxyableClasses);
+        }
+
         processErrors(errors);
         List<Predicate<BeanInfo>> allUnusedExclusions = new ArrayList<>(additionalUnusedBeanExclusions);
         if (unusedExclusions != null) {
@@ -389,6 +396,10 @@ public class BeanDeployment {
 
     public Collection<InterceptorInfo> getInterceptors() {
         return Collections.unmodifiableList(interceptors);
+    }
+
+    public Collection<DecoratorInfo> getDecorators() {
+        return Collections.unmodifiableList(decorators);
     }
 
     public Collection<StereotypeInfo> getStereotypes() {
@@ -1126,6 +1137,33 @@ public class BeanDeployment {
             injectionPoints.addAll(interceptor.getAllInjectionPoints());
         }
         return interceptors;
+    }
+
+    private List<DecoratorInfo> findDecorators(List<InjectionPointInfo> injectionPoints) {
+        Map<DotName, ClassInfo> decoratorClasses = new HashMap<>();
+        for (AnnotationInstance annotation : beanArchiveIndex.getAnnotations(DotNames.DECORATOR)) {
+            if (Kind.CLASS.equals(annotation.target().kind())) {
+                decoratorClasses.put(annotation.target().asClass().name(), annotation.target().asClass());
+            }
+        }
+        List<DecoratorInfo> decorators = new ArrayList<>();
+        for (ClassInfo decoratorClass : decoratorClasses.values()) {
+            if (annotationStore.hasAnnotation(decoratorClass, DotNames.VETOED) || isExcluded(decoratorClass)) {
+                // Skip vetoed decorators
+                continue;
+            }
+            decorators
+                    .add(Decorators.createDecorator(decoratorClass, this, injectionPointTransformer, annotationStore));
+        }
+        if (LOGGER.isTraceEnabled()) {
+            for (DecoratorInfo decorator : decorators) {
+                LOGGER.logf(Level.TRACE, "Created %s", decorator);
+            }
+        }
+        for (DecoratorInfo decorator : decorators) {
+            injectionPoints.addAll(decorator.getAllInjectionPoints());
+        }
+        return decorators;
     }
 
     private void validateBeans(List<Throwable> errors, List<BeanDeploymentValidator> validators,

@@ -448,6 +448,10 @@ final class Beans {
 
     static void resolveInjectionPoint(BeanDeployment deployment, InjectionTargetInfo target, InjectionPointInfo injectionPoint,
             List<Throwable> errors) {
+        if (injectionPoint.isDelegate()) {
+            // Skip delegate injection points
+            return;
+        }
         BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
         if (builtinBean != null) {
             if (BuiltinBean.INJECTION_POINT.equals(builtinBean)

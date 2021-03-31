@@ -124,7 +124,7 @@
         <mysql-jdbc.version>8.0.23</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
-        <db2-jdbc.version>11.5.4.0</db2-jdbc.version>
+        <db2-jdbc.version>11.5.5.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.3.3</rest-assured.version>
         <junit.jupiter.version>5.7.1</junit.jupiter.version>

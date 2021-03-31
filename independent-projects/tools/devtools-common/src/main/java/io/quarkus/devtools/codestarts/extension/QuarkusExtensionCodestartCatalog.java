@@ -1,21 +1,20 @@
 package io.quarkus.devtools.codestarts.extension;
 
+import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
+import static io.quarkus.devtools.project.QuarkusProjectHelper.getBaseCodestartResourceLoaders;
+
 import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
-import io.quarkus.devtools.codestarts.CodestartPathLoader;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
-import io.quarkus.platform.descriptor.loader.json.ClassPathResourceLoader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCatalog<QuarkusExtensionCodestartProjectInput> {
 
     public static final String QUARKUS_EXTENSION_CODESTARTS_DIR = "codestarts/quarkus-extension";
-
-    private static final ClassPathCodestartPathLoader LOADER = new ClassPathCodestartPathLoader();
 
     private QuarkusExtensionCodestartCatalog(Collection<Codestart> codestarts) {
         super(codestarts);
@@ -70,11 +69,11 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         GIT
     }
 
-    public static QuarkusExtensionCodestartCatalog fromBundledResources()
+    public static QuarkusExtensionCodestartCatalog fromBaseCodestartsResources()
             throws IOException {
-        final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(LOADER,
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getBaseCodestartResourceLoaders(),
                 QUARKUS_EXTENSION_CODESTARTS_DIR);
-        return new QuarkusExtensionCodestartCatalog(codestarts);
+        return new QuarkusExtensionCodestartCatalog(codestarts.values());
     }
 
     @Override
@@ -98,12 +97,4 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         return codestarts;
     }
 
-    private static final class ClassPathCodestartPathLoader implements CodestartPathLoader {
-        private final ClassPathResourceLoader resourceLoader = new ClassPathResourceLoader();
-
-        @Override
-        public <T> T loadResourceAsPath(String name, PathConsumer<T> consumer) throws IOException {
-            return resourceLoader.loadResourceAsPath(name, consumer::consume);
-        }
-    }
 }

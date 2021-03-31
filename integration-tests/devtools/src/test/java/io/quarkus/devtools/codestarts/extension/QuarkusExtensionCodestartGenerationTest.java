@@ -56,7 +56,7 @@ class QuarkusExtensionCodestartGenerationTest {
     }
 
     private QuarkusExtensionCodestartCatalog getCatalog() throws IOException {
-        return QuarkusExtensionCodestartCatalog.fromBundledResources();
+        return QuarkusExtensionCodestartCatalog.fromBaseCodestartsResources();
     }
 
 }

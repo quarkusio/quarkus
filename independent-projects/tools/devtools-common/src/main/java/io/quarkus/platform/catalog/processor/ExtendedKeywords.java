@@ -23,11 +23,10 @@ public final class ExtendedKeywords {
             "these", "her", "him", "has", "over", "than", "who", "may", "down", "been", "more", "implementing", "non",
             "quarkus"));
 
-    public static List<String> extendsKeywords(ExtensionProcessor extensionMetadata) {
+    public static List<String> extendsKeywords(String artifactId, String description, List<String> keywords) {
         final TreeSet<String> result = new TreeSet<>();
-        extensionMetadata.getKeywords().forEach(it -> result.add(it.toLowerCase(Locale.US)));
-        result.add(extensionMetadata.getExtension().getArtifact().getArtifactId().toLowerCase(Locale.US));
-        final String description = extensionMetadata.getExtension().getDescription();
+        keywords.forEach(it -> result.add(it.toLowerCase(Locale.US)));
+        result.add(artifactId.toLowerCase(Locale.US));
         if (!StringUtils.isEmpty(description)) {
             final Matcher matcher = TOKENIZER_PATTERN.matcher(description);
             while (matcher.find()) {

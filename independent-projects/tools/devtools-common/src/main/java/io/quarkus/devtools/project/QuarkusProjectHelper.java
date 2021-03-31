@@ -1,5 +1,8 @@
 package io.quarkus.devtools.project;
 
+import static io.quarkus.platform.catalog.processor.CatalogProcessor.getCodestartArtifacts;
+import static java.util.Objects.requireNonNull;
+
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
@@ -7,30 +10,55 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.platform.descriptor.loader.json.ClassPathResourceLoader;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.config.PropertiesUtil;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.eclipse.aether.artifact.Artifact;
 
 public class QuarkusProjectHelper {
 
-    private static final String CODESTARTS_ARTIFACTS = "codestarts-artifacts";
+    private static final String BASE_CODESTARTS_ARTIFACT_PROPERTY = "quarkus-base-codestart-artifact";
+    private static final String BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME = "/quarkus-devtools-base-codestarts.properties";
 
     private static RegistriesConfig toolsConfig;
     private static MessageWriter log;
     private static MavenArtifactResolver artifactResolver;
     private static ExtensionCatalogResolver catalogResolver;
+    private static final String BASE_CODESTARTS_ARTIFACT_COORDS = retrieveBaseCodestartsArtifactCoords();
+
+    private static String retrieveBaseCodestartsArtifactCoords() {
+        final String artifact = PropertiesUtil.getProperty(BASE_CODESTARTS_ARTIFACT_PROPERTY);
+        if (artifact != null) {
+            return artifact;
+        }
+        try {
+            final Properties properties = new Properties();
+            final InputStream resource = requireNonNull(
+                    QuarkusProjectHelper.class.getResourceAsStream(BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME),
+                    BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME + " resource not found.");
+            properties.load(resource);
+            return requireNonNull(properties.getProperty("artifact"),
+                    "base codestarts 'artifact' property not found");
+        } catch (IOException e) {
+            throw new IllegalStateException("Couldn't load the base codestarts artifact properties", e);
+        }
+    }
 
     public static QuarkusProject getProject(Path projectDir) {
         BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectDir);
@@ -77,7 +105,7 @@ public class QuarkusProjectHelper {
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,
             MessageWriter log) {
-        return QuarkusProject.of(projectDir, catalog, getResourceLoader(catalog, artifactResolver()),
+        return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
                 log, buildTool);
     }
 
@@ -91,47 +119,61 @@ public class QuarkusProjectHelper {
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, ExtensionManager extManager,
             MessageWriter log) {
-        return QuarkusProject.of(projectDir, catalog, getResourceLoader(catalog, artifactResolver()),
+        return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
                 log, extManager);
     }
 
-    public static ClassPathResourceLoader getResourceLoader(ExtensionCatalog catalog) {
-        return getResourceLoader(catalog, artifactResolver());
+    public static List<ResourceLoader> getCodestartResourceLoaders(ExtensionCatalog catalog) {
+        return getCodestartResourceLoaders(catalog, artifactResolver());
     }
 
-    public static ClassPathResourceLoader getResourceLoader(ExtensionCatalog catalog, MavenArtifactResolver mvn) {
-        final Map<String, Artifact> codestartArtifacts = new LinkedHashMap<>();
-        for (Extension e : catalog.getExtensions()) {
-            final String artifactCoords = ExtensionProcessor.of(e).getCodestartArtifact();
-            if (artifactCoords == null || codestartArtifacts.containsKey(artifactCoords)) {
-                continue;
-            }
-            codestartArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
-        }
-        Object o = catalog.getMetadata().get(CODESTARTS_ARTIFACTS);
-        if (o != null) {
-            @SuppressWarnings({ "unchecked" })
-            final List<Object> list = o instanceof List ? (List<Object>) o : Arrays.asList(o);
-            for (Object i : list) {
-                final String artifactCoords = i.toString();
-                if (codestartArtifacts.containsKey(artifactCoords)) {
+    public static List<ResourceLoader> getBaseCodestartResourceLoaders() {
+        return getCodestartResourceLoaders(null, artifactResolver());
+    }
+
+    public static List<ResourceLoader> getCodestartResourceLoaders(ExtensionCatalog catalog,
+            MavenArtifactResolver mvn) {
+        return getCodestartResourceLoaders(BASE_CODESTARTS_ARTIFACT_COORDS, catalog, mvn);
+    }
+
+    public static List<ResourceLoader> getCodestartResourceLoaders(String baseCodestartsArtifactCoords,
+            ExtensionCatalog catalog,
+            MavenArtifactResolver mvn) {
+        final Map<String, Artifact> codestartsArtifacts = new LinkedHashMap<>();
+        if (catalog != null) {
+            // Load codestarts from each extensions codestart artifacts
+            for (Extension e : catalog.getExtensions()) {
+                final String artifactCoords = ExtensionProcessor.of(e).getCodestartArtifact();
+                if (artifactCoords == null || codestartsArtifacts.containsKey(artifactCoords)) {
                     continue;
                 }
-                codestartArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
+                codestartsArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
+            }
+
+            // Load codestarts from catalog codestart artifacts
+            final List<String> catalogCodestartArtifacts = getCodestartArtifacts(catalog);
+            for (String artifactCoords : catalogCodestartArtifacts) {
+                if (codestartsArtifacts.containsKey(artifactCoords)) {
+                    continue;
+                }
+                codestartsArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
             }
         }
+        // Load codestarts from the base artifact
+        codestartsArtifacts.put(baseCodestartsArtifactCoords, DependencyNodeUtils.toArtifact(baseCodestartsArtifactCoords));
 
-        final URL[] urls = new URL[codestartArtifacts.size()];
-        int i = 0;
-        for (Artifact a : codestartArtifacts.values()) {
+        final List<ResourceLoader> codestartResourceLoaders = new ArrayList<>(codestartsArtifacts.size());
+        for (Artifact a : codestartsArtifacts.values()) {
             try {
-                urls[i++] = mvn.resolve(a).getArtifact().getFile().toURI().toURL();
+                final URL artifactUrl = mvn.resolve(a).getArtifact().getFile().toURI().toURL();
+                final ClassPathResourceLoader resourceLoader = new ClassPathResourceLoader(
+                        new URLClassLoader(new URL[] { artifactUrl }, null));
+                codestartResourceLoaders.add(resourceLoader);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to resolve codestart artifact " + a, e);
             }
         }
-
-        return new ClassPathResourceLoader(new URLClassLoader(urls, null));
+        return codestartResourceLoaders;
     }
 
     public static ExtensionCatalogResolver getCatalogResolver() {

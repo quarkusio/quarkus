@@ -32,7 +32,7 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.platform.descriptor.loader.json.ClassPathResourceLoader;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
@@ -92,11 +92,11 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         }
 
         final ExtensionCatalog catalog = resolveExtensionsCatalog();
-        final ClassPathResourceLoader codestartsResourceLoader = QuarkusProjectHelper.getResourceLoader(catalog,
+        final List<ResourceLoader> codestartsResourceLoaders = QuarkusProjectHelper.getCodestartResourceLoaders(catalog,
                 artifactResolver());
         final QuarkusProject quarkusProject;
         if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null) {
-            quarkusProject = QuarkusProject.of(baseDir(), catalog, codestartsResourceLoader, getMessageWriter(),
+            quarkusProject = QuarkusProject.of(baseDir(), catalog, codestartsResourceLoaders, getMessageWriter(),
                     new MavenProjectBuildFile(baseDir(), catalog, () -> project.getOriginalModel(),
                             () -> {
                                 try {
@@ -114,7 +114,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                             },
                             project.getModel().getProperties()));
         } else {
-            quarkusProject = QuarkusProject.of(baseDir(), catalog, codestartsResourceLoader, log, buildTool);
+            quarkusProject = QuarkusProject.of(baseDir(), catalog, codestartsResourceLoaders, log, buildTool);
         }
 
         doExecute(quarkusProject, getMessageWriter());

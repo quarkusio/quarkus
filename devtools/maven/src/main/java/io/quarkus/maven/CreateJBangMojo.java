@@ -103,7 +103,7 @@ public class CreateJBangMojo extends AbstractMojo {
                 QuarkusProjectHelper.getCatalogResolver(mvn, log), mvn, log);
 
         final CreateJBangProject createJBangProject = new CreateJBangProject(QuarkusProject.of(projectDirPath, catalog,
-                QuarkusProjectHelper.getResourceLoader(catalog, mvn), log, BuildTool.MAVEN))
+                QuarkusProjectHelper.getCodestartResourceLoaders(catalog, mvn), log, BuildTool.MAVEN))
                         .extensions(extensions)
                         .setValue("noJBangWrapper", noJBangWrapper);
 

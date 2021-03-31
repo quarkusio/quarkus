@@ -20,6 +20,7 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.Quarku
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.SCALA_VERSION;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -49,8 +50,8 @@ public class PlatformAwareTestBase {
         RegistryClientTestHelper.disableRegistryClientTestConfig();
     }
 
-    protected ResourceLoader getCodestartsResourceLoader() {
-        return QuarkusProjectHelper.getResourceLoader(getExtensionsCatalog());
+    protected List<ResourceLoader> getCodestartsResourceLoaders() {
+        return QuarkusProjectHelper.getCodestartResourceLoaders(getExtensionsCatalog());
     }
 
     protected ExtensionCatalog getExtensionsCatalog() {

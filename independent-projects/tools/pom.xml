@@ -62,6 +62,7 @@
         <module>message-writer</module>
         <module>devtools-testing</module>
         <module>codestarts</module>
+        <module>base-codestarts</module>
         <module>devtools-common</module>
         <module>utilities</module>
     </modules>
@@ -70,6 +71,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-artifact-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-base-codestarts</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

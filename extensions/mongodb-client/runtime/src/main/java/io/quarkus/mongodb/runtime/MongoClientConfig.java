@@ -183,4 +183,11 @@ public class MongoClientConfig {
      */
     @ConfigDocSection
     public CredentialConfig credentials;
+
+    /**
+     * The database used during the readiness health checks
+     */
+    @ConfigItem(name = "health.database", defaultValue = "admin")
+    public String healthDatabase;
+
 }

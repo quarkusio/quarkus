@@ -1,11 +1,14 @@
 package io.quarkus.mongodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.literal.NamedLiteral;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
@@ -17,6 +20,7 @@ import com.mongodb.client.internal.MongoClientImpl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.ClientProxyUnwrapper;
+import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.mongodb.runtime.MongoClientName;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -33,6 +37,10 @@ public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestB
     @Inject
     @MongoClientName("cluster2")
     MongoClient client2;
+
+    @Inject
+    @Any
+    MongoHealthCheck health;
 
     private final ClientProxyUnwrapper unwrapper = new ClientProxyUnwrapper();
 
@@ -58,6 +66,14 @@ public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestB
         assertThat(Arc.container().instance(MongoClient.class, Default.Literal.INSTANCE).get()).isNotNull();
         assertThat(Arc.container().instance(MongoClient.class, NamedLiteral.of("cluster2")).get()).isNotNull();
         assertThat(Arc.container().instance(MongoClient.class, NamedLiteral.of("cluster3")).get()).isNull();
+
+        org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
+        assertThat(response.getState()).isEqualTo(HealthCheckResponse.State.UP);
+        assertThat(response.getData()).isNotEmpty();
+        assertThat(response.getData().get()).hasSize(2).contains(
+                entry("<default>", "OK"),
+                entry("cluster2", "OK"));
+
     }
 
     private void assertProperConnection(MongoClient client, int expectedPort) {

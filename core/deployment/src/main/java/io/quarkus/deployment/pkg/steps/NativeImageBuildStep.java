@@ -666,6 +666,7 @@ public class NativeImageBuildStep {
                 List<String> nativeImageArgs = new ArrayList<>();
                 boolean enableSslNative = false;
                 boolean enableAllSecurityServices = nativeConfig.enableAllSecurityServices;
+                boolean inlineBeforeAnalysis = nativeConfig.inlineBeforeAnalysis;
                 boolean addAllCharsets = nativeConfig.addAllCharsets;
                 boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler;
                 for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
@@ -680,6 +681,8 @@ public class NativeImageBuildStep {
                         enableAllSecurityServices |= Boolean.parseBoolean(prop.getValue());
                     } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
+                    } else if (prop.getKey().equals("quarkus.native.inline-before-analysis") && prop.getValue() != null) {
+                        inlineBeforeAnalysis |= Boolean.parseBoolean(prop.getValue());
                     } else {
                         // todo maybe just -D is better than -J-D in this case
                         if (prop.getValue() == null) {
@@ -763,6 +766,9 @@ public class NativeImageBuildStep {
                 }
                 if (enableAllSecurityServices) {
                     nativeImageArgs.add("--enable-all-security-services");
+                }
+                if (inlineBeforeAnalysis) {
+                    nativeImageArgs.add("-H:+InlineBeforeAnalysis");
                 }
                 if (!noPIE.isEmpty()) {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + noPIE);

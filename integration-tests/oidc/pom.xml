@@ -39,6 +39,11 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-keycloak-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
@@ -134,6 +139,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
+                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
                                 <keycloak.url>${keycloak.ssl.url}</keycloak.url>
                             </systemPropertyVariables>
                         </configuration>
@@ -143,6 +149,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
+                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
                                 <keycloak.url>${keycloak.ssl.url}</keycloak.url>
                             </systemPropertyVariables>
                         </configuration>
@@ -173,91 +180,6 @@
             <properties>
                 <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
             </properties>
-        </profile>
-
-        <profile>
-            <id>docker-keycloak</id>
-            <activation>
-                <property>
-                    <name>start-containers</name>
-                </property>
-            </activation>
-            <properties>
-                <keycloak.url>http://localhost:8180/auth</keycloak.url>
-                <keycloak.ssl.url>https://localhost:8543/auth</keycloak.ssl.url>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <name>${keycloak.docker.image}</name>
-                                    <alias>quarkus-test-keycloak</alias>
-                                    <run>
-                                        <ports>
-                                            <port>8180:8080</port>
-                                            <port>8543:8443</port>
-                                        </ports>
-                                        <env>
-                                            <KEYCLOAK_USER>admin</KEYCLOAK_USER>
-                                            <KEYCLOAK_PASSWORD>admin</KEYCLOAK_PASSWORD>
-                                        </env>
-                                        <log>
-                                            <prefix>Keycloak:</prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <http>
-                                                <url>http://localhost:8180</url>
-                                            </http>
-                                            <time>100000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                            <allContainers>true</allContainers>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>docker-prune</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${docker-prune.location}</executable>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
     </profiles>

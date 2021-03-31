@@ -10,6 +10,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <properties>
+        <quarkus.package.type>uber-jar</quarkus.package.type>
+    </properties>
+
     <artifactId>quarkus-cli</artifactId>
     <name>Quarkus - Command Line Interface</name>
     <description>Quarkus command line utility</description>

@@ -4,17 +4,14 @@ import java.util.function.BooleanSupplier;
 
 import javax.interceptor.Interceptor;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
-import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 
 /**
@@ -36,24 +33,15 @@ public class VertxBinderProcessor {
     }
 
     @BuildStep(onlyIf = VertxBinderEnabled.class)
-    AdditionalBeanBuildItem createVertxAdapters() {
-        // Add Vertx meter adapters
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(VertxMeterBinderAdapter.class)
-                .setUnremovable().build();
-    }
-
-    @BuildStep(onlyIf = VertxBinderEnabled.class)
     @Record(value = ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem build(VertxMeterBinderRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.configureMetricsAdapter(), Interceptor.Priority.LIBRARY_AFTER);
+        return new VertxOptionsConsumerBuildItem(recorder.setVertxMetricsOptions(), Interceptor.Priority.LIBRARY_AFTER);
     }
 
     @BuildStep(onlyIf = VertxBinderEnabled.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    void setVertxConfig(VertxMeterBinderRecorder recorder,
-            VertxConfig config) {
-        recorder.setVertxConfig(config);
+    void setVertxConfig(VertxMeterBinderRecorder recorder) {
+        recorder.configureBinderAdapter();
     }
 }

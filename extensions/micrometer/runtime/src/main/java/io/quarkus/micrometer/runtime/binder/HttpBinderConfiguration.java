@@ -35,6 +35,9 @@ public class HttpBinderConfiguration {
     List<Pattern> clientIgnorePatterns = Collections.emptyList();
     Map<Pattern, String> clientMatchPatterns = Collections.emptyMap();
 
+    private HttpBinderConfiguration() {
+    }
+
     @SuppressWarnings("deprecation")
     public HttpBinderConfiguration(boolean httpServerMetrics, boolean httpClientMetrics,
             HttpServerConfig serverConfig, HttpClientConfig clientConfig, VertxConfig vertxConfig) {
@@ -129,5 +132,21 @@ public class HttpBinderConfiguration {
 
     public String getHttpClientRequestsName() {
         return "http.client.requests";
+    }
+
+    public HttpBinderConfiguration unwrap() {
+        HttpBinderConfiguration result = new HttpBinderConfiguration();
+        // not dev-mode changeable
+        result.clientEnabled = this.clientEnabled;
+        result.serverEnabled = this.serverEnabled;
+        return result.update(this);
+    }
+
+    public HttpBinderConfiguration update(HttpBinderConfiguration httpConfig) {
+        this.clientMatchPatterns = httpConfig.clientMatchPatterns;
+        this.serverMatchPatterns = httpConfig.serverMatchPatterns;
+        this.clientIgnorePatterns = httpConfig.clientIgnorePatterns;
+        this.serverIgnorePatterns = httpConfig.serverIgnorePatterns;
+        return this;
     }
 }

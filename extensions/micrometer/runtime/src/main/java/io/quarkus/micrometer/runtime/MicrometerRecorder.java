@@ -18,6 +18,7 @@ import javax.enterprise.inject.spi.BeanManager;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.MeterBinder;
@@ -33,11 +34,11 @@ import io.micrometer.core.instrument.config.MeterFilter;
 import io.quarkus.arc.Arc;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.JVMInfoBinder;
-import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -51,7 +52,6 @@ public class MicrometerRecorder {
 
     /* STATIC_INIT */
     public RuntimeValue<MeterRegistry> createRootRegistry(MicrometerConfig config) {
-        VertxMeterBinderAdapter.setMeterRegistry(Metrics.globalRegistry);
         factory = new MicrometerMetricsFactory(config, Metrics.globalRegistry);
         return new RuntimeValue<>(Metrics.globalRegistry);
     }
@@ -62,7 +62,6 @@ public class MicrometerRecorder {
             ShutdownContext context) {
         BeanManager beanManager = Arc.container().beanManager();
 
-        List<MeterRegistry> allRegistries = new ArrayList<>();
         Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters = new HashMap<>(registryClasses.size());
 
         // Find global/common registry configuration
@@ -70,6 +69,7 @@ public class MicrometerRecorder {
         Instance<MeterFilter> globalFilterInstance = beanManager.createInstance()
                 .select(MeterFilter.class, Default.Literal.INSTANCE);
         populateListWithMeterFilters(globalFilterInstance, globalFilters);
+        log.debugf("Discovered global MeterFilters : %s", globalFilters);
 
         // Find MeterFilters for specific registry classes, i.e.:
         // @MeterFilterConstraint(applyTo = DatadogMeterRegistry.class) Instance<MeterFilter> filters
@@ -80,6 +80,7 @@ public class MicrometerRecorder {
             List<MeterFilter> classFilters = classMeterFilters.computeIfAbsent(typeClass, k -> new ArrayList<>());
 
             populateListWithMeterFilters(classFilterInstance, classFilters);
+            log.debugf("Discovered MeterFilters for %s: %s", typeClass, classFilters);
         }
 
         // Find and configure MeterRegistry beans (includes runtime config)
@@ -99,7 +100,6 @@ public class MicrometerRecorder {
                 applyMeterFilters(registry, classMeterFilters.get(registry.getClass()));
                 log.debugf("Adding configured registry %s", registry.getClass(), registry);
                 Metrics.globalRegistry.add(registry);
-                allRegistries.add(registry);
             }
         }
 
@@ -132,6 +132,11 @@ public class MicrometerRecorder {
         context.addShutdownTask(new Runnable() {
             @Override
             public void run() {
+                if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                    // Drop existing meters (recreated on next use)
+                    Collection<Meter> meters = new ArrayList<>(Metrics.globalRegistry.getMeters());
+                    meters.forEach(m -> Metrics.globalRegistry.remove(m));
+                }
                 Collection<MeterRegistry> cleanup = new ArrayList<>(Metrics.globalRegistry.getRegistries());
                 cleanup.forEach(x -> {
                     x.close();

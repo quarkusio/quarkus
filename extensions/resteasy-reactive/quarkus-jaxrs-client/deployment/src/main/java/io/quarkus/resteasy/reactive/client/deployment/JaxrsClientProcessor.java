@@ -541,24 +541,14 @@ public class JaxrsClientProcessor {
                         } else {
                             Type type = paramType.arguments().get(0);
                             if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                                ResultHandle currentThread = methodCreator
-                                        .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
-                                ResultHandle tccl = methodCreator.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL,
-                                        currentThread);
-                                genericReturnType = Types.getParameterizedType(methodCreator, tccl, type.asParameterizedType());
+                                genericReturnType = createGenericTypeFromParameterizedType(methodCreator,
+                                        type.asParameterizedType());
                             } else {
                                 simpleReturnType = type.toString();
                             }
                         }
                     } else {
-                        ResultHandle currentThread = methodCreator.invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
-                        ResultHandle tccl = methodCreator.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
-                        ResultHandle parameterizedType = Types.getParameterizedType(methodCreator, tccl,
-                                paramType);
-
-                        genericReturnType = methodCreator.newInstance(
-                                MethodDescriptor.ofConstructor(GenericType.class, java.lang.reflect.Type.class),
-                                parameterizedType);
+                        genericReturnType = createGenericTypeFromParameterizedType(methodCreator, paramType);
                     }
                 }
 
@@ -706,6 +696,18 @@ public class JaxrsClientProcessor {
         }
         return recorderContext.newInstance(creatorName);
 
+    }
+
+    private ResultHandle createGenericTypeFromParameterizedType(MethodCreator methodCreator,
+            ParameterizedType parameterizedType2) {
+        ResultHandle genericReturnType;
+        ResultHandle currentThread = methodCreator.invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
+        ResultHandle tccl = methodCreator.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
+        ResultHandle parameterizedType = Types.getParameterizedType(methodCreator, tccl, parameterizedType2);
+        genericReturnType = methodCreator.newInstance(
+                MethodDescriptor.ofConstructor(GenericType.class, java.lang.reflect.Type.class),
+                parameterizedType);
+        return genericReturnType;
     }
 
     private AssignableResultHandle createWebTargetForMethod(MethodCreator constructor, AssignableResultHandle baseTarget,

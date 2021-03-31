@@ -70,15 +70,17 @@ public class OidcClientImpl implements OidcClient {
         return getJsonResponse(refreshGrantParams, true);
     }
 
-    private Uni<Tokens> getJsonResponse(MultiMap reqBody, boolean refresh) {
+    private Uni<Tokens> getJsonResponse(MultiMap formBody, boolean refresh) {
         //Uni needs to be lazy by default, we don't send the request unless
         //something has subscribed to it. This is important for the CAS state
         //management in TokensHelper
         return Uni.createFrom().deferred(new Supplier<Uni<? extends Tokens>>() {
             @Override
             public Uni<Tokens> get() {
-                MultiMap body = reqBody;
+                MultiMap body = formBody;
                 HttpRequest<Buffer> request = client.postAbs(tokenRequestUri);
+                request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
+                        HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
                 if (clientSecretBasicAuthScheme != null) {
                     request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
                 } else if (clientJwtKey != null) {
@@ -88,7 +90,7 @@ public class OidcClientImpl implements OidcClient {
                     body.add(OidcConstants.CLIENT_ASSERTION, OidcCommonUtils.signJwtWithKey(oidcConfig, clientJwtKey));
                 }
                 // Retry up to three times with a one second delay between the retries if the connection is closed
-                Uni<HttpResponse<Buffer>> response = request.sendForm(body)
+                Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(body))
                         .onFailure(ConnectException.class)
                         .retry()
                         .atMost(3);

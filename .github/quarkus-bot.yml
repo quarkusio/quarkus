@@ -184,7 +184,7 @@ triage:
         - extensions/smallrye-reactive-messaging
     - labels: [area/rest-client]
       title: "rest.client"
-      notify: [phillip-kruger]
+      notify: [michalszynkiewicz]
       directories:
         - extensions/rest-client/
     - labels: [area/smallrye]

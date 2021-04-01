@@ -13,4 +13,4 @@ metadata:
     languages:
       - "java"
       - "kotlin"
-    artifact: "io.quarkus:quarkus-descriptor-json"
+    artifact: "io.quarkus:quarkus-platform-descriptor-json"

@@ -14,4 +14,4 @@ metadata:
     name: "funqy-amazon-lambda"
     kind: "singleton-example"
     languages: "java"
-    artifact: "io.quarkus:quarkus-descriptor-json"
+    artifact: "io.quarkus:quarkus-platform-descriptor-json"

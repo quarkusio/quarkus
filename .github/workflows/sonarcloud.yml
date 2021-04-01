@@ -1,0 +1,40 @@
+name: Sonarcloud Analysis
+on:
+#  push:
+#    branches:
+#      - main
+#  pull_request_target:
+#    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+        shell: bash
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar-${{ steps.get-date.outputs.date }}
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ steps.get-date.outputs.date }}
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./mvnw -e -B --settings .github/mvn-settings.xml -Dquickly-ci install org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.organization=quarkusio -Dsonar.projectKey=quarkusio_quarkus -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectName=Quarkus -Dsonar.java.libraries=/home/runner/.m2/repository/**/*.jar

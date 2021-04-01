@@ -16,7 +16,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -98,6 +100,8 @@ public class QuarkusDevModeTest
     private Path testLocation;
     private String[] commandLineArgs = new String[0];
 
+    private final Map<String, String> buildSystemProperties = new HashMap<>();
+
     private static final List<CompilationProvider> compilationProviders;
 
     static {
@@ -134,6 +138,11 @@ public class QuarkusDevModeTest
 
     public List<LogRecord> getLogRecords() {
         return inMemoryLogHandler.records;
+    }
+
+    public QuarkusDevModeTest setBuildSystemProperty(String name, String value) {
+        buildSystemProperties.put(name, value);
+        return this;
     }
 
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
@@ -202,6 +211,7 @@ public class QuarkusDevModeTest
             context.setTest(true);
             context.setAbortOnFailedStart(true);
             context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
+            context.getBuildSystemProperties().putAll(buildSystemProperties);
             devModeMain = new DevModeMain(context);
             devModeMain.start();
             ApplicationStateNotification.waitForApplicationStart();

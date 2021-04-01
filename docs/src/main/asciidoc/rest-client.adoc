@@ -230,6 +230,19 @@ To disable the SSL hostname verification for a specific REST client, add the fol
 country-api/mp-rest/hostnameVerifier=io.quarkus.restclient.NoopHostnameVerifier
 ----
 
+=== Disabling SSL verifications
+
+To disable all SSL verifications, add the following property to your configuration:
+
+[source,properties]
+----
+quarkus.tls.trust-all=true
+----
+[WARNING]
+====
+This setting should not used in production as it will disable any kind of SSL verification.
+====
+
 == Update the JAX-RS resource
 
 Open the `src/main/java/org/acme/rest/client/CountriesResource.java` file and update it with the following content:

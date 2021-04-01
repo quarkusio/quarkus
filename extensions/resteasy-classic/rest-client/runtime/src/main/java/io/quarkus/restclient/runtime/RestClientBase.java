@@ -8,20 +8,25 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.graalvm.nativeimage.ImageInfo;
+import org.jboss.resteasy.client.jaxrs.engines.PassthroughTrustManager;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -80,6 +85,14 @@ public class RestClientBase {
         Optional<Boolean> trustAll = getOptionalProperty(TLS_TRUST_ALL, Boolean.class);
         if (trustAll.isPresent() && trustAll.get()) {
             registerHostnameVerifier(REST_NOOP_HOSTNAME_VERIFIER, builder);
+            try {
+                SSLContext sslContext = SSLContext.getInstance("SSL");
+                sslContext.init(null, new TrustManager[] { new PassthroughTrustManager() },
+                        new SecureRandom());
+                builder.sslContext(sslContext);
+            } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                throw new RuntimeException("Failed to initialized SSL context", e);
+            }
         }
 
         Optional<String> maybeTrustStore = getOptionalDynamicProperty(REST_TRUST_STORE, String.class);

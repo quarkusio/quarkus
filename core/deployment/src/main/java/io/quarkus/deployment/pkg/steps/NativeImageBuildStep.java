@@ -768,7 +768,14 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--enable-all-security-services");
                 }
                 if (inlineBeforeAnalysis) {
-                    nativeImageArgs.add("-H:+InlineBeforeAnalysis");
+                    if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_3)) {
+                        nativeImageArgs.add("-H:+InlineBeforeAnalysis");
+                    } else {
+                        log.warn(
+                                "The InlineBeforeAnalysis feature is not supported in GraalVM versions prior to 21.0.0."
+                                        + " InlineBeforeAnalysis will thus not be enabled, please consider using a newer"
+                                        + " GraalVM version if your application relies on this feature.");
+                    }
                 }
                 if (!noPIE.isEmpty()) {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + noPIE);

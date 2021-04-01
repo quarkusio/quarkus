@@ -15,6 +15,9 @@ import io.quarkus.deployment.pkg.NativeConfig;
 public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildContainerRunner {
 
     private static final Logger log = Logger.getLogger(NativeImageBuildRemoteContainerRunner.class);
+    // Use a predefined volume name and implicitly create the volume with `podman create`, instead of explicitly
+    // generating a unique volume with `podman volume create`, to work around Podman's 3.0.x
+    // issue https://github.com/containers/podman/issues/9608
     private static final String CONTAINER_BUILD_VOLUME_NAME = "quarkus-native-builder-image-project-volume";
 
     private final String nativeImageName;

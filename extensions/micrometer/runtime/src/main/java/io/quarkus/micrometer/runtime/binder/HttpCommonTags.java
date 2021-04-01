@@ -1,7 +1,5 @@
 package io.quarkus.micrometer.runtime.binder;
 
-import java.util.regex.Pattern;
-
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.http.Outcome;
 
@@ -15,9 +13,6 @@ public class HttpCommonTags {
     public static final Tag STATUS_RESET = Tag.of("status", "RESET");
 
     public static final Tag METHOD_UNKNOWN = Tag.of("method", "UNKNOWN");
-
-    public static final Pattern TRAILING_SLASH_PATTERN = Pattern.compile("/$");
-    public static final Pattern MULTIPLE_SLASH_PATTERN = Pattern.compile("//+");
 
     /**
      * Creates an {@code method} {@code Tag} derived from the given {@code HTTP method}.

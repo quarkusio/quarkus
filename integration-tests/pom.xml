@@ -23,6 +23,7 @@
         <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
     <modules>
+        <module>avro-reload</module>
         <module>bouncycastle</module>
         <module>bouncycastle-fips</module>
         <module>bouncycastle-fips-jsse</module>

@@ -45,7 +45,7 @@ public class CodeGenerator {
                 codeGenProviderClass = (Class<? extends CodeGenProvider>) deploymentClassLoader
                         .loadClass(CodeGenProvider.class.getName());
             } catch (ClassNotFoundException e) {
-                throw new CodeGenException("Failde to load CodeGenProvider class from deployment classloader", e);
+                throw new CodeGenException("Failed to load CodeGenProvider class from deployment classloader", e);
             }
             for (CodeGenProvider provider : ServiceLoader.load(codeGenProviderClass, deploymentClassLoader)) {
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);

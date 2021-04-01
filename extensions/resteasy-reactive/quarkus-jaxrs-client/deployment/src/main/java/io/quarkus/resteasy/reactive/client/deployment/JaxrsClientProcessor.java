@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.client.deployment;
 
 import static io.quarkus.deployment.Feature.RESTEASY_REACTIVE_JAXRS_CLIENT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.WEB_APPLICATION_EXCEPTION;
 
 import java.io.Closeable;
@@ -25,6 +26,7 @@ import javax.ws.rs.client.AsyncInvoker;
 import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.RxInvoker;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
@@ -38,6 +40,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
+import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
@@ -100,6 +103,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.smallrye.mutiny.Uni;
 
 public class JaxrsClientProcessor {
 
@@ -525,15 +529,17 @@ public class JaxrsClientProcessor {
                 }
 
                 Type returnType = jandexMethod.returnType();
-                boolean completionStage = false;
-                String simpleReturnType = method.getSimpleReturnType();
+                ReturnCategory returnCategory = ReturnCategory.BLOCKING;
 
+                String simpleReturnType = method.getSimpleReturnType();
                 ResultHandle genericReturnType = null;
+
                 if (returnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
 
                     ParameterizedType paramType = returnType.asParameterizedType();
-                    if (paramType.name().equals(COMPLETION_STAGE)) {
-                        completionStage = true;
+                    if (paramType.name().equals(COMPLETION_STAGE) || paramType.name().equals(UNI)) {
+                        returnCategory = paramType.name().equals(COMPLETION_STAGE) ? ReturnCategory.COMPLETION_STAGE
+                                : ReturnCategory.UNI;
 
                         // CompletionStage has one type argument:
                         if (paramType.arguments().isEmpty()) {
@@ -600,7 +606,7 @@ public class JaxrsClientProcessor {
                             tryBlock.getMethodParam(bodyParameterIdx),
                             mediaType);
 
-                    if (completionStage) {
+                    if (returnCategory == ReturnCategory.COMPLETION_STAGE) {
                         ResultHandle async = tryBlock.invokeInterfaceMethod(
                                 MethodDescriptor.ofMethod(Invocation.Builder.class, "async", AsyncInvoker.class),
                                 builder);
@@ -620,6 +626,27 @@ public class JaxrsClientProcessor {
                                     async, tryBlock.load(method.getHttpMethod()), entity,
                                     tryBlock.loadClass(simpleReturnType));
                         }
+                    } else if (returnCategory == ReturnCategory.UNI) {
+                        ResultHandle rx = tryBlock.invokeInterfaceMethod(
+                                MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
+                                builder, tryBlock.loadClass(UniInvoker.class));
+                        ResultHandle uniInvoker = tryBlock.checkCast(rx, UniInvoker.class);
+                        // with entity
+                        if (genericReturnType != null) {
+                            result = tryBlock.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(UniInvoker.class, "method",
+                                            Uni.class, String.class,
+                                            Entity.class, GenericType.class),
+                                    uniInvoker, tryBlock.load(method.getHttpMethod()), entity,
+                                    genericReturnType);
+                        } else {
+                            result = tryBlock.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(UniInvoker.class, "method",
+                                            Uni.class, String.class,
+                                            Entity.class, Class.class),
+                                    uniInvoker, tryBlock.load(method.getHttpMethod()), entity,
+                                    tryBlock.loadClass(simpleReturnType));
+                        }
                     } else {
                         if (genericReturnType != null) {
                             result = tryBlock.invokeInterfaceMethod(
@@ -637,7 +664,7 @@ public class JaxrsClientProcessor {
                     }
                 } else {
 
-                    if (completionStage) {
+                    if (returnCategory == ReturnCategory.COMPLETION_STAGE) {
                         ResultHandle async = tryBlock.invokeInterfaceMethod(
                                 MethodDescriptor.ofMethod(Invocation.Builder.class, "async", AsyncInvoker.class),
                                 builder);
@@ -653,6 +680,25 @@ public class JaxrsClientProcessor {
                                             String.class,
                                             Class.class),
                                     async, tryBlock.load(method.getHttpMethod()),
+                                    tryBlock.loadClass(simpleReturnType));
+                        }
+                    } else if (returnCategory == ReturnCategory.UNI) {
+                        ResultHandle rx = tryBlock.invokeInterfaceMethod(
+                                MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
+                                builder, tryBlock.loadClass(UniInvoker.class));
+                        ResultHandle uniInvoker = tryBlock.checkCast(rx, UniInvoker.class);
+                        if (genericReturnType != null) {
+                            result = tryBlock.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(UniInvoker.class, "method",
+                                            Uni.class, String.class,
+                                            GenericType.class),
+                                    uniInvoker, tryBlock.load(method.getHttpMethod()), genericReturnType);
+                        } else {
+                            result = tryBlock.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(UniInvoker.class, "method",
+                                            Uni.class, String.class,
+                                            Class.class),
+                                    uniInvoker, tryBlock.load(method.getHttpMethod()),
                                     tryBlock.loadClass(simpleReturnType));
                         }
                     } else {
@@ -828,6 +874,12 @@ public class JaxrsClientProcessor {
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "cookie", Invocation.Builder.class, String.class,
                                 String.class),
                         invocationBuilder, invoBuilderEnricher.load(paramName), cookieParamHandle));
+    }
+
+    private enum ReturnCategory {
+        BLOCKING,
+        COMPLETION_STAGE,
+        UNI
     }
 
 }

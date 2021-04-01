@@ -21,8 +21,15 @@ public class BasicTest {
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
-                .body("size()", is(2))
+                .body("size()", is(9))
                 .body("[0].cultivar", equalTo("cortland"))
-                .body("[1].cultivar", equalTo("cortland2"));
+                .body("[1].cultivar", equalTo("cortland2"))
+                .body("[2].cultivar", equalTo("cortland3"))
+                .body("[3].cultivar", equalTo("cortland"))
+                .body("[4].cultivar", equalTo("cortland2"))
+                .body("[5].cultivar", equalTo("cortland3"))
+                .body("[6].cultivar", equalTo("cortland"))
+                .body("[7].cultivar", equalTo("cortland2"))
+                .body("[8].cultivar", equalTo("cortland3"));
     }
 }

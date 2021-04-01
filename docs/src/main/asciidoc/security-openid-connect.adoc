@@ -434,6 +434,29 @@ Please see link:security-openid-connect-client#token-propagation[Token Propagati
 [[integration-testing]]
 == Testing
 
+Start by adding the following dependencies to your test project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>net.sourceforge.htmlunit</groupId>
+    <artifactId>htmlunit</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>*</artifactId>
+       </exclusion>
+    </exclusions>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[[integration-testing-wiremock]]
 === Wiremock
 
 Add the following dependencies to your test project:
@@ -444,16 +467,6 @@ Add the following dependencies to your test project:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-oidc-server</artifactId>
     <scope>test</scope>
-</dependency>
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
-    <scope>test</scope>
-</dependency>
-<dependency>
-   <groupId>io.rest-assured</groupId>
-   <artifactId>rest-assured</artifactId>
-   <scope>test</scope>
 </dependency>
 ----
 
@@ -516,6 +529,89 @@ public class BearerTokenAuthorizationTest {
 Testing your `quarkus-oidc` `service` application with `OidcWiremockTestResource` provides the best coverage as even the communication channel is tested against the Wiremock HTTP stubs.
 `OidcWiremockTestResource` will be enhanced going forward to support more complex Bearer token test scenarios.
 
+[[integration-testing-keycloak]]
+=== Keycloak
+
+If you work with Keycloak then you can test against a live Keycloak instance by adding the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-keycloak-server</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+and configure `maven.surefire.plugin` as follows:
+
+[source,xml]
+----
+<plugin>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <configuration>
+        <systemPropertyVariables>
+            <!-- or, alternativey, configure 'keycloak.version' -->
+            <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+            <!--
+              Disable HTTPS if required:
+              <keycloak.use.https>false</keycloak.use.https>
+            -->
+        </systemPropertyVariables>
+    </configuration>
+</plugin>
+----
+
+(and similarly `maven.failsafe.plugin` when testing in native image).
+
+Prepare the REST test endpoint, set `application.properties`, for example:
+
+[source, properties]
+----
+# keycloak.url is set by KeycloakTestResourceLifecycleManager
+quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc.client-id=quarkus-service-app
+quarkus.oidc.credentials=secret
+quarkus.oidc.application-type=service
+----
+
+and finally write the test code, for example:
+
+[source, java]
+----
+import static io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager.getAccessToken;
+import static org.hamcrest.Matchers.equalTo;
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
+import io.restassured.RestAssured;
+
+@QuarkusTest
+@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+public class BearerTokenAuthorizationTest {
+
+    @Test
+    public void testBearerToken() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))))
+            .when().get("/api/users/preferredUserName")
+            .then()
+            .statusCode(200)
+            // the test endpoint returns the name extracted from the injected SecurityIdentity Principal
+            .body("userName", equalTo("alice"));
+    }
+
+}
+----
+
+`KeycloakTestResourceLifecycleManager` registers `alice` and `admin` users. The user `alice` has the `user` role only by default - it can be customized with a `keycloak.token.user-roles` system property. The user `admin` has the `user` and `admin` roles by default - it can be customized with a `keycloak.token.admin-roles` system property.
+
+By default, `KeycloakTestResourceLifecycleManager` uses HTTPS to initialize a Keycloak instance which can be disabled with `keycloak.use.https=false`.
+Default realm name is `quarkus` and client id - `quarkus-service-app` - set `keycloak.realm` and `keycloak.service.client` system properties to customize the values if needed.
+
 === Local Public Key
 
 You can also use a local inlined public key for testing your `quarkus-oidc` `service` applications:
@@ -531,6 +627,10 @@ smallrye.jwt.sign.key-location=/privateKey.pem
 copy `privateKey.pem` from the `integration-tests/oidc-tenancy` in the `main` Quarkus repository and use a test code similar to the one in the `Wiremock` section above to generate JWT tokens. You can use your own test keys if preferred.
 
 This approach provides a more limited coverage compared to the Wiremock approach - for example, the remote communication code is not covered.
+
+=== TestSecurity annotation
+
+Please see link:security-testing#testing-security[TestingSecurity Annotation] section how to do simple tests with the `TestSecurity` annotation.
 
 == References
 

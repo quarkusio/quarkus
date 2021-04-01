@@ -330,7 +330,7 @@ Using `private_key_jwt` or `private_key_jwt` authentication methods ensures that
 [[integration-testing-oidc-client]]
 === Testing
 
-Add the following dependencies to your test project:
+Start by adding the following dependencies to your test project:
 
 [source,xml]
 ----
@@ -340,18 +340,22 @@ Add the following dependencies to your test project:
     <scope>test</scope>
 </dependency>
 <dependency>
-    <groupId>com.github.tomakehurst</groupId>
-    <artifactId>wiremock-jre8</artifactId>
-    <scope>test</scope>
-</dependency>
-<dependency>
-    <groupId>io.rest-assured</groupId>
-    <artifactId>rest-assured</artifactId>
-    <scope>test</scope>
-</dependency>
-<dependency>
     <groupId>org.awaitility</groupId>
     <artifactId>awaitility</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[[integration-testing-wiremock]]
+==== Wiremock
+
+Add the following dependencies to your test project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.github.tomakehurst</groupId>
+    <artifactId>wiremock-jre8</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -400,8 +404,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
 
         Map<String, String> conf = new HashMap<>();
-        conf.put("quarkus.oidc-client.auth-server-url", server.baseUrl());
-        conf.put("keycloak-url", server.baseUrl());
+        conf.put("keycloak.url", server.baseUrl());
         return conf;
     }
 
@@ -425,7 +428,7 @@ Set `application.properties`, for example:
 quarkus.oidc-client.auth-server-url=${keycloak.url}
 quarkus.oidc-client.discovery-enabled=false
 quarkus.oidc-client.token-path=/tokens
-quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.client-id=quarkus-service-app
 quarkus.oidc-client.credentials.secret=secret
 quarkus.oidc-client.grant.type=password
 quarkus.oidc-client.grant-options.password.username=alice
@@ -433,6 +436,10 @@ quarkus.oidc-client.grant-options.password.password=alice
 ----
 
 and finally write the test code. Given the Wiremock-based resource above, the first test invocation should return `access_token_1` access token which will expire in 4 seconds. Use `awaitility` to wait for about 5 seconds, and now the next test invocation should return `access_token_2` access token which confirms the expired `access_token_1` access token has been refreshed.
+
+=== Keycloak
+
+If you work with Keycloak then you can use the same approach as described in the link:security-openid-connect#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section.
 
 == Token endpoint configuration
 

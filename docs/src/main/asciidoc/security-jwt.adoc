@@ -823,7 +823,16 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 smallrye.jwt.sign.key.location=privateKey.jwk
 ----
 
-It will ensure that the `smallrye-jwt` remote key resolution code also works as expected.
+=== Keycloak
+
+If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the link:security-openid-connect#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section but only change the `application.properties` to use MP JWT configuration properties instead:
+
+[source, properties]
+----
+# keycloak.url is set by OidcWiremockTestResource
+mp.jwt.verify.publickey.location=${keycloak.url}/realms/quarkus/protocol/openid-connect/certs
+mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
+----
 
 === Local Public Key
 
@@ -838,6 +847,10 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 # required to sign the tokens
 smallrye.jwt.sign.key.location=privateKey.pem
 ----
+
+=== TestSecurity annotation
+
+Please see link:security-testing#testing-security[TestingSecurity Annotation] section how to do simple tests with the `TestSecurity` annotation.
 
 [[generate-jwt-tokens]]
 == Generate JWT tokens with SmallRye JWT

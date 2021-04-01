@@ -18,9 +18,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 public final class HibernateUserTypeProcessor {
     private static final String TYPE_VALUE = "type";
     private static final String TYPE_CLASS_VALUE = "typeClass";
-    public static final DotName TYPE = DotName.createSimple("org.hibernate.annotations.Type");
-    public static final DotName TYPE_DEFINITION = DotName.createSimple("org.hibernate.annotations.TypeDef");
-    public static final DotName TYPE_DEFINITIONS = DotName.createSimple("org.hibernate.annotations.TypeDefs");
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, CombinedIndexBuildItem combinedIndexBuildItem) {
@@ -28,9 +25,9 @@ public final class HibernateUserTypeProcessor {
 
         final Set<String> userTypes = new HashSet<>();
 
-        Collection<AnnotationInstance> typeAnnotationInstances = index.getAnnotations(TYPE);
-        Collection<AnnotationInstance> typeDefinitionAnnotationInstances = index.getAnnotations(TYPE_DEFINITION);
-        Collection<AnnotationInstance> typeDefinitionsAnnotationInstances = index.getAnnotations(TYPE_DEFINITIONS);
+        Collection<AnnotationInstance> typeAnnotationInstances = index.getAnnotations(ClassNames.TYPE);
+        Collection<AnnotationInstance> typeDefinitionAnnotationInstances = index.getAnnotations(ClassNames.TYPE_DEFINITION);
+        Collection<AnnotationInstance> typeDefinitionsAnnotationInstances = index.getAnnotations(ClassNames.TYPE_DEFINITIONS);
 
         userTypes.addAll(getUserTypes(typeDefinitionAnnotationInstances));
 

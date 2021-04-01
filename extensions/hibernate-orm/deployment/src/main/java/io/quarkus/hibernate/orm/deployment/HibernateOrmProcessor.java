@@ -137,21 +137,7 @@ public final class HibernateOrmProcessor {
 
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
-    public static final DotName TENANT_CONNECTION_RESOLVER = DotName
-            .createSimple("io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver");
-    public static final DotName TENANT_RESOLVER = DotName
-            .createSimple("io.quarkus.hibernate.orm.runtime.tenant.TenantResolver");
-
-    public static final DotName STATIC_METAMODEL = DotName.createSimple("javax.persistence.metamodel.StaticMetamodel");
-    public static final DotName PERSISTENCE_UNIT = DotName.createSimple("io.quarkus.hibernate.orm.PersistenceUnit");
-    public static final DotName PERSISTENCE_UNIT_REPEATABLE_CONTAINER = DotName
-            .createSimple("io.quarkus.hibernate.orm.PersistenceUnit$List");
-    public static final DotName JPA_ENTITY = DotName.createSimple("javax.persistence.Entity");
-    public static final DotName MAPPED_SUPERCLASS = DotName.createSimple("javax.persistence.MappedSuperclass");
-    public static final DotName PROXY = DotName.createSimple("org.hibernate.annotations.Proxy");
-
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
-    public static final String HIBERNATE_PROXY_INTERFACENAME = "org.hibernate.proxy.HibernateProxy";
 
     @BuildStep
     CapabilityBuildItem capability() {
@@ -188,7 +174,7 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     AdditionalIndexedClassesBuildItem addPersistenceUnitAnnotationToIndex() {
-        return new AdditionalIndexedClassesBuildItem(PERSISTENCE_UNIT.toString());
+        return new AdditionalIndexedClassesBuildItem(ClassNames.QUARKUS_PERSISTENCE_UNIT.toString());
     }
 
     // We do our own enhancement during the compilation phase, so disable any
@@ -594,8 +580,9 @@ public final class HibernateOrmProcessor {
         }
 
         if (multitenancyEnabled) {
-            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(TENANT_CONNECTION_RESOLVER)));
-            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(TENANT_RESOLVER)));
+            unremovableBeans
+                    .produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_CONNECTION_RESOLVER)));
+            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_RESOLVER)));
         }
     }
 
@@ -610,7 +597,7 @@ public final class HibernateOrmProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     public void registerStaticMetamodelClassesForReflection(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflective) {
-        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(STATIC_METAMODEL);
+        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(ClassNames.STATIC_METAMODEL);
         if (!annotationInstances.isEmpty()) {
 
             String[] metamodel = annotationInstances.stream()
@@ -1036,8 +1023,8 @@ public final class HibernateOrmProcessor {
             Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaEntities.getAllModelClassNames(),
                     modelClassInfo);
 
-            if (modelClassInfo != null && (modelClassInfo.classAnnotation(PERSISTENCE_UNIT) != null
-                    || modelClassInfo.classAnnotation(PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
+            if (modelClassInfo != null && (modelClassInfo.classAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
+                    || modelClassInfo.classAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
                 modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
             }
 
@@ -1097,8 +1084,8 @@ public final class HibernateOrmProcessor {
         Set<String> relatedModelClassNames = new HashSet<>();
 
         // for now we only deal with entities and mapped super classes
-        if (modelClassInfo.classAnnotation(JPA_ENTITY) == null &&
-                modelClassInfo.classAnnotation(MAPPED_SUPERCLASS) == null) {
+        if (modelClassInfo.classAnnotation(ClassNames.JPA_ENTITY) == null &&
+                modelClassInfo.classAnnotation(ClassNames.MAPPED_SUPERCLASS) == null) {
             return Collections.emptySet();
         }
 
@@ -1137,7 +1124,8 @@ public final class HibernateOrmProcessor {
     }
 
     private static Collection<AnnotationInstance> getPackageLevelPersistenceUnitAnnotations(IndexView index) {
-        Collection<AnnotationInstance> persistenceUnitAnnotations = index.getAnnotationsWithRepeatable(PERSISTENCE_UNIT, index);
+        Collection<AnnotationInstance> persistenceUnitAnnotations = index
+                .getAnnotationsWithRepeatable(ClassNames.QUARKUS_PERSISTENCE_UNIT, index);
         Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = new ArrayList<>();
 
         for (AnnotationInstance persistenceUnitAnnotation : persistenceUnitAnnotations) {
@@ -1220,7 +1208,7 @@ public final class HibernateOrmProcessor {
         //create a map of entity to proxy type
         PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
         Map<String, String> proxyAnnotations = new HashMap<>();
-        for (AnnotationInstance i : combinedIndex.getAnnotations(PROXY)) {
+        for (AnnotationInstance i : combinedIndex.getAnnotations(ClassNames.PROXY)) {
             AnnotationValue proxyClass = i.value("proxyClass");
             if (proxyClass == null) {
                 continue;
@@ -1235,7 +1223,7 @@ public final class HibernateOrmProcessor {
                     result = proxyCache.cache.get(managedClassOrPackageName);
                 } else {
                     Set<String> proxyInterfaceNames = new TreeSet<>();
-                    proxyInterfaceNames.add(HIBERNATE_PROXY_INTERFACENAME); //always added
+                    proxyInterfaceNames.add(ClassNames.HIBERNATE_PROXY.toString()); //always added
                     String proxy = proxyAnnotations.get(managedClassOrPackageName);
                     if (proxy == null) {
                         if (!proxyHelper.isProxiable(managedClassOrPackageName)) {

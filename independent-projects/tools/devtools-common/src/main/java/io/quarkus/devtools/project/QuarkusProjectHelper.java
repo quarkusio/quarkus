@@ -1,6 +1,7 @@
 package io.quarkus.devtools.project;
 
 import static io.quarkus.platform.catalog.processor.CatalogProcessor.getCodestartArtifacts;
+import static io.quarkus.platform.descriptor.loader.json.ResourceLoaders.resolveFileResourceLoader;
 import static java.util.Objects.requireNonNull;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
@@ -9,7 +10,6 @@ import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
-import io.quarkus.platform.descriptor.loader.json.ClassPathResourceLoader;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
@@ -19,10 +19,9 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.PropertiesUtil;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -47,10 +46,10 @@ public class QuarkusProjectHelper {
         if (artifact != null) {
             return artifact;
         }
-        try {
+        try (final InputStream resource = QuarkusProjectHelper.class
+                .getResourceAsStream(BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME)) {
             final Properties properties = new Properties();
-            final InputStream resource = requireNonNull(
-                    QuarkusProjectHelper.class.getResourceAsStream(BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME),
+            requireNonNull(resource,
                     BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME + " resource not found.");
             properties.load(resource);
             return requireNonNull(properties.getProperty("artifact"),
@@ -165,10 +164,8 @@ public class QuarkusProjectHelper {
         final List<ResourceLoader> codestartResourceLoaders = new ArrayList<>(codestartsArtifacts.size());
         for (Artifact a : codestartsArtifacts.values()) {
             try {
-                final URL artifactUrl = mvn.resolve(a).getArtifact().getFile().toURI().toURL();
-                final ClassPathResourceLoader resourceLoader = new ClassPathResourceLoader(
-                        new URLClassLoader(new URL[] { artifactUrl }, null));
-                codestartResourceLoaders.add(resourceLoader);
+                final File artifactFile = mvn.resolve(a).getArtifact().getFile();
+                codestartResourceLoaders.add(resolveFileResourceLoader(artifactFile));
             } catch (Exception e) {
                 throw new RuntimeException("Failed to resolve codestart artifact " + a, e);
             }

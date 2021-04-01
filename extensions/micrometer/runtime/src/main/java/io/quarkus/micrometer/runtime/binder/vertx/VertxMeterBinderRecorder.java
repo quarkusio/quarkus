@@ -6,30 +6,42 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
-import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.VertxOptions;
 
 @Recorder
 public class VertxMeterBinderRecorder {
-    private static final Logger log = Logger.getLogger(VertxMeterBinderRecorder.class);
+    static final Logger VERTX_LOGGER = Logger.getLogger(VertxMeterBinderRecorder.class);
+
+    static VertxMeterBinderAdapter binderAdapter = new VertxMeterBinderAdapter();
+    static volatile HttpBinderConfiguration devModeConfig;
 
     /* STATIC_INIT */
-    public Consumer<VertxOptions> configureMetricsAdapter() {
+    public Consumer<VertxOptions> setVertxMetricsOptions() {
         return new Consumer<VertxOptions>() {
             @Override
             public void accept(VertxOptions vertxOptions) {
-                log.debug("Adding Micrometer MeterBinder to VertxOptions");
-                VertxMeterBinderAdapter binder = Arc.container().instance(VertxMeterBinderAdapter.class).get();
-                vertxOptions.setMetricsOptions(binder);
+                vertxOptions.setMetricsOptions(binderAdapter);
             }
         };
     }
 
     /* RUNTIME_INIT */
-    public void setVertxConfig(VertxConfig config) {
-        VertxMeterBinderAdapter binder = Arc.container().instance(VertxMeterBinderAdapter.class).get();
+    public void configureBinderAdapter() {
         HttpBinderConfiguration httpConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
-        binder.setVertxConfig(config, httpConfig);
+        if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+            if (devModeConfig == null) {
+                // Create an object whose attributes we can update
+                devModeConfig = httpConfig.unwrap();
+                binderAdapter.setHttpConfig(devModeConfig);
+            } else {
+                // update config attributes
+                devModeConfig.update(httpConfig);
+            }
+        } else {
+            // unwrap the CDI bean (use POJO)
+            binderAdapter.setHttpConfig(httpConfig.unwrap());
+        }
     }
 }

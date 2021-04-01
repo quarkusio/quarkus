@@ -4,16 +4,15 @@ import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.vertx.ext.web.RoutingContext;
 
 public class VertxMeterBinderRestEasyContainerFilter implements ContainerRequestFilter {
 
     @Inject
-    CurrentVertxRequest currentVertxRequest;
+    RoutingContext routingContext;
 
     @Override
     public void filter(final ContainerRequestContext requestContext) {
-        VertxMeterBinderContainerFilterUtil.doFilter(currentVertxRequest.getCurrent(),
-                requestContext.getUriInfo());
+        VertxMeterBinderContainerFilterUtil.doFilter(routingContext, requestContext.getUriInfo());
     }
 }

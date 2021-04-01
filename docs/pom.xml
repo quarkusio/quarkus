@@ -931,7 +931,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxrs-client-deployment</artifactId>
+            <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

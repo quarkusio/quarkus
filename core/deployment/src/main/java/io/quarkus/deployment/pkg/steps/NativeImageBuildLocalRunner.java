@@ -1,7 +1,5 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -11,12 +9,6 @@ public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
 
     public NativeImageBuildLocalRunner(String nativeImageExecutable) {
         this.nativeImageExecutable = nativeImageExecutable;
-    }
-
-    @Override
-    public void cleanupServer(File outputDir) throws InterruptedException, IOException {
-        final String[] cleanupCommand = { nativeImageExecutable, "--server-shutdown" };
-        runCommand(cleanupCommand, null, outputDir);
     }
 
     @Override

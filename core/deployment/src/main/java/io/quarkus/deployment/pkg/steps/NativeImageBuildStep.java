@@ -158,8 +158,12 @@ public class NativeImageBuildStep {
         }
 
         try {
-            if (nativeConfig.cleanupServer && !graalVMVersion.isMandrel()) {
-                buildRunner.cleanupServer(outputDir.toFile());
+            if (nativeConfig.cleanupServer) {
+                log.warn(
+                        "Your application is setting the deprecated 'quarkus.native.cleanup-server' configuration key"
+                                + " to true. Please consider removing this configuration key as it is ignored"
+                                + " (The Native image build server is always disabled) and it will be removed in a"
+                                + " future Quarkus version.");
             }
 
             NativeImageInvokerInfo commandAndExecutable = new NativeImageInvokerInfo.Builder()
@@ -741,10 +745,6 @@ public class NativeImageBuildStep {
                 }
                 if (nativeConfig.dumpProxies) {
                     nativeImageArgs.add("-Dsun.misc.ProxyGenerator.saveGeneratedFiles=true");
-                    if (nativeConfig.enableServer) {
-                        log.warn(
-                                "Options dumpProxies and enableServer are both enabled: this will get the proxies dumped in an unknown external working directory");
-                    }
                 }
                 if (nativeConfig.nativeImageXmx.isPresent()) {
                     nativeImageArgs.add("-J-Xmx" + nativeConfig.nativeImageXmx.get());
@@ -783,8 +783,12 @@ public class NativeImageBuildStep {
                                     + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
                                     + " will be removed in a future Quarkus version.");
                 }
-                if (!nativeConfig.enableServer && !SystemUtils.IS_OS_WINDOWS && !graalVMVersion.isMandrel()) {
-                    nativeImageArgs.add("--no-server");
+                if (nativeConfig.enableServer) {
+                    log.warn(
+                            "Your application is setting the deprecated 'quarkus.native.enable-server' configuration key to true."
+                                    + " Please consider removing this configuration key as it is ignored"
+                                    + " (The Native image build server is always disabled) and it"
+                                    + " will be removed in a future Quarkus version.");
                 }
                 if (nativeConfig.enableVmInspection) {
                     nativeImageArgs.add("-H:+AllowVMInspection");

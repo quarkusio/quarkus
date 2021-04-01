@@ -119,8 +119,12 @@ public class NativeConfig {
     public boolean publishDebugBuildProcessPort;
 
     /**
-     * If the native image server should be restarted
+     * If the native image server should be restarted.
+     *
+     * @deprecated Since GraalVM 20.2.0 the native image server has become an experimental feature and is disabled by
+     *             default.
      */
+    @Deprecated
     @ConfigItem
     public boolean cleanupServer;
 
@@ -140,7 +144,12 @@ public class NativeConfig {
     /**
      * If the native image server should be used. This can speed up compilation but can result in changes not always
      * being picked up due to cache invalidation not working 100%
+     *
+     * @deprecated This used to be the default prior to GraalVM 20.2.0 and this configuration item was used to disable
+     *             it as it was not stable. Since GraalVM 20.2.0 the native image server has become an experimental
+     *             feature.
      */
+    @Deprecated
     @ConfigItem
     public boolean enableServer;
 

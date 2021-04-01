@@ -24,6 +24,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.IntFunction;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
@@ -33,6 +35,7 @@ import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
+import io.smallrye.config.Expressions;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -138,6 +141,24 @@ public final class ConfigUtils {
         for (ConfigSourceProvider provider : providers) {
             addSourceProvider(builder, provider);
         }
+    }
+
+    /**
+     * Checks if a property is present in the current Configuration.
+     *
+     * Because the sources may not expose the property directly in {@link ConfigSource#getPropertyNames()}, we cannot
+     * reliable determine if the property is present in the properties list. The property needs to be retrieved to make
+     * sure it exists. Also, if the value is an expression, we want to ignore expansion, because this is not relevant
+     * for the check and the expansion value may not be available at this point.
+     *
+     * It may be interesting to expose such API in SmallRyeConfig directly.
+     *
+     * @param propertyName the property name.
+     * @return true if the property is present or false otherwise.
+     */
+    public static boolean isPropertyPresent(String propertyName) {
+        Config config = ConfigProvider.getConfig();
+        return Expressions.withoutExpansion(() -> config.getOptionalValue(propertyName, String.class)).isPresent();
     }
 
     /**

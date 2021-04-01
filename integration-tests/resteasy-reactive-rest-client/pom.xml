@@ -109,35 +109,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>uk.co.automatictester</groupId>
-                <artifactId>wiremock-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>wiremock-start</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>stop</goal>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <dir>target/classes</dir>
-                            <params>--port=8765 --verbose --disable-banner</params>
-                            <skip>${skipTests}</skip>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>wiremock-stop</id>
-                        <phase>post-integration-test</phase>
-                        <goals>
-                            <goal>stop</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skipTests}</skip>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 

@@ -47,7 +47,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxrs-client-deployment</artifactId>
+            <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
             <scope>test</scope>
         </dependency>
 

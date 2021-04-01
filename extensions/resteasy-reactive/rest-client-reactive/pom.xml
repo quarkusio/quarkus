@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-reactive-parent</artifactId>
-    <name>Quarkus - MicroProfile Rest Client with Reactive RestEasy</name>
+    <name>Quarkus - REST Client Reactive</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

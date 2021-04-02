@@ -112,7 +112,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
             final QuarkusCodestartCatalog catalog = QuarkusCodestartCatalog
                     .fromExtensionsCatalog(invocation.getQuarkusProject().getExtensionsCatalog(),
-                            invocation.getQuarkusProject().getCodestartsResourceLoader());
+                            invocation.getQuarkusProject().getCodestartResourceLoaders());
             final CodestartProjectDefinition projectDefinition = catalog.createProject(input);
             projectDefinition.generate(invocation.getQuarkusProject().getProjectDirPath());
             invocation.log()

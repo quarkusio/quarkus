@@ -54,7 +54,7 @@ class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     private QuarkusJBangCodestartCatalog getCatalog() throws IOException {
-        return QuarkusJBangCodestartCatalog.fromResourceLoader(getCodestartsResourceLoader());
+        return QuarkusJBangCodestartCatalog.fromResourceLoaders(getCodestartsResourceLoaders());
     }
 
 }

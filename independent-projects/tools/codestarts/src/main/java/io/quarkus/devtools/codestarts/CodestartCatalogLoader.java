@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -60,28 +61,34 @@ public final class CodestartCatalogLoader {
     // Visible for testing
     static Collection<Codestart> loadCodestarts(final CodestartPathLoader pathLoader, final String directoryName)
             throws IOException {
-        return pathLoader.loadResourceAsPath(directoryName,
-                path -> {
-                    try (final Stream<Path> pathStream = Files.walk(path)) {
-                        return pathStream
-                                .filter(p -> p.getFileName().toString().matches("codestart\\.yml$"))
-                                .map(p -> {
-                                    final String resourceName = resolveResourceName(directoryName, path, p);
-                                    try {
-                                        final CodestartSpec spec = readCodestartSpec(new String(Files.readAllBytes(p)));
-                                        final String resourceCodestartDirectory = resourceName.replaceAll("/?codestart\\.yml",
-                                                "");
-                                        return new Codestart(
-                                                new PathCodestartResourceAllocator(pathLoader, resourceCodestartDirectory),
-                                                spec,
-                                                resolveImplementedLanguages(p.getParent()));
-                                    } catch (IOException e) {
-                                        throw new CodestartStructureException("Failed to load codestart spec: " + resourceName,
-                                                e);
-                                    }
-                                }).collect(Collectors.toList());
-                    }
-                });
+        try {
+            return pathLoader.loadResourceAsPath(directoryName,
+                    path -> {
+                        try (final Stream<Path> pathStream = Files.walk(path)) {
+                            return pathStream
+                                    .filter(p -> p.getFileName().toString().matches("codestart\\.yml$"))
+                                    .map(p -> {
+                                        final String resourceName = resolveResourceName(directoryName, path, p);
+                                        try {
+                                            final CodestartSpec spec = readCodestartSpec(new String(Files.readAllBytes(p)));
+                                            final String resourceCodestartDirectory = resourceName.replaceAll(
+                                                    "/?codestart\\.yml",
+                                                    "");
+                                            return new Codestart(
+                                                    new PathCodestartResourceAllocator(pathLoader, resourceCodestartDirectory),
+                                                    spec,
+                                                    resolveImplementedLanguages(p.getParent()));
+                                        } catch (IOException e) {
+                                            throw new CodestartStructureException(
+                                                    "Failed to load codestart spec: " + resourceName,
+                                                    e);
+                                        }
+                                    }).collect(Collectors.toList());
+                        }
+                    });
+        } catch (IOException e) {
+            return Collections.emptyList();
+        }
     }
 
     private static Set<String> resolveImplementedLanguages(Path p) throws IOException {

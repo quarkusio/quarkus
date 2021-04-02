@@ -10,10 +10,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
 import io.quarkus.devtools.testing.SnapshotTesting;
 
-class QuarkusExtensionCodestartGenerationTest {
+class QuarkusExtensionCodestartGenerationTest extends PlatformAwareTestBase {
 
     private static final Path testDirPath = Paths.get("target/extension-codestart-gen-test");
 
@@ -56,7 +57,7 @@ class QuarkusExtensionCodestartGenerationTest {
     }
 
     private QuarkusExtensionCodestartCatalog getCatalog() throws IOException {
-        return QuarkusExtensionCodestartCatalog.fromBundledResources();
+        return QuarkusExtensionCodestartCatalog.fromBaseCodestartsResources();
     }
 
 }

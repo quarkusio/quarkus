@@ -69,6 +69,6 @@ public class CreateJBangProjectCommandHandler implements QuarkusCommandHandler {
     }
 
     private QuarkusJBangCodestartCatalog getCatalog(QuarkusProject project) throws IOException {
-        return QuarkusJBangCodestartCatalog.fromResourceLoader(project.getCodestartsResourceLoader());
+        return QuarkusJBangCodestartCatalog.fromResourceLoaders(project.getCodestartResourceLoaders());
     }
 }

@@ -277,7 +277,7 @@ public class CreateProjectMojo extends AbstractMojo {
             sanitizeOptions(sourceType);
 
             QuarkusProject newProject = QuarkusProject.of(projectDirPath, catalog,
-                    QuarkusProjectHelper.getResourceLoader(catalog, mvn), log, buildToolEnum);
+                    QuarkusProjectHelper.getCodestartResourceLoaders(catalog, mvn), log, buildToolEnum);
             final CreateProject createProject = new CreateProject(newProject)
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)

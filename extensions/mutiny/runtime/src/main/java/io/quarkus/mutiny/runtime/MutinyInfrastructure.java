@@ -18,7 +18,7 @@ public class MutinyInfrastructure {
         Infrastructure.setDefaultExecutor(exec);
     }
 
-    public void configureDroppedExceptionHandlerAndThreadBlockingChecker() {
+    public void configureDroppedExceptionHandler() {
         Logger logger = Logger.getLogger(MutinyInfrastructure.class);
         Infrastructure.setDroppedExceptionHandler(new Consumer<Throwable>() {
             @Override
@@ -26,7 +26,9 @@ public class MutinyInfrastructure {
                 logger.error("Mutiny had to drop the following exception", throwable);
             }
         });
+    }
 
+    public void configureThreadBlockingChecker() {
         Infrastructure.setCanCallerThreadBeBlockedSupplier(new BooleanSupplier() {
             @Override
             public boolean getAsBoolean() {
@@ -39,6 +41,24 @@ public class MutinyInfrastructure {
                  */
                 String threadName = Thread.currentThread().getName();
                 return !threadName.startsWith(VERTX_EVENT_LOOP_THREAD_PREFIX);
+            }
+        });
+    }
+
+    public void configureOperatorLogger() {
+        Logger logger = Logger.getLogger(MutinyInfrastructure.class);
+        Infrastructure.setOperatorLogger(new Infrastructure.OperatorLogger() {
+            @Override
+            public void log(String identifier, String event, Object value, Throwable failure) {
+                String log = identifier + " | ";
+                if (failure != null) {
+                    log = log + event + "(" + failure.getClass() + "(" + failure.getMessage() + "))";
+                } else if (value != null) {
+                    log = log + event + "(" + value + ")";
+                } else {
+                    log = log + event + "()";
+                }
+                logger.info(log);
             }
         });
     }

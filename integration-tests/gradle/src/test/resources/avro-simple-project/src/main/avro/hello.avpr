@@ -1,0 +1,12 @@
+{
+  "protocol" : "HelloProtocol",
+  "namespace" : "org.acme.quarkus.hello",
+  "types" : [
+    {
+      "type": "enum",
+      "namespace": "org.acme.quarkus.hello",
+      "name": "Provider",
+      "symbols" : ["MAIL", "SMS"]
+    }
+  ]
+}

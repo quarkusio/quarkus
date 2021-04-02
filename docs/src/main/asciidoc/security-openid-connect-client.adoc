@@ -30,6 +30,13 @@ quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.secret=secret
 ----
 
+The `client_credentials` grant allows to set extra parameters to the token request via `quarkus.oidc-client.grant-options.client.<param-name>=<value>`. Here is how to set the intended token recipient via the `audience` parameter:
+
+[source,properties]
+----
+quarkus.oidc-client.grant-options.client.audience=https://example.com/api
+----
+
 Here is how `OidcClient` can be configured to use the `password` grant:
 
 [source,properties]

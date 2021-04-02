@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-tck-microprofile-rest-client-reactive</artifactId>
-    <name>Quarkus - TCK - MicroProfile REST Client - RestEasy Reactive</name>
+    <name>Quarkus - TCK - MicroProfile REST Client - RESTEasy Reactive</name>
 
     <build>
         <plugins>
@@ -24,7 +24,7 @@
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
                         <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
-                        <quarkus.rest-client.scope>javax.enterprise.context.Dependent</quarkus.rest-client.scope>
+                        <quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->

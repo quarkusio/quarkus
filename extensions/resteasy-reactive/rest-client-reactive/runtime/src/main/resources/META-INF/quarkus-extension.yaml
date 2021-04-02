@@ -1,0 +1,11 @@
+---
+name: "REST Client Reactive"
+metadata:
+  keywords:
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "resteasy-reactive"
+  categories:
+  - "web"
+  status: "experimental"

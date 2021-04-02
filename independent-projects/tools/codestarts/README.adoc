@@ -104,10 +104,10 @@ metadata:
       - "java"
       - "kotlin"
       - "scala"
-    artifact: "io.quarkus:quarkus-descriptor-json" # The artifact in which the codestart is located
+    artifact: "io.quarkus:quarkus-platform-descriptor-json" # The artifact in which the codestart is located
 ----
 
-*NOTE* Using "io.quarkus:quarkus-descriptor-json" as artifact is temporary, extension codestarts will soon live alongside the extension.
+*NOTE* Using "io.quarkus:quarkus-platform-descriptor-json" as artifact is temporary, extension codestarts will soon live alongside the extension.
 
 === Tests
 

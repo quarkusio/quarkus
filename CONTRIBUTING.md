@@ -244,10 +244,6 @@ It will take much longer to build but will give you more guarantees on your code
 
 You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
 
-By default the build will use the native image server. This speeds up the build, but can cause problems due to the cache
-not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
-`./mvnw install -Dnative-image.new-server=true`.
-
 ### Workflow tips
 
 Due to Quarkus being a large repository, having to rebuild the entire project every time a change is made isn't very productive. 

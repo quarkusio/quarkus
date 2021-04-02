@@ -43,9 +43,6 @@ public abstract class NativeImageBuildRunner {
     public void setup(boolean processInheritIODisabled) {
     }
 
-    public void cleanupServer(File outputDir) throws InterruptedException, IOException {
-    }
-
     public int build(List<String> args, Path outputDir, boolean processInheritIODisabled)
             throws InterruptedException, IOException {
         preBuild(args);

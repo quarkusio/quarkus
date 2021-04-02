@@ -62,6 +62,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
     public static final String QUARKUS_REMOTE_DEV_TASK_NAME = "quarkusRemoteDev";
     public static final String DEV_MODE_CONFIGURATION_NAME = "quarkusDev";
+    public static final String ANNOTATION_PROCESSOR_CONFIGURATION_NAME = "quarkusAnnotationProcessor";
 
     @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";
@@ -145,8 +146,11 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     // By default, gradle looks for annotation processors in the annotationProcessor configuration.
                     // This configure the compile task to look for annotation processors in the compileClasspath.
-                    compileJavaTask.getOptions().setAnnotationProcessorPath(
-                            configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+                    Configuration annotationProcessorConfig = configurations.create(ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
+                            .extendsFrom(
+                                    configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
+                                    configurations.getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME));
+                    compileJavaTask.getOptions().setAnnotationProcessorPath(annotationProcessorConfig);
 
                     compileJavaTask.dependsOn(quarkusGenerateCode);
                     quarkusGenerateCode.setSourceRegistrar(compileJavaTask::source);

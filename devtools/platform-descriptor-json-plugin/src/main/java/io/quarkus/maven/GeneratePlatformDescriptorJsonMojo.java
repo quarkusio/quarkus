@@ -144,6 +144,9 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
     @Parameter(property = "resolveDependencyManagement")
     boolean resolveDependencyManagement;
 
+    @Parameter(required = false)
+    String quarkusCoreVersion;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -250,7 +253,6 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
         final Set<String> referencedCategories = new HashSet<>();
         final List<io.quarkus.registry.catalog.Extension> extListJson = new ArrayList<>();
         platformJson.setExtensions(extListJson);
-        String quarkusCoreVersion = null;
         boolean jsonFoundInBom = false;
         for (Dependency dep : deps) {
             final Artifact artifact = dep.getArtifact();
@@ -281,7 +283,7 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
                 continue;
             }
 
-            if (artifact.getArtifactId().equals(quarkusCoreArtifactId)
+            if (quarkusCoreVersion == null && artifact.getArtifactId().equals(quarkusCoreArtifactId)
                     && artifact.getGroupId().equals(quarkusCoreGroupId)) {
                 quarkusCoreVersion = artifact.getVersion();
             }

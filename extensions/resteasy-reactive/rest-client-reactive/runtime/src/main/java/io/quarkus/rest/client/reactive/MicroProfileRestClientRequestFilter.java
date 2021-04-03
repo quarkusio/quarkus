@@ -11,11 +11,11 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
-import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 
 @Priority(Integer.MIN_VALUE)
 public class MicroProfileRestClientRequestFilter implements ClientRequestFilter {

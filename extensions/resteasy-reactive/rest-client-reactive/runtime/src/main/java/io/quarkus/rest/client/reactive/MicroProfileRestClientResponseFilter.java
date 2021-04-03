@@ -14,8 +14,7 @@ import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientResponseContextImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 
-public class
-MicroProfileRestClientResponseFilter implements ClientResponseFilter {
+public class MicroProfileRestClientResponseFilter implements ClientResponseFilter {
     private final List<ResponseExceptionMapper<?>> exceptionMappers;
 
     public MicroProfileRestClientResponseFilter(List<ResponseExceptionMapper<?>> exceptionMappers) {

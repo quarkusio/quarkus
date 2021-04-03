@@ -23,9 +23,6 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Configurable;
 import javax.ws.rs.core.MultivaluedMap;
 
-import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
-import io.quarkus.rest.client.reactive.MicroProfileRestClientRequestFilter;
-import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
@@ -56,8 +53,11 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
 import io.quarkus.rest.client.reactive.BeanGrabber;
 import io.quarkus.rest.client.reactive.HeaderFiller;
+import io.quarkus.rest.client.reactive.MicroProfileRestClientRequestFilter;
+import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import io.quarkus.runtime.util.HashUtil;
 
 /**

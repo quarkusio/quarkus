@@ -93,7 +93,7 @@ import io.quarkus.jaxrs.client.reactive.deployment.beanparam.Item;
 import io.quarkus.jaxrs.client.reactive.deployment.beanparam.QueryParamItem;
 import io.quarkus.jaxrs.client.reactive.runtime.ClientResponseBuilderFactory;
 import io.quarkus.jaxrs.client.reactive.runtime.JaxrsClientReactiveRecorder;
-import io.quarkus.resteasy.reactive.client.runtime.ToObjectArray;
+import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;

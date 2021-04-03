@@ -1,6 +1,5 @@
 package io.quarkus.rest.client.reactive.deployment;
 
-import static io.quarkus.deployment.Feature.REST_CLIENT_REACTIVE;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
@@ -44,7 +43,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -53,27 +51,22 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricherBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
+import io.quarkus.rest.client.reactive.ReactiveResteasyMpClientConfig;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
 import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilder;
-import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 
-class RestClientReactiveProcessor {
+class ReactiveResteasyMpClientProcessor {
 
-    private static final Logger log = Logger.getLogger(RestClientReactiveProcessor.class);
+    private static final Logger log = Logger.getLogger(ReactiveResteasyMpClientProcessor.class);
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
     private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
 
     private static final String DELEGATE = "delegate";
     private static final String CREATE_DELEGATE = "createDelegate";
-
-    @BuildStep
-    void feature(BuildProducer<FeatureBuildItem> features) {
-        features.produce(new FeatureBuildItem(REST_CLIENT_REACTIVE));
-    }
 
     @BuildStep
     void setUpDefaultMediaType(BuildProducer<RestClientDefaultConsumesBuildItem> consumes,
@@ -99,7 +92,7 @@ class RestClientReactiveProcessor {
 
     @BuildStep
     void addMpClientEnricher(BuildProducer<JaxrsClientReactiveEnricherBuildItem> enrichers) {
-        enrichers.produce(new JaxrsClientReactiveEnricherBuildItem(new RestClientReactiveEnricher()));
+        enrichers.produce(new JaxrsClientReactiveEnricherBuildItem(new MicroProfileRestClientEnricher()));
     }
 
     private void searchForJaxRsMethods(List<MethodInfo> listOfKnownMethods, ClassInfo startingInterface, CompositeIndex index) {
@@ -126,7 +119,7 @@ class RestClientReactiveProcessor {
             if (value != null) {
                 Type clientHeaderFactoryType = value.asClass();
                 String factoryTypeName = clientHeaderFactoryType.name().toString();
-                if (!RestClientReactiveEnricher.DEFAULT_HEADERS_FACTORY.equals(factoryTypeName)) {
+                if (!MicroProfileRestClientEnricher.DEFAULT_HEADERS_FACTORY.equals(factoryTypeName)) {
                     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(factoryTypeName));
                 }
             }
@@ -137,7 +130,7 @@ class RestClientReactiveProcessor {
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            RestClientReactiveConfig clientConfig) {
+            ReactiveResteasyMpClientConfig clientConfig) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
         Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
@@ -271,7 +264,7 @@ class RestClientReactiveProcessor {
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config,
             ClassInfo restClientInterface,
             String configPrefix,
-            RestClientReactiveConfig mpClientConfig) {
+            ReactiveResteasyMpClientConfig mpClientConfig) {
         ScopeInfo scopeToUse = null;
         final Optional<String> scopeConfig = config
                 .getOptionalValue(String.format(RestClientCDIDelegateBuilder.REST_SCOPE_FORMAT, configPrefix), String.class);

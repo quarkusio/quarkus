@@ -220,6 +220,12 @@ jobs:
         with:
           name: test-reports-linux-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-jvm-linux-jdk${{matrix.java.name}}
+          path: "**/target/surefire-reports/TEST-*.xml"
 
   windows-jdk11-jvm-tests:
     name: JVM Tests - JDK 11 Windows
@@ -266,6 +272,12 @@ jobs:
         with:
           name: test-reports-windows-jdk11-jvm
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-jvm-windows-jdk11
+          path: "**/target/surefire-reports/TEST-*.xml"
 
   linux-jvm-maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -314,6 +326,12 @@ jobs:
         with:
           name: test-reports-linux-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-maven-linux-jdk${{matrix.java.name}}
+          path: "**/target/surefire-reports/TEST-*.xml"
 
   windows-jdk11-jvm-maven-tests:
     name: Maven Tests - JDK 11 Windows
@@ -357,6 +375,12 @@ jobs:
         with:
           name: test-reports-windows-maven-java11
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-maven-windows-jdk11
+          path: "**/target/surefire-reports/TEST-*.xml"
 
   gradle-tests-jdk11-jvm:
     name: Gradle Tests - JDK 11 ${{matrix.os.family}}
@@ -461,6 +485,12 @@ jobs:
         with:
           name: test-reports-linux-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-devtools-linux-jdk${{matrix.java.name}}
+          path: "**/target/surefire-reports/TEST-*.xml"
 
   windows-jdk11-jvm-devtools-tests:
     name: Devtools Tests - JDK 11 Windows
@@ -504,6 +534,12 @@ jobs:
         with:
           name: test-reports-windows-devtools-java11
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-devtools-windows-jdk${{matrix.java.name}}
+          path: "**/target/surefire-reports/TEST-*.xml"
 
   tcks-test:
     name: MicroProfile TCKs Tests
@@ -560,6 +596,12 @@ jobs:
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-microprofile-tck-tests
+          path: "**/target/surefire-reports/TEST-*.xml"
 
   native-tests-read-json-matrix:
     name: Native Tests - Read JSON matrix
@@ -639,6 +681,12 @@ jobs:
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-native-linux-${{matrix.category}}
+          path: "**/target/surefire-reports/TEST-*.xml"
   native-tests-windows:
     name: Native Tests - Windows - ${{matrix.category}}
     needs: [build-jdk11, native-tests-read-json-matrix]
@@ -715,3 +763,9 @@ jobs:
         with:
           name: test-reports-native-windows-${{matrix.category}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-native-windows-${{matrix.category}}
+          path: "**/target/surefire-reports/TEST-*.xml"

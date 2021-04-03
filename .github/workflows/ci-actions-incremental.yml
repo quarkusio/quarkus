@@ -225,7 +225,8 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-jvm-linux-jdk${{matrix.java.name}}
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-tests:
     name: JVM Tests - JDK 11 Windows
@@ -277,7 +278,8 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-jvm-windows-jdk11
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   linux-jvm-maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -331,7 +333,8 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-maven-linux-jdk${{matrix.java.name}}
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-maven-tests:
     name: Maven Tests - JDK 11 Windows
@@ -380,7 +383,8 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-maven-windows-jdk11
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   gradle-tests-jdk11-jvm:
     name: Gradle Tests - JDK 11 ${{matrix.os.family}}
@@ -395,11 +399,13 @@ jobs:
         os:
           - {
             name: "ubuntu-latest",
-            family: "Linux"
+            family: "Linux",
+            path: "linux"
           }
           - {
             name: "windows-latest",
-            family: "Windows"
+            family: "Windows",
+            path: "windows"
           }
     steps:
       - uses: actions/checkout@v2
@@ -437,6 +443,13 @@ jobs:
       - name: Build with Gradle via Maven
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl integration-tests/gradle ${{ needs.build-jdk11.outputs.gib_args }}
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: surefire-reports-gradle-${{ matrix.os.path }}-jdk11
+          path: "**/build/test-results/test/TEST-*.xml"
+          retention-days: 2
 
   linux-jvm-devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
@@ -490,7 +503,8 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-devtools-linux-jdk${{matrix.java.name}}
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-devtools-tests:
     name: Devtools Tests - JDK 11 Windows
@@ -539,7 +553,8 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-devtools-windows-jdk${{matrix.java.name}}
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   tcks-test:
     name: MicroProfile TCKs Tests
@@ -601,7 +616,8 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-microprofile-tck-tests
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   native-tests-read-json-matrix:
     name: Native Tests - Read JSON matrix
@@ -686,7 +702,8 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-native-linux-${{matrix.category}}
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
   native-tests-windows:
     name: Native Tests - Windows - ${{matrix.category}}
     needs: [build-jdk11, native-tests-read-json-matrix]
@@ -768,4 +785,5 @@ jobs:
         if: failure()
         with:
           name: surefire-reports-native-windows-${{matrix.category}}
-          path: "**/target/surefire-reports/TEST-*.xml"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2

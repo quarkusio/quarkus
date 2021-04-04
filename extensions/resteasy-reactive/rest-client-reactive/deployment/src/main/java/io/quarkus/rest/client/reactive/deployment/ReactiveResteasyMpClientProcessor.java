@@ -51,10 +51,10 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricherBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
-import io.quarkus.rest.client.reactive.ReactiveResteasyMpClientConfig;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
 import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilder;
+import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 
@@ -130,7 +130,7 @@ class ReactiveResteasyMpClientProcessor {
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            ReactiveResteasyMpClientConfig clientConfig) {
+            RestClientReactiveConfig clientConfig) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
         Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
@@ -264,7 +264,7 @@ class ReactiveResteasyMpClientProcessor {
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config,
             ClassInfo restClientInterface,
             String configPrefix,
-            ReactiveResteasyMpClientConfig mpClientConfig) {
+            RestClientReactiveConfig mpClientConfig) {
         ScopeInfo scopeToUse = null;
         final Optional<String> scopeConfig = config
                 .getOptionalValue(String.format(RestClientCDIDelegateBuilder.REST_SCOPE_FORMAT, configPrefix), String.class);

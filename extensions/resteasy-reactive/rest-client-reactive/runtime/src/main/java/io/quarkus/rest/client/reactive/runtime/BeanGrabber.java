@@ -1,4 +1,4 @@
-package io.quarkus.rest.client.reactive;
+package io.quarkus.rest.client.reactive.runtime;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;

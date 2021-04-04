@@ -1,4 +1,4 @@
-package io.quarkus.rest.client.reactive;
+package io.quarkus.rest.client.reactive.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,7 @@ import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
+import io.quarkus.rest.client.reactive.HeaderFiller;
 
 @Priority(Integer.MIN_VALUE)
 public class MicroProfileRestClientRequestFilter implements ClientRequestFilter {

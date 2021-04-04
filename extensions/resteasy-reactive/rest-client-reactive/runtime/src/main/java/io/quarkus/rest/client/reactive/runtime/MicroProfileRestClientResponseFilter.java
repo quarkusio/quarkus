@@ -1,4 +1,4 @@
-package io.quarkus.rest.client.reactive;
+package io.quarkus.rest.client.reactive.runtime;
 
 import java.io.IOException;
 import java.util.List;

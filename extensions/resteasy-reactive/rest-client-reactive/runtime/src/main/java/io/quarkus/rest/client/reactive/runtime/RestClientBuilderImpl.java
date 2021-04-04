@@ -1,4 +1,4 @@
-package io.quarkus.rest.client.reactive;
+package io.quarkus.rest.client.reactive.runtime;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;

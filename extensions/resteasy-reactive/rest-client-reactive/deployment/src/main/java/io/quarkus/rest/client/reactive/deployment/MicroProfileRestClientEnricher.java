@@ -54,9 +54,9 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
-import io.quarkus.rest.client.reactive.BeanGrabber;
 import io.quarkus.rest.client.reactive.HeaderFiller;
-import io.quarkus.rest.client.reactive.MicroProfileRestClientRequestFilter;
+import io.quarkus.rest.client.reactive.runtime.BeanGrabber;
+import io.quarkus.rest.client.reactive.runtime.MicroProfileRestClientRequestFilter;
 import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import io.quarkus.runtime.util.HashUtil;
 

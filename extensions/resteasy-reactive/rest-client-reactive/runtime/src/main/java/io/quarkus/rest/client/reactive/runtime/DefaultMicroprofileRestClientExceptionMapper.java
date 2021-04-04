@@ -1,4 +1,4 @@
-package io.quarkus.rest.client.reactive;
+package io.quarkus.rest.client.reactive.runtime;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MultivaluedMap;

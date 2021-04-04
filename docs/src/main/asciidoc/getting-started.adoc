@@ -461,7 +461,7 @@ the dependencies are copied into subdirectories of `quarkus-app/lib/`.
 
 You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`
 
-NOTE: If you want to deploy your application soemwhere (typically in a container), you need to deploy the whole `quarkus-app` directory.
+NOTE: If you want to deploy your application somewhere (typically in a container), you need to deploy the whole `quarkus-app` directory.
 
 NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
 

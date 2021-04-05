@@ -23,7 +23,7 @@ public class ApplicationPathHttpRootTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class, HelloApp.class)
+                    .addClasses(HelloResource.class, HelloApp.class, BaseApplication.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
 
     @Test
@@ -44,7 +44,11 @@ public class ApplicationPathHttpRootTest {
     }
 
     @ApplicationPath("hello")
-    public static class HelloApp extends Application {
+    public static class HelloApp extends BaseApplication {
+
+    }
+
+    public static abstract class BaseApplication extends Application {
 
     }
 

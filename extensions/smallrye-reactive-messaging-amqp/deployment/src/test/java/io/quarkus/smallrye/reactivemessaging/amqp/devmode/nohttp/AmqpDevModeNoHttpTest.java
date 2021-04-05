@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
@@ -76,7 +77,7 @@ public class AmqpDevModeNoHttpTest {
     @Test
     public void testConsumerUpdate() {
         await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-            List<LogRecord> log = TEST.getLogRecords();
+            List<LogRecord> log = new CopyOnWriteArrayList<>(TEST.getLogRecords());
             assertThat(log).hasSizeGreaterThanOrEqualTo(5);
 
             List<Long> nums = log.stream()

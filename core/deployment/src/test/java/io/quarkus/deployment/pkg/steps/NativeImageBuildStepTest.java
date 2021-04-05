@@ -1,15 +1,15 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.pkg.steps.NativeImageBuildStep.GraalVM.Distribution.MANDREL;
-import static io.quarkus.deployment.pkg.steps.NativeImageBuildStep.GraalVM.Distribution.ORACLE;
+import static io.quarkus.deployment.pkg.steps.GraalVM.Distribution.MANDREL;
+import static io.quarkus.deployment.pkg.steps.GraalVM.Distribution.ORACLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.deployment.pkg.steps.NativeImageBuildStep.GraalVM.Distribution;
-import io.quarkus.deployment.pkg.steps.NativeImageBuildStep.GraalVM.Version;
+import io.quarkus.deployment.pkg.steps.GraalVM.Distribution;
+import io.quarkus.deployment.pkg.steps.GraalVM.Version;
 
 public class NativeImageBuildStepTest {
 

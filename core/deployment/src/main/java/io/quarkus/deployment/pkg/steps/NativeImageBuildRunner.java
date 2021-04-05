@@ -14,7 +14,6 @@ import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.pkg.steps.NativeImageBuildStep.GraalVM;
 import io.quarkus.deployment.util.ProcessUtil;
 
 public abstract class NativeImageBuildRunner {

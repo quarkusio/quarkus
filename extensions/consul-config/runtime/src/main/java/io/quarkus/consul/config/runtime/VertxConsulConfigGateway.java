@@ -18,6 +18,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class VertxConsulConfigGateway implements ConsulConfigGateway {
@@ -134,29 +135,64 @@ public class VertxConsulConfigGateway implements ConsulConfigGateway {
 
     @Override
     public Uni<Response> getValue(String key) {
-        HttpRequest<Buffer> request = webClient
-                .get(consulConfig.agent.hostPort.getPort(), consulConfig.agent.hostPort.getHostString(), "/v1/kv/" + key)
-                .ssl(consulConfig.agent.useHttps)
-                .putHeader("Accept", "application/json;charset=UTF-8");
-        if (consulConfig.agent.token.isPresent()) {
-            request.putHeader("Authorization", "Bearer " + consulConfig.agent.token.get());
-        }
+        HttpRequest<Buffer> request = buildRequest(key, false);
 
         log.debug("Attempting to look up value of key '" + key + "' from Consul.");
         return request.send().map(r -> {
-            if (r.statusCode() != 200) {
+            JsonArray jsonArray = getConfigJson(r);
+            if (jsonArray == null) {
                 log.debug("Look up of key '" + key + "' from Consul yielded a non success HTTP error-code: " + r.statusCode());
                 return null;
-            } else {
-                JsonArray jsonArray = r.bodyAsJsonArray();
-                if (jsonArray.size() != 1) {
-                    throw new IllegalStateException(
-                            "Consul returned an unexpected number of results when looking up value of key '" + key + "'");
-                }
-                JsonObject jsonObject = jsonArray.getJsonObject(0);
-                return new Response(jsonObject.getString("Key"), jsonObject.getString("Value"));
             }
+            if (jsonArray.size() != 1) {
+                throw new IllegalStateException(
+                        "Consul returned an unexpected number of results when looking up value of key '" + key + "'");
+            }
+            JsonObject jsonObject = jsonArray.getJsonObject(0);
+            return new Response(jsonObject.getString("Key"), jsonObject.getString("Value"));
         });
+    }
+
+    @Override
+    public Uni<MultiResponse> getValueRecursive(String key) {
+        HttpRequest<Buffer> request = buildRequest(key, true);
+
+        log.debug("Attempting to look up values of folder '" + key + "' from Consul.");
+        return request.send().map(r -> {
+            JsonArray jsonArray = getConfigJson(r);
+            if (jsonArray == null) {
+                log.debug(
+                        "Look up of folder '" + key + "' from Consul yielded a non success HTTP error-code: " + r.statusCode());
+                return null;
+            }
+            MultiResponse multiResponse = new MultiResponse();
+            for (int i = 0; i < jsonArray.size(); i++) {
+                multiResponse.addResponse(buildResponse(jsonArray.getJsonObject(i)));
+            }
+            return multiResponse;
+        });
+    }
+
+    private HttpRequest<Buffer> buildRequest(String key, boolean isRecursive) {
+        final String requestUri = "/v1/kv/" + key + (isRecursive ? "?recursive" : "");
+        HttpRequest<Buffer> request = webClient
+                .get(consulConfig.agent.hostPort.getPort(), consulConfig.agent.hostPort.getHostString(), requestUri)
+                .ssl(consulConfig.agent.useHttps)
+                .putHeader("Accept", "application/json;charset=UTF-8");
+        consulConfig.agent.token.ifPresent(s -> request.putHeader("Authorization", "Bearer " + s));
+        return request;
+    }
+
+    private JsonArray getConfigJson(HttpResponse<Buffer> response) {
+        if (response.statusCode() != 200) {
+            return null;
+        } else {
+            return response.bodyAsJsonArray();
+        }
+    }
+
+    private Response buildResponse(JsonObject jsonObject) {
+        return new Response(jsonObject.getString("Key"), jsonObject.getString("Value"));
     }
 
     @Override

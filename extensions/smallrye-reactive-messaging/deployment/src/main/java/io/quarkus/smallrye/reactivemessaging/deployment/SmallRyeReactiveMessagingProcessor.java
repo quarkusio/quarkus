@@ -23,6 +23,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -43,9 +44,11 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -67,6 +70,8 @@ import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLi
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
 import io.quarkus.smallrye.reactivemessaging.runtime.WorkerConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactory;
+import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactoryInterceptor;
 import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
@@ -481,6 +486,41 @@ public class SmallRyeReactiveMessagingProcessor {
         }
 
         return generatedName.replace('/', '.');
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void devmodeSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+        beans.produce(new AdditionalBeanBuildItem(DevModeSupportConnectorFactory.class,
+                DevModeSupportConnectorFactoryInterceptor.class));
+
+        transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                ClassInfo clazz = ctx.getTarget().asClass();
+                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())) {
+                    ctx.transform().add(DevModeSupportConnectorFactory.class).done();
+                }
+            }
+
+            private boolean doesImplement(ClassInfo clazz, DotName iface, IndexView index) {
+                while (clazz != null && !clazz.name().equals(ReactiveMessagingDotNames.OBJECT)) {
+                    if (clazz.interfaceNames().contains(iface)) {
+                        return true;
+                    }
+
+                    clazz = index.getClassByName(clazz.superName());
+                }
+
+                return false;
+            }
+        }));
     }
 
 }

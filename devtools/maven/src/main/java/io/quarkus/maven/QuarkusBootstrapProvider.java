@@ -1,5 +1,8 @@
 package io.quarkus.maven;
 
+import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
+import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +29,7 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.smallrye.common.expression.Expression;
 
 @Component(role = QuarkusBootstrapProvider.class, instantiationStrategy = "singleton")
 public class QuarkusBootstrapProvider implements Closeable {
@@ -137,6 +141,22 @@ public class QuarkusBootstrapProvider implements Closeable {
 
             effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
+
+            // Add other properties that may be required for expansion
+            for (Object value : effectiveProperties.values()) {
+                for (String reference : Expression.compile((String) value, LENIENT_SYNTAX, NO_TRIM).getReferencedStrings()) {
+                    String referenceValue = mojo.mavenSession().getUserProperties().getProperty(reference);
+                    if (referenceValue != null) {
+                        effectiveProperties.setProperty(reference, referenceValue);
+                        continue;
+                    }
+
+                    referenceValue = projectProperties.getProperty(reference);
+                    if (referenceValue != null) {
+                        effectiveProperties.setProperty(reference, referenceValue);
+                    }
+                }
+            }
 
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setAppArtifact(appArtifact(mojo))

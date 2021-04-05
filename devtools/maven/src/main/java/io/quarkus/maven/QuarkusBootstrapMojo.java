@@ -3,6 +3,7 @@ package io.quarkus.maven;
 import java.io.File;
 import java.util.List;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -46,6 +47,9 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
+
+    @Parameter(defaultValue = "${session}", readonly = true)
+    private MavenSession session;
 
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
@@ -151,6 +155,10 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected MavenProject mavenProject() {
         return project;
+    }
+
+    public MavenSession mavenSession() {
+        return session;
     }
 
     protected File buildDir() {

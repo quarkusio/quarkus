@@ -1,34 +1,5 @@
 package io.quarkus.keycloak.pep.deployment;
 
-import org.keycloak.adapters.authentication.ClientCredentialsProvider;
-import org.keycloak.adapters.authentication.ClientIdAndSecretCredentialsProvider;
-import org.keycloak.adapters.authentication.JWTClientCredentialsProvider;
-import org.keycloak.adapters.authentication.JWTClientSecretCredentialsProvider;
-import org.keycloak.adapters.authorization.ClaimInformationPointProviderFactory;
-import org.keycloak.adapters.authorization.cip.ClaimsInformationPointProviderFactory;
-import org.keycloak.adapters.authorization.cip.HttpClaimInformationPointProviderFactory;
-import org.keycloak.authorization.client.representation.ServerConfiguration;
-import org.keycloak.jose.jwk.JSONWebKeySet;
-import org.keycloak.jose.jwk.JWK;
-import org.keycloak.jose.jws.JWSHeader;
-import org.keycloak.json.StringListMapDeserializer;
-import org.keycloak.json.StringOrArrayDeserializer;
-import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
-import org.keycloak.representations.AccessToken;
-import org.keycloak.representations.AccessTokenResponse;
-import org.keycloak.representations.IDToken;
-import org.keycloak.representations.JsonWebToken;
-import org.keycloak.representations.RefreshToken;
-import org.keycloak.representations.idm.authorization.AuthorizationRequest;
-import org.keycloak.representations.idm.authorization.AuthorizationResponse;
-import org.keycloak.representations.idm.authorization.Permission;
-import org.keycloak.representations.idm.authorization.PermissionRequest;
-import org.keycloak.representations.idm.authorization.PermissionResponse;
-import org.keycloak.representations.idm.authorization.PermissionTicketToken;
-import org.keycloak.representations.idm.authorization.ResourceOwnerRepresentation;
-import org.keycloak.representations.idm.authorization.ResourceRepresentation;
-import org.keycloak.representations.idm.authorization.ScopeRepresentation;
-
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -40,41 +11,41 @@ public class KeycloakReflectionBuildStep {
     @BuildStep
     public void registerReflectionItems(BuildProducer<ReflectiveClassBuildItem> reflectiveItems) {
         reflectiveItems.produce(new ReflectiveClassBuildItem(true, true,
-                JsonWebToken.class.getName(),
-                JWSHeader.class.getName(),
-                AccessToken.class.getName(),
-                IDToken.class.getName(),
-                RefreshToken.class.getName(),
-                AccessTokenResponse.class.getName(),
-                JSONWebKeySet.class.getName(),
-                JWK.class.getName(),
-                StringOrArrayDeserializer.class.getName(),
-                AccessToken.Access.class.getName(),
-                AccessToken.Authorization.class.getName(),
-                AuthorizationRequest.class.getName(),
-                AuthorizationResponse.class.getName(),
-                PermissionRequest.class.getName(),
-                PermissionResponse.class.getName(),
-                PermissionTicketToken.class.getName(),
-                Permission.class.getName(),
-                ServerConfiguration.class.getName(),
-                ResourceRepresentation.class.getName(),
-                ScopeRepresentation.class.getName(),
-                ResourceOwnerRepresentation.class.getName(),
-                StringListMapDeserializer.class.getName(),
-                StringOrArrayDeserializer.class.getName(),
-                OIDCConfigurationRepresentation.class.getName()));
+                "org.keycloak.authorization.client.representation.ServerConfiguration",
+                "org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation",
+                "org.keycloak.jose.jwk.JSONWebKeySet",
+                "org.keycloak.jose.jwk.JWK",
+                "org.keycloak.jose.jws.JWSHeader",
+                "org.keycloak.json.StringOrArrayDeserializer",
+                "org.keycloak.json.StringListMapDeserializer",
+                "org.keycloak.representations.AccessToken",
+                "org.keycloak.representations.AccessTokenResponse",
+                "org.keycloak.representations.AccessToken$Access",
+                "org.keycloak.representations.AccessToken$Authorization",
+                "org.keycloak.representations.IDToken",
+                "org.keycloak.representations.JsonWebToken",
+                "org.keycloak.representations.RefreshToken",
+                "org.keycloak.representations.idm.authorization.AuthorizationRequest",
+                "org.keycloak.representations.idm.authorization.AuthorizationResponse",
+                "org.keycloak.representations.idm.authorization.PermissionRequest",
+                "org.keycloak.representations.idm.authorization.PermissionResponse",
+                "org.keycloak.representations.idm.authorization.PermissionTicketToken",
+                "org.keycloak.representations.idm.authorization.Permission",
+                "org.keycloak.representations.idm.authorization.ResourceRepresentation",
+                "org.keycloak.representations.idm.authorization.ScopeRepresentation",
+                "org.keycloak.representations.idm.authorization.ResourceOwnerRepresentation"));
     }
 
     @BuildStep
     public void registerServiceProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
-        serviceProvider.produce(new ServiceProviderBuildItem(ClientCredentialsProvider.class.getName(),
-                ClientIdAndSecretCredentialsProvider.class.getName(),
-                JWTClientCredentialsProvider.class.getName(),
-                JWTClientSecretCredentialsProvider.class.getName()));
-        serviceProvider.produce(new ServiceProviderBuildItem(ClaimInformationPointProviderFactory.class.getName(),
-                HttpClaimInformationPointProviderFactory.class.getName(),
-                ClaimsInformationPointProviderFactory.class.getName()));
+        serviceProvider.produce(new ServiceProviderBuildItem("org.keycloak.adapters.authentication.ClientCredentialsProvider",
+                "org.keycloak.adapters.authentication.ClientIdAndSecretCredentialsProvider",
+                "org.keycloak.adapters.authentication.JWTClientCredentialsProvider",
+                "org.keycloak.adapters.authentication.JWTClientSecretCredentialsProvider"));
+        serviceProvider.produce(
+                new ServiceProviderBuildItem("org.keycloak.adapters.authorization.ClaimInformationPointProviderFactory",
+                        "org.keycloak.adapters.authorization.cip.HttpClaimInformationPointProviderFactory",
+                        "org.keycloak.adapters.authorization.cip.ClaimsInformationPointProviderFactory"));
 
     }
 

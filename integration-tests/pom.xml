@@ -53,6 +53,7 @@
         <module>jpa-h2</module>
         <module>jpa-mssql</module>
         <module>jpa-mysql</module>
+        <module>jpa-oracle</module>
         <module>hibernate-orm-panache</module>
         <module>hibernate-orm-rest-data-panache</module>
         <module>hibernate-orm-panache-kotlin</module>

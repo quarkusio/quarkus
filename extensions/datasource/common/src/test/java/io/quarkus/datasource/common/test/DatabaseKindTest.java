@@ -49,6 +49,10 @@ public class DatabaseKindTest {
         assertFalse(DatabaseKind.isMySQL("mariadb"));
         assertFalse(DatabaseKind.isMySQL(DatabaseKind.POSTGRESQL));
 
+        assertTrue(DatabaseKind.isOracle("oracle"));
+        assertFalse(DatabaseKind.isOracle("mariadb"));
+        assertFalse(DatabaseKind.isOracle(DatabaseKind.POSTGRESQL));
+
         assertTrue(DatabaseKind.isPostgreSQL(DatabaseKind.POSTGRESQL));
         assertFalse(DatabaseKind.isPostgreSQL("mysql"));
     }

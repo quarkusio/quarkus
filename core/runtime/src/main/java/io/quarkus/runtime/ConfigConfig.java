@@ -1,5 +1,6 @@
 package io.quarkus.runtime;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -19,7 +20,7 @@ public class ConfigConfig {
      * separated by a comma and each must represent a valid {@link java.net.URI}.
      */
     @ConfigItem(name = "config.locations")
-    public Optional<String> locations;
+    public Optional<List<String>> locations;
 
     /**
      * Accepts a single configuration profile name. If a configuration property cannot be found in the current active

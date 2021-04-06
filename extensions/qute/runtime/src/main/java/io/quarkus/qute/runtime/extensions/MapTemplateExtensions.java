@@ -33,7 +33,7 @@ public class MapTemplateExtensions {
         }
     }
 
-    static Object get(Map<?, ?> map, Object key) {
+    static <V> V get(Map<?, V> map, Object key) {
         return map.get(key);
     }
 

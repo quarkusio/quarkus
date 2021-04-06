@@ -226,7 +226,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
@@ -277,7 +277,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         shell: bash
         run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
@@ -335,7 +335,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-      - name: Run Maven integration tests
+      - name: Build
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -384,7 +384,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Run Maven integration tests
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
@@ -459,7 +459,7 @@ jobs:
             exit 1
           fi
         working-directory: integration-tests/gradle
-      - name: Build with Gradle via Maven
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl integration-tests/gradle ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Upload Surefire reports (if build failed)
@@ -505,7 +505,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-      - name: Run Devtools integration tests
+      - name: Build
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -554,7 +554,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Run Devtools integration tests
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
@@ -693,7 +693,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CATEGORY: ${{matrix.category}}
@@ -781,7 +781,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         shell: bash
         env:
           TEST_MODULES: ${{matrix.test-modules}}

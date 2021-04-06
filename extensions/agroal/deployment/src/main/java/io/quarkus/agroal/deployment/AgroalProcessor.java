@@ -261,11 +261,15 @@ class AgroalProcessor {
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<JdbcDriverBuildItem> jdbcDriverBuildItems, List<DefaultDataSourceDbKindBuildItem> defaultDbKinds) {
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems,
+            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
         Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
-                .resolve(dataSourcesBuildTimeConfig.defaultDataSource.dbKind, defaultDbKinds, curateOutcomeBuildItem);
+                .resolve(dataSourcesBuildTimeConfig.defaultDataSource.dbKind, defaultDbKinds,
+                        dataSourcesBuildTimeConfig.defaultDataSource.devservices.enabled
+                                .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty()),
+                        curateOutcomeBuildItem);
 
         if (effectiveDbKind.isPresent()) {
             if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
@@ -285,7 +289,9 @@ class AgroalProcessor {
                 continue;
             }
             Optional<String> dbKind = DefaultDataSourceDbKindBuildItem
-                    .resolve(entry.getValue().dbKind, defaultDbKinds, curateOutcomeBuildItem);
+                    .resolve(entry.getValue().dbKind, defaultDbKinds,
+                            true,
+                            curateOutcomeBuildItem);
             if (!dbKind.isPresent()) {
                 continue;
             }

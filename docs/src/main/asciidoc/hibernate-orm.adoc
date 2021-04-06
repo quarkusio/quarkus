@@ -414,6 +414,7 @@ or jars, you can make sure that your jar is treated like a Quarkus application l
 
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 
+[[dev-mode]]]
 == Hibernate ORM in development mode
 
 Quarkus development mode is really useful for applications that mix front end or services and database access.

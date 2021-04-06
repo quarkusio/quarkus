@@ -1,0 +1,11 @@
+---
+name: "JAX-RS Client Reactive"
+metadata:
+  keywords:
+  - "jax-rs client"
+  - "jax-rs"
+  - "web-client"
+  - "resteasy-reactive"
+  categories:
+  - "web"
+  status: "experimental"

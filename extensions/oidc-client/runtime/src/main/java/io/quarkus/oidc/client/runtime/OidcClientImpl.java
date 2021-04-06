@@ -1,8 +1,10 @@
 package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.function.Supplier;
@@ -29,6 +31,7 @@ public class OidcClientImpl implements OidcClient {
 
     private static final Logger LOG = Logger.getLogger(OidcClientImpl.class);
 
+    private static final Duration REQUEST_RETRY_BACKOFF_DURATION = Duration.ofSeconds(1);
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
     private final WebClient client;
@@ -67,15 +70,17 @@ public class OidcClientImpl implements OidcClient {
         return getJsonResponse(refreshGrantParams, true);
     }
 
-    private Uni<Tokens> getJsonResponse(MultiMap reqBody, boolean refresh) {
+    private Uni<Tokens> getJsonResponse(MultiMap formBody, boolean refresh) {
         //Uni needs to be lazy by default, we don't send the request unless
         //something has subscribed to it. This is important for the CAS state
         //management in TokensHelper
         return Uni.createFrom().deferred(new Supplier<Uni<? extends Tokens>>() {
             @Override
             public Uni<Tokens> get() {
-                MultiMap body = reqBody;
+                MultiMap body = formBody;
                 HttpRequest<Buffer> request = client.postAbs(tokenRequestUri);
+                request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
+                        HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
                 if (clientSecretBasicAuthScheme != null) {
                     request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
                 } else if (clientJwtKey != null) {
@@ -84,7 +89,12 @@ public class OidcClientImpl implements OidcClient {
                     body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
                     body.add(OidcConstants.CLIENT_ASSERTION, OidcCommonUtils.signJwtWithKey(oidcConfig, clientJwtKey));
                 }
-                return request.sendForm(body).onItem()
+                // Retry up to three times with a one second delay between the retries if the connection is closed
+                Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(body))
+                        .onFailure(ConnectException.class)
+                        .retry()
+                        .atMost(3);
+                return response.onItem()
                         .transform(resp -> emitGrantTokens(resp, refresh));
             }
         });

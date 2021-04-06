@@ -97,7 +97,13 @@ public class OidcClientRecorder {
             oidcConfig.setId(oidcClientId);
         }
 
-        OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false);
+        try {
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false);
+        } catch (Throwable t) {
+            String message = String.format("'%s' client configuration is not initialized", oidcClientId);
+            LOG.debug(message);
+            return Uni.createFrom().item(new DisabledOidcClient(message));
+        }
 
         String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
 
@@ -200,17 +206,17 @@ public class OidcClientRecorder {
 
         @Override
         public Uni<Tokens> getTokens() {
-            throw new OidcClientException(message);
+            throw new DisabledOidcClientException(message);
         }
 
         @Override
         public Uni<Tokens> refreshTokens(String refreshToken) {
-            throw new OidcClientException(message);
+            throw new DisabledOidcClientException(message);
         }
 
         @Override
         public void close() throws IOException {
-            throw new OidcClientException(message);
+            throw new DisabledOidcClientException(message);
         }
     }
 }

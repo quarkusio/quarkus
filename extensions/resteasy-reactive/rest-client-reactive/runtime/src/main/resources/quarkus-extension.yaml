@@ -1,7 +1,0 @@
----
-name: "MicroProfile Rest Client with RESTEasy Reactive"
-metadata:
-  keywords:
-  categories:
-  - "microprofile"
-  status: "experimental"

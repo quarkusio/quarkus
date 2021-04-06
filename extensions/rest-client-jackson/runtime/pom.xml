@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-rest-client-jackson</artifactId>
     <name>Quarkus - REST Client - Jackson - Runtime</name>
-    <description>Enable Jackson serialization for the REST Client</description>
+    <description>Jackson serialization support for the REST Client</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

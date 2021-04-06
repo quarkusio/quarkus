@@ -1,11 +1,13 @@
 package io.quarkus.oidc.common.runtime;
 
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.crypto.SecretKey;
@@ -22,8 +24,13 @@ import io.smallrye.jwt.util.ResourceUtils;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.mutiny.core.MultiMap;
+import io.vertx.mutiny.core.buffer.Buffer;
 
 public class OidcCommonUtils {
+    static final byte AMP = '&';
+    static final byte EQ = '=';
+
     private OidcCommonUtils() {
 
     }
@@ -32,25 +39,48 @@ public class OidcCommonUtils {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
         if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
             throw new ConfigurationException(
-                    String.format("Both '%sauth-server-url' and '%sclient-id' properties must be configured", configPrefix));
+                    String.format("Both '%1$sauth-server-url' and '%1$sclient-id' properties must be configured",
+                            configPrefix));
         }
 
         Credentials creds = oidcConfig.getCredentials();
         if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
             throw new ConfigurationException(
-                    String.format("'%scredentials.secret' and '%scredentials.client-secret' properties are mutually exclusive",
+                    String.format(
+                            "'%1$scredentials.secret' and '%1$scredentials.client-secret' properties are mutually exclusive",
                             configPrefix));
         }
         if ((creds.secret.isPresent() || creds.clientSecret.value.isPresent()) && creds.jwt.secret.isPresent()) {
             throw new ConfigurationException(
                     String.format(
-                            "Use only '%scredentials.secret' or '%scredentials.client-secret' or '%scredentials.jwt.secret' property",
+                            "Use only '%1$scredentials.secret' or '%1$scredentials.client-secret' or '%1$scredentials.jwt.secret' property",
                             configPrefix));
         }
     }
 
     public static String prependSlash(String path) {
         return !path.startsWith("/") ? "/" + path : path;
+    }
+
+    public static Buffer encodeForm(MultiMap form) {
+        Buffer buffer = Buffer.buffer();
+        for (Map.Entry<String, String> entry : form) {
+            if (buffer.length() != 0) {
+                buffer.appendByte(AMP);
+            }
+            buffer.appendString(entry.getKey());
+            buffer.appendByte(EQ);
+            buffer.appendString(urlEncode(entry.getValue()));
+        }
+        return buffer;
+    }
+
+    public static String urlEncode(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, TlsConfig tlsConfig, HttpClientOptions options) {

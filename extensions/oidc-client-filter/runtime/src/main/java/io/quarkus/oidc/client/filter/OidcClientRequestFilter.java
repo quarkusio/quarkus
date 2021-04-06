@@ -14,6 +14,7 @@ import javax.ws.rs.ext.Provider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
+import io.quarkus.oidc.client.runtime.DisabledOidcClientException;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 
 @Provider
@@ -28,6 +29,8 @@ public class OidcClientRequestFilter extends AbstractTokensProducer implements C
         try {
             final String accessToken = getAccessToken();
             requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + accessToken);
+        } catch (DisabledOidcClientException ex) {
+            requestContext.abortWith(Response.status(500).build());
         } catch (Exception ex) {
             LOG.debugf("Access token is not available, aborting the request with HTTP 401 error: %s", ex.getMessage());
             requestContext.abortWith(Response.status(401).build());

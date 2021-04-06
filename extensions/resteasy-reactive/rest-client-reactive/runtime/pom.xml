@@ -10,13 +10,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-reactive</artifactId>
-    <name>Quarkus - MicroProfile Rest Client - Runtime</name>
-    <description>MicroProfile Rest Client</description>
+    <name>Quarkus - REST Client Reactive - Runtime</name>
+    <description>Call REST services reactively</description>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxrs-client</artifactId>
+            <artifactId>quarkus-jaxrs-client-reactive</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>

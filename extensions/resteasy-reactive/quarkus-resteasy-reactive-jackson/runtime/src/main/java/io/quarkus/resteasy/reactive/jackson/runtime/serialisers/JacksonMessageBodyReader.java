@@ -12,20 +12,18 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
-import org.jboss.resteasy.reactive.server.providers.serialisers.json.AbstractJsonMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
-public class JacksonMessageBodyReader extends AbstractJsonMessageBodyReader {
-
-    private final ObjectReader reader;
+public class JacksonMessageBodyReader extends JacksonBasicMessageBodyReader implements ServerMessageBodyReader<Object> {
 
     @Inject
     public JacksonMessageBodyReader(ObjectMapper mapper) {
-        this.reader = mapper.reader();
+        super(mapper);
     }
 
     @Override
@@ -36,6 +34,16 @@ public class JacksonMessageBodyReader extends AbstractJsonMessageBodyReader {
         } catch (MismatchedInputException e) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
+    }
+
+    @Override
+    public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+        return isReadable(mediaType, type);
+    }
+
+    @Override
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+        return isReadable(mediaType, type);
     }
 
     @Override

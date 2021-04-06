@@ -36,6 +36,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -59,6 +61,7 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class MongoClientProcessor {
+    private static final String MONGODB_TRACING_COMMANDLISTENER_CLASSNAME = "io.quarkus.mongodb.tracing.MongoTracingCommandListener";
     private static final DotName LEGACY_MONGO_CLIENT_ANNOTATION = DotName
             .createSimple(io.quarkus.mongodb.runtime.MongoClientName.class.getName());
     private static final DotName MONGO_CLIENT_ANNOTATION = DotName.createSimple(MongoClientName.class.getName());
@@ -93,10 +96,16 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    CommandListenerBuildItem collectCommandListeners(CombinedIndexBuildItem indexBuildItem) {
+    CommandListenerBuildItem collectCommandListeners(CombinedIndexBuildItem indexBuildItem,
+            MongoClientBuildTimeConfig buildTimeConfig, Capabilities capabilities) {
         Collection<ClassInfo> commandListenerClasses = indexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(CommandListener.class.getName()));
-        List<String> names = commandListenerClasses.stream().map(ci -> ci.name().toString()).collect(Collectors.toList());
+        List<String> names = commandListenerClasses.stream()
+                .map(ci -> ci.name().toString())
+                .collect(Collectors.toList());
+        if (buildTimeConfig.tracingEnabled && capabilities.isPresent(Capability.OPENTRACING)) {
+            names.add(MONGODB_TRACING_COMMANDLISTENER_CLASSNAME);
+        }
         return new CommandListenerBuildItem(names);
     }
 

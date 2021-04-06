@@ -431,6 +431,16 @@ public MeterFilter renameApplicationMeters() {
 }
 ----
 
+Ensure the following dependency is present in your `pom.xml` file if you require the Microprofile Metrics API:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.eclipse.microprofile.metrics</groupId>
+  <artifactId>microprofile-metrics-api</artifactId>
+</dependency>
+----
+
 NOTE: The MP Metrics API compatibility layer will be moved to a different extension in the future.
 
 == Configuration Reference

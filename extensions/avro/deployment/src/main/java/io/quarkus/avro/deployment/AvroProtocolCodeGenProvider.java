@@ -48,7 +48,7 @@ public class AvroProtocolCodeGenProvider extends AvroCodeGenProviderBase impleme
             compiler.setOutputCharacterEncoding("UTF-8");
             compiler.compileToDestination(filePath.toFile(), outputDirectory.toFile());
         } catch (IOException e) {
-            new CodeGenException("Failed to compile avro protocole file: " + filePath.toString() + " to Java", e);
+            throw new CodeGenException("Failed to compile avro protocole file: " + filePath.toString() + " to Java", e);
         }
     }
 }

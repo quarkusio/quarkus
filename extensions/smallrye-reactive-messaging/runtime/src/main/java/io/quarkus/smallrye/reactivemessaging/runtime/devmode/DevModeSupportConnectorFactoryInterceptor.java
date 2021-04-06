@@ -19,7 +19,7 @@ import org.reactivestreams.Subscription;
 @DevModeSupportConnectorFactory
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 10)
 public class DevModeSupportConnectorFactoryInterceptor {
-    private static Supplier<CompletableFuture<Boolean>> onMessage;
+    private static volatile Supplier<CompletableFuture<Boolean>> onMessage;
 
     static void register(Supplier<CompletableFuture<Boolean>> onMessage) {
         DevModeSupportConnectorFactoryInterceptor.onMessage = onMessage;

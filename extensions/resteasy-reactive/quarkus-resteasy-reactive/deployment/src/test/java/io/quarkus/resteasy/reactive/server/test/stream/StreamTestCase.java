@@ -141,6 +141,7 @@ public class StreamTestCase {
     }
 
     @Test
+    @Disabled("https://github.com/quarkusio/quarkus/issues/16227")
     public void testSse() throws InterruptedException {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + "stream/sse");

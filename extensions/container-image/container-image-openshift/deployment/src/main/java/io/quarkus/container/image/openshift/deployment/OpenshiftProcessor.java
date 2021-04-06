@@ -65,7 +65,7 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
-import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
+import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -340,7 +340,7 @@ public class OpenshiftProcessor {
         //Let's disable http2 as it causes issues with duplicate build triggers.
         config.setHttp2Disable(true);
         try (KubernetesClient client = Clients.fromConfig(config)) {
-            OpenShiftClient openShiftClient = client.adapt(OpenShiftClient.class);
+            OpenShiftClient openShiftClient = toOpenshiftClient(client);
             KubernetesList kubernetesList = Serialization
                     .unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
 
@@ -350,6 +350,15 @@ public class OpenshiftProcessor {
 
             applyOpenshiftResources(openShiftClient, buildResources);
             openshiftBuild(openShiftClient, buildResources, tar, openshiftConfig);
+        }
+    }
+
+    private static OpenShiftClient toOpenshiftClient(KubernetesClient client) {
+        try {
+            return client.adapt(OpenShiftClient.class);
+        } catch (KubernetesClientException e) {
+            KubernetesClientErrorHandler.handle(e);
+            return null; // will never happen
         }
     }
 
@@ -391,7 +400,7 @@ public class OpenshiftProcessor {
             OpenshiftUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
 
         } catch (KubernetesClientException e) {
-            KubernetesClientErrorHanlder.handle(e);
+            KubernetesClientErrorHandler.handle(e);
         }
     }
 
@@ -499,7 +508,7 @@ public class OpenshiftProcessor {
 
     private static RuntimeException openshiftException(Throwable t) {
         if (t instanceof KubernetesClientException) {
-            KubernetesClientErrorHanlder.handle((KubernetesClientException) t);
+            KubernetesClientErrorHandler.handle((KubernetesClientException) t);
         }
         return new RuntimeException("Execution of openshift build failed. See build output for more details", t);
     }

@@ -142,15 +142,17 @@ public class OidcClientRecorder {
                                 : OidcConstants.PASSWORD_GRANT;
                         setGrantClientParams(oidcConfig, tokenGrantParams, grantType);
 
-                        Map<String, String> grantOptions = oidcConfig.getGrantOptions()
-                                .get(oidcConfig.grant.getType().name().toLowerCase());
-                        if (oidcConfig.grant.getType() == Grant.Type.PASSWORD) {
-                            tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
-                                    grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
-                            tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
-                                    grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
-                        } else if (grantOptions != null && oidcConfig.grant.getType() == Grant.Type.CLIENT) {
-                            tokenGrantParams.addAll(grantOptions);
+                        if (oidcConfig.getGrantOptions() != null) {
+                            Map<String, String> grantOptions = oidcConfig.getGrantOptions()
+                                    .get(oidcConfig.grant.getType().name().toLowerCase());
+                            if (oidcConfig.grant.getType() == Grant.Type.PASSWORD) {
+                                tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
+                                        grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
+                                tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
+                                        grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
+                            } else if (grantOptions != null && oidcConfig.grant.getType() == Grant.Type.CLIENT) {
+                                tokenGrantParams.addAll(grantOptions);
+                            }
                         }
 
                         MultiMap commonRefreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());

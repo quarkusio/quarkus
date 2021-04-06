@@ -80,7 +80,7 @@ public class JacocoProcessor {
         }
         if (config.report) {
             ReportInfo info = new ReportInfo();
-            info.savedData = dataFile;
+            info.dataFile = dataFile;
 
             File targetdir = new File(
                     outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
@@ -96,6 +96,7 @@ public class JacocoProcessor {
             if (BuildToolHelper.isMavenProject(targetdir.toPath())) {
                 LocalProject project = LocalProject.loadWorkspace(targetdir.toPath());
                 for (Map.Entry<AppArtifactKey, LocalProject> i : project.getWorkspace().getProjects().entrySet()) {
+                    info.savedData.add(i.getValue().getOutputDir().resolve(config.dataFile).toAbsolutePath().toString());
                     sources.add(i.getValue().getSourcesSourcesDir().toFile().getAbsolutePath());
                     File classesDir = i.getValue().getClassesDir().toFile();
                     if (classesDir.isDirectory()) {

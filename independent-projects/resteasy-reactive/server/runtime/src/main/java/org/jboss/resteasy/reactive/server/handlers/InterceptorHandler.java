@@ -20,4 +20,8 @@ public class InterceptorHandler implements ServerRestHandler {
         requestContext.setWriterInterceptors(writerInterceptors);
         requestContext.setReaderInterceptors(readerInterceptors);
     }
+
+    public boolean hasWriterInterceptors() {
+        return writerInterceptors != null && writerInterceptors.length > 0;
+    }
 }

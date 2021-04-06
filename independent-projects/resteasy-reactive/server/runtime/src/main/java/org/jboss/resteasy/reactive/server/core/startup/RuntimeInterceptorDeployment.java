@@ -336,6 +336,28 @@ public class RuntimeInterceptorDeployment {
             }
             return handlers;
         }
+
+        public boolean hasWriterInterceptors() {
+            if (method.getNameBindingNames().isEmpty() && methodSpecificReaderInterceptorsMap.isEmpty()
+                    && methodSpecificWriterInterceptorsMap.isEmpty()) {
+                if (globalInterceptorHandler != null) {
+                    return globalInterceptorHandler.hasWriterInterceptors();
+                }
+            } else if (nameReaderInterceptorsMap.isEmpty() && nameWriterInterceptorsMap.isEmpty()
+                    && methodSpecificReaderInterceptorsMap.isEmpty() && methodSpecificWriterInterceptorsMap.isEmpty()) {
+                // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
+                if (globalInterceptorHandler != null) {
+                    return globalInterceptorHandler.hasWriterInterceptors();
+                }
+            } else {
+                // this is not optimal at all, but this method is only used for return types of AsyncFile so limited impact
+                TreeMap<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> writerInterceptorsToUse = buildInterceptorMap(
+                        globalWriterInterceptorsMap, nameWriterInterceptorsMap, methodSpecificWriterInterceptorsMap, method,
+                        false);
+                return !writerInterceptorsToUse.isEmpty();
+            }
+            return false;
+        }
     }
 
     /**

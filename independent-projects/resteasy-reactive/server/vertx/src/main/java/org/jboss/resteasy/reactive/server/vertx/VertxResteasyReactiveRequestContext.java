@@ -348,6 +348,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
+    public ServerHttpResponse sendFile(String path, long offset, long length) {
+        response.sendFile(path, offset, length);
+        return this;
+    }
+
+    @Override
     public OutputStream createResponseOutputStream() {
         return new ResteasyReactiveOutputStream(this);
     }
@@ -362,6 +368,22 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         if (preCommitTask != null) {
             preCommitTask.accept(this);
         }
+    }
+
+    @Override
+    public ServerHttpResponse addDrainHandler(Runnable onDrain) {
+        response.drainHandler(new Handler<Void>() {
+            @Override
+            public void handle(Void event) {
+                onDrain.run();
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public boolean isWriteQueueFull() {
+        return response.writeQueueFull();
     }
 
     public HttpServerRequest vertxServerRequest() {

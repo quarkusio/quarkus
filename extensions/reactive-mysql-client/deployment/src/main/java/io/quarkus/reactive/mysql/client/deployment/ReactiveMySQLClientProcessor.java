@@ -167,7 +167,10 @@ class ReactiveMySQLClientProcessor {
                 .getDataSourceReactiveBuildTimeConfig(dataSourceName);
 
         Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind,
-                defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
+                defaultDataSourceDbKindBuildItems,
+                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices.enabled
+                        .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty()),
+                curateOutcomeBuildItem);
         if (!dbKind.isPresent()) {
             return false;
         }

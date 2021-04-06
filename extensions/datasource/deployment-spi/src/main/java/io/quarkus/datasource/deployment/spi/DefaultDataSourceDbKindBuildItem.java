@@ -53,18 +53,25 @@ public final class DefaultDataSourceDbKindBuildItem extends MultiBuildItem {
         return scope;
     }
 
-    public static Optional<String> resolve(Optional<String> configured, List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
+    public static Optional<String> resolve(Optional<String> configured,
+            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
+            boolean enableImplicitResolution,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (configured.isPresent()) {
             return Optional.of(DatabaseKind.normalize(configured.get()));
         }
-        return resolve(defaultDbKinds, curateOutcomeBuildItem);
+
+        if (!enableImplicitResolution) {
+            return Optional.empty();
+        }
+
+        return resolveImplicitDbKind(defaultDbKinds, curateOutcomeBuildItem);
     }
 
     /**
-     * Attempts to resolve the default DB kind for the case where none has been specified.
+     * Attempts to resolve the implicit DB kind for the case where none has been specified.
      */
-    public static Optional<String> resolve(List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
+    private static Optional<String> resolveImplicitDbKind(List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (defaultDbKinds.isEmpty()) {
             return Optional.empty();

@@ -22,7 +22,8 @@ public class ErroneousConfigHotReloadTestCase {
 
     @Test
     public void test() {
-        RestAssured.when().get("/unannotatedEntity").then().statusCode(500).body(containsString("No entities were found"))
+        RestAssured.when().get("/unannotatedEntity").then().statusCode(500)
+                .body(containsString("The default datasource has not been properly configured."))
                 .body(not(containsString("NullPointer")));
 
         TEST.modifyResourceFile("application.properties", new Function<String, String>() {

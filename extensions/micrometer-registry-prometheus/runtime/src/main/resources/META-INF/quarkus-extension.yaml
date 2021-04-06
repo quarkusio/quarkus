@@ -1,4 +1,4 @@
-name: "Micrometer registry: Prometheus"
+name: "Micrometer Registry Prometheus"
 metadata:
   keywords:
   - "micrometer"

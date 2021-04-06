@@ -118,6 +118,10 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>$\{compiler-plugin.version}</version>
+                <!-- Workaround to support maven.compiler.parameters property (see https://youtrack.jetbrains.com/issue/IDEA-201496) -->
+                <configuration>
+                    <parameters>$\{maven.compiler.parameters}</parameters>
+                </configuration>
             </plugin>
             <!-- Run the tests in JVM mode -->
             <plugin>

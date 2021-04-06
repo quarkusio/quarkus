@@ -19,8 +19,9 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
-@QuarkusTestResource(KeycloakDevModeRealmResourceManager.class)
+@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowDevModeTestCase {
 
     private static Class<?>[] testClasses = {
@@ -68,20 +69,20 @@ public class CodeFlowDevModeTestCase {
             }
 
             // Now set the correct client-id
-            test.modifyResourceFile("application.properties", s -> s.replace("client-dev", "client-dev-mode"));
+            test.modifyResourceFile("application.properties", s -> s.replace("client-dev", "quarkus-web-app"));
 
             page = webClient.getPage("http://localhost:8080/protected");
 
-            assertEquals("Sign in to devmode", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
-            loginForm.getInputByName("username").setValueAttribute("alice-dev-mode");
-            loginForm.getInputByName("password").setValueAttribute("alice-dev-mode");
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("alice-dev-mode", page.getBody().asText());
+            assertEquals("alice", page.getBody().asText());
 
             assertEquals("custom", page.getWebClient().getCookieManager().getCookie("q_session").getValue().split("\\|")[3]);
 
@@ -93,16 +94,16 @@ public class CodeFlowDevModeTestCase {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8080/protected/tenant/tenant-config-resolver");
 
-            assertEquals("Sign in to devmode", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
-            loginForm.getInputByName("username").setValueAttribute("alice-dev-mode");
-            loginForm.getInputByName("password").setValueAttribute("alice-dev-mode");
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("tenant-config-resolver:alice-dev-mode", page.getBody().asText());
+            assertEquals("tenant-config-resolver:alice", page.getBody().asText());
             webClient.getCookieManager().clearCookies();
         }
     }

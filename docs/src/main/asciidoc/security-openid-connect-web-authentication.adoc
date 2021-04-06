@@ -576,15 +576,10 @@ Please see link:security-openid-connect-client#token-propagation[Token Propagati
 [[integration-testing]]
 == Testing
 
-Add the following dependencies to your test project:
+Start by adding the following dependencies to your test project:
 
 [source,xml]
 ----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-test-oidc-server</artifactId>
-    <scope>test</scope>
-</dependency>
 <dependency>
     <groupId>net.sourceforge.htmlunit</groupId>
     <artifactId>htmlunit</artifactId>
@@ -601,10 +596,19 @@ Add the following dependencies to your test project:
     <artifactId>quarkus-junit5</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[[integration-testing-wiremock]]
+=== Wiremock
+
+Add the following dependency:
+
+[source,xml]
+----
 <dependency>
-   <groupId>io.rest-assured</groupId>
-   <artifactId>rest-assured</artifactId>
-   <scope>test</scope>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-oidc-server</artifactId>
+    <scope>test</scope>
 </dependency>
 ----
 
@@ -666,9 +670,66 @@ public class CodeFlowAuthorizationTest {
 ----
 
 `OidcWiremockTestResource` recognizes `alice` and `admin` users. The user `alice` has the `user` role only by default - it can be customized with a `quarkus.test.oidc.token.user-roles` system property. The user `admin` has the `user` and `admin` roles by default - it can be customized with a `quarkus.test.oidc.token.admin-roles` system property.
+
 Additionally, `OidcWiremockTestResource` set token issuer and audience to `https://service.example.com` which can be customized with `quarkus.test.oidc.token.issuer` and `quarkus.test.oidc.token.audience` system properties.
 
-`OidcWiremockTestResource` will be enhanced going forward to support more complex authorization code flow test scenarios.
+`OidcWiremockTestResource` can be used to emulate all OpenId Connect providers.
+
+=== Keycloak
+
+If you work with Keycloak then you can test against a live Keycloak instance by adding the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-keycloak-server</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+and configure `maven.surefire.plugin` as follows:
+
+[source,xml]
+----
+<plugin>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <configuration>
+        <systemPropertyVariables>
+            <!-- or, alternativey, configure 'keycloak.version' -->
+            <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+            <!--
+              Disable HTTPS if required:
+              <keycloak.use.https>false</keycloak.use.https>
+            -->
+        </systemPropertyVariables>
+    </configuration>
+</plugin>
+----
+
+(and similarly `maven.failsafe.plugin` when testing in native image).
+
+And now set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section above.
+The only difference is the name of `QuarkusTestResource`:
+
+[source, java]
+----
+import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
+
+@QuarkusTest
+@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+public class CodeFlowAuthorizationTest {
+}
+----
+
+`KeycloakTestResourceLifecycleManager` registers `alice` and `admin` users. The user `alice` has the `user` role only by default - it can be customized with a `keycloak.token.user-roles` system property. The user `admin` has the `user` and `admin` roles by default - it can be customized with a `keycloak.token.admin-roles` system property.
+
+By default, `KeycloakTestResourceLifecycleManager` uses HTTPS to initialize a Keycloak instance which can be disabled with `keycloak.use.https=false`.
+Default realm name is `quarkus` and client id - `quarkus-web-app` - set `keycloak.realm` and `keycloak.web-app.client` system properties to customize the values if needed.
+
+=== TestSecurity annotation
+
+Please see link:security-testing#testing-security[TestingSecurity Annotation] section how to do simple tests with the `TestSecurity` annotation.
 
 == Configuration Reference
 

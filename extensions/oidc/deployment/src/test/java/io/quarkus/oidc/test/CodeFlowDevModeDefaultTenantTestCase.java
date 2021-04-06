@@ -18,8 +18,9 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
-@QuarkusTestResource(KeycloakDevModeRealmResourceManager.class)
+@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowDevModeDefaultTenantTestCase {
 
     private static Class<?>[] testClasses = {
@@ -51,16 +52,16 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
             HtmlPage page = webClient.getPage("http://localhost:8080/protected");
 
-            assertEquals("Sign in to devmode", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
-            loginForm.getInputByName("username").setValueAttribute("alice-dev-mode");
-            loginForm.getInputByName("password").setValueAttribute("alice-dev-mode");
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("alice-dev-mode", page.getBody().asText());
+            assertEquals("alice", page.getBody().asText());
 
             webClient.getCookieManager().clearCookies();
         }

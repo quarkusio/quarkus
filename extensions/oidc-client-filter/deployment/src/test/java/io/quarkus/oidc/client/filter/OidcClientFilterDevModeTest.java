@@ -22,9 +22,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KeycloakRealmResourceManager.class)
+@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class OidcClientFilterDevModeTest {
 
     private static Class<?>[] testClasses = {

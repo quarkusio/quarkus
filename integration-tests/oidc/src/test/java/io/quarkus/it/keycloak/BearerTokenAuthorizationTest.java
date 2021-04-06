@@ -148,7 +148,6 @@ public class BearerTokenAuthorizationTest {
     }
 
     //see https://github.com/quarkusio/quarkus/issues/5809
-    @Test
     @RepeatedTest(20)
     public void testOidcAndVertxHandler() {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))

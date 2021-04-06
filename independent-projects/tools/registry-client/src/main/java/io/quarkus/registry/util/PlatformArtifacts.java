@@ -37,4 +37,13 @@ public class PlatformArtifacts {
                 : artifactId;
     }
 
+    public static ArtifactCoords ensureBomArtifact(ArtifactCoords coords) {
+        return isCatalogArtifactId(coords.getArtifactId())
+                ? new ArtifactCoords(coords.getGroupId(),
+                        coords.getArtifactId().substring(0,
+                                coords.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
+                        null, "pom", coords.getVersion())
+                : coords;
+    }
+
 }

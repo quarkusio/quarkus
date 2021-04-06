@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
@@ -66,6 +67,10 @@ public class QuarkusDelayedHandler extends ExtHandler {
                     publishToNestedHandlers(record);
                     super.doPublish(record);
                 } else {
+                    // until the handler is fully activated, we drop anything below the info level
+                    if (record.getLevel().intValue() < Level.INFO.intValue()) {
+                        return;
+                    }
                     // Determine whether the queue was overrun
                     if (logRecords.size() >= queueLimit) {
                         reportError(

@@ -177,6 +177,13 @@ public class RuntimeResourceDeployment {
             }
         }
 
+        // special case for AsyncFile which can't do async IO and handle interceptors
+        if (method.getReturnType().equals("Lio/vertx/core/file/AsyncFile;")
+                && interceptorDeployment.hasWriterInterceptors()) {
+            throw new RuntimeException(
+                    "Endpoints that return an AsyncFile cannot have any WriterInterceptor set");
+        }
+
         //spec doesn't seem to test this, but RESTEasy does not run request filters again for sub resources (which makes sense)
         if (!locatableResource) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment

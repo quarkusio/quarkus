@@ -472,6 +472,26 @@ response (see <<negotiation>> for more advanced information).
 You can return any of the pre-defined types that you can read from the <<resource-types,HTTP response>>,
 and any other type will be mapped <<json,from that type to JSON>>.
 
+In addition, the following return types are also supported:
+
+.Table Additional response body parameter type
+|===
+|Type|Usage
+
+|link:{jdkapi}/java/nio/file/Path.html[`Path`]
+|The contents of the file specified by the given path
+
+|`PathPart`
+|The partial contents of the file specified by the given path
+
+|`FilePart`
+|The partial contents of a file
+
+|link:{vertxapi}io/vertx/core/file/AsyncFile.html[`AsyncFile`]
+|Vert.x AsyncFile, which can be in full, or partial
+
+|===
+
 Alternately, you can also return a <<reactive,reactive type>> such as link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni`], 
 link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] or 
 link:{jdkapi}/java/util/concurrent/CompletionStage.html[`CompletionStage`]

@@ -34,9 +34,15 @@ public interface ServerHttpResponse {
 
     CompletionStage<Void> write(byte[] data);
 
+    ServerHttpResponse sendFile(String path, long offset, long length);
+
     OutputStream createResponseOutputStream();
 
     void setPreCommitListener(Consumer<ResteasyReactiveRequestContext> task);
 
     ServerHttpResponse addCloseHandler(Runnable onClose);
+
+    boolean isWriteQueueFull();
+
+    ServerHttpResponse addDrainHandler(Runnable onDrain);
 }

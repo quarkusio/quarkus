@@ -11,7 +11,7 @@ final class JsonbProducer {
     private JsonbProducer() {
     }
 
-    // Try to get JSON-B from Arc but fallback to regular JSON-B creation
+    // Try to get Jsonb from Arc but fallback to regular Jsonb creation
     // The fallback could be used for example in unit tests where Arc has not been initialized
     static Jsonb get() {
         Jsonb jsonb = null;

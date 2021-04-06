@@ -33,6 +33,12 @@ import io.vertx.ext.web.RoutingContext;
 public class OidcProvider {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
+    private static final String[] SUPPORTED_ALGORITHMS = new String[] { SignatureAlgorithm.RS256.getAlgorithm(),
+            SignatureAlgorithm.RS384.getAlgorithm(),
+            SignatureAlgorithm.RS512.getAlgorithm(),
+            SignatureAlgorithm.ES256.getAlgorithm(),
+            SignatureAlgorithm.ES384.getAlgorithm(),
+            SignatureAlgorithm.ES512.getAlgorithm() };
 
     final OidcProviderClient client;
     final RefreshableVerificationKeyResolver keyResolver;
@@ -56,7 +62,7 @@ public class OidcProvider {
         builder.setVerificationKeyResolver(keyResolver);
 
         builder.setJwsAlgorithmConstraints(
-                new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, SignatureAlgorithm.RS256.getAlgorithm()));
+                new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, SUPPORTED_ALGORITHMS));
 
         builder.setRequireExpirationTime();
         builder.setRequireIssuedAt();

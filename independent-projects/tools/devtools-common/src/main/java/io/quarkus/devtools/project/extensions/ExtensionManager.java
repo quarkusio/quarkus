@@ -18,6 +18,14 @@ public interface ExtensionManager {
     BuildTool getBuildTool();
 
     /**
+     * Returns the list of the imported platforms in the current project.
+     *
+     * @return current list of imported platforms
+     * @throws IOException if a problem occurs while reading the project build file(s)
+     */
+    Collection<AppArtifactCoords> getInstalledPlatforms() throws IOException;
+
+    /**
      * Read the build file(s) to get the list of installed extensions in this Quarkus project.
      *
      * @return The list of {@link AppArtifactCoords} installed in the project build file(s).

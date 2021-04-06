@@ -243,7 +243,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-jvm-linux-jdk${{matrix.java.name}}
+          name: "surefire-reports-JVM Tests - JDK ${{matrix.java.name}}"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
@@ -296,7 +296,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-jvm-windows-jdk11
+          name: "surefire-reports-JVM Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
@@ -351,7 +351,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-maven-linux-jdk${{matrix.java.name}}
+          name: "surefire-reports-Maven Tests - JDK ${{matrix.java.name}}"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
@@ -401,7 +401,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-maven-windows-jdk11
+          name: "surefire-reports-Maven Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
@@ -466,7 +466,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-gradle-${{ matrix.os.path }}-jdk11
+          name: "surefire-reports-Gradle Tests - JDK 11 ${{matrix.os.family}}"
           path: "**/build/test-results/test/TEST-*.xml"
           retention-days: 2
 
@@ -521,7 +521,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-devtools-linux-jdk${{matrix.java.name}}
+          name: "surefire-reports-Devtools Tests - JDK ${{matrix.java.name}}"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
@@ -571,7 +571,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-devtools-windows-jdk${{matrix.java.name}}
+          name: "surefire-reports-Devtools Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
@@ -634,7 +634,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-microprofile-tck-tests
+          name: "surefire-reports-MicroProfile TCKs Tests"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
@@ -720,7 +720,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-native-linux-${{matrix.category}}
+          name: "surefire-reports-Native Tests - ${{matrix.category}}"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
   native-tests-windows:
@@ -803,6 +803,6 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: surefire-reports-native-windows-${{matrix.category}}
+          name: "surefire-reports-Native Tests - Windows - ${{matrix.category}}"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2

@@ -59,11 +59,25 @@ public class RedisConfig {
          * 1 element.
          * <p>
          * The URI provided uses the following schema `redis://[username:password@][host][:port][/database]`
+         * Use `quarkus.redis.hosts-provider-name` to provide the hosts programmatically.
+         * <p>
          * 
          * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
          */
         @ConfigItem(defaultValueDocumentation = "redis://localhost:6379")
         public Optional<Set<URI>> hosts;
+
+        /**
+         * The hosts provider bean name.
+         * <p>
+         * It is the {@code &#64;Named} value of the hosts provider bean. It is used to discriminate if multiple
+         * `io.quarkus.redis.client.RedisHostsProvider` beans are available.
+         *
+         * <p>
+         * Used when `quarkus.redis.hosts` is not set.
+         */
+        @ConfigItem
+        public Optional<String> hostsProviderName = Optional.empty();
 
         /**
          * The maximum delay to wait before a blocking command to redis server times out

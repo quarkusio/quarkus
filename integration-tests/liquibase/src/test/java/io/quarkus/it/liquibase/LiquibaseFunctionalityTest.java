@@ -20,6 +20,7 @@ public class LiquibaseFunctionalityTest {
                 .then()
                 .body(is(
                         "create-tables-1,test-1,create-view-inline,create-view-file-abs,create-view-file-rel,"
+                                + "includeAll-1,includeAll-2,"
                                 + "json-create-tables-1,json-test-1,"
                                 + "sql-create-tables-1,sql-test-1,"
                                 + "yaml-create-tables-1,yaml-test-1,"

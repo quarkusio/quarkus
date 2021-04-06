@@ -9,4 +9,6 @@
     <include relativeToChangelogFile="true" file="test/test.xml" />
 
     <include relativeToChangelogFile="true" file="create-views.xml" />
+
+    <includeAll relativeToChangelogFile="true" path="includeAll" />
 </databaseChangeLog>

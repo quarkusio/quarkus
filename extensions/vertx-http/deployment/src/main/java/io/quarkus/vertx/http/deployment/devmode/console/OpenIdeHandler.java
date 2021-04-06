@@ -77,7 +77,13 @@ public class OpenIdeHandler extends DevConsolePostHandler {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    new ProcessBuilder(Arrays.asList(ide.getEffectiveCommand(), arg)).inheritIO().start().waitFor(10,
+                    String effectiveCommand = ide.getEffectiveCommand();
+                    if (isNullOrEmpty(effectiveCommand)) {
+                        log.debug("Unable to determine proper launch command for IDE: " + ide);
+                        routingContext.response().setStatusCode(500).end();
+                        return;
+                    }
+                    new ProcessBuilder(Arrays.asList(effectiveCommand, arg)).inheritIO().start().waitFor(10,
                             TimeUnit.SECONDS);
                     routingContext.response().setStatusCode(200).end();
                 } catch (Exception e) {

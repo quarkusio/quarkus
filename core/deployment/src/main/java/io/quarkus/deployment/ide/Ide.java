@@ -66,4 +66,10 @@ public enum Ide {
         this.machineSpecificCommand = machineSpecificCommand;
     }
 
+    @Override
+    public String toString() {
+        return "Ide{" +
+                "defaultCommand='" + defaultCommand + '\'' +
+                '}';
+    }
 }

@@ -110,7 +110,7 @@ public class DataSourceReactiveRuntimeConfig {
     public Duration reconnectInterval = Duration.ofSeconds(1L);
 
     /**
-     * The maximum time without data written to or read from a connection before it is closed.
+     * The maximum time a connection remains unused in the pool before it is closed.
      */
     @ConfigItem(defaultValueDocumentation = "no timeout")
     public Optional<Duration> idleTimeout = Optional.empty();

@@ -570,6 +570,12 @@ quarkus.oidc.introspection-path=/protocol/openid-connect/token/introspect
 quarkus.oidc.end-session-path=/protocol/openid-connect/logout
 ----
 
+[[jwt-claim-verification]]
+== JSON Web Token Claim Verification
+
+Please see link:security-openid-connect#jwt-claim-verification[JSON Web Token Claim verification] section about the claim verification, including the `iss` (issuer) claim.
+It applies to ID tokens but also to access tokens in a JWT format if the `web-app` application has requested the access token verification.
+
 == Token Propagation
 Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Authorization Code Flow access token propagation to the downstream services.
 

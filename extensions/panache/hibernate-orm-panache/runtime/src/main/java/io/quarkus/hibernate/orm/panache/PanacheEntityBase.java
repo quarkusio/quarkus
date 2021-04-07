@@ -727,6 +727,7 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persist(Iterable<?> entities) {
         JpaOperations.INSTANCE.persist(entities);
     }
@@ -739,6 +740,7 @@ public abstract class PanacheEntityBase {
      * @see #persist(Iterable)
      * @see #persist(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persist(Stream<?> entities) {
         JpaOperations.INSTANCE.persist(entities);
     }
@@ -751,6 +753,7 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Iterable)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persist(Object firstEntity, Object... entities) {
         JpaOperations.INSTANCE.persist(firstEntity, entities);
     }

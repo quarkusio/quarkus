@@ -77,6 +77,9 @@ public class PanacheMockingTest {
         Assertions.assertSame(p, Person.findById(12l));
         Assertions.assertNull(Person.findById(42l));
 
+        Person.persist(p);
+        Assertions.assertNull(p.id);
+
         Mockito.when(Person.findById(12l)).thenThrow(new WebApplicationException());
         try {
             Person.findById(12l);
@@ -89,6 +92,7 @@ public class PanacheMockingTest {
 
         PanacheMock.verify(Person.class, Mockito.atLeast(5)).voidMethod();
         PanacheMock.verify(Person.class).findOrdered();
+        PanacheMock.verify(Person.class).persist(Mockito.<Object> any(), Mockito.<Object> any());
         PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
         PanacheMock.verifyNoMoreInteractions(Person.class);
 
@@ -124,6 +128,9 @@ public class PanacheMockingTest {
         Assertions.assertSame(p, mockablePersonRepository.findById(12l));
         Assertions.assertNull(mockablePersonRepository.findById(42l));
 
+        mockablePersonRepository.persist(p);
+        Assertions.assertNull(p.id);
+
         Mockito.when(mockablePersonRepository.findById(12l)).thenThrow(new WebApplicationException());
         try {
             mockablePersonRepository.findById(12l);
@@ -136,6 +143,7 @@ public class PanacheMockingTest {
 
         Mockito.verify(mockablePersonRepository).findOrdered();
         Mockito.verify(mockablePersonRepository, Mockito.atLeastOnce()).findById(Mockito.any());
+        Mockito.verify(mockablePersonRepository).persist(Mockito.<Person> any());
         Mockito.verifyNoMoreInteractions(mockablePersonRepository);
     }
 

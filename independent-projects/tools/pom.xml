@@ -53,7 +53,6 @@
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>18</maven-model-helper.version>
         <commons-io.version>2.8.0</commons-io.version>
-        <quarkus-http.version>3.0.18.Final</quarkus-http.version>
         <smallrye-commons.version>1.5.0</smallrye-commons.version>
     </properties>
     <modules>
@@ -118,17 +117,6 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkus.http</groupId>
-                <artifactId>quarkus-http-websockets-jsr</artifactId>
-                <version>${quarkus-http.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.spec.javax.annotation</groupId>
-                        <artifactId>jboss-annotations-api_1.2_spec</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>jline</groupId>
                 <artifactId>jline</artifactId>
                 <version>${jline.version}</version>
@@ -162,16 +150,6 @@
                 <groupId>jakarta.enterprise</groupId>
                 <artifactId>jakarta.enterprise.cdi-api</artifactId>
                 <version>${jakarta.enterprise.cdi-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.servlet</groupId>
-                <artifactId>jakarta.servlet-api</artifactId>
-                <version>${jakarta.servlet-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.websocket</groupId>
-                <artifactId>jakarta.websocket-api</artifactId>
-                <version>${jakarta.websocket-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>

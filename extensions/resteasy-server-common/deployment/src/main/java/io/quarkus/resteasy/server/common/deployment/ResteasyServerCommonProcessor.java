@@ -953,6 +953,9 @@ public class ResteasyServerCommonProcessor {
         Application application;
         ClassInfo selectedAppClass = null;
         for (ClassInfo applicationClassInfo : applications) {
+            if (Modifier.isAbstract(applicationClassInfo.flags())) {
+                continue;
+            }
             if (selectedAppClass != null) {
                 throw new RuntimeException("More than one Application class: " + applications);
             }

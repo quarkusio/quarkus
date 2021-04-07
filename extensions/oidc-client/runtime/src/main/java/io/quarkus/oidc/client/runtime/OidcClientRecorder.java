@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.oidc.client.OidcClientConfig.Grant;
+import io.quarkus.oidc.client.OidcClientConfig.Grant.Type;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
@@ -141,13 +142,17 @@ public class OidcClientRecorder {
                                 : OidcConstants.PASSWORD_GRANT;
                         setGrantClientParams(oidcConfig, tokenGrantParams, grantType);
 
-                        if (oidcConfig.grant.getType() == Grant.Type.PASSWORD) {
-                            Map<String, String> passwordGrantOptions = oidcConfig.getGrantOptions()
-                                    .get(OidcConstants.PASSWORD_GRANT);
-                            tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
-                                    passwordGrantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
-                            tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
-                                    passwordGrantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
+                        if (oidcConfig.getGrantOptions() != null) {
+                            Map<String, String> grantOptions = oidcConfig.getGrantOptions()
+                                    .get(oidcConfig.grant.getType().name().toLowerCase());
+                            if (oidcConfig.grant.getType() == Grant.Type.PASSWORD) {
+                                tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
+                                        grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
+                                tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
+                                        grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
+                            } else if (grantOptions != null && oidcConfig.grant.getType() == Grant.Type.CLIENT) {
+                                tokenGrantParams.addAll(grantOptions);
+                            }
                         }
 
                         MultiMap commonRefreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());

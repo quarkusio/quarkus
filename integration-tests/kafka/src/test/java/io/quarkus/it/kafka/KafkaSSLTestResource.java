@@ -1,5 +1,8 @@
 package io.quarkus.it.kafka;
 
+import static io.quarkus.it.kafka.KafkaTestResource.extract;
+import static org.awaitility.Awaitility.await;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +18,8 @@ import org.apache.kafka.common.config.SslConfigs;
 import io.debezium.kafka.KafkaCluster;
 import io.debezium.util.Testing;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import kafka.server.KafkaServer;
+import kafka.server.RunningAsBroker;
 
 public class KafkaSSLTestResource implements QuarkusTestResourceLifecycleManager {
 
@@ -48,7 +53,7 @@ public class KafkaSSLTestResource implements QuarkusTestResourceLifecycleManager
             props.setProperty("zookeeper.connection.timeout.ms", "45000");
             //See http://kafka.apache.org/documentation.html#security_ssl for detail
             props.setProperty("listener.security.protocol.map", "CLIENT:SSL");
-            props.setProperty("listeners", "CLIENT://:19093");
+            props.setProperty("listeners", "CLIENT://:19099");
             props.setProperty("inter.broker.listener.name", "CLIENT");
             props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, ksPath.toString());
             props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, password);
@@ -60,7 +65,7 @@ public class KafkaSSLTestResource implements QuarkusTestResourceLifecycleManager
             props.setProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
 
             kafka = new KafkaCluster()
-                    .withPorts(2183, 19093)
+                    .withPorts(2189, 19099)
                     .addBrokers(1)
                     .usingDirectory(directory)
                     .deleteDataUponShutdown(true)
@@ -70,6 +75,11 @@ public class KafkaSSLTestResource implements QuarkusTestResourceLifecycleManager
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        KafkaServer server = extract(kafka);
+        await().until(() -> server.brokerState().currentState() == RunningAsBroker.state());
+        server.logger().underlying().info("Broker 'kafka-ssl' started");
+
         return Collections.emptyMap();
     }
 

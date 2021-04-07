@@ -18,6 +18,11 @@ abstract class GenericGradleBuildFile implements ExtensionManager {
     }
 
     @Override
+    public Collection<AppArtifactCoords> getInstalledPlatforms() throws IOException {
+        throw new IllegalStateException("This feature is not yet implemented outside of the Gradle Plugin.");
+    }
+
+    @Override
     public InstallResult install(Collection<AppArtifactCoords> coords) throws IOException {
         throw new IllegalStateException("This feature is not yet implemented outside of the Gradle Plugin.");
     }

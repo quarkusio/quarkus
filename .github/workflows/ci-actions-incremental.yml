@@ -40,6 +40,25 @@ env:
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
 jobs:
+  # This is a hack to work around a GitHub API limitation:
+  # when the PR is coming from another fork, the pull_requests field of the
+  # workflow_run payload is empty.
+  # For more details, see
+  # https://github.community/t/pull-request-attribute-empty-in-workflow-run-event-object-for-pr-from-forked-repo/154682
+  attach-pr-number:
+    runs-on: ubuntu-latest
+    name: Attach pull request number
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Create file
+        shell: bash
+        run: |
+          echo -n ${{ github.event.number }} > pull-request-number
+      - name: Upload pull request number
+        uses: actions/upload-artifact@v2
+        with:
+          name: pull-request-number-${{ github.event.number }}
+          path: pull-request-number
   ci-sanity-check:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
@@ -207,7 +226,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
@@ -220,6 +239,13 @@ jobs:
         with:
           name: test-reports-linux-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-JVM Tests - JDK ${{matrix.java.name}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-tests:
     name: JVM Tests - JDK 11 Windows
@@ -251,7 +277,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         shell: bash
         run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
@@ -266,6 +292,13 @@ jobs:
         with:
           name: test-reports-windows-jdk11-jvm
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-JVM Tests - JDK 11 Windows"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   linux-jvm-maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -302,7 +335,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-      - name: Run Maven integration tests
+      - name: Build
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -314,6 +347,13 @@ jobs:
         with:
           name: test-reports-linux-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-Maven Tests - JDK ${{matrix.java.name}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-maven-tests:
     name: Maven Tests - JDK 11 Windows
@@ -344,7 +384,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Run Maven integration tests
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
@@ -357,6 +397,13 @@ jobs:
         with:
           name: test-reports-windows-maven-java11
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-Maven Tests - JDK 11 Windows"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   gradle-tests-jdk11-jvm:
     name: Gradle Tests - JDK 11 ${{matrix.os.family}}
@@ -371,11 +418,13 @@ jobs:
         os:
           - {
             name: "ubuntu-latest",
-            family: "Linux"
+            family: "Linux",
+            path: "linux"
           }
           - {
             name: "windows-latest",
-            family: "Windows"
+            family: "Windows",
+            path: "windows"
           }
     steps:
       - uses: actions/checkout@v2
@@ -410,9 +459,16 @@ jobs:
             exit 1
           fi
         working-directory: integration-tests/gradle
-      - name: Build with Gradle via Maven
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl integration-tests/gradle ${{ needs.build-jdk11.outputs.gib_args }}
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-Gradle Tests - JDK 11 ${{matrix.os.family}}"
+          path: "**/build/test-results/test/TEST-*.xml"
+          retention-days: 2
 
   linux-jvm-devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
@@ -449,7 +505,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-      - name: Run Devtools integration tests
+      - name: Build
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -461,6 +517,13 @@ jobs:
         with:
           name: test-reports-linux-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-Devtools Tests - JDK ${{matrix.java.name}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-devtools-tests:
     name: Devtools Tests - JDK 11 Windows
@@ -491,7 +554,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Run Devtools integration tests
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
@@ -504,6 +567,13 @@ jobs:
         with:
           name: test-reports-windows-devtools-java11
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-Devtools Tests - JDK 11 Windows"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   tcks-test:
     name: MicroProfile TCKs Tests
@@ -561,6 +631,13 @@ jobs:
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-MicroProfile TCKs Tests"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   native-tests-read-json-matrix:
     name: Native Tests - Read JSON matrix
@@ -616,7 +693,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CATEGORY: ${{matrix.category}}
@@ -640,6 +717,13 @@ jobs:
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-Native Tests - ${{matrix.category}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
   native-tests-windows:
     name: Native Tests - Windows - ${{matrix.category}}
     needs: [build-jdk11, native-tests-read-json-matrix]
@@ -697,7 +781,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         shell: bash
         env:
           TEST_MODULES: ${{matrix.test-modules}}
@@ -716,3 +800,10 @@ jobs:
         with:
           name: test-reports-native-windows-${{matrix.category}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: "surefire-reports-Native Tests - Windows - ${{matrix.category}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2

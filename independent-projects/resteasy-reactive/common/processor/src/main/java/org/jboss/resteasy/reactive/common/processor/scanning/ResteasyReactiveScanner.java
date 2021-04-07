@@ -59,6 +59,9 @@ public class ResteasyReactiveScanner {
         ClassInfo selectedAppClass = null;
         boolean blocking = false;
         for (ClassInfo applicationClassInfo : applications) {
+            if (Modifier.isAbstract(applicationClassInfo.flags())) {
+                continue;
+            }
             if (selectedAppClass != null) {
                 throw new RuntimeException("More than one Application class: " + applications);
             }

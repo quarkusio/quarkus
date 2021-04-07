@@ -5,9 +5,8 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
  * A handler that can map an automatic datasource to the relevant config properties.
@@ -66,15 +65,10 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     @Override
                     public boolean test(String dsName) {
                         if (dsName == null) {
-                            return ConfigProvider.getConfig().getOptionalValue("quarkus.datasource.jdbc.url", String.class)
-                                    .isPresent();
+                            return ConfigUtils.isPropertyPresent("quarkus.datasource.jdbc.url");
                         } else {
-                            return ConfigProvider.getConfig()
-                                    .getOptionalValue("quarkus.datasource.\"" + dsName + "\".jdbc.url", String.class)
-                                    .isPresent() ||
-                                    ConfigProvider.getConfig()
-                                            .getOptionalValue("quarkus.datasource." + dsName + ".jdbc.url", String.class)
-                                            .isPresent();
+                            return ConfigUtils.isPropertyPresent("quarkus.datasource.\"" + dsName + "\".jdbc.url") ||
+                                    ConfigUtils.isPropertyPresent("quarkus.datasource." + dsName + ".jdbc.url");
                         }
                     }
                 });
@@ -98,12 +92,10 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     @Override
                     public boolean test(String dsName) {
                         if (dsName == null) {
-                            return ConfigProvider.getConfig().getOptionalValue("quarkus.datasource.reactive.url", String.class)
-                                    .isPresent();
+                            return ConfigUtils.isPropertyPresent("quarkus.datasource.reactive.url");
                         } else {
-                            return ConfigProvider.getConfig()
-                                    .getOptionalValue("quarkus.datasource.\"" + dsName + "\".reactive.url", String.class)
-                                    .isPresent();
+                            return ConfigUtils.isPropertyPresent("quarkus.datasource.\"" + dsName + "\".reactive.url") ||
+                                    ConfigUtils.isPropertyPresent("quarkus.datasource." + dsName + ".reactive.url");
                         }
                     }
                 });

@@ -4,9 +4,9 @@ import javax.net.ssl.SSLHandshakeException;
 
 import org.jboss.logging.Logger;
 
-public class KubernetesClientErrorHanlder {
+public class KubernetesClientErrorHandler {
 
-    private static final Logger LOG = Logger.getLogger(KubernetesClientErrorHanlder.class);
+    private static final Logger LOG = Logger.getLogger(KubernetesClientErrorHandler.class);
 
     public static void handle(Exception e) {
         if (e.getCause() instanceof SSLHandshakeException) {

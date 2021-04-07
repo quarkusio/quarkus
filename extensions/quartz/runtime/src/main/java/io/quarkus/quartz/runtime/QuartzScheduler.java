@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Properties;
 
 import javax.annotation.PreDestroy;
@@ -136,6 +137,9 @@ public class QuartzScheduler implements Scheduler {
 
                         String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
                         if (!cron.isEmpty()) {
+                            if (SchedulerUtils.isOff(cron)) {
+                                continue;
+                            }
                             if (!CronType.QUARTZ.equals(cronType)) {
                                 // Migrate the expression
                                 Cron cronExpr = parser.parse(cron);
@@ -152,8 +156,12 @@ public class QuartzScheduler implements Scheduler {
                             }
                             scheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
                         } else if (!scheduled.every().isEmpty()) {
+                            OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
+                            if (!everyMillis.isPresent()) {
+                                continue;
+                            }
                             scheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
-                                    .withIntervalInMilliseconds(SchedulerUtils.parseEveryAsMillis(scheduled))
+                                    .withIntervalInMilliseconds(everyMillis.getAsLong())
                                     .repeatForever();
                         } else {
                             throw new IllegalArgumentException("Invalid schedule configuration: " + scheduled);

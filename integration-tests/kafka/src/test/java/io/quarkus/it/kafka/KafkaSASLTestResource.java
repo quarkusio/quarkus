@@ -1,5 +1,8 @@
 package io.quarkus.it.kafka;
 
+import static io.quarkus.it.kafka.KafkaTestResource.extract;
+import static org.awaitility.Awaitility.await;
+
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
@@ -10,6 +13,8 @@ import org.apache.kafka.common.config.SaslConfigs;
 import io.debezium.kafka.KafkaCluster;
 import io.debezium.util.Testing;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import kafka.server.KafkaServer;
+import kafka.server.RunningAsBroker;
 
 public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManager {
 
@@ -45,6 +50,10 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        KafkaServer server = extract(kafka);
+        await().until(() -> server.brokerState().currentState() == RunningAsBroker.state());
+        server.logger().underlying().info("Broker 'kafka-sasl' started");
 
         return Collections.emptyMap();
     }

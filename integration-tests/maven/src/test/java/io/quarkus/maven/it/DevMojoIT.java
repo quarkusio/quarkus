@@ -220,7 +220,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         testDir = initProject("projects/classic-inst", "projects/project-intrumentation-reload");
         runAndCheck();
 
-        //if there is an insturmentation based reload this will stay the same
+        // Enable instrumentation based reload to begin with
+        DevModeTestUtils.getHttpResponse("/app/enable");
+
+        //if there is an instrumentation based reload this will stay the same
         String firstUuid = DevModeTestUtils.getHttpResponse("/app/uuid");
 
         // Edit the "Hello" message.

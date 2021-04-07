@@ -65,7 +65,7 @@ import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 /**
  * This goal generates a platform JSON descriptor for a given platform BOM.
  */
-@Mojo(name = "generate-platform-descriptor-json")
+@Mojo(name = "generate-platform-descriptor-json", threadSafe = true)
 public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
 
     @Parameter(property = "quarkusCoreGroupId", defaultValue = ToolsConstants.QUARKUS_CORE_GROUP_ID)

@@ -809,6 +809,7 @@ Please see link:security-openid-connect-client#token-propagation[Token Propagati
 [[integration-testing]]
 == Testing
 
+[[integration-testing-wiremock]]
 === Wiremock
 
 If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
@@ -823,6 +824,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 smallrye.jwt.sign.key.location=privateKey.jwk
 ----
 
+[[integration-testing-keycloak]]
 === Keycloak
 
 If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the link:security-openid-connect#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section but only change the `application.properties` to use MP JWT configuration properties instead:
@@ -834,6 +836,7 @@ mp.jwt.verify.publickey.location=${keycloak.url}/realms/quarkus/protocol/openid-
 mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 ----
 
+[[integration-testing-public-key]]
 === Local Public Key
 
 You can use the same approach as described in the link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
@@ -848,9 +851,82 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 smallrye.jwt.sign.key.location=privateKey.pem
 ----
 
+[[integration-testing-security-annotation]]
 === TestSecurity annotation
 
-Please see link:security-testing#testing-security[TestingSecurity Annotation] section how to do simple tests with the `TestSecurity` annotation.
+Add the following dependency:
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-security-jwt</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+and write a test code like this one:
+
+[source, java]
+----
+package io.quarkus.it.keycloak;
+
+import static org.hamcrest.Matchers.is;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.SecurityAttribute;
+import io.quarkus.test.security.TestSecurity;
+import io.restassured.RestAssured;
+
+@QuarkusTest
+@TestHTTPEndpoint(ProtectedResource.class)
+public class TestSecurityAuthTest {
+
+    @Test
+    @TestSecurity(user = "userJwt", roles = "viewer", attributes = {
+            @SecurityAttribute(key = "claim.email", value = "user@gmail.com")
+    })
+    public void testJwtWithDummyUser() {
+        RestAssured.when().get("test-security-jwt").then()
+                .body(is("userJwt:viewer:user@gmail.com"));
+    }
+
+}
+----
+
+where `ProtectedResource` class may look like this:
+
+[source, java]
+----
+package io.quarkus.it.keycloak;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
+
+@Path("/web-app")
+@Authenticated
+public class ProtectedResource {
+
+    @Inject
+    JsonWebToken accessToken;
+
+    @GET
+    @Path("test-security-jwt")
+    public String testSecurityJwt() {
+        return accessToken.getName() + ":" + accessToken.getGroups().iterator().next()
+                + ":" + accessToken.getClaim("email");
+    }
+}
+----
+
+Note that `TestSecurity` `user` property is returned as `JsonWebToken.getName()` and `roles` property - as `JsonWebToken.getGroups()`. Additionally, any `SecurityAttribute` with the key starting from `claim.` will be returned as a token claim value, for example, `claim.email` will support `JsonWebToken.getClaim("email")`, etc.
 
 [[generate-jwt-tokens]]
 == Generate JWT tokens with SmallRye JWT

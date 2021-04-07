@@ -52,9 +52,16 @@ public class ProtectedResource {
     SecurityContext securityContext;
 
     @GET
-    @Path("sec")
-    public String hello() {
+    @Path("test-security")
+    public String testSecurity() {
         return securityContext.getUserPrincipal().getName();
+    }
+
+    @GET
+    @Path("test-security-oidc")
+    public String testSecurityJwt() {
+        return idToken.getName() + ":" + idToken.getGroups().iterator().next()
+                + ":" + idToken.getClaim("email");
     }
 
     @GET

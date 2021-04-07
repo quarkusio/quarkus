@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
@@ -64,11 +66,20 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                             .collect(Collectors.toMap(s -> s.key(), s -> s.value())));
                 }
 
-                CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(user.build());
+                SecurityIdentity userIdentity = augment(user.build());
+                CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(userIdentity);
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to setup @TestSecurity", e);
         }
 
+    }
+
+    private SecurityIdentity augment(SecurityIdentity identity) {
+        Instance<TestSecurityIdentityAugmentor> producer = CDI.current().select(TestSecurityIdentityAugmentor.class);
+        if (producer.isResolvable()) {
+            return producer.get().augment(identity);
+        }
+        return identity;
     }
 }

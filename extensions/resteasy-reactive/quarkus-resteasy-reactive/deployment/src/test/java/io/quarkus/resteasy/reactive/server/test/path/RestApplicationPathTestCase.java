@@ -17,7 +17,7 @@ public class RestApplicationPathTestCase {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withConfigurationResource("empty.properties")
-            .overrideConfigKey("quarkus.rest.path", "/foo")
+            .overrideConfigKey("quarkus.resteasy-reactive.path", "/foo")
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(HelloResource.class, BarApp.class, BaseApplication.class));

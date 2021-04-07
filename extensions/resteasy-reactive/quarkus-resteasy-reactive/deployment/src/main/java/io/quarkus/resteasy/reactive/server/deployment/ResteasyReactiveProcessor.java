@@ -24,6 +24,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -318,8 +320,7 @@ public class ResteasyReactiveProcessor {
                     .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
                     .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
                     .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths)
-                    .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
-                            config.inputBufferSize.asLongValue(), config.singleDefaultProduces, config.defaultProduces))
+                    .setConfig(createRestReactiveConfig(config))
                     .setAdditionalReaders(additionalReaders)
                     .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
                     .setInjectableBeans(injectableBeans)
@@ -501,7 +502,7 @@ public class ResteasyReactiveProcessor {
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
                     beanContainerBuildItem.getValue());
 
-            String applicationPath = determineApplicationPath(index, serverConfig.path);
+            String applicationPath = determineApplicationPath(index, getAppPath(serverConfig.path));
             // spec allows the path contain encoded characters
             if ((applicationPath != null) && applicationPath.contains("%")) {
                 applicationPath = Encode.decodePath(applicationPath);
@@ -513,8 +514,7 @@ public class ResteasyReactiveProcessor {
             Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
             DeploymentInfo deploymentInfo = new DeploymentInfo()
                     .setInterceptors(interceptors.sort())
-                    .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
-                            config.inputBufferSize.asLongValue(), config.singleDefaultProduces, config.defaultProduces))
+                    .setConfig(createRestReactiveConfig(config))
                     .setExceptionMapping(exceptionMapping)
                     .setCtxResolvers(contextResolvers)
                     .setFeatures(feats)
@@ -554,6 +554,24 @@ public class ResteasyReactiveProcessor {
                         new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
             }
         }
+    }
+
+    private org.jboss.resteasy.reactive.common.ResteasyReactiveConfig createRestReactiveConfig(ResteasyReactiveConfig config) {
+        Config mpConfig = ConfigProvider.getConfig();
+
+        return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
+                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize.asLongValue(), Long.class, mpConfig),
+                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces, Boolean.class, mpConfig),
+                getEffectivePropertyValue("default-produces", config.defaultProduces, Boolean.class, mpConfig));
+    }
+
+    private <T> T getEffectivePropertyValue(String legacyPropertyName, T newPropertyValue, Class<T> propertyType,
+            Config mpConfig) {
+        Optional<T> legacyPropertyValue = mpConfig.getOptionalValue("quarkus.rest." + legacyPropertyName, propertyType);
+        if (legacyPropertyValue.isPresent()) {
+            return legacyPropertyValue.get();
+        }
+        return newPropertyValue;
     }
 
     @BuildStep
@@ -600,6 +618,15 @@ public class ResteasyReactiveProcessor {
                 return Collections.singletonList(new SecurityContextOverrideHandler.Customizer());
             }
         });
+    }
+
+    private Optional<String> getAppPath(Optional<String> newPropertyValue) {
+        Optional<String> legacyProperty = ConfigProvider.getConfig().getOptionalValue("quarkus.rest.path", String.class);
+        if (legacyProperty.isPresent()) {
+            return legacyProperty;
+        }
+
+        return newPropertyValue;
     }
 
     private String determineApplicationPath(IndexView index, Optional<String> defaultPath) {

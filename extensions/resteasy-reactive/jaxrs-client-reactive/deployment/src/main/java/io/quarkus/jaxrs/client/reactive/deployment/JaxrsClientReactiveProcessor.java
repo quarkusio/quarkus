@@ -31,6 +31,8 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -174,8 +176,7 @@ public class JaxrsClientReactiveProcessor {
                 .setIndex(index)
                 .setExistingConverters(new HashMap<>())
                 .setScannedResourcePaths(result.getScannedResourcePaths())
-                .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(config.inputBufferSize.asLongValue(),
-                        config.singleDefaultProduces, config.defaultProduces))
+                .setConfig(createRestReactiveConfig(config))
                 .setAdditionalReaders(additionalReaders)
                 .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
                 .setInjectableBeans(new HashMap<>())
@@ -236,6 +237,24 @@ public class JaxrsClientReactiveProcessor {
                     .produce(new ReflectiveClassBuildItem(true, false, false, writerClass.getName()));
         }
 
+    }
+
+    private org.jboss.resteasy.reactive.common.ResteasyReactiveConfig createRestReactiveConfig(ResteasyReactiveConfig config) {
+        Config mpConfig = ConfigProvider.getConfig();
+
+        return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
+                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize.asLongValue(), Long.class, mpConfig),
+                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces, Boolean.class, mpConfig),
+                getEffectivePropertyValue("default-produces", config.defaultProduces, Boolean.class, mpConfig));
+    }
+
+    private <T> T getEffectivePropertyValue(String legacyPropertyName, T newPropertyValue, Class<T> propertyType,
+            Config mpConfig) {
+        Optional<T> legacyPropertyValue = mpConfig.getOptionalValue("quarkus.rest." + legacyPropertyName, propertyType);
+        if (legacyPropertyValue.isPresent()) {
+            return legacyPropertyValue.get();
+        }
+        return newPropertyValue;
     }
 
     private String defaultMediaType(List<? extends MediaTypeWithPriority> defaultMediaTypes, String defaultMediaType) {

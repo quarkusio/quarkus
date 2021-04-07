@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 import javax.ws.rs.Path;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
@@ -27,7 +28,7 @@ public class ResteasyReactiveTestHttpProvider implements TestHttpEndpointProvide
                 //TODO: there is not really any way to handle @ApplicationPath, we could do something for @QuarkusTest apps but we can't for
                 //native apps, so we just have to document the limitation
                 String path = "/";
-                Optional<String> appPath = ConfigProvider.getConfig().getOptionalValue("quarkus.rest.path", String.class);
+                Optional<String> appPath = getAppPath();
                 if (appPath.isPresent()) {
                     path = appPath.get();
                 }
@@ -38,6 +39,16 @@ public class ResteasyReactiveTestHttpProvider implements TestHttpEndpointProvide
                 return value;
             }
         };
+    }
+
+    private Optional<String> getAppPath() {
+        Config config = ConfigProvider.getConfig();
+        Optional<String> legacyProperty = config.getOptionalValue("quarkus.rest.path", String.class);
+        if (legacyProperty.isPresent()) {
+            return legacyProperty;
+        }
+
+        return config.getOptionalValue("quarkus.resteasy-reactive.path", String.class);
     }
 
     private String getPath(Class<?> aClass) {

@@ -43,7 +43,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -64,7 +63,7 @@ public class ResteasyReactiveCommonProcessor {
 
     @BuildStep
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
-            JaxRsSecurityConfig config,
+            ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resteasyDeployment,
             BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
         if (config.denyJaxRs && resteasyDeployment.isPresent()) {

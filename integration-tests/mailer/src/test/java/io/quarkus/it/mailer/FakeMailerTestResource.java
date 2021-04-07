@@ -3,6 +3,7 @@ package io.quarkus.it.mailer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
@@ -10,8 +11,9 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class FakeMailerTestResource implements QuarkusTestResourceLifecycleManager {
 
-    public GenericContainer<?> server = new GenericContainer<>("reachfive/fake-smtp-server:latest")
-            .withExposedPorts(1080, 1025)
+    public GenericContainer<?> server = new FixedHostPortGenericContainer<>("reachfive/fake-smtp-server:latest")
+            .withFixedExposedPort(9155, 1080)
+            .withFixedExposedPort(9156, 1025)
             .waitingFor(Wait.forHttp("/api/emails"));
 
     @Override

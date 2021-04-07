@@ -1,6 +1,5 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.ArtifactCoords;
 import java.io.IOException;
@@ -90,7 +89,7 @@ public final class GroovyGradleBuildFilesCreator extends AbstractGradleBuildFile
     }
 
     @Override
-    void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException {
+    void addDependencyInBuildFile(ArtifactCoords coords) throws IOException {
         AbstractGroovyGradleBuildFile.addDependencyInModel(getModel(), coords, false);
     }
 

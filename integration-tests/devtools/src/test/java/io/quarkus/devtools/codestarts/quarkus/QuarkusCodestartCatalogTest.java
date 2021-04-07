@@ -9,13 +9,13 @@ import java.nio.file.Paths;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.testing.SnapshotTesting;
+import io.quarkus.maven.ArtifactKey;
 
 class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
 
@@ -104,7 +104,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     @Test
     void createProjectTestKotlin() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getName)
@@ -114,7 +114,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestScala() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getName)
@@ -124,7 +124,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestConfigYaml() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getName)
@@ -134,7 +134,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestResteasy() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         assertThat(projectDefinition.getBaseCodestarts()).extracting(Codestart::getName)

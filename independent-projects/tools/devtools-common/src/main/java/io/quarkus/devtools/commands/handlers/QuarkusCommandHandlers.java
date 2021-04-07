@@ -6,11 +6,10 @@ import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getExtend
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
 import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
 import io.quarkus.registry.catalog.Extension;
 import java.util.ArrayList;
@@ -29,20 +28,20 @@ final class QuarkusCommandHandlers {
     private QuarkusCommandHandlers() {
     }
 
-    static List<AppArtifactCoords> computeCoordsFromQuery(final QuarkusCommandInvocation invocation,
+    static List<ArtifactCoords> computeCoordsFromQuery(final QuarkusCommandInvocation invocation,
             final Set<String> extensionsQuery) {
-        final ArrayList<AppArtifactCoords> builder = new ArrayList<>();
+        final ArrayList<ArtifactCoords> builder = new ArrayList<>();
         for (String query : extensionsQuery) {
             final int countColons = StringUtils.countMatches(query, ":");
             if (countColons == 1) {
-                builder.add(toCoords(AppArtifactKey.fromString(query), null));
+                builder.add(toCoords(ArtifactKey.fromString(query), null));
             } else if (countColons > 1) {
-                builder.add(AppArtifactCoords.fromString(query));
+                builder.add(ArtifactCoords.fromString(query));
             } else {
                 Collection<Extension> extensions = invocation.getExtensionsCatalog().getExtensions();
                 SelectionResult result = select(query, extensions, false);
                 if (result.matches()) {
-                    final Set<AppArtifactCoords> withStrippedVersion = result.getExtensions().stream().map(Extensions::toCoords)
+                    final Set<ArtifactCoords> withStrippedVersion = result.getExtensions().stream().map(Extensions::toCoords)
                             .map(Extensions::stripVersion).collect(Collectors.toSet());
                     // We strip the version because those extensions are managed
                     builder.addAll(withStrippedVersion);

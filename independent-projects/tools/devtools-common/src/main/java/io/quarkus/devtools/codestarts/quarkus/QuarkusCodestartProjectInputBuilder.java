@@ -2,12 +2,12 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
-    Collection<AppArtifactCoords> extensions = new ArrayList<>();
+    Collection<ArtifactCoords> extensions = new ArrayList<>();
     Set<String> overrideExamples = new HashSet<>();
     boolean noExamples;
     boolean noDockerfiles;
@@ -28,17 +28,17 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
         super();
     }
 
-    public QuarkusCodestartProjectInputBuilder addExtensions(Collection<AppArtifactCoords> extensions) {
+    public QuarkusCodestartProjectInputBuilder addExtensions(Collection<ArtifactCoords> extensions) {
         this.extensions.addAll(extensions);
         super.addDependencies(extensions.stream().map(Extensions::toGAV).collect(Collectors.toList()));
         return this;
     }
 
-    public QuarkusCodestartProjectInputBuilder addExtension(AppArtifactCoords extension) {
+    public QuarkusCodestartProjectInputBuilder addExtension(ArtifactCoords extension) {
         return this.addExtensions(Collections.singletonList(extension));
     }
 
-    public QuarkusCodestartProjectInputBuilder addExtension(AppArtifactKey extension) {
+    public QuarkusCodestartProjectInputBuilder addExtension(ArtifactKey extension) {
         return this.addExtension(Extensions.toCoords(extension, null));
     }
 

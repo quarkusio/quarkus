@@ -4,14 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Google Cloud Functions (Serverless)
-:extension-status: experimental
+:extension-status: preview
 
 include::./attributes.adoc[]
 
 The `quarkus-google-cloud-functions` extension allows you to use Quarkus to build your Google Cloud Functions.
 Your functions can use injection annotations from CDI or Spring and other Quarkus facilities as you need them.
-
-As the Google Cloud Function Java engine is a new Beta feature of Google Cloud, this extension is flagged as experimental.
 
 include::./status-include.adoc[]
 
@@ -66,13 +64,6 @@ Login to Google Cloud is necessary for deploying the application and it can be d
 [source,bash,subs=attributes+]
 ----
 gcloud auth login
-----
-
-At the time of this writing, Cloud Functions are still in beta so make sure to install the `beta` command group.
-
-[source,bash,subs=attributes+]
-----
-gcloud components install beta
 ----
 
 == Creating the functions
@@ -223,14 +214,14 @@ To build your application, you can package it using the standard `mvn clean pack
 
 The result of the previous command is a single JAR file inside the `target/deployment` repository that contains classes and dependencies of the project.
 
-Then you will be able to use `gcloud beta functions deploy` command to deploy your function to Google Cloud.
+Then you will be able to use `gcloud functions deploy` command to deploy your function to Google Cloud.
 
 [WARNING]
 ====
 The first time you launch this command, you can have the following error message:
 [source]
 ----
-ERROR: (gcloud.beta.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
+ERROR: (gcloud.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
 ----
 This means that Cloud Build is not activated yet. To overcome this error, open the URL shown in the error, follow the instructions and then wait a few minutes before retrying the command.
 ====
@@ -241,7 +232,7 @@ This is an example command to deploy your `HttpFunction` to Google Cloud:
 
 [source,bash]
 ----
-gcloud beta functions deploy quarkus-example-http \
+gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.QuarkusHttpFunction \
   --runtime=java11 --trigger-http --source=target/deployment
 ----
@@ -267,7 +258,7 @@ it needs to use `--trigger-event google.storage.object.finalize` and the `--trig
 
 [source,bash]
 ----
-gcloud beta functions deploy quarkus-example-storage \
+gcloud functions deploy quarkus-example-storage \
     --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
     --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
     --runtime=java11 --source=target/deployment
@@ -294,7 +285,7 @@ it needs to use `--trigger-event google.pubsub.topic.publish` and the `--trigger
 
 [source,bash]
 ----
-gcloud beta functions deploy quarkus-example-pubsub \
+gcloud functions deploy quarkus-example-pubsub \
   --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
   --runtime=java11 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
 ----
@@ -320,7 +311,7 @@ You can download it via Maven using the following command:
 [source,bash]
 ----
 mvn dependency:copy \
-  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-beta1' \
+  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.2' \
   -DoutputDirectory=.
 ----
 
@@ -332,7 +323,7 @@ To test an `HttpFunction`, you can use this command to launch your function loca
 
 [source,bash]
 ----
-java -jar java-function-invoker-1.0.0-beta1.jar \
+java -jar java-function-invoker-1.0.2.jar \
   --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusHttpFunction
 ----
@@ -347,7 +338,7 @@ For background functions, you launch the invoker with a target class of `io.quar
 
 [source,bash]
 ----
-java -jar java-function-invoker-1.0.0-beta1.jar \
+java -jar java-function-invoker-1.0.2.jar \
   --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusBackgroundFunction
 ----
@@ -369,7 +360,7 @@ For background functions, you launch the invoker with a target class of `io.quar
 
 [source,bash]
 ----
-java -jar java-function-invoker-1.0.0-beta1.jar \
+java -jar java-function-invoker-1.0.2.jar \
   --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusBackgroundFunction
 ----

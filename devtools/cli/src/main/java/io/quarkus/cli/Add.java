@@ -15,7 +15,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "add", usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Add extension(s) to current project.")
+@CommandLine.Command(name = "add", mixinStandardHelpOptions = false, description = "Add extension(s) to current project.")
 public class Add extends BaseSubCommand implements BuildsystemCommand {
 
     @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "extensions to add to project")

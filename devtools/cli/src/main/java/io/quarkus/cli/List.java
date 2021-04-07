@@ -12,7 +12,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "list", usageHelpAutoWidth = true, sortOptions = false, mixinStandardHelpOptions = false, description = "List installed (default) or installable extensions.")
+@CommandLine.Command(name = "list", sortOptions = false, mixinStandardHelpOptions = false, description = "List installed (default) or installable extensions.")
 public class List extends BaseSubCommand implements BuildsystemCommand {
 
     @CommandLine.Option(names = { "-i",

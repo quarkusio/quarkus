@@ -18,7 +18,7 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
 
 @QuarkusMain
-@CommandLine.Command(name = "qs", versionProvider = QuarkusCliVersion.class, usageHelpAutoWidth = true, subcommandsRepeatable = true, mixinStandardHelpOptions = true, subcommands = {
+@CommandLine.Command(name = "qs", versionProvider = QuarkusCliVersion.class, subcommandsRepeatable = true, mixinStandardHelpOptions = true, subcommands = {
         Build.class,
         Clean.class, Create.class, CreateJBang.class, List.class, Platforms.class, Add.class, Remove.class, Dev.class,
         CreateExtension.class })
@@ -81,7 +81,6 @@ public class QuarkusCli implements QuarkusApplication {
     public int run(String... args) throws Exception {
         CommandLine cmd = factory == null ? new CommandLine(this) : new CommandLine(this, factory);
         return cmd.setExecutionStrategy(new ExecutionStrategy())
-                .setUsageHelpLongOptionsMaxWidth(30)
                 .execute(args);
     }
 

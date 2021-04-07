@@ -4,7 +4,6 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -208,7 +207,7 @@ public class MavenArtifactResolver {
         }
     }
 
-    public String getLatestVersionFromRange(Artifact artifact, String range) throws AppModelResolverException {
+    public String getLatestVersionFromRange(Artifact artifact, String range) throws BootstrapMavenException {
         return getLatest(resolveVersionRange(new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(), artifact.getExtension(), range)));
     }

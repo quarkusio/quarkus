@@ -100,7 +100,9 @@ public class DevServicesDatasourceProcessor {
                 .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
                         DevServicesDatasourceProviderBuildItem::getDevServicesProvider));
 
-        defaultResult = startDevDb(null, curateOutcomeBuildItem, installedDrivers, devDBProviderMap,
+        defaultResult = startDevDb(null, curateOutcomeBuildItem, installedDrivers,
+                !dataSourceBuildTimeConfig.namedDataSources.isEmpty(),
+                devDBProviderMap,
                 dataSourceBuildTimeConfig.defaultDataSource,
                 configHandlersByDbType, propertiesMap, closeableList);
         if (defaultResult != null) {
@@ -111,7 +113,7 @@ public class DevServicesDatasourceProcessor {
         }
         for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources.entrySet()) {
             DevServicesDatasourceResultBuildItem.DbResult result = startDevDb(entry.getKey(), curateOutcomeBuildItem,
-                    installedDrivers,
+                    installedDrivers, true,
                     devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap, closeableList);
             if (result != null) {
                 namedResults.put(entry.getKey(), result);
@@ -160,12 +162,23 @@ public class DevServicesDatasourceProcessor {
     private DevServicesDatasourceResultBuildItem.DbResult startDevDb(String dbName,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
+            boolean hasNamedDatasources,
             Map<String, DevServicesDatasourceProvider> devDBProviders, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
             Map<String, String> propertiesMap, List<Closeable> closeableList) {
+        Optional<Boolean> enabled = dataSourceBuildTimeConfig.devservices.enabled;
+        if (enabled.isPresent() && !enabled.get()) {
+            //explicitly disabled
+            log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
+                    + " as it has been disabled in the config");
+            return null;
+        }
+
         Optional<String> defaultDbKind = DefaultDataSourceDbKindBuildItem.resolve(
                 dataSourceBuildTimeConfig.dbKind,
-                installedDrivers, curateOutcomeBuildItem);
+                installedDrivers,
+                dbName != null || enabled.orElse(!hasNamedDatasources),
+                curateOutcomeBuildItem);
 
         if (!defaultDbKind.isPresent()) {
             //nothing we can do
@@ -181,15 +194,7 @@ public class DevServicesDatasourceProcessor {
             return null;
         }
 
-        Optional<Boolean> enabled = dataSourceBuildTimeConfig.devservices.enabled;
-        if (enabled.isPresent()) {
-            if (!enabled.get()) {
-                //explicitly disabled
-                log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
-                        + " as it has been disabled in the config");
-                return null;
-            }
-        } else {
+        if (!enabled.isPresent()) {
             for (DevServicesDatasourceConfigurationHandlerBuildItem i : configHandlers) {
                 if (i.getCheckConfiguredFunction().test(dbName)) {
                     //this database has explicit configuration
@@ -200,6 +205,7 @@ public class DevServicesDatasourceProcessor {
                 }
             }
         }
+
         //ok, so we know we need to start one
 
         String prefix = "quarkus.datasource.";

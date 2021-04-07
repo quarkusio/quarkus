@@ -5,8 +5,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.apache.maven.artifact.Artifact;
@@ -30,7 +34,7 @@ import io.quarkus.runtime.configuration.ProfileManager;
 /**
  * Builds the Quarkus application.
  */
-@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class BuildMojo extends QuarkusBootstrapMojo {
 
     private static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
@@ -62,6 +66,12 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     @Parameter(property = "skipOriginalJarRename")
     boolean skipOriginalJarRename;
 
+    /**
+     * The list of system properties defined for the plugin.
+     */
+    @Parameter
+    private Map<String, String> systemProperties = Collections.emptyMap();
+
     @Override
     protected boolean beforeExecute() throws MojoExecutionException {
         if (skip) {
@@ -82,9 +92,19 @@ public class BuildMojo extends QuarkusBootstrapMojo {
 
     @Override
     protected void doExecute() throws MojoExecutionException {
-
         try {
-            boolean clearPackageTypeSysProp = false;
+            Set<String> propertiesToClear = new HashSet<>();
+
+            // Add the system properties of the plugin to the system properties
+            // if and only if they are not already set.
+            for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
+                String key = entry.getKey();
+                if (System.getProperty(key) == null) {
+                    System.setProperty(key, entry.getValue());
+                    propertiesToClear.add(key);
+                }
+            }
+
             // Essentially what this does is to enable the native package type even if a different package type is set
             // in application properties. This is done to preserve what users expect to happen when
             // they execute "mvn package -Dnative" even if quarkus.package.type has been set in application.properties
@@ -96,15 +116,17 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                     packageType = packageTypeProp.toString();
                 }
                 System.setProperty(PACKAGE_TYPE_PROP, packageType);
-                clearPackageTypeSysProp = true;
+                propertiesToClear.add(PACKAGE_TYPE_PROP);
             }
             // Set the build profile based on the value of the project property ProfileManager.QUARKUS_PROFILE_PROP
             // if and only if it has not already been set using the corresponding system property
             // or environment variable.
             final Object profile = mavenProject().getProperties().get(ProfileManager.QUARKUS_PROFILE_PROP);
+
             if (profile != null && System.getProperty(ProfileManager.QUARKUS_PROFILE_PROP) == null
                     && System.getenv(ProfileManager.QUARKUS_PROFILE_ENV) == null) {
                 System.setProperty(ProfileManager.QUARKUS_PROFILE_PROP, profile.toString());
+                propertiesToClear.add(ProfileManager.QUARKUS_PROFILE_PROP);
             }
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
 
@@ -135,9 +157,8 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                     }
                 }
             } finally {
-                if (clearPackageTypeSysProp) {
-                    System.clearProperty(PACKAGE_TYPE_PROP);
-                }
+                // Clear all the system properties set by the plugin
+                propertiesToClear.forEach(System::clearProperty);
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to build quarkus application", e);

@@ -40,7 +40,7 @@ public class QuarkusBootstrapProvider implements Closeable {
     @Requirement(role = RemoteRepositoryManager.class, optional = false)
     protected RemoteRepositoryManager remoteRepoManager;
 
-    private final Cache<AppArtifactKey, QuarkusAppBootstrapProvider> appBootstrapProviders = CacheBuilder.newBuilder()
+    private final Cache<String, QuarkusAppBootstrapProvider> appBootstrapProviders = CacheBuilder.newBuilder()
             .concurrencyLevel(4).softValues().initialCapacity(10).build();
 
     public RepositorySystem repositorySystem() {
@@ -51,9 +51,9 @@ public class QuarkusBootstrapProvider implements Closeable {
         return remoteRepoManager;
     }
 
-    private QuarkusAppBootstrapProvider provider(AppArtifactKey projectId) {
+    private QuarkusAppBootstrapProvider provider(AppArtifactKey projectId, String executionId) {
         try {
-            return appBootstrapProviders.get(projectId, () -> new QuarkusAppBootstrapProvider());
+            return appBootstrapProviders.get(String.format("%s-%s", projectId, executionId), QuarkusAppBootstrapProvider::new);
         } catch (ExecutionException e) {
             throw new IllegalStateException("Failed to cache a new instance of " + QuarkusAppBootstrapProvider.class.getName(),
                     e);
@@ -62,24 +62,24 @@ public class QuarkusBootstrapProvider implements Closeable {
 
     public MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo)
             throws MojoExecutionException {
-        return provider(mojo.projectId()).artifactResolver(mojo);
+        return provider(mojo.projectId(), mojo.executionId()).artifactResolver(mojo);
     }
 
     // @deprecated in 1.14.0.Final
     @Deprecated
     public AppArtifact projectArtifact(QuarkusBootstrapMojo mojo)
             throws MojoExecutionException {
-        return provider(mojo.projectId()).appArtifact(mojo);
+        return provider(mojo.projectId(), mojo.executionId()).appArtifact(mojo);
     }
 
     public QuarkusBootstrap bootstrapQuarkus(QuarkusBootstrapMojo mojo)
             throws MojoExecutionException {
-        return provider(mojo.projectId()).bootstrapQuarkus(mojo);
+        return provider(mojo.projectId(), mojo.executionId()).bootstrapQuarkus(mojo);
     }
 
     public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo)
             throws MojoExecutionException {
-        return provider(mojo.projectId()).curateApplication(mojo);
+        return provider(mojo.projectId(), mojo.executionId()).curateApplication(mojo);
     }
 
     @Override
@@ -138,6 +138,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                     effectiveProperties.setProperty(name, projectProperties.getProperty(name));
                 }
             }
+
+            // Add plugin properties
+            effectiveProperties.putAll(mojo.properties());
 
             effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
@@ -282,13 +285,12 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             if (curatedApp != null) {
                 curatedApp.close();
                 curatedApp = null;
             }
-            this.artifactResolver = null;
-            this.quarkusBootstrap = null;
+            quarkusBootstrap = null;
         }
     }
 

@@ -19,14 +19,15 @@ package io.quarkus.bootstrap.logging;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
+import org.jboss.logmanager.Level;
 import org.jboss.logmanager.StandardOutputStreams;
 import org.jboss.logmanager.formatters.PatternFormatter;
 
@@ -38,6 +39,14 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 @SuppressWarnings({ "unused", "WeakerAccess" })
 public class QuarkusDelayedHandler extends ExtHandler {
 
+    /**
+     * This is a system property that can be used to help debug startup issues if TRACE and DEBUG logs are being
+     * dropped due to the queue limit being exceeded.
+     *
+     * This is not a normal config property, and is unlikely to be needed under normal usage.
+     */
+    public static final String QUARKUS_LOG_MAX_STARTUP_RECORDS = "quarkus-log-max-startup-records";
+
     private final Deque<ExtLogRecord> logRecords = new ArrayDeque<>();
     private final List<Runnable> logCloseTasks = new ArrayList<>();
 
@@ -45,9 +54,12 @@ public class QuarkusDelayedHandler extends ExtHandler {
     private volatile boolean buildTimeLoggingActivated = false;
     private volatile boolean activated = false;
     private volatile boolean callerCalculationRequired = false;
+    //accessed under lock
+    private int discardLevel = Integer.MIN_VALUE;
+    private int lowestInQueue = Integer.MAX_VALUE;
 
     public QuarkusDelayedHandler() {
-        this(4000);
+        this(Integer.getInteger(QUARKUS_LOG_MAX_STARTUP_RECORDS, 4000));
     }
 
     public QuarkusDelayedHandler(final int queueLimit) {
@@ -67,8 +79,10 @@ public class QuarkusDelayedHandler extends ExtHandler {
                     publishToNestedHandlers(record);
                     super.doPublish(record);
                 } else {
-                    // until the handler is fully activated, we drop anything below the info level
-                    if (record.getLevel().intValue() < Level.INFO.intValue()) {
+                    // drop everything below the discard level
+                    // this is not ideal, but we can run out of memory otherwise
+                    // this only happens if we end up with more than 4k log messages before activation
+                    if (record.getLevel().intValue() <= discardLevel) {
                         return;
                     }
                     // Determine whether the queue was overrun
@@ -76,6 +90,11 @@ public class QuarkusDelayedHandler extends ExtHandler {
                         reportError(
                                 "The delayed handler's queue was overrun and log record(s) were lost. Did you forget to configure logging?",
                                 null, ErrorManager.WRITE_FAILURE);
+                        compactQueue();
+                        if (logRecords.size() >= queueLimit) {
+                            //still too full, nothing we can do
+                            return;
+                        }
                         return;
                     }
                     // Determine if we need to calculate the caller information before we queue the record
@@ -88,10 +107,31 @@ public class QuarkusDelayedHandler extends ExtHandler {
                         // Copy the MDC over
                         record.copyMdc();
                     }
+                    lowestInQueue = Integer.min(record.getLevel().intValue(), lowestInQueue);
                     logRecords.addLast(record);
                 }
             }
         }
+    }
+
+    private void compactQueue() {
+        if (lowestInQueue == Level.INFO.intValue()) {
+            //we don't discard info and above
+            return;
+        }
+        int newLowest = Integer.MAX_VALUE;
+        Iterator<ExtLogRecord> it = logRecords.iterator();
+        while (it.hasNext()) {
+            ExtLogRecord rec = it.next();
+            if (rec.getLevel().intValue() == lowestInQueue) {
+                it.remove();
+            } else {
+                newLowest = Integer.min(rec.getLevel().intValue(), newLowest);
+            }
+        }
+        discardLevel = lowestInQueue;
+        lowestInQueue = newLowest;
+
     }
 
     @Override

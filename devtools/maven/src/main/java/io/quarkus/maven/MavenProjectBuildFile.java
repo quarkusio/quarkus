@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -23,7 +24,9 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.buildfile.BuildFile;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.util.PlatformArtifacts;
 
 public class MavenProjectBuildFile extends BuildFile {
 
@@ -35,6 +38,7 @@ public class MavenProjectBuildFile extends BuildFile {
     private Properties projectProps;
     protected List<AppArtifactCoords> dependencies;
     protected List<AppArtifactCoords> managedDependencies;
+    protected List<AppArtifactCoords> importedPlatforms;
     protected Model model;
 
     public MavenProjectBuildFile(Path projectDirPath, ExtensionCatalog extensionsCatalog, Supplier<Model> model,
@@ -126,6 +130,24 @@ public class MavenProjectBuildFile extends BuildFile {
         return dependencies;
     }
 
+    @Override
+    public final Collection<AppArtifactCoords> getInstalledPlatforms() throws IOException {
+        if (importedPlatforms == null) {
+            final List<AppArtifactCoords> tmp = new ArrayList<>(4);
+            for (AppArtifactCoords c : getManagedDependencies()) {
+                if (!PlatformArtifacts.isCatalogArtifactId(c.getArtifactId())) {
+                    continue;
+                }
+                tmp.add(new AppArtifactCoords(c.getGroupId(),
+                        c.getArtifactId().substring(0,
+                                c.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
+                        null, "pom", c.getVersion()));
+            }
+            importedPlatforms = tmp;
+        }
+        return importedPlatforms;
+    }
+
     protected List<AppArtifactCoords> getManagedDependencies() {
         if (managedDependencies == null) {
             final List<org.eclipse.aether.graph.Dependency> managedDeps = projectManagedDepsSupplier.get();
@@ -137,7 +159,7 @@ public class MavenProjectBuildFile extends BuildFile {
                         a.getExtension(), a.getVersion()));
             }
         }
-        return dependencies;
+        return managedDependencies;
     }
 
     @Override

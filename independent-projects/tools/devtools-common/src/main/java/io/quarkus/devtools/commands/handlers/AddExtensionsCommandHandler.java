@@ -39,13 +39,10 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
             return QuarkusCommandOutcome.success().setValue(AddExtensions.OUTCOME_UPDATED, false);
         }
 
-        String quarkusVersion = invocation.getExtensionsCatalog().getQuarkusCoreVersion();
-
         final ExtensionManager extensionManager = invocation.getValue(EXTENSION_MANAGER,
                 invocation.getQuarkusProject().getExtensionManager());
         try {
-            ExtensionInstallPlan extensionInstallPlan = planInstallation(quarkusVersion, extensionsQuery,
-                    invocation.getExtensionsCatalog());
+            ExtensionInstallPlan extensionInstallPlan = planInstallation(invocation, extensionsQuery);
             if (extensionInstallPlan.isNotEmpty()) {
                 final InstallResult result = extensionManager.install(extensionInstallPlan);
                 result.getInstalled()
@@ -70,8 +67,12 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
         return new QuarkusCommandOutcome(false).setValue(AddExtensions.OUTCOME_UPDATED, false);
     }
 
-    public ExtensionInstallPlan planInstallation(String quarkusCore, Collection<String> keywords,
-            ExtensionCatalog catalog) {
+    public ExtensionInstallPlan planInstallation(QuarkusCommandInvocation invocation, Collection<String> keywords)
+            throws IOException {
+        final ExtensionCatalog catalog = invocation.getExtensionsCatalog();
+        final String quarkusCore = catalog.getQuarkusCoreVersion();
+        final Collection<AppArtifactCoords> importedPlatforms = invocation.getQuarkusProject().getExtensionManager()
+                .getInstalledPlatforms();
         ExtensionInstallPlan.Builder builder = ExtensionInstallPlan.builder();
         boolean multipleKeywords = keywords.size() > 1;
         for (String keyword : keywords) {
@@ -103,16 +104,28 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
                 AppArtifactCoords extensionCoords = new AppArtifactCoords(groupId, artifactId, version);
 
                 boolean managed = false;
-                // TODO this is not properly picking the platform BOMs
+                ExtensionOrigin firstPlatform = null;
                 for (ExtensionOrigin origin : e.getOrigins()) {
-                    if (origin.isPlatform()) {
-                        builder.addManagedExtension(extensionCoords);
-                        final ArtifactCoords bomCoords = origin.getBom();
-                        builder.addPlatform(new AppArtifactCoords(bomCoords.getGroupId(), bomCoords.getArtifactId(),
-                                null, "pom", bomCoords.getVersion()));
+                    if (!origin.isPlatform()) {
+                        continue;
+                    }
+                    if (importedPlatforms.contains(new AppArtifactCoords(origin.getBom().getGroupId(),
+                            origin.getBom().getArtifactId(), null, "pom", origin.getBom().getVersion()))) {
                         managed = true;
+                        builder.addManagedExtension(extensionCoords);
                         break;
                     }
+                    if (firstPlatform == null) {
+                        firstPlatform = origin;
+                    }
+                }
+                if (!managed && firstPlatform != null) {
+                    // TODO this is not properly picking the platform BOMs
+                    builder.addManagedExtension(extensionCoords);
+                    final ArtifactCoords bomCoords = firstPlatform.getBom();
+                    builder.addPlatform(new AppArtifactCoords(bomCoords.getGroupId(), bomCoords.getArtifactId(), null, "pom",
+                            bomCoords.getVersion()));
+                    managed = true;
                 }
                 if (!managed) {
                     builder.addIndependentExtension(extensionCoords);

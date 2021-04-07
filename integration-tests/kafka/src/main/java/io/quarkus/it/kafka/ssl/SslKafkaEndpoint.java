@@ -52,7 +52,7 @@ public class SslKafkaEndpoint {
 
     public static KafkaConsumer<Integer, String> createConsumer() {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19093");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19099");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-consumer");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());

@@ -117,7 +117,7 @@
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
-        <cronutils.version>9.1.3</cronutils.version>
+        <cronutils.version>9.1.5</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.2.19</postgresql-jdbc.version>

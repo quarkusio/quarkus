@@ -38,8 +38,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <!-- Newer versions don't copy the right artifact. They seem to ignore the type -->
-                <version>2.10</version>
                 <executions>
                     <execution>
                         <id>unpack-suite-files</id>
@@ -54,6 +52,7 @@
                                     <artifactId>microprofile-jwt-auth-tck</artifactId>
                                     <version>${microprofile-jwt-api.version}</version>
                                     <type>test-jar</type>
+                                    <classifier>tests</classifier>
                                     <overWrite>false</overWrite>
                                     <outputDirectory>${project.build.directory}/tck-suite</outputDirectory>
                                     <includes>**/tck-base-suite.xml</includes>

@@ -9,6 +9,7 @@ import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.dialect.Oracle12cDialect;
 import org.hibernate.dialect.SQLServer2012Dialect;
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Assertions;
@@ -41,6 +42,7 @@ public class ConstantsTest {
         assertDialectMatch(DatabaseKind.MYSQL, MySQL8Dialect.class);
         assertDialectMatch(DatabaseKind.DERBY, DerbyTenSevenDialect.class);
         assertDialectMatch(DatabaseKind.MSSQL, SQLServer2012Dialect.class);
+        assertDialectMatch(DatabaseKind.ORACLE, Oracle12cDialect.class);
     }
 
     private void assertDialectMatch(String dbName, Class<?> dialectClass) {

@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.common.processor.scanning;
 
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -84,6 +85,9 @@ public class ResteasyReactiveInterceptorScanner {
     private static <T> void handleDiscoveredInterceptor(
             ApplicationScanningResult applicationResultBuildItem, InterceptorContainer<T> interceptorContainer, IndexView index,
             ClassInfo filterClass) {
+        if (Modifier.isAbstract(filterClass.flags())) {
+            return;
+        }
         ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
         if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
             ResourceInterceptor<T> interceptor = interceptorContainer.create();

@@ -52,27 +52,26 @@ import io.vertx.ext.web.RoutingContext;
 
 import javax.enterprise.context.ApplicationScoped;
 
-@ApplicationScoped <1>
+@ApplicationScoped // <1>
 public class MyDeclarativeRoutes {
 
     // neither path nor regex is set - match a path derived from the method name
-    @Route(methods = HttpMethod.GET) <2>
-    void hello(RoutingContext rc) { <3>
+    @Route(methods = Route.HttpMethod.GET) // <2>
+    void hello(RoutingContext rc) { // <3>
         rc.response().end("hello");
     }
     
     @Route(path = "/world") 
-    String helloWorld() { <4>
+    String helloWorld() { // <4>
         return "Hello world!";
     }
 
-    @Route(path = "/greetings", methods = HttpMethod.GET)
-    void greetings(RoutingExchange ex) { <5>
+    @Route(path = "/greetings", methods = Route.HttpMethod.GET)
+    void greetings(RoutingExchange ex) { // <5>
         ex.ok("hello " + ex.getParam("name").orElse("world"));
     }
 }
 ----
-
 <1> If there is a reactive route found on a class with no scope annotation then `@javax.inject.Singleton` is added automatically.
 <2> The `@Route` annotation indicates that the method is a reactive route. Again, by default, the code contained in the method must not block.
 <3> The method gets a https://vertx.io/docs/apidocs/io/vertx/ext/web/RoutingContext.html[`RoutingContext`] as a parameter. From the `RoutingContext` you can retrieve the HTTP request (using `request()`) and write the response using `response().end(...)`.
@@ -653,7 +652,7 @@ example, adding header info, or specifying the return type on `void` methods mig
 
 [source, java]
 ----
-@OpenAPIDefinition(<1>
+@OpenAPIDefinition( // <1>
     info = @Info(
         title="Greeting API",
         version = "1.0.1",
@@ -669,10 +668,10 @@ example, adding header info, or specifying the return type on `void` methods mig
 public class MyDeclarativeRoutes {
 
     // neither path nor regex is set - match a path derived from the method name
-    @Route(methods = HttpMethod.GET)
+    @Route(methods = Route.HttpMethod.GET)
     @APIResponse(responseCode="200", 
             description="Say hello", 
-            content=@Content(mediaType="application/json", schema=@Schema(type=SchemaType.STRING)))<2>
+            content=@Content(mediaType="application/json", schema=@Schema(type=SchemaType.STRING))) // <2>
     void hello(RoutingContext rc) {
         rc.response().end("hello");
     }
@@ -691,7 +690,6 @@ public class MyDeclarativeRoutes {
     }
 }
 ----
-
 <1> Header information about your API.
 <2> Defining the response
 
@@ -744,7 +742,7 @@ paths:
 === Using Swagger UI
 
 Swagger UI is included by default when running in `dev` or `test` mode, and can optionally added to `prod` mode.
-See <<openapi-swaggerui.adoc#use-swagger-ui-for-development,the Swagger UI>> Guide for more details.
+See <<openapi-swaggerui.adoc#dev-mode,the Swagger UI>> Guide for more details.
 
 Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
 

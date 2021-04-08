@@ -48,6 +48,12 @@ public class QuarkusMock {
      */
     public static <T> void installMockForType(T mock, Class<? super T> instance, Annotation... qualifiers) {
         //mock support does the actual work, but exposes other methods that are not part of the user API
+        if (!instance.isAssignableFrom(mock.getClass())) {
+            if (!(instance.getClass().getSuperclass().isAssignableFrom(mock.getClass()))) {
+                throw new RuntimeException(mock
+                        + " is not assignable to type " + instance.getClass().getSuperclass());
+            }
+        }
         MockSupport.installMock(CDI.current().select(instance, qualifiers).get(), mock);
     }
 }

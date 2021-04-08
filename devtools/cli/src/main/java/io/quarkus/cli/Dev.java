@@ -9,7 +9,7 @@ import io.quarkus.cli.core.BuildsystemCommand;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "dev", usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Execute project in live coding dev mode")
+@CommandLine.Command(name = "dev", mixinStandardHelpOptions = false, description = "Execute project in live coding dev mode")
 public class Dev extends BaseSubCommand implements BuildsystemCommand {
 
     @Override

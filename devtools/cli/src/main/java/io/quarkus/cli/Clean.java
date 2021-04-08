@@ -9,7 +9,7 @@ import io.quarkus.cli.core.BuildsystemCommand;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "clean", usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Clean current project")
+@CommandLine.Command(name = "clean", mixinStandardHelpOptions = false, description = "Clean current project")
 public class Clean extends BaseSubCommand implements BuildsystemCommand {
 
     @Override

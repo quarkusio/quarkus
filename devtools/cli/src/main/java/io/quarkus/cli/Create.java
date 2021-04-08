@@ -14,7 +14,7 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.codegen.SourceType;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "create", sortOptions = false, usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Create a new quarkus project.")
+@CommandLine.Command(name = "create", sortOptions = false, mixinStandardHelpOptions = false, description = "Create a new quarkus project.")
 public class Create extends BaseSubCommand implements Callable<Integer> {
 
     @CommandLine.Option(names = { "-g",

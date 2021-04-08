@@ -9,7 +9,7 @@ import io.quarkus.cli.core.BuildsystemCommand;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "build", usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Build your quarkus project")
+@CommandLine.Command(name = "build", mixinStandardHelpOptions = false, description = "Build your quarkus project")
 public class Build extends BaseSubCommand implements BuildsystemCommand {
 
     @CommandLine.Option(names = { "-n",

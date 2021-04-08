@@ -10,7 +10,7 @@ import io.quarkus.devtools.commands.CreateJBangProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "create-jbang", sortOptions = false, usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Create a new quarkus jbang project.")
+@CommandLine.Command(name = "create-jbang", sortOptions = false, mixinStandardHelpOptions = false, description = "Create a new quarkus jbang project.")
 public class CreateJBang extends BaseSubCommand implements Callable<Integer> {
 
     @CommandLine.Option(names = { "-n",

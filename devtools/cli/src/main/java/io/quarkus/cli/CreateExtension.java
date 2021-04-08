@@ -18,7 +18,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.utils.Prompter;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "create-extension", sortOptions = false, usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Creates the base of a Quarkus extension in different layout depending of the options and environment.")
+@CommandLine.Command(name = "create-extension", sortOptions = false, mixinStandardHelpOptions = false, description = "Creates the base of a Quarkus extension in different layout depending of the options and environment.")
 public class CreateExtension extends BaseSubCommand implements Callable<Integer> {
 
     @CommandLine.Option(names = { "-g",

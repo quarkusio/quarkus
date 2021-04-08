@@ -14,7 +14,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "remove", aliases = "rm", usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Remove an extension from this project.")
+@CommandLine.Command(name = "remove", aliases = "rm", mixinStandardHelpOptions = false, description = "Remove an extension from this project.")
 public class Remove extends BaseSubCommand implements BuildsystemCommand {
 
     @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "extensions to remove")

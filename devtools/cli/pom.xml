@@ -10,6 +10,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <properties>
+        <quarkus.package.type>uber-jar</quarkus.package.type>
+    </properties>
+
     <artifactId>quarkus-cli</artifactId>
     <name>Quarkus - Command Line Interface</name>
     <description>Quarkus command line utility</description>
@@ -25,6 +29,34 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-project-core-extension-codestarts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-apache-httpclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-netty</artifactId>
+        </dependency>
+        <!--
+        Somehow, we need this as otherwise you end up with:
+        java.lang.ClassNotFoundException: io.netty.handler.codec.http2.DefaultHttp2FrameWriter
+        as we try to initialize them at runtime anyway
+        which is weird because the NettyProcessor correctly checks if the HTTP2 support is around.
+        Note that if you drop this dependency, the native image build will finish,
+        but the native image will be all broken.
+        -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-http2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>log4j-jboss-logmanager</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -45,6 +77,45 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli-deployment</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-netty-deployment</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-apache-httpclient-deployment</artifactId>
             <type>pom</type>
             <scope>test</scope>
             <version>${project.version}</version>

@@ -43,4 +43,15 @@ public class AvroCodeReloadTest {
         assertThat(when().get("/protocol").body().print().split(",")).containsExactlyInAnyOrder("Public", "Private", "Default");
     }
 
+    @Test
+    void shouldAlterAvdl() throws InterruptedException {
+        assertThat(when().get("/avdl").body().print().split(",")).containsExactlyInAnyOrder("LOW", "MEDIUM", "HIGH");
+
+        test.modifyFile("avro/Hello.avdl",
+                text -> text.replaceAll(Pattern.quote("LOW, MEDIUM, HIGH"),
+                        "LOWER, MEDIUM, HIGHEST"));
+        Thread.sleep(5000); // to wait for eager reload for code gen sources to happen
+        assertThat(when().get("/avdl").body().print().split(",")).containsExactlyInAnyOrder("LOWER", "MEDIUM", "HIGHEST");
+    }
+
 }

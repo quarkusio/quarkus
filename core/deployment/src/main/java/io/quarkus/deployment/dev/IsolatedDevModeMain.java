@@ -125,7 +125,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         //we need to set this here, while we still have the correct TCCL
                         //this is so the config is still valid, and we can read HTTP config from application.properties
                         log.info(
-                                "Attempting to start hot replacement endpoint to recover from previous Quarkus startup failure");
+                                "Attempting to start live reload endpoint to recover from previous Quarkus startup failure");
                         if (RuntimeUpdatesProcessor.INSTANCE != null) {
                             Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
                             try {

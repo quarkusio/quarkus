@@ -233,7 +233,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         }).exceptionHandler(new Handler<Throwable>() {
             @Override
             public void handle(Throwable error) {
-                log.error("Failed writing hot replacement data", error);
+                log.error("Failed writing live reload data", error);
                 event.response().setStatusCode(500);
                 event.response().end();
             }

@@ -1,7 +1,7 @@
 package io.quarkus.qute.deployment.typesafe;
 
+import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
 
 public class Monks {
 

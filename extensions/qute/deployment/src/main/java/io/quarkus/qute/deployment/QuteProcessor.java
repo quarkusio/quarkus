@@ -1578,7 +1578,9 @@ public class QuteProcessor {
      * @return the property or null
      */
     private static AnnotationTarget findProperty(String name, ClassInfo clazz, IndexView index) {
+        Set<DotName> interfaceNames = new HashSet<>();
         while (clazz != null) {
+            interfaceNames.addAll(clazz.interfaceNames());
             // Fields
             for (FieldInfo field : clazz.fields()) {
                 if (!Modifier.isPublic(field.flags()) || ValueResolverGenerator.isSynthetic(field.flags())) {
@@ -1608,6 +1610,22 @@ public class QuteProcessor {
                 clazz = index.getClassByName(clazz.superName());
             }
         }
+        // Try the default methods
+        for (DotName interfaceName : interfaceNames) {
+            ClassInfo interfaceClassInfo = index.getClassByName(interfaceName);
+            if (interfaceClassInfo != null) {
+                for (MethodInfo method : interfaceClassInfo.methods()) {
+                    // A default method is a public non-abstract instance method
+                    if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
+                            && !ValueResolverGenerator.isSynthetic(method.flags()) && !Modifier.isAbstract(method.flags())
+                            && (method.name().equals(name)
+                                    || ValueResolverGenerator.getPropertyName(method.name()).equals(name))) {
+                        return method;
+                    }
+                }
+            }
+        }
+        // No matching method found
         return null;
     }
 
@@ -1624,61 +1642,14 @@ public class QuteProcessor {
      */
     private static AnnotationTarget findMethod(VirtualMethodPart virtualMethod, ClassInfo clazz, Expression expression,
             IndexView index, Function<String, String> templateIdToPathFun, Map<String, Match> results) {
+        Set<DotName> interfaceNames = new HashSet<>();
         while (clazz != null) {
+            interfaceNames.addAll(clazz.interfaceNames());
             for (MethodInfo method : clazz.methods()) {
                 if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
                         && !ValueResolverGenerator.isSynthetic(method.flags())
-                        && method.name().equals(virtualMethod.getName())) {
-                    boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
-                    List<Type> parameters = method.parameters();
-                    int lastParamIdx = parameters.size() - 1;
-
-                    if (isVarArgs) {
-                        // For varargs methods match the minimal number of params
-                        if (lastParamIdx > virtualMethod.getParameters().size()) {
-                            continue;
-                        }
-                    } else {
-                        if (virtualMethod.getParameters().size() != parameters.size()) {
-                            // Number of params must be equal
-                            continue;
-                        }
-                    }
-
-                    // Check parameter types if available
-                    boolean matches = true;
-                    byte idx = 0;
-
-                    for (Expression param : virtualMethod.getParameters()) {
-                        Match result = results.get(param.toOriginalString());
-                        if (result != null && !result.isEmpty()) {
-                            // Type info available - validate parameter type
-                            Type paramType;
-                            if (isVarArgs && idx >= lastParamIdx) {
-                                // Replace the type for varargs methods
-                                paramType = parameters.get(lastParamIdx).asArrayType().component();
-                            } else {
-                                paramType = parameters.get(idx);
-                            }
-                            if (!Types.isAssignableFrom(paramType,
-                                    result.type, index)) {
-                                matches = false;
-                                break;
-                            }
-                        } else {
-                            LOGGER.debugf(
-                                    "Type info not available - skip validation for parameter [%s] of method [%s] for expression [%s] in template [%s] on line %s",
-                                    method.parameterName(idx),
-                                    method.declaringClass().name() + "#" + method,
-                                    expression.toOriginalString(),
-                                    templateIdToPathFun.apply(expression.getOrigin().getTemplateId()),
-                                    expression.getOrigin().getLine());
-                        }
-                        idx++;
-                    }
-                    if (matches) {
-                        return method;
-                    }
+                        && methodMatches(method, virtualMethod, expression, index, templateIdToPathFun, results)) {
+                    return method;
                 }
             }
             DotName superName = clazz.superName();
@@ -1688,7 +1659,79 @@ public class QuteProcessor {
                 clazz = index.getClassByName(clazz.superName());
             }
         }
+        // Try the default methods
+        for (DotName interfaceName : interfaceNames) {
+            ClassInfo interfaceClassInfo = index.getClassByName(interfaceName);
+            if (interfaceClassInfo != null) {
+                for (MethodInfo method : interfaceClassInfo.methods()) {
+                    // A default method is a public non-abstract instance method
+                    if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
+                            && !ValueResolverGenerator.isSynthetic(method.flags()) && !Modifier.isAbstract(method.flags())
+                            && methodMatches(method, virtualMethod, expression, index, templateIdToPathFun, results)) {
+                        return method;
+                    }
+                }
+            }
+        }
+        // No matching method found
         return null;
+    }
+
+    private static boolean methodMatches(MethodInfo method, VirtualMethodPart virtualMethod, Expression expression,
+            IndexView index, Function<String, String> templateIdToPathFun, Map<String, Match> results) {
+
+        if (!method.name().equals(virtualMethod.getName())) {
+            return false;
+        }
+
+        boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
+        List<Type> parameters = method.parameters();
+        int lastParamIdx = parameters.size() - 1;
+
+        if (isVarArgs) {
+            // For varargs methods match the minimal number of params
+            if (lastParamIdx > virtualMethod.getParameters().size()) {
+                return false;
+            }
+        } else {
+            if (virtualMethod.getParameters().size() != parameters.size()) {
+                // Number of params must be equal
+                return false;
+            }
+        }
+
+        // Check parameter types if available
+        boolean matches = true;
+        byte idx = 0;
+
+        for (Expression param : virtualMethod.getParameters()) {
+            Match result = results.get(param.toOriginalString());
+            if (result != null && !result.isEmpty()) {
+                // Type info available - validate parameter type
+                Type paramType;
+                if (isVarArgs && idx >= lastParamIdx) {
+                    // Replace the type for varargs methods
+                    paramType = parameters.get(lastParamIdx).asArrayType().component();
+                } else {
+                    paramType = parameters.get(idx);
+                }
+                if (!Types.isAssignableFrom(paramType,
+                        result.type, index)) {
+                    matches = false;
+                    break;
+                }
+            } else {
+                LOGGER.debugf(
+                        "Type info not available - skip validation for parameter [%s] of method [%s] for expression [%s] in template [%s] on line %s",
+                        method.parameterName(idx),
+                        method.declaringClass().name() + "#" + method,
+                        expression.toOriginalString(),
+                        templateIdToPathFun.apply(expression.getOrigin().getTemplateId()),
+                        expression.getOrigin().getLine());
+            }
+            idx++;
+        }
+        return matches;
     }
 
     private void processsTemplateData(IndexView index, AnnotationInstance templateData, AnnotationTarget annotationTarget,

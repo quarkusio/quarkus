@@ -8,7 +8,7 @@ public class SmallRyeIndividualHealthGroupHandler extends SmallRyeHealthHandlerB
 
     @Override
     protected SmallRyeHealth getHealth(SmallRyeHealthReporter reporter, RoutingContext ctx) {
-        String group = ctx.normalisedPath().substring(ctx.normalisedPath().lastIndexOf("/") + 1);
+        String group = ctx.normalizedPath().substring(ctx.normalizedPath().lastIndexOf("/") + 1);
         return reporter.getHealthGroup(group);
     }
 }

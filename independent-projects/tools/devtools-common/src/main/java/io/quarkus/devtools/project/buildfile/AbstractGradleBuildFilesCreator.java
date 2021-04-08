@@ -1,6 +1,5 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile.Model;
 import io.quarkus.maven.ArtifactCoords;
@@ -36,10 +35,10 @@ abstract class AbstractGradleBuildFilesCreator {
 
     abstract void createSettingsContent(String artifactId) throws IOException;
 
-    abstract void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException;
+    abstract void addDependencyInBuildFile(ArtifactCoords coords) throws IOException;
 
     public void create(String groupId, String artifactId, String version,
-            Properties properties, List<AppArtifactCoords> extensions) throws IOException {
+            Properties properties, List<ArtifactCoords> extensions) throws IOException {
         createSettingsContent(artifactId);
         createBuildContent(groupId, version);
         createProperties();

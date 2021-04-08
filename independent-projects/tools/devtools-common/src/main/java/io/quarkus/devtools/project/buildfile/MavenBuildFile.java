@@ -2,10 +2,10 @@ package io.quarkus.devtools.project.buildfile;
 
 import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.ArtifactKey;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -50,7 +50,7 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
-    protected boolean addDependency(AppArtifactCoords coords, boolean managed) {
+    protected boolean addDependency(ArtifactCoords coords, boolean managed) {
         Model model = getModel();
         final Dependency d = new Dependency();
         d.setGroupId(coords.getGroupId());
@@ -89,7 +89,7 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
-    protected void removeDependency(AppArtifactKey key) throws IOException {
+    protected void removeDependency(ArtifactKey key) throws IOException {
         if (getModel() != null) {
             getModel().getDependencies()
                     .removeIf(d -> Objects.equals(toKey(d), key));
@@ -97,23 +97,23 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
-    public List<AppArtifactCoords> getDependencies() throws IOException {
+    public List<ArtifactCoords> getDependencies() throws IOException {
         return getModel() == null ? Collections.emptyList()
                 : getModel().getDependencies().stream().map(Extensions::toCoords).collect(Collectors.toList());
     }
 
     @Override
-    public final Collection<AppArtifactCoords> getInstalledPlatforms() throws IOException {
+    public final Collection<ArtifactCoords> getInstalledPlatforms() throws IOException {
         final Model model = getModel();
         if (model == null || model.getDependencyManagement() == null) {
             return Collections.emptyList();
         }
-        final List<AppArtifactCoords> tmp = new ArrayList<>(4);
+        final List<ArtifactCoords> tmp = new ArrayList<>(4);
         for (Dependency c : model.getDependencyManagement().getDependencies()) {
             if (!PlatformArtifacts.isCatalogArtifactId(c.getArtifactId())) {
                 continue;
             }
-            tmp.add(new AppArtifactCoords(c.getGroupId(),
+            tmp.add(new ArtifactCoords(c.getGroupId(),
                     c.getArtifactId().substring(0,
                             c.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
                     null, "pom", c.getVersion()));

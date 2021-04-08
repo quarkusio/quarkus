@@ -14,7 +14,6 @@ import static io.quarkus.devtools.project.codegen.ProjectGenerator.PACKAGE_NAME;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_VERSION;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
@@ -79,7 +78,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             }
         }
 
-        final List<AppArtifactCoords> extensionsToAdd = computeCoordsFromQuery(invocation, extensionsQuery);
+        final List<ArtifactCoords> extensionsToAdd = computeCoordsFromQuery(invocation, extensionsQuery);
         if (extensionsToAdd == null) {
             throw new QuarkusCommandException("Failed to create project because of invalid extensions");
         }

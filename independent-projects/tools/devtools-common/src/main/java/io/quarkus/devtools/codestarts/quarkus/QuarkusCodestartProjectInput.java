@@ -2,15 +2,15 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.maven.ArtifactCoords;
 import java.util.Collection;
 import java.util.Set;
 
 public final class QuarkusCodestartProjectInput extends CodestartProjectInput {
     private final BuildTool buildTool;
-    private final Collection<AppArtifactCoords> extensions;
+    private final Collection<ArtifactCoords> extensions;
     private final Set<String> overrideExamples;
     private final boolean noExamples;
     private final boolean noDockerfiles;
@@ -30,7 +30,7 @@ public final class QuarkusCodestartProjectInput extends CodestartProjectInput {
         return new QuarkusCodestartProjectInputBuilder();
     }
 
-    public Collection<AppArtifactCoords> getExtensions() {
+    public Collection<ArtifactCoords> getExtensions() {
         return extensions;
     }
 

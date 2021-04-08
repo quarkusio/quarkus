@@ -1,8 +1,8 @@
 package io.quarkus.devtools.project.extensions;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.ArtifactKey;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
@@ -23,24 +23,24 @@ public interface ExtensionManager {
      * @return current list of imported platforms
      * @throws IOException if a problem occurs while reading the project build file(s)
      */
-    Collection<AppArtifactCoords> getInstalledPlatforms() throws IOException;
+    Collection<ArtifactCoords> getInstalledPlatforms() throws IOException;
 
     /**
      * Read the build file(s) to get the list of installed extensions in this Quarkus project.
      *
-     * @return The list of {@link AppArtifactCoords} installed in the project build file(s).
+     * @return The list of {@link ArtifactCoords} installed in the project build file(s).
      * @throws IOException if a problem occurs while reading the project build file(s)
      */
-    Collection<AppArtifactCoords> getInstalled() throws IOException;
+    Collection<ArtifactCoords> getInstalled() throws IOException;
 
     /**
      * Read build file(s) to check if an extension is installed in this Quarkus project.
      *
-     * @param key the {@link AppArtifactKey} of the extension to check
+     * @param key the {@link ArtifactKey} of the extension to check
      * @return true if it's installed
      * @throws IOException if a problem occurs while reading the project build file(s)
      */
-    default boolean isInstalled(AppArtifactKey key) throws IOException {
+    default boolean isInstalled(ArtifactKey key) throws IOException {
         return getInstalled().stream().anyMatch(i -> Objects.equals(i.getKey(), key));
     }
 
@@ -52,11 +52,11 @@ public interface ExtensionManager {
      *   - The provided version will be used if it wasn't already installed
      * </pre>
      *
-     * @param coords the list of {@link AppArtifactCoords} for the extensions to install
+     * @param coords the list of {@link ArtifactCoords} for the extensions to install
      * @return the {@link InstallResult}
      * @throws IOException if a problem occurs while reading/writing the project build file(s)
      */
-    InstallResult install(Collection<AppArtifactCoords> coords) throws IOException;
+    InstallResult install(Collection<ArtifactCoords> coords) throws IOException;
 
     /**
      * This is going to install/add all the specified extensions to the project build file(s).
@@ -67,7 +67,7 @@ public interface ExtensionManager {
      *   - The provided version will be used if wasn't already installed
      * </pre>
      *
-     * @param request the list of {@link AppArtifactCoords} for the extensions to install
+     * @param request the list of {@link ArtifactCoords} for the extensions to install
      * @return the {@link InstallResult}
      * @throws IOException if a problem occurs while reading/writing the project build file(s)
      */
@@ -78,20 +78,20 @@ public interface ExtensionManager {
      *
      * This is ignoring the {@link Extension} version
      *
-     * @param keys the set of {@link AppArtifactKey} for the extensions to uninstall
+     * @param keys the set of {@link ArtifactKey} for the extensions to uninstall
      * @return the {@link InstallResult}
      * @throws IOException if a problem occurs while reading/writing the project build file(s)
      */
-    UninstallResult uninstall(Collection<AppArtifactKey> keys) throws IOException;
+    UninstallResult uninstall(Collection<ArtifactKey> keys) throws IOException;
 
     class InstallResult {
-        private final Collection<AppArtifactCoords> installed;
+        private final Collection<ArtifactCoords> installed;
 
-        public InstallResult(Collection<AppArtifactCoords> installed) {
+        public InstallResult(Collection<ArtifactCoords> installed) {
             this.installed = installed;
         }
 
-        public Collection<AppArtifactCoords> getInstalled() {
+        public Collection<ArtifactCoords> getInstalled() {
             return installed;
         }
 
@@ -101,13 +101,13 @@ public interface ExtensionManager {
     }
 
     class UninstallResult {
-        private final Collection<AppArtifactKey> uninstalled;
+        private final Collection<ArtifactKey> uninstalled;
 
-        public UninstallResult(Collection<AppArtifactKey> uninstalled) {
+        public UninstallResult(Collection<ArtifactKey> uninstalled) {
             this.uninstalled = uninstalled;
         }
 
-        public Collection<AppArtifactKey> getUninstalled() {
+        public Collection<ArtifactKey> getUninstalled() {
             return uninstalled;
         }
 

@@ -1,7 +1,7 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.ArtifactKey;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -60,7 +60,7 @@ abstract class AbstractGradleBuildFile extends BuildFile {
         writeToProjectFile(getBuildGradlePath(), getModel().getBuildContent().getBytes());
     }
 
-    static String createDependencyCoordinatesString(AppArtifactCoords coords, boolean managed, char quoteChar) {
+    static String createDependencyCoordinatesString(ArtifactCoords coords, boolean managed, char quoteChar) {
         StringBuilder newDependency = new StringBuilder().append(quoteChar)
                 .append(coords.getGroupId()).append(":").append(coords.getArtifactId());
         if (!managed &&
@@ -101,7 +101,7 @@ abstract class AbstractGradleBuildFile extends BuildFile {
     }
 
     @Override
-    protected void removeDependency(AppArtifactKey key) {
+    protected void removeDependency(ArtifactKey key) {
         StringBuilder newBuildContent = new StringBuilder();
         Scanner scanner = new Scanner(getModel().getBuildContent());
         while (scanner.hasNextLine()) {

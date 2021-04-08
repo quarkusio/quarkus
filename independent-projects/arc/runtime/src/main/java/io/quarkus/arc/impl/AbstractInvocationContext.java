@@ -77,7 +77,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
                         + ", type: " + parameterTypes[i] + "]");
             }
             if (params[i] != null) {
-                if (!parameterTypes[i].isAssignableFrom(params[i].getClass())) {
+                if (!Types.boxedClass(parameterTypes[i]).isAssignableFrom(Types.boxedClass(params[i].getClass()))) {
                     throw new IllegalArgumentException("The parameter type [" + params[i].getClass()
                             + "] can not be assigned to the type for the target method [" + parameterTypes[i] + "]");
                 }

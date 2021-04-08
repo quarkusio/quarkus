@@ -5,6 +5,7 @@ import static io.quarkus.qute.Parameter.EMPTY;
 import io.quarkus.qute.Results.Result;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,8 @@ public class LoopSectionHelper implements SectionHelper {
                         "Loop error in template [%s] on line %s: {%s} resolved to null, use {%<s.orEmpty} to ignore this error",
                         iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString()));
             }
-            List<CompletionStage<ResultNode>> results = new ArrayList<>();
+            // Try to extract the capacity for collections, maps and arrays to avoid resize
+            List<CompletionStage<ResultNode>> results = new ArrayList<>(extractSize(it));
             Iterator<?> iterator = extractIterator(it);
             int idx = 0;
             // Ideally, we should not block here but we still need to retain the order of results
@@ -68,6 +70,19 @@ public class LoopSectionHelper implements SectionHelper {
                     });
             return result;
         });
+    }
+
+    private static int extractSize(Object it) {
+        if (it instanceof Collection) {
+            return ((Collection<?>) it).size();
+        } else if (it instanceof Map) {
+            return ((Map<?, ?>) it).size();
+        } else if (it.getClass().isArray()) {
+            return Array.getLength(it);
+        } else if (it instanceof Integer) {
+            return ((Integer) it);
+        }
+        return 10;
     }
 
     private Iterator<?> extractIterator(Object it) {

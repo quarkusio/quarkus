@@ -738,7 +738,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             }
             parts.add(part);
         }
-        return new ExpressionImpl(idGenerator.get(), namespace, parts, Result.NOT_FOUND, origin);
+        return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), Result.NOT_FOUND, origin);
     }
 
     private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first,

@@ -90,14 +90,8 @@ public final class ValueResolvers {
                 if (context.getParams().size() != 1) {
                     return false;
                 }
-                switch (context.getName()) {
-                    case "?:":
-                    case "or":
-                    case ":":
-                        return true;
-                    default:
-                        return false;
-                }
+                String name = context.getName();
+                return name.equals("?:") || name.equals("or") || name.equals(":");
             }
 
             @Override
@@ -146,13 +140,8 @@ public final class ValueResolvers {
                 if (context.getParams().size() != 1) {
                     return false;
                 }
-                switch (context.getName()) {
-                    case "?":
-                    case "ifTruthy":
-                        return true;
-                    default:
-                        return false;
-                }
+                String name = context.getName();
+                return name.equals("?") || name.equals("ifTruthy");
             }
 
             @Override
@@ -389,7 +378,8 @@ public final class ValueResolvers {
     @SuppressWarnings("rawtypes")
     private static CompletionStage<Object> mapResolveAsync(EvalContext context) {
         Map map = (Map) context.getBase();
-        switch (context.getName()) {
+        String name = context.getName();
+        switch (name) {
             case "keys":
             case "keySet":
                 return CompletableFuture.completedFuture(map.keySet());
@@ -401,7 +391,7 @@ public final class ValueResolvers {
                 return CompletableFuture.completedFuture(map.size());
             case "empty":
             case "isEmpty":
-                return CompletableFuture.completedFuture(map.isEmpty());
+                return map.isEmpty() ? Results.TRUE : Results.FALSE;
             case "get":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(k -> {
@@ -415,8 +405,11 @@ public final class ValueResolvers {
                     });
                 }
             default:
-                return map.containsKey(context.getName()) ? CompletableFuture.completedFuture(map.get(context.getName()))
-                        : Results.NOT_FOUND;
+                Object val = map.get(name);
+                if (val == null) {
+                    return map.containsKey(name) ? Results.NULL : Results.NOT_FOUND;
+                }
+                return CompletableFuture.completedFuture(val);
         }
     }
 

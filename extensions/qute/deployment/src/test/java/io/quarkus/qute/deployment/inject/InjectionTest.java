@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class InjectionTest {
@@ -50,10 +49,10 @@ public class InjectionTest {
         @Inject
         Template foo;
 
-        @ResourcePath("foo.qute.html")
+        @Location("foo.qute.html")
         Template foo2;
 
-        @ResourcePath("bars/bar")
+        @Location("bars/bar")
         Template bar;
 
         @Location("bars/bar")

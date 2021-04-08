@@ -785,6 +785,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> persist(Iterable<?> entities) {
         return INSTANCE.persist(entities);
     }
@@ -797,6 +798,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persist(Iterable)
      * @see #persist(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> persist(Stream<?> entities) {
         return INSTANCE.persist(entities);
     }
@@ -809,6 +811,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persist(Stream)
      * @see #persist(Iterable)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> persist(Object firstEntity, Object... entities) {
         return INSTANCE.persist(firstEntity, entities);
     }
@@ -821,6 +824,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Stream)
      * @see #update(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> update(Iterable<?> entities) {
         return INSTANCE.update(entities);
     }
@@ -833,6 +837,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Iterable)
      * @see #update(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> update(Stream<?> entities) {
         return INSTANCE.update(entities);
     }
@@ -845,6 +850,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Stream)
      * @see #update(Iterable)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> update(Object firstEntity, Object... entities) {
         return INSTANCE.update(firstEntity, entities);
     }
@@ -857,6 +863,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> persistOrUpdate(Iterable<?> entities) {
         return INSTANCE.persistOrUpdate(entities);
     }
@@ -869,6 +876,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Iterable)
      * @see #persistOrUpdate(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> persistOrUpdate(Stream<?> entities) {
         return INSTANCE.persistOrUpdate(entities);
     }
@@ -881,6 +889,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Iterable)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static Uni<Void> persistOrUpdate(Object firstEntity, Object... entities) {
         return INSTANCE.persistOrUpdate(firstEntity, entities);
     }

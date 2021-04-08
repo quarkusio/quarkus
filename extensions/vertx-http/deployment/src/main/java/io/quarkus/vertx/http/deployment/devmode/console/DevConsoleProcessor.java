@@ -234,7 +234,7 @@ public class DevConsoleProcessor {
                 .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
-        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev/*")).subRouter(router);
+        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev*")).subRouter(router);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

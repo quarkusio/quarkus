@@ -23,6 +23,7 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -41,6 +42,7 @@ public class DevConsole implements Handler<RoutingContext> {
     final Map<String, Object> globalData = new HashMap<>();
 
     final Config config = ConfigProvider.getConfig();
+    final String devRootAppend;
 
     DevConsole(Engine engine, String httpRootPath, String frameworkRootPath) {
         this.engine = engine;
@@ -49,7 +51,8 @@ public class DevConsole implements Handler<RoutingContext> {
         this.globalData.put("frameworkRootPath", frameworkRootPath);
 
         // This includes the dev segment, but does not include a trailing slash (for append)
-        this.globalData.put("devRootAppend", frameworkRootPath + "dev");
+        this.devRootAppend = frameworkRootPath + "dev";
+        this.globalData.put("devRootAppend", devRootAppend);
 
         this.globalData.put("quarkusVersion", Version.getVersion());
         this.globalData.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
@@ -76,7 +79,15 @@ public class DevConsole implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext ctx) {
-        String path = ctx.normalisedPath().substring(ctx.mountPoint().length());
+        // Redirect /q/dev to /q/dev/
+        if (ctx.normalizedPath().length() == devRootAppend.length()) {
+            ctx.response().setStatusCode(302);
+            ctx.response().headers().set(HttpHeaders.LOCATION, devRootAppend + "/");
+            ctx.response().end();
+            return;
+        }
+
+        String path = ctx.normalizedPath().substring(ctx.mountPoint().length() + 1);
         if (path.isEmpty() || path.equals("/")) {
             sendMainPage(ctx);
         } else {

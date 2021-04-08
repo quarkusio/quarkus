@@ -534,16 +534,18 @@ public class SmallRyeGraphQLProcessor {
                     smallRyeGraphQLBuildItem.getGraphqlUiPath(), runtimeConfig);
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(graphQLConfig.ui.rootPath)
+                    .displayOnNotFoundPage("GraphQL UI")
                     .routeConfigKey("quarkus.smallrye-graphql.ui.root-path")
-                    .displayOnNotFoundPage("MicroProfile GraphQL UI")
                     .handler(handler)
                     .requiresLegacyRedirect()
                     .build());
+
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .route(graphQLConfig.ui.rootPath + "/*")
+                    .route(graphQLConfig.ui.rootPath + "*")
                     .handler(handler)
                     .requiresLegacyRedirect()
                     .build());
+
         }
     }
 

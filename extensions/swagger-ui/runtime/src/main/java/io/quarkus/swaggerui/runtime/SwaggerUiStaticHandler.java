@@ -43,12 +43,12 @@ public class SwaggerUiStaticHandler implements Handler<RoutingContext> {
                 .setWebRoot(swaggerUiFinalDestination)
                 .setDefaultContentEncoding("UTF-8");
 
-        if (event.normalisedPath().length() == swaggerUiPath.length()) {
+        if (event.normalizedPath().length() == swaggerUiPath.length()) {
             event.response().setStatusCode(302);
             event.response().headers().set(HttpHeaders.LOCATION, swaggerUiPath + "/");
             event.response().end();
             return;
-        } else if (event.normalisedPath().length() == swaggerUiPath.length() + 1) {
+        } else if (event.normalizedPath().length() == swaggerUiPath.length() + 1) {
             event.reroute(swaggerUiPath + "/index.html");
             return;
         }

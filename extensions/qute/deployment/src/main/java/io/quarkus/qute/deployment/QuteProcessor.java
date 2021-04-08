@@ -59,6 +59,7 @@ import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
@@ -651,6 +652,7 @@ public class QuteProcessor {
                 }
 
                 AnnotationTarget member = null;
+                TemplateExtensionMethodBuildItem extensionMethod = null;
 
                 if (!match.isPrimitive()) {
                     Set<String> membersUsed = implicitClassToMembersUsed.get(match.type().name());
@@ -679,9 +681,12 @@ public class QuteProcessor {
 
                 if (member == null) {
                     // Then try to find an etension method
-                    member = findTemplateExtensionMethod(info, match.type(), templateExtensionMethods, expression,
+                    extensionMethod = findTemplateExtensionMethod(info, match.type(), templateExtensionMethods, expression,
                             index,
                             templateIdToPathFun, results);
+                    if (extensionMethod != null) {
+                        member = extensionMethod.getMethod();
+                    }
                 }
 
                 if (member == null) {
@@ -707,7 +712,7 @@ public class QuteProcessor {
                     match.clearValues();
                     break;
                 } else {
-                    Type type = resolveType(member, match, index);
+                    Type type = resolveType(member, match, index, extensionMethod);
                     ClassInfo clazz = null;
                     if (type.kind() == Type.Kind.CLASS || type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
                         clazz = index.getClassByName(type.name());
@@ -1268,7 +1273,8 @@ public class QuteProcessor {
         return map;
     }
 
-    private static Type resolveType(AnnotationTarget member, Match match, IndexView index) {
+    private static Type resolveType(AnnotationTarget member, Match match, IndexView index,
+            TemplateExtensionMethodBuildItem extensionMethod) {
         Type matchType;
         if (member.kind() == Kind.FIELD) {
             matchType = member.asField().type();
@@ -1283,17 +1289,64 @@ public class QuteProcessor {
             Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
                     match.getParameterizedTypeArguments(), match.getTypeParameters(),
                     new HashMap<>(), index), index);
-            DotName declaringClassName = member.kind() == Kind.METHOD ? member.asMethod().declaringClass().name()
-                    : member.asField().declaringClass().name();
+
+            DotName declaringClassName = null;
+            Type extensionMatchBase = null;
+            if (member.kind() == Kind.METHOD) {
+                MethodInfo method = member.asMethod();
+                List<TypeVariable> typeParameters = method.typeParameters();
+                if (extensionMethod != null && !extensionMethod.hasNamespace() && !typeParameters.isEmpty()) {
+                    // Special handling for extension methods with type parameters
+                    // For example "static <T> Iterator<T> reversed(List<T> list)"
+                    // 1. identify the type used to match the base object; List<T>
+                    // 2. resolve this type; List<String>
+                    // 3. if needed apply to the return type; Iterator<String>
+                    List<Type> params = method.parameters();
+                    Set<AnnotationInstance> attributeAnnotations = Annotations.getAnnotations(Kind.METHOD_PARAMETER,
+                            ExtensionMethodGenerator.TEMPLATE_ATTRIBUTE, method.annotations());
+                    if (attributeAnnotations.isEmpty()) {
+                        extensionMatchBase = params.get(0);
+                    } else {
+                        for (int i = 0; i < params.size(); i++) {
+                            int position = i;
+                            if (attributeAnnotations.stream()
+                                    .noneMatch(a -> a.target().asMethodParameter().position() == position)) {
+                                // The first parameter that is not annotated with @TemplateAttribute is used to match the base object
+                                extensionMatchBase = params.get(i);
+                                break;
+                            }
+                        }
+                    }
+                    if (extensionMatchBase != null && Types.containsTypeVariable(extensionMatchBase)) {
+                        declaringClassName = extensionMatchBase.name();
+                    }
+                } else {
+                    declaringClassName = method.declaringClass().name();
+                }
+            } else if (member.kind() == Kind.FIELD) {
+                declaringClassName = member.asField().declaringClass().name();
+            }
             // Then find the declaring type with resolved type variables
-            Type declaringType = closure.stream()
-                    .filter(t -> t.name().equals(declaringClassName)).findAny()
-                    .orElse(null);
+            Type declaringType = null;
+            if (declaringClassName != null) {
+                for (Type type : closure) {
+                    if (type.name().equals(declaringClassName)) {
+                        declaringType = type;
+                        break;
+                    }
+                }
+            }
             if (declaringType != null
                     && declaringType.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE) {
+                List<TypeVariable> typeParameters;
+                if (extensionMatchBase != null) {
+                    typeParameters = extensionMethod.getMethod().typeParameters();
+                } else {
+                    typeParameters = index.getClassByName(declaringType.name()).typeParameters();
+                }
                 matchType = Types.resolveTypeParam(matchType,
                         Types.buildResolvedMap(declaringType.asParameterizedType().arguments(),
-                                index.getClassByName(declaringType.name()).typeParameters(),
+                                typeParameters,
                                 Collections.emptyMap(),
                                 index),
                         index);
@@ -1482,7 +1535,7 @@ public class QuteProcessor {
         }
     }
 
-    private static AnnotationTarget findTemplateExtensionMethod(Info info, Type matchType,
+    private static TemplateExtensionMethodBuildItem findTemplateExtensionMethod(Info info, Type matchType,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods, Expression expression, IndexView index,
             Function<String, String> templateIdToPathFun, Map<String, Match> results) {
         if (!info.isProperty() && !info.isVirtualMethod()) {
@@ -1563,7 +1616,7 @@ public class QuteProcessor {
                     continue;
                 }
             }
-            return extensionMethod.getMethod();
+            return extensionMethod;
         }
         return null;
     }

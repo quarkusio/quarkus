@@ -1383,6 +1383,9 @@ TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket n
 * `get(index)`: Returns the element at the specified position in a list
 ** `{list.get(0)}`
 
+* `reversed`: Returns a reversed iterator over a list
+** `{#for r in recordsList.reversed}`
+
 TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 
 ===== Numbers

@@ -8,7 +8,7 @@ metadata:
   categories:
   - "cloud"
   guide: "https://quarkus.io/guides/gcp-functions"
-  status: "experimental"
+  status: "preview"
   codestart:
     name: "google-cloud-functions"
     kind: "singleton-example"

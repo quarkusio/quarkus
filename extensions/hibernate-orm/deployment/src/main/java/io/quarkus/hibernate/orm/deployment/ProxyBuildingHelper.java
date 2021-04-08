@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.Set;
 
 import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
 import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyProxyHelper;
@@ -22,7 +23,13 @@ final class ProxyBuildingHelper implements AutoCloseable {
         this.contextClassLoader = contextClassLoader;
     }
 
-    public DynamicType.Unloaded<?> buildUnloadedProxy(Class<?> mappedClass, Class[] interfaces) {
+    public DynamicType.Unloaded<?> buildUnloadedProxy(String mappedClassName, Set<String> interfaceNames) {
+        final Class[] interfaces = new Class[interfaceNames.size()];
+        int i = 0;
+        for (String name : interfaceNames) {
+            interfaces[i++] = uninitializedClass(name);
+        }
+        final Class<?> mappedClass = uninitializedClass(mappedClassName);
         return getByteBuddyProxyHelper().buildUnloadedProxy(mappedClass, interfaces);
     }
 
@@ -36,7 +43,7 @@ final class ProxyBuildingHelper implements AutoCloseable {
         return this.byteBuddyProxyHelper;
     }
 
-    public Class<?> uninitializedClass(String entity) {
+    private Class<?> uninitializedClass(String entity) {
         try {
             return Class.forName(entity, false, contextClassLoader);
         } catch (ClassNotFoundException e) {

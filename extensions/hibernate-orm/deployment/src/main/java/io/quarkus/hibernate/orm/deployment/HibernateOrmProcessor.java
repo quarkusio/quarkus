@@ -31,31 +31,20 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
 import javax.persistence.AttributeConverter;
-import javax.persistence.Entity;
-import javax.persistence.MappedSuperclass;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
-import javax.persistence.metamodel.StaticMetamodel;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
 
 import org.hibernate.MultiTenancyStrategy;
-import org.hibernate.annotations.Proxy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
-import org.hibernate.dialect.DB297Dialect;
-import org.hibernate.dialect.DerbyTenSevenDialect;
-import org.hibernate.dialect.MariaDB103Dialect;
-import org.hibernate.dialect.MySQL8Dialect;
-import org.hibernate.dialect.Oracle12cDialect;
-import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
-import org.hibernate.proxy.HibernateProxy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
@@ -79,7 +68,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -122,13 +110,10 @@ import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
-import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
-import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
-import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -152,19 +137,7 @@ public final class HibernateOrmProcessor {
 
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
-    private static final DotName TENANT_CONNECTION_RESOLVER = DotName.createSimple(TenantConnectionResolver.class.getName());
-    private static final DotName TENANT_RESOLVER = DotName.createSimple(TenantResolver.class.getName());
-
-    private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
-    private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
-    private static final DotName PERSISTENCE_UNIT_REPEATABLE_CONTAINER = DotName
-            .createSimple(PersistenceUnit.List.class.getName());
-    private static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());
-    private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
-
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
-
-    private static final String PROXY_CACHE = HibernateOrmProcessor.class.getName() + ".proxyCache";
 
     @BuildStep
     CapabilityBuildItem capability() {
@@ -201,7 +174,7 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     AdditionalIndexedClassesBuildItem addPersistenceUnitAnnotationToIndex() {
-        return new AdditionalIndexedClassesBuildItem(PersistenceUnit.class.getName());
+        return new AdditionalIndexedClassesBuildItem(ClassNames.QUARKUS_PERSISTENCE_UNIT.toString());
     }
 
     // We do our own enhancement during the compilation phase, so disable any
@@ -607,8 +580,9 @@ public final class HibernateOrmProcessor {
         }
 
         if (multitenancyEnabled) {
-            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(TENANT_CONNECTION_RESOLVER)));
-            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(TENANT_RESOLVER)));
+            unremovableBeans
+                    .produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_CONNECTION_RESOLVER)));
+            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_RESOLVER)));
         }
     }
 
@@ -623,7 +597,7 @@ public final class HibernateOrmProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     public void registerStaticMetamodelClassesForReflection(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflective) {
-        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(STATIC_METAMODEL);
+        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(ClassNames.STATIC_METAMODEL);
         if (!annotationInstances.isEmpty()) {
 
             String[] metamodel = annotationInstances.stream()
@@ -777,7 +751,7 @@ public final class HibernateOrmProcessor {
 
         Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
         if (!dialect.isPresent()) {
-            dialect = guessDialect(jdbcDataSource.getDbKind());
+            dialect = Dialects.guessDialect(jdbcDataSource.getDbKind());
         }
 
         if (!dialect.isPresent()) {
@@ -939,40 +913,6 @@ public final class HibernateOrmProcessor {
                         false, false));
     }
 
-    public static Optional<String> guessDialect(String resolvedDbKind) {
-        // For now select the latest dialect from the driver
-        // later, we can keep doing that but also avoid DCE
-        // of all the dialects we want in so that people can override them
-        if (DatabaseKind.isDB2(resolvedDbKind)) {
-            return Optional.of(DB297Dialect.class.getName());
-        }
-        if (DatabaseKind.isPostgreSQL(resolvedDbKind)) {
-            return Optional.of(QuarkusPostgreSQL10Dialect.class.getName());
-        }
-        if (DatabaseKind.isH2(resolvedDbKind)) {
-            return Optional.of(QuarkusH2Dialect.class.getName());
-        }
-        if (DatabaseKind.isMariaDB(resolvedDbKind)) {
-            return Optional.of(MariaDB103Dialect.class.getName());
-        }
-        if (DatabaseKind.isMySQL(resolvedDbKind)) {
-            return Optional.of(MySQL8Dialect.class.getName());
-        }
-        if (DatabaseKind.isOracle(resolvedDbKind)) {
-            return Optional.of(Oracle12cDialect.class.getName());
-        }
-        if (DatabaseKind.isDerby(resolvedDbKind)) {
-            return Optional.of(DerbyTenSevenDialect.class.getName());
-        }
-        if (DatabaseKind.isMsSQL(resolvedDbKind)) {
-            return Optional.of(SQLServer2012Dialect.class.getName());
-        }
-
-        String error = "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind
-                + "'. Add an explicit '" + HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property.";
-        throw new ConfigurationError(error);
-    }
-
     private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {
         descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
     }
@@ -1083,8 +1023,8 @@ public final class HibernateOrmProcessor {
             Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaEntities.getAllModelClassNames(),
                     modelClassInfo);
 
-            if (modelClassInfo != null && (modelClassInfo.classAnnotation(PERSISTENCE_UNIT) != null
-                    || modelClassInfo.classAnnotation(PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
+            if (modelClassInfo != null && (modelClassInfo.classAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
+                    || modelClassInfo.classAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
                 modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
             }
 
@@ -1144,8 +1084,8 @@ public final class HibernateOrmProcessor {
         Set<String> relatedModelClassNames = new HashSet<>();
 
         // for now we only deal with entities and mapped super classes
-        if (modelClassInfo.classAnnotation(JPA_ENTITY) == null &&
-                modelClassInfo.classAnnotation(MAPPED_SUPERCLASS) == null) {
+        if (modelClassInfo.classAnnotation(ClassNames.JPA_ENTITY) == null &&
+                modelClassInfo.classAnnotation(ClassNames.MAPPED_SUPERCLASS) == null) {
             return Collections.emptySet();
         }
 
@@ -1184,7 +1124,8 @@ public final class HibernateOrmProcessor {
     }
 
     private static Collection<AnnotationInstance> getPackageLevelPersistenceUnitAnnotations(IndexView index) {
-        Collection<AnnotationInstance> persistenceUnitAnnotations = index.getAnnotationsWithRepeatable(PERSISTENCE_UNIT, index);
+        Collection<AnnotationInstance> persistenceUnitAnnotations = index
+                .getAnnotationsWithRepeatable(ClassNames.QUARKUS_PERSISTENCE_UNIT, index);
         Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = new ArrayList<>();
 
         for (AnnotationInstance persistenceUnitAnnotation : persistenceUnitAnnotations) {
@@ -1267,7 +1208,7 @@ public final class HibernateOrmProcessor {
         //create a map of entity to proxy type
         PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
         Map<String, String> proxyAnnotations = new HashMap<>();
-        for (AnnotationInstance i : combinedIndex.getAnnotations(DotName.createSimple(Proxy.class.getName()))) {
+        for (AnnotationInstance i : combinedIndex.getAnnotations(ClassNames.PROXY)) {
             AnnotationValue proxyClass = i.value("proxyClass");
             if (proxyClass == null) {
                 continue;
@@ -1281,8 +1222,8 @@ public final class HibernateOrmProcessor {
                         && !isModified(managedClassOrPackageName, changedClasses, combinedIndex)) {
                     result = proxyCache.cache.get(managedClassOrPackageName);
                 } else {
-                    Set<Class<?>> proxyInterfaces = new HashSet<>();
-                    proxyInterfaces.add(HibernateProxy.class); //always added
+                    Set<String> proxyInterfaceNames = new TreeSet<>();
+                    proxyInterfaceNames.add(ClassNames.HIBERNATE_PROXY.toString()); //always added
                     String proxy = proxyAnnotations.get(managedClassOrPackageName);
                     if (proxy == null) {
                         if (!proxyHelper.isProxiable(managedClassOrPackageName)) {
@@ -1290,9 +1231,9 @@ public final class HibernateOrmProcessor {
                             continue;
                         }
                     } else {
-                        proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
+                        proxyInterfaceNames.add(proxy);
                     }
-                    Class<?> mappedClass = proxyHelper.uninitializedClass(managedClassOrPackageName);
+                    final String mappedClass = managedClassOrPackageName;
                     for (ClassInfo subclass : combinedIndex
                             .getAllKnownSubclasses(DotName.createSimple(managedClassOrPackageName))) {
                         String subclassName = subclass.name().toString();
@@ -1302,13 +1243,11 @@ public final class HibernateOrmProcessor {
                         }
                         proxy = proxyAnnotations.get(subclassName);
                         if (proxy != null) {
-                            proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
+                            proxyInterfaceNames.add(proxy);
                         }
                     }
-                    DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(mappedClass,
-                            toArray(proxyInterfaces));
-                    result = new CachedProxy(unloaded,
-                            proxyInterfaces.stream().map(Class::getName).collect(Collectors.toSet()));
+                    DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(mappedClass, proxyInterfaceNames);
+                    result = new CachedProxy(unloaded, proxyInterfaceNames);
                     proxyCache.cache.put(managedClassOrPackageName, result);
                 }
                 for (Entry<TypeDescription, byte[]> i : result.proxyDef.getAllTypes().entrySet()) {

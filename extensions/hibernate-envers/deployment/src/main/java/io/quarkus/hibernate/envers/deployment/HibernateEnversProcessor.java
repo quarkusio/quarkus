@@ -36,8 +36,8 @@ public final class HibernateEnversProcessor {
     @BuildStep
     List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
         return Arrays.asList(
-                new AdditionalJpaModelBuildItem(org.hibernate.envers.DefaultRevisionEntity.class),
-                new AdditionalJpaModelBuildItem(org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity.class));
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity"),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"));
     }
 
     @BuildStep

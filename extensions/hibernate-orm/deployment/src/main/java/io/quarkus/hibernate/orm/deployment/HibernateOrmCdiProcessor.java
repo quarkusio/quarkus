@@ -6,8 +6,6 @@ import java.util.function.Supplier;
 
 import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -33,19 +31,9 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 public class HibernateOrmCdiProcessor {
 
-    private static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(
-            DotName.createSimple(EntityManagerFactory.class.getName()),
-            DotName.createSimple(SessionFactory.class.getName()));
-    private static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(
-            DotName.createSimple(EntityManager.class.getName()),
-            DotName.createSimple(Session.class.getName()));
-
-    private static final DotName PERSISTENCE_UNIT_QUALIFIER = DotName.createSimple(PersistenceUnit.class.getName());
-
-    private static final DotName JPA_PERSISTENCE_UNIT = DotName.createSimple(javax.persistence.PersistenceUnit.class.getName());
-
-    private static final DotName JPA_PERSISTENCE_CONTEXT = DotName
-            .createSimple(javax.persistence.PersistenceContext.class.getName());
+    private static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER_FACTORY,
+            ClassNames.SESSION_FACTORY);
+    private static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER, ClassNames.SESSION);
 
     @BuildStep
     AnnotationsTransformerBuildItem convertJpaResourceAnnotationsToQualifier(
@@ -71,10 +59,10 @@ public class HibernateOrmCdiProcessor {
                 }
 
                 DotName jpaAnnotation;
-                if (field.hasAnnotation(JPA_PERSISTENCE_UNIT)) {
-                    jpaAnnotation = JPA_PERSISTENCE_UNIT;
-                } else if (field.hasAnnotation(JPA_PERSISTENCE_CONTEXT)) {
-                    jpaAnnotation = JPA_PERSISTENCE_CONTEXT;
+                if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_UNIT)) {
+                    jpaAnnotation = ClassNames.JPA_PERSISTENCE_UNIT;
+                } else if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_CONTEXT)) {
+                    jpaAnnotation = ClassNames.JPA_PERSISTENCE_CONTEXT;
                 } else {
                     return;
                 }
@@ -93,7 +81,7 @@ public class HibernateOrmCdiProcessor {
                     // in this case, we consider it the default too if the name matches
                     transformation.add(DotNames.DEFAULT);
                 } else {
-                    transformation.add(PERSISTENCE_UNIT_QUALIFIER,
+                    transformation.add(ClassNames.QUARKUS_PERSISTENCE_UNIT,
                             AnnotationValue.createStringValue("value", persistenceUnitNameAnnotationValue.asString()));
                 }
                 transformation.done();

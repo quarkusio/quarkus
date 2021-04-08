@@ -125,6 +125,11 @@ public class SecurityProcessor {
         if (bouncyCastleJsseProvider.isPresent()) {
             reflection.produce(
                     new ReflectiveClassBuildItem(true, true, SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
+            reflection.produce(new ReflectiveClassBuildItem(true, true, true,
+                    "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem(
+                            "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers"));
             prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleJsseProvider.get().isInFipsMode());
         } else if (bouncyCastleProvider.isPresent()) {
             prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleProvider.get().isInFipsMode());
@@ -144,10 +149,17 @@ public class SecurityProcessor {
         runtimeReInitialized
                 .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
         if (!inFipsMode) {
+            reflection.produce(new ReflectiveClassBuildItem(true, true, true,
+                    "org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
+        } else {
+            reflection.produce(new ReflectiveClassBuildItem(true, true, true,
+                    "org.bouncycastle.crypto.general.AES"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.general.AES"));
         }
 
     }

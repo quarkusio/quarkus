@@ -104,7 +104,7 @@ jobs:
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
       - name: Report status
-        uses: jbangdev/jbang-action@v0.69.2
+        uses: jbangdev/jbang-action@v0.68.0
         if: "always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
         with:
           script: .github/NativeBuildReport.java

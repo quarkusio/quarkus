@@ -15,8 +15,6 @@
 
     <properties>
         <maven.compiler.parameters>true</maven.compiler.parameters>
-        <!-- needs to wait for smallrye-reactive-messaging-health to update MP health to 3.0 -->
-        <enforcer.skip>true</enforcer.skip>
     </properties>
 
     <dependencies>

@@ -54,8 +54,7 @@ public class StartupActionImpl implements StartupAction {
         //so we have some differences between dev and test mode here.
         //test mode only has a single class loader, while dev uses a disposable runtime class loader
         //that is discarded between restarts
-        Map<String, byte[]> resources = new HashMap<>();
-        resources.putAll(extractGeneratedResources(true));
+        Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(true));
         if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
             resources.putAll(extractGeneratedResources(false));
             baseClassLoader.reset(resources, transformedClasses);

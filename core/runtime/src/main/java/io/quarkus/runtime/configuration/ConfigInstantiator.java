@@ -118,7 +118,7 @@ public class ConfigInstantiator {
         } else if (rawType == List.class) {
             return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0)), ArrayList::new);
         } else {
-            return config.getConverter(rawTypeOf(type));
+            return config.requireConverter(rawTypeOf(type));
         }
     }
 

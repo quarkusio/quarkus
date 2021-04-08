@@ -32,18 +32,18 @@ public class DatabaseListTest extends MongoTestBase {
 
     @Test
     void list() {
-        assertThat(client.listDatabaseNames().collectItems().asList().await().indefinitely().size()).isBetween(2, 3);
-        assertThat(client.listDatabases().collectItems().asList().await().indefinitely().size()).isBetween(2, 3);
-        assertThat(client.listDatabases(Document.class).collectItems().asList().await().indefinitely().size())
+        assertThat(client.listDatabaseNames().collect().asList().await().indefinitely().size()).isBetween(2, 3);
+        assertThat(client.listDatabases().collect().asList().await().indefinitely().size()).isBetween(2, 3);
+        assertThat(client.listDatabases(Document.class).collect().asList().await().indefinitely().size())
                 .isBetween(2, 3);
         Assertions.assertThat(client.listDatabases(Document.class, new DatabaseListOptions().maxTime(1, TimeUnit.SECONDS))
-                .collectItems().asList().await().indefinitely().size()).isBetween(2, 3);
+                .collect().asList().await().indefinitely().size()).isBetween(2, 3);
         assertThat(client.listDatabases(Document.class, null)
-                .collectItems().asList().await().indefinitely().size()).isBetween(2, 3);
-        assertThat(client.listDatabases(new DatabaseListOptions().nameOnly(true)).collectItems().asList()
+                .collect().asList().await().indefinitely().size()).isBetween(2, 3);
+        assertThat(client.listDatabases(new DatabaseListOptions().nameOnly(true)).collect().asList()
                 .await().indefinitely().size()).isBetween(2, 3);
         assertThat(
-                client.listDatabases((DatabaseListOptions) null).collectItems().asList().await().indefinitely().size())
+                client.listDatabases((DatabaseListOptions) null).collect().asList().await().indefinitely().size())
                         .isBetween(2, 3);
     }
 }

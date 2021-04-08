@@ -11,14 +11,11 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
-import io.vertx.ext.web.RoutingContext;
+import io.vertx.core.spi.observability.HttpRequest;
+import io.vertx.core.spi.observability.HttpResponse;
 
 /**
  * HttpServerMetrics<R, W, S>
@@ -50,40 +47,6 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     }
 
     /**
-     * Stash the RequestMetric in the Vertx Context
-     *
-     * @param context Vertx context to store RequestMetric in
-     * @param requestMetric
-     * @see VertxMeterFilter
-     */
-    public static void setRequestMetric(Context context, HttpRequestMetric requestMetric) {
-        if (context != null) {
-            context.put(METRICS_CONTEXT, requestMetric);
-        }
-    }
-
-    /**
-     * Move RequestMetric from the Vertx Context to the RoutingContext: YUCK
-     * Note: dropped in Vert.x 4
-     *
-     * @param context
-     * @param routingContext
-     * @return the RequestMetricContext stored in the Vertx Context, or null
-     * @see VertxMeterFilter
-     * @see #setRequestMetric(Context, HttpRequestMetric)
-     */
-    public static void moveRequestMetric(Context context, RoutingContext routingContext) {
-        if (context != null) {
-            HttpRequestMetric requestMetric = context.get(METRICS_CONTEXT);
-            if (requestMetric != null) {
-                requestMetric.setRoutingContext(routingContext);
-                context.remove(METRICS_CONTEXT);
-                routingContext.put(METRICS_CONTEXT, requestMetric);
-            }
-        }
-    }
-
-    /**
      * Called when an http server response is pushed.
      *
      * @param socketMetric a Map for socket metric context or null
@@ -94,21 +57,27 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      */
     @Override
     public HttpRequestMetric responsePushed(Map<String, Object> socketMetric, HttpMethod method, String uri,
-            HttpServerResponse response) {
+            HttpResponse response) {
         HttpRequestMetric requestMetric = new HttpRequestMetric(uri);
         String path = requestMetric.getNormalizedUriPath(
                 config.getServerMatchPatterns(),
                 config.getServerIgnorePatterns());
         if (path != null) {
             registry.counter(nameHttpServerPush, Tags.of(
-                    HttpCommonTags.uri(path, response.getStatusCode()),
+                    HttpCommonTags.uri(path, response.statusCode()),
                     VertxMetricsTags.method(method),
                     VertxMetricsTags.outcome(response),
-                    HttpCommonTags.status(response.getStatusCode())))
+                    HttpCommonTags.status(response.statusCode())))
                     .increment();
         }
         log.debugf("responsePushed %s, %s", socketMetric, requestMetric);
         return requestMetric;
+    }
+
+    @Override
+    public void requestRouted(HttpRequestMetric requestMetric, String route) {
+        log.debugf("requestRouted %s %s", route, requestMetric);
+        requestMetric.appendCurrentRoutePath(route);
     }
 
     /**
@@ -121,10 +90,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      * @return a RequestMetricContext
      */
     @Override
-    public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpServerRequest request) {
+    public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpRequest request) {
         HttpRequestMetric requestMetric = new HttpRequestMetric(request);
         requestMetric.setSample(Timer.start(registry));
-        setRequestMetric(Vertx.currentContext(), requestMetric);
 
         log.debugf("requestBegin %s, %s", socketMetric, requestMetric);
         return requestMetric;
@@ -161,9 +129,10 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      *
      * @param requestMetric a RequestMetricContext or null
      * @param response the http server response
+     * @param bytesWritten bytes written
      */
     @Override
-    public void responseEnd(HttpRequestMetric requestMetric, HttpServerResponse response) {
+    public void responseEnd(HttpRequestMetric requestMetric, HttpResponse response, long bytesWritten) {
         log.debugf("responseEnd %s, %s", response, requestMetric);
 
         String path = requestMetric.getNormalizedUriPath(
@@ -174,9 +143,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
                     .tags(Tags.of(
                             VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, response.getStatusCode()),
+                            HttpCommonTags.uri(path, response.statusCode()),
                             VertxMetricsTags.outcome(response),
-                            HttpCommonTags.status(response.getStatusCode())));
+                            HttpCommonTags.status(response.statusCode())));
 
             sample.stop(builder.register(registry));
         }
@@ -214,7 +183,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      */
     @Override
     public void disconnected(LongTaskTimer.Sample websocketMetric) {
-        log.debugf("websocket disconnected: %s", websocketMetric);
+        log.debugf("websocket disconnected %s", websocketMetric);
         if (websocketMetric != null) {
             websocketMetric.stop();
         }

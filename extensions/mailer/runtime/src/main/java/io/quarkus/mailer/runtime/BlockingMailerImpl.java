@@ -5,8 +5,7 @@ import javax.inject.Inject;
 
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
-import io.quarkus.mailer.ReactiveMailer;
-import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.mailer.reactive.ReactiveMailer;
 
 /**
  * Implementation of {@link Mailer} relying on the {@link ReactiveMailer} and waiting for completion.
@@ -19,10 +18,6 @@ public class BlockingMailerImpl implements Mailer {
 
     @Override
     public void send(Mail... mails) {
-        if (!BlockingOperationControl.isBlockingAllowed()) {
-            throw new RuntimeException(
-                    "Attempted a blocking operation from the IO thread. If you want to send mail from an IO thread please use ReactiveMailer instead, or dispatch to a worker thread to use the blocking mailer.");
-        }
-        mailer.send(mails).toCompletableFuture().join();
+        mailer.send(mails).await().indefinitely();
     }
 }

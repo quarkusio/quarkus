@@ -4,6 +4,11 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.smallrye.config.ConfigMappings.ConfigMappingWithPrefix.configMappingWithPrefix;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static org.jboss.jandex.AnnotationInstance.create;
+import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
+import static org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER;
+import static org.jboss.jandex.AnnotationValue.createStringValue;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -16,11 +21,14 @@ import java.util.stream.Stream;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.CreationException;
 
+import org.eclipse.microprofile.config.ConfigValue;
+import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
@@ -28,6 +36,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigBeanCreator;
@@ -57,6 +66,8 @@ import io.smallrye.config.inject.ConfigProducer;
 public class ConfigBuildStep {
 
     private static final DotName MP_CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
+    private static final DotName MP_CONFIG_PROPERTIES_NAME = DotName.createSimple(ConfigProperties.class.getName());
+    private static final DotName MP_CONFIG_VALUE_NAME = DotName.createSimple(ConfigValue.class.getName());
 
     private static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
@@ -67,6 +78,7 @@ public class ConfigBuildStep {
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(new AdditionalBeanBuildItem(ConfigProducer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(ConfigProperties.class));
     }
 
     @BuildStep
@@ -116,7 +128,8 @@ public class ConfigBuildStep {
                         || DotNames.OPTIONAL_DOUBLE.equals(requiredType.name())
                         || DotNames.PROVIDER.equals(requiredType.name())
                         || SUPPLIER_NAME.equals(requiredType.name())
-                        || CONFIG_VALUE_NAME.equals(requiredType.name())) {
+                        || CONFIG_VALUE_NAME.equals(requiredType.name())
+                        || MP_CONFIG_VALUE_NAME.equals(requiredType.name())) {
                     // Never validate container objects
                     continue;
                 }
@@ -194,6 +207,25 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
+    AnnotationsTransformerBuildItem vetoMPConfigProperties() {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
+                return CLASS.equals(kind);
+            }
+
+            public void transform(TransformationContext context) {
+                if (context.getAnnotations().stream()
+                        .anyMatch(annotation -> annotation.name().equals(MP_CONFIG_PROPERTIES_NAME))) {
+                    context.transform()
+                            .add(DotNames.VETOED)
+                            .add(DotNames.UNREMOVABLE)
+                            .done();
+                }
+            }
+        });
+    }
+
+    @BuildStep
     void generateConfigMappings(
             CombinedIndexBuildItem combinedIndex,
             BeanRegistrationPhaseBuildItem beanRegistrationPhase,
@@ -204,10 +236,32 @@ public class ConfigBuildStep {
 
         List<AnnotationInstance> mappingAnnotations = new ArrayList<>();
         mappingAnnotations.addAll(combinedIndex.getIndex().getAnnotations(CONFIG_MAPPING_NAME));
+        mappingAnnotations.addAll(combinedIndex.getIndex().getAnnotations(MP_CONFIG_PROPERTIES_NAME));
 
         for (AnnotationInstance instance : mappingAnnotations) {
             AnnotationTarget target = instance.target();
             AnnotationValue annotationPrefix = instance.value("prefix");
+
+            if (target.kind().equals(FIELD)) {
+                if (annotationPrefix != null && !annotationPrefix.asString().equals(ConfigProperties.UNCONFIGURED_PREFIX)) {
+                    configMappings.produce(
+                            new ConfigMappingBuildItem(toClass(target.asField().type().name()), annotationPrefix.asString()));
+                    continue;
+                }
+            }
+
+            if (target.kind().equals(METHOD_PARAMETER)) {
+                if (annotationPrefix != null && !annotationPrefix.asString().equals(ConfigProperties.UNCONFIGURED_PREFIX)) {
+                    ClassType classType = target.asMethodParameter().method().parameters()
+                            .get(target.asMethodParameter().position()).asClassType();
+                    configMappings.produce(new ConfigMappingBuildItem(toClass(classType.name()), annotationPrefix.asString()));
+                    continue;
+                }
+            }
+
+            if (!target.kind().equals(CLASS)) {
+                continue;
+            }
 
             Class<?> type = toClass(target.asClass().name());
             String prefix = Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse("");
@@ -244,12 +298,20 @@ public class ConfigBuildStep {
 
             configMappings.produce(new ConfigMappingBuildItem(type, prefix));
 
+            List<AnnotationInstance> qualifiers = new ArrayList<>();
+            if (instance.name().equals(MP_CONFIG_PROPERTIES_NAME)) {
+                qualifiers.add(
+                        create(MP_CONFIG_PROPERTIES_NAME, null, new AnnotationValue[] { createStringValue("prefix", prefix) }));
+            }
+
             beanConfigurationRegistry.produce(new BeanConfiguratorBuildItem(
                     beanRegistrationPhase.getContext()
                             .configure(type)
                             .types(type)
+                            .qualifiers(qualifiers.toArray(new AnnotationInstance[] {}))
                             .creator(ConfigMappingCreator.class)
-                            .param("type", type)));
+                            .param("type", type)
+                            .param("prefix", prefix)));
         }
     }
 
@@ -312,7 +374,7 @@ public class ConfigBuildStep {
                 DotNames.BYTE.equals(type.name()) ||
                 DotNames.CHARACTER.equals(type.name()) ||
                 SUPPLIER_NAME.equals(type.name()) ||
-                CONFIG_VALUE_NAME.equals(type.name());
+                CONFIG_VALUE_NAME.equals(type.name()) ||
+                MP_CONFIG_VALUE_NAME.equals(type.name());
     }
-
 }

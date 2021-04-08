@@ -16,7 +16,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
     @Override
     public Multi<Item> source(Empty request) {
         return Multi.createFrom().ticks().every(Duration.ofMillis(2))
-                .transform().byTakingFirstItems(10)
+                .select().first(10)
                 .map(l -> Item.newBuilder().setValue(Long.toString(l)).build());
     }
 
@@ -25,7 +25,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
         return request
                 .map(Item::getValue)
                 .map(Long::parseLong)
-                .collectItems().last()
+                .collect().last()
                 .map(l -> Empty.newBuilder().build());
     }
 

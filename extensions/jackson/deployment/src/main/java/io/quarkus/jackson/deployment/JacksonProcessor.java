@@ -31,6 +31,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -83,6 +85,13 @@ public class JacksonProcessor {
 
     @Inject
     List<IgnoreJsonDeserializeClassBuildItem> ignoreJsonDeserializeClassBuildItems;
+
+    @BuildStep
+    void unremovable(Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> producer) {
+        if (capabilities.isPresent(Capability.VERTX_CORE)) {
+            producer.produce(UnremovableBeanBuildItem.beanTypes(ObjectMapper.class));
+        }
+    }
 
     @BuildStep
     CapabilityBuildItem register(

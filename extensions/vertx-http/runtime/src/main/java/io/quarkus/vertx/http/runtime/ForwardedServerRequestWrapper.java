@@ -6,6 +6,9 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
@@ -19,12 +22,13 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.StreamPriority;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
-class ForwardedServerRequestWrapper implements HttpServerRequest {
+class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequestInternal {
 
-    private final HttpServerRequest delegate;
+    private final HttpServerRequestInternal delegate;
     private final ForwardedParser forwardedParser;
 
     private boolean modified;
@@ -36,7 +40,7 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     private String absoluteURI;
 
     ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions) {
-        delegate = request;
+        delegate = (HttpServerRequestInternal) request;
         forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions);
     }
 
@@ -124,14 +128,6 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
             return delegate.method();
         }
         return method;
-    }
-
-    @Override
-    public String rawMethod() {
-        if (!modified) {
-            return delegate.rawMethod();
-        }
-        return method.toString();
     }
 
     @Override
@@ -257,11 +253,6 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     }
 
     @Override
-    public NetSocket netSocket() {
-        return delegate.netSocket();
-    }
-
-    @Override
     public HttpServerRequest setExpectMultipart(boolean b) {
         delegate.setExpectMultipart(b);
         return this;
@@ -286,11 +277,6 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public String getFormAttribute(String s) {
         return delegate.getFormAttribute(s);
-    }
-
-    @Override
-    public ServerWebSocket upgrade() {
-        return delegate.upgrade();
     }
 
     @Override
@@ -329,4 +315,53 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
         return delegate.cookieMap();
     }
 
+    @Override
+    public HttpServerRequest body(Handler<AsyncResult<Buffer>> handler) {
+        return delegate.body(handler);
+    }
+
+    @Override
+    public Future<Buffer> body() {
+        return delegate.body();
+    }
+
+    @Override
+    public void end(Handler<AsyncResult<Void>> handler) {
+        delegate.end(handler);
+    }
+
+    @Override
+    public Future<Void> end() {
+        return delegate.end();
+    }
+
+    @Override
+    public void toNetSocket(Handler<AsyncResult<NetSocket>> handler) {
+        delegate.toNetSocket(handler);
+    }
+
+    @Override
+    public Future<NetSocket> toNetSocket() {
+        return delegate.toNetSocket();
+    }
+
+    @Override
+    public void toWebSocket(Handler<AsyncResult<ServerWebSocket>> handler) {
+        delegate.toWebSocket(handler);
+    }
+
+    @Override
+    public Future<ServerWebSocket> toWebSocket() {
+        return delegate.toWebSocket();
+    }
+
+    @Override
+    public Context context() {
+        return delegate.context();
+    }
+
+    @Override
+    public Object metric() {
+        return delegate.metric();
+    }
 }

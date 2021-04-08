@@ -24,6 +24,8 @@ final class DotNames {
     static final DotName SET = DotName.createSimple(Set.class.getName());
     static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
     static final DotName ENUM = DotName.createSimple(Enum.class.getName());
+    static final DotName MP_CONFIG_PROPERTIES = DotName
+            .createSimple(org.eclipse.microprofile.config.inject.ConfigProperties.class.getName());
     static final DotName CONFIG_PROPERTIES = DotName.createSimple(ConfigProperties.class.getName());
     static final DotName CONFIG_PREFIX = DotName.createSimple(ConfigPrefix.class.getName());
     static final DotName CONFIG_IGNORE = DotName.createSimple(ConfigIgnore.class.getName());

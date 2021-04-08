@@ -66,7 +66,7 @@ public class NamedMongoClientConfigTest extends MongoWithReplicasTestBase {
 
     public void checkHealth() {
         org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
-        assertThat(response.getState()).isEqualTo(HealthCheckResponse.State.UP);
+        assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
         assertThat(response.getData()).isNotEmpty();
         assertThat(response.getData().get()).hasSize(2).contains(entry("cluster1", "OK"), entry("cluster2", "OK"));
     }

@@ -3,13 +3,14 @@ package io.quarkus.reactive.datasource.runtime;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.Transaction;
 
 class TestPool implements TestPoolInterface {
 
@@ -30,12 +31,22 @@ class TestPool implements TestPoolInterface {
     }
 
     @Override
-    public void begin(Handler<AsyncResult<Transaction>> handler) {
+    public Future<SqlConnection> getConnection() {
+        Promise<SqlConnection> promise = Promise.promise();
+        getConnection(promise);
+        return promise.future();
     }
 
     @Override
-    public void close() {
+    public void close(Handler<AsyncResult<Void>> handler) {
         isClosed.set(true);
+        handler.handle(Future.succeededFuture());
+    }
+
+    @Override
+    public Future<Void> close() {
+        isClosed.set(true);
+        return Future.succeededFuture();
     }
 
     @Override

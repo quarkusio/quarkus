@@ -43,7 +43,7 @@
         <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
         <rest-assured.version>4.3.2</rest-assured.version>
         <mutiny-client.version>1.1.0</mutiny-client.version>
-        <vertx.version>3.9.2</vertx.version>
+        <vertx.version>4.0.3</vertx.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -65,16 +65,16 @@
         <gradle-wrapper.version>6.8.3</gradle-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>2.2</microprofile-health-api.version>
-        <microprofile-config-api.version>1.4</microprofile-config-api.version>
-        <microprofile-metrics-api.version>2.3.2</microprofile-metrics-api.version>
-        <microprofile-fault-tolerance-api.version>2.1.1</microprofile-fault-tolerance-api.version>
+        <microprofile-health-api.version>3.0</microprofile-health-api.version>
+        <microprofile-config-api.version>2.0</microprofile-config-api.version>
+        <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
+        <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
         <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
-        <microprofile-rest-client-api.version>1.4.1</microprofile-rest-client-api.version>
-        <microprofile-open-api.version>1.1.3-RC1</microprofile-open-api.version>
-        <microprofile-opentracing-api.version>1.3.3</microprofile-opentracing-api.version>
+        <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
+        <microprofile-open-api.version>2.0</microprofile-open-api.version>
+        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
-        <microprofile-jwt-api.version>1.1.1</microprofile-jwt-api.version>
+        <microprofile-jwt-api.version>1.2</microprofile-jwt-api.version>
         <microprofile-graphql-api.version>1.0.3</microprofile-graphql-api.version>
 
         <!-- Antlr is used by the PanacheQL parser-->
@@ -107,10 +107,10 @@
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
         <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
-        <protoc.version>3.12.3</protoc.version> <!--keep in sync with the BOM-->
-        <grpc.version>1.30.2</grpc.version> <!--keep in sync with the BOM -->
+        <protoc.version>3.14.0</protoc.version> <!--keep in sync with the BOM-->
+        <grpc.version>1.35.0</grpc.version> <!--keep in sync with the BOM -->
 
-        <boring-ssl.version>2.0.30.Final</boring-ssl.version>
+        <boring-ssl.version>2.0.36.Final</boring-ssl.version>
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>

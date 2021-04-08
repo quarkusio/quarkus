@@ -15,7 +15,7 @@ public class MultiStringBean {
     Multi<String> strings;
 
     public List<String> getStrings(Duration duration) {
-        return strings.collectItems()
+        return strings.collect()
                 .asList()
                 .await()
                 .atMost(duration);

@@ -147,7 +147,7 @@ public class BlockingMethodsTest {
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
         List<String> response = mutiny.fullDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .allSatisfy(s -> {
@@ -163,7 +163,7 @@ public class BlockingMethodsTest {
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
         List<String> response = mutiny.fullDuplexCallBlocking(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .allSatisfy(s -> {
@@ -178,7 +178,7 @@ public class BlockingMethodsTest {
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
         List<String> response = mutiny.halfDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .allSatisfy(s -> {
@@ -193,7 +193,7 @@ public class BlockingMethodsTest {
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
         List<String> response = mutiny.halfDuplexCallBlocking(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .allSatisfy(s -> {

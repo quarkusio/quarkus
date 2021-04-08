@@ -4,6 +4,7 @@ import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.impl.ComputingCache;
 import java.io.Serializable;
 import java.lang.annotation.Repeatable;
@@ -109,6 +110,7 @@ public final class DotNames {
     public static final DotName DECORATOR = create(Decorator.class);
     public static final DotName DELEGATE = create(Delegate.class);
     public static final DotName SERIALIZABLE = create(Serializable.class);
+    public static final DotName UNREMOVABLE = create(Unremovable.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

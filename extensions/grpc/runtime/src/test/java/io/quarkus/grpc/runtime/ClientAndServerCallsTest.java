@@ -53,7 +53,7 @@ public class ClientAndServerCallsTest {
 
     @Test
     public void testOneToMany() {
-        assertThat(client.oneToMany("hello").collectItems().asList().await().atMost(TIMEOUT)).containsExactly("HELLO", "HELLO");
+        assertThat(client.oneToMany("hello").collect().asList().await().atMost(TIMEOUT)).containsExactly("HELLO", "HELLO");
     }
 
     @Test
@@ -65,7 +65,7 @@ public class ClientAndServerCallsTest {
     @Test
     public void testManyToMany() {
         assertThat(client.manyToMany(Multi.createFrom().items("hello", "world"))
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT)).containsExactly("HELLO", "WORLD");
     }
 
@@ -116,7 +116,7 @@ public class ClientAndServerCallsTest {
         }
 
         Uni<List<String>> manyToOne(Multi<String> multi) {
-            return multi.map(String::toUpperCase).collectItems().asList();
+            return multi.map(String::toUpperCase).collect().asList();
         }
 
         Multi<String> oneToMany(String s) {
@@ -134,7 +134,7 @@ public class ClientAndServerCallsTest {
         FakeService service = new FakeService();
 
         Uni<String> oneToOne(String s) {
-            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::oneToOne));
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, null, service::oneToOne));
         }
 
         Uni<List<String>> manyToOne(Multi<String> multi) {
@@ -142,7 +142,7 @@ public class ClientAndServerCallsTest {
         }
 
         Multi<String> oneToMany(String s) {
-            return ClientCalls.oneToMany(s, (i, o) -> ServerCalls.oneToMany(i, o, service::oneToMany));
+            return ClientCalls.oneToMany(s, (i, o) -> ServerCalls.oneToMany(i, o, null, service::oneToMany));
         }
 
         Multi<String> manyToMany(Multi<String> multi) {
@@ -176,19 +176,19 @@ public class ClientAndServerCallsTest {
         FailingService service = new FailingService();
 
         Uni<String> propagateFailure(String s) {
-            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::propagateFailure));
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, null, service::propagateFailure));
         }
 
         Uni<String> immediateFailure(String s) {
-            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::immediateFailure));
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, null, service::immediateFailure));
         }
 
         Uni<String> illegalArgumentException(String s) {
-            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::illegalArgumentException));
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, null, service::illegalArgumentException));
         }
 
         Uni<String> npe(String s) {
-            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::npe));
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, null, service::npe));
         }
 
     }

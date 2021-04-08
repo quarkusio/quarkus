@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -28,6 +29,11 @@ public class HttpHostConfigSource implements ConfigSource, Serializable {
     @Override
     public Map<String, String> getProperties() {
         return Collections.singletonMap(QUARKUS_HTTP_HOST, getValue(QUARKUS_HTTP_HOST));
+    }
+
+    @Override
+    public Set<String> getPropertyNames() {
+        return Collections.singleton(QUARKUS_HTTP_HOST);
     }
 
     @Override

@@ -14,18 +14,22 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
+import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 
 /**
  * Builder implementation for MicroProfile Rest Client
@@ -34,10 +38,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     private static final String DEFAULT_MAPPER_DISABLED = "microprofile.rest.client.disable.default.mapper";
 
-    private final ClientBuilder clientBuilder = new ClientBuilderImpl().withConfig(new ConfigurationImpl(RuntimeType.CLIENT));
+    private final ClientBuilderImpl clientBuilder = (ClientBuilderImpl) new ClientBuilderImpl()
+            .withConfig(new ConfigurationImpl(RuntimeType.CLIENT));
     private final List<ResponseExceptionMapper<?>> exceptionMappers = new ArrayList<>();
 
     private URL url;
+    private boolean followRedirects;
+    private QueryParamStyle queryParamStyle;
 
     @Override
     public RestClientBuilder baseUrl(URL url) {
@@ -82,6 +89,25 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
+    public RestClientBuilder followRedirects(final boolean follow) {
+        this.followRedirects = follow;
+        return this;
+    }
+
+    @Override
+    public RestClientBuilder proxyAddress(final String proxyHost, final int proxyPort) {
+        if (proxyHost == null) {
+            throw new IllegalArgumentException("proxyHost must not be null");
+        }
+        if (proxyPort <= 0 || proxyPort > 65535) {
+            throw new IllegalArgumentException("Invalid port number");
+        }
+
+        clientBuilder.proxy(proxyHost, proxyPort);
+        return this;
+    }
+
+    @Override
     public RestClientBuilder executorService(ExecutorService executor) {
         throw new IllegalArgumentException("Specifying executor service is not supported. " +
                 "The underlying call in RestEasy Reactive is non-blocking, " +
@@ -101,46 +127,53 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     @Override
     public RestClientBuilder register(Class<?> componentClass) {
-        registerMpSpecificProvider(componentClass);
-        clientBuilder.register(componentClass);
+        Object bean = BeanGrabber.getBeanIfDefined(componentClass);
+        if (bean != null) {
+            registerMpSpecificProvider(bean);
+            clientBuilder.register(bean);
+        } else {
+            registerMpSpecificProvider(componentClass);
+            clientBuilder.register(componentClass);
+        }
         return this;
     }
 
     @Override
     public RestClientBuilder register(Class<?> componentClass, int priority) {
-        registerMpSpecificProvider(componentClass);
-        clientBuilder.register(componentClass, priority);
+        InstanceHandle<?> instance = Arc.container().instance(componentClass);
+        if (instance.isAvailable()) {
+            registerMpSpecificProvider(instance.get());
+            clientBuilder.register(instance.get(), priority);
+        } else {
+            registerMpSpecificProvider(componentClass);
+            clientBuilder.register(componentClass, priority);
+        }
         return this;
     }
 
-    private void registerMpSpecificProvider(Class<?> componentClass) {
-        if (ResponseExceptionMapper.class.isAssignableFrom(componentClass)) {
-            try {
-                registerMpSpecificProvider(componentClass.getDeclaredConstructor().newInstance());
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                throw new IllegalArgumentException("Failed to instantiate exception mapper " + componentClass
-                        + ". Does it have a public no-arg constructor?", e);
-            }
-        }
-    }
-
-    private void registerMpSpecificProvider(Object component) {
-        if (component instanceof ResponseExceptionMapper) {
-            exceptionMappers.add((ResponseExceptionMapper<?>) component);
-        }
-    };
-
     @Override
     public RestClientBuilder register(Class<?> componentClass, Class<?>... contracts) {
-        registerMpSpecificProvider(componentClass);
-        clientBuilder.register(componentClass, contracts);
+        InstanceHandle<?> instance = Arc.container().instance(componentClass);
+        if (instance.isAvailable()) {
+            registerMpSpecificProvider(instance.get());
+            clientBuilder.register(instance.get(), contracts);
+        } else {
+            registerMpSpecificProvider(componentClass);
+            clientBuilder.register(componentClass, contracts);
+        }
         return this;
     }
 
     @Override
     public RestClientBuilder register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
-        registerMpSpecificProvider(componentClass);
-        clientBuilder.register(componentClass, contracts);
+        InstanceHandle<?> instance = Arc.container().instance(componentClass);
+        if (instance.isAvailable()) {
+            registerMpSpecificProvider(instance.get());
+            clientBuilder.register(instance.get(), contracts);
+        } else {
+            registerMpSpecificProvider(componentClass);
+            clientBuilder.register(componentClass, contracts);
+        }
         return this;
     }
 
@@ -172,6 +205,29 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         return this;
     }
 
+    private void registerMpSpecificProvider(Class<?> componentClass) {
+        if (ResponseExceptionMapper.class.isAssignableFrom(componentClass)) {
+            try {
+                registerMpSpecificProvider(componentClass.getDeclaredConstructor().newInstance());
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new IllegalArgumentException("Failed to instantiate exception mapper " + componentClass
+                        + ". Does it have a public no-arg constructor?", e);
+            }
+        }
+    }
+
+    private void registerMpSpecificProvider(Object component) {
+        if (component instanceof ResponseExceptionMapper) {
+            exceptionMappers.add((ResponseExceptionMapper<?>) component);
+        }
+    }
+
+    @Override
+    public RestClientBuilder queryParamStyle(final QueryParamStyle style) {
+        queryParamStyle = style;
+        return this;
+    }
+
     @Override
     public <T> T build(Class<T> aClass) throws IllegalStateException, RestClientDefinitionException {
         if (url == null) {
@@ -185,11 +241,15 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         Boolean globallyDisabledMapper = ConfigProvider.getConfig()
                 .getOptionalValue(DEFAULT_MAPPER_DISABLED, Boolean.class).orElse(false);
         if (!globallyDisabledMapper && !(defaultMapperDisabled instanceof Boolean && (Boolean) defaultMapperDisabled)) {
-            exceptionMappers.add(new DefaultRestClientReactiveExceptionMapper());
+            exceptionMappers.add(new DefaultMicroprofileRestClientExceptionMapper());
         }
 
         exceptionMappers.sort(Comparator.comparingInt(ResponseExceptionMapper::getPriority));
-        clientBuilder.register(new RestClientReactiveResponseFilter(exceptionMappers));
+        clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
+        clientBuilder.followRedirects(followRedirects);
+
+        clientBuilder.multiQueryParamMode(toMultiQueryParamMode(queryParamStyle));
+
         ClientImpl client = (ClientImpl) clientBuilder.build();
         WebTargetImpl target = null;
         try {
@@ -202,5 +262,20 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         } catch (InvalidRestClientDefinitionException e) {
             throw new RestClientDefinitionException(e);
         }
+    }
+
+    private MultiQueryParamMode toMultiQueryParamMode(QueryParamStyle queryParamStyle) {
+        if (queryParamStyle == null) {
+            return null;
+        }
+        switch (queryParamStyle) {
+            case MULTI_PAIRS:
+                return MultiQueryParamMode.MULTI_PAIRS;
+            case COMMA_SEPARATED:
+                return MultiQueryParamMode.COMMA_SEPARATED;
+            case ARRAY_PAIRS:
+                return MultiQueryParamMode.ARRAY_PAIRS;
+        }
+        return null;
     }
 }

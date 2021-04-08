@@ -59,8 +59,8 @@ public class LegacyNamedReactiveMongoClientConfigTest extends MongoWithReplicasT
         assertProperConnection(client, 27018);
         assertProperConnection(client2, 27019);
 
-        assertThat(client.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
-        assertThat(client2.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
+        assertThat(client.listDatabases().collect().first().await().indefinitely()).isNotEmpty();
+        assertThat(client2.listDatabases().collect().first().await().indefinitely()).isNotEmpty();
 
         assertNoDefaultClient();
     }

@@ -46,13 +46,6 @@ public class MutinyMailerImpl implements ReactiveMailer {
     @Inject
     MailerSupport mailerSupport;
 
-    private static final Function<List<?>, Void> ignore = new Function<List<?>, Void>() {
-        @Override
-        public Void apply(List<?> results) {
-            return null;
-        }
-    };
-
     @Override
     public Uni<Void> send(Mail... mails) {
         if (mails == null) {
@@ -74,7 +67,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
                 })
                 .collect(Collectors.toList());
 
-        return Uni.combine().all().unis(unis).combinedWith(ignore);
+        return Uni.combine().all().unis(unis).discardItems();
     }
 
     private Uni<Void> send(Mail mail, MailMessage message) {
@@ -148,7 +141,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
     }
 
     private Uni<MailAttachment> toMailAttachment(Attachment attachment) {
-        MailAttachment attach = new MailAttachment();
+        MailAttachment attach = MailAttachment.create();
         attach.setName(attachment.getName());
         attach.setContentId(attachment.getContentId());
         attach.setDescription(attachment.getDescription());
@@ -173,12 +166,12 @@ public class MutinyMailerImpl implements ReactiveMailer {
             return open
                     .flatMap(af -> af.toMulti()
                             .map(io.vertx.mutiny.core.buffer.Buffer::getDelegate)
-                            .on().termination((r, f) -> af.close())
-                            .collectItems().in(Buffer::buffer, Buffer::appendBuffer));
+                            .onTermination().call((r, f) -> af.close())
+                            .collect().in(Buffer::buffer, Buffer::appendBuffer));
         } else if (attachment.getData() != null) {
             Publisher<Byte> data = attachment.getData();
             return Multi.createFrom().publisher(data)
-                    .collectItems().in(Buffer::buffer, Buffer::appendByte);
+                    .collect().in(Buffer::buffer, Buffer::appendByte);
         } else {
             return Uni.createFrom().failure(new IllegalArgumentException("Attachment has no data"));
         }

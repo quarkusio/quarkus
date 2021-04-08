@@ -48,7 +48,7 @@ public class StreamingServiceTest {
     @Test
     public void testSourceWithMutinyStub() {
         Multi<Item> source = MutinyStreamingGrpc.newMutinyStub(channel).source(Empty.newBuilder().build());
-        List<String> list = source.map(Item::getValue).collectItems().asList().await().atMost(TIMEOUT);
+        List<String> list = source.map(Item::getValue).collect().asList().await().atMost(TIMEOUT);
         assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
     }
 
@@ -56,7 +56,7 @@ public class StreamingServiceTest {
     public void testSinkWithMutinyStub() {
         Uni<Empty> done = MutinyStreamingGrpc.newMutinyStub(channel)
                 .sink(Multi.createFrom().ticks().every(Duration.ofMillis(2))
-                        .transform().byTakingFirstItems(5)
+                        .select().first(5)
                         .map(l -> Item.newBuilder().setValue(l.toString()).build()));
         done.await().atMost(TIMEOUT);
     }
@@ -64,13 +64,13 @@ public class StreamingServiceTest {
     @Test
     public void testPipeWithMutinyStub() {
         Multi<Item> source = Multi.createFrom().ticks().every(Duration.ofMillis(2))
-                .transform().byTakingFirstItems(5)
+                .select().first(5)
                 .map(l -> Item.newBuilder().setValue(l.toString()).build());
         Multi<Item> results = MutinyStreamingGrpc.newMutinyStub(channel).pipe(source);
 
         List<Long> items = results
                 .map(i -> Long.parseLong(i.getValue()))
-                .collectItems().asList().await().atMost(TIMEOUT);
+                .collect().asList().await().atMost(TIMEOUT);
 
         // Resulting stream is: initial state (0), 0 + 0, 0 + 1, 1 + 2, 3 + 3, 6 + 4
         assertThat(items).containsExactly(0L, 0L, 1L, 3L, 6L, 10L);

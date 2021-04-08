@@ -7,7 +7,7 @@ import io.micrometer.core.instrument.binder.http.Outcome;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.spi.observability.HttpResponse;
 
 public class VertxMetricsTags {
     private static final Logger log = Logger.getLogger(VertxMetricsTags.class);
@@ -29,9 +29,9 @@ public class VertxMetricsTags {
      * @param response the response
      * @return the outcome tag
      */
-    public static Tag outcome(HttpServerResponse response) {
+    public static Tag outcome(HttpResponse response) {
         if (response != null) {
-            return Outcome.forStatus(response.getStatusCode()).asTag();
+            return Outcome.forStatus(response.statusCode()).asTag();
         }
         return Outcome.UNKNOWN.asTag();
     }

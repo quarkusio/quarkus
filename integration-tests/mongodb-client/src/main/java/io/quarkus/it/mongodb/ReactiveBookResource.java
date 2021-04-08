@@ -24,7 +24,7 @@ public class ReactiveBookResource {
 
     @GET
     public CompletionStage<List<Book>> getBooks() {
-        return getCollection().find().collectItems().asList().subscribeAsCompletionStage();
+        return getCollection().find().collect().asList().subscribeAsCompletionStage();
     }
 
     @POST
@@ -38,7 +38,7 @@ public class ReactiveBookResource {
     @Path("/{author}")
     public CompletionStage<List<Book>> getBooksByAuthor(@PathParam("author") String author) {
         return getCollection().find(eq("author", author))
-                .collectItems().asList()
+                .collect().asList()
                 .subscribeAsCompletionStage();
     }
 

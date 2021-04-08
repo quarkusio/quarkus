@@ -109,8 +109,11 @@ public class JacocoProcessor {
                     }
                 }
             } else if (BuildToolHelper.isGradleProject(targetdir.toPath())) {
-                QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(targetdir.toPath());
+                //this seems counter productive, but we want the dev mode model and not the test model
+                //as the test model will include the test classes that we don't want in the report
+                QuarkusModel model = BuildToolHelper.enableGradleAppModelForDevMode(targetdir.toPath());
                 for (WorkspaceModule i : model.getWorkspace().getAllModules()) {
+                    info.savedData.add(new File(i.getBuildDir(), config.dataFile).getAbsolutePath());
                     for (File src : i.getSourceSourceSet().getSourceDirectories()) {
                         sources.add(src.getAbsolutePath());
                     }

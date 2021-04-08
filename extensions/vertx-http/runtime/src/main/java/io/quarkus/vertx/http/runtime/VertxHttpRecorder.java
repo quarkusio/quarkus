@@ -178,7 +178,7 @@ public class VertxHttpRecorder {
             //we shut it down in this case, as we have no idea what state it is in
             final Handler<RoutingContext> prevHotReplacementHandler = hotReplacementHandler;
             shutDownDevMode();
-            // reset back to the older hot replacement handler, so that it can be used
+            // reset back to the older live reload handler, so that it can be used
             // to watch any artifacts that need hot deployment to fix the reason which caused
             // the server start to fail
             hotReplacementHandler = prevHotReplacementHandler;

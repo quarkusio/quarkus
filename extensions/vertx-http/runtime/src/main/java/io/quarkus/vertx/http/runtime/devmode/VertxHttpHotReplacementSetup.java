@@ -61,7 +61,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                         try {
                             restart = hotReplacementContext.doScan(true);
                         } catch (Exception e) {
-                            event.fail(new IllegalStateException("Unable to perform hot replacement scanning", e));
+                            event.fail(new IllegalStateException("Unable to perform live reload scanning", e));
                             return;
                         }
                     }

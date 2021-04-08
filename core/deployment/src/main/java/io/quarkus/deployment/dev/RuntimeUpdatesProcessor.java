@@ -280,7 +280,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             log.infof("Files changed but restart not needed - notified extensions in: %ss ",
                     Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
         } else if (instrumentationChange) {
-            log.infof("Hot replace performed via instrumentation, no restart needed, total time: %ss ",
+            log.infof("Live reload performed via instrumentation, no restart needed, total time: %ss ",
                     Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
         }
         return false;

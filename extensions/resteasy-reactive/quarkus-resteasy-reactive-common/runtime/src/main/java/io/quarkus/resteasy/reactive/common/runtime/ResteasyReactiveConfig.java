@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.common.annotation.Experimental;
 
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED, name = "rest")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED, name = "resteasy-reactive")
 public class ResteasyReactiveConfig {
 
     /**
@@ -41,4 +41,10 @@ public class ResteasyReactiveConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean buildTimeConditionAware;
+
+    /**
+     * If set to true, access to all JAX-RS resources will be denied by default
+     */
+    @ConfigItem(name = "deny-unannotated-endpoints")
+    public boolean denyJaxRs;
 }

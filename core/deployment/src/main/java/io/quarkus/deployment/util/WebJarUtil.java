@@ -343,16 +343,22 @@ public class WebJarUtil {
             String contents = new String(IoUtil.readBytes(is));
             contents = contents.replace("{applicationName}",
                     c.getOptionalValue("quarkus.application.name", String.class)
-                            .orElse(appArtifact.getArtifactId()));
+                            .orElseGet(() -> notNullString(appArtifact.getArtifactId())));
 
             contents = contents.replace("{applicationVersion}",
                     c.getOptionalValue("quarkus.application.version", String.class)
-                            .orElse(appArtifact.getVersion()));
+                            .orElseGet(() -> notNullString(appArtifact.getVersion())));
 
             contents = contents.replace("{quarkusVersion}", Version.getVersion());
             is = new ByteArrayInputStream(contents.getBytes());
         }
         return is;
+    }
+
+    private static String notNullString(String in) {
+        if (in == null)
+            return "";
+        return in;
     }
 
     private static InputStream getCustomOverride(PathsCollection paths, String filename, String modulename) {

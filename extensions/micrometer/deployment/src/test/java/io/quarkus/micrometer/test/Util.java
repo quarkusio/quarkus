@@ -1,14 +1,13 @@
 package io.quarkus.micrometer.test;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
 
-import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 public class Util {
     private Util() {
@@ -31,8 +30,24 @@ public class Util {
         return sb.toString();
     }
 
-    public static String listMeters(Collection<Meter> collection, final String tag) {
-        return collection.stream()
+    public static String foundServerRequests(MeterRegistry registry, String message) {
+        return message + "\nFound:\n" + Util.listMeters(registry, "http.server.requests");
+    }
+
+    public static String foundClientRequests(MeterRegistry registry, String message) {
+        return message + "\nFound:\n" + Util.listMeters(registry, "http.client.requests");
+    }
+
+    public static String listMeters(MeterRegistry registry, String meterName) {
+        return registry.find(meterName).meters().stream()
+                .map(x -> {
+                    return x.getId().toString();
+                })
+                .collect(Collectors.joining("\n"));
+    }
+
+    public static String listMeters(MeterRegistry registry, String meterName, final String tag) {
+        return registry.find(meterName).meters().stream()
                 .map(x -> {
                     return x.getId().getTag(tag);
                 })

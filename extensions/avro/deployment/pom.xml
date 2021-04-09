@@ -33,6 +33,13 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-conventions-tests</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
             <scope>test</scope>
         </dependency>

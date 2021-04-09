@@ -39,6 +39,7 @@
         <module>oidc-server</module>
         <module>keycloak-server</module>
         <module>jacoco</module>
+        <module>conventions-tests</module>
     </modules>
 
 </project>

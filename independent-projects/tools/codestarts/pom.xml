@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus.qute</groupId>
-            <artifactId>qute-generator</artifactId>
+            <artifactId>qute-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

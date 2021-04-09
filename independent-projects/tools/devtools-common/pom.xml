@@ -42,10 +42,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-codestarts</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus.qute</groupId>
-            <artifactId>qute-generator</artifactId>
-        </dependency>
         <!-- user prompt -->
         <dependency>
             <groupId>jline</groupId>

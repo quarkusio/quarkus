@@ -78,13 +78,13 @@ public class TikaProcessorTest {
 
     @Test
     public void testAllSupportedParserNames() throws Exception {
-        assertEquals(72, getParserNames(null, null).size());
+        assertEquals(77, getParserNames(null, null).size());
     }
 
     @Test
     public void testSupportedParserNamesWithTikaConfigPath() throws Exception {
         Set<String> names = getParserNames("tika-config.xml", "pdf");
-        assertEquals(72, names.size());
+        assertEquals(77, names.size());
     }
 
     @Test

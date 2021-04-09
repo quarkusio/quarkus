@@ -20,7 +20,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * This will never be generated if the previous restart was a failure
  * to avoid issues with inconsistent application state.
  */
-public class ChangedClassesBuildItem extends SimpleBuildItem {
+public final class ChangedClassesBuildItem extends SimpleBuildItem {
 
     private final Map<DotName, ClassInfo> changedClassesNewVersion;
     private final Map<DotName, ClassInfo> changedClassesOldVersion;

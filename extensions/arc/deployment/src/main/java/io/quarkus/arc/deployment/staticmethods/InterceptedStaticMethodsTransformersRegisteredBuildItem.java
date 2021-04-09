@@ -8,6 +8,6 @@ import io.quarkus.builder.item.EmptyBuildItem;
  * ASM class visitors produced by transformers registered by consumers of this build item will be run before visitors used for
  * static method interception.
  */
-public class InterceptedStaticMethodsTransformersRegisteredBuildItem extends EmptyBuildItem {
+public final class InterceptedStaticMethodsTransformersRegisteredBuildItem extends EmptyBuildItem {
 
 }

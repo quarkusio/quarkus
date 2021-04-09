@@ -357,8 +357,7 @@ public class ResteasyCommonProcessor {
 
     private void checkProperConstructorInProvider(AnnotationInstance i) {
         ClassInfo targetClass = i.target().asClass();
-        if (!targetClass.hasNoArgsConstructor()
-                || targetClass.methods().stream().filter(m -> m.name().equals("<init>")).count() > 1) {
+        if (!targetClass.hasNoArgsConstructor()) {
             LOGGER.warn(
                     "Classes annotated with @Provider should have a single, no-argument constructor, otherwise dependency injection won't work properly. Offending class is "
                             + targetClass);

@@ -43,7 +43,6 @@
         <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
         <rest-assured.version>4.3.2</rest-assured.version>
         <mutiny-client.version>1.1.0</mutiny-client.version>
-        <vertx.version>4.0.3</vertx.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -291,7 +290,7 @@
                 <version>${project.version}</version>
                 <scope>test</scope>
             </dependency>
-            
+
             <!-- Webjars for UI related -->
             <dependency>
                 <groupId>org.webjars</groupId>

@@ -64,7 +64,10 @@ import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 
 /**
  * This goal generates a platform JSON descriptor for a given platform BOM.
+ * 
+ * @deprecated in favor of <code>io.quarkus:quarkus-platform-bom-maven-plugin:generate-platform-descriptor</code>
  */
+@Deprecated
 @Mojo(name = "generate-platform-descriptor-json", threadSafe = true)
 public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
 

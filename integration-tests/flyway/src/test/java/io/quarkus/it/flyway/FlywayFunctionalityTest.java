@@ -42,4 +42,16 @@ public class FlywayFunctionalityTest {
         when().get("/flyway/title").then().body(is("1.0.1 REPLACED"));
     }
 
+    @Test
+    @DisplayName("Returns whether the init-sql is CREATE CONSTANT IF NOT EXISTS ONE_HUNDRED VALUE 100 or not")
+    public void testReturnInitSql() {
+        when().get("/flyway/init-sql").then().body(is("CREATE CONSTANT IF NOT EXISTS ONE_HUNDRED VALUE 100"));
+    }
+
+    @Test
+    @DisplayName("Returns whether the init-sql executed")
+    public void testInitSqlExecuted() {
+        when().get("/flyway/init-sql-result").then().body(is("100"));
+    }
+
 }

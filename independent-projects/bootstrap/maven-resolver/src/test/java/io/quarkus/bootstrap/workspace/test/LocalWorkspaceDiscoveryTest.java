@@ -458,6 +458,7 @@ public class LocalWorkspaceDiscoveryTest {
 
         final LocalProject module1 = LocalProject.load(module1Dir);
 
+        assertEquals(expectedResolvedVersion, module1.getAppArtifact().getVersion());
         assertEquals(expectedResolvedVersion, module1.getVersion());
         if (resolvesFromWorkspace) {
             assertNotNull(module1.getWorkspace()); // the property must have been resolved from the workspace

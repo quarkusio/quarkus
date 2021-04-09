@@ -326,7 +326,7 @@ public class LocalProject {
     }
 
     public AppArtifact getAppArtifact(String extension) {
-        return new AppArtifact(groupId, artifactId, "", extension, version);
+        return new AppArtifact(groupId, artifactId, "", extension, getVersion());
     }
 
     private Path resolveRelativeToBaseDir(String path, String defaultPath) {

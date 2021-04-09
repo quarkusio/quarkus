@@ -447,7 +447,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (hasBodyParam) {
                     throw new RuntimeException(
                             "'@MultipartForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo.toString() + "'");
+                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
                 }
                 boolean validConsumes = false;
                 if (consumes != null) {
@@ -462,7 +462,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (!validConsumes) {
                     throw new RuntimeException(
                             "'@MultipartForm' can only be used on methods that annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)'. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo.toString() + "'");
+                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
                 }
             }
 
@@ -515,6 +515,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     // FIXME: resolved arguments ?
                     .setReturnType(
                             determineReturnType(currentMethodInfo, typeArgMapper, currentClassInfo, actualEndpointInfo, index));
+
+            if (httpMethod == null) {
+                handleClientSubResource(method, currentMethodInfo, index);
+            }
+
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, currentMethodInfo);
             if (resourceMethodCallback != null) {
                 resourceMethodCallback.accept(new AbstractMap.SimpleEntry<>(currentMethodInfo, method));
@@ -522,8 +527,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return method;
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + currentMethodInfo.declaringClass().name() + "#"
-                    + currentMethodInfo.toString(), e);
+                    + currentMethodInfo, e);
         }
+    }
+
+    protected void handleClientSubResource(ResourceMethod resourceMethod, MethodInfo method, IndexView index) {
+
     }
 
     private boolean isBlocking(MethodInfo info, boolean defaultValue) {
@@ -651,7 +660,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return false;
     }
 
-    private static String[] extractProducesConsumesValues(AnnotationInstance annotation, String[] defaultValue) {
+    public static String[] extractProducesConsumesValues(AnnotationInstance annotation, String[] defaultValue) {
         String[] read = extractProducesConsumesValues(annotation);
         if (read == null) {
             return defaultValue;

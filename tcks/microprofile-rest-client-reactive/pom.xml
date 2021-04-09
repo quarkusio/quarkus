@@ -21,10 +21,11 @@
                 <configuration>
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
-                        <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
-                        <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
+                        <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>
+                        <vertx.disableTCCL>true</vertx.disableTCCL>
+                        <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -53,17 +54,16 @@
                         <!-- on invalid interfaces -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.InvalidInterfaceTest</exclude>
 
-                        <!--TODO: at the moment we don't support providing serializers with @Provider:-->
-                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonPProviderTest</exclude>
-
                         <!-- currently not supported or unapplicable for non-blocking implementation: -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.ssl.SslContextTest</exclude>
                         <exclude>org.eclipse.microprofile.rest.client.tck.ssl.SslHostnameVerifierTest</exclude>
                         <exclude>org.eclipse.microprofile.rest.client.tck.asynctests.AsyncMethodTest</exclude>
-                        <exclude>org.eclipse.microprofile.rest.client.tck.SubResourceTest</exclude>
 
                         <!-- The connection timeout is too small -->
                         <exclude>org/eclipse/microprofile/rest/client/tck/timeout/*.java</exclude>
+
+                        <!-- TODO fix this-->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.jsonb.InvokeWithJsonBProviderTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

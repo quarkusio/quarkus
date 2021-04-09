@@ -10,16 +10,17 @@ public class GradleDevModeLauncher extends QuarkusDevModeLauncher {
      * Initializes the launcher builder
      *
      * @param logger the logger
+     * @param java java binary to use
      * @return launcher builder
      */
-    public static Builder builder(Logger logger) {
-        return new GradleDevModeLauncher(logger).new Builder();
+    public static Builder builder(Logger logger, String java) {
+        return new GradleDevModeLauncher(logger).new Builder(java);
     }
 
     public class Builder extends QuarkusDevModeLauncher.Builder<GradleDevModeLauncher, Builder> {
 
-        private Builder() {
-            super(null);
+        private Builder(String java) {
+            super(java);
         }
     }
 

@@ -16,4 +16,9 @@ public class VertxWebEndpoint {
     public String item(@Param("id") Integer id, @Param("sub") Integer sub) {
         return "message with id " + id + " and sub " + sub;
     }
+
+    @Route(path = "echo/:msg", methods = { HttpMethod.HEAD, HttpMethod.GET, HttpMethod.OPTIONS })
+    public String echo(@Param("msg") String msg) {
+        return "echo " + msg;
+    }
 }

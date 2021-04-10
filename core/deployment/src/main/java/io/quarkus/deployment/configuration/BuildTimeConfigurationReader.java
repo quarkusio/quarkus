@@ -296,7 +296,7 @@ public final class BuildTimeConfigurationReader {
                 nameBuilder.setLength(len);
             }
             // sweep-up
-            for (String propertyName : config.getPropertyNames()) {
+            for (String propertyName : getAllProperties()) {
                 if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
                     continue;
                 }
@@ -717,6 +717,22 @@ public final class BuildTimeConfigurationReader {
             }
             convByType.put(valueType, converter);
             return converter;
+        }
+
+        /**
+         * We collect all properties from ConfigSources, because Config#getPropertyNames exclude the active profiled
+         * properties, meaning that the property is written in the default config source unprofiled. This may cause
+         * issues if we run with a different profile and fallback to defaults.
+         */
+        private Set<String> getAllProperties() {
+            Set<String> properties = new HashSet<>();
+            for (ConfigSource configSource : config.getConfigSources()) {
+                properties.addAll(configSource.getPropertyNames());
+            }
+            for (String propertyName : config.getPropertyNames()) {
+                properties.add(propertyName);
+            }
+            return properties;
         }
     }
 

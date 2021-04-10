@@ -9,6 +9,7 @@
   </parent>
   <artifactId>my-org-my-own-ext</artifactId>
   <name>My Org - My Own Ext - Runtime</name>
+  <description>My Org - My Own Ext</description>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>

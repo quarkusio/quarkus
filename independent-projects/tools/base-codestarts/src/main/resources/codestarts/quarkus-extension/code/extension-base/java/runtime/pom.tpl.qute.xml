@@ -13,6 +13,7 @@
     <artifactId>{namespace.id}{extension.id}</artifactId>
     {#if extension.name}
     <name>{namespace.name}{extension.name} - Runtime</name>
+    <description>{extension.name}</description>
     {/if}
 
     <dependencies>

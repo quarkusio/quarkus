@@ -29,7 +29,6 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
-import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -39,6 +38,7 @@ import org.gradle.api.tasks.options.Option;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
+import org.gradle.util.GradleVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -170,16 +170,6 @@ public class QuarkusDev extends QuarkusTask {
         this.compilerArgs = compilerArgs;
     }
 
-    @Nested
-    @Optional
-    public Provider<JavaLauncher> getJavaLauncher() {
-        Project project = getProject();
-        JavaToolchainService toolChainService = project.getExtensions().getByType(JavaToolchainService.class);
-        JavaToolchainSpec toolchainSpec = project.getExtensions().getByType(JavaPluginExtension.class).getToolchain();
-        Provider<JavaLauncher> javaLauncher = toolChainService.launcherFor(toolchainSpec);
-        return javaLauncher;
-    }
-
     @TaskAction
     public void startDev() {
         if (!getSourceDir().isDirectory()) {
@@ -210,11 +200,15 @@ public class QuarkusDev extends QuarkusTask {
         final Project project = getProject();
 
         String java = null;
-        Provider<JavaLauncher> javaLauncher = getJavaLauncher();
-        if (javaLauncher.isPresent()) {
-            java = javaLauncher.get().getExecutablePath().getAsFile().getAbsolutePath();
-        }
 
+        if (GradleVersion.current().compareTo(GradleVersion.version("6.7")) >= 0) {
+            JavaToolchainService toolChainService = project.getExtensions().getByType(JavaToolchainService.class);
+            JavaToolchainSpec toolchainSpec = project.getExtensions().getByType(JavaPluginExtension.class).getToolchain();
+            Provider<JavaLauncher> javaLauncher = toolChainService.launcherFor(toolchainSpec);
+            if (javaLauncher.isPresent()) {
+                java = javaLauncher.get().getExecutablePath().getAsFile().getAbsolutePath();
+            }
+        }
         GradleDevModeLauncher.Builder builder = GradleDevModeLauncher.builder(getLogger(), java)
                 .preventnoverify(isPreventnoverify())
                 .projectDir(project.getProjectDir())

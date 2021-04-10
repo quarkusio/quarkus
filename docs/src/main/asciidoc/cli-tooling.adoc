@@ -4,72 +4,70 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building Quarkus apps with Quarkus Command Line Interface (CLI)
+:extension-status: experimental
 
 include::./attributes.adoc[]
 
+The Quarkus CLI is named `qs` as in shorthand for Quarkus. `qs` lets you create projects, manage extensions and 
+do essential build and dev commands using the underlying projects build tool.
+
+include::./status-include.adoc[]
+
 == Installing the CLI
 
-The Quarkus CLI is provided as a native binary for Linux and macOS or as a jar-file for
-all operating systems.
+The Quarkus CLI is currently available as a jar installable using https://jbang.dev[jbang]. 
 
-=== Native CLI
-
-Download the binaries here:
-
-* https://coming-soon[Linux Binary] (coming soon)
-* https://coming-soon[macOS Binary] (coming soon)
-
-We recommend that you create a specific Quarkus folder, eg '~/quarkus' and move the 
-binary there. 
-Then in your shell profile (for Bash shell edit '~/.bash_profile'), export the 'QUARKUS_HOME' 
-folder and add that to your 'PATH':
-
+On Linux, macOS, and Windows (using WSL or bash compatible shell like cygwin or mingw)
 [source,bash]
 ----
-export QUARKUS_HOME=/path/to/quarkus-cli
-export PATH="$PATH:$QUARKUS_HOME"
+curl -Ls https://sh.jbang.dev | bash -s - app install --force qs@quarkusio
 ----
 
-Reload your terminal or do:
+On Windows using Powershell:
+[source,powershell]
+----
+iex "& { $(iwr https://ps.jbang.dev) } app install --force qs@quarkusio"
+----
 
-[source,bash]
+Note: if you get an error about `app` not being readable then you probably
+have a `jbang` version older than v0.56.0 installed. Please remove or upgrade it to a recent version.
+
+If this is the first time you install, start a new session to get your `PATH` updated.
+
+Once installed `qs` will be in your PATH and if you run `qs --version` it will print the installed version:
+
+[source,shell]
 ----
-source ~/.bash_profile
+qs --version
+{quarkus-version}
 ----
+
+=== Using the CLI
 
 Now you can run the Quarkus CLI:
 
 [source,shell]
 ----
-$ quarkus --help
+$ qs
+Usage: quarkus [-ehV] [--verbose] [COMMAND]
+  -e, --errors    Produce execution error messages.
+  -h, --help      Show this help message and exit.
+  -V, --version   Print version information and exit.
+      --verbose   Verbose mode.
+Commands:
+  build             Build your quarkus project
+  clean             Clean current project
+  create            Create a new quarkus project.
+  create-jbang      Create a new quarkus jbang project.
+  list              List installed (default) or installable extensions.
+  platforms         List imported (default) or all available Quarkus platforms.
+  add               Add extension(s) to current project.
+  remove, rm        Remove an extension from this project.
+  dev               Execute project in live coding dev mode
+  create-extension  Creates the base of a Quarkus extension in different layout depending of the options and environment.
 ----
 
 This will display the help information with all the available commands.
-
-[source,shell]
-----
-$ quarkus -i
-----
-
-This will start the Quarkus CLI in interactive mode.
-
-=== Jar CLI
-
-Download the jar-file here:
-* https://coming-soon[jar-file] (coming soon)
-
-As with the native CLI we recommend that you copy the binary to a specific folder, eg '~/quarkus'.
-The jar file requires Java 8 or newer to run. To start the CLI:
-
-[source,shell]
-----
-$ java -jar quarkus-cli.jar
-----
-
-The jar file CLI accepts all the same options and commands as the native binary.
-
-Note: In the examples below switch out 'quarkus' with 'java -jar quarkus-cli.jar'.
-
 
 [[project-creation]]
 == Creating a new project
@@ -78,58 +76,75 @@ To create a new project we use the create-project command:
 
 [source,shell]
 ----
-$ quarkus create-project hello-world
+$ qs create -a myapp
 ----
 
-This will create a folder called 'hello-world' in your current working directory using default
+This will create a folder called 'myapp' in your current working directory using default
+
+
 groupId, artifactId and version values 
-(groupId='org.acme', artifactId='quarkus' and version='1.0.0-SNAPSHOT').
+(groupId='org.acme', artifactId='myapp' and version='1.0.0-SNAPSHOT').
 
 To specify the groupId, artifactId and version values, 
-use the '--groupid', '--artifactid' and '--version' options:
+use the '--group-id', '--artifact-id' and '--version' options:
 
 [source,shell]
 ----
-$ quarkus create-project --groupid=com.foo --artifactId=bar --version=1.0  hello-world
+$ qs create --group-id com.foo --artifact-id bar --version 1.0 
 ----
 
+[TIP]
+----
+`-g`,`-a`,`-v` are short hand options for the full name counter parts: `--group-id`,`--artifact-id` and `--version`.
+We use both short and full names in this guide interchangeably.
+----
 
 Use the help option to display all the possible options:
 
 [source,shell]
 ----
-$ quarkus create-project --help
+$ qs create --help
 ----
 
 == Dealing with extensions
 
-The Quarkus CLI can obtain a list of the available extensions with:
+The Quarkus CLI can obtain a list of the extensions in the project:
 
 [source,shell]
 ----
-$ quarkus list-extensions
+$ qs list
 ----
 
-To more easily get an overview and only display the extension names:
+To get a list of available extensions to install use `--installable` or `-i`
+
+You can combine that with a search (`--search` or `-s`) and get a concise list including description with `--concise`
 
 [source,shell]
 ----
-$ quarkus list-extensions -n
+$ qs list -i --concise -s jdbc
+JDBC Driver - DB2                                  quarkus-jdbc-db2
+JDBC Driver - PostgreSQL                           quarkus-jdbc-postgresql
+JDBC Driver - H2                                   quarkus-jdbc-h2
+JDBC Driver - MariaDB                              quarkus-jdbc-mariadb
+JDBC Driver - Microsoft SQL Server                 quarkus-jdbc-mssql
+JDBC Driver - MySQL                                quarkus-jdbc-mysql
+JDBC Driver - Derby                                quarkus-jdbc-derby
+Elytron Security JDBC                              quarkus-elytron-security-jdbc
+Agroal - Database connection pool                  quarkus-agroal
 ----
-
 
 == Adding extension(s)
 
-The Quarkus CLI can add Quarkus extensions to your project with the 'add-extension'
+The Quarkus CLI can add Quarkus one or more extensions to your project with the 'add'
 command:
 
 [source,shell]
 ----
-$ quarkus add-extension --extension=hibernate-validator /path/to/my/project
+$ qs add kubernetes health
+[SUCCESS] ✅ Extension io.quarkus:quarkus-kubernetes has been installed
+[SUCCESS] ✅ Extension io.quarkus:quarkus-smallrye-health has been installed
 ----
 
-The argument path either needs to be the base folder for the project or a direct path to the 
-build file.
 
 == Development mode
 
@@ -137,10 +152,29 @@ To start dev mode from the Quarkus CLI do:
 
 [source,shell]
 ----
-$ quarkus dev /path/to/my/project
+$ quarkus dev 
+[INFO] Scanning for projects...
+[INFO]
+[INFO] ---------------------------< org.acme:myapp >---------------------------
+[INFO] Building myapp 1.0.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+[INFO] --- quarkus-maven-plugin:1.13.0.Final:dev (default-cli) @ myapp ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 2 resources
+[INFO] Nothing to compile - all classes are up to date
+Listening for transport dt_socket at address: 5005
+[INFO] Checking for existing resources in: /Users/max/demo/myapp/src/main/kubernetes.
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+2021-03-26 11:17:36,270 INFO  [io.quarkus] (Quarkus Main Thread) myapp 1.0.0-SNAPSHOT on JVM (powered by Quarkus 1.13.0.Final) started in 2.562s. Listening on: http://localhost:8080
+2021-03-26 11:17:36,275 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
+2021-03-26 11:17:36,275 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, resteasy, smallrye-health]
 ----
 
-As with 'add-extension' the argument path needs to be the base folder for the project or a 
-direct path to the build file.
+Quarkus cli will use the right maven or gradle command dependent on your projects setup. Above is showing a maven project, but you can
+just as easily use gradle with `qs dev`
 
 

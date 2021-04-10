@@ -3,12 +3,12 @@ plugins {
 }
 
 if (JavaVersion.current().isJava9Compatible()) {
-    compileJava.options.compilerArgs.addAll(['--release', '8'])
+    compileJava.options.compilerArgs.addAll(['--release', '11'])
 }
 compileJava {
     options.encoding = 'UTF-8'
-    sourceCompatibility = '1.8'
-    targetCompatibility = '1.8'
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
 }
 
 compileTestJava {

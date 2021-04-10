@@ -87,6 +87,7 @@ public class TikaProcessor {
 
     @BuildStep
     public void registerPdfBoxResources(BuildProducer<NativeImageResourceDirectoryBuildItem> resource) {
+        resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/pdfbox/resources/afm"));
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/pdfbox/resources/glyphlist"));
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/fontbox/cmap"));
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/fontbox/unicode"));

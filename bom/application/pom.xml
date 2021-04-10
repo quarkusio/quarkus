@@ -145,7 +145,7 @@
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.12.13</scala.version>
-        <tika.version>1.24.1</tika.version>
+        <tika.version>1.26</tika.version>
         <ooxml-schemas.version>1.4</ooxml-schemas.version>
         <aws-lambda-java.version>1.2.1</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.8.0</aws-lambda-java-events.version>
@@ -2954,6 +2954,7 @@
             <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-parsers</artifactId>
+                <version>${tika.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.cxf</groupId>
@@ -2963,8 +2964,19 @@
                         <groupId>commons-logging</groupId>
                         <artifactId>commons-logging</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>activation</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>activation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.xml.bind</groupId>
+                        <artifactId>jaxb-api</artifactId>
+                    </exclusion>
                 </exclusions>
-                <version>${tika.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.poi</groupId>

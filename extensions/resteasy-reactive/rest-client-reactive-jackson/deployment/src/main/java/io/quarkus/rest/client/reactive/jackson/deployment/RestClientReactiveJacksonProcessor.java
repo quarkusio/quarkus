@@ -36,7 +36,7 @@ public class RestClientReactiveJacksonProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
-        if (jacksonProviderDefined != null && !jacksonProviderDefined.isEmpty()) {
+        if (!jacksonProviderDefined.isEmpty()) {
             return;
         }
         // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object

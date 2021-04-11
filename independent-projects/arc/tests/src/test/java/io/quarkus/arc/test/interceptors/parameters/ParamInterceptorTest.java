@@ -37,6 +37,16 @@ public class ParamInterceptorTest {
         assertThrows(IllegalArgumentException.class, () -> {
             simpleBean.setStringBuilderVal(new StringBuilder("intercept"));
         });
+
+        simpleBean.setPrimitiveIntVal(0);
+        assertEquals("123456", simpleBean.getVal());
+
+        simpleBean.setIntVal(1);
+        assertEquals("123456", simpleBean.getVal());
+
+        simpleBean.setNumberVal(2L);
+        assertEquals("123456", simpleBean.getVal());
+
         handle.destroy();
     }
 }

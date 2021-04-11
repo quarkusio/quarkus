@@ -20,6 +20,7 @@ public final class DatabaseKind {
     public static final String MSSQL = "mssql";
     public static final String MYSQL = "mysql";
     public static final String POSTGRESQL = "postgresql";
+    public static final String ORACLE = "oracle";
 
     private static final Map<String, String> ALIASES;
 
@@ -75,6 +76,10 @@ public final class DatabaseKind {
         return is(value, MYSQL);
     }
 
+    public static boolean isOracle(String value) {
+        return is(value, ORACLE);
+    }
+
     public static boolean isPostgreSQL(String value) {
         return is(value, POSTGRESQL);
     }
@@ -99,6 +104,7 @@ public final class DatabaseKind {
         MARIADB(DatabaseKind.MARIADB),
         MSSQL(DatabaseKind.MSSQL),
         MYSQL(DatabaseKind.MYSQL),
+        ORACLE(DatabaseKind.ORACLE),
         POSTGRESQL(DatabaseKind.POSTGRESQL, "pgsql", "pg");
 
         private final String mainName;

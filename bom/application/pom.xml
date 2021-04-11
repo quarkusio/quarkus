@@ -100,7 +100,7 @@
         <hibernate-search.version>6.0.2.Final</hibernate-search.version>
         <narayana.version>5.10.6.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
-        <agroal.version>1.9</agroal.version>
+        <agroal.version>1.11</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <elasticsearch-rest-client.version>7.10.0</elasticsearch-rest-client.version>
         <rxjava1.version>1.3.8</rxjava1.version>
@@ -125,6 +125,7 @@
         <mariadb-jdbc.version>2.7.2</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.23</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
+        <oracle-jdbc.version>21.1.0.0</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <db2-jdbc.version>11.5.4.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
@@ -176,7 +177,7 @@
         <sentry.version>4.3.0</sentry.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.2.1</kubernetes-client.version>
+        <kubernetes-client.version>5.3.0</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
@@ -1039,6 +1040,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-mysql-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-oracle</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-oracle-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -4220,6 +4231,11 @@
                 <groupId>com.microsoft.sqlserver</groupId>
                 <artifactId>mssql-jdbc</artifactId>
                 <version>${mssql-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oracle.database.jdbc</groupId>
+                <artifactId>ojdbc8</artifactId>
+                <version>${oracle-jdbc.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.elasticsearch.client</groupId>

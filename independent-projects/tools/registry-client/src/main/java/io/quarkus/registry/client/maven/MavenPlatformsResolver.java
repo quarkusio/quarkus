@@ -1,6 +1,5 @@
 package io.quarkus.registry.client.maven;
 
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
@@ -18,10 +17,10 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 public class MavenPlatformsResolver implements RegistryPlatformsResolver {
 
     private final RegistryPlatformsConfig config;
-    private final MavenArtifactResolver artifactResolver;
+    private final MavenRegistryArtifactResolver artifactResolver;
     private final MessageWriter log;
 
-    public MavenPlatformsResolver(RegistryPlatformsConfig config, MavenArtifactResolver artifactResolver,
+    public MavenPlatformsResolver(RegistryPlatformsConfig config, MavenRegistryArtifactResolver artifactResolver,
             MessageWriter log) {
         this.config = Objects.requireNonNull(config);
         this.artifactResolver = Objects.requireNonNull(artifactResolver);
@@ -36,7 +35,7 @@ public class MavenPlatformsResolver implements RegistryPlatformsResolver {
         log.debug("Resolving platform catalog %s", catalogArtifact);
         final Path jsonFile;
         try {
-            jsonFile = artifactResolver.resolve(catalogArtifact).getArtifact().getFile().toPath();
+            jsonFile = artifactResolver.resolve(catalogArtifact);
         } catch (Exception e) {
             log.debug("Failed to resolve platform catalog %s", catalogArtifact);
             return null;

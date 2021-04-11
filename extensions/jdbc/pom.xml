@@ -21,6 +21,7 @@
         <module>jdbc-mariadb</module>
         <module>jdbc-mssql</module>
         <module>jdbc-mysql</module>
+        <module>jdbc-oracle</module>
     </modules>
 
 </project>

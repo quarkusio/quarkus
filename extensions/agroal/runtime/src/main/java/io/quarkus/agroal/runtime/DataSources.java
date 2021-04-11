@@ -39,7 +39,6 @@ import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig.DataSourceJdbcOu
 import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig.DataSourceJdbcOuterNamedRuntimeConfig;
 import io.quarkus.agroal.runtime.JdbcDriver.JdbcDriverLiteral;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -150,9 +149,9 @@ public class DataSources {
         }
 
         String resolvedDbKind = matchingSupportEntry.resolvedDbKind;
-        InstanceHandle<AgroalConnectionConfigurer> agroalConnectionConfigurerHandle = Arc.container().instance(
-                AgroalConnectionConfigurer.class,
-                new JdbcDriverLiteral(resolvedDbKind));
+        AgroalConnectionConfigurer agroalConnectionConfigurer = Arc.container()
+                .instance(AgroalConnectionConfigurer.class, new JdbcDriverLiteral(resolvedDbKind))
+                .orElse(new UnknownDbAgroalConnectionConfigurer());
 
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
 
@@ -170,14 +169,10 @@ public class DataSources {
                 dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
 
         if (dataSourceSupport.disableSslSupport) {
-            if (agroalConnectionConfigurerHandle.isAvailable()) {
-                agroalConnectionConfigurerHandle.get().disableSslSupport(resolvedDbKind,
-                        dataSourceConfiguration);
-            } else {
-                log.warnv("Agroal does not support disabling SSL for database kind: {0}",
-                        resolvedDbKind);
-            }
+            agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
         }
+
+        agroalConnectionConfigurer.setExceptionSorter(resolvedDbKind, dataSourceConfiguration);
 
         // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
         AgroalDataSourceConfiguration agroalConfiguration = dataSourceConfiguration.get();

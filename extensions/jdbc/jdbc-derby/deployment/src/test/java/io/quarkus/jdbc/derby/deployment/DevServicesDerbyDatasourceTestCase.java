@@ -1,11 +1,13 @@
 package io.quarkus.jdbc.derby.deployment;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
-import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import javax.inject.Inject;
 
@@ -16,18 +18,23 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
+import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ExceptionSorter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DevServicesDerbyDatasourceTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class);
-                }
-            });
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+            // Expect no warnings (in particular from Agroal)
+            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
+                    // There are other warnings: JDK8, TestContainers, drivers, ...
+                    // Ignore them: we're only interested in Agroal here.
+                    && record.getMessage().contains("Agroal"))
+            .assertLogRecords(records -> assertThat(records)
+                    // This is just to get meaningful error messages, as LogRecord doesn't have a toString()
+                    .extracting(LogRecord::getMessage)
+                    .isEmpty());;
 
     @Inject
     AgroalDataSource dataSource;
@@ -44,6 +51,7 @@ public class DevServicesDerbyDatasourceTestCase {
         }
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:derby:"));
         assertEquals(20, configuration.maxSize());
+        assertThat(configuration.exceptionSorter()).isInstanceOf(ExceptionSorter.emptyExceptionSorter().getClass());
 
         try (Connection connection = dataSource.getConnection()) {
         }

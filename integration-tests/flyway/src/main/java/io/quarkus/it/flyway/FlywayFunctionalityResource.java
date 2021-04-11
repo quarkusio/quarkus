@@ -61,4 +61,18 @@ public class FlywayFunctionalityResource {
     public boolean returnCreateSchema() {
         return flyway.getConfiguration().getCreateSchemas();
     }
+
+    @GET
+    @Path("init-sql")
+    public String returnInitSql() {
+        return flyway.getConfiguration().getInitSql();
+    }
+
+    @GET
+    @Path("init-sql-result")
+    public Integer returnInitSqlResult() {
+        return (Integer) entityManager.createNativeQuery("SELECT ONE_HUNDRED")
+                .getSingleResult();
+    }
+
 }

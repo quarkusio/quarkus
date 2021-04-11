@@ -136,8 +136,8 @@
         <!-- Forbidden API checks -->
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
 
-        <!-- platform properties -->
-        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.0.0-java11</platform.quarkus.native.builder-image>
+        <!-- platform properties - this is a floating tag -->
+        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.0-java11</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>

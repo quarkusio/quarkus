@@ -50,6 +50,7 @@ public enum Feature {
     JDBC_MARIADB,
     JDBC_MSSQL,
     JDBC_MYSQL,
+    JDBC_ORACLE,
     JGIT,
     JSCH,
     KAFKA_STREAMS,

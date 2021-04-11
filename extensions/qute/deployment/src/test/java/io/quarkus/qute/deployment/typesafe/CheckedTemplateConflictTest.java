@@ -8,9 +8,9 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class CheckedTemplateConflictTest {

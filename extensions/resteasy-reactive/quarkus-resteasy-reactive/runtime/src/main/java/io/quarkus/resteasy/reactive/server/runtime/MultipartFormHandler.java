@@ -21,6 +21,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 
+import io.netty.handler.codec.DecoderException;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
@@ -116,6 +117,15 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
             Set<FileUpload> fileUploads = context.fileUploads();
 
             context.request().setExpectMultipart(true);
+            context.request().exceptionHandler(new Handler<Throwable>() {
+                @Override
+                public void handle(Throwable t) {
+                    cancelUploads();
+                    rrContext.resume(new WebApplicationException(
+                            (t instanceof DecoderException) ? Response.Status.REQUEST_ENTITY_TOO_LARGE
+                                    : Response.Status.INTERNAL_SERVER_ERROR));
+                }
+            });
             context.request().uploadHandler(new Handler<HttpServerFileUpload>() {
                 @Override
                 public void handle(HttpServerFileUpload upload) {
@@ -144,6 +154,18 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
                     fileUploads.add(fileUpload);
                 }
             });
+        }
+
+        private void cancelUploads() {
+            for (FileUpload fileUpload : context.fileUploads()) {
+                FileSystem fileSystem = context.vertx().fileSystem();
+                String uploadedFileName = fileUpload.uploadedFileName();
+                fileSystem.delete(uploadedFileName, deleteResult -> {
+                    if (deleteResult.failed()) {
+                        LOG.warn("Delete of uploaded file failed: " + uploadedFileName, deleteResult.cause());
+                    }
+                });
+            }
         }
 
         @Override

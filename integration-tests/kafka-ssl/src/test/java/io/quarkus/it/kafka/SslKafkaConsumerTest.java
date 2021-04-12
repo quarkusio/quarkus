@@ -1,8 +1,6 @@
 package io.quarkus.it.kafka;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Properties;
 
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -24,27 +22,18 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KafkaSSLTestResource.class)
 public class SslKafkaConsumerTest {
 
-    private static void addSsl(Properties props) {
-        try {
-            File sslDir = KafkaSSLTestResource.sslDir(null, false);
-            File tsFile = new File(sslDir, "kafka-truststore.p12");
-            props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
-            props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, tsFile.getPath());
-            props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L");
-            props.setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PKCS12");
-            props.setProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
     public static Producer<Integer, String> createProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19093");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, System.getProperty("bootstrap.servers"));
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "test-ssl-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        addSsl(props);
+        File tsFile = new File("src/test/resources/kafka-truststore.p12");
+        props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
+        props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, tsFile.getPath());
+        props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L");
+        props.setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PKCS12");
+        props.setProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
 
         return new KafkaProducer<>(props);
     }

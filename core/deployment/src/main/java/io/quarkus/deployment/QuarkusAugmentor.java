@@ -82,8 +82,7 @@ public class QuarkusAugmentor {
 
     public BuildResult run() throws Exception {
         if (!JavaVersionUtil.isJava11OrHigher()) {
-            log.warn("Using Java versions older than 11 to build"
-                    + " Quarkus applications is deprecated and will be disallowed in a future release!");
+            throw new IllegalStateException("Quarkus applications require Java 11 or higher to build");
         }
         long time = System.currentTimeMillis();
         log.debug("Beginning Quarkus augmentation");

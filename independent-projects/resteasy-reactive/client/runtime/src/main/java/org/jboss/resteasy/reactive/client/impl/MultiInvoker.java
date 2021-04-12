@@ -17,7 +17,7 @@ import org.jboss.resteasy.reactive.client.impl.MultiInvoker.MultiRequest;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
-    private WebTargetImpl target;
+    private final WebTargetImpl target;
 
     public MultiInvoker(WebTargetImpl target) {
         this.target = target;
@@ -44,7 +44,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
         private final AtomicReference<Runnable> onCancel = new AtomicReference<>();
 
-        private MultiEmitter<? super R> emitter;
+        private final MultiEmitter<? super R> emitter;
 
         private static final Runnable CLEARED = () -> {
         };

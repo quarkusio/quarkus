@@ -1836,13 +1836,7 @@ Please note that if a JAX-RS Application has been detected and the method `getCl
 == RESTEasy Reactive client
 In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile Rest Client implementation that is non-blocking at its core.
 
-To use it, add the `quarkus-rest-client-reactive` extension to your project.
-The client can be used as described in https://quarkus.io/guides/rest-client[Using the REST Client guide] and specified in the https://download.eclipse.org/microprofile/microprofile-rest-client-1.4.1/microprofile-rest-client-1.4.1.html[MicroProfile Rest Client specification], with a few exceptions:
+Please note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
 
-- the extension name
-- the default scope of the client for the new extension is `@ApplicationScoped` while the `quarkus-rest-client` defaults to `@Dependent`
-To change this behavior, set the `quarkus.rest.client.scope` property to the fully qualified scope name.
-- it is not possible to set `HostnameVerifier` or `SSLContext`
-- a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
+See link:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive client.
 
-It is important to note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.

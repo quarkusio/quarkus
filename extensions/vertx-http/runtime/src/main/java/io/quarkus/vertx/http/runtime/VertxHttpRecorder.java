@@ -593,6 +593,7 @@ public class VertxHttpRecorder {
         }
         serverOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         serverOptions.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
+        serverOptions.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
         setIdleTimeout(httpConfiguration, serverOptions);
 
         if (certFile.isPresent() && keyFile.isPresent()) {
@@ -725,6 +726,7 @@ public class VertxHttpRecorder {
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
+        options.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
         options.setWebSocketSubProtocols(websocketSubProtocols);
         options.setReusePort(httpConfiguration.soReusePort);
         options.setTcpQuickAck(httpConfiguration.tcpQuickAck);
@@ -745,6 +747,7 @@ public class VertxHttpRecorder {
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
+        options.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
         options.setWebSocketSubProtocols(websocketSubProtocols);
         return options;
     }

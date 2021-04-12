@@ -23,7 +23,7 @@ import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageForm
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class MultipartInputTest {
+public class MultipartInputTest extends AbstractMultipartTest {
 
     private static final Path uploadDir = Paths.get("file-uploads");
 
@@ -52,16 +52,12 @@ public class MultipartInputTest {
 
     @BeforeEach
     public void assertEmptyUploads() {
-        Assertions.assertEquals(0, uploadDir.toFile().listFiles().length);
+        Assertions.assertTrue(isDirectoryEmpty(uploadDir));
     }
 
     @AfterEach
     public void clearDirectory() {
-        for (File file : uploadDir.toFile().listFiles()) {
-            if (!file.isDirectory()) {
-                file.delete();
-            }
-        }
+        clearDirectory(uploadDir);
     }
 
     @Test

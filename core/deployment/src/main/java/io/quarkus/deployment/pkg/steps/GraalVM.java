@@ -8,14 +8,9 @@ import java.util.stream.Stream;
 final class GraalVM {
     static final class Version implements Comparable<Version> {
         private static final Pattern PATTERN = Pattern.compile(
-                "GraalVM Version (([1-9][0-9]*)\\.([0-9]+)\\.[0-9]+|\\p{XDigit}*)[^(\n$]*(\\(Mandrel Distribution\\))?\\s*");
+                "(GraalVM|native-image)( Version)? ([1-9][0-9]*)\\.([0-9]+)\\.[0-9]+(-dev\\p{XDigit}*)?([^\n$]*)\\s*");
 
         static final Version UNVERSIONED = new Version("Undefined", -1, -1, Distribution.ORACLE);
-        static final Version SNAPSHOT_ORACLE = new Version("Snapshot", Integer.MAX_VALUE, Integer.MAX_VALUE,
-                Distribution.ORACLE);
-        static final Version SNAPSHOT_MANDREL = new Version("Snapshot", Integer.MAX_VALUE, Integer.MAX_VALUE,
-                Distribution.MANDREL);
-
         static final Version VERSION_20_3 = new Version("GraalVM 20.3", 20, 3, Distribution.ORACLE);
         static final Version VERSION_21_0 = new Version("GraalVM 21.0", 21, 0, Distribution.ORACLE);
 
@@ -50,10 +45,6 @@ final class GraalVM {
             return distribution == Distribution.MANDREL;
         }
 
-        boolean isSnapshot() {
-            return this == SNAPSHOT_ORACLE || this == SNAPSHOT_MANDREL;
-        }
-
         boolean isNewerThan(Version version) {
             return this.compareTo(version) > 0;
         }
@@ -81,27 +72,21 @@ final class GraalVM {
                 final String line = it.next();
                 final Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find() && matcher.groupCount() >= 3) {
-                    final String distro = matcher.group(4);
-                    if (isSnapshot(matcher.group(2))) {
-                        return isMandrel(distro) ? SNAPSHOT_MANDREL : SNAPSHOT_ORACLE;
-                    } else {
-                        return new Version(
-                                line,
-                                Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
-                                isMandrel(distro) ? Distribution.MANDREL : Distribution.ORACLE);
-                    }
+                    final String major = matcher.group(3);
+                    final String minor = matcher.group(4);
+                    final String distro = matcher.group(6);
+                    return new Version(
+                            line,
+                            Integer.parseInt(major), Integer.parseInt(minor),
+                            isMandrel(distro) ? Distribution.MANDREL : Distribution.ORACLE);
                 }
             }
 
             return UNVERSIONED;
         }
 
-        private static boolean isSnapshot(String s) {
-            return s == null;
-        }
-
         private static boolean isMandrel(String s) {
-            return "(Mandrel Distribution)".equals(s);
+            return s.contains("Mandrel Distribution");
         }
 
         @Override

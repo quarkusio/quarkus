@@ -85,7 +85,9 @@ public class PersistentAppModel implements Serializable {
         for (AppArtifactKey i : localProjectArtifacts) {
             model.addLocalProjectArtifact(i);
         }
-        model.addPlatformProperties(platformProperties);
+        final PlatformImportsImpl pi = new PlatformImportsImpl();
+        pi.setPlatformProperties(platformProperties);
+        model.setPlatformImports(pi);
         return model.build();
     }
 

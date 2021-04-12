@@ -49,7 +49,7 @@ public class Create extends BaseSubCommand implements Callable<Integer> {
         boolean gradle = false;
 
         @CommandLine.Option(names = {
-                "--grade-kotlin-dsl" }, order = 7, description = "Create a Gradle Kotlin DSL project.")
+                "--gradle-kotlin-dsl" }, order = 7, description = "Create a Gradle Kotlin DSL project.")
         boolean gradleKotlinDsl = false;
     }
 

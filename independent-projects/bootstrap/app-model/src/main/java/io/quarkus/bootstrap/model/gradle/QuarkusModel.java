@@ -1,7 +1,7 @@
-package io.quarkus.bootstrap.resolver.model;
+package io.quarkus.bootstrap.model.gradle;
 
+import io.quarkus.bootstrap.model.PlatformImports;
 import java.util.List;
-import java.util.Map;
 
 public interface QuarkusModel {
 
@@ -13,5 +13,5 @@ public interface QuarkusModel {
 
     List<Dependency> getEnforcedPlatformDependencies();
 
-    Map<String, String> getPlatformProperties();
+    PlatformImports getPlatformImports();
 }

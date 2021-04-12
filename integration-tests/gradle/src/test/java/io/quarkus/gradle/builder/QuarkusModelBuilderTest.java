@@ -22,11 +22,11 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.SourceSet;
+import io.quarkus.bootstrap.model.gradle.Workspace;
+import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.SourceSet;
-import io.quarkus.bootstrap.resolver.model.Workspace;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 
 class QuarkusModelBuilderTest {
 

@@ -8,11 +8,11 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.bootstrap.model.gradle.ArtifactCoords;
+import io.quarkus.bootstrap.model.gradle.Dependency;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.model.ArtifactCoords;
-import io.quarkus.bootstrap.resolver.model.Dependency;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -158,14 +158,11 @@ public class QuarkusModelHelper {
                     new AppArtifactKey(coords.getGroupId(), coords.getArtifactId(), null, coords.getType()));
         }
 
-        if (!model.getPlatformProperties().isEmpty()) {
-            appBuilder.addPlatformProperties(model.getPlatformProperties());
-        }
-
         appBuilder.addRuntimeDeps(userDeps)
                 .addFullDeploymentDeps(fullDeploymentDeps)
                 .addDeploymentDeps(deploymentDeps)
-                .setAppArtifact(appArtifact);
+                .setAppArtifact(appArtifact)
+                .setPlatformImports(model.getPlatformImports());
         return appBuilder.build();
     }
 

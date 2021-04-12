@@ -1,12 +1,11 @@
-package io.quarkus.bootstrap.resolver.model.impl;
+package io.quarkus.bootstrap.model.gradle.impl;
 
-import io.quarkus.bootstrap.resolver.model.Dependency;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.Workspace;
+import io.quarkus.bootstrap.model.PlatformImports;
+import io.quarkus.bootstrap.model.gradle.Dependency;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.Workspace;
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class QuarkusModelImpl implements QuarkusModel, Serializable {
 
@@ -14,25 +13,18 @@ public class QuarkusModelImpl implements QuarkusModel, Serializable {
     private final List<Dependency> appDependencies;
     private final List<Dependency> extensionDependencies;
     private final List<Dependency> enforcedPlatformDependencies;
-    private final Map<String, String> platformProperties;
-
-    public QuarkusModelImpl(Workspace workspace,
-            List<Dependency> appDependencies,
-            List<Dependency> extensionDependencies,
-            List<Dependency> enforcedPlatformDependencies) {
-        this(workspace, appDependencies, extensionDependencies, enforcedPlatformDependencies, Collections.emptyMap());
-    }
+    private final PlatformImports platformImports;
 
     public QuarkusModelImpl(Workspace workspace,
             List<Dependency> appDependencies,
             List<Dependency> extensionDependencies,
             List<Dependency> enforcedPlatformDependencies,
-            Map<String, String> platformProperties) {
+            PlatformImports platformImports) {
         this.workspace = workspace;
         this.appDependencies = appDependencies;
         this.extensionDependencies = extensionDependencies;
         this.enforcedPlatformDependencies = enforcedPlatformDependencies;
-        this.platformProperties = platformProperties;
+        this.platformImports = platformImports;
     }
 
     @Override
@@ -56,7 +48,7 @@ public class QuarkusModelImpl implements QuarkusModel, Serializable {
     }
 
     @Override
-    public Map<String, String> getPlatformProperties() {
-        return platformProperties;
+    public PlatformImports getPlatformImports() {
+        return platformImports;
     }
 }

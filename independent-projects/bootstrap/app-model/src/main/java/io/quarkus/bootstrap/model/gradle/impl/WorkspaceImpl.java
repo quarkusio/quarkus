@@ -1,8 +1,8 @@
-package io.quarkus.bootstrap.resolver.model.impl;
+package io.quarkus.bootstrap.model.gradle.impl;
 
-import io.quarkus.bootstrap.resolver.model.ArtifactCoords;
-import io.quarkus.bootstrap.resolver.model.Workspace;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
+import io.quarkus.bootstrap.model.gradle.ArtifactCoords;
+import io.quarkus.bootstrap.model.gradle.Workspace;
+import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;

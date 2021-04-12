@@ -378,6 +378,9 @@
                             <configuration>
                                 <rules>
                                     <dependencyConvergence/>
+                                    <requireJavaVersion>
+                                        <version>[11,)</version>
+                                    </requireJavaVersion>
                                     <requireMavenVersion>
                                         <version>${supported-maven-versions}</version>
                                     </requireMavenVersion>

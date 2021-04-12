@@ -11,7 +11,8 @@
         "Security2",
         "Security3",
         "Amazon",
-        "Messaging",
+        "Messaging1",
+        "Messaging2",
         "Cache",
         "HTTP",
         "Misc1",
@@ -63,9 +64,14 @@
             "test-modules": "amazon-services amazon-lambda amazon-lambda-http"
         },
         {
-            "category": "Messaging",
-            "timeout": 85,
-            "test-modules": "artemis-core artemis-jms kafka kafka-streams reactive-messaging-amqp reactive-messaging-kafka reactive-messaging-http"
+            "category": "Messaging1",
+            "timeout": 100,
+            "test-modules": "kafka kafka-ssl kafka-sasl kafka-avro kafka-streams reactive-messaging-kafka"
+        },
+        {
+            "category": "Messaging2",
+            "timeout": 70,
+            "test-modules": "artemis-core artemis-jms reactive-messaging-amqp reactive-messaging-http"
         },
         {
             "category": "Security1",

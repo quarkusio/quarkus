@@ -21,17 +21,17 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
     private TimeUnit reconnectUnit;
     private long reconnectDelay;
 
-    private WebTargetImpl webTarget;
+    private final WebTargetImpl webTarget;
     // this tracks user request to open/close
     private volatile boolean isOpen;
     // this tracks whether we have a connection open
     private volatile boolean isInProgress;
 
-    private List<Consumer<InboundSseEvent>> consumers = new ArrayList<>();
-    private List<Consumer<Throwable>> errorListeners = new ArrayList<>();
-    private List<Runnable> completionListeners = new ArrayList<>();
+    private final List<Consumer<InboundSseEvent>> consumers = new ArrayList<>();
+    private final List<Consumer<Throwable>> errorListeners = new ArrayList<>();
+    private final List<Runnable> completionListeners = new ArrayList<>();
     private HttpConnection connection;
-    private SseParser sseParser;
+    private final SseParser sseParser;
     private long timerId = -1;
     private boolean receivedClientClose;
 

@@ -230,6 +230,10 @@ public class KnativeProcessor {
             result.add(new DecoratorBuildItem(KNATIVE, new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e))));
         });
 
+        if (!roleBindings.isEmpty()) {
+            result.add(new DecoratorBuildItem(new ApplyServiceAccountToRevisionSpecDecorator()));
+        }
+
         return result;
     }
 

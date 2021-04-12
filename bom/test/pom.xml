@@ -18,6 +18,7 @@
     <properties>
         <debezium.version>1.4.2.Final</debezium.version>
         <testcontainers.version>1.15.2</testcontainers.version>
+        <strimzi-test-container.version>0.22.1</strimzi-test-container.version>
     </properties>
 
     <dependencyManagement>
@@ -40,6 +41,13 @@
                 <artifactId>debezium-core</artifactId>
                 <version>${debezium.version}</version>
                 <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.strimzi</groupId>
+                <artifactId>strimzi-test-container</artifactId>
+                <version>${strimzi-test-container.version}</version>
+                <scope>test</scope>
             </dependency>
 
         </dependencies>

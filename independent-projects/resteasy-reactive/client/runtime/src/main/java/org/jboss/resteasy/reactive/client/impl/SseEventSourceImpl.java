@@ -128,11 +128,11 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         // that is set in ClientSendRequestHandler
         vertxClientResponse.request().exceptionHandler(null);
         connection = vertxClientResponse.request().connection();
-        connection.closeHandler(v -> {
-            close(true);
-        });
         String sseContentTypeHeader = vertxClientResponse.getHeader(CommonSseUtil.SSE_CONTENT_TYPE);
         sseParser.setSseContentTypeHeader(sseContentTypeHeader);
+        // we don't add a closeHandler handler on the connection as it can race with this handler
+        // and close before the emitter emits anything
+        // see: https://github.com/quarkusio/quarkus/pull/16438
         vertxClientResponse.handler(sseParser);
         vertxClientResponse.endHandler(v -> {
             close(true);

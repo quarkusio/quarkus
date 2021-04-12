@@ -1,9 +1,9 @@
 package io.quarkus.it.kafka;
 
-import static io.quarkus.it.kafka.KafkaTestResource.extract;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
@@ -63,6 +63,25 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
         if (kafka != null) {
             kafka.shutdown();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    static kafka.server.KafkaServer extract(KafkaCluster cluster) {
+        Field kafkaServersField;
+        Field serverField;
+        try {
+            kafkaServersField = cluster.getClass().getDeclaredField("kafkaServers");
+            kafkaServersField.setAccessible(true);
+            Map<Integer, io.debezium.kafka.KafkaServer> map = (Map<Integer, io.debezium.kafka.KafkaServer>) kafkaServersField
+                    .get(cluster);
+            io.debezium.kafka.KafkaServer server = map.get(1);
+            serverField = io.debezium.kafka.KafkaServer.class.getDeclaredField("server");
+            serverField.setAccessible(true);
+            return (kafka.server.KafkaServer) serverField.get(server);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
 }

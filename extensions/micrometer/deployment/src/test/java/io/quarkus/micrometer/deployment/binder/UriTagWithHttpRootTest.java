@@ -44,7 +44,7 @@ public class UriTagWithHttpRootTest {
     MeterRegistry registry;
 
     @Test
-    public void testMetricFactoryCreatedMetrics() throws Exception {
+    public void test() throws Exception {
         RestAssured.basePath = "/";
 
         // If you invoke requests, http server and client meters should be registered
@@ -58,14 +58,12 @@ public class UriTagWithHttpRootTest {
 
         // URIs for server: /ping/{message}, /pong/{message}, /vertx/item/{id}
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/ping/{message}").timers().size(),
-                "/ping/{message} should be returned by JAX-RS. Found:\n"
-                        + Util.listMeters(registry.find("http.server.requests").meters(), "uri"));
+                Util.foundServerRequests(registry, "/ping/{message} should be returned by JAX-RS."));
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/pong/{message}").timers().size(),
-                "/pong/{message} should be returned by JAX-RS. Found:\n"
-                        + Util.listMeters(registry.find("http.server.requests").meters(), "uri"));
+                Util.foundServerRequests(registry, "/pong/{message} should be returned by JAX-RS."));
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/vertx/item/{id}").timers().size(),
-                "Vert.x Web template path (/vertx/item/:id) should be detected/translated to /vertx/item/{id}. Found:\n"
-                        + Util.listMeters(registry.find("http.server.requests").meters(), "uri"));
+                Util.foundServerRequests(registry,
+                        "Vert.x Web template path (/vertx/item/:id) should be detected/translated to /vertx/item/{id}."));
     }
 
     @Path("/")

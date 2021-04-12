@@ -47,7 +47,7 @@ public class UriTagWithHttpApplicationRootTest {
     MeterRegistry registry;
 
     @Test
-    public void testMetricFactoryCreatedMetrics() throws Exception {
+    public void test() throws Exception {
         RestAssured.basePath = "/";
 
         // If you invoke requests, http server and client meters should be registered
@@ -64,16 +64,14 @@ public class UriTagWithHttpApplicationRootTest {
 
         // URIs for server should include Application Path: /bar/ping/{message}, /bar/pong/{message}
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/ping/{message}").timers().size(),
-                "/bar/ping/{message} should be returned by JAX-RS. Found:\n"
-                        + Util.listMeters(registry.find("http.server.requests").meters(), "uri"));
+                Util.foundServerRequests(registry, "/bar/ping/{message} should be returned by JAX-RS"));
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/pong/{message}").timers().size(),
-                "/bar/pong/{message} should be returned by JAX-RS. Found:\n"
-                        + Util.listMeters(registry.find("http.server.requests").meters(), "uri"));
+                Util.foundServerRequests(registry, "/bar/pong/{message} should be returned by JAX-RS"));
 
         // Application Path does not apply to non-rest endpoints: /vertx/item/{id}
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/vertx/item/{id}").timers().size(),
-                "Vert.x Web template path (/vertx/item/:id) should be detected/translated to /vertx/item/{id}. Found:\n"
-                        + Util.listMeters(registry.find("http.server.requests").meters(), "uri"));
+                Util.foundServerRequests(registry,
+                        "Vert.x Web template path (/vertx/item/:id) should be detected/translated to /vertx/item/{id}."));
     }
 
     @ApplicationPath("/bar")

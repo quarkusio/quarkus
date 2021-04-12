@@ -69,7 +69,7 @@ public class RequestMetricInfo {
     }
 
     /** Return path or null if it should be ignored */
-    static String filterIgnored(String path, List<Pattern> ignorePatterns) {
+    protected static String filterIgnored(String path, List<Pattern> ignorePatterns) {
         if (!ignorePatterns.isEmpty()) {
             for (Pattern p : ignorePatterns) {
                 if (p.matcher(path).matches()) {

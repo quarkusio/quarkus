@@ -772,6 +772,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persist(Iterable<?> entities) {
         INSTANCE.persist(entities);
     }
@@ -784,6 +785,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #persist(Iterable)
      * @see #persist(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persist(Stream<?> entities) {
         INSTANCE.persist(entities);
     }
@@ -796,6 +798,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #persist(Stream)
      * @see #persist(Iterable)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persist(Object firstEntity, Object... entities) {
         INSTANCE.persist(firstEntity, entities);
     }
@@ -808,6 +811,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #update(Stream)
      * @see #update(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void update(Iterable<?> entities) {
         INSTANCE.update(entities);
     }
@@ -820,6 +824,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #update(Iterable)
      * @see #update(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void update(Stream<?> entities) {
         INSTANCE.update(entities);
     }
@@ -832,6 +837,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #update(Stream)
      * @see #update(Iterable)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void update(Object firstEntity, Object... entities) {
         INSTANCE.update(firstEntity, entities);
     }
@@ -844,6 +850,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persistOrUpdate(Iterable<?> entities) {
         INSTANCE.persistOrUpdate(entities);
     }
@@ -856,6 +863,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #persistOrUpdate(Iterable)
      * @see #persistOrUpdate(Object,Object...)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persistOrUpdate(Stream<?> entities) {
         INSTANCE.persistOrUpdate(entities);
     }
@@ -868,6 +876,7 @@ public abstract class PanacheMongoEntityBase {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Iterable)
      */
+    @GenerateBridge(callSuperMethod = true)
     public static void persistOrUpdate(Object firstEntity, Object... entities) {
         INSTANCE.persistOrUpdate(firstEntity, entities);
     }

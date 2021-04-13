@@ -10,6 +10,7 @@ import io.vertx.core.metrics.MetricsOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.VertxMetricsFactory;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
+import io.vertx.core.spi.metrics.PoolMetrics;
 import io.vertx.core.spi.metrics.VertxMetrics;
 
 public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetricsFactory, VertxMetrics {
@@ -54,5 +55,10 @@ public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetr
             return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration);
         }
         return null;
+    }
+
+    @Override
+    public PoolMetrics<?> createPoolMetrics(String poolType, String poolName, int maxPoolSize) {
+        return new VertxPoolMetrics(Metrics.globalRegistry, poolName, poolType, maxPoolSize);
     }
 }

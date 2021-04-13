@@ -81,6 +81,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Infinispan Client extension (`quarkus-infinispan-client`).
  * the Jaeger extension (`quarkus-jaeger`),
  * the JGit extension (`quarkus-jgit`),
+ * the Kafka Client extension (`quarkus-kafka-client`), if Apicurio Registry 2.x Avro library is used
  * the Keycloak extension (`quarkus-keycloak`),
  * the Kubernetes client extension (`quarkus-kubernetes-client`),
  * the Mailer extension (`quarkus-mailer`),

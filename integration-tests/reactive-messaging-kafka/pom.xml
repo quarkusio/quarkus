@@ -73,20 +73,15 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-core</artifactId>
+            <groupId>io.strimzi</groupId>
+            <artifactId>strimzi-test-container</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-core</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.12</artifactId>
-            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
@@ -201,14 +196,14 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
-                    <skip>false</skip>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
 
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <skip>false</skip>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>
@@ -239,21 +234,6 @@
                 </plugins>
             </build>
         </profile>
-
-        <!-- Needs to wait for the MP Health 3.0 update in the SR reactive messaging -->
-        <!--
-        <profile>
-            <id>native-image</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <properties>
-                <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
-            </properties>
-        </profile>
-        -->
     </profiles>
 
 

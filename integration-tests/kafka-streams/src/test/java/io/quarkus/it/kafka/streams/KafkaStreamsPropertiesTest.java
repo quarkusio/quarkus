@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
-@QuarkusTestResource(KafkaTestResource.class)
+@QuarkusTestResource(KafkaSSLTestResource.class)
 @QuarkusTest
 public class KafkaStreamsPropertiesTest {
 

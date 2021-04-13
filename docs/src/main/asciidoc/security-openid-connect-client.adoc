@@ -168,7 +168,7 @@ Please note that some OpenId Connect Providers will not return a refresh token i
 
 === OidcClients
 
-`io.quarkus.oidc.client.OidcClients` is a container of `OidcClient`s - it includes a default `OidcClient` (which can also be injected directly as described above) and named clients which can be configured like this:
+`io.quarkus.oidc.client.OidcClients` is a container of ``OidcClient``s - it includes a default `OidcClient` (which can also be injected directly as described above) and named clients which can be configured like this:
 
 [source,properties]
 ----
@@ -266,6 +266,52 @@ public class OidcClientResource {
         cfg.getCredentials().setSecret("secret");
         Uni<OidcClient> client = clients.newClient(config);
         // use this client to get the token
+    }
+}
+----
+
+==== Inject named `OidcClient` and `Tokens`
+
+In case of multiple configured ``OidcClient``s you can specify the `OidcClient` injection target by the extra qualifier `@NamedOidcClient` instead of working with `OidcClients`:
+
+[source,java]
+----
+package io.quarkus.oidc.client;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("/clients")
+public class OidcClientResource {
+
+    @Inject
+    @NamedOidcClient("jwt-secret")
+    OidcClient client;
+
+    @GET
+    public String getResponse() {
+        // use client to get the token
+    }
+}
+----
+
+The same qualifier can be used to specify the `OidcClient` used for a `Tokens` injection:
+
+[source,java]
+----
+@Provider
+@Priority(Priorities.AUTHENTICATION)
+@RequestScoped
+public class OidcClientRequestCustomFilter implements ClientRequestFilter {
+
+    @Inject
+    @NamedOidcClient("jwt-secret")
+    Tokens tokens;
+
+    @Override
+    public void filter(ClientRequestContext requestContext) throws IOException {
+        requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.getAccessToken());
     }
 }
 ----

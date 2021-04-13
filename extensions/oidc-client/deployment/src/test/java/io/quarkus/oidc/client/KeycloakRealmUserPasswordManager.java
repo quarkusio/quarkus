@@ -31,6 +31,7 @@ public class KeycloakRealmUserPasswordManager implements QuarkusTestResourceLife
 
             realm.getClients().add(createClient("quarkus-app"));
             realm.getUsers().add(createUser("alice", "user"));
+            realm.getUsers().add(createUser("bob", "user"));
 
             RestAssured
                     .given()

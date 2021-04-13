@@ -1148,7 +1148,7 @@ Note that sections can override names that would otherwise match a parameter dec
  
 [[typesafe_templates]]
 === Type-safe Templates
-You can also declare your templates in your Java code.
+You can also define type-safe templates in your Java code.
 If using <<resteasy_integration,templates in JAX-RS resources>>, you can rely on the following convention:
 
 - Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
@@ -1193,6 +1193,9 @@ public class ItemResource {
 <1> Declare a method that gives us a `TemplateInstance` for `templates/ItemResource/item.html` and declare its `Item item` parameter so we can validate the template.
 <2> The `item` parameter is automatically turned into a <<typesafe_expressions,parameter declaration>> and so all expressions that reference this name will be validated.
 <3> Make the `Item` object accessible in the template.
+
+TIP: By default, the templates defined in a class annotated with `@CheckedTemplate` can only contain type-safe expressions, i.e. expressions that can be validated at build time. You can use `@CheckedTemplate(requireTypeSafeExpressions = false)` to relax this requirement.
+
  
 You can also declare a top-level Java class annotated with `@CheckedTemplate`:
 

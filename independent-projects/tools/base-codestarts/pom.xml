@@ -12,7 +12,6 @@
 
     <artifactId>quarkus-devtools-base-codestarts</artifactId>
     <name>Quarkus - Dev tools - Base Codestarts</name>
-
     <build>
         <resources>
             <resource>

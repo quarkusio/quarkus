@@ -96,8 +96,8 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-devtools</artifactId>
-            <version>${project.version}</version>
+            <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

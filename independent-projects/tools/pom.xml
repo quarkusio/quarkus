@@ -79,6 +79,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-testing</artifactId>
+                <scope>test</scope>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-registry-client</artifactId>
                 <version>${project.version}</version>
             </dependency>

@@ -134,7 +134,25 @@ public class SnapshotTesting {
      * @throws Throwable
      */
     public static ListAssert<String> assertThatDirectoryTreeMatchSnapshots(TestInfo testInfo, Path dir) throws Throwable {
-        final String snapshotName = getSnapshotDirName(testInfo) + "/dir-tree.snapshot";
+        return assertThatDirectoryTreeMatchSnapshots(getSnapshotDirName(testInfo), dir);
+    }
+
+    /**
+     * Test directory tree to make sure it is valid by comparing it to a snapshot.
+     * <br />
+     * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
+     * <br />
+     * <br />
+     * The snapshot will be created/updated using <code>-Dsnap</code> or
+     * <code>-Dupdate-snapshots</code>
+     *
+     * @param snapshotDirName the snapshot dir name for storage
+     * @param dir the {@link Path} of the directory to test
+     * @return a {@link ListAssert} with the directory tree as a list
+     * @throws Throwable
+     */
+    public static ListAssert<String> assertThatDirectoryTreeMatchSnapshots(String snapshotDirName, Path dir) throws Throwable {
+        final String snapshotName = snapshotDirName + "/dir-tree.snapshot";
         final Path snapshotFile = SNAPSHOTS_DIR.resolve(snapshotName);
 
         assertThat(dir).isDirectory();

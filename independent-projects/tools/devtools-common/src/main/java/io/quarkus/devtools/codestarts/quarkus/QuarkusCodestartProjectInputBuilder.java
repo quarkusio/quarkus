@@ -1,8 +1,7 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
-import static java.util.Objects.requireNonNull;
-
 import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
+import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.Extensions;
@@ -77,6 +76,12 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     }
 
     @Override
+    public QuarkusCodestartProjectInputBuilder putData(DataKey key, Object value) {
+        super.putData(key, value);
+        return this;
+    }
+
+    @Override
     public QuarkusCodestartProjectInputBuilder messageWriter(MessageWriter messageWriter) {
         super.messageWriter(messageWriter);
         return this;
@@ -110,7 +115,10 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     }
 
     public QuarkusCodestartProjectInputBuilder buildTool(BuildTool buildTool) {
-        this.buildTool = requireNonNull(buildTool, "buildTool is required");
+        if (buildTool == null) {
+            return this;
+        }
+        this.buildTool = buildTool;
         return this;
     }
 

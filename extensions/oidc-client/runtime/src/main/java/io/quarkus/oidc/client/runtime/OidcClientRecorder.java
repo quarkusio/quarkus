@@ -16,7 +16,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.oidc.client.OidcClientConfig.Grant;
-import io.quarkus.oidc.client.OidcClientConfig.Grant.Type;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
@@ -68,6 +67,16 @@ public class OidcClientRecorder {
             @Override
             public OidcClient get() {
                 return clients.getClient();
+            }
+        };
+    }
+
+    public Supplier<OidcClient> createOidcClientBean(OidcClients clients, String clientName) {
+        return new Supplier<OidcClient>() {
+
+            @Override
+            public OidcClient get() {
+                return clients.getClient(clientName);
             }
         };
     }

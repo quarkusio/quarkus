@@ -39,6 +39,6 @@ public class OidcClientRequestFilter extends AbstractTokensProducer implements C
 
     private String getAccessToken() {
         // It should be reactive when run with Resteasy Reactive
-        return getTokens().await().indefinitely().getAccessToken();
+        return awaitTokens().getAccessToken();
     }
 }

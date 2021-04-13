@@ -12,6 +12,6 @@ public class TokensProducer extends AbstractTokensProducer {
     @Produces
     @RequestScoped
     public Tokens produceTokens() {
-        return getTokens().await().indefinitely();
+        return awaitTokens();
     }
 }

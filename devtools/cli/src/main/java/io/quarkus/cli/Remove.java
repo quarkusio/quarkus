@@ -7,11 +7,9 @@ import java.util.Set;
 
 import io.quarkus.cli.core.BaseSubCommand;
 import io.quarkus.cli.core.BuildsystemCommand;
-import io.quarkus.cli.core.QuarkusCliVersion;
 import io.quarkus.devtools.commands.RemoveExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "remove", aliases = "rm", mixinStandardHelpOptions = false, description = "Remove an extension from this project.")
@@ -49,7 +47,7 @@ public class Remove extends BaseSubCommand implements BuildsystemCommand {
     private Integer removeMaven(Path projectDirectory) {
         try {
             RemoveExtensions project = new RemoveExtensions(
-                    QuarkusProjectHelper.getProject(projectDirectory, QuarkusCliVersion.version()))
+                    QuarkusCliUtils.getQuarkusProject(projectDirectory))
                             .extensions(extensions);
             QuarkusCommandOutcome result = project.execute();
             return result.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;

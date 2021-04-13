@@ -137,6 +137,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
             final File pom = lp.getRawModel().getPomFile();
             // if the pom exists we should also check whether the main artifact can also be resolved from the workspace
             if (pom.exists() && ("pom".equals(lp.getRawModel().getPackaging())
+                    || mvnCtx != null && mvnCtx.isPreferPomsFromWorkspace()
                     || Files.exists(lp.getOutputDir())
                     || emptyJarOutput(lp, artifact) != null)) {
                 return pom;

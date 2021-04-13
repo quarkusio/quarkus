@@ -39,11 +39,15 @@ public class PlatformArtifacts {
 
     public static ArtifactCoords ensureBomArtifact(ArtifactCoords coords) {
         return isCatalogArtifactId(coords.getArtifactId())
-                ? new ArtifactCoords(coords.getGroupId(),
-                        coords.getArtifactId().substring(0,
-                                coords.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
-                        null, "pom", coords.getVersion())
+                ? getBomArtifactForCatalog(coords)
                 : coords;
+    }
+
+    public static ArtifactCoords getBomArtifactForCatalog(ArtifactCoords coords) {
+        return new ArtifactCoords(coords.getGroupId(),
+                coords.getArtifactId().substring(0,
+                        coords.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
+                null, "pom", coords.getVersion());
     }
 
 }

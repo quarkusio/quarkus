@@ -42,6 +42,7 @@ public class BootstrapMavenContextTestBase {
     protected BootstrapMavenContext bootstrapMavenContextForProject(String projectOnCp) throws Exception {
 
         final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config();
+        initBootstrapMavenContextConfig(config);
 
         final Path projectLocation = getProjectLocation(projectOnCp);
         config.setCurrentProject(projectLocation.toString());
@@ -51,6 +52,9 @@ public class BootstrapMavenContextTestBase {
             config.setUserSettings(projectSettingsXml.toFile());
         }
         return new BootstrapMavenContext(config);
+    }
+
+    protected void initBootstrapMavenContextConfig(BootstrapMavenContextConfig<?> config) throws Exception {
     }
 
     protected BootstrapMavenContext bootstrapMavenContextWithSettings(String configDirOnCp) throws Exception {

@@ -27,6 +27,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected boolean artifactTransferLogging = true;
     protected BootstrapMavenOptions cliOptions;
     protected Path rootProjectDir;
+    protected boolean preferPomsFromWorkspace;
 
     /**
      * Local repository location
@@ -193,6 +194,23 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setRootProjectDir(Path rootProjectDir) {
         this.rootProjectDir = rootProjectDir;
+        return (T) this;
+    }
+
+    /**
+     * By default POM artifacts of modules with packaging other than {@code pom} are resolved from the workspace
+     * only if the main artifact has been built locally, otherwise both the main artifact and the POM will be
+     * resolved from a Maven repository (local and/or remote).
+     * <p>
+     * Enabling this option will make the resolver ignore the fact that the main artifact hasn't been built yet and
+     * will pick up its {@code pom} from the workspace.
+     *
+     * @param preferPomsFromWorkspace whether the POM artifact should always be resolved from the workspace
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setPreferPomsFromWorkspace(boolean preferPomsFromWorkspace) {
+        this.preferPomsFromWorkspace = preferPomsFromWorkspace;
         return (T) this;
     }
 

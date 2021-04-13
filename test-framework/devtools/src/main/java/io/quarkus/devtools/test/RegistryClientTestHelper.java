@@ -118,7 +118,7 @@ public class RegistryClientTestHelper {
 
         final JsonRegistriesConfig toolsConfig = new JsonRegistriesConfig();
         toolsConfig.addRegistry(registryConfig);
-        toolsConfig.setDebug(true);
+        toolsConfig.setDebug(false);
 
         try {
             RegistriesConfigMapperHelper.serialize(toolsConfig,

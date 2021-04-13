@@ -19,11 +19,8 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.graph.DependencyNode;
-import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
@@ -32,7 +29,7 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
+import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
@@ -73,7 +70,6 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     private List<ArtifactCoords> importedPlatforms;
 
     private Artifact projectArtifact;
-    private ArtifactDescriptorResult projectDescr;
     private MavenArtifactResolver artifactResolver;
     private ExtensionCatalogResolver catalogResolver;
     private MessageWriter log;
@@ -91,30 +87,15 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             buildTool = BuildTool.MAVEN;
         }
 
-        final ExtensionCatalog catalog = resolveExtensionsCatalog();
-        final List<ResourceLoader> codestartsResourceLoaders = QuarkusProjectHelper.getCodestartResourceLoaders(catalog,
-                artifactResolver());
         final QuarkusProject quarkusProject;
         if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null) {
-            quarkusProject = QuarkusProject.of(baseDir(), catalog, codestartsResourceLoaders, getMessageWriter(),
-                    new MavenProjectBuildFile(baseDir(), catalog, () -> project.getOriginalModel(),
-                            () -> {
-                                try {
-                                    return projectDependencies();
-                                } catch (MojoExecutionException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            },
-                            () -> {
-                                try {
-                                    return projectDescriptor().getManagedDependencies();
-                                } catch (MojoExecutionException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            },
-                            project.getModel().getProperties()));
+            quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(), baseDir(),
+                    project.getModel().getProperties(), artifactResolver(), getMessageWriter(), null);
         } else {
-            quarkusProject = QuarkusProject.of(baseDir(), catalog, codestartsResourceLoaders, log, buildTool);
+            quarkusProject = QuarkusProject.of(baseDir(), resolveExtensionsCatalog(),
+                    QuarkusProjectHelper.getCodestartResourceLoaders(resolveExtensionsCatalog(),
+                            artifactResolver()),
+                    log, buildTool);
         }
 
         doExecute(quarkusProject, getMessageWriter());
@@ -124,24 +105,9 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         return log == null ? log = new MojoMessageWriter(getLog()) : log;
     }
 
-    private ArtifactDescriptorResult projectDescriptor() throws MojoExecutionException {
-        if (this.projectDescr == null) {
-            try {
-                projectDescr = artifactResolver.resolveDescriptor(projectArtifact());
-            } catch (Exception e) {
-                throw new MojoExecutionException("Failed to read the artifact desriptor for the project", e);
-            }
-        }
-        return projectDescr;
-    }
-
     protected Path baseDir() {
         return project == null || project.getBasedir() == null ? Paths.get("").normalize().toAbsolutePath()
                 : project.getBasedir().toPath();
-    }
-
-    protected boolean isLimitExtensionsToImportedPlatforms() {
-        return false;
     }
 
     private ExtensionCatalog resolveExtensionsCatalog() throws MojoExecutionException {
@@ -149,9 +115,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                 : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {
-                return isLimitExtensionsToImportedPlatforms()
-                        ? catalogResolver.resolveExtensionCatalog(getImportedPlatforms())
-                        : catalogResolver.resolveExtensionCatalog(getQuarkusCoreVersion());
+                return catalogResolver.resolveExtensionCatalog(getQuarkusCoreVersion());
             } catch (Exception e) {
                 throw new MojoExecutionException("Failed to resolve the Quarkus extensions catalog", e);
             }
@@ -275,30 +239,6 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
 
     protected abstract void doExecute(QuarkusProject quarkusProject, MessageWriter log)
             throws MojoExecutionException;
-
-    private List<org.eclipse.aether.graph.Dependency> projectDependencies() throws MojoExecutionException {
-        final List<org.eclipse.aether.graph.Dependency> deps = new ArrayList<>();
-        try {
-            artifactResolver().collectDependencies(projectArtifact(), Collections.emptyList())
-                    .getRoot().accept(new DependencyVisitor() {
-                        @Override
-                        public boolean visitEnter(DependencyNode node) {
-                            if (node.getDependency() != null) {
-                                deps.add(node.getDependency());
-                            }
-                            return true;
-                        }
-
-                        @Override
-                        public boolean visitLeave(DependencyNode node) {
-                            return true;
-                        }
-                    });
-        } catch (Exception e) {
-            throw new MojoExecutionException("Failed to collect dependencies for the project", e);
-        }
-        return deps;
-    }
 
     private Artifact projectArtifact() {
         return projectArtifact == null

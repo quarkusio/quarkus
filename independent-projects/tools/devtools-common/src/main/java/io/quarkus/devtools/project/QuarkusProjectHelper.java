@@ -67,6 +67,7 @@ public class QuarkusProjectHelper {
         return getProject(projectDir, buildTool);
     }
 
+    @Deprecated
     public static QuarkusProject getProject(Path projectDir, String quarkusVersion) {
         // TODO remove this method once the default registry becomes available
         BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectDir);
@@ -76,15 +77,25 @@ public class QuarkusProjectHelper {
         return getProject(projectDir, buildTool, quarkusVersion);
     }
 
+    @Deprecated
     public static QuarkusProject getProject(Path projectDir, BuildTool buildTool, String quarkusVersion) {
         // TODO remove this method once the default registry becomes available
-        final ExtensionCatalogResolver catalogResolver = getCatalogResolver();
-        if (catalogResolver.hasRegistries()) {
-            return getProject(projectDir, buildTool);
-        }
         return QuarkusProjectHelper.getProject(projectDir,
-                ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, artifactResolver(), messageWriter()),
+                getExtensionCatalog(quarkusVersion),
                 buildTool);
+    }
+
+    @Deprecated
+    public static ExtensionCatalog getExtensionCatalog(String quarkusVersion) {
+        // TODO remove this method once the default registry becomes available
+        final ExtensionCatalogResolver catalogResolver = getCatalogResolver();
+        try {
+            return catalogResolver.hasRegistries() ? catalogResolver.resolveExtensionCatalog(quarkusVersion)
+                    : ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, artifactResolver(),
+                            messageWriter());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
+        }
     }
 
     public static QuarkusProject getProject(Path projectDir, BuildTool buildTool) {
@@ -191,7 +202,7 @@ public class QuarkusProjectHelper {
                 .build();
     }
 
-    private static RegistriesConfig toolsConfig() {
+    public static RegistriesConfig toolsConfig() {
         return toolsConfig == null ? toolsConfig = RegistriesConfigLocator.resolveConfig() : toolsConfig;
     }
 

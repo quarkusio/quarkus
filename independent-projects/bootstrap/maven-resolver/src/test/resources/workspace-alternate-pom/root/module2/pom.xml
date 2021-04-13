@@ -4,8 +4,9 @@
 
     <parent>
         <groupId>org.acme</groupId>
-        <artifactId>root</artifactId>
+        <artifactId>acme-parent</artifactId>
         <version>1.0</version>
+        <relativePath>../parent</relativePath>
     </parent>
 
     <artifactId>root-module2</artifactId>

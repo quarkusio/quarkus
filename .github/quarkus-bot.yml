@@ -127,10 +127,17 @@ triage:
         - extensions/vertx-graphql/
         - integration-tests/vertx-graphql/
     - labels: [area/tracing, area/smallrye]
-      title: "(trace|tracing|telemetry)"
+      title: "(trace|tracing)"
       notify: [kenfinnigan, Ladicek]
       directories:
         - extensions/smallrye-opentracing/
+    - labels: [area/tracing]
+      title: "(trace|opentelemetry)"
+      notify: [kenfinnigan]
+      notifyInPullRequest: true
+      directories:
+        - extensions/opentelemetry/
+        - extensions/opentelemetry-exporter-jaeger/
     - labels: [area/security, area/smallrye]
       title: "jwt"
       notify: [sberyozkin]
@@ -139,12 +146,14 @@ triage:
       notify: [sberyozkin]
     - labels: [area/metrics, area/smallrye]
       title: "metrics"
-      notify: [jmartisk]
+      notify: [jmartisk, ebullient]
+      notifyInPullRequest: true
       directories:
         - extensions/smallrye-metrics
     - labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient]
+      notify: [ebullient, phillip-kruger]
+      notifyInPullRequest: true
       directories:
         - extensions/micrometer
     - labels: [area/health, area/smallrye]

@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>37</version>
+        <version>38</version>
     </parent>
     <groupId>io.quarkus.arc</groupId>
     <artifactId>arc-parent</artifactId>

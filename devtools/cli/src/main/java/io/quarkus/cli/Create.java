@@ -34,6 +34,10 @@ public class Create extends BaseSubCommand implements Callable<Integer> {
             "--example" }, order = 4, description = "Choose a specific example for the generated Quarkus application.")
     String example;
 
+    @CommandLine.Option(names = { "-c",
+            "--app-config" }, order = 11, description = "Application configs to be set in the application.properties/yml file. (key1=value1,key2=value2)")
+    private String appConfig;
+
     @CommandLine.ArgGroup()
     TargetBuildTool targetBuildTool = new TargetBuildTool();
 
@@ -119,6 +123,7 @@ public class Create extends BaseSubCommand implements Callable<Integer> {
                     .example(example)
                     .extensions(extensions)
                     .noCode(noCode)
+                    .appConfig(appConfig)
                     .execute().isSuccess();
 
             if (status) {

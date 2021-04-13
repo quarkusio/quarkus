@@ -1,87 +1,124 @@
 package io.quarkus.it.kafka;
 
-import static org.awaitility.Awaitility.await;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
-import java.io.File;
-import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
+import org.jboss.logging.Logger;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.images.builder.Transferable;
+import org.testcontainers.utility.MountableFile;
 
-import org.apache.kafka.common.config.SaslConfigs;
+import com.github.dockerjava.api.command.InspectContainerResponse;
 
-import io.debezium.kafka.KafkaCluster;
-import io.debezium.util.Testing;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import kafka.server.KafkaServer;
-import kafka.server.RunningAsBroker;
 
 public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private KafkaCluster kafka;
+    private final SaslStrimziKafkaContainer kafka = new SaslStrimziKafkaContainer()
+            .withCopyFileToContainer(MountableFile.forClasspathResource("server.properties"),
+                    "/opt/kafka/config/server.properties");
 
     @Override
     public Map<String, String> start() {
-        try {
-            File directory = Testing.Files.createTestingDirectory("kafka-data-sasl", true);
+        kafka.start();
+        // Used by the test
+        System.setProperty("bootstrap.servers", kafka.getBootstrapServers());
+        // Used by the application
+        Map<String, String> properties = new HashMap<>();
+        properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());
 
-            Properties props = new Properties();
-            props.setProperty("zookeeper.connection.timeout.ms", "45000");
-            props.setProperty("listener.security.protocol.map", "CLIENT:SASL_PLAINTEXT");
-            props.setProperty("listeners", "CLIENT://:19094");
-            props.setProperty("inter.broker.listener.name", "CLIENT");
-
-            props.setProperty("sasl.enabled.mechanisms", "PLAIN");
-            props.setProperty("sasl.mechanism.inter.broker.protocol", "PLAIN");
-
-            final String jaasConf = "org.apache.kafka.common.security.plain.PlainLoginModule required" +
-                    " username=broker password=broker-secret" +
-                    " user_broker=broker-secret user_client=client-secret;";
-            props.setProperty("listener.name.client.plain." + SaslConfigs.SASL_JAAS_CONFIG, jaasConf);
-
-            kafka = new KafkaCluster()
-                    .withPorts(2184, 19094)
-                    .addBrokers(1)
-                    .usingDirectory(directory)
-                    .deleteDataUponShutdown(true)
-                    .withKafkaConfiguration(props)
-                    .deleteDataPriorToStartup(true)
-                    .startup();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        KafkaServer server = extract(kafka);
-        await().until(() -> server.brokerState().currentState() == RunningAsBroker.state());
-        server.logger().underlying().info("Broker 'kafka-sasl' started");
-
-        return Collections.emptyMap();
+        return properties;
     }
 
     @Override
     public void stop() {
         if (kafka != null) {
-            kafka.shutdown();
+            kafka.close();
         }
+        System.clearProperty("boostrap.servers");
     }
 
-    @SuppressWarnings("unchecked")
-    static kafka.server.KafkaServer extract(KafkaCluster cluster) {
-        Field kafkaServersField;
-        Field serverField;
-        try {
-            kafkaServersField = cluster.getClass().getDeclaredField("kafkaServers");
-            kafkaServersField.setAccessible(true);
-            Map<Integer, io.debezium.kafka.KafkaServer> map = (Map<Integer, io.debezium.kafka.KafkaServer>) kafkaServersField
-                    .get(cluster);
-            io.debezium.kafka.KafkaServer server = map.get(1);
-            serverField = io.debezium.kafka.KafkaServer.class.getDeclaredField("server");
-            serverField.setAccessible(true);
-            return (kafka.server.KafkaServer) serverField.get(server);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    /**
+     * Use a fixed port container to ease SASL configuration.
+     */
+    static class SaslStrimziKafkaContainer extends FixedHostPortGenericContainer<SaslStrimziKafkaContainer> {
+
+        private static final org.jboss.logging.Logger LOGGER = Logger
+                .getLogger(SaslStrimziKafkaContainer.class.getName());
+
+        private static final String STARTER_SCRIPT = "/testcontainers_start.sh";
+        private static final int KAFKA_PORT = 9092;
+        private static final int ZOOKEEPER_PORT = 2181;
+        private static final String LATEST_KAFKA_VERSION;
+
+        private int kafkaExposedPort;
+        private static final List<String> supportedKafkaVersions = new ArrayList<>(3);
+
+        static {
+            InputStream inputStream = io.strimzi.StrimziKafkaContainer.class.getResourceAsStream("/kafka-versions.txt");
+            InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+
+            try (BufferedReader bufferedReader = new BufferedReader(streamReader)) {
+                String kafkaVersion;
+                while ((kafkaVersion = bufferedReader.readLine()) != null) {
+                    supportedKafkaVersions.add(kafkaVersion);
+                }
+            } catch (IOException e) {
+                LOGGER.error("Unable to load the supported Kafka versions", e);
+            }
+
+            // sort kafka version from low to high
+            Collections.sort(supportedKafkaVersions);
+
+            LATEST_KAFKA_VERSION = supportedKafkaVersions.get(supportedKafkaVersions.size() - 1);
         }
 
+        public SaslStrimziKafkaContainer(final String version) {
+            super("quay.io/strimzi/kafka:" + version);
+            super.withNetwork(Network.SHARED);
+
+            // exposing kafka port from the container
+            withExposedPorts(KAFKA_PORT);
+            withFixedExposedPort(KAFKA_PORT, KAFKA_PORT);
+
+            withEnv("LOG_DIR", "/tmp");
+        }
+
+        public SaslStrimziKafkaContainer() {
+            this("latest-kafka-" + LATEST_KAFKA_VERSION);
+        }
+
+        @Override
+        protected void doStart() {
+            // we need it for the startZookeeper(); and startKafka(); to run container before...
+            withCommand("sh", "-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
+            super.doStart();
+        }
+
+        @Override
+        protected void containerIsStarting(InspectContainerResponse containerInfo, boolean reused) {
+            super.containerIsStarting(containerInfo, reused);
+
+            String command = "#!/bin/bash \n";
+            command += "bin/zookeeper-server-start.sh config/zookeeper.properties &\n";
+            command += "bin/kafka-server-start.sh config/server.properties" +
+                    " --override listeners=SASL_PLAINTEXT://:" + KAFKA_PORT +
+                    " --override advertised.listeners=" + getBootstrapServers() +
+                    " --override zookeeper.connect=localhost:" + ZOOKEEPER_PORT;
+
+            copyFileToContainer(
+                    Transferable.of(command.getBytes(StandardCharsets.UTF_8), 700),
+                    STARTER_SCRIPT);
+        }
+
+        public String getBootstrapServers() {
+            return String.format("SASL_PLAINTEXT://%s:%s", getContainerIpAddress(), KAFKA_PORT);
+        }
     }
 
 }

@@ -21,22 +21,19 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KafkaSASLTestResource.class)
 public class SaslKafkaConsumerTest {
 
-    private static void addJaas(Properties props) {
+    public Producer<Integer, String> createProducer() {
+        Properties props = new Properties();
+        String bs = System.getProperty("bootstrap.servers");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "sasl-test-producer");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
         props.setProperty(SaslConfigs.SASL_MECHANISM, "PLAIN");
         props.setProperty(SaslConfigs.SASL_JAAS_CONFIG,
                 "org.apache.kafka.common.security.plain.PlainLoginModule required "
                         + "username=\"client\" "
                         + "password=\"client-secret\";");
-    }
-
-    public static Producer<Integer, String> createProducer() {
-        Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19094");
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, "sasl-test-producer");
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        addJaas(props);
 
         return new KafkaProducer<>(props);
     }

@@ -30,6 +30,12 @@ public class HibernateSearchTestResource {
         createPerson("David Lodge", "London");
         createPerson("Paul Auster", "New York");
         createPerson("John Grisham", "Oxford");
+
+        // Add many other entities, so that mass indexing has something to do.
+        // DO NOT REMOVE, it's important to have many entities to fully test mass indexing.
+        for (int i = 0; i < 2000; i++) {
+            createPerson("Other Person #" + i, "Other City #" + i);
+        }
     }
 
     @GET
@@ -55,6 +61,10 @@ public class HibernateSearchTestResource {
 
         assertEquals(1, person.size());
         assertEquals("David Lodge", person.get(0).getName());
+
+        assertEquals(4 + 2000, searchSession.search(Person.class)
+                .where(f -> f.matchAll())
+                .fetchTotalHitCount());
 
         return "OK";
     }

@@ -101,7 +101,7 @@ public class MailerProcessor {
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
             if (injectionPoint.getRequiredType().name().equals(MAIL_TEMPLATE)) {
-                AnnotationInstance resourcePath = injectionPoint.getRequiredQualifier(QuteProcessor.RESOURCE_PATH);
+                AnnotationInstance resourcePath = injectionPoint.getRequiredQualifier(QuteProcessor.LOCATION);
                 String name;
                 if (resourcePath != null) {
                     name = resourcePath.value().asString();

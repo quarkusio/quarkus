@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
-import io.quarkus.qute.api.ResourcePath;
+import io.quarkus.qute.CheckedTemplate;
+import io.quarkus.qute.Location;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.mail.MailClient;
@@ -123,7 +123,7 @@ public class InjectionTest {
         @Inject
         MailTemplate test1;
 
-        @ResourcePath("mails/test2")
+        @Location("mails/test2")
         MailTemplate testMail;
 
         Uni<Void> send1() {

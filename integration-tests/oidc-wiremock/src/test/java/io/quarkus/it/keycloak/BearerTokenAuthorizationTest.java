@@ -61,7 +61,8 @@ public class BearerTokenAuthorizationTest {
     public void testDeniedNoBearerToken() {
         RestAssured.given()
                 .when().get("/api/users/me").then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     @Test
@@ -71,7 +72,8 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given().auth().oauth2(token).when()
                 .get("/api/users/me")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     @Test
@@ -81,7 +83,8 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given().auth().oauth2(token).when()
                 .get("/api/users/me")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     @Test
@@ -91,7 +94,8 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given().auth().oauth2(token).when()
                 .get("/api/users/me")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     private String getAccessToken(String userName, Set<String> groups) {

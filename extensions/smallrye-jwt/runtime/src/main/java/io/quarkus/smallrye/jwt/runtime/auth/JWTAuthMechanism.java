@@ -53,7 +53,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
         ChallengeData result = new ChallengeData(
                 HttpResponseStatus.UNAUTHORIZED.code(),
                 HttpHeaderNames.WWW_AUTHENTICATE,
-                "Bearer {token}");
+                "Bearer");
         return Uni.createFrom().item(result);
     }
 

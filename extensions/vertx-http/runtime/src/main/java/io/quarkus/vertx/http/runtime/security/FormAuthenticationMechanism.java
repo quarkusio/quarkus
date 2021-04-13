@@ -152,7 +152,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
 
-        if (context.normalisedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
+        if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
             //we always re-auth if it is a post to the auth URL
             return runFormAuth(context, identityProviderManager);
         } else {
@@ -173,7 +173,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        if (context.normalisedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
+        if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
             log.debugf("Serving form auth error page %s for %s", loginPage, context);
             // This method would no longer be called if authentication had already occurred.
             return getRedirect(context, errorPage);

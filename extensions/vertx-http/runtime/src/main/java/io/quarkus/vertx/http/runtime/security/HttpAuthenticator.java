@@ -19,7 +19,9 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport.Type;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -27,7 +29,6 @@ import io.vertx.ext.web.RoutingContext;
  */
 @ApplicationScoped
 public class HttpAuthenticator {
-
     final HttpAuthenticationMechanism[] mechanisms;
     @Inject
     IdentityProviderManager identityProviderManager;
@@ -97,6 +98,11 @@ public class HttpAuthenticator {
      */
     public Uni<SecurityIdentity> attemptAuthentication(RoutingContext routingContext) {
 
+        HttpAuthenticationMechanism matchingMech = findMechanismWithAuthorizationScheme(routingContext);
+        if (matchingMech != null) {
+            return matchingMech.authenticate(routingContext, identityProviderManager);
+        }
+
         Uni<SecurityIdentity> result = mechanisms[0].authenticate(routingContext, identityProviderManager);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
@@ -118,18 +124,26 @@ public class HttpAuthenticator {
      * @return
      */
     public Uni<Boolean> sendChallenge(RoutingContext routingContext) {
-        Uni<Boolean> result = mechanisms[0].sendChallenge(routingContext);
-        for (int i = 1; i < mechanisms.length; ++i) {
-            HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().transformToUni(new Function<Boolean, Uni<? extends Boolean>>() {
-                @Override
-                public Uni<? extends Boolean> apply(Boolean authDone) {
-                    if (authDone) {
-                        return Uni.createFrom().item(authDone);
+        Uni<Boolean> result = null;
+
+        HttpAuthenticationMechanism matchingMech = findMechanismWithAuthorizationScheme(routingContext);
+        if (matchingMech != null) {
+            result = matchingMech.sendChallenge(routingContext);
+        }
+        if (result == null) {
+            result = mechanisms[0].sendChallenge(routingContext);
+            for (int i = 1; i < mechanisms.length; ++i) {
+                HttpAuthenticationMechanism mech = mechanisms[i];
+                result = result.onItem().transformToUni(new Function<Boolean, Uni<? extends Boolean>>() {
+                    @Override
+                    public Uni<? extends Boolean> apply(Boolean authDone) {
+                        if (authDone) {
+                            return Uni.createFrom().item(authDone);
+                        }
+                        return mech.sendChallenge(routingContext);
                     }
-                    return mech.sendChallenge(routingContext);
-                }
-            });
+                });
+            }
         }
         return result.onItem().transformToUni(new Function<Boolean, Uni<? extends Boolean>>() {
             @Override
@@ -144,6 +158,10 @@ public class HttpAuthenticator {
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext routingContext) {
+        HttpAuthenticationMechanism matchingMech = findMechanismWithAuthorizationScheme(routingContext);
+        if (matchingMech != null) {
+            return matchingMech.getChallenge(routingContext);
+        }
         Uni<ChallengeData> result = mechanisms[0].getChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
@@ -159,6 +177,32 @@ public class HttpAuthenticator {
 
         }
         return result;
+    }
+
+    private HttpAuthenticationMechanism findMechanismWithAuthorizationScheme(RoutingContext routingContext) {
+        String authScheme = getAuthorizationScheme(routingContext);
+        if (authScheme == null) {
+            return null;
+        }
+        for (int i = 0; i < mechanisms.length; ++i) {
+            HttpCredentialTransport credType = mechanisms[i].getCredentialTransport();
+            if (credType != null && credType.getTransportType() == Type.AUTHORIZATION
+                    && credType.getTypeTarget().toLowerCase().startsWith(authScheme.toLowerCase())) {
+                return mechanisms[i];
+            }
+        }
+        return null;
+    }
+
+    private static String getAuthorizationScheme(RoutingContext routingContext) {
+        String authorization = routingContext.request().getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorization != null) {
+            int spaceIndex = authorization.indexOf(' ');
+            if (spaceIndex > 0) {
+                return authorization.substring(0, spaceIndex);
+            }
+        }
+        return null;
     }
 
     static class NoAuthenticationMechanism implements HttpAuthenticationMechanism {

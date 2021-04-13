@@ -340,6 +340,19 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 
+        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_ACTION,
+                persistenceUnitConfig.scripts.generation.generation);
+
+        if (persistenceUnitConfig.scripts.generation.createTarget.isPresent()) {
+            runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_CREATE_TARGET,
+                    persistenceUnitConfig.scripts.generation.createTarget.get());
+        }
+
+        if (persistenceUnitConfig.scripts.generation.dropTarget.isPresent()) {
+            runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_DROP_TARGET,
+                    persistenceUnitConfig.scripts.generation.dropTarget.get());
+        }
+
         // Logging
         if (persistenceUnitConfig.log.sql) {
             runtimeSettingsBuilder.put(AvailableSettings.SHOW_SQL, "true");

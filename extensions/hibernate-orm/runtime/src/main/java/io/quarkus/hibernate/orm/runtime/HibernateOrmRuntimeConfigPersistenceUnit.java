@@ -17,6 +17,13 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
     public HibernateOrmConfigPersistenceUnitDatabase database = new HibernateOrmConfigPersistenceUnitDatabase();
 
     /**
+     * Database scripts related configuration.
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public HibernateOrmConfigPersistenceUnitScripts scripts = new HibernateOrmConfigPersistenceUnitScripts();
+
+    /**
      * Logging configuration.
      */
     @ConfigItem
@@ -25,6 +32,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
 
     public boolean isAnyPropertySet() {
         return database.isAnyPropertySet() ||
+                scripts.isAnyPropertySet() ||
                 log.isAnyPropertySet();
     }
 
@@ -36,6 +44,20 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @ConfigItem
         public HibernateOrmConfigPersistenceUnitDatabaseGeneration generation = new HibernateOrmConfigPersistenceUnitDatabaseGeneration();
+
+        public boolean isAnyPropertySet() {
+            return generation.isAnyPropertySet();
+        }
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitScripts {
+
+        /**
+         * Schema generation configuration.
+         */
+        @ConfigItem
+        public HibernateOrmConfigPersistenceUnitScriptGeneration generation = new HibernateOrmConfigPersistenceUnitScriptGeneration();
 
         public boolean isAnyPropertySet() {
             return generation.isAnyPropertySet();
@@ -71,6 +93,36 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
             return !"none".equals(generation)
                     || createSchemas
                     || haltOnError;
+        }
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitScriptGeneration {
+
+        /**
+         * Select whether the database schema DDL files are generated or not.
+         *
+         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`.
+         */
+        @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
+        public String generation = "none";
+
+        /**
+         * Filename or URL where the database create DDL file should be generated.
+         */
+        @ConfigItem
+        public Optional<String> createTarget = Optional.empty();
+
+        /**
+         * Filename or URL where the database drop DDL file should be generated.
+         */
+        @ConfigItem
+        public Optional<String> dropTarget = Optional.empty();
+
+        public boolean isAnyPropertySet() {
+            return !"none".equals(generation)
+                    || createTarget.isPresent()
+                    || dropTarget.isPresent();
         }
     }
 

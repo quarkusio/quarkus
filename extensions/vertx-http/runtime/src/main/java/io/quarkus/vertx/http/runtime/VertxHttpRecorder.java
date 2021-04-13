@@ -1120,7 +1120,9 @@ public class VertxHttpRecorder {
                         }
                     });
                 } else {
-                    event.request().resume();
+                    if (!event.request().isEnded()) {
+                        event.request().resume();
+                    }
                     if (CAN_HAVE_BODY.contains(event.request().method())) {
                         bodyHandler.handle(event);
                     } else {

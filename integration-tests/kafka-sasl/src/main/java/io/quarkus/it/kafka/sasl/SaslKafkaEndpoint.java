@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Properties;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -16,6 +17,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.eclipse.microprofile.config.Config;
 
 /**
  * Endpoint to check the SSL/SASL connection.
@@ -24,6 +26,9 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 public class SaslKafkaEndpoint {
 
     private Consumer<Integer, String> consumer;
+
+    @Inject
+    Config config;
 
     @PostConstruct
     public void create() {
@@ -48,9 +53,10 @@ public class SaslKafkaEndpoint {
                         + "password=\"client-secret\";");
     }
 
-    public static KafkaConsumer<Integer, String> createConsumer() {
+    public KafkaConsumer<Integer, String> createConsumer() {
+        String bs = config.getValue("kafka.bootstrap.servers", String.class);
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19094");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-consumer");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());

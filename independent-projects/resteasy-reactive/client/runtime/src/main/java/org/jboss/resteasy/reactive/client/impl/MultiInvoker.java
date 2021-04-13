@@ -5,7 +5,6 @@ import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpConnection;
 import io.vertx.core.net.impl.ConnectionBase;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +17,7 @@ import org.jboss.resteasy.reactive.client.impl.MultiInvoker.MultiRequest;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
-    private WebTargetImpl target;
+    private final WebTargetImpl target;
 
     public MultiInvoker(WebTargetImpl target) {
         this.target = target;
@@ -45,7 +44,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
         private final AtomicReference<Runnable> onCancel = new AtomicReference<>();
 
-        private MultiEmitter<? super R> emitter;
+        private final MultiEmitter<? super R> emitter;
 
         private static final Runnable CLEARED = () -> {
         };
@@ -155,11 +154,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 multiRequest.emitter.fail(t);
             }
         });
-        HttpConnection connection = vertxClientResponse.request().connection();
-        // this captures the server closing
-        connection.closeHandler(v -> {
-            multiRequest.emitter.complete();
-        });
+        // we don't add a closeHandler handler on the connection as it can race with this handler
+        // and close before the emitter emits anything
+        // see: https://github.com/quarkusio/quarkus/pull/16438
         vertxClientResponse.handler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer buffer) {

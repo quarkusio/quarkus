@@ -18,7 +18,6 @@ import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -89,7 +88,6 @@ public class StreamTestCase {
     }
 
     @Test
-    @Disabled("https://github.com/quarkusio/quarkus/issues/16227")
     public void testClientStreaming() throws Exception {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + "stream/text/stream");
@@ -141,7 +139,6 @@ public class StreamTestCase {
     }
 
     @Test
-    @Disabled("https://github.com/quarkusio/quarkus/issues/16227")
     public void testSse() throws InterruptedException {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + "stream/sse");

@@ -1,6 +1,8 @@
 package io.quarkus.it.kafka;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -22,7 +24,7 @@ public class KafkaProducerTest {
 
     public static KafkaConsumer<Integer, String> createConsumer() {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaTestResource.getBootstrapServers());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "test");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -34,7 +36,7 @@ public class KafkaProducerTest {
     }
 
     @Test
-    public void test() throws Exception {
+    public void test() {
         KafkaConsumer<Integer, String> consumer = createConsumer();
         RestAssured.with().body("hello").post("/kafka");
         ConsumerRecord<Integer, String> records = consumer.poll(Duration.ofMillis(10000)).iterator().next();
@@ -43,7 +45,7 @@ public class KafkaProducerTest {
     }
 
     @Test
-    public void health() throws Exception {
+    public void health() {
         RestAssured.when().get("/q/health/ready").then()
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
@@ -51,7 +53,7 @@ public class KafkaProducerTest {
     }
 
     @Test
-    public void metrics() throws Exception {
+    public void metrics() {
         // Look for kafka producer metrics (add .log().all() to examine what they are
         RestAssured.when().get("/q/metrics").then()
                 .statusCode(200)

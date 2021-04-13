@@ -23,7 +23,7 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KafkaTestResource.class)
+@QuarkusTestResource(KafkaSSLTestResource.class)
 @TestProfile(KafkaStreamsStartupFailureTest.NonExistingTopicProfile.class)
 @QuarkusTest
 public class KafkaStreamsStartupFailureTest {

@@ -16,7 +16,6 @@
     <description>Dependency management for integration tests. Importable by third party extension developers.</description>
 
     <properties>
-        <debezium.version>1.4.2.Final</debezium.version>
         <testcontainers.version>1.15.2</testcontainers.version>
         <strimzi-test-container.version>0.22.1</strimzi-test-container.version>
     </properties>
@@ -29,18 +28,6 @@
                 <version>${testcontainers.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>io.debezium</groupId>
-                <artifactId>debezium-core</artifactId>
-                <version>${debezium.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.debezium</groupId>
-                <artifactId>debezium-core</artifactId>
-                <version>${debezium.version}</version>
-                <type>test-jar</type>
             </dependency>
 
             <dependency>

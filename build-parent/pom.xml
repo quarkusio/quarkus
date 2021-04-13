@@ -106,8 +106,6 @@
         <protoc.version>3.14.0</protoc.version> <!--keep in sync with the BOM-->
         <grpc.version>1.35.0</grpc.version> <!--keep in sync with the BOM -->
 
-        <boring-ssl.version>2.0.36.Final</boring-ssl.version>
-
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
         <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
@@ -253,12 +251,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-tcnative-boringssl-static</artifactId>
-                <scope>test</scope>
-                <version>${boring-ssl.version}</version>
-            </dependency>            
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>

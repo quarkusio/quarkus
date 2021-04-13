@@ -3,8 +3,8 @@ package io.quarkus.resteasy.reactive.qute.deployment;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
 
 @Path("type-error")
 public class TypeErrorResource {

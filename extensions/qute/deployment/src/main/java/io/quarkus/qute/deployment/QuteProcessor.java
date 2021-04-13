@@ -106,7 +106,6 @@ import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.WhenSectionHelper;
-import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.TypeCheck;
 import io.quarkus.qute.deployment.TypeInfos.Info;
@@ -136,7 +135,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class QuteProcessor {
 
-    public static final DotName RESOURCE_PATH = Names.RESOURCE_PATH;
+    public static final DotName LOCATION = Names.LOCATION;
 
     private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
 
@@ -205,8 +204,8 @@ public class QuteProcessor {
     AdditionalBeanBuildItem additionalBeans() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
-                .addBeanClasses(EngineProducer.class, TemplateProducer.class, ContentTypes.class, ResourcePath.class,
-                        Template.class, TemplateInstance.class, CollectionTemplateExtensions.class,
+                .addBeanClasses(EngineProducer.class, TemplateProducer.class, ContentTypes.class, Template.class,
+                        TemplateInstance.class, CollectionTemplateExtensions.class,
                         MapTemplateExtensions.class, NumberTemplateExtensions.class, ConfigTemplateExtensions.class,
                         TimeTemplateExtensions.class)
                 .build();
@@ -245,7 +244,6 @@ public class QuteProcessor {
         Map<String, MethodInfo> checkedTemplateMethods = new HashMap<>();
 
         Set<AnnotationInstance> checkedTemplateAnnotations = new HashSet<>();
-        checkedTemplateAnnotations.addAll(index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE_OLD));
         checkedTemplateAnnotations.addAll(index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE));
 
         // Build a set of file paths for validation
@@ -1054,10 +1052,6 @@ public class QuteProcessor {
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
             if (injectionPoint.getRequiredType().name().equals(Names.TEMPLATE)) {
                 AnnotationInstance location = injectionPoint.getRequiredQualifier(Names.LOCATION);
-                if (location == null) {
-                    // Try the deprecated @ResourcePath
-                    location = injectionPoint.getRequiredQualifier(Names.RESOURCE_PATH);
-                }
                 String name;
                 if (location != null) {
                     name = location.value().asString();

@@ -35,4 +35,16 @@ public class PingPongResource {
     public String ping(@PathParam("message") String message) {
         return pingRestClient.pingpong(message);
     }
+
+    @GET
+    @Path("one")
+    public String one() {
+        return "OK";
+    }
+
+    @GET
+    @Path("two")
+    public String two() {
+        return "OK";
+    }
 }

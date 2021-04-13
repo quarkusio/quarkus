@@ -6,11 +6,13 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 import org.mockito.Mockito;
 
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
@@ -22,41 +24,52 @@ public class VertxHttpServerMetricsTest {
     final List<Pattern> NO_IGNORE_PATTERNS = Collections.emptyList();
     final Map<Pattern, String> NO_MATCH_PATTERNS = Collections.emptyMap();
 
+    Route currentRoute;
+    RoutingContext routingContext;
+    HttpRequestMetric requestMetric;
+    HttpServerRequest request;
+
+    @BeforeEach
+    public void init() {
+        requestMetric = new HttpRequestMetric("/irrelevant");
+
+        currentRoute = Mockito.mock(Route.class);
+        routingContext = Mockito.mock(RoutingContext.class);
+        request = Mockito.mock(HttpServerRequest.class);
+
+        Mockito.when(routingContext.request()).thenReturn(request);
+        Mockito.when(routingContext.currentRoute()).thenReturn(currentRoute);
+        Mockito.when(routingContext.get(VertxHttpServerMetrics.METRICS_CONTEXT)).thenReturn(routingContext);
+    }
+
     @Test
     public void testReturnPathFromHttpRequestPath() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/");
-        requestMetric.routingContext = Mockito.mock(RoutingContext.class);
-
-        Mockito.when(requestMetric.routingContext.get(HttpRequestMetric.HTTP_REQUEST_PATH))
-                .thenReturn("/item/{id}");
-
-        Assertions.assertEquals("/item/{id}", requestMetric.getHttpRequestPath());
+        // Emulate a JAX-RS or Servlet filter pre-determining the template path
+        requestMetric.setTemplatePath("/item/{id}");
+        Assertions.assertEquals("/item/{id}", requestMetric.applyTemplateMatching("/"));
     }
 
     @Test
     public void testReturnPathFromRoutingContext() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/");
-        requestMetric.routingContext = Mockito.mock(RoutingContext.class);
-        Route currentRoute = Mockito.mock(Route.class);
-
-        Mockito.when(requestMetric.routingContext.currentRoute()).thenReturn(currentRoute);
+        // Vertx route information collection, no web template
         Mockito.when(currentRoute.getPath()).thenReturn("/item");
+        Mockito.when(routingContext.mountPoint()).thenReturn("/");
+        requestMetric.routingContext = routingContext;
 
-        Assertions.assertEquals("/item", requestMetric.getHttpRequestPath());
+        // Return the value passed in from the parent class
+        Assertions.assertEquals("/item/abc", requestMetric.applyTemplateMatching("/item/abc"));
     }
 
     @Test
     public void testReturnGenericPathFromRoutingContext() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/");
-        requestMetric.routingContext = Mockito.mock(RoutingContext.class);
-        Route currentRoute = Mockito.mock(Route.class);
-
-        Mockito.when(requestMetric.routingContext.currentRoute()).thenReturn(currentRoute);
+        // Emulate a Vert.x Route containing templated values
         Mockito.when(currentRoute.getPath()).thenReturn("/item/:id");
+        Mockito.when(routingContext.mountPoint()).thenReturn("/");
+        requestMetric.routingContext = routingContext;
 
-        Assertions.assertEquals("/item/{id}", requestMetric.getHttpRequestPath());
+        // Should return the templated version of the path (based on the route definition)
+        Assertions.assertEquals("/item/{id}", requestMetric.applyTemplateMatching("/"));
         // Make sure conversion is cached
-        Assertions.assertEquals("/item/{id}", HttpRequestMetric.templatePath.get("/item/:id"));
+        Assertions.assertEquals("/item/{id}", HttpRequestMetric.vertxWebToUriTemplate.get("/item/:id"));
     }
-
 }

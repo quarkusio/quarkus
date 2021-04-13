@@ -24,14 +24,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import com.google.common.collect.Sets;
 
-import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Tag;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.devtools.testing.WrapperRunner;
+import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QuarkusCodestartRunIT extends PlatformAwareTestBase {
@@ -49,7 +50,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     }
 
     private Map<String, Object> getTestInputData(final Map<String, Object> override) {
-        return getTestInputData(getExtensionsCatalog(), override);
+        return QuarkusCodestartTesting.getRealTestInputData(getExtensionsCatalog(), override);
     }
 
     @Test

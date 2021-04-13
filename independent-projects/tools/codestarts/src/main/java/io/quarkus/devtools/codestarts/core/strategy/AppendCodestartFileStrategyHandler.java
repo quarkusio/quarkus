@@ -21,7 +21,8 @@ final class AppendCodestartFileStrategyHandler implements CodestartFileStrategyH
         final Path targetPath = targetDirectory.resolve(relativePath);
         checkTargetDoesNotExist(targetPath);
         createDirectories(targetPath);
-        final String content = codestartFiles.stream().map(TargetFile::getContent).collect(Collectors.joining("\n"));
+        final String content = codestartFiles.stream().map(TargetFile::getContent)
+                .collect(Collectors.joining(System.getProperty("line.separator")));
         writeFile(targetPath, content);
     }
 }

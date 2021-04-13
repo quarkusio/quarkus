@@ -16,7 +16,8 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-devtools</artifactId>
+            <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

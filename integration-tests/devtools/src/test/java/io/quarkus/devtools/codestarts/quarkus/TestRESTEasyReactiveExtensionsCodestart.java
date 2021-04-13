@@ -6,7 +6,7 @@ import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnliste
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.PlatformAwareTestBase;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.registry.catalog.Extension;
 
 public class TestRESTEasyReactiveExtensionsCodestart extends PlatformAwareTestBase {

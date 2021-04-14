@@ -129,7 +129,8 @@ public class PgPoolRecorder {
         if (dataSourceReactivePostgreSQLConfig.cachePreparedStatements.isPresent()) {
             log.warn(
                     "datasource.reactive.postgresql.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
-            pgConnectOptions.setCachePreparedStatements(dataSourceReactivePostgreSQLConfig.cachePreparedStatements.get());
+            pgConnectOptions
+                    .setCachePreparedStatements(dataSourceReactivePostgreSQLConfig.cachePreparedStatements.get());
         } else {
             pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
         }
@@ -155,6 +156,11 @@ public class PgPoolRecorder {
         pgConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
 
         pgConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
+
+        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
+            pgConnectOptions.setHostnameVerificationAlgorithm(
+                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
+        }
 
         return pgConnectOptions;
     }

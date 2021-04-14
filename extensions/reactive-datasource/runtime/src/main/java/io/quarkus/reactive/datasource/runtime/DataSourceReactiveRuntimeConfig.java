@@ -110,6 +110,12 @@ public class DataSourceReactiveRuntimeConfig {
     public Duration reconnectInterval = Duration.ofSeconds(1L);
 
     /**
+     * The hostname verification algorithm to use in case the server's identity should be checked.
+     */
+    @ConfigItem
+    public Optional<String> hostnameVerificationAlgorithm = Optional.empty();
+
+    /**
      * The maximum time a connection remains unused in the pool before it is closed.
      */
     @ConfigItem(defaultValueDocumentation = "no timeout")

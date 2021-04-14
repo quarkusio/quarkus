@@ -135,6 +135,14 @@ public class OidcCommonConfig {
             this.clientSecret = clientSecret;
         }
 
+        public Jwt getJwt() {
+            return jwt;
+        }
+
+        public void setJwt(Jwt jwt) {
+            this.jwt = jwt;
+        }
+
         /**
          * Supports the client authentication methods which involve sending a client secret.
          *
@@ -158,10 +166,16 @@ public class OidcCommonConfig {
             }
 
             /**
-             * The client secret
+             * The client secret value - it will be ignored if 'secret.key' is set
              */
             @ConfigItem
             public Optional<String> value = Optional.empty();
+
+            /**
+             * The Secret CredentialsProvider
+             */
+            @ConfigItem
+            public Provider provider = new Provider();
 
             /**
              * Authentication method.
@@ -184,6 +198,14 @@ public class OidcCommonConfig {
             public void setMethod(Method method) {
                 this.method = Optional.of(method);
             }
+
+            public Provider getSecretProvider() {
+                return provider;
+            }
+
+            public void setSecretProvider(Provider secretProvider) {
+                this.provider = secretProvider;
+            }
         }
 
         /**
@@ -201,6 +223,12 @@ public class OidcCommonConfig {
              */
             @ConfigItem
             public Optional<String> secret = Optional.empty();
+
+            /**
+             * If provided, indicates that JWT is signed using a secret key provided by Secret CredentialsProvider
+             */
+            @ConfigItem
+            public Provider secretProvider = new Provider();
 
             /**
              * If provided, indicates that JWT is signed using a private key in PEM or JWK format
@@ -258,6 +286,58 @@ public class OidcCommonConfig {
 
             public void setLifespan(int lifespan) {
                 this.lifespan = lifespan;
+            }
+
+            public Optional<String> getTokenKeyId() {
+                return tokenKeyId;
+            }
+
+            public void setTokenKeyId(String tokenKeyId) {
+                this.tokenKeyId = Optional.of(tokenKeyId);
+            }
+
+            public Provider getSecretProvider() {
+                return secretProvider;
+            }
+
+            public void setSecretProvider(Provider secretProvider) {
+                this.secretProvider = secretProvider;
+            }
+
+        }
+
+        /**
+         * CredentialsProvider which provides a client secret
+         */
+        @ConfigGroup
+        public static class Provider {
+
+            /**
+             * The CredentialsProvider name which should only be set if more than one CredentialsProvider is registered
+             */
+            @ConfigItem
+            public Optional<String> name = Optional.empty();
+
+            /**
+             * The CredentialsProvider client secret key
+             */
+            @ConfigItem
+            public Optional<String> key = Optional.empty();
+
+            public Optional<String> getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = Optional.of(name);
+            }
+
+            public Optional<String> getKey() {
+                return key;
+            }
+
+            public void setKey(String key) {
+                this.key = Optional.of(key);
             }
         }
     }

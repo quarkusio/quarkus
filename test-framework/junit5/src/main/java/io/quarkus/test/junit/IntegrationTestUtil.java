@@ -215,7 +215,7 @@ final class IntegrationTestUtil {
         Map<String, String> propertyMap = new HashMap<>();
         curatedApplication
                 .createAugmentor()
-                .performCustomBuild(NativeDevServicesDatasourceHandler.class.getName(), new BiConsumer<String, String>() {
+                .performCustomBuild(NativeDevServicesHandler.class.getName(), new BiConsumer<String, String>() {
                     @Override
                     public void accept(String s, String s2) {
                         propertyMap.put(s, s2);

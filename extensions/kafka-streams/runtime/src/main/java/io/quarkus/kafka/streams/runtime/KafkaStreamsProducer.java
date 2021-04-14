@@ -77,7 +77,7 @@ public class KafkaStreamsProducer {
         shutdown = false;
         // No producer for Topology -> nothing to do
         if (topology.isUnsatisfied()) {
-            LOGGER.debug("No Topology producer; Kafka Streams will not be started");
+            LOGGER.warn("No Topology producer; Kafka Streams will not be started");
             this.executorService = null;
             this.kafkaStreams = null;
             this.kafkaStreamsTopologyManager = null;

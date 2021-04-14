@@ -2,6 +2,8 @@ package io.quarkus.infinispan.client.runtime.graal;
 
 import java.util.concurrent.ExecutorService;
 
+import org.infinispan.client.hotrod.impl.transport.netty.DefaultTransportFactory;
+
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -15,17 +17,16 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  * 
  * @author William Burns
  */
-@Substitute
-@TargetClass(className = "org.infinispan.client.hotrod.impl.transport.netty.TransportHelper")
-final class SubstituteTransportHelper {
+@TargetClass(DefaultTransportFactory.class)
+final class SubstituteDefaultTransportFactory {
 
     @Substitute
-    static Class<? extends SocketChannel> socketChannel() {
+    public Class<? extends SocketChannel> socketChannelClass() {
         return NioSocketChannel.class;
     }
 
     @Substitute
-    static EventLoopGroup createEventLoopGroup(int maxExecutors, ExecutorService executorService) {
+    public EventLoopGroup createEventLoopGroup(int maxExecutors, ExecutorService executorService) {
         return new NioEventLoopGroup(maxExecutors, executorService);
     }
 }

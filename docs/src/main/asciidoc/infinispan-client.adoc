@@ -147,23 +147,6 @@ Here is an example of how the preceding classes should be changed:
     }
 ----
 
-.BigDecimalAdapter.java
-[source,java]
-----
-@ProtoAdapter(BigDecimal.class)
-public class BigDecimalAdapter {
-    @ProtoFactory
-    BigDecimal create(Double value) {
-        return BigDecimal.valueOf(value);
-    }
-
-    @ProtoField(number = 1, type = Type.DOUBLE, defaultValue = "0")
-    Double value(BigDecimal value) {
-        return value.doubleValue();
-    }
-}
-----
-
 If your classes have only mutable fields, then the `ProtoFactory` annotation
 is not required, assuming your class has a no arg constructor.
 
@@ -173,6 +156,10 @@ on it to specify configuration settings
 .BookContextInitializer.java
 [source,java]
 ----
+import org.infinispan.protostream.SerializationContextInitializer;
+import org.infinispan.protostream.annotations.AutoProtoSchemaBuilder;
+import org.infinispan.protostream.types.java.math.BigDecimalAdapter;
+
 @AutoProtoSchemaBuilder(includeClasses = { Book.class, Author.class, BigDecimalAdapter.class }, schemaPackageName = "book_sample")
 interface BookContextInitializer extends SerializationContextInitializer {
 }

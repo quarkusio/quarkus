@@ -179,9 +179,6 @@ class InfinispanClientProcessor {
 
         // This is required for netty to work properly
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
-        nativeImageConfig.produce(NativeImageConfigBuildItem.builder()
-                .addRuntimeInitializedClass("org.infinispan.client.hotrod.impl.transport.netty.TransportHelper")
-                .build());
         // We use reflection to have continuous queries work
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
                 "org.infinispan.client.hotrod.event.impl.ContinuousQueryImpl$ClientEntryListener"));

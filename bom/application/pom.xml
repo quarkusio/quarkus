@@ -133,8 +133,8 @@
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.19.0</assertj.version>
         <json-smart.version>2.3</json-smart.version>
-        <infinispan.version>12.0.1.Final</infinispan.version>
-        <infinispan.protostream.version>4.4.0.Alpha4</infinispan.protostream.version>
+        <infinispan.version>12.1.1.Final</infinispan.version>
+        <infinispan.protostream.version>4.4.0.Final</infinispan.protostream.version>
         <caffeine.version>2.9.0</caffeine.version>
         <netty.version>4.1.60.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
@@ -4594,6 +4594,11 @@
             <dependency>
                 <groupId>org.infinispan.protostream</groupId>
                 <artifactId>protostream-processor</artifactId>
+                <version>${infinispan.protostream.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.infinispan.protostream</groupId>
+                <artifactId>protostream-types</artifactId>
                 <version>${infinispan.protostream.version}</version>
             </dependency>
             <dependency>

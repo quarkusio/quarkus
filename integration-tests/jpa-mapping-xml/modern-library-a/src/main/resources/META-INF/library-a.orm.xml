@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings
+        xmlns="http://java.sun.com/xml/ns/persistence/orm"
+        version="2.0">
+
+    <description>Override Annotations...</description>
+
+    <entity class="io.quarkus.it.jpa.mapping.xml.modern.library_a.LibraryAEntity" metadata-complete="false">
+        <attributes>
+            <basic name="name">
+                <!-- Override the column name -->
+                <column name="name_a" />
+            </basic>
+        </attributes>
+    </entity>
+</entity-mappings>

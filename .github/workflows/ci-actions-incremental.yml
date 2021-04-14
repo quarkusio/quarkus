@@ -172,7 +172,7 @@ jobs:
     needs: build-jdk11
     timeout-minutes: 240
     env:
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+      MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
     strategy:
       fail-fast: false
       matrix:
@@ -253,7 +253,7 @@ jobs:
     needs: build-jdk11
     timeout-minutes: 180
     env:
-      MAVEN_OPTS: -Xmx1408m  -XX:MaxMetaspaceSize=1000m
+      MAVEN_OPTS: -Xmx1500m -XX:MaxMetaspaceSize=1g
 
     steps:
       - uses: actions/checkout@v2
@@ -301,6 +301,8 @@ jobs:
   linux-jvm-maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
@@ -356,6 +358,8 @@ jobs:
   windows-jdk11-jvm-maven-tests:
     name: Maven Tests - JDK 11 Windows
     runs-on: windows-latest
+    env:
+      MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
@@ -406,6 +410,9 @@ jobs:
   gradle-tests-jdk11-jvm:
     name: Gradle Tests - JDK 11 ${{matrix.os.family}}
     runs-on: ${{matrix.os.name}}
+    env:
+      # leave more space for the actual gradle execution (which is just wrapped by maven)
+      MAVEN_OPTS: -Xmx1g
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
@@ -657,6 +664,9 @@ jobs:
     name: Native Tests - ${{matrix.category}}
     needs: [build-jdk11, native-tests-read-json-matrix]
     runs-on: ubuntu-latest
+    env:
+      # leave more space for the actual native compilation and execution
+      MAVEN_OPTS: -Xmx1g
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     # Ignore the following YAML Schema error
@@ -727,6 +737,9 @@ jobs:
     name: Native Tests - Windows - ${{matrix.category}}
     needs: [build-jdk11, native-tests-read-json-matrix]
     runs-on: windows-latest
+    env:
+      # leave more space for the actual native compilation and execution
+      MAVEN_OPTS: -Xmx1g
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     # Ignore the following YAML Schema error

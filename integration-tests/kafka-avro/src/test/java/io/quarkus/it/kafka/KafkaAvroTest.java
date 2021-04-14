@@ -16,8 +16,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaTestResource.class)
-@QuarkusTestResource(SchemaRegistryTestResource.class)
+@QuarkusTestResource(KafkaAndSchemaRegistryTestResource.class)
 public class KafkaAvroTest {
 
     private static final String CONFLUENT_PATH = "/avro/confluent";
@@ -25,27 +24,39 @@ public class KafkaAvroTest {
 
     @Test
     public void testConfluentAvroProducer() {
-        KafkaConsumer<Integer, Pet> consumer = AvroKafkaCreator.createConfluentConsumer("test-avro-confluent",
+        KafkaConsumer<Integer, Pet> consumer = AvroKafkaCreator.createConfluentConsumer(
+                KafkaAndSchemaRegistryTestResource.getBootstrapServers(),
+                KafkaAndSchemaRegistryTestResource.getConfluentSchemaRegistryUrl(),
+                "test-avro-confluent",
                 "test-avro-confluent-producer");
         testAvroProducer(consumer, CONFLUENT_PATH);
     }
 
     @Test
     public void testConfluentAvroConsumer() {
-        KafkaProducer<Integer, Pet> producer = AvroKafkaCreator.createConfluentProducer("test-avro-confluent");
+        KafkaProducer<Integer, Pet> producer = AvroKafkaCreator.createConfluentProducer(
+                KafkaAndSchemaRegistryTestResource.getBootstrapServers(),
+                KafkaAndSchemaRegistryTestResource.getConfluentSchemaRegistryUrl(),
+                "test-avro-confluent-test");
         testAvroConsumer(producer, CONFLUENT_PATH, "test-avro-confluent-consumer");
     }
 
     @Test
     public void testApicurioAvroProducer() {
-        KafkaConsumer<Integer, Pet> consumer = AvroKafkaCreator.createApicurioConsumer("test-avro-apicurio",
+        KafkaConsumer<Integer, Pet> consumer = AvroKafkaCreator.createApicurioConsumer(
+                KafkaAndSchemaRegistryTestResource.getBootstrapServers(),
+                KafkaAndSchemaRegistryTestResource.getApicurioSchemaRegistryUrl(),
+                "test-avro-apicurio",
                 "test-avro-apicurio-producer");
         testAvroProducer(consumer, APICURIO_PATH);
     }
 
     @Test
     public void testApicurioAvroConsumer() {
-        KafkaProducer<Integer, Pet> producer = AvroKafkaCreator.createApicurioProducer("test-avro-apicurio");
+        KafkaProducer<Integer, Pet> producer = AvroKafkaCreator.createApicurioProducer(
+                KafkaAndSchemaRegistryTestResource.getBootstrapServers(),
+                KafkaAndSchemaRegistryTestResource.getApicurioSchemaRegistryUrl(),
+                "test-avro-apicurio-test");
         testAvroConsumer(producer, APICURIO_PATH, "test-avro-apicurio-consumer");
     }
 

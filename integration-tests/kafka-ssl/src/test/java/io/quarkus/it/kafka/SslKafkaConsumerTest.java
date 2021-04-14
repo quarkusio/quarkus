@@ -1,5 +1,6 @@
 package io.quarkus.it.kafka;
 
+import java.io.File;
 import java.util.Properties;
 
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -7,7 +8,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Assertions;
@@ -18,25 +19,21 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaSASLTestResource.class)
-public class SaslKafkaConsumerTest {
-
-    private static void addJaas(Properties props) {
-        props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
-        props.setProperty(SaslConfigs.SASL_MECHANISM, "PLAIN");
-        props.setProperty(SaslConfigs.SASL_JAAS_CONFIG,
-                "org.apache.kafka.common.security.plain.PlainLoginModule required "
-                        + "username=\"client\" "
-                        + "password=\"client-secret\";");
-    }
+@QuarkusTestResource(KafkaSSLTestResource.class)
+public class SslKafkaConsumerTest {
 
     public static Producer<Integer, String> createProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19094");
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, "sasl-test-producer");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, System.getProperty("bootstrap.servers"));
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "test-ssl-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        addJaas(props);
+        File tsFile = new File("src/test/resources/kafka-truststore.p12");
+        props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
+        props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, tsFile.getPath());
+        props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L");
+        props.setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PKCS12");
+        props.setProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
 
         return new KafkaProducer<>(props);
     }
@@ -44,8 +41,8 @@ public class SaslKafkaConsumerTest {
     @Test
     public void testReception() {
         Producer<Integer, String> consumer = createProducer();
-        consumer.send(new ProducerRecord<>("test-sasl-consumer", 1, "hi world"));
-        String string = RestAssured.when().get("/sasl").andReturn().asString();
+        consumer.send(new ProducerRecord<>("test-ssl-consumer", 1, "hi world"));
+        String string = RestAssured.when().get("/ssl").andReturn().asString();
         Assertions.assertEquals("hi world", string);
     }
 

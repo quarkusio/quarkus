@@ -14,13 +14,17 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class KafkaProducerManager {
 
-    public static Producer<Integer, String> createProducer() {
+    @ConfigProperty(name = "kafka.bootstrap.servers")
+    String bs;
+
+    public Producer<Integer, String> createProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "test");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());

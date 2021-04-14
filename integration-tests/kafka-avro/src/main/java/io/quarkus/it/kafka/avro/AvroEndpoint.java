@@ -2,6 +2,7 @@ package io.quarkus.it.kafka.avro;
 
 import java.time.Duration;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -20,29 +21,32 @@ import io.vertx.core.json.JsonObject;
 @Path("/avro")
 public class AvroEndpoint {
 
+    @Inject
+    AvroKafkaCreator creator;
+
     @GET
     @Path("/confluent")
     public JsonObject getConfluent() {
-        return get(AvroKafkaCreator.createConfluentConsumer("test-avro-confluent-consumer", "test-avro-confluent-consumer"));
+        return get(creator.createConfluentConsumer("test-avro-confluent-consumer", "test-avro-confluent-consumer"));
     }
 
     @POST
     @Path("/confluent")
     public void sendConfluent(Pet pet) {
-        KafkaProducer<Integer, Pet> p = AvroKafkaCreator.createConfluentProducer("test-avro-confluent");
+        KafkaProducer<Integer, Pet> p = creator.createConfluentProducer("test-avro-confluent");
         send(p, pet, "test-avro-confluent-producer");
     }
 
     @GET
     @Path("/apicurio")
     public JsonObject getApicurio() {
-        return get(AvroKafkaCreator.createApicurioConsumer("test-avro-apicurio-consumer", "test-avro-apicurio-consumer"));
+        return get(creator.createApicurioConsumer("test-avro-apicurio-consumer", "test-avro-apicurio-consumer"));
     }
 
     @POST
     @Path("/apicurio")
     public void sendApicurio(Pet pet) {
-        KafkaProducer<Integer, Pet> p = AvroKafkaCreator.createApicurioProducer("test-avro-apicurio");
+        KafkaProducer<Integer, Pet> p = creator.createApicurioProducer("test-avro-apicurio");
         send(p, pet, "test-avro-apicurio-producer");
     }
 

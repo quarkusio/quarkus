@@ -12,6 +12,12 @@
     <artifactId>quarkus-hibernate-reactive-deployment</artifactId>
     <name>Quarkus - Hibernate Reactive - Deployment</name>
 
+    <!-- Defaults, to simplify local testing -->
+    <properties>
+        <postgres.image>postgres:13.1</postgres.image>
+        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -144,7 +150,6 @@
                 </property>
             </activation>
             <properties>
-                <postgres.image>postgres:13.1</postgres.image>
                 <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
             </properties>
             <build>

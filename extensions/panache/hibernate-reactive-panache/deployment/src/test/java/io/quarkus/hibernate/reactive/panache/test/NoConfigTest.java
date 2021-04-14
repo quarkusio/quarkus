@@ -10,8 +10,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.datasource.devservices", "false")
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class));
 
     @Test
     public void testNoConfig() {

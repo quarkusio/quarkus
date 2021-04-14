@@ -40,7 +40,7 @@ jobs:
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
-          mvn -e -B --settings .github/mvn-settings.xml \
+          ./mvnw -e -B --settings .github/mvn-settings.xml \
             -DskipITs -Dno-format -Dinvoker.skip=true \
             -DretryFailedDeploymentCount=10 \
             clean deploy

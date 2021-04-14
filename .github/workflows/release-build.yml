@@ -27,7 +27,7 @@ jobs:
         run: mkdir -p $HOME/release/repository
       - name: Build and Test
         run: |
-          mvn --settings .github/mvn-settings.xml \
+          ./mvnw --settings .github/mvn-settings.xml \
             -B \
             -DskipITs -Dinvoker.skip=true \
             -Dmaven.repo.local=$HOME/release/repository \

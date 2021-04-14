@@ -52,10 +52,10 @@ jobs:
             ${{ runner.os }}-native-cron-
 
       - name: Build Quarkus
-        run: mvn -B install -DskipTests -DskipITs -Dformat.skip
+        run: ./mvnw -B install -DskipTests -DskipITs -Dformat.skip
 
       - name: Run integration tests in native
-        run: mvn -B --settings .github/mvn-settings.xml verify -f integration-tests/pom.xml --fail-at-end -Dno-format -Dtest-containers -Dstart-containers -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.2.0-java${{ matrix.java }} -pl '!io.quarkus:quarkus-integration-test-google-cloud-functions-http,!io.quarkus:quarkus-integration-test-google-cloud-functions,!io.quarkus:quarkus-integration-test-funqy-google-cloud-functions'
+        run: ./mvnw -B --settings .github/mvn-settings.xml verify -f integration-tests/pom.xml --fail-at-end -Dno-format -Dtest-containers -Dstart-containers -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.2.0-java${{ matrix.java }} -pl '!io.quarkus:quarkus-integration-test-google-cloud-functions-http,!io.quarkus:quarkus-integration-test-google-cloud-functions,!io.quarkus:quarkus-integration-test-funqy-google-cloud-functions'
 
       - name: Report
         if: always()

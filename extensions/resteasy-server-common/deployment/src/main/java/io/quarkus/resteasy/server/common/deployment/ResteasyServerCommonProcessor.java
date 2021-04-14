@@ -459,6 +459,7 @@ public class ResteasyServerCommonProcessor {
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("javax.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("java.lang"));
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("javax.inject"));
         return prefixes;
     }
 

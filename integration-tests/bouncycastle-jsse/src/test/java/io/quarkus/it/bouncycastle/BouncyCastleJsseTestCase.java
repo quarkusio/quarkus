@@ -19,7 +19,6 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -36,10 +35,6 @@ public class BouncyCastleJsseTestCase {
 
     @Test
     public void testListProviders() {
-        if (!JavaVersionUtil.isJava11OrHigher()) {
-            LOG.trace("Skipping BouncyCastleJsseITCase, Java version is older than 11");
-            return;
-        }
         doTestListProviders();
         checkLog(false);
     }

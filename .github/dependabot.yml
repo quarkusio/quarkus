@@ -42,8 +42,6 @@ updates:
       # Kafka
       - dependency-name: org.apache.kafka:*
       - dependency-name: org.apache.zookeeper:zookeeper
-      # Debezium
-      - dependency-name: io.debezium:debezium-core
       # Scala
       - dependency-name: org.scala-lang:*
       - dependency-name: net.alchim31.maven:scala-maven-plugin

@@ -7,7 +7,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -728,8 +727,8 @@ public class JarResultBuildStep {
             if (log.isDebugEnabled()) {
                 processBuilder.inheritIO();
             } else {
-                processBuilder.redirectError(NULL_FILE);
-                processBuilder.redirectOutput(NULL_FILE);
+                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD.file())
+                        .redirectOutput(ProcessBuilder.Redirect.DISCARD.file());
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
@@ -1313,9 +1312,4 @@ public class JarResultBuildStep {
             return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
         }
     }
-
-    // copied from Java 9
-    // TODO remove when we move to Java 11
-
-    private static final File NULL_FILE = new File(SystemUtils.IS_OS_WINDOWS ? "NUL" : "/dev/null");
 }

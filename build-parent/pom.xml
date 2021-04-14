@@ -319,7 +319,7 @@
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
                             <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
                         </systemPropertyVariables>
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m</argLine> <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m</argLine> <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
                         <trimStackTrace>false</trimStackTrace>
                     </configuration>

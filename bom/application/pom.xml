@@ -5027,7 +5027,7 @@
                         <artifactId>checker-qual</artifactId>
                     </exclusion>
                     <exclusion>
-    	                <groupId>com.google.code.findbugs</groupId>
+                        <groupId>com.google.code.findbugs</groupId>
                         <artifactId>jsr305</artifactId>
                     </exclusion>
                 </exclusions>
@@ -5205,7 +5205,6 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-platform-bom-maven-plugin</artifactId>
-                <version>0.0.9</version>
                 <executions>
                     <execution>
                         <phase>process-resources</phase>

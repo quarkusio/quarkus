@@ -151,10 +151,15 @@ public class NativeTestExtension
         }
     }
 
-    private void throwBootFailureException() {
+    private void throwBootFailureException() throws Exception {
         if (firstException != null) {
             Throwable throwable = firstException;
             firstException = null;
+
+            if (throwable instanceof Exception) {
+                throw (Exception) throwable;
+            }
+
             throw new RuntimeException(throwable);
         } else {
             throw new TestAbortedException("Boot failed");

@@ -19,6 +19,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.annotations.Recorder;
+import io.undertow.websockets.UndertowContainerProvider;
 import io.undertow.websockets.WebSocketDeploymentInfo;
 import io.undertow.websockets.util.ContextSetupHandler;
 import io.undertow.websockets.util.ObjectFactory;
@@ -107,6 +108,7 @@ public class WebsocketRecorder {
 
     public Handler<RoutingContext> createHandler(BeanContainer beanContainer, Supplier<EventLoopGroup> eventLoopGroupSupplier,
             WebSocketDeploymentInfo info) throws DeploymentException {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
         ManagedContext requestContext = Arc.container().requestContext();
         VertxServerWebSocketContainer container = new VertxServerWebSocketContainer(new ObjectIntrospecter() {
             @Override
@@ -137,11 +139,22 @@ public class WebsocketRecorder {
                         return new Action<T, C>() {
                             @Override
                             public T call(C context) throws Exception {
-                                requestContext.activate();
+                                ClassLoader old = Thread.currentThread().getContextClassLoader();
+                                Thread.currentThread().setContextClassLoader(cl);
+                                boolean required = !requestContext.isActive();
+                                if (required) {
+                                    requestContext.activate();
+                                }
                                 try {
                                     return action.call(context);
                                 } finally {
-                                    requestContext.terminate();
+                                    try {
+                                        if (required) {
+                                            requestContext.terminate();
+                                        }
+                                    } finally {
+                                        Thread.currentThread().setContextClassLoader(old);
+                                    }
                                 }
                             }
                         };
@@ -159,6 +172,7 @@ public class WebsocketRecorder {
         for (ServerEndpointConfig i : info.getProgramaticEndpoints()) {
             container.addEndpoint(i);
         }
+        UndertowContainerProvider.setDefaultContainer(container);
         return new VertxWebSocketHandler(container, info);
     }
 

@@ -640,6 +640,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * Expected issuer 'iss' claim value.
+         * Note this property overrides the `issuer` property which may be set in OpenId Connect provider's well-known
+         * configuration.
+         * If the `iss` claim value varies depending on the host/IP address or tenant id of the provider then you may skip the
+         * issuer verification by setting this property to 'any' but it should be done only when other options (such as
+         * configuring
+         * the provider to use the fixed `iss` claim value) are not possible.
          */
         @ConfigItem
         public Optional<String> issuer = Optional.empty();

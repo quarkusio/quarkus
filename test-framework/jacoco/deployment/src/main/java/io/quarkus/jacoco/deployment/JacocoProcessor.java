@@ -57,8 +57,13 @@ public class JacocoProcessor {
         Files.deleteIfExists(Paths.get(dataFile));
 
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
+        Set<String> seen = new HashSet<>();
         for (ClassInfo i : indexBuildItem.getIndex().getKnownClasses()) {
             String className = i.name().toString();
+            if (seen.contains(className)) {
+                continue;
+            }
+            seen.add(className);
             transformers.produce(
                     new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
                             .setCacheable(true)

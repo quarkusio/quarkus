@@ -1,6 +1,8 @@
 package io.quarkus.mutiny.runtime;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -15,7 +17,19 @@ public class MutinyInfrastructure {
     public static final String VERTX_EVENT_LOOP_THREAD_PREFIX = "vert.x-eventloop-thread-";
 
     public void configureMutinyInfrastructure(ExecutorService exec) {
-        Infrastructure.setDefaultExecutor(exec);
+        Infrastructure.setDefaultExecutor(new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                try {
+                    exec.execute(command);
+                } catch (RejectedExecutionException e) {
+                    if (!exec.isShutdown() && !exec.isTerminated()) {
+                        throw e;
+                    }
+                    // Ignore the failure - the application has been shutdown.
+                }
+            }
+        });
     }
 
     public void configureDroppedExceptionHandlerAndThreadBlockingChecker() {

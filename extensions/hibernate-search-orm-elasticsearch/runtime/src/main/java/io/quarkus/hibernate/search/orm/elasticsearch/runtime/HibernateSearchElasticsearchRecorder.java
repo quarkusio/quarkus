@@ -139,8 +139,8 @@ public class HibernateSearchElasticsearchRecorder {
         public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
                 BiConsumer<String, Object> propertyCollector) {
             Version graalVMVersion = Version.getCurrent();
-            boolean isGraalVM20OrBelow = !graalVMVersion.isSnapshot() // isSnapshot() will be true on OpenJDK
-                    && graalVMVersion.compareTo(GRAAL_VM_VERSION_21) < 0;
+            final boolean isAOT = Boolean.getBoolean("com.oracle.graalvm.isaot");
+            boolean isGraalVM20OrBelow = isAOT && graalVMVersion.compareTo(GRAAL_VM_VERSION_21) < 0;
             HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(metadata, bootstrapContext)
                     .valueReadHandleFactory(
                             // GraalVM 20 or below doesn't support method handles

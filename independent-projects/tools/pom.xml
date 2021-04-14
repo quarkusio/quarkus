@@ -46,7 +46,7 @@
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
         <junit.version>5.7.1</junit.version>
         <commons-compress.version>1.20</commons-compress.version>
-        <jboss-logging.version>3.3.2.Final</jboss-logging.version>
+        <jboss-logging.version>3.4.1.Final</jboss-logging.version>
         <maven-core.version>3.6.3</maven-core.version>
         <mockito.version>3.9.0</mockito.version>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>

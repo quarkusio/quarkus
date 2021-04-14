@@ -15,10 +15,6 @@
     <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-
         <!-- Maven plugin versions -->
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
@@ -108,8 +104,6 @@
         <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
         <protoc.version>3.14.0</protoc.version> <!--keep in sync with the BOM-->
         <grpc.version>1.35.0</grpc.version> <!--keep in sync with the BOM -->
-
-        <boring-ssl.version>2.0.36.Final</boring-ssl.version>
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
@@ -257,12 +251,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-tcnative-boringssl-static</artifactId>
-                <scope>test</scope>
-                <version>${boring-ssl.version}</version>
-            </dependency>            
-            <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>
                 <version>${project.version}</version>
@@ -381,6 +369,9 @@
                             <configuration>
                                 <rules>
                                     <dependencyConvergence/>
+                                    <requireJavaVersion>
+                                        <version>[11,)</version>
+                                    </requireJavaVersion>
                                     <requireMavenVersion>
                                         <version>${supported-maven-versions}</version>
                                     </requireMavenVersion>
@@ -604,17 +595,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>jdk-8-classpath</id>
-            <activation>
-                <!-- activate this on any JDK from 9 onwards -->
-                <jdk>[9,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>8</maven.compiler.release>
-            </properties>
-        </profile>
-
         <profile>
             <id>format</id>
             <activation>

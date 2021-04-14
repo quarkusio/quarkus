@@ -21,8 +21,9 @@
     </licenses>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.release>11</maven.compiler.release>
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.6.3</proposed-maven-version>
@@ -351,16 +352,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>jdk-8-classpath</id>
-            <activation>
-                <!-- activate this on any JDK from 9 onwards -->
-                <jdk>[9,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>8</maven.compiler.release>
-            </properties>
-        </profile>
         <profile>
             <id>quick-build</id>
             <activation>

@@ -149,6 +149,11 @@ public class DB2PoolRecorder {
 
         connectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
 
+        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
+            connectOptions.setHostnameVerificationAlgorithm(
+                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
+        }
+
         return connectOptions;
     }
 }

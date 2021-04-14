@@ -1,0 +1,669 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Mapping configuration to objects
+
+include::./attributes.adoc[]
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:toc:
+
+With config mappings it is possible to group multiple configuration properties in a single interface that
+share the same prefix.
+
+[[config-mappings]]
+== `@ConfigMapping`
+
+A config mapping requires an interface with minimal metadata configuration and annotated with the
+`@io.smallrye.config.ConfigMapping` annotation.
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+interface Server {
+    String host();
+
+    int port();
+}
+----
+
+The `Server` interface is able to map configuration properties with the name `server.host` into the `Server.host()`
+method and `server.port` into `Server.port()` method. The configuration property name to look up is built from the
+prefix, and the method name with `.` (dot) as the separator.
+
+NOTE: If a mapping fails to match a configuration property a `NoSuchElementException` is thrown, unless the mapped
+element is an `Optional`.
+
+=== Retrieval
+
+A config mapping interface can be injected into any CDI aware bean:
+
+[source,java]
+----
+class BusinessBean {
+    @Inject
+    Server server;
+
+    public void businessMethod() {
+        String host = server.host();
+    }
+}
+----
+
+In non-CDI contexts, use the API `io.smallrye.config.SmallRyeConfig#getConfigMapping` to retrieve the config mapping
+instance:
+
+[source,java]
+----
+SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+Server server = config.getConfigMapping(Server.class);
+----
+
+=== Nested groups
+
+A nested mapping provides a way to subgroup other config properties:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+public interface Server {
+    String host();
+
+    int port();
+
+    Log log();
+
+    interface Log {
+        boolean enabled();
+
+        String suffix();
+
+        boolean rotate();
+    }
+}
+----
+
+.application.properties
+[source,properties]
+----
+server.host=localhost
+server.port=8080
+server.log.enabled=true
+server.log.suffix=.log
+server.log.rotate=false
+----
+
+The method name of a mapping group acts as sub-namespace to the configurations properties.
+
+=== Overriding property names
+
+==== `@WithName`
+
+If a method name, or a property name do not match with each other, the `@WithName` annotation can override the method
+name mapping and use the name supplied in the annotation:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+interface Server {
+    @WithName("name")
+    String host();
+
+    int port();
+}
+----
+
+.application.properties
+[source,properties]
+----
+server.name=localhost
+server.port=8080
+----
+
+==== `@WithParentName`
+
+The `@WithParent` annotation allows to configurations mapping to inherit its container name, simplifying the
+configuration property name required to match the mapping:
+
+[source,java]
+----
+interface Server {
+    @WithParentName
+    ServerHostAndPort hostAndPort();
+
+    @WithParentName
+    ServerInfo info();
+}
+
+interface ServerHostAndPort {
+    String host();
+
+    int port();
+}
+
+interface ServerInfo {
+    String name();
+}
+----
+
+.application.properties
+[source,properties]
+----
+server.host=localhost
+server.port=8080
+server.name=konoha
+----
+
+Without the `@WithParentName` the method `name()` requires the configuration property `server.info.name`. Because we use
+`@WithParentName`, the `info()` mapping will inherit the parent name from `Server` and `name()` maps to `server.name`
+instead.
+
+==== NamingStrategy
+
+Method names in camelCase map to kebab-case property names:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+interface Server {
+    String theHost();
+
+    int thePort();
+}
+----
+
+.application.properties
+[source,properties]
+----
+server.the-host=localhost
+server.the-port=8080
+----
+
+The mapping strategy can be adjusted by setting `namingStrategy` value in the `@ConfigMapping` annotation:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server", namingStrategy = ConfigMapping.NamingStrategy.VERBATIM)
+public interface ServerVerbatimNamingStrategy {
+    String theHost();
+
+    int thePort();
+}
+----
+
+.application.properties
+[source,properties]
+----
+server.theHost=localhost
+server.thePort=8080
+----
+
+The `@ConfigMapping` annotation support the following naming stategies:
+
+- `KEBAB_CASE` (default) - The method name is derived by replacing case changes with a dash to map the configuration property.
+- `VERBATIM` - The method name is used as is to map the configuration property.
+- `SNAKE_CASE` - The method name is derived by replacing case changes with an underscore to map the configuration property.
+
+=== Conversions
+
+A config mapping class support automatic conversions of all types available for conversion in `Config`:
+
+[source,java]
+----
+@ConfigMapping
+public interface SomeTypes {
+    @WithName("int")
+    int intPrimitive();
+
+    @WithName("int")
+    Integer intWrapper();
+
+    @WithName("long")
+    long longPrimitive();
+
+    @WithName("long")
+    Long longWrapper();
+
+    @WithName("float")
+    float floatPrimitive();
+
+    @WithName("float")
+    Float floatWrapper();
+
+    @WithName("double")
+    double doublePrimitive();
+
+    @WithName("double")
+    Double doubleWrapper();
+
+    @WithName("char")
+    char charPrimitive();
+
+    @WithName("char")
+    Character charWrapper();
+
+    @WithName("boolean")
+    boolean booleanPrimitive();
+
+    @WithName("boolean")
+    Boolean booleanWrapper();
+}
+----
+
+.application.properties
+[source,properties]
+----
+int=9
+long=9999999999
+float=99.9
+double=99.99
+char=c
+boolean=true
+----
+
+This is also valid for `Optional` and friends:
+
+[source,java]
+----
+@ConfigMapping
+public interface Optionals {
+    Optional<Server> server();
+
+    Optional<String> optional();
+
+    @WithName("optional.int")
+    OptionalInt optionalInt();
+
+    interface Server {
+        String host();
+
+        int port();
+    }
+}
+----
+
+In this case, the mapping won't fail if there are not configuration properties to match the mapping.
+
+==== `@WithConverter`
+
+The `@WithConverter` annotation provides a way to set a `Converter` to use in a specific mapping:
+
+[source,java]
+----
+@ConfigMapping
+public interface Converters {
+    @WithConverter(FooBarConverter.class)
+    String foo();
+}
+
+public static class FooBarConverter implements Converter<String> {
+    @Override
+    public String convert(final String value) {
+        return "bar";
+    }
+}
+----
+
+.application.properties
+[source,properties]
+----
+foo=foo
+----
+
+A call to `Converters.foo()` results in the value `bar`.
+
+==== Collections ====
+
+A config mapping is also able to map collections types `List` and `Set`:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+public interface ServerCollections {
+    Set<Environment> environments();
+
+    interface Environment {
+        String name();
+
+        List<App> apps();
+
+        interface App {
+            String name();
+
+            List<String> services();
+
+            Optional<List<String>> databases();
+        }
+    }
+}
+----
+
+.application.properties
+[source,properties]
+----
+server.environments[0].name=dev
+server.environments[0].apps[0].name=rest
+server.environments[0].apps[0].services=bookstore,registration
+server.environments[0].apps[0].databases=pg,h2
+server.environments[0].apps[1].name=batch
+server.environments[0].apps[1].services=stock,warehouse
+----
+
+The `List` or `Set` mappings can use xref:config-reference.adoc#indexed-properties[indexed properties] to map
+configuration values in mapping groups. For collection with simple element types like `String`, their configuration
+value is a comma separated string.
+
+==== Maps ====
+
+A config mapping is also able to map a `Map`:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+public interface Server {
+    String host();
+
+    int port();
+
+    Map<String, String> form();
+}
+----
+
+.application.properties
+[source,properties]
+----
+server.host=localhost
+server.port=8080
+server.form.login-page=login.html
+server.form.error-page=error.html
+server.form.landing-page=index.html
+----
+
+The configuration property needs to specify an additional name to act as the key. In this case the `form()` `Map` will
+contain three elements with the keys `login-page`, `error-page` and `landing-page`.
+
+=== Defaults
+
+The `@WithDefault` annotation allows to set a default property into a mapping (and prevent and error if the
+configuration value is not available in any `ConfigSource`):
+
+[source,java]
+----
+public interface Defaults {
+    @WithDefault("foo")
+    String foo();
+
+    @WithDefault("bar")
+    String bar();
+}
+----
+
+No configuration properties required. The `Defaults.foo()` will return the value `foo` and `Defaults.bar()` will return
+thevalue `bar`.
+
+[[config-properties]]
+== [.line-through]#`@ConfigProperties`# (Deprecated)
+
+IMPORTANT: This feature will be removed soon, please update your code base and use `@ConfigMapping` instead.
+
+The `@io.quarkus.arc.config.ConfigProperties` annotation is able to group multiple related configuration values in its
+own class:
+
+[source,java]
+----
+package org.acme.config;
+
+import io.quarkus.arc.config.ConfigProperties;
+import java.util.Optional;
+
+@ConfigProperties(prefix = "greeting") <1>
+public class GreetingConfiguration {
+
+    private String message;
+    private String suffix = "!"; <2>
+    private Optional<String> name;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
+    }
+
+    public Optional<String> getName() {
+        return name;
+    }
+
+    public void setName(Optional<String> name) {
+        this.name = name;
+    }
+}
+----
+<1> `prefix` is optional. If not set then the prefix to be used will be determined by the class name. In this case it
+would still be `greeting` (since the `Configuration` suffix is removed). If the class were named
+`GreetingExtraConfiguration` then the resulting default prefix would be `greeting-extra`.
+<2> `!` will be the default value if `greeting.suffix` is not set.
+
+Inject the `GreetingResource` with CDI `@Inject`:
+
+[source,java]
+----
+@Inject
+GreetingConfiguration greetingConfiguration;
+----
+
+Another alternative style provided by Quarkus is to create `GreetingConfiguration` as an interface:
+
+[source,java]
+----
+package org.acme.config;
+
+import io.quarkus.arc.config.ConfigProperties;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import java.util.Optional;
+
+@ConfigProperties(prefix = "greeting")
+public interface GreetingConfiguration {
+
+    @ConfigProperty(name = "message") <1>
+    String message();
+
+    @ConfigProperty(defaultValue = "!")
+    String getSuffix(); <2>
+
+    Optional<String> getName(); <3>
+}
+----
+<1> The `@ConfigProperty` annotation is needed because the name of the configuration property that the method
+corresponds does not follow the getter method naming conventions.
+<2> In this case since `name` is not set, the corresponding property will be `greeting.suffix`.
+<3> It is unnecessary to specify the `@ConfigProperty` annotation because the method name follows the getter method
+naming conventions (`greeting.name` being the corresponding property) and no default value is required.
+
+When using `@ConfigProperties` on a class or an interface, if the value of one of its fields is not provided, the
+application startup will fail, and a `javax.enterprise.inject.spi.DeploymentException` will be thrown. This does not
+apply to `Optional` fields and fields with a default value.
+
+=== Additional notes on @ConfigProperties
+
+When using a regular class annotated with `@ConfigProperties` the class doesn't necessarily have to declare getters and
+setters. Having simple public non-final fields is valid as well.
+
+Furthermore, the configuration classes support nested object configuration. Suppose there was a need to have an extra
+layer of greeting configuration named `content` that would contain a few fields:
+
+[source,java]
+----
+@ConfigProperties(prefix = "greeting")
+public class GreetingConfiguration {
+
+    public String message;
+    public String suffix = "!";
+    public Optional<String> name;
+    public ContentConfig content; <1>
+
+    public static class ContentConfig {
+        public Integer prizeAmount;
+        public List<String> recipients;
+    }
+}
+----
+<1> The name of the field (not the class name) will determine the name of the properties that are bound to the object.
+
+Setting the properties would occur in the normal manner:
+
+.application.properties
+[source,properties]
+----
+greeting.message = hello
+greeting.name = quarkus
+greeting.content.prize-amount=10
+greeting.content.recipients=Jane,John
+----
+
+Furthermore, classes annotated with `@ConfigProperties` can be annotated with Bean Validation annotations:
+
+[source,java]
+----
+@ConfigProperties(prefix = "greeting")
+public class GreetingConfiguration {
+
+    @Size(min = 20)
+    public String message;
+    public String suffix = "!";
+
+}
+----
+
+WARNING: For validation to work, the `quarkus-hibernate-validator` extension is required.
+
+=== Using same ConfigProperties with different prefixes
+
+Quarkus also supports the use of the same `@ConfigProperties` object with different prefixes for each injection point
+using the `io.quarkus.arc.config.@ConfigPrefix` annotation. If `GreetingConfiguration` from above needs to be used for
+both the `greeting` prefix and the `other` prefix:
+
+[source,java]
+----
+@ConfigProperties(prefix = "greeting")
+public class GreetingConfiguration {
+
+    @Size(min = 20)
+    public String message;
+    public String suffix = "!";
+
+}
+----
+
+[source,java]
+----
+@ApplicationScoped
+public class SomeBean {
+
+    @Inject <1>
+    GreetingConfiguration greetingConfiguration;
+
+    @ConfigPrefix("other") <2>
+    GreetingConfiguration otherConfiguration;
+
+}
+----
+<1> At this injection point `greetingConfiguration` will use the `greeting` prefix since that is what has been defined
+on `@ConfigProperties`.
+<2> At this injection point `otherConfiguration` will use the `other` prefix from `@ConfigPrefix` instead of the
+`greeting` prefix. Notice that in this case `@Inject` is not required.
+
+=== Using a list of objects
+
+In certain cases it might be necessary to support complex configuration structures that use a list of objects:
+
+[source,java]
+----
+@ConfigProperties(prefix = "complex")
+public class ComplexConfiguration {
+    public String name;
+    public String user;
+    public String password;
+    public List<Nested> inputs;
+    public List<Nested> outputs;
+
+    public static class Nested {
+        public String user;
+        public String password;
+    }
+}
+----
+
+Support for such use cases is only available when using YAML configuration with the `quarkus-config-yaml` extension. A
+corresponding example xref:config-yaml.adoc[YAML] configuration could be:
+
+`application.yaml`
+[source,yaml]
+----
+complex:
+  name: defaultName
+  user: defaultUser
+  password: defaultPassword
+  inputs:
+    - user: user
+      password: secret
+    - user: otheruser
+      password: secret2
+  outputs:
+    - user: someuser
+      password: asecret
+    - user: someotheruser
+      password: anothersecret
+----
+
+WARNING: A limitation of such configuration is that the types used as the generic types of the lists need to be classes
+and not interfaces.
+
+=== Combining ConfigProperties with build time conditions
+
+Quarkus allows you to define conditions evaluated at build time (`@IfBuildProfile`, `@UnlessBuildProfile`,
+`@IfBuildProperty` and `@UnlessBuildProperty`) to enable or not the annotations `@ConfigProperties` and `@ConfigPrefix`
+which gives you a very flexible way to map your configuration.
+
+Let's assume that the configuration of a service is mapped thanks to a `@ConfigProperties` and you don't need this part
+of the configuration for your tests as it will be mocked, in that case you can define a build time condition like in
+the next example:
+
+`ServiceConfiguration.java`
+[source,java]
+----
+@UnlessBuildProfile("test") <1>
+@ConfigProperties
+public class ServiceConfiguration {
+    public String user;
+    public String password;
+}
+----
+<1> The annotation `@ConfigProperties` is considered if and only if the active profile is not `test`.
+
+`SomeBean.java`
+[source,java]
+----
+@ApplicationScoped
+public class SomeBean {
+
+    @Inject
+    Instance<ServiceConfiguration> serviceConfiguration; <1>
+
+}
+----
+<1> As the configuration of the service could be missing, we need to use `Instance<ServiceConfiguration>` as type at
+the injection point.

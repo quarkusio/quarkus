@@ -25,7 +25,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <!-- Versions -->
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
-        <jboss-logging.version>3.3.2.Final</jboss-logging.version>
+        <jboss-logging.version>3.4.1.Final</jboss-logging.version>
         <junit.jupiter.version>5.7.1</junit.jupiter.version>
         <maven-core.version>3.6.3</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.3.4</sisu.version><!-- Keep in sync with maven-core.version -->

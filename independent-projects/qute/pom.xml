@@ -37,7 +37,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <version.junit>5.7.1</version.junit>
         <version.gizmo>1.0.7.Final</version.gizmo>
-        <version.jboss-logging>3.3.2.Final</version.jboss-logging>
+        <version.jboss-logging>3.4.1.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
         <version.smallrye-mutiny>0.15.0</version.smallrye-mutiny>

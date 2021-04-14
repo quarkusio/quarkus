@@ -1,8 +1,12 @@
 package io.quarkus.redis.client.runtime;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.Set;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.runtime.RedisConfig.RedisConfiguration;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.redis.client.RedisClientType;
@@ -14,20 +18,25 @@ public class RedisClientUtil {
     public static RedisOptions buildOptions(RedisConfiguration redisConfig) {
         RedisOptions options = new RedisOptions();
         options.setType(redisConfig.clientType);
+        Set<URI> hosts = Collections.emptySet();
+
+        if (redisConfig.hosts.isPresent()) {
+            hosts = redisConfig.hosts.get();
+        } else if (redisConfig.hostsProviderName.isPresent()) {
+            RedisHostsProvider hostsProvider = findProvider(redisConfig.hostsProviderName.get());
+            hosts = hostsProvider.getHosts();
+        }
 
         if (RedisClientType.STANDALONE == redisConfig.clientType) {
-            if (redisConfig.hosts.isPresent() && redisConfig.hosts.get().size() > 1) {
+            if (hosts.size() > 1) {
                 throw new ConfigurationException("Multiple hosts supplied for non clustered configuration");
             }
         }
 
-        if (redisConfig.hosts.isPresent()) {
-            Set<URI> hosts = redisConfig.hosts.get();
-            for (URI host : hosts) {
-                options.addConnectionString(host.toString());
-            }
-
+        for (URI host : hosts) {
+            options.addConnectionString(host.toString());
         }
+
         options.setMaxNestedArrays(redisConfig.maxNestedArrays);
         options.setMaxWaitingHandlers(redisConfig.maxWaitingHandlers);
         options.setMaxPoolSize(redisConfig.maxPoolSize);
@@ -59,5 +68,18 @@ public class RedisClientUtil {
 
     public static RedisConfiguration getConfiguration(RedisConfig config, String name) {
         return isDefault(name) ? config.defaultClient : config.additionalRedisClients.get(name);
+    }
+
+    public static RedisHostsProvider findProvider(String name) {
+        ArcContainer container = Arc.container();
+        RedisHostsProvider hostsProvider = name != null
+                ? (RedisHostsProvider) container.instance(name).get()
+                : container.instance(RedisHostsProvider.class).get();
+
+        if (hostsProvider == null) {
+            throw new RuntimeException("unable to find redis host provider named: " + (name == null ? "default" : name));
+        }
+
+        return hostsProvider;
     }
 }

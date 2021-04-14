@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
+import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.quarkus.redis.client.runtime.MutinyRedis;
 import io.quarkus.redis.client.runtime.MutinyRedisAPI;
@@ -51,6 +52,14 @@ public class RedisClientProcessor {
     @BuildStep
     ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
         return new ExtensionSslNativeSupportBuildItem(Feature.REDIS_CLIENT.getName());
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem registerAdditionalBeans() {
+        return new AdditionalBeanBuildItem.Builder()
+                .setUnremovable()
+                .addBeanClass(RedisHostsProvider.class)
+                .build();
     }
 
     @BuildStep

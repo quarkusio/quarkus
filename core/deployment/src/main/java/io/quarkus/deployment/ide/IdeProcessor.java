@@ -1,8 +1,6 @@
 package io.quarkus.deployment.ide;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,7 +14,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -24,7 +21,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.runtime.util.JavaVersionUtil;
 
 public class IdeProcessor {
 
@@ -183,40 +179,17 @@ public class IdeProcessor {
 
         /**
          * Returns a list of running processes
-         * Only works for Java 11+
          */
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         public static List<ProcessInfo> runningProcesses() {
-            if (!JavaVersionUtil.isJava11OrHigher()) {
-                return Collections.emptyList();
-            }
-            // we can't use ProcessHandle directly as it is Java 9+, so we need to do reflection to the get the info we need
-            try {
-                Class processHandlerClass = Class.forName("java.lang.ProcessHandle");
-                Method allProcessesMethod = processHandlerClass.getMethod("allProcesses");
-                Method processHandleInfoMethod = processHandlerClass.getMethod("info");
-                Class processHandleInfoClass = Class.forName("java.lang.ProcessHandle$Info");
-                Method processHandleInfoCommandMethod = processHandleInfoClass.getMethod("command");
-                Method processHandleInfoArgumentsMethod = processHandleInfoClass.getMethod("arguments");
-                Stream<Object> allProcessesResult = (Stream<Object>) allProcessesMethod.invoke(null);
-                List<ProcessInfo> result = new ArrayList<>();
-                allProcessesResult.forEach(o -> {
-                    try {
-                        Object processHandleInfo = processHandleInfoMethod.invoke(o);
-                        Optional<String> command = (Optional<String>) processHandleInfoCommandMethod.invoke(processHandleInfo);
-                        if (command.isPresent()) {
-                            Optional<String[]> arguments = (Optional<String[]>) processHandleInfoArgumentsMethod
-                                    .invoke(processHandleInfo);
-                            result.add(new ProcessInfo(command.get(), arguments.orElse(null)));
-                        }
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-                return result;
-            } catch (Exception e) {
-                throw new RuntimeException("Unable to determine running IDE processes", e);
-            }
+            List<ProcessInfo> result = new ArrayList<>();
+            ProcessHandle.allProcesses().forEach(p -> {
+                ProcessHandle.Info info = p.info();
+                Optional<String> command = info.command();
+                if (command.isPresent()) {
+                    result.add(new ProcessInfo(command.get(), info.arguments().orElse(null)));
+                }
+            });
+            return result;
         }
     }
 

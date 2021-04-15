@@ -16,7 +16,7 @@
     <description>Dependency management for integration tests. Importable by third party extension developers.</description>
 
     <properties>
-        <testcontainers.version>1.15.2</testcontainers.version>
+        <testcontainers.version>1.15.3</testcontainers.version>
         <strimzi-test-container.version>0.22.1</strimzi-test-container.version>
     </properties>
 

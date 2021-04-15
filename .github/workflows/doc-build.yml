@@ -46,7 +46,7 @@ jobs:
           key: q2maven-doc-${{ steps.get-date.outputs.date }}
       - name: Build
         run: |
-          mvn -Dquickly-ci -B --settings .github/mvn-settings.xml install
+          ./mvnw -Dquickly-ci -B --settings .github/mvn-settings.xml install
       - name: Build Docs
         run: |
-          mvn -e -B --settings .github/mvn-settings.xml clean org.asciidoctor:asciidoctor-maven-plugin:process-asciidoc -pl docs -Ddocumentation-pdf
+          ./mvnw -e -B --settings .github/mvn-settings.xml clean org.asciidoctor:asciidoctor-maven-plugin:process-asciidoc -pl docs -Ddocumentation-pdf

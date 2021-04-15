@@ -26,7 +26,7 @@
         <maven.compiler.release>11</maven.compiler.release>
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.6.3</proposed-maven-version>
+        <proposed-maven-version>3.8.1</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
         <gradle-wrapper.version>6.8.3</gradle-wrapper.version>
 
@@ -47,7 +47,7 @@
         <junit.version>5.7.1</junit.version>
         <commons-compress.version>1.20</commons-compress.version>
         <jboss-logging.version>3.4.1.Final</jboss-logging.version>
-        <maven-core.version>3.6.3</maven-core.version>
+        <maven-core.version>3.8.1</maven-core.version>
         <mockito.version>3.9.0</mockito.version>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>

@@ -78,8 +78,8 @@
         <asm.version>9.1</asm.version>
         <commons-io.version>2.8.0</commons-io.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
-        <maven-core.version>3.6.3</maven-core.version>
-        <maven-resolver.version>1.4.1</maven-resolver.version>
+        <maven-core.version>3.8.1</maven-core.version>
+        <maven-resolver.version>1.6.2</maven-resolver.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <guava.version>30.1.1-jre</guava.version>
         <plexus-utils.version>3.2.1</plexus-utils.version>

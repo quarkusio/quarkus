@@ -25,7 +25,7 @@ public final class SubstituteRemoteCacheManager {
     @Substitute
     private void initRemoteCache(InternalRemoteCache<?, ?> remoteCache, OperationsFactory operationsFactory) {
         // Invoke the init method that doesn't have the JMX ObjectName argument
-        remoteCache.init(marshaller, operationsFactory, configuration);
+        remoteCache.init(operationsFactory, configuration);
     }
 
     @Substitute
@@ -34,6 +34,9 @@ public final class SubstituteRemoteCacheManager {
 
     @Substitute
     private void unregisterMBean() {
+    }
 
+    @Substitute
+    private void registerProtoStreamMarshaller() {
     }
 }

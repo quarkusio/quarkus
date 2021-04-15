@@ -9,6 +9,7 @@ import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.runtime.spi.FlashScopeUtil.FlashMessageStatus;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
@@ -27,35 +28,52 @@ public class SchedulerDevConsoleRecorder {
         final ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
         return new DevConsolePostHandler() {
             @Override
-            protected void handlePost(RoutingContext event, MultiMap form) throws Exception {
-                String name = form.get("name");
-                SchedulerContext context = Arc.container().instance(SchedulerContext.class).get();
-                for (ScheduledMethodMetadata metadata : context.getScheduledMethods()) {
-                    if (metadata.getMethodDescription().equals(name)) {
-                        context.getExecutor().execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                final ClassLoader previousCl = Thread.currentThread().getContextClassLoader();
-                                try {
-                                    Thread.currentThread().setContextClassLoader(currentCl);
-                                    ScheduledInvoker invoker = context
-                                            .createInvoker(metadata.getInvokerClassName());
-                                    invoker.invoke(new DevModeScheduledExecution());
-                                } catch (Exception e) {
-                                    LOG.error(
-                                            "Unable to invoke a @Scheduled method: "
-                                                    + metadata.getMethodDescription(),
-                                            e);
-                                } finally {
-                                    Thread.currentThread().setContextClassLoader(previousCl);
-                                }
-                            }
-                        });
-                        flashMessage(event, "Action invoked");
-                        return;
+            protected void handlePost(RoutingContext ctx, MultiMap form) throws Exception {
+                String action = form.get("action");
+                if ("pause".equals(action)) {
+                    Scheduler scheduler = Arc.container().instance(Scheduler.class).get();
+                    if (scheduler.isRunning()) {
+                        scheduler.pause();
+                        LOG.info("Scheduler paused via Dev UI");
+                        flashMessage(ctx, "Scheduler paused");
                     }
+                } else if ("resume".equals(action)) {
+                    Scheduler scheduler = Arc.container().instance(Scheduler.class).get();
+                    if (!scheduler.isRunning()) {
+                        scheduler.resume();
+                        LOG.info("Scheduler resumed via Dev UI");
+                        flashMessage(ctx, "Scheduler resumed");
+                    }
+                } else {
+                    String name = form.get("name");
+                    SchedulerContext context = Arc.container().instance(SchedulerContext.class).get();
+                    for (ScheduledMethodMetadata metadata : context.getScheduledMethods()) {
+                        if (metadata.getMethodDescription().equals(name)) {
+                            context.getExecutor().execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    final ClassLoader previousCl = Thread.currentThread().getContextClassLoader();
+                                    try {
+                                        Thread.currentThread().setContextClassLoader(currentCl);
+                                        ScheduledInvoker invoker = context
+                                                .createInvoker(metadata.getInvokerClassName());
+                                        invoker.invoke(new DevModeScheduledExecution());
+                                    } catch (Exception e) {
+                                        LOG.error(
+                                                "Unable to invoke a @Scheduled method: "
+                                                        + metadata.getMethodDescription(),
+                                                e);
+                                    } finally {
+                                        Thread.currentThread().setContextClassLoader(previousCl);
+                                    }
+                                }
+                            });
+                            flashMessage(ctx, "Action invoked");
+                            return;
+                        }
+                    }
+                    flashMessage(ctx, "Action not found: " + name, FlashMessageStatus.ERROR);
                 }
-                flashMessage(event, "Action not found: " + name, FlashMessageStatus.ERROR);
             }
         };
     }

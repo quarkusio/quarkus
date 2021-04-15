@@ -64,6 +64,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
@@ -196,8 +197,7 @@ public class SchedulerProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     public FeatureBuildItem build(SchedulerConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            SchedulerRecorder recorder,
-            List<ScheduledBusinessMethodItem> scheduledMethods,
+            SchedulerRecorder recorder, List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             AnnotationProxyBuildItem annotationProxy, ExecutorBuildItem executor) {
 
@@ -227,9 +227,11 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    public DevConsoleRuntimeTemplateInfoBuildItem devConsoleInfo() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
-                new BeanLookupSupplier(SchedulerContext.class));
+    public void devConsoleInfo(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos) {
+        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
+                new BeanLookupSupplier(SchedulerContext.class)));
+        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("scheduler",
+                new BeanLookupSupplier(Scheduler.class)));
     }
 
     @BuildStep

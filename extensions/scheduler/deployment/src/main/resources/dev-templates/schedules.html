@@ -1,6 +1,20 @@
 {#include main}
   {#title}Schedules{/title}
   {#body}
+  {#if info:scheduler.running}
+  <form method="post" enctype="application/x-www-form-urlencoded">
+    <strong>Scheduler is running</strong> 
+    <input type="hidden" name="action" value="pause">
+    <button type="submit" class="btn btn-primary" type="submit"><i class="far fa-pause-circle"></i> Pause</button>
+  </form>
+  {#else}
+  <form method="post" enctype="application/x-www-form-urlencoded">
+     <strong>Scheduler is paused</strong>
+     <input type="hidden" name="action" value="resume">
+     <button type="submit" class="btn btn-primary" type="submit"><i class="far fa-play-circle"></i> Resume</button>
+  </form>
+  {/if}
+  <hr/>
   <table class="table table-striped">
    <thead class="thead-dark">
     <tr>

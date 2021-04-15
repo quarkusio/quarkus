@@ -621,7 +621,7 @@ jobs:
         # Note: No gib_args here because resteasy-reactive-testsuite is a different repo
         run: mvn -B --settings ../tcks/.github/mvn-settings.xml install
         working-directory: ./resteasy-reactive-testsuite
-      - name: Verify with Maven
+      - name: Verify
         run: ./mvnw $COMMON_MAVEN_ARGS -Dtcks -pl tcks -amd install ${{ needs.build-jdk11.outputs.gib_args }}
         working-directory: ./tcks
       - name: Prepare failure archive (if maven failed)

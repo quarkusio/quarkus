@@ -139,6 +139,9 @@ public class QuteProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
 
+    private static final String CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE = "requireTypeSafeExpressions";
+    private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
+
     private static final Function<FieldInfo, String> GETTER_FUN = new Function<FieldInfo, String>() {
         @Override
         public String apply(FieldInfo field) {
@@ -216,7 +219,7 @@ public class QuteProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<TemplatePathBuildItem> templatePaths,
             List<CheckedTemplateAdapterBuildItem> templateAdaptorBuildItems,
-            QuteConfig config) {
+            TemplateFilePathsBuildItem filePaths) {
         List<CheckedTemplateBuildItem> ret = new ArrayList<>();
 
         Map<DotName, CheckedTemplateAdapter> adaptors = new HashMap<>();
@@ -246,20 +249,6 @@ public class QuteProcessor {
         Set<AnnotationInstance> checkedTemplateAnnotations = new HashSet<>();
         checkedTemplateAnnotations.addAll(index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE));
 
-        // Build a set of file paths for validation
-        Set<String> filePaths = new HashSet<String>();
-        for (TemplatePathBuildItem templatePath : templatePaths) {
-            String path = templatePath.getPath();
-            filePaths.add(path);
-            // Also add version without suffix from the path
-            // For example for "items.html" also add "items"
-            for (String suffix : config.suffixes) {
-                if (path.endsWith(suffix)) {
-                    filePaths.add(path.substring(0, path.length() - (suffix.length() + 1)));
-                }
-            }
-        }
-
         for (AnnotationInstance annotation : checkedTemplateAnnotations) {
             if (annotation.target().kind() != Kind.CLASS) {
                 continue;
@@ -288,7 +277,7 @@ public class QuteProcessor {
                 }
 
                 StringBuilder templatePathBuilder = new StringBuilder();
-                AnnotationValue basePathValue = annotation.value("basePath");
+                AnnotationValue basePathValue = annotation.value(CHECKED_TEMPLATE_BASE_PATH);
                 if (basePathValue != null && !basePathValue.asString().equals(CheckedTemplate.DEFAULTED)) {
                     templatePathBuilder.append(basePathValue.asString());
                 } else if (classInfo.enclosingClass() != null) {
@@ -309,7 +298,7 @@ public class QuteProcessor {
                 }
                 if (!filePaths.contains(templatePath)) {
                     List<String> startsWith = new ArrayList<>();
-                    for (String filePath : filePaths) {
+                    for (String filePath : filePaths.getFilePaths()) {
                         if (filePath.startsWith(templatePath)) {
                             startsWith.add(filePath);
                         }
@@ -338,7 +327,9 @@ public class QuteProcessor {
                     bindings.put(name, JandexUtil.getBoxedTypeName(type));
                     parameterNames.add(name);
                 }
-                ret.add(new CheckedTemplateBuildItem(templatePath, bindings, methodInfo));
+                AnnotationValue requireTypeSafeExpressions = annotation.value(CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE);
+                ret.add(new CheckedTemplateBuildItem(templatePath, bindings, methodInfo,
+                        requireTypeSafeExpressions != null ? requireTypeSafeExpressions.asBoolean() : true));
                 enhancer.implement(methodInfo, templatePath, parameterNames, adaptor);
             }
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(),
@@ -350,7 +341,8 @@ public class QuteProcessor {
 
     @BuildStep
     TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
-            List<CheckedTemplateBuildItem> checkedTemplates, List<MessageBundleMethodBuildItem> messageBundleMethods) {
+            TemplateFilePathsBuildItem filePaths, List<CheckedTemplateBuildItem> checkedTemplates,
+            List<MessageBundleMethodBuildItem> messageBundleMethods, QuteConfig config) {
         long start = System.currentTimeMillis();
         List<TemplateAnalysis> analysis = new ArrayList<>();
 
@@ -409,28 +401,54 @@ public class QuteProcessor {
                 }
                 return Optional.empty();
             }
-        }).addParserHook(new ParserHook() {
+        });
+
+        Map<String, MessageBundleMethodBuildItem> messageBundleMethodsMap;
+        if (messageBundleMethods.isEmpty()) {
+            messageBundleMethodsMap = Collections.emptyMap();
+        } else {
+            messageBundleMethodsMap = new HashMap<>();
+            for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
+                messageBundleMethodsMap.put(messageBundleMethod.getTemplateId(), messageBundleMethod);
+            }
+        }
+
+        builder.addParserHook(new ParserHook() {
 
             @Override
             public void beforeParsing(ParserHelper parserHelper) {
-                for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
-                    // FIXME: check for dot/extension?
-                    if (parserHelper.getTemplateId().startsWith(checkedTemplate.templateId)) {
-                        for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
-                            parserHelper.addParameter(entry.getKey(), entry.getValue());
+                // The template id may be the full path, e.g. "items.html" or a path without the suffic, e.g. "items"
+                String templateId = parserHelper.getTemplateId();
+
+                if (filePaths.contains(templateId)) {
+                    // It's a file-based template
+                    // We need to find out whether the parsed template represents a checked template
+                    String path = templateId;
+                    for (String suffix : config.suffixes) {
+                        if (path.endsWith(suffix)) {
+                            // Remove the suffix 
+                            path = path.substring(0, path.length() - (suffix.length() + 1));
+                            break;
+                        }
+                    }
+                    for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
+                        if (checkedTemplate.templateId.equals(path)) {
+                            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
+                                parserHelper.addParameter(entry.getKey(), entry.getValue());
+                            }
+                            break;
                         }
                     }
                 }
-                // Add params to message bundle templates
-                for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
-                    if (parserHelper.getTemplateId().equals(messageBundleMethod.getTemplateId())) {
-                        MethodInfo method = messageBundleMethod.getMethod();
-                        for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
-                            Type paramType = it.next();
-                            parserHelper.addParameter(method.parameterName(it.previousIndex()),
-                                    JandexUtil.getBoxedTypeName(paramType));
-                        }
-                        break;
+
+                // If needed add params to message bundle templates
+                MessageBundleMethodBuildItem messageBundleMethod = messageBundleMethodsMap.get(templateId);
+                if (messageBundleMethod != null) {
+                    MethodInfo method = messageBundleMethod.getMethod();
+                    for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
+                        Type paramType = it.next();
+                        parserHelper.addParameter(method.parameterName(it.previousIndex()),
+                                JandexUtil.getBoxedTypeName(paramType));
                     }
                 }
             }
@@ -460,12 +478,15 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void validateExpressions(TemplatesAnalysisBuildItem templatesAnalysis, BeanArchiveIndexBuildItem beanArchiveIndex,
+    void validateExpressions(TemplatesAnalysisBuildItem templatesAnalysis,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             BuildProducer<ImplicitValueResolverBuildItem> implicitClasses,
-            BeanDiscoveryFinishedBuildItem beanDiscovery) {
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            List<CheckedTemplateBuildItem> checkedTemplates,
+            QuteConfig config) {
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -485,6 +506,23 @@ public class QuteProcessor {
         Map<DotName, Set<String>> implicitClassToMembersUsed = new HashMap<>();
 
         for (TemplateAnalysis templateAnalysis : templatesAnalysis.getAnalysis()) {
+
+            // Try to find the checked template
+            String path = templateAnalysis.path;
+            for (String suffix : config.suffixes) {
+                if (path.endsWith(suffix)) {
+                    path = path.substring(0, path.length() - (suffix.length() + 1));
+                    break;
+                }
+            }
+            CheckedTemplateBuildItem checkedTemplate = null;
+            for (CheckedTemplateBuildItem item : checkedTemplates) {
+                if (item.templateId.equals(path)) {
+                    checkedTemplate = item;
+                    break;
+                }
+            }
+
             // Maps an expression generated id to the last match of an expression (i.e. the type of the last part)
             Map<Integer, Match> generatedIdsToMatches = new HashMap<>();
 
@@ -502,6 +540,18 @@ public class QuteProcessor {
                         continue;
                     }
                 } else {
+                    if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()) {
+                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                                "Only type-safe expressions are allowed in the checked template defined via: "
+                                        + checkedTemplate.method.declaringClass().name() + "."
+                                        + checkedTemplate.method.name()
+                                        + "(); an expression must be based on a checked template parameter "
+                                        + checkedTemplate.bindings.keySet()
+                                        + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
+                                expression.getOrigin()));
+                        continue;
+                    }
+
                     generatedIdsToMatches.put(expression.getGeneratedId(),
                             validateNestedExpressions(templateAnalysis, null, new HashMap<>(), templateExtensionMethods,
                                     excludes,
@@ -1032,10 +1082,7 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void validateTemplateInjectionPoints(QuteConfig config, List<TemplatePathBuildItem> templatePaths,
-            ValidationPhaseBuildItem validationPhase,
-            BuildProducer<ValidationErrorBuildItem> validationErrors) {
-
+    TemplateFilePathsBuildItem collectTemplateFilePaths(QuteConfig config, List<TemplatePathBuildItem> templatePaths) {
         Set<String> filePaths = new HashSet<String>();
         for (TemplatePathBuildItem templatePath : templatePaths) {
             String path = templatePath.getPath();
@@ -1048,6 +1095,13 @@ public class QuteProcessor {
                 }
             }
         }
+        return new TemplateFilePathsBuildItem(filePaths);
+    }
+
+    @BuildStep
+    void validateTemplateInjectionPoints(TemplateFilePathsBuildItem filePaths, List<TemplatePathBuildItem> templatePaths,
+            ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationErrorBuildItem> validationErrors) {
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
             if (injectionPoint.getRequiredType().name().equals(Names.TEMPLATE)) {

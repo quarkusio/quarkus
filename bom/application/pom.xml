@@ -142,7 +142,7 @@
         <mutiny.version>0.15.0</mutiny.version>
         <mutiny-vertx.version>2.3.0</mutiny-vertx.version>
         <kafka2.version>2.7.0</kafka2.version>
-        <zookeeper.version>3.7.0</zookeeper.version>
+        <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.12.13</scala.version>
         <tika.version>1.26</tika.version>

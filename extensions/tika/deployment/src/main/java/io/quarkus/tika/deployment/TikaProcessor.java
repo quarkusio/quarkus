@@ -1,5 +1,6 @@
 package io.quarkus.tika.deployment;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -221,18 +222,24 @@ public class TikaProcessor {
     private static String getParserParamType(String parserName, String paramName) {
         try {
             Class<?> parserClass = loadParserClass(parserName);
-            String paramType = parserClass.getMethod("get" + capitalize(paramName), new Class[] {}).getReturnType()
-                    .getSimpleName().toLowerCase();
-            if (paramType.equals(boolean.class.getSimpleName())) {
-                // TikaConfig Param class does not recognize 'boolean', only 'bool'
-                // This whole reflection code is temporary anyway
-                paramType = "bool";
+            Method[] methods = parserClass.getMethods();
+            String setterMethodName = "set" + capitalize(paramName);
+            String paramType = null;
+            for (Method method : methods) {
+                if (method.getName().equals(setterMethodName) && method.getParameterCount() == 1) {
+                    paramType = method.getParameterTypes()[0].getSimpleName().toLowerCase();
+                    if (paramType.equals(boolean.class.getSimpleName())) {
+                        // TikaConfig Param class does not recognize 'boolean', only 'bool'
+                        // This whole reflection code is temporary anyway
+                        paramType = "bool";
+                    }
+                    return paramType;
+                }
             }
-            return paramType;
         } catch (Throwable t) {
-            final String errorMessage = "Parser " + parserName + " has no " + paramName + " property";
-            throw new TikaParseException(errorMessage);
+            throw new TikaParseException(String.format("Parser %s has no %s property", parserName, paramName));
         }
+        throw new TikaParseException(String.format("Parser %s has no %s property", parserName, paramName));
     }
 
     public static class TikaParserParameter {

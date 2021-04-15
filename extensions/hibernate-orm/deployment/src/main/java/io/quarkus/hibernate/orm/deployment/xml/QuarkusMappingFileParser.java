@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.boot.archive.internal.ArchiveHelper;
 import org.hibernate.boot.jaxb.spi.Binding;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
@@ -46,11 +47,14 @@ public final class QuarkusMappingFileParser implements AutoCloseable {
     }
 
     /**
-     * @param mappingFileName The name of the mapping file.
+     * @param persistenceUnitName The name of the persistence unit requesting the mapping file.
+     * @param persistenceUnitRootUrl The root URL of the persistence unit requesting the mapping file.
+     * @param mappingFilePath The path of the mapping file in the classpath.
      * @return A summary of the parsed mapping file, or {@link Optional#empty()} if it was not found.
      */
-    public Optional<RecordableXmlMapping> parse(String mappingFileName) {
-        URL url = locateMappingFile(mappingFileName);
+    public Optional<RecordableXmlMapping> parse(String persistenceUnitName, URL persistenceUnitRootUrl,
+            String mappingFilePath) {
+        URL url = locateMappingFile(persistenceUnitName, persistenceUnitRootUrl, mappingFilePath);
 
         if (url == null) {
             // Ignore and let Hibernate ORM complain about it during bootstrap.
@@ -62,20 +66,42 @@ public final class QuarkusMappingFileParser implements AutoCloseable {
             return Optional.of(RecordableXmlMapping.create(binding));
         } catch (RuntimeException | IOException e) {
             throw new IllegalStateException(
-                    "Error reading mapping file '" + mappingFileName + "' ('" + url + "'): " + e.getMessage(), e);
+                    "Error reading mapping file '" + mappingFilePath + "' ('" + url + "'): " + e.getMessage(), e);
         }
     }
 
-    private URL locateMappingFile(String mappingFileName) {
+    private URL locateMappingFile(String persistenceUnitName, URL persistenceUnitRootUrl, String mappingFileName) {
         List<URL> mappingFileURLs = FlatClassLoaderService.INSTANCE.locateResources(mappingFileName);
         if (mappingFileURLs.isEmpty()) {
             return null;
+        } else if (mappingFileURLs.size() == 1) {
+            return mappingFileURLs.get(0);
+        } else { // mappingFileURLs.size() > 1
+            // Multiple classpath resources match this name.
+            // We need to resolve the ambiguity.
+            URL urlInSameMappingFile = null;
+            if (persistenceUnitRootUrl != null) {
+                for (URL url : mappingFileURLs) {
+                    if (!persistenceUnitRootUrl.equals(ArchiveHelper.getJarURLFromURLEntry(url, mappingFileName))) {
+                        continue;
+                    }
+                    if (urlInSameMappingFile == null) {
+                        urlInSameMappingFile = url;
+                    } else {
+                        // Multiple matches in the same JAR...? Can this even happen?
+                        urlInSameMappingFile = null;
+                        break;
+                    }
+                }
+            }
+            if (urlInSameMappingFile == null) {
+                throw new IllegalStateException("Persistence unit '" + persistenceUnitName + "' references mapping file '"
+                        + mappingFileName + "', but multiple resources with this path exist in the classpath,"
+                        + " and it is not possible to resolve the ambiguity."
+                        + " URLs of matching resources found in the classpath: " + mappingFileURLs);
+            }
+            return urlInSameMappingFile;
         }
-        if (mappingFileURLs.size() > 1) {
-            throw new IllegalStateException("Founds multiple occurrences of mapping file '" + mappingFileName
-                    + "' in the classpath: " + mappingFileURLs);
-        }
-        return mappingFileURLs.get(0);
     }
 
     private static BootstrapServiceRegistry createEmptyBootstrapServiceRegistry() {

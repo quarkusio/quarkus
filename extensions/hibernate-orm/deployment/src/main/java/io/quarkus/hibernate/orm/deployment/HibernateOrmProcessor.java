@@ -310,7 +310,7 @@ public final class HibernateOrmProcessor {
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptor : persistenceXmlDescriptors) {
             ParsedPersistenceXmlDescriptor descriptor = persistenceXmlDescriptor.getDescriptor();
             jpaModelPuContributions.produce(new JpaModelPersistenceUnitContributionBuildItem(
-                    descriptor.getName(), descriptor.getManagedClassNames(),
+                    descriptor.getName(), descriptor.getPersistenceUnitRootUrl(), descriptor.getManagedClassNames(),
                     descriptor.getMappingFileNames()));
         }
     }
@@ -329,7 +329,7 @@ public final class HibernateOrmProcessor {
             String name = entry.getKey();
             HibernateOrmConfigPersistenceUnit config = entry.getValue();
             jpaModelPuContributions.produce(new JpaModelPersistenceUnitContributionBuildItem(
-                    name, Collections.emptySet(),
+                    name, null, Collections.emptySet(),
                     config.mappingFiles.orElse(Collections.emptySet())));
         }
     }

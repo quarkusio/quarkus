@@ -48,11 +48,31 @@ public class OidcClientConfig extends OidcCommonConfig {
             /**
              * 'client_credentials' grant requiring an OIDC client authentication only
              */
-            CLIENT,
+            CLIENT("client_credentials"),
             /**
              * 'password' grant requiring both OIDC client and user ('username' and 'password') authentications
              */
-            PASSWORD
+            PASSWORD("password"),
+            /**
+             * 'authorization_code' grant requiring an OIDC client authentication as well as
+             * at least 'code' and 'redirect_uri' parameters which must be passed to OidcClient at the token request time.
+             */
+            CODE("authorization_code"),
+            /**
+             * 'urn:ietf:params:oauth:grant-type:token-exchange' grant requiring an OIDC client authentication as well as
+             * at least 'subject_token' parameter which must be passed to OidcClient at the token request time.
+             */
+            EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange");
+
+            private String grantType;
+
+            private Type(String grantType) {
+                this.grantType = grantType;
+            }
+
+            public String getGrantType() {
+                return grantType;
+            }
         }
 
         /**

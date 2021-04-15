@@ -24,7 +24,7 @@ public class OidcConfigurationMetadata {
     private final String userInfoUri;
     private final String endSessionUri;
     private final String issuer;
-    private JsonObject json;
+    private final JsonObject json;
 
     public OidcConfigurationMetadata(String tokenUri,
             String introspectionUri,
@@ -40,6 +40,7 @@ public class OidcConfigurationMetadata {
         this.userInfoUri = userInfoUri;
         this.endSessionUri = endSessionUri;
         this.issuer = issuer;
+        this.json = null;
     }
 
     public OidcConfigurationMetadata(JsonObject wellKnownConfig) {
@@ -101,7 +102,7 @@ public class OidcConfigurationMetadata {
     }
 
     public boolean contains(String propertyName) {
-        return json.containsKey(propertyName);
+        return json == null ? false : json.containsKey(propertyName);
     }
 
     public Set<String> getPropertyNames() {

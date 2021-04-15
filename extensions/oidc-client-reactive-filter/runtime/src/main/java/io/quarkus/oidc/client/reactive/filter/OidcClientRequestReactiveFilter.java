@@ -1,13 +1,16 @@
 package io.quarkus.oidc.client.reactive.filter;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.annotation.Priority;
+import javax.inject.Inject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
@@ -22,6 +25,10 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 public class OidcClientRequestReactiveFilter extends AbstractTokensProducer implements ResteasyReactiveClientRequestFilter {
     private static final Logger LOG = Logger.getLogger(OidcClientRequestReactiveFilter.class);
     private static final String BEARER_SCHEME_WITH_SPACE = OidcConstants.BEARER_SCHEME + " ";
+
+    @Inject
+    @ConfigProperty(name = "quarkus.oidc-client-reactive-filter.client-name")
+    Optional<String> clientName;
 
     protected void initTokens() {
         if (earlyTokenAcquisition) {
@@ -52,5 +59,9 @@ public class OidcClientRequestReactiveFilter extends AbstractTokensProducer impl
                 requestContext.resume();
             }
         });
+    }
+
+    protected Optional<String> clientId() {
+        return clientName;
     }
 }

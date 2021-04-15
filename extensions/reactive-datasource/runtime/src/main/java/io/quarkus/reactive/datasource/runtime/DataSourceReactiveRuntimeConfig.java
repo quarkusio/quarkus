@@ -111,6 +111,7 @@ public class DataSourceReactiveRuntimeConfig {
 
     /**
      * The hostname verification algorithm to use in case the server's identity should be checked.
+     * Should be HTTPS, LDAPS or an empty string.
      */
     @ConfigItem
     public Optional<String> hostnameVerificationAlgorithm = Optional.empty();

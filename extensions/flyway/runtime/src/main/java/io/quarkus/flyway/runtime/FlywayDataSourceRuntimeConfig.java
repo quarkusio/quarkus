@@ -72,6 +72,12 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean cleanAtStart;
 
     /**
+     * true to prevent Flyway clean operations, false otherwise.
+     */
+    @ConfigItem
+    public boolean cleanDisabled;
+
+    /**
      * true to execute Flyway automatically when the application starts, false otherwise.
      *
      */

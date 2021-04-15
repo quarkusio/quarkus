@@ -44,6 +44,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -73,6 +74,11 @@ class RestClientReactiveProcessor {
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> features) {
         features.produce(new FeatureBuildItem(REST_CLIENT_REACTIVE));
+    }
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(REST_CLIENT_REACTIVE);
     }
 
     @BuildStep

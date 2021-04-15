@@ -167,10 +167,22 @@ Below is a summary of the options.
 |No
 |Yes
 |No
+|SecretKey support
+|No
+|In JsonWebKey format
+|No
 |InnerSigned/Encrypted or Encrypted tokens
 |Introspection
 |Local Verification
 |Introspection
+|Custom Token Verificition
+|No
+|With Injected JWTParser
+|No
+|Accept JWT as cookie
+|No
+|Yes
+|No
 |===
 
 === LDAP

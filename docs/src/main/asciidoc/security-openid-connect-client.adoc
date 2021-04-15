@@ -81,6 +81,7 @@ public class OidcClientResource {
         
         Tokens tokens = currentTokens;
         if (tokens.isAccessTokenExpired()) {
+            // Add @Blocking method annotation if this code is used with Reactive RestClient
             tokens = client.refreshTokens(tokens.getRefreshToken()).await().indefinitely();
             currentTokens = tokens;
         } 
@@ -140,7 +141,6 @@ If you prefer you can use your own custom filter and inject `Tokens`:
 ----
 @Provider
 @Priority(Priorities.AUTHENTICATION)
-@RequestScoped
 public class OidcClientRequestCustomFilter implements ClientRequestFilter {
 
     @Inject

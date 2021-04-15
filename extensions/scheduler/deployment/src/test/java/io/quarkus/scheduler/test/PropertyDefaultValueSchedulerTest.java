@@ -30,7 +30,7 @@ public class PropertyDefaultValueSchedulerTest {
 
     @Test
     public void testDefaultIdentity() throws InterruptedException {
-        assertTrue(Jobs.LATCH.await(500, TimeUnit.MILLISECONDS), "Scheduler was not triggered");
+        assertTrue(Jobs.LATCH.await(5, TimeUnit.SECONDS), "Scheduler was not triggered");
         assertNotNull(Jobs.execution);
         assertEquals(EXPECTED_IDENTITY, Jobs.execution.getTrigger().getId());
     }
@@ -39,12 +39,12 @@ public class PropertyDefaultValueSchedulerTest {
 
         static final CountDownLatch LATCH = new CountDownLatch(1);
 
-        static ScheduledExecution execution;
+        static volatile ScheduledExecution execution;
 
-        @Scheduled(every = "0.001s", identity = "{nonexistent:${PropertyDefaultValueSchedulerTest.default}}")
-        void trigger(ScheduledExecution execution) {
-            if (this.execution == null) {
-                this.execution = execution;
+        @Scheduled(every = "0.5s", identity = "{nonexistent:${PropertyDefaultValueSchedulerTest.default}}")
+        void trigger(ScheduledExecution exec) {
+            if (execution == null) {
+                execution = exec;
             }
             LATCH.countDown();
         }

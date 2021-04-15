@@ -1,6 +1,7 @@
 package io.quarkus.quartz.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -25,8 +26,7 @@ public class DisabledScheduledMethodTest {
 
     @Test
     public void testNoSchedulerInvocations() throws InterruptedException {
-        Thread.sleep(100);
-        Jobs.LATCH.await(500, TimeUnit.MILLISECONDS);
+        assertTrue(Jobs.LATCH.await(2, TimeUnit.SECONDS));
         assertEquals(0, Jobs.executionCounter);
     }
 
@@ -46,7 +46,7 @@ public class DisabledScheduledMethodTest {
             executionCounter++;
         }
 
-        @Scheduled(every = "0.001s")
+        @Scheduled(every = "0.5s")
         void enabled() {
             LATCH.countDown();
         }

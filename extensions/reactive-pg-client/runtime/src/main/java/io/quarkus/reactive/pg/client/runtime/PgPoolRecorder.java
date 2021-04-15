@@ -26,6 +26,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Vertx;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
+import io.vertx.pgclient.SslMode;
 import io.vertx.sqlclient.PoolOptions;
 
 @Recorder
@@ -140,7 +141,15 @@ public class PgPoolRecorder {
         }
 
         if (dataSourceReactivePostgreSQLConfig.sslMode.isPresent()) {
-            pgConnectOptions.setSslMode(dataSourceReactivePostgreSQLConfig.sslMode.get());
+            final SslMode sslMode = dataSourceReactivePostgreSQLConfig.sslMode.get();
+            pgConnectOptions.setSslMode(sslMode);
+
+            // If sslMode is verify-full, we also need a hostname verification algorithm
+            if (sslMode == SslMode.VERIFY_FULL && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm
+                    .isPresent() || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get()))) {
+                throw new IllegalArgumentException(
+                        "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-full sslmode");
+            }
         }
 
         pgConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);

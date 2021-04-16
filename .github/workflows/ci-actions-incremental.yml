@@ -115,7 +115,7 @@ jobs:
       - name: Verify extension dependencies
         shell: bash
         run: |
-          ./update-extension-dependencies.sh -B --settings .github/mvn-settings.xml
+          ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
           if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
           then
             echo -e '\033[0;31mError:\033[0m Dependencies to extension artifacts are outdated!' 1>&2
@@ -453,7 +453,7 @@ jobs:
         if: matrix.os.family == 'Linux'
         shell: bash
         run: |
-          ./update-dependencies.sh -B --settings ../../.github/mvn-settings.xml
+          ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS
           if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
           then
             echo -e '\033[0;31mError:\033[0m Dependencies in integration-tests/gradle/pom.xml are outdated!' 1>&2
@@ -462,7 +462,6 @@ jobs:
             git --no-pager diff '*pom.xml' 1>&2
             exit 1
           fi
-        working-directory: integration-tests/gradle
       - name: Build
         shell: bash
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl integration-tests/gradle ${{ needs.build-jdk11.outputs.gib_args }}
@@ -591,19 +590,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          path: tcks
       - name: Add quarkusio remote
         shell: bash
         run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-        working-directory: ./tcks
-      - name: Download RESTEasy Reactive Testsuite
-        uses: actions/checkout@v2
-        with:
-          repository: quarkusio/resteasy-reactive-testsuite
-          path: resteasy-reactive-testsuite
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-        working-directory: ./tcks
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
@@ -617,13 +608,22 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Run RESTEasy Reactive TCK
-        # Note: No gib_args here because resteasy-reactive-testsuite is a different repo
-        run: mvn -B --settings ../tcks/.github/mvn-settings.xml install
-        working-directory: ./resteasy-reactive-testsuite
       - name: Verify
         run: ./mvnw $COMMON_MAVEN_ARGS -Dtcks -pl tcks -amd install ${{ needs.build-jdk11.outputs.gib_args }}
-        working-directory: ./tcks
+      - name: Verify resteasy-reative dependencies
+        # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
+        shell: bash
+        run: |
+          ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
+          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
+          then
+            echo -e '\033[0;31mError:\033[0m Dependencies in tcks/resteasy-reactive/pom.xml are outdated!' 1>&2
+            echo -e '\033[0;31mError:\033[0m Run './mvnw clean process-test-resources -f tcks/resteasy-reactive && tcks/resteasy-reactive/update-dependencies.sh' \
+              and add the modified pom.xml file to your commit.' 1>&2
+            echo -e '\033[0;31mError:\033[0m Diff is:' 1>&2
+            git --no-pager diff '*pom.xml' 1>&2
+            exit 1
+          fi
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash

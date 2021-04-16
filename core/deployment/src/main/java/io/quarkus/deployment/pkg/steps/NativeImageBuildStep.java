@@ -656,7 +656,8 @@ public class NativeImageBuildStep {
                 if (!protocols.isEmpty()) {
                     nativeImageArgs.add("-H:EnableURLProtocols=" + String.join(",", protocols));
                 }
-                if (enableAllSecurityServices) {
+                if (enableAllSecurityServices && graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_1)) {
+                    // This option was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
                     nativeImageArgs.add("--enable-all-security-services");
                 }
                 if (inlineBeforeAnalysis) {

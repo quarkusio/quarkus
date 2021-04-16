@@ -10,8 +10,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyReader;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyReader;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyReader;
@@ -44,12 +44,12 @@ public class ResteasyReactiveJacksonProcessor {
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
         // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object
         additionalBean.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(JacksonMessageBodyReader.class.getName())
-                .addBeanClass(JacksonMessageBodyWriter.class.getName())
+                .addBeanClass(ServerJacksonMessageBodyReader.class.getName())
+                .addBeanClass(ServerJacksonMessageBodyWriter.class.getName())
                 .setUnremovable().build());
 
         additionalReaders
-                .produce(new MessageBodyReaderBuildItem(JacksonMessageBodyReader.class.getName(), Object.class.getName(),
+                .produce(new MessageBodyReaderBuildItem(ServerJacksonMessageBodyReader.class.getName(), Object.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(VertxJsonArrayMessageBodyReader.class.getName(),
@@ -60,7 +60,7 @@ public class ResteasyReactiveJacksonProcessor {
                         JsonObject.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters
-                .produce(new MessageBodyWriterBuildItem(JacksonMessageBodyWriter.class.getName(), Object.class.getName(),
+                .produce(new MessageBodyWriterBuildItem(ServerJacksonMessageBodyWriter.class.getName(), Object.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(VertxJsonArrayMessageBodyWriter.class.getName(),

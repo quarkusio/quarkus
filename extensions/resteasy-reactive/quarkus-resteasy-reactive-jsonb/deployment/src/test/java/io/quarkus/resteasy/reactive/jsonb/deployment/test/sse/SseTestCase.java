@@ -20,7 +20,6 @@ import javax.ws.rs.sse.SseEventSource;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -80,7 +79,6 @@ public class SseTestCase {
     }
 
     @Test
-    @Disabled("See https://github.com/quarkusio/quarkus/issues/16227")
     public void testMultiFromMulti() {
         testMulti("sse/multi");
     }

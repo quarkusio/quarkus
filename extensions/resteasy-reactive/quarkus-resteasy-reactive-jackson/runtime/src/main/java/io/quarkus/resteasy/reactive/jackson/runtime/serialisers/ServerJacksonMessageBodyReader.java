@@ -19,10 +19,10 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
-public class JacksonMessageBodyReader extends JacksonBasicMessageBodyReader implements ServerMessageBodyReader<Object> {
+public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReader implements ServerMessageBodyReader<Object> {
 
     @Inject
-    public JacksonMessageBodyReader(ObjectMapper mapper) {
+    public ServerJacksonMessageBodyReader(ObjectMapper mapper) {
         super(mapper);
     }
 

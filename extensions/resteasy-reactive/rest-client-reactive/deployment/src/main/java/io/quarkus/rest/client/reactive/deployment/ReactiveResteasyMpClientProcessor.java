@@ -18,6 +18,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
@@ -38,11 +39,15 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -67,6 +72,21 @@ class ReactiveResteasyMpClientProcessor {
 
     private static final String DELEGATE = "delegate";
     private static final String CREATE_DELEGATE = "createDelegate";
+
+    @BuildStep
+    void announceFeature(BuildProducer<FeatureBuildItem> features) {
+        features.produce(new FeatureBuildItem(Feature.REST_CLIENT_REACTIVE));
+    }
+
+    @BuildStep
+    void registerQueryParamStyleForConfig(BuildProducer<ConfigurationTypeBuildItem> configurationTypes) {
+        configurationTypes.produce(new ConfigurationTypeBuildItem(QueryParamStyle.class));
+    }
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(Feature.REST_CLIENT_REACTIVE);
+    }
 
     @BuildStep
     void setUpDefaultMediaType(BuildProducer<RestClientDefaultConsumesBuildItem> consumes,

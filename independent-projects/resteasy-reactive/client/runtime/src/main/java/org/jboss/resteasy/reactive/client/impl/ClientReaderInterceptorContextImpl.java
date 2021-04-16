@@ -60,7 +60,7 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
             }
             // Spec says to throw this
             throw new ProcessingException(
-                    "Request could not be mapped to type " + entityType);
+                    "Response could not be mapped to type " + entityType);
         } else {
             return interceptors[index++].aroundReadFrom(this);
         }

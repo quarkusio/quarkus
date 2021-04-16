@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.InboundSseEvent;
@@ -22,6 +23,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
     private long reconnectDelay;
 
     private final WebTargetImpl webTarget;
+    private final Invocation.Builder invocationBuilder;
     // this tracks user request to open/close
     private volatile boolean isOpen;
     // this tracks whether we have a connection open
@@ -35,7 +37,8 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
     private long timerId = -1;
     private boolean receivedClientClose;
 
-    public SseEventSourceImpl(WebTargetImpl webTarget, long reconnectDelay, TimeUnit reconnectUnit) {
+    public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder,
+            long reconnectDelay, TimeUnit reconnectUnit) {
         // tests set a null endpoint
         Objects.requireNonNull(reconnectUnit);
         if (reconnectDelay <= 0)
@@ -44,6 +47,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         this.reconnectDelay = reconnectDelay;
         this.reconnectUnit = reconnectUnit;
         this.sseParser = new SseParser(this);
+        this.invocationBuilder = invocationBuilder;
     }
 
     WebTargetImpl getWebTarget() {
@@ -83,7 +87,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         isInProgress = true;
         // ignore previous client closes
         receivedClientClose = false;
-        AsyncInvokerImpl invoker = (AsyncInvokerImpl) webTarget.request().rx();
+        AsyncInvokerImpl invoker = (AsyncInvokerImpl) invocationBuilder.rx();
         RestClientRequestContext restClientRequestContext = invoker.performRequestInternal("GET", null, null, false);
         restClientRequestContext.getResult().handle((response, throwable) -> {
             // errors during connection don't currently lead to a retry

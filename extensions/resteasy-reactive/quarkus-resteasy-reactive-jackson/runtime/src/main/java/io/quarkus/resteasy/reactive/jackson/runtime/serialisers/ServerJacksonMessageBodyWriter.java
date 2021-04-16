@@ -1,18 +1,23 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.serialisers;
 
+import static io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriterUtil.*;
 import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageServerBodyWriterUtil.setContentTypeIfNecessary;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -24,14 +29,19 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 
-public class JacksonMessageBodyWriter extends JacksonBasicMessageBodyWriter implements ServerMessageBodyWriter<Object> {// extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
+public class ServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private static final String JSON_VIEW_NAME = JsonView.class.getName();
     private static final String CUSTOM_SERIALIZATION = CustomSerialization.class.getName();
 
+    private final ObjectMapper originalMapper;
+    private final ObjectWriter defaultWriter;
+    private final ConcurrentMap<Method, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
+
     @Inject
-    public JacksonMessageBodyWriter(ObjectMapper mapper) {
-        super(mapper);
+    public ServerJacksonMessageBodyWriter(ObjectMapper mapper) {
+        this.originalMapper = mapper;
+        this.defaultWriter = createDefaultWriter(mapper);
     }
 
     @Override
@@ -65,12 +75,6 @@ public class JacksonMessageBodyWriter extends JacksonBasicMessageBodyWriter impl
         stream.close();
     }
 
-    @Override
-    public final boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
-            MediaType mediaType) {
-        return true;
-    }
-
     // TODO: this can definitely be made faster if necessary by optimizing the use of the map and also by moving the creation of the
     //  biFunction to build time
     private boolean handleCustomSerialization(Method method, Object o, Type genericType, OutputStream stream)
@@ -92,6 +96,12 @@ public class JacksonMessageBodyWriter extends JacksonBasicMessageBodyWriter impl
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+        doLegacyWrite(o, annotations, httpHeaders, entityStream, defaultWriter);
     }
 
     private static class MethodObjectWriterFunction implements Function<Method, ObjectWriter> {

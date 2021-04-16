@@ -82,9 +82,6 @@ package org.acme.rest.client;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class Country {
 
     public String name;
@@ -191,13 +188,10 @@ The name of the property needs to follow a certain convention which is best disp
 ----
 # Your configuration properties
 org.acme.rest.client.CountriesService/mp-rest/url=https://restcountries.eu/rest # // <1>
-org.acme.rest.client.CountriesService/mp-rest/scope=javax.inject.Singleton # // <2>
 ----
 
 <1> Having this configuration means that all requests performed using `org.acme.rest.client.CountriesService` will use `https://restcountries.eu/rest` as the base URL.
 Using the configuration above, calling the `getByName` method of `CountriesService` with a value of `France` would result in an HTTP GET request being made to `https://restcountries.eu/rest/v2/name/France`.
-<2> Having this configuration means that the default scope of `org.acme.rest.client.CountriesService` will be `@Singleton`. Supported scope values are `@Singleton`, `@Dependent`, `@ApplicationScoped` and `@RequestScoped`. The default scope is `@Dependent`.
-The default scope can also be defined on the interface.
 
 Note that `org.acme.rest.client.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
 
@@ -538,7 +532,7 @@ public class RequestUUIDHeaderFactory implements ClientHeadersFactory {
 }
 ----
 
-As you see in the example above, you can make your the `ClientHeadersFactory` implementation a CDI bean by
+As you see in the example above, you can make your `ClientHeadersFactory` implementation a CDI bean by
 annotating it with a scope-defining annotation, such as `@Singleton`, `@ApplicationScoped`, etc.
 
 === Default header factory

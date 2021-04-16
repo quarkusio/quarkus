@@ -7,6 +7,7 @@
         "Data4",
         "Data5",
         "Data6",
+        "Data7",
         "Security1",
         "Security2",
         "Security3",
@@ -36,7 +37,7 @@
         {
             "category": "Data2",
             "timeout": 65,
-            "test-modules": "jpa jpa-mysql jpa-db2 reactive-mysql-client reactive-db2-client hibernate-reactive-db2 hibernate-reactive-mysql"
+            "test-modules": "jpa jpa-mysql jpa-db2"
         },
         {
             "category": "Data3",
@@ -57,6 +58,11 @@
             "category": "Data6",
             "timeout": 50,
             "test-modules": "elasticsearch-rest-client elasticsearch-rest-high-level-client hibernate-search-orm-elasticsearch hibernate-reactive-panache"
+        },
+        {
+            "category": "Data7",
+            "timeout": 65,
+            "test-modules": "reactive-mysql-client reactive-db2-client hibernate-reactive-db2 hibernate-reactive-mysql"
         },
         {
             "category": "Amazon",
@@ -81,12 +87,12 @@
         {
             "category": "Security2",
             "timeout": 70,
-            "test-modules": "oidc oidc-code-flow oidc-tenancy keycloak-authorization oidc-client oidc-token-propagation smallrye-jwt-token-propagation oidc-wiremock oidc-client-wiremock"
+            "test-modules": "oidc oidc-code-flow oidc-tenancy oidc-client oidc-token-propagation oidc-wiremock oidc-client-wiremock"
         },
         {
             "category": "Security3",
             "timeout": 50,
-            "test-modules": "vault vault-app vault-agroal"
+            "test-modules": "vault vault-app vault-agroal keycloak-authorization smallrye-jwt-token-propagation"
         },
         {
             "category": "Cache",
@@ -111,12 +117,12 @@
         {
             "category": "Misc3",
             "timeout": 65,
-            "test-modules": "kubernetes-client openshift-client"
+            "test-modules": "kubernetes-client openshift-client smallrye-config smallrye-graphql smallrye-metrics "
         },
         {
             "category": "Misc4",
             "timeout": 65,
-            "test-modules": "smallrye-config smallrye-graphql picocli-native gradle micrometer-mp-metrics micrometer-prometheus smallrye-metrics logging-json jaxp opentelemetry"
+            "test-modules": "picocli-native gradle micrometer-mp-metrics micrometer-prometheus logging-json jaxp opentelemetry"
         },
         {
             "category": "Spring",

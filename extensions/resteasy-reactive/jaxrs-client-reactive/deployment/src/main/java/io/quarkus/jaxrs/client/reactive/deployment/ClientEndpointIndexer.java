@@ -79,7 +79,8 @@ public class ClientEndpointIndexer
     }
 
     @Override
-    protected ResourceMethod createResourceMethod(MethodInfo info, Map<String, Object> methodContext) {
+    protected ResourceMethod createResourceMethod(MethodInfo info, ClassInfo actualEndpointClass,
+            Map<String, Object> methodContext) {
         return new ResourceMethod();
     }
 

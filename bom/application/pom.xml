@@ -155,6 +155,7 @@
         <aws-alexa-sdk.version>2.38.1</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
         <kotlin.version>1.4.32</kotlin.version>
+        <kotlin.coroutine.version>1.4.2</kotlin.coroutine.version>
         <dekorate.version>2.1.2</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
@@ -4693,6 +4694,11 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-reflect</artifactId>
                 <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-coroutines-core-jvm</artifactId>
+                <version>${kotlin.coroutine.version}</version>
             </dependency>
 
             <dependency>

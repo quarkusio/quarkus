@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -53,6 +54,7 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJson
 import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJsonObjectHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJsonStructureHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJsonValueHandler;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
 public class ServerEndpointIndexer
         extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter, ServerResourceMethod> {
@@ -120,11 +122,12 @@ public class ServerEndpointIndexer
     }
 
     @Override
-    protected ServerResourceMethod createResourceMethod(MethodInfo methodInfo, Map<String, Object> methodContext) {
+    protected ServerResourceMethod createResourceMethod(MethodInfo methodInfo, ClassInfo actualEndpointClass,
+            Map<String, Object> methodContext) {
         ServerResourceMethod serverResourceMethod = new ServerResourceMethod();
         List<HandlerChainCustomizer> methodCustomizers = new ArrayList<>();
         for (MethodScanner i : methodScanners) {
-            List<HandlerChainCustomizer> scanned = i.scan(methodInfo, methodContext);
+            List<HandlerChainCustomizer> scanned = i.scan(methodInfo, actualEndpointClass, methodContext);
             if (scanned != null) {
                 methodCustomizers.addAll(scanned);
             }
@@ -144,7 +147,17 @@ public class ServerEndpointIndexer
 
     @Override
     protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
-        method.setInvoker(endpointInvokerFactory.create(method, currentClassInfo, info));
+        Supplier<EndpointInvoker> invokerSupplier = null;
+        for (HandlerChainCustomizer i : method.getHandlerChainCustomizers()) {
+            invokerSupplier = i.alternateInvoker(method);
+            if (invokerSupplier != null) {
+                break;
+            }
+        }
+        if (invokerSupplier == null) {
+            invokerSupplier = endpointInvokerFactory.create(method, currentClassInfo, info);
+        }
+        method.setInvoker(invokerSupplier);
         Set<String> methodAnnotationNames = new HashSet<>();
         List<AnnotationInstance> instances = info.annotations();
         for (AnnotationInstance instance : instances) {

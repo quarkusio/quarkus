@@ -378,6 +378,7 @@ public class ResteasyReactiveProcessor {
                         }
                     })
                     .setInitConverters(initConverters)
+                    .setResteasyReactiveRecorder(recorder)
                     .setApplicationClassPredicate(s -> {
                         for (ApplicationClassPredicateBuildItem i : applicationClassPredicateBuildItems) {
                             if (i.test(s)) {
@@ -614,7 +615,8 @@ public class ResteasyReactiveProcessor {
     MethodScannerBuildItem integrateSecurityOverrideSupport() {
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
-            public List<HandlerChainCustomizer> scan(MethodInfo method, Map<String, Object> methodContext) {
+            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                    Map<String, Object> methodContext) {
                 return Collections.singletonList(new SecurityContextOverrideHandler.Customizer());
             }
         });

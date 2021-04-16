@@ -7,8 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize the Micrometer
-metrics library for runtime and application metrics.
+This guide demonstrates how your Quarkus application can utilize the Micrometer metrics library for runtime and
+application metrics.
 
 Apart from application-specific metrics, which are described in this guide, you may also utilize built-in metrics
 exposed by various Quarkus extensions. These are described in the guide for each particular extension that supports
@@ -27,24 +27,34 @@ To complete this guide, you need:
 
 == Architecture
 
-In this example, we build a very simple microservice which offers one REST endpoint and that determines
-if a number is prime.
+Micrometer defines a core library providing a registration mechanism for Metrics, and core metric types (Counters,
+Gauges, Timers, Distribution Summaries, etc.). These core types provide an abstraction layer that can be adapted to
+different backend monitoring systems. In essence, your application (or a library) can `register` a `Counter`,
+`Gauge`, `Timer`, or `DistributionSummary` with a `MeterRegistry`. Micrometer will then delegate that registration to
+one or more implementations, where each implementation handles the unique considerations for the associated
+monitoring stack.
+
+Micrometer uses naming conventions to translate between registered Meters and the conventions used by various backend
+registries. Meter names, for example, should be created and named using dots to separate segments, `a.name.like.this`.
+Micrometer then translates that name into the format that the selected registry prefers. Prometheus
+uses underscores, which means the previous name will appear as `a_name_like_this` in Prometheus-formatted metrics
+output.
 
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
+You can skip right to the solution if you prefer. Either:
 
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+* Clone the git repository: `git clone {quickstarts-clone-url}`, or
+* Download an {quickstarts-archive-url}[archive].
 
 The solution is located in the `micrometer-quickstart` {quickstarts-tree-url}/micrometer-quickstart[directory].
 
 == Creating the Maven Project
 
-Micrometer defines a core library and a set of additional libraries that support different monitoring systems.
-Quarkus Micrometer extensions are structured similarly: `quarkus-micrometer` provides core micrometer support and
-runtime integration and other supporting Quarkus and Quarkiverse extensions bring in additional dependencies
-and requirements to support specific monitoring systems.
+Quarkus Micrometer extensions are structured similarly to Micrometer itself: `quarkus-micrometer` provides core
+micrometer support and runtime integration and other Quarkus and Quarkiverse extensions bring in additional
+dependencies and requirements to support specific monitoring systems.
 
 For this example, we'll use the Prometheus registry.
 
@@ -55,7 +65,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=micrometer-quickstart \
-    -DclassName="org.acme.micrometer.PrimeNumberResource" \
+    -DclassName="org.acme.micrometer.ExampleResource" \
     -Dpath="/" \
     -Dextensions="resteasy,micrometer-registry-prometheus"
 cd micrometer-quickstart
@@ -85,15 +95,12 @@ This will add the following to your `pom.xml`:
 
 == Writing the application
 
-The application consists of a single class that implements an algorithm for checking whether a number is prime.
-This algorithm is exposed over a REST interface. With the Micrometer extension enabled, metrics for all http
-server requests are collected automatically.
+Micrometer provides an API that allows you to construct your own custom metrics. The most common types of
+meters supported by monitoring systems are gauges, counters, and summaries. The following sections build
+an example endpoint, and observes endpoint behavior using these basic meter types.
 
-We do want to add a few other metrics to demonstrate how those types work:
-
-* A counter will be incremented for every prime number discovered
-* A gauge will store the highest prime number discovered
-* A timer will record the time spent testing if ia number is prime.
+To register meters, you need a reference to a `MeterRegistry`, which is configured and maintained by the Micrometer
+extension. The `MeterRegistry` can be injected into your application as follows:
 
 [source,java]
 ----
@@ -105,182 +112,290 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import java.util.concurrent.atomic.LongAccumulator;
-import java.util.function.Supplier;
 
-@Path("/")
-public class PrimeNumberResource {
+@Path("/example")
+@Produces("text/plain")
+public class ExampleResource {
 
-    private final LongAccumulator highestPrime = new LongAccumulator(Long::max, 0);
     private final MeterRegistry registry;
 
-    PrimeNumberResource(MeterRegistry registry) {
+    ExampleResource(MeterRegistry registry) {
         this.registry = registry;
-
-        // Create a gauge that uses the highestPrimeNumberSoFar method
-        // to obtain the highest observed prime number
-        registry.gauge("prime.number.max", this,
-                PrimeNumberResource::highestObservedPrimeNumber);
-    }
-
-    @GET
-    @Path("/{number}")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String checkIfPrime(@PathParam("number") long number) {
-        if (number < 1) {
-            return "Only natural numbers can be prime numbers.";
-        }
-        if (number == 1) {
-            return "1 is not prime.";
-        }
-        if (number == 2) {
-            return "2 is prime.";
-        }
-        if (number % 2 == 0) {
-            return number + " is not prime, it is divisible by 2.";
-        }
-
-        Supplier<String> supplier = () -> {
-            for (int i = 3; i < Math.floor(Math.sqrt(number)) + 1; i = i + 2) {
-                if (number % i == 0) {
-                    return number + " is not prime, is divisible by " + i + ".";
-                }
-            }
-            highestPrime.accumulate(number);
-            return number + " is prime.";
-        };
-
-        return registry.timer("prime.number.test").wrap(supplier).get();
-    }
-
-    /**
-     * This method is called by the registered {@code highest.prime.number} gauge.
-     * @return the highest observed prime value
-     */
-    long highestObservedPrimeNumber() {
-        return highestPrime.get();
     }
 }
 ----
 
-== Running and using the application
+Micrometer maintains an internal mapping between unique metric identifier and tag combinations and specific meter
+instances. Using `register`, `counter`,  or other methods to increment counters or record values does not create
+a new instance of a meter unless that combination of identifier and tag/label values hasn't been seen before.
 
-To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`
+=== Gauges
 
-=== Generate some values for the metrics
+Gauges measure a value that can increase or decrease over time, like the speedometer on a car. Gauges can be
+useful when monitoring the statistics for a cache or collection. Consider the following simple example that
+observes the size of a list:
 
-First, ask the endpoint whether some numbers are prime numbers.
-
-[source,bash]
+[source,java]
 ----
-curl localhost:8080/350
+    LinkedList<Long> list = new LinkedList<>();
+
+    // Update the constructor to create the gauge
+    ExampleResource(MeterRegistry registry) {
+        this.registry = registry;
+        registry.gaugeCollectionSize("example.list.size", Tags.empty(), list);
+    }
+
+    @GET
+    @Path("gauge/{number}")
+    public Long checkListSize(@PathParam("number") long number) {
+        if (number == 2 || number % 2 == 0) {
+            // add even numbers to the list
+            list.add(number);
+        } else {
+            // remove items from the list for odd numbers
+            try {
+                number = list.removeFirst();
+            } catch (NoSuchElementException nse) {
+                number = 0;
+            }
+        }
+        return number;
+    }
 ----
 
-The application will respond that 350 is not a prime number because it can be divided by 2.
+Note that even numbers are added to the list, and odd numbers remove an element from the list. Try the following
+sequence and look for `example_list_size` in the plain text output:
 
-Now for some large prime number so that the test takes a bit more time:
-
-[source,bash]
+[source,shell]
 ----
-curl localhost:8080/629521085409773
+# Compile and run the app in dev mode:
+./mvnw compile quarkus:dev
+
+curl http://localhost:8080/example/gauge/1
+curl http://localhost:8080/example/gauge/2
+curl http://localhost:8080/example/gauge/4
+curl http://localhost:8080/q/metrics
+curl http://localhost:8080/example/gauge/6
+curl http://localhost:8080/example/gauge/5
+curl http://localhost:8080/example/gauge/7
+curl http://localhost:8080/q/metrics
 ----
 
-The application will respond that 629521085409773 is a prime number.
-If you want, try some more calls with numbers of your choice.
+It is important to note that gauges are sampled rather than set; there is no record of how the value associated with a
+gauge might have changed between measurements. In this example, the size of the list is observed when the Prometheus
+endpoint is visited.
 
-=== Review the generated metrics
+Micrometer provides a few additional mechanisms for creating gauges. Note that Micrometer does not create strong
+references to the objects it observes by default. Depending on the registry, Micrometer either omits gauges that observe
+objects that have been garbage-collected entirely or uses `NaN` (not a number) as the observed value.
 
-To view the metrics, execute `curl localhost:8080/q/metrics/`
+When should you use a Gauge? Only if you can't use something else. Never gauge something you can count. Gauges can be
+less straight-forward to use than counters. If what you are measuring can be counted (because the value always
+increments), use a counter instead.
 
-Prometheus-formatted metrics will be returned in plain text in no particular order.
+=== Counters
 
-The application above has only one custom gauge that measures the time
-spent determining whether or not a number is prime. The Micrometer extension
-enables additional system, jvm, and http metrics. A subset of the collected metrics
-are shown below.
+Counters are used to measure values that only increase. In the example below, you will count the number of times you
+test a number to see if it is prime:
+
+[source,java]
+----
+    @GET
+    @Path("prime/{number}")
+    public String checkIfPrime(@PathParam("number") long number) {
+        if (number < 1) {
+            return "Only natural numbers can be prime numbers.";
+        }
+        if (number == 1 || number == 2 || number % 2 == 0) {
+            return number + " is not prime.";
+        }
+
+        if ( testPrimeNumber(number) ) {
+            return number + " is prime.";
+        } else {
+            return number + " is not prime.";
+        }
+    }
+
+    protected boolean testPrimeNumber(long number) {
+        // Count the number of times we test for a prime number
+        registry.counter("example.prime.number").increment();
+        for (int i = 3; i < Math.floor(Math.sqrt(number)) + 1; i = i + 2) {
+            if (number % i == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+----
+
+It might be tempting to add a label or tag to the counter indicating what value was checked, but remember that each
+unique combination of metric name (`example.prime.number`) and label value produces a unique time series. Using an
+unbounded set of data as label values can lead to a "cardinality explosion", an exponential increase in the creation
+of new time series.
+
+[NOTE]
+====
+Label and tag can be used interchangably. You may also see "attribute" used in this context in some documentation.
+The gist is each that each label or tag or attribute defines an additional bit of information associated with the
+single numerical measurement that helps you classify, group, or aggregate the measured value later. The Micrometer API
+uses `Tag` as the mechanism for specifying this additional data.
+====
+
+It is possible to add a tag that would convey a little more information, however. Let's adjust our code, and move
+the counter to add some tags to convey additional information.
+
+[source,java]
+----
+    @GET
+    @Path("prime/{number}")
+    public String checkIfPrime(@PathParam("number") long number) {
+        if (number < 1) {
+            registry.counter("example.prime.number", "type", "not-natural").increment();
+            return "Only natural numbers can be prime numbers.";
+        }
+        if (number == 1 ) {
+            registry.counter("example.prime.number", "type", "one").increment();
+            return number + " is not prime.";
+        }
+        if (number == 2 || number % 2 == 0) {
+            registry.counter("example.prime.number", "type", "even").increment();
+            return number + " is not prime.";
+        }
+
+        if ( testPrimeNumber(number) ) {
+            registry.counter("example.prime.number", "type", "prime").increment();
+            return number + " is prime.";
+        } else {
+            registry.counter("example.prime.number", "type", "not-prime").increment();
+            return number + " is not prime.";
+        }
+    }
+
+    protected boolean testPrimeNumber(long number) {
+        for (int i = 3; i < Math.floor(Math.sqrt(number)) + 1; i = i + 2) {
+            if (number % i == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+----
+
+Looking at the data produced by this counter, you can tell how often a negative number was checked, or the number one,
+or an even number, and so on. Try the following sequence and look for `example_prime_number_total` in the plain text
+output. Note that the `_total` suffix is added when Micrometer applies Prometheus naming conventions to
+`example.prime.number`, the originally specified counter name.
+
+[source,shell]
+----
+# If you did not leave quarkus running in dev mode, start it again:
+./mvnw compile quarkus:dev
+
+curl http://localhost:8080/example/prime/-1
+curl http://localhost:8080/example/prime/0
+curl http://localhost:8080/example/prime/1
+curl http://localhost:8080/example/prime/2
+curl http://localhost:8080/example/prime/3
+curl http://localhost:8080/example/prime/15
+curl http://localhost:8080/q/metrics
+----
+
+When should you use a counter? Only if you are doing something that can not be either timed (or summarized).
+Counters only record a count, which may be all that is needed. However, if you want to understand more about how a
+value is changing, a timer (when the base unit of measurement is time) or a distribution summary might be
+more appropriate.
+
+=== Summaries and Timers
+
+Timers and distribution summaries in Micrometer are very similar. Both allow you to record an observed value, which
+will be aggregated with other recorded values and stored as a sum. Micrometer also increments a counter to indicate the
+number of measurements that have been recorded and tracks the maximum observed value (within a decaying interval).
+
+Distribution summaries are populated by calling the `record` method to record observed values, while timers provide
+additional capabilities specific to working with time and measuring durations. For example, we can use a timer to
+measure how long it takes to calculate prime numbers using one of the `record` methods that wraps the invocation of a
+Supplier function:
+
+[source,java]
+----
+    protected boolean testPrimeNumber(long number) {
+        Timer timer = registry.timer("example.prime.number.test");
+        return timer.record(() -> {
+            for (int i = 3; i < Math.floor(Math.sqrt(number)) + 1; i = i + 2) {
+                if (number % i == 0) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+----
+
+Micrometer will apply Prometheus conventions when emitting metrics for this timer. Prometheus measures time in seconds.
+Micrometer converts measured durations into seconds and includes the unit in the metric name, per convention. After
+visiting the prime endpoint a few more times, look in the plain text output for the following three entries:
+`example_prime_number_test_seconds_count`, `example_prime_number_test_seconds_sum`, and
+`example_prime_number_test_seconds_max`.
+
+[source,shell]
+----
+# If you did not leave quarkus running in dev mode, start it again:
+./mvnw compile quarkus:dev
+
+curl http://localhost:8080/example/prime/256
+curl http://localhost:8080/q/metrics
+curl http://localhost:8080/example/prime/7919
+curl http://localhost:8080/q/metrics
+----
+
+Both timers and distribution summaries can be configured to emit additional statistics, like histogram data,
+precomputed percentiles, or service level objective (SLO) boundaries. Note that the count, sum, and histogram data
+can be re-aggregated across dimensions (or across a series of instances), while precomputed percentile values cannot.
+
+=== Review automatically generated metrics
+
+To view metrics, execute `curl localhost:8080/q/metrics/`
+
+The Micrometer extension automatically times HTTP server requests. Following Prometheus naming conventions for
+timers, look for `http_server_requests_seconds_count`, `http_server_requests_seconds_sum`, and
+`http_server_requests_seconds_max`. Dimensional labels have been added for the requested uri, the HTTP method
+(GET, POST, etc.), the status code (200, 302, 404, etc.), and a more general outcome field.
 
 [source,text]
 ----
 # HELP http_server_requests_seconds
 # TYPE http_server_requests_seconds summary
-http_server_requests_seconds_count{method="GET",outcome="SUCCESS",status="200",uri="/{number}",} 4.0
-http_server_requests_seconds_sum{method="GET",outcome="SUCCESS",status="200",uri="/{number}",} 0.041501773
+http_server_requests_seconds_count{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}",} 1.0
+http_server_requests_seconds_sum{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}",} 0.017385896
 # HELP http_server_requests_seconds_max
 # TYPE http_server_requests_seconds_max gauge
-http_server_requests_seconds_max{method="GET",outcome="SUCCESS",status="200",uri="/{number}",} 0.038066359
-# HELP jvm_threads_peak_threads The peak live thread count since the Java virtual machine started or peak was reset
-# TYPE jvm_threads_peak_threads gauge
-jvm_threads_peak_threads 56.0
-# HELP http_server_connections_seconds_max
-# TYPE http_server_connections_seconds_max gauge
-http_server_connections_seconds_max 0.102580737
-# HELP http_server_connections_seconds
-# TYPE http_server_connections_seconds summary
-http_server_connections_seconds_active_count 5.0
-http_server_connections_seconds_duration_sum 0.175032815
-# HELP system_load_average_1m The sum of the number of runnable entities queued to available processors and the number of runnable entities running on the available processors averaged over a period of time
-# TYPE system_load_average_1m gauge
-system_load_average_1m 2.4638671875
-# HELP http_server_bytes_written_max
-# TYPE http_server_bytes_written_max gauge
-http_server_bytes_written_max 39.0
-# HELP http_server_bytes_written
-# TYPE http_server_bytes_written summary
-http_server_bytes_written_count 4.0
-http_server_bytes_written_sum 99.0
-# HELP jvm_classes_loaded_classes The number of classes that are currently loaded in the Java virtual machine
-# TYPE jvm_classes_loaded_classes gauge
-jvm_classes_loaded_classes 9341.0
-# HELP prime_number_max
-# TYPE prime_number_max gauge
-prime_number_max 887.0
-# HELP jvm_info JVM version info
-# TYPE jvm_info gauge
-jvm_info{runtime="OpenJDK Runtime Environment",vendor="Oracle Corporation",version="13.0.2+8",} 1.0
-# HELP jvm_classes_unloaded_classes_total The total number of classes unloaded since the Java virtual machine has started execution
-# TYPE jvm_classes_unloaded_classes_total counter
-jvm_classes_unloaded_classes_total 28.0
-# HELP prime_number_test_seconds
-# TYPE prime_number_test_seconds summary
-prime_number_test_seconds_count 3.0
-prime_number_test_seconds_sum 1.94771E-4
-# HELP prime_number_test_seconds_max
-# TYPE prime_number_test_seconds_max gauge
-prime_number_test_seconds_max 1.76162E-4
-# HELP http_server_bytes_read
-# TYPE http_server_bytes_read summary
-http_server_bytes_read_count 4.0
-http_server_bytes_read_sum 0.0
-# HELP http_server_bytes_read_max
-# TYPE http_server_bytes_read_max gauge
-http_server_bytes_read_max 0.0
-# HELP jvm_threads_states_threads The current number of threads having NEW state
-# TYPE jvm_threads_states_threads gauge
-jvm_threads_states_threads{state="runnable",} 37.0
-jvm_threads_states_threads{state="blocked",} 0.0
-jvm_threads_states_threads{state="waiting",} 15.0
-jvm_threads_states_threads{state="timed-waiting",} 4.0
-jvm_threads_states_threads{state="new",} 0.0
-jvm_threads_states_threads{state="terminated",} 0.0
-# HELP jvm_buffer_memory_used_bytes An estimate of the memory that the Java virtual machine is using for this buffer pool
-# TYPE jvm_buffer_memory_used_bytes gauge
-jvm_buffer_memory_used_bytes{id="mapped",} 0.0
-jvm_buffer_memory_used_bytes{id="direct",} 149521.0
-# HELP jvm_memory_committed_bytes The amount of memory in bytes that is committed for the Java virtual machine to use
-# TYPE jvm_memory_committed_bytes gauge
-jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'profiled nmethods'",} 1.1403264E7
-jvm_memory_committed_bytes{area="heap",id="G1 Survivor Space",} 4194304.0
-jvm_memory_committed_bytes{area="heap",id="G1 Old Gen",} 9.2274688E7
-jvm_memory_committed_bytes{area="nonheap",id="Metaspace",} 4.9803264E7
-jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-nmethods'",} 2555904.0
-jvm_memory_committed_bytes{area="heap",id="G1 Eden Space",} 6.9206016E7
-jvm_memory_committed_bytes{area="nonheap",id="Compressed Class Space",} 6815744.0
-jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'",} 2555904.0
+http_server_requests_seconds_max{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}",} 0.017385896
+#
 ----
 
 Note that metrics appear lazily, you often won't see any data for your endpoint until
 something tries to access it, etc.
+
+.Ignoring endpoints
+
+You can disable measurement of HTTP endpoints using the `quarkus.micrometer.binder.http-server.ignore-patterns`
+property. This property accepts a comma-separated list of simple regex match patterns identifying URI paths that should
+be ignored. For example, setting `quarkus.micrometer.binder.http-server.ignore-patterns=/example/prime/[0-9]+` will
+ignore a request to `http://localhost:8080/example/prime/7919`. A request to `http://localhost:8080/example/gauge/7919`
+would still be measured.
+
+.URI templates
+
+The micrometer extension will make a best effort at representing URIs containing path parameters in templated form.
+Using examples from above, a request to `http://localhost:8080/example/prime/7919` should appear as an attribute of
+`http_server_requests_seconds_*` metrics with a value of `uri=/example/prime/{number}`.
+
+Use the `quarkus.micrometer.binder.http-server.match-patterns` property if the correct URL can not be determined. This
+property accepts a comma-separated list defining an association between a simple regex match pattern and a replacement
+string. For example, setting
+`quarkus.micrometer.binder.http-server.match-patterns=/example/prime/[0-9]+=/example/{jellybeans}` would use the value
+`/example/{jellybeans}` for the uri attribute any time the requested uri matches `/example/prime/[0-9]+`.
 
 == Using MeterFilter to configure metrics
 
@@ -337,6 +452,17 @@ public class CustomConfiguration {
 In this example, a singleton CDI bean will produce two different `MeterFilter` beans. One will be applied only to
 Prometheus `MeterRegistry` instances (using the `@MeterFilterConstraint` qualifier), and another will be applied
 to all `MeterRegistry` instances. An application configuration property is also injected and used as a tag value.
+Additional examples of MeterFilters can be found in the
+link:https://micrometer.io/docs/concepts[official documentation].
+
+== Does Micrometer support annotations?
+
+Micrometer does define two annotations, `@Counted` and `@Timed`, that can be added to methods. The `@Timed` annotation
+will wrap the execution of a method and will emit the following tags in addition to any tags defined on the
+annotation itself: class, method, and exception (either "none" or the simple class name of a detected exception).
+
+Using annotations is limited, as you can't dynamically assign meaningful tag values. Also note that many methods, e.g.
+REST endpoint methods or Vert.x Routes, are counted and timed by the micrometer extension out of the box.
 
 == Using other Registry implementations
 
@@ -406,24 +532,25 @@ that are integrated with the Quarkus configuration model.
 
 If you use the MicroProfile Metrics API in your application, the Micrometer extension will create an adaptive
 layer to map those metrics into the Micrometer registry. Note that naming conventions between the two
-systems will change, but you can use MeterFilters to remap names or tags to what your dashboards require.
+systems is different, so the metrics that are emitted when using MP Metrics with Micrometer will change.
+You can use a `MeterFilter` to remap names or tags according to your conventions.
 
 [source,java]
 ----
 @Produces
 @Singleton
 public MeterFilter renameApplicationMeters() {
-    final String targetMetric = PrimeResource.class.getName() + ".highestPrimeNumberSoFar";
+    final String targetMetric = MPResourceClass.class.getName() + ".mpAnnotatedMethodName";
 
     return MeterFilter() {
         @Override
         public Meter.Id map(Meter.Id id) {
-            // rename the specified metric (remove package), and drop the scope tag
-            // you could also use this to prepend a scope tag (application, base, vendor, if present) to the metric name
             if (id.getName().equals(targetMetric)) {
+                // Drop the scope tag (MP Registry type: application, vendor, base)
                 List<Tag> tags = id.getTags().stream().filter(x -> !"scope".equals(x.getKey()))
                         .collect(Collectors.toList());
-                return id.withName("highestPrimeNumberSoFar").replaceTags(tags);
+                // rename the metric
+                return id.withName("my.metric.name").replaceTags(tags);
             }
             return id;
         }

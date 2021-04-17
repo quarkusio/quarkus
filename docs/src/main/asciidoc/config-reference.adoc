@@ -503,3 +503,7 @@ Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Con
 
 For more information, please check the
 link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].
+
+== Change build time properties after your application has been published
+
+If you are in the rare situation that you need to change the build time configuration after your application is built, then check out how link:reaugmentation[re-augmentation] can be used to rebuild the augmentation output for a different build time configuration.

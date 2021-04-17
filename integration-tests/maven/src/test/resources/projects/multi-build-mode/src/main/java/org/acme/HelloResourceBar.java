@@ -18,6 +18,6 @@ public class HelloResourceBar {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "Bar: hello, " + service.name();
+        return "Bar: hello, " + service.name() + "-" + service.classFounds();
     }
 }

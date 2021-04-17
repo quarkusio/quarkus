@@ -18,6 +18,6 @@ public class HelloResourceFoo {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "Foo: hello, " + service.name();
+        return "Foo: hello, " + service.name() + "-" + service.classFounds();
     }
 }

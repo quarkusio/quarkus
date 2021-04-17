@@ -91,20 +91,29 @@ class BuildIT extends MojoTestBase {
         testDir = initProject("projects/multi-build-mode");
         build(null);
 
-        launch("foo-", "Foo: hello, from foo");
-        launch("bar-", "Bar: hello, from bar");
+        for (TestContext context : TestContext.values()) {
+            if (context == TestContext.FAST_NO_PREFIX) {
+                continue;
+            }
+            launch(context, "foo-", "Foo: hello, from foo-?/MultiSet");
+            launch(context, "bar-", "Bar: hello, from bar-FileUtils/?");
+            launch(context, "foo-full-", "Foo: hello, from foo-FileUtils/MultiSet");
+            launch(context, "bar-empty-", "Bar: hello, from bar-?/?");
+        }
     }
 
     private void launch() throws IOException {
-        launch("", "hello, from foo");
+        launch(TestContext.FAST_NO_PREFIX, "", "hello, from foo");
     }
 
-    private void launch(String outputPrefix, String expectedMessage) throws IOException {
-        File output = new File(testDir, String.format("target/%soutput.log", outputPrefix));
+    private void launch(TestContext context, String outputPrefix, String expectedMessage) throws IOException {
+        File output = new File(testDir, String.format("target/%s%soutput.log", context.prefix, outputPrefix));
         output.createNewFile();
-        Process process = JarRunnerIT.doLaunch(new File(testDir, String.format("target/%squarkus-app", outputPrefix)),
-                Paths.get("quarkus-run.jar"), output,
-                Collections.emptyList()).start();
+        Process process = JarRunnerIT
+                .doLaunch(new File(testDir, String.format("target/%s%squarkus-app", context.prefix, outputPrefix)),
+                        Paths.get(context.jarFileName), output,
+                        Collections.emptyList())
+                .start();
         try {
             Assertions.assertEquals(expectedMessage, DevModeTestUtils.getHttpResponse("/hello"));
         } finally {
@@ -131,6 +140,21 @@ class BuildIT extends MojoTestBase {
                 Manifest manifest = stream.getManifest();
                 assertThat(manifest).isNotNull();
             }
+        }
+    }
+
+    enum TestContext {
+        FAST_NO_PREFIX("", "quarkus-run.jar"),
+        FAST("fast-", "quarkus-run.jar"),
+        LEGACY("legacy-", "legacy-runner.jar"),
+        UBER("uber-", "uber-runner.jar");
+
+        final String prefix;
+        final String jarFileName;
+
+        TestContext(String prefix, String jarFileName) {
+            this.prefix = prefix;
+            this.jarFileName = jarFileName;
         }
     }
 }

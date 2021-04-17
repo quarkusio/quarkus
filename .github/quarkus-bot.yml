@@ -447,6 +447,6 @@ triage:
       notify: [ge0ffrey, rsynek, Christopher-Chianelli]
     - labels: [kind/extension-proposal]
       title: quarkiverse
-      notify: [gastaldi, gsmet, aloubyansky]
+      notify: [gastaldi, gsmet, aloubyansky, maxandersen]
   qe:
     notify: [rsvoboda, mjurc]

@@ -14,6 +14,7 @@ import javax.interceptor.InvocationContext;
 import org.jboss.logging.Logger;
 
 import io.quarkus.cache.CacheResult;
+import io.smallrye.mutiny.Uni;
 
 @CacheResult(cacheName = "") // The `cacheName` attribute is @Nonbinding.
 @Interceptor
@@ -47,26 +48,39 @@ public class CacheResultInterceptor extends CacheInterceptor {
                 @Override
                 public Object apply(Object k) {
                     try {
-                        return invocationContext.proceed();
+                        if (Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType())) {
+                            LOGGER.debugf("Adding %s entry with key [%s] into cache [%s]",
+                                    UnresolvedUniValue.class.getSimpleName(), key, cache.getName());
+                            return UnresolvedUniValue.INSTANCE;
+                        } else {
+                            return invocationContext.proceed();
+                        }
                     } catch (Exception e) {
                         throw new CacheException(e);
                     }
                 }
             });
 
+            Object value;
             if (binding.lockTimeout() <= 0) {
-                return cacheValue.get();
+                value = cacheValue.get();
             } else {
                 try {
                     /*
                      * If the current thread started the cache value computation, then the computation is already finished since
                      * it was done synchronously and the following call will never time out.
                      */
-                    return cacheValue.get(binding.lockTimeout(), TimeUnit.MILLISECONDS);
+                    value = cacheValue.get(binding.lockTimeout(), TimeUnit.MILLISECONDS);
                 } catch (TimeoutException e) {
                     // TODO: Add statistics here to monitor the timeout.
                     return invocationContext.proceed();
                 }
+            }
+
+            if (Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType())) {
+                return resolveUni(invocationContext, cache, key, value);
+            } else {
+                return value;
             }
 
         } catch (ExecutionException e) {
@@ -91,6 +105,16 @@ public class CacheResultInterceptor extends CacheInterceptor {
                 // The ExecutionException does not have a cause (very unlikely case).
                 throw e;
             }
+        }
+    }
+
+    private Object resolveUni(InvocationContext invocationContext, AbstractCache cache, Object key, Object value)
+            throws Exception {
+        if (value == UnresolvedUniValue.INSTANCE) {
+            return ((Uni<Object>) invocationContext.proceed())
+                    .onItem().call(emittedValue -> cache.replaceUniValue(key, emittedValue));
+        } else {
+            return Uni.createFrom().item(value);
         }
     }
 }

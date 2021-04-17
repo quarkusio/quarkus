@@ -104,14 +104,14 @@ jobs:
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
       - name: Report status
-        uses: jbangdev/jbang-action@v0.68.0
         if: "always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
-        with:
-          script: .github/NativeBuildReport.java
-          scriptargs: |
-            issueNumber=15867
-            runId=${{ github.run_id }}
-            status=${{ job.status }}
-            token=${{ secrets.GITHUB_API_TOKEN }}
-            issueRepo=${{ github.repository }}
+        shell: bash
+        run: |
+          curl -Ls https://sh.jbang.dev | bash -s - app setup
+          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
+            issueNumber=15867 \
+            runId=${{ github.run_id }} \
+            status=${{ job.status }} \
+            token=${{ secrets.GITHUB_API_TOKEN }} \
+            issueRepo=${{ github.repository }} \
             thisRepo=${{ github.repository }}

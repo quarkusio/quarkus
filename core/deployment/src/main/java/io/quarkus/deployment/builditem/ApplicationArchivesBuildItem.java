@@ -58,12 +58,15 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
      * @return The application archive
      */
     public ApplicationArchive containingArchive(String className) {
-        DotName name = DotName.createSimple(className);
-        if (root.getIndex().getClassByName(name) != null) {
+        return containingArchive(DotName.createSimple(className));
+    }
+
+    public ApplicationArchive containingArchive(DotName className) {
+        if (root.getIndex().getClassByName(className) != null) {
             return root;
         }
         for (ApplicationArchive i : applicationArchives) {
-            if (i.getIndex().getClassByName(name) != null) {
+            if (i.getIndex().getClassByName(className) != null) {
                 return i;
             }
         }

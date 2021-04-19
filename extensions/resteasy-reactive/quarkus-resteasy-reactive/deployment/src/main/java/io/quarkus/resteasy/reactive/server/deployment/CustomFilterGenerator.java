@@ -381,7 +381,8 @@ final class CustomFilterGenerator {
         ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, rrReqCtxHandle);
         AssignableResultHandle resourceInfo = filterMethod.createVariable(ResteasyReactiveResourceInfo.class);
         BranchResult ifNullBranch = filterMethod.ifNull(runtimeResourceHandle);
-        ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().loadNull());
+        ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().readStaticField(
+                FieldDescriptor.of(SimpleResourceInfo.NullValues.class, "INSTANCE", SimpleResourceInfo.NullValues.class)));
         ifNullBranch.falseBranch().assign(resourceInfo, ifNullBranch.falseBranch().invokeVirtualMethod(
                 ofMethod(RuntimeResource.class, "getLazyMethod", ResteasyReactiveResourceInfo.class),
                 runtimeResourceHandle));
@@ -392,7 +393,8 @@ final class CustomFilterGenerator {
         ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, rrReqCtxHandle);
         AssignableResultHandle resourceInfo = filterMethod.createVariable(SimpleResourceInfo.class);
         BranchResult ifNullBranch = filterMethod.ifNull(runtimeResourceHandle);
-        ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().loadNull());
+        ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().readStaticField(
+                FieldDescriptor.of(SimpleResourceInfo.NullValues.class, "INSTANCE", SimpleResourceInfo.NullValues.class)));
         ifNullBranch.falseBranch().assign(resourceInfo, ifNullBranch.falseBranch().invokeVirtualMethod(
                 ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimpleResourceInfo.class),
                 runtimeResourceHandle));

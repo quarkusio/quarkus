@@ -12,7 +12,7 @@ public class UniResponseFilter {
     @ServerResponseFilter
     Uni<Void> filter(SimpleResourceInfo simplifiedResourceInfo,
             ContainerResponseContext responseContext) {
-        if (simplifiedResourceInfo != null) {
+        if (simplifiedResourceInfo.getMethodName() != null) {
             return Uni.createFrom().deferred(() -> {
                 responseContext.getHeaders().putSingle("java-method", simplifiedResourceInfo.getMethodName());
                 return Uni.createFrom().nullItem();

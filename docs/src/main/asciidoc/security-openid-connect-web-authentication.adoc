@@ -681,6 +681,7 @@ Additionally, `OidcWiremockTestResource` set token issuer and audience to `https
 
 `OidcWiremockTestResource` can be used to emulate all OpenId Connect providers.
 
+[[integration-testing-keycloak]]
 === Keycloak
 
 If you work with Keycloak then you can test against a live Keycloak instance by adding the following dependency:
@@ -733,9 +734,20 @@ public class CodeFlowAuthorizationTest {
 By default, `KeycloakTestResourceLifecycleManager` uses HTTPS to initialize a Keycloak instance which can be disabled with `keycloak.use.https=false`.
 Default realm name is `quarkus` and client id - `quarkus-web-app` - set `keycloak.realm` and `keycloak.web-app.client` system properties to customize the values if needed.
 
+[[integration-testing-security-annotation]]
 === TestSecurity annotation
 
-Please see link:security-testing#testing-security[TestingSecurity Annotation] section how to do simple tests with the `TestSecurity` annotation.
+Please see link:security-jwt#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken`.
+
+The only difference is that the following dependency should be used when testing the `web-app` applications:
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-security-oidc</artifactId>
+    <scope>test</scope>
+</dependency>
+----
 
 == Configuration Reference
 

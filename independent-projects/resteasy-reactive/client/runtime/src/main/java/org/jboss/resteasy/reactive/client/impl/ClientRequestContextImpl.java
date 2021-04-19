@@ -22,7 +22,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Cookie;
@@ -31,13 +30,14 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
-public class ClientRequestContextImpl implements ClientRequestContext {
+public class ClientRequestContextImpl implements ResteasyReactiveClientRequestContext {
 
     private final Client client;
     private final ConfigurationImpl configuration;
@@ -240,8 +240,27 @@ public class ClientRequestContextImpl implements ClientRequestContext {
         return restClientRequestContext;
     }
 
+    public boolean isAborted() {
+        return restClientRequestContext.isAborted();
+    }
+
     public Response getAbortedWith() {
         return restClientRequestContext.getAbortedWith();
+    }
+
+    @Override
+    public void suspend() {
+        restClientRequestContext.suspend();
+    }
+
+    @Override
+    public void resume() {
+        restClientRequestContext.resume();
+    }
+
+    @Override
+    public void resume(Throwable t) {
+        restClientRequestContext.resume(t);
     }
 
     private class ClientRequestHeadersMap implements MultivaluedMap<String, Object> {

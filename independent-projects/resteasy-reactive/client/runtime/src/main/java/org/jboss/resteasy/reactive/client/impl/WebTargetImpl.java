@@ -23,13 +23,13 @@ public class WebTargetImpl implements WebTarget {
     private final ConfigurationImpl configuration;
     private boolean chunked = false;
     private final ClientImpl restClient;
-    final ClientRestHandler[] handlerChain;
+    final HandlerChain handlerChain;
     final ClientRestHandler[] abortHandlerChain;
     final ThreadSetupAction requestContext;
 
     public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration,
-            ClientRestHandler[] handlerChain,
+            HandlerChain handlerChain,
             ClientRestHandler[] abortHandlerChain,
             ThreadSetupAction requestContext) {
         this.restClient = restClient;

@@ -33,7 +33,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
     @Override
     public void handle(RestClientRequestContext requestContext) {
-        if (requestContext.getAbortedWith() != null) {
+        if (requestContext.isAborted()) {
             return;
         }
         requestContext.suspend();

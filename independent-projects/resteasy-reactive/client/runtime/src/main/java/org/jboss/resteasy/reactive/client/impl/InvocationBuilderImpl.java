@@ -38,21 +38,23 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     final WebTargetImpl target;
     final RequestSpec requestSpec;
     final Map<String, Object> properties = new HashMap<>();
+    final ConfigurationImpl configuration;
     final ClientImpl restClient;
-    final ClientRestHandler[] handlerChain;
+    final HandlerChain handlerChain;
     final ClientRestHandler[] abortHandlerChain;
     final ThreadSetupAction requestContext;
     final long readTimeoutMs;
 
     public InvocationBuilderImpl(URI uri, ClientImpl restClient, HttpClient httpClient,
             WebTargetImpl target,
-            ConfigurationImpl configuration, ClientRestHandler[] handlerChain,
+            ConfigurationImpl configuration, HandlerChain handlerChain,
             ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.uri = uri;
         this.restClient = restClient;
         this.httpClient = httpClient;
         this.target = target;
         this.requestSpec = new RequestSpec(configuration);
+        this.configuration = configuration;
         this.handlerChain = handlerChain;
         this.abortHandlerChain = abortHandlerChain;
         this.requestContext = requestContext;
@@ -96,7 +98,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public AsyncInvokerImpl async() {
-        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec,
+        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration,
                 properties, handlerChain, abortHandlerChain, requestContext);
     }
 
@@ -168,7 +170,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public CompletionStageRxInvoker rx() {
-        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec,
+        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration,
                 properties, handlerChain, abortHandlerChain, requestContext);
     }
 

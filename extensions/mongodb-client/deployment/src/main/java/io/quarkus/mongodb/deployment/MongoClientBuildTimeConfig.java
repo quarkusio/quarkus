@@ -29,4 +29,10 @@ public class MongoClientBuildTimeConfig {
      */
     @ConfigItem(name = "force-default-clients")
     public boolean forceDefaultClients;
+
+    /**
+     * Configuration for DevServices. DevServices allows Quarkus to automatically start MongoDB in dev and test mode.
+     */
+    @ConfigItem
+    public DevServicesBuildTimeConfig devservices;
 }

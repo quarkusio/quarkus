@@ -32,6 +32,12 @@ echo ''
 echo 'Building dependencies list from testuite pom.xml...'
 echo ''
 
+if [ "${CI:-}" == true ] && [ ! -f "${PRG_PATH}/target/testsuite/tests/pom.xml" ]
+then
+  echo 'Testsuite pom.xml not found, assuming no-op incremental build.'
+  exit 0
+fi
+
 # get the Quarkus artifact ids from tests/pom.xml of the testsuite repo that is cloned in target
 # pipefail is switched off briefly so that a better error can be logged when nothing is found
 set +o pipefail

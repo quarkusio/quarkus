@@ -17,8 +17,11 @@ public class QuarkusRestMetricsFilter {
 
     @ServerResponseFilter
     public void filter(ResourceInfo resourceInfo, Throwable throwable) {
-        final Class<?> resourceClass = resourceInfo.getResourceClass();
-        final Method resourceMethod = resourceInfo.getResourceMethod();
+        Class<?> resourceClass = resourceInfo.getResourceClass();
+        Method resourceMethod = resourceInfo.getResourceMethod();
+        if ((resourceClass == null) || (resourceMethod == null)) {
+            return;
+        }
         maybeCreateMetrics(resourceClass, resourceMethod);
         FilterUtil.finishRequest(System.nanoTime(), resourceInfo.getResourceClass(),
                 resourceInfo.getResourceMethod().getName(),

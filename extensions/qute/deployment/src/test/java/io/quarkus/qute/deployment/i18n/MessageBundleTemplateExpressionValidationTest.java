@@ -20,7 +20,8 @@ public class MessageBundleTemplateExpressionValidationTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MyBundle.class, Item.class)
-                    .addAsResource(new StringAsset("{msg:hello('foo')} {msg:hello_and_bye} {msg:hello(1,2)}"),
+                    .addAsResource(new StringAsset(
+                            "{@java.util.List<java.lang.Integer> names} {msg:hello('foo')} {msg:hello_and_bye} {msg:hello(1,2)} {#each names}{msg:helloName(it)}{/each}"),
                             "templates/hello.html"))
             .assertException(t -> {
                 Throwable e = t;
@@ -35,10 +36,11 @@ public class MessageBundleTemplateExpressionValidationTest {
                 if (te == null) {
                     fail("No template exception thrown: " + t);
                 }
-                assertTrue(te.getMessage().contains("Found template problems (3)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found template problems (4)"), te.getMessage());
                 assertTrue(te.getMessage().contains("msg:hello('foo')"), te.getMessage());
                 assertTrue(te.getMessage().contains("msg:hello_and_bye"), te.getMessage());
                 assertTrue(te.getMessage().contains("msg:hello(1,2)"), te.getMessage());
+                assertTrue(te.getMessage().contains("msg:helloName(it)"), te.getMessage());
             });
 
     @Test
@@ -51,6 +53,9 @@ public class MessageBundleTemplateExpressionValidationTest {
 
         @Message("Hello {item.name}")
         String hello(Item item);
+
+        @Message("Hello {name}!")
+        String helloName(String name);
 
     }
 

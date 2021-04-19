@@ -70,6 +70,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private String responseReasonPhrase;
     private MultivaluedMap<String, String> responseHeaders;
     private ClientRequestContextImpl clientRequestContext;
+    private ClientResponseContextImpl clientResponseContext;
     private InputStream responseEntityStream;
     private Response abortedWith;
 
@@ -141,6 +142,13 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public ClientRequestContextImpl getClientRequestContext() {
         return clientRequestContext;
+    }
+
+    public ClientResponseContextImpl getOrCreateClientResponseContext() {
+        if (clientResponseContext == null) {
+            clientResponseContext = new ClientResponseContextImpl(this);
+        }
+        return clientResponseContext;
     }
 
     public ClientRequestContextImpl getOrCreateClientRequestContext() {
@@ -334,6 +342,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public RestClientRequestContext setResponseEntityStream(InputStream responseEntityStream) {
         this.responseEntityStream = responseEntityStream;
         return this;
+    }
+
+    public boolean isAborted() {
+        return getAbortedWith() != null;
     }
 
     public Response getAbortedWith() {

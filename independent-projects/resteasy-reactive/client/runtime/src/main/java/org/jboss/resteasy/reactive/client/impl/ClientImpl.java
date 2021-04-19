@@ -58,9 +58,6 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.reactive.client.handlers.ClientErrorHandler;
-import org.jboss.resteasy.reactive.client.handlers.ClientRequestFiltersRestHandler;
-import org.jboss.resteasy.reactive.client.handlers.ClientResponseRestHandler;
-import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -78,7 +75,7 @@ public class ClientImpl implements Client {
     final HostnameVerifier hostnameVerifier;
     final SSLContext sslContext;
     private boolean isClosed;
-    final ClientRestHandler[] handlerChain;
+    final HandlerChain handlerChain;
     final ClientRestHandler[] abortHandlerChain;
     final Vertx vertx;
     private final MultiQueryParamMode multiQueryParamMode;
@@ -121,8 +118,7 @@ public class ClientImpl implements Client {
         }
         this.httpClient = this.vertx.createHttpClient(options);
         abortHandlerChain = new ClientRestHandler[] { new ClientErrorHandler() };
-        handlerChain = new ClientRestHandler[] { new ClientRequestFiltersRestHandler(),
-                new ClientSendRequestHandler(followRedirects), new ClientResponseRestHandler() };
+        handlerChain = new HandlerChain(followRedirects);
     }
 
     public ClientContext getClientContext() {

@@ -315,6 +315,7 @@ public class MessageBundleProcessor {
             List<TypeCheckExcludeBuildItem> excludes,
             List<MessageBundleBuildItem> messageBundles,
             List<MessageBundleMethodBuildItem> messageBundleMethods,
+            List<TemplateExpressionMatchesBuildItem> expressionMatches,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             BuildProducer<ImplicitValueResolverBuildItem> implicitClasses) {
 
@@ -356,7 +357,13 @@ public class MessageBundleProcessor {
 
                 for (Entry<TemplateAnalysis, Set<Expression>> exprEntry : expressions.entrySet()) {
 
-                    Map<Integer, Match> generatedIdsToMatches = new HashMap<>();
+                    Map<Integer, Match> generatedIdsToMatches = Collections.emptyMap();
+                    for (TemplateExpressionMatchesBuildItem templateExpressionMatchesBuildItem : expressionMatches) {
+                        if (templateExpressionMatchesBuildItem.templateGeneratedId.equals(exprEntry.getKey().generatedId)) {
+                            generatedIdsToMatches = templateExpressionMatchesBuildItem.getGeneratedIdsToMatches();
+                            break;
+                        }
+                    }
 
                     for (Expression expression : exprEntry.getValue()) {
                         // msg:hello_world(foo.name)
@@ -407,7 +414,7 @@ public class MessageBundleProcessor {
                                             incorrectExpressions, expression, index, implicitClassToMembersUsed,
                                             templateIdToPathFun, generatedIdsToMatches);
                                     Match match = results.get(param.toOriginalString());
-                                    if (match != null && !Types.isAssignableFrom(match.type(),
+                                    if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),
                                             methodParams.get(idx), index)) {
                                         incorrectExpressions
                                                 .produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),

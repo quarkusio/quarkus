@@ -484,6 +484,7 @@ public class QuteProcessor {
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             BuildProducer<ImplicitValueResolverBuildItem> implicitClasses,
+            BuildProducer<TemplateExpressionMatchesBuildItem> expressionMatches,
             BeanDiscoveryFinishedBuildItem beanDiscovery,
             List<CheckedTemplateBuildItem> checkedTemplates,
             QuteConfig config) {
@@ -559,6 +560,9 @@ public class QuteProcessor {
                                     generatedIdsToMatches));
                 }
             }
+
+            expressionMatches
+                    .produce(new TemplateExpressionMatchesBuildItem(templateAnalysis.generatedId, generatedIdsToMatches));
         }
 
         for (Entry<DotName, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {

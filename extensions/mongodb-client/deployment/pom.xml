@@ -98,10 +98,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-mongodb-client-deployment-spi</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

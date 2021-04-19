@@ -32,6 +32,8 @@ public class HttpAuthenticator {
     final HttpAuthenticationMechanism[] mechanisms;
     @Inject
     IdentityProviderManager identityProviderManager;
+    @Inject
+    Instance<PathMatchingHttpSecurityPolicy> pathMatchingPolicy;
 
     public HttpAuthenticator() {
         mechanisms = null;
@@ -98,9 +100,15 @@ public class HttpAuthenticator {
      */
     public Uni<SecurityIdentity> attemptAuthentication(RoutingContext routingContext) {
 
-        HttpAuthenticationMechanism matchingMech = findMechanismWithAuthorizationScheme(routingContext);
+        String pathSpecificMechanism = pathMatchingPolicy.isResolvable()
+                ? pathMatchingPolicy.get().getAuthMechanismName(routingContext)
+                : null;
+        HttpAuthenticationMechanism matchingMech = findBestCandidateMechanism(routingContext, pathSpecificMechanism);
         if (matchingMech != null) {
+            routingContext.put(HttpAuthenticationMechanism.class.getName(), matchingMech);
             return matchingMech.authenticate(routingContext, identityProviderManager);
+        } else if (pathSpecificMechanism != null) {
+            return Uni.createFrom().optional(Optional.empty());
         }
 
         Uni<SecurityIdentity> result = mechanisms[0].authenticate(routingContext, identityProviderManager);
@@ -126,7 +134,7 @@ public class HttpAuthenticator {
     public Uni<Boolean> sendChallenge(RoutingContext routingContext) {
         Uni<Boolean> result = null;
 
-        HttpAuthenticationMechanism matchingMech = findMechanismWithAuthorizationScheme(routingContext);
+        HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
         if (matchingMech != null) {
             result = matchingMech.sendChallenge(routingContext);
         }
@@ -158,7 +166,7 @@ public class HttpAuthenticator {
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext routingContext) {
-        HttpAuthenticationMechanism matchingMech = findMechanismWithAuthorizationScheme(routingContext);
+        HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
         if (matchingMech != null) {
             return matchingMech.getChallenge(routingContext);
         }
@@ -179,16 +187,25 @@ public class HttpAuthenticator {
         return result;
     }
 
-    private HttpAuthenticationMechanism findMechanismWithAuthorizationScheme(RoutingContext routingContext) {
-        String authScheme = getAuthorizationScheme(routingContext);
-        if (authScheme == null) {
-            return null;
-        }
-        for (int i = 0; i < mechanisms.length; ++i) {
-            HttpCredentialTransport credType = mechanisms[i].getCredentialTransport();
-            if (credType != null && credType.getTransportType() == Type.AUTHORIZATION
-                    && credType.getTypeTarget().toLowerCase().startsWith(authScheme.toLowerCase())) {
-                return mechanisms[i];
+    private HttpAuthenticationMechanism findBestCandidateMechanism(RoutingContext routingContext,
+            String pathSpecificMechanism) {
+        if (pathSpecificMechanism != null) {
+            for (int i = 0; i < mechanisms.length; ++i) {
+                HttpCredentialTransport credType = mechanisms[i].getCredentialTransport();
+                if (credType != null && credType.getAuthenticationScheme().equalsIgnoreCase(pathSpecificMechanism)) {
+                    return mechanisms[i];
+                }
+            }
+        } else {
+            String authScheme = getAuthorizationScheme(routingContext);
+            if (authScheme != null) {
+                for (int i = 0; i < mechanisms.length; ++i) {
+                    HttpCredentialTransport credType = mechanisms[i].getCredentialTransport();
+                    if (credType != null && credType.getTransportType() == Type.AUTHORIZATION
+                            && credType.getTypeTarget().toLowerCase().startsWith(authScheme.toLowerCase())) {
+                        return mechanisms[i];
+                    }
+                }
             }
         }
         return null;

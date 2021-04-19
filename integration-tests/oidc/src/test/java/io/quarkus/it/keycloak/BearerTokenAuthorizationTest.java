@@ -5,9 +5,7 @@ import static io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManag
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
@@ -63,9 +61,8 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testBasicAuth() {
-        byte[] basicAuthBytes = "alice:password".getBytes(StandardCharsets.UTF_8);
-        RestAssured.given()
-                .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(basicAuthBytes))
+        RestAssured.given().auth()
+                .preemptive().basic("alice", "password")
                 .when().get("/api/users/me")
                 .then()
                 .statusCode(200)
@@ -157,6 +154,41 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("Hello World"));
+    }
+
+    @Test
+    public void testBearerAuthFailureWhereBasicIsRequired() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))
+                .when().get("/basic-only")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testBasicAuthWhereBasicIsRequired() {
+        RestAssured.given().auth()
+                .preemptive().basic("alice", "password")
+                .when().get("/basic-only")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice:/basic-only"));
+    }
+
+    @Test
+    public void testBasicAuthFailureWhereBearerIsRequired() {
+        RestAssured.given().auth().preemptive().basic("alice", "password")
+                .when().get("/bearer-only")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testBearerAuthWhereBasicIsRequired() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))
+                .when().get("/bearer-only")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice@gmail.com:/bearer-only"));
     }
 
     @Test

@@ -43,6 +43,7 @@
         <module>kafka-sasl</module>
         <module>kafka-snappy</module>
         <module>kafka-avro</module>
+        <module>kafka-avro-apicurio2</module>
         <module>kafka-streams</module>
         <module>jpa</module>
         <module>jpa-db2</module>

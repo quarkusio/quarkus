@@ -16,6 +16,6 @@ public class HelloResourceBarTest {
             .when().get("/hello")
             .then()
             .statusCode(200)
-            .body(is("Bar: hello, from bar"));
+            .body(is("Bar: hello, from bar-FileUtils/MultiSet"));
     }
 }

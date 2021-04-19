@@ -16,6 +16,6 @@ public class HelloResourceFooTest {
             .when().get("/hello")
             .then()
             .statusCode(200)
-            .body(is("Foo: hello, from foo"));
+            .body(is("Foo: hello, from foo-FileUtils/MultiSet"));
     }
 }

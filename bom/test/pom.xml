@@ -35,6 +35,16 @@
                 <artifactId>strimzi-test-container</artifactId>
                 <version>${strimzi-test-container.version}</version>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.docker-java</groupId>
+                        <artifactId>docker-java-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
         </dependencies>

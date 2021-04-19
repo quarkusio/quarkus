@@ -90,6 +90,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
@@ -101,6 +102,7 @@ import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.ServerVertxAsyncFileMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.ServerVertxBufferMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
@@ -129,6 +131,7 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.AsyncFile;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
@@ -145,11 +148,36 @@ public class ResteasyReactiveProcessor {
         return new CapabilityBuildItem(Capability.RESTEASY_REACTIVE);
     }
 
+    // This is required to get rid of netty exceptions when allocating direct buffers in tests running
+    // in IDEs, which have assertions enabled, otherwise we run into:
+    /*
+     * java.lang.AssertionError
+     * at io.netty.buffer.PoolChunk.calculateRunSize(PoolChunk.java:366)
+     * at io.netty.buffer.PoolChunk.allocateSubpage(PoolChunk.java:424)
+     * at io.netty.buffer.PoolChunk.allocate(PoolChunk.java:299)
+     * at io.netty.buffer.PoolArena.allocateNormal(PoolArena.java:205)
+     * at io.netty.buffer.PoolArena.tcacheAllocateSmall(PoolArena.java:174)
+     * at io.netty.buffer.PoolArena.allocate(PoolArena.java:136)
+     * at io.netty.buffer.PoolArena.allocate(PoolArena.java:128)
+     * at io.netty.buffer.PooledByteBufAllocator.newDirectBuffer(PooledByteBufAllocator.java:378)
+     * at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:187)
+     * at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:178)
+     * at io.vertx.core.net.impl.PartialPooledByteBufAllocator.directBuffer(PartialPooledByteBufAllocator.java:92)
+     */
+    @BuildStep
+    MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {
+        return new MinNettyAllocatorMaxOrderBuildItem(3);
+    }
+
     @BuildStep
     void vertxIntegration(BuildProducer<MessageBodyWriterBuildItem> writerBuildItemBuildProducer) {
         writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerVertxBufferMessageBodyWriter.class.getName(),
                 Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER, true,
                 Priorities.USER));
+        writerBuildItemBuildProducer
+                .produce(new MessageBodyWriterBuildItem(ServerVertxAsyncFileMessageBodyWriter.class.getName(),
+                        AsyncFile.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER, true,
+                        Priorities.USER));
     }
 
     @BuildStep

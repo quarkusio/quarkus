@@ -256,7 +256,11 @@ public final class HibernateReactiveProcessor {
         }
 
         // Query
-        if (persistenceUnitConfig.batchFetchSize > 0) {
+        if (persistenceUnitConfig.fetch.batchSize > 0) {
+            desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
+                    Integer.toString(persistenceUnitConfig.fetch.batchSize));
+            desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
+        } else if (persistenceUnitConfig.batchFetchSize > 0) {
             desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
                     Integer.toString(persistenceUnitConfig.batchFetchSize));
             desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
@@ -270,6 +274,11 @@ public final class HibernateReactiveProcessor {
 
         desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
                 persistenceUnitConfig.query.defaultNullOrdering.name().toLowerCase());
+
+        // JDBC
+        persistenceUnitConfig.jdbc.statementBatchSize.ifPresent(
+                fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
+                        String.valueOf(fetchSize)));
 
         // Statistics
         if (hibernateOrmConfig.metricsEnabled

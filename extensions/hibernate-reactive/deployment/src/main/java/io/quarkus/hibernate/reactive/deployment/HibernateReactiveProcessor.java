@@ -272,6 +272,11 @@ public final class HibernateReactiveProcessor {
         desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
                 persistenceUnitConfig.query.defaultNullOrdering.name().toLowerCase());
 
+        // JDBC
+        persistenceUnitConfig.jdbc.statementBatchSize.ifPresent(
+                statementBatchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
+                        String.valueOf(statementBatchSize)));
+
         // Statistics
         if (hibernateOrmConfig.metricsEnabled
                 || (hibernateOrmConfig.statistics.isPresent() && hibernateOrmConfig.statistics.get())) {

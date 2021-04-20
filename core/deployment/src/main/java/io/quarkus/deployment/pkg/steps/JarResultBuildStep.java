@@ -403,11 +403,6 @@ public class JarResultBuildStep {
                                     seen.put(relativePath, appDep.toString());
                                     Files.copy(file, runnerZipFs.getPath(relativePath),
                                             StandardCopyOption.REPLACE_EXISTING);
-                                } else if (!relativePath.endsWith(".class")) {
-                                    //for .class entries we warn as a group
-                                    log.warn("Duplicate entry " + relativePath + " entry from " + appDep
-                                            + " will be ignored. Existing file was provided by "
-                                            + seen.get(relativePath));
                                 }
                             }
                         }

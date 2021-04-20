@@ -151,6 +151,8 @@ public class HibernateSearchElasticsearchRecorder {
                     ElasticsearchBackendSettings.TYPE_NAME);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
                     elasticsearchBackendConfig.version);
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
+                    elasticsearchBackendConfig.versionCheck);
             addBackendConfig(propertyCollector, backendName,
                     ElasticsearchBackendSettings.LAYOUT_STRATEGY,
                     elasticsearchBackendConfig.layout.strategy);

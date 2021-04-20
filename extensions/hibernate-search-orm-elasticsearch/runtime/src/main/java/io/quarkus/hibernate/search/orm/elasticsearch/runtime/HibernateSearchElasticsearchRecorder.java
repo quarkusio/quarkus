@@ -11,7 +11,6 @@ import java.util.function.Supplier;
 
 import javax.enterprise.inject.literal.NamedLiteral;
 
-import org.graalvm.home.Version;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
@@ -111,8 +110,6 @@ public class HibernateSearchElasticsearchRecorder {
 
     private static final class HibernateSearchIntegrationStaticInitListener
             implements HibernateOrmIntegrationStaticInitListener {
-
-        private static final Version GRAAL_VM_VERSION_21 = Version.create(21);
 
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
 

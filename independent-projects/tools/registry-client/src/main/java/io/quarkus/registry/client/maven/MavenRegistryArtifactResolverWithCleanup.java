@@ -60,7 +60,7 @@ public class MavenRegistryArtifactResolverWithCleanup implements MavenRegistryAr
         final ArtifactResult result = resolver.resolve(artifact);
 
         final File[] jsonDirContent = jsonDir.listFiles();
-        if (jsonDirContent.length > existingFiles.size()) {
+        if (jsonDirContent != null && jsonDirContent.length > existingFiles.size()) {
             final String fileName = result.getArtifact().getFile().getName();
             for (File c : jsonDirContent) {
                 if (c.getName().length() > fileName.length() && c.getName().startsWith(artifact.getArtifactId())

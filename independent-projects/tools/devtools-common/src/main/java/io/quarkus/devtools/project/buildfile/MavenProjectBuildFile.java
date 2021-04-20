@@ -1,0 +1,323 @@
+package io.quarkus.devtools.project.buildfile;
+
+import static io.quarkus.devtools.project.extensions.Extensions.toKey;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.ExtensionCatalogResolver;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.util.PlatformArtifacts;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+
+public class MavenProjectBuildFile extends BuildFile {
+
+    private static final Pattern PROPERTY_PATTERN = Pattern.compile("\\$\\{(.+)}");
+
+    public static QuarkusProject getProject(Path projectDir, MessageWriter log, Supplier<String> defaultQuarkusVersion) {
+        final MavenArtifactResolver mvnResolver = getMavenResolver(projectDir);
+        final LocalProject currentProject = mvnResolver.getMavenContext().getCurrentProject();
+        final Model projectModel;
+        final Artifact projectPom;
+        if (currentProject != null && isSameFile(projectDir, currentProject.getDir())) {
+            projectPom = new DefaultArtifact(currentProject.getGroupId(), currentProject.getArtifactId(), null, "pom",
+                    currentProject.getVersion());
+            projectModel = currentProject.getRawModel();
+        } else {
+            projectPom = null;
+            projectModel = null;
+        }
+        return getProject(projectPom, projectModel, projectDir,
+                projectModel == null ? new Properties() : projectModel.getProperties(), mvnResolver, log,
+                defaultQuarkusVersion);
+    }
+
+    public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,
+            Properties projectProps, MavenArtifactResolver mvnResolver, MessageWriter log,
+            Supplier<String> defaultQuarkusVersion) {
+        final List<ArtifactCoords> managedDeps;
+        final Supplier<List<ArtifactCoords>> deps;
+        final String quarkusVersion;
+        if (projectPom == null) {
+            managedDeps = Collections.emptyList();
+            deps = () -> Collections.emptyList();
+            quarkusVersion = defaultQuarkusVersion.get();
+        } else {
+            final ArtifactDescriptorResult descriptor = describe(mvnResolver, projectPom);
+            managedDeps = toArtifactCoords(descriptor.getManagedDependencies());
+            deps = () -> toArtifactCoords(descriptor.getDependencies());
+            quarkusVersion = getQuarkusVersion(managedDeps);
+        }
+
+        final ExtensionCatalog extensionCatalog;
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver(mvnResolver, log);
+        if (catalogResolver.hasRegistries()) {
+            try {
+                extensionCatalog = catalogResolver.resolveExtensionCatalog(quarkusVersion);
+            } catch (RegistryResolutionException e) {
+                throw new RuntimeException("Failed to resolve extension catalog", e);
+            }
+        } else {
+            final List<ArtifactCoords> importedPlatforms = collectPlatformDescriptors(managedDeps, log);
+            if (importedPlatforms.isEmpty()) {
+                extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, mvnResolver, log);
+            } else {
+                extensionCatalog = ToolsUtils.mergePlatforms(importedPlatforms, mvnResolver);
+            }
+        }
+        final MavenProjectBuildFile extensionManager = new MavenProjectBuildFile(projectDir, extensionCatalog,
+                projectModel, deps, managedDeps, projectProps);
+        return QuarkusProject.of(projectDir, extensionCatalog,
+                QuarkusProjectHelper.getCodestartResourceLoaders(extensionCatalog, mvnResolver), log, extensionManager);
+    }
+
+    private static MavenArtifactResolver getMavenResolver(Path projectDir) {
+        final RegistriesConfig toolsConfig = QuarkusProjectHelper.toolsConfig();
+        try {
+            return MavenArtifactResolver.builder()
+                    .setArtifactTransferLogging(toolsConfig.isDebug())
+                    .setCurrentProject(projectDir.toString())
+                    .setPreferPomsFromWorkspace(true)
+                    .build();
+        } catch (BootstrapMavenException e) {
+            throw new RuntimeException("Failed to initialize Maven artifact resolver", e);
+        }
+    }
+
+    private static String getQuarkusVersion(List<ArtifactCoords> managedDeps) {
+        for (ArtifactCoords a : managedDeps) {
+            if (a.getArtifactId().endsWith("quarkus-core") && a.getGroupId().equals("io.quarkus")) {
+                return a.getVersion();
+            }
+        }
+        return null;
+    }
+
+    private static List<ArtifactCoords> toArtifactCoords(List<org.eclipse.aether.graph.Dependency> deps) {
+        final List<ArtifactCoords> result = new ArrayList<>(deps.size());
+        for (org.eclipse.aether.graph.Dependency dep : deps) {
+            org.eclipse.aether.artifact.Artifact a = dep.getArtifact();
+            result.add(new ArtifactCoords(a.getGroupId(), a.getArtifactId(), a.getClassifier(),
+                    a.getExtension(), a.getVersion()));
+        }
+        return result;
+    }
+
+    private static ArtifactDescriptorResult describe(MavenArtifactResolver resolver, Artifact projectArtifact) {
+        try {
+            return resolver.resolveDescriptor(projectArtifact);
+        } catch (BootstrapMavenException e) {
+            throw new RuntimeException("Failed to resolve descriptor for " + projectArtifact, e);
+        }
+    }
+
+    private static List<ArtifactCoords> collectPlatformDescriptors(List<ArtifactCoords> managedDeps, MessageWriter log) {
+        if (managedDeps.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final List<ArtifactCoords> result = new ArrayList<>(4);
+        for (ArtifactCoords c : managedDeps) {
+            if (PlatformArtifacts.isCatalogArtifact(c)) {
+                result.add(c);
+            }
+        }
+        return result;
+    }
+
+    private static boolean isSameFile(Path p1, Path p2) {
+        try {
+            return Files.isSameFile(p1, p2);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to compare " + p1 + " to " + p2, e);
+        }
+    }
+
+    private final Model model;
+    private final List<ArtifactCoords> managedDependencies;
+    private final Properties projectProps;
+    private Supplier<List<ArtifactCoords>> projectDepsSupplier;
+    private List<ArtifactCoords> dependencies;
+    private List<ArtifactCoords> importedPlatforms;
+
+    private MavenProjectBuildFile(Path projectDirPath, ExtensionCatalog extensionsCatalog, Model model,
+            Supplier<List<ArtifactCoords>> projectDeps,
+            List<ArtifactCoords> projectManagedDeps,
+            Properties projectProps) {
+        super(projectDirPath, extensionsCatalog);
+        this.model = model;
+        this.projectDepsSupplier = projectDeps;
+        this.managedDependencies = projectManagedDeps;
+        this.projectProps = projectProps;
+    }
+
+    @Override
+    public BuildTool getBuildTool() {
+        return BuildTool.MAVEN;
+    }
+
+    @Override
+    protected boolean addDependency(ArtifactCoords coords, boolean managed) {
+        final Dependency d = new Dependency();
+        d.setGroupId(coords.getGroupId());
+        d.setArtifactId(coords.getArtifactId());
+        if (!managed) {
+            d.setVersion(coords.getVersion());
+        }
+        // When classifier is empty, you get  <classifier></classifier> in the pom.xml
+        if (coords.getClassifier() != null && !coords.getClassifier().isEmpty()) {
+            d.setClassifier(coords.getClassifier());
+        }
+        d.setType(coords.getType());
+        if ("pom".equalsIgnoreCase(coords.getType())) {
+            d.setScope("import");
+            DependencyManagement dependencyManagement = model().getDependencyManagement();
+            if (dependencyManagement == null) {
+                dependencyManagement = new DependencyManagement();
+                model().setDependencyManagement(dependencyManagement);
+            }
+            if (dependencyManagement.getDependencies()
+                    .stream()
+                    .noneMatch(thisDep -> d.getManagementKey().equals(resolveKey(thisDep)))) {
+                dependencyManagement.addDependency(d);
+                // the effective managed dependencies set may already include it
+                if (!getManagedDependencies().contains(coords)) {
+                    getManagedDependencies().add(coords);
+                }
+                return true;
+            }
+        } else if (model().getDependencies()
+                .stream()
+                .noneMatch(thisDep -> d.getManagementKey().equals(thisDep.getManagementKey()))) {
+            model().addDependency(d);
+            // it could still be a transitive dependency or inherited from the parent
+            if (!getDependencies().contains(coords)) {
+                getDependencies().add(coords);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    protected void removeDependency(ArtifactKey key) throws IOException {
+        if (model() != null) {
+            final Iterator<ArtifactCoords> i = getDependencies().iterator();
+            while (i.hasNext()) {
+                final ArtifactCoords a = i.next();
+                if (a.getKey().equals(key)) {
+                    i.remove();
+                    break;
+                }
+                model().getDependencies().removeIf(d -> Objects.equals(toKey(d), key));
+            }
+        }
+    }
+
+    @Override
+    protected List<ArtifactCoords> getDependencies() {
+        if (dependencies == null) {
+            dependencies = projectDepsSupplier.get();
+            projectDepsSupplier = null;
+        }
+        return dependencies;
+    }
+
+    @Override
+    public final Collection<ArtifactCoords> getInstalledPlatforms() throws IOException {
+        if (importedPlatforms == null) {
+            final List<ArtifactCoords> tmp = new ArrayList<>(4);
+            for (ArtifactCoords c : getManagedDependencies()) {
+                if (PlatformArtifacts.isCatalogArtifact(c)) {
+                    tmp.add(PlatformArtifacts.getBomArtifactForCatalog(c));
+                }
+            }
+            importedPlatforms = tmp;
+        }
+        return importedPlatforms;
+    }
+
+    protected List<ArtifactCoords> getManagedDependencies() {
+        return managedDependencies;
+    }
+
+    @Override
+    protected void writeToDisk() throws IOException {
+        if (model == null) {
+            return;
+        }
+        try (ByteArrayOutputStream pomOutputStream = new ByteArrayOutputStream()) {
+            MojoUtils.write(model(), pomOutputStream);
+            writeToProjectFile(BuildTool.MAVEN.getDependenciesFile(), pomOutputStream.toByteArray());
+        }
+    }
+
+    @Override
+    protected String getProperty(String propertyName) {
+        return projectProps.getProperty(propertyName);
+    }
+
+    @Override
+    protected void refreshData() {
+    }
+
+    private Model model() {
+        return model;
+    }
+
+    /**
+     * Resolves dependencies containing property references in the GAV
+     */
+    private String resolveKey(Dependency dependency) {
+        String resolvedGroupId = toResolvedProperty(dependency.getGroupId());
+        String resolvedArtifactId = toResolvedProperty(dependency.getArtifactId());
+        String resolvedVersion = toResolvedProperty(dependency.getVersion());
+        if (!resolvedGroupId.equals(dependency.getGroupId())
+                || !resolvedArtifactId.equals(dependency.getArtifactId())
+                || !resolvedVersion.equals(dependency.getVersion())) {
+            return resolvedGroupId + ":" + resolvedArtifactId + ":" + dependency.getType()
+                    + (dependency.getClassifier() != null ? ":" + dependency.getClassifier() : "");
+        }
+        return dependency.getManagementKey();
+    }
+
+    /**
+     * Resolves properties as ${quarkus.platform.version}
+     */
+    private String toResolvedProperty(String value) {
+        Matcher matcher = PROPERTY_PATTERN.matcher(value);
+        if (matcher.matches()) {
+            String property = getProperty(matcher.group(1));
+            return property == null ? value : property;
+        }
+        return value;
+    }
+}

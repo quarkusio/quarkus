@@ -215,11 +215,17 @@ public class LocalWorkspaceDiscoveryTest {
         LocalProject module1 = workspace.getProject("org.acme", "root-module1");
         assertNotNull(module1);
         assertParents(module1, "root");
+        LocalProject bom = workspace.getProject("org.acme", "acme-bom");
+        assertNotNull(bom);
+        assertParents(bom, "root");
+        LocalProject parent = workspace.getProject("org.acme", "acme-parent");
+        assertNotNull(parent);
+        assertParents(parent, "root");
         assertNull(workspace.getProject("org.acme", "root-module2"));
         LocalProject submodule = workspace.getProject("org.acme", "root-submodule");
         assertNotNull(submodule);
         assertParents(submodule, "root-module1", "root");
-        assertEquals(3, workspace.getProjects().size());
+        assertEquals(5, workspace.getProjects().size());
     }
 
     @Test
@@ -242,9 +248,15 @@ public class LocalWorkspaceDiscoveryTest {
         assertParents(module1, "root");
         LocalProject module2 = workspace.getProject("org.acme", "root-module2");
         assertNotNull(module2);
-        assertParents(module2, "root");
+        assertParents(module2, "acme-parent", "root");
+        LocalProject bom = workspace.getProject("org.acme", "acme-bom");
+        assertNotNull(bom);
+        assertParents(bom, "root");
+        LocalProject parent = workspace.getProject("org.acme", "acme-parent");
+        assertNotNull(parent);
+        assertParents(parent, "root");
         assertNull(workspace.getProject("org.acme", "root-submodule"));
-        assertEquals(3, workspace.getProjects().size());
+        assertEquals(5, workspace.getProjects().size());
     }
 
     @Test

@@ -114,6 +114,7 @@ public class BootstrapMavenContext {
     private DefaultServiceLocator serviceLocator;
     private String alternatePomName;
     private Path rootProjectDir;
+    private boolean preferPomsFromWorkspace;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -140,6 +141,8 @@ public class BootstrapMavenContext {
         this.remoteRepoManager = config.remoteRepoManager;
         this.cliOptions = config.cliOptions;
         this.rootProjectDir = config.rootProjectDir;
+        this.preferPomsFromWorkspace = config.preferPomsFromWorkspace;
+        this.userSettings = config.userSettings;
         if (config.currentProject != null) {
             this.currentProject = config.currentProject;
             this.currentPom = currentProject.getRawModel().getPomFile().toPath();
@@ -148,7 +151,6 @@ public class BootstrapMavenContext {
             currentProject = resolveCurrentProject();
             this.workspace = currentProject == null ? null : currentProject.getWorkspace();
         }
-        userSettings = config.userSettings;
     }
 
     public AppArtifact getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
@@ -798,5 +800,9 @@ public class BootstrapMavenContext {
         // with how Maven discovers the workspace and also created issues testing the Quarkus platform
         // due to its specific FS layout
         return rootProjectDir;
+    }
+
+    public boolean isPreferPomsFromWorkspace() {
+        return preferPomsFromWorkspace;
     }
 }

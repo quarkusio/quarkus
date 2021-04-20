@@ -5,11 +5,9 @@ import java.util.ArrayList;
 
 import io.quarkus.cli.core.BaseSubCommand;
 import io.quarkus.cli.core.BuildsystemCommand;
-import io.quarkus.cli.core.QuarkusCliVersion;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "list", sortOptions = false, mixinStandardHelpOptions = false, description = "List installed (default) or installable extensions.")
@@ -88,7 +86,7 @@ public class List extends BaseSubCommand implements BuildsystemCommand {
         // we do not have to spawn process for maven
         try {
 
-            new ListExtensions(QuarkusProjectHelper.getProject(projectDirectory, QuarkusCliVersion.version()))
+            new ListExtensions(QuarkusCliUtils.getQuarkusProject(projectDirectory))
                     .fromCli(true)
                     .all(false)
                     .installed(!installable)

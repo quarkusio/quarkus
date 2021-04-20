@@ -822,12 +822,15 @@ class Parser implements Function<String, Expression>, ParserHelper {
         if (currentLine == null) {
             currentLine = new ArrayList<>();
         }
-        if (!ROOT_HELPER_NAME.equals(sectionNode.name)) {
+        boolean isRoot = ROOT_HELPER_NAME.equals(sectionNode.name);
+        if (!isRoot) {
             // Simulate the start tag
             currentLine.add(sectionNode);
         }
         for (SectionBlock block : sectionNode.blocks) {
-            currentLine.add(BLOCK_NODE);
+            if (!isRoot) {
+                currentLine.add(BLOCK_NODE);
+            }
             for (TemplateNode node : block.nodes) {
                 if (node instanceof SectionNode) {
                     currentLine = readLines(lines, currentLine, (SectionNode) node);
@@ -840,7 +843,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
                     currentLine.add(node);
                 }
             }
-            currentLine.add(BLOCK_NODE);
+            if (!isRoot) {
+                currentLine.add(BLOCK_NODE);
+            }
         }
         if (!ROOT_HELPER_NAME.equals(sectionNode.name)) {
             // Simulate the end tag

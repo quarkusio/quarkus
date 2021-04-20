@@ -196,6 +196,17 @@ public class IfSectionTest {
                         + "{/if}").render());
     }
 
+    @Test
+    public void testStandaloneLinesLinebreaks() {
+        Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
+        assertEquals("FOO\n\n\n\n",
+                engine.parse("FOO\n\n\n\n").render());
+        assertEquals("FOO\n\n\n\n",
+                engine.parse("FOO\n\n{#if false}\nBAZ\n{/if}\n\n\n").render());
+        assertEquals("FOO\n\n",
+                engine.parse("FOO\n\n{#if false}\nBAZ\n{/if}\n").render());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {

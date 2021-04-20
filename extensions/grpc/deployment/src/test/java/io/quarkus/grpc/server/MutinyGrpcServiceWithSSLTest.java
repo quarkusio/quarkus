@@ -37,13 +37,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MutinyGrpcServiceWithSSLTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
-                            GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
-                            HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
-                            EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
-                            TestServiceGrpc.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setFlatClassPath(true).setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
+                                    GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
+                                    HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
+                                    EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
+                                    TestServiceGrpc.class))
             .withConfigurationResource("grpc-server-tls-configuration.properties");
 
     @Override

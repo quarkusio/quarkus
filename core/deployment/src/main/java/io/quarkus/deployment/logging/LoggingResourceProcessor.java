@@ -133,50 +133,53 @@ public final class LoggingResourceProcessor {
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             List<LogCleanupFilterBuildItem> logCleanupFilters) {
-        final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
-                .map(LogHandlerBuildItem::getHandlerValue)
-                .collect(Collectors.toList());
-        final List<RuntimeValue<Map<String, Handler>>> namedHandlers = namedHandlerBuildItems.stream()
-                .map(NamedLogHandlersBuildItem::getNamedHandlersMap).collect(Collectors.toList());
+        if (!launchModeBuildItem.isAuxiliaryApplication()) {
+            final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
+                    .map(LogHandlerBuildItem::getHandlerValue)
+                    .collect(Collectors.toList());
+            final List<RuntimeValue<Map<String, Handler>>> namedHandlers = namedHandlerBuildItems.stream()
+                    .map(NamedLogHandlersBuildItem::getNamedHandlersMap).collect(Collectors.toList());
 
-        ConsoleFormatterBannerBuildItem bannerBuildItem = null;
-        RuntimeValue<Optional<Supplier<String>>> possibleSupplier = null;
-        if (possibleBannerBuildItem.isPresent()) {
-            bannerBuildItem = possibleBannerBuildItem.get();
-        }
-        if (bannerBuildItem != null) {
-            possibleSupplier = bannerBuildItem.getBannerSupplier();
-        }
-        recorder.initializeLogging(log, buildLog, handlers, namedHandlers,
-                consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
-                possibleSupplier);
-        if (launchModeBuildItem.getLaunchMode() != LaunchMode.NORMAL) {
-            LogConfig logConfig = new LogConfig();
-            ConfigInstantiator.handleObject(logConfig);
-            for (LogCleanupFilterBuildItem i : logCleanupFilters) {
-                CleanupFilterConfig value = new CleanupFilterConfig();
-                LogCleanupFilterElement filterElement = i.getFilterElement();
-                value.ifStartsWith = filterElement.getMessageStarts();
-                value.targetLevel = filterElement.getTargetLevel() == null ? org.jboss.logmanager.Level.DEBUG
-                        : filterElement.getTargetLevel();
-                logConfig.filters.put(filterElement.getLoggerName(), value);
+            ConsoleFormatterBannerBuildItem bannerBuildItem = null;
+            RuntimeValue<Optional<Supplier<String>>> possibleSupplier = null;
+            if (possibleBannerBuildItem.isPresent()) {
+                bannerBuildItem = possibleBannerBuildItem.get();
             }
-            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog);
-            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+            if (bannerBuildItem != null) {
+                possibleSupplier = bannerBuildItem.getBannerSupplier();
+            }
+            recorder.initializeLogging(log, buildLog, handlers, namedHandlers,
+                    consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
+                    possibleSupplier);
+            if (launchModeBuildItem.getLaunchMode() != LaunchMode.NORMAL) {
+                LogConfig logConfig = new LogConfig();
+                ConfigInstantiator.handleObject(logConfig);
+                for (LogCleanupFilterBuildItem i : logCleanupFilters) {
+                    CleanupFilterConfig value = new CleanupFilterConfig();
+                    LogCleanupFilterElement filterElement = i.getFilterElement();
+                    value.ifStartsWith = filterElement.getMessageStarts();
+                    value.targetLevel = filterElement.getTargetLevel() == null ? org.jboss.logmanager.Level.DEBUG
+                            : filterElement.getTargetLevel();
+                    logConfig.filters.put(filterElement.getLoggerName(), value);
                 }
-            });
+                LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog);
+                ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+                    }
+                });
+            }
         }
-
         return new LoggingSetupBuildItem();
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupRecorder recorder) {
-        recorder.initializeLoggingForImageBuild();
+    void setupLoggingStaticInit(LoggingSetupRecorder recorder, LaunchModeBuildItem launchModeBuildItem) {
+        if (!launchModeBuildItem.isAuxiliaryApplication()) {
+            recorder.initializeLoggingForImageBuild();
+        }
     }
 
     // This is specifically to help out with presentations, to allow an env var to always override this value

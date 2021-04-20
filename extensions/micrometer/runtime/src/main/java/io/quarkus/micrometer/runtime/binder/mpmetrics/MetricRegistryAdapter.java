@@ -29,7 +29,7 @@ import org.eclipse.microprofile.metrics.Timer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 
-class MetricRegistryAdapter implements MetricRegistry {
+public class MetricRegistryAdapter implements MetricRegistry {
 
     final Type type;
     final MeterRegistry registry;

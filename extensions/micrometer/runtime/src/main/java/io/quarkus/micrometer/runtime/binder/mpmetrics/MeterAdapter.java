@@ -6,7 +6,7 @@ import org.eclipse.microprofile.metrics.MetricType;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 
-class MeterAdapter implements Meter, MeterHolder {
+public class MeterAdapter implements Meter, MeterHolder {
     Counter counter;
 
     public MeterAdapter register(MpMetadata metadata, MetricDescriptor descriptor, MeterRegistry registry) {

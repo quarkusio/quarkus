@@ -203,7 +203,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Quarkus Base Runtime ClassLoader",
                     quarkusBootstrap.getBaseClassLoader(), false);
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
-            if (quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST) {
+
+            if (quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST && quarkusBootstrap.isFlatClassPath()) {
                 //in test mode we have everything in the base class loader
                 //there is no need to restart so there is no need for an additional CL
 
@@ -211,6 +212,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     builder.addElement(ClassPathElement.fromPath(root));
                 }
             }
+
             //additional user class path elements first
             Set<Path> hotReloadPaths = new HashSet<>();
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {

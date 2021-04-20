@@ -9,6 +9,7 @@ import io.quarkus.bootstrap.model.AppArtifactCoords;
 public interface BootstrapConstants {
 
     String SERIALIZED_APP_MODEL = "quarkus-internal.serialized-app-model.path";
+    String SERIALIZED_TEST_APP_MODEL = "quarkus-internal-test.serialized-app-model.path";
     String DESCRIPTOR_FILE_NAME = "quarkus-extension.properties";
     String CONDITIONAL_DEPENDENCIES = "conditional-dependencies";
     String DEPENDENCY_CONDITION = "dependency-condition";

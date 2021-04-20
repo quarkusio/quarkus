@@ -42,9 +42,26 @@
       {/if}
       </span>
     </span>   
-    {/}  
+    {/}
+    <span class="navbar-right">
+       <span class="dropdown" style="display: none">
+          <button class="btn btn-success dropdown-toggle" type="button" id="quarkus-test-result-button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <span id="quarkus-test-result-button-caption">
+                  All Tests Passing
+              </span>
+              <div class="spinner-border text-info spinner-border-sm" role="status" id="quarkus-test-result-button-loading">
+                  <span class="sr-only">Loading...</span>
+              </div>
+          </button>
+          <div class="dropdown-menu" aria-labelledby="quarkus-test-result-button">
+            <a class="dropdown-item" href="{devRootAppend}/io.quarkus.quarkus-vertx-http/test">Results</a>
+            <a class="dropdown-item" id="quarkus-test-result-button-pause" href="#">Pause Tests</a>
+            <a class="dropdown-item" id="quarkus-test-result-button-run-all" href="#">Re-run All Tests</a>
+          </div>
+        </span>
     <span class="navbar-text">
       {#if applicationName and applicationVersion}{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion}){/if}
+    </span>
     </span>
   </nav>
 
@@ -76,6 +93,7 @@
   <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
   <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
   <script src="{devRootAppend}/resources/js/logstream.js"></script>
+  <script src="{devRootAppend}/resources/js/tests.js"></script>
   <script>
   {|
     if (jQuery(".alert").length) {

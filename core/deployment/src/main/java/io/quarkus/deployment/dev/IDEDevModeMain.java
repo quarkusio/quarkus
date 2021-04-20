@@ -105,26 +105,31 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
         if (module.getSourceSet().getResourceDirectory() != null) {
             resourceDirectory = module.getSourceSet().getResourceDirectory().getPath();
         }
-        return new DevModeContext.ModuleInfo(key,
-                module.getArtifactCoords().getArtifactId(),
-                module.getProjectRoot().getPath(),
-                sourceDirectories,
-                QuarkusModelHelper.getClassPath(module).toAbsolutePath().toString(),
-                module.getSourceSourceSet().getResourceDirectory().toString(),
-                resourceDirectory,
-                sourceParents,
-                module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
-                module.getBuildDir().toString());
+        return new DevModeContext.ModuleInfo.Builder()
+                .setAppArtifactKey(key)
+                .setName(module.getArtifactCoords().getArtifactId())
+                .setProjectDirectory(module.getProjectRoot().getPath())
+                .setSourcePaths(sourceDirectories)
+                .setClassesPath(QuarkusModelHelper.getClassPath(module).toAbsolutePath().toString())
+                .setResourcePath(module.getSourceSourceSet().getResourceDirectory().toString())
+                .setResourcesOutputPath(resourceDirectory)
+                .setSourceParents(sourceParents)
+                .setPreBuildOutputDir(module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString())
+                .setTargetDir(module.getBuildDir().toString()).build();
     }
 
     private DevModeContext.ModuleInfo toModule(LocalProject project) {
-        return new DevModeContext.ModuleInfo(project.getKey(), project.getArtifactId(),
-                project.getDir().toAbsolutePath().toString(),
-                Collections.singleton(project.getSourcesSourcesDir().toAbsolutePath().toString()),
-                project.getClassesDir().toAbsolutePath().toString(),
-                project.getResourcesSourcesDir().toAbsolutePath().toString(),
-                project.getSourcesDir().toString(),
-                project.getCodeGenOutputDir().toString(),
-                project.getOutputDir().toString());
+
+        return new DevModeContext.ModuleInfo.Builder()
+                .setAppArtifactKey(project.getKey())
+                .setName(project.getArtifactId())
+                .setProjectDirectory(project.getDir().toAbsolutePath().toString())
+                .setSourcePaths(Collections.singleton(project.getSourcesSourcesDir().toAbsolutePath().toString()))
+                .setClassesPath(project.getClassesDir().toAbsolutePath().toString())
+                .setResourcesOutputPath(project.getClassesDir().toAbsolutePath().toString())
+                .setResourcePath(project.getResourcesSourcesDir().toAbsolutePath().toString())
+                .setSourceParents(Collections.singleton(project.getSourcesDir().toString()))
+                .setPreBuildOutputDir(project.getCodeGenOutputDir().toString())
+                .setTargetDir(project.getOutputDir().toString()).build();
     }
 }

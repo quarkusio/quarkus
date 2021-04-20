@@ -323,7 +323,8 @@ public class AugmentActionImpl implements AugmentAction {
                     .build();
             BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
                     .produce(new LaunchModeBuildItem(launchMode,
-                            devModeType == null ? Optional.empty() : Optional.of(devModeType)))
+                            devModeType == null ? Optional.empty() : Optional.of(devModeType),
+                            curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LiveReloadBuildItem());
@@ -364,6 +365,7 @@ public class AugmentActionImpl implements AugmentAction {
                 builder.setBaseName(quarkusBootstrap.getBaseName());
             }
 
+            builder.setAuxiliaryApplication(curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication());
             builder.setLaunchMode(launchMode);
             builder.setDevModeType(devModeType);
             builder.setRebuild(quarkusBootstrap.isRebuild());

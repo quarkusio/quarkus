@@ -62,8 +62,8 @@ public class QuarkusPluginExtension {
 
             final AppModel appModel = getAppModelResolver(LaunchMode.TEST)
                     .resolveModel(getAppArtifact());
-            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, task);
-            props.put(BootstrapConstants.SERIALIZED_APP_MODEL, serializedModel.toString());
+            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, task, true);
+            props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
 
             StringJoiner outputSourcesDir = new StringJoiner(",");
             for (File outputSourceDir : combinedOutputSourceDirs()) {

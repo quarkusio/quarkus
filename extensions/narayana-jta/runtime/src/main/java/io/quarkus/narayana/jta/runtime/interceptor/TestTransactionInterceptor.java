@@ -25,7 +25,7 @@ public class TestTransactionInterceptor {
     }
 
     @Inject
-    UserTransaction userTransaction;
+    public UserTransaction userTransaction;
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {

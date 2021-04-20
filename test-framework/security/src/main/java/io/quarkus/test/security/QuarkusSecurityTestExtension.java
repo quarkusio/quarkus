@@ -27,7 +27,7 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
     public void beforeEach(QuarkusTestMethodContext context) {
         try {
             //the usual ClassLoader hacks to get our copy of the TestSecurity annotation
-            ClassLoader cl = QuarkusSecurityTestExtension.class.getClassLoader();
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
             Class<?> original = cl.loadClass(context.getTestMethod().getDeclaringClass().getName());
             Method method = original.getDeclaredMethod(context.getTestMethod().getName(),
                     Arrays.stream(context.getTestMethod().getParameterTypes()).map(s -> {

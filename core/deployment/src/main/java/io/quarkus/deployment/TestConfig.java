@@ -11,12 +11,101 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * This is used currently only to suppress warnings about unknown properties
  * when the user supplies something like: -Dquarkus.test.profile=someProfile or -Dquarkus.test.native-image-profile=someProfile
- *
+ * <p>
  * TODO refactor code to actually use these values
  */
 @ConfigRoot
 public class TestConfig {
 
+    /**
+     * If continuous testing is enabled.
+     *
+     * The default value is 'paused', which will allow you to start testing
+     * from the console or the Dev UI, but will not run tests on startup.
+     *
+     * If this is set to 'enabled' then testing will start as soon as the
+     * application has started.
+     *
+     * If this is 'disabled' then continuous testing is not enabled, and can't
+     * be enabled without restarting the application.
+     *
+     */
+    @ConfigItem(defaultValue = "paused")
+    public Mode continuousTesting;
+
+    /**
+     * If output from the running tests should be displayed in the console.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean displayTestOutput;
+
+    /**
+     * Tags that should be included for continuous testing.
+     */
+    @ConfigItem
+    public Optional<List<String>> includeTags;
+
+    /**
+     * Tags that should be excluded by default with continuous testing.
+     *
+     * This is ignored if include-tags has been set.
+     *
+     * Defaults to 'slow'
+     */
+    @ConfigItem(defaultValue = "slow")
+    public Optional<List<String>> excludeTags;
+
+    /**
+     * Tests that should be included for continuous testing. This is a regular expression.
+     */
+    @ConfigItem
+    public Optional<String> includePattern;
+
+    /**
+     * Tests that should be excluded with continuous testing. This is a regular expression.
+     *
+     * This is ignored if include-pattern has been set.
+     *
+     */
+    @ConfigItem
+    public Optional<String> excludePattern;
+    /**
+     * Disable the testing status/prompt message at the bottom of the console
+     * and log these messages to STDOUT instead.
+     *
+     * Use this option if your terminal does not support ANSI escape sequences.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean basicConsole;
+
+    /**
+     * Disable color in the testing status and prompt messages.
+     *
+     * Use this option if your terminal does not support color.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean disableColor;
+
+    /**
+     * If test results and status should be displayed in the console.
+     *
+     * If this is false results can still be viewed in the dev console.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean console;
+
+    /**
+     * Changes tests to use the 'flat' ClassPath used in Quarkus 1.x versions.
+     *
+     * This means all Quarkus and test classes are loaded in the same ClassLoader,
+     * however it means you cannot use continuous testing.
+     *
+     * Note that if you find this necessary for your application then you
+     * may also have problems running in development mode, which cannot use
+     * a flat class path.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean flatClassPath;
     /**
      * Duration to wait for the native image to built during testing
      */
@@ -35,6 +124,16 @@ public class TestConfig {
     @ConfigItem
     Profile profile;
 
+    /**
+     * Configures the hang detection in @QuarkusTest. If no activity happens (i.e. no test callbacks are called) over
+     * this period then QuarkusTest will dump all threads stack traces, to help diagnose a potential hang.
+     *
+     * Note that the initial timeout (before Quarkus has started) will only apply if provided by a system property, as
+     * it is not possible to read all config sources until Quarkus has booted.
+     */
+    @ConfigItem(defaultValue = "10m")
+    Duration hangDetectionTimeout;
+
     @ConfigGroup
     public static class Profile {
 
@@ -52,5 +151,12 @@ public class TestConfig {
          */
         @ConfigItem(defaultValue = "")
         Optional<List<String>> tags;
+    }
+
+    public enum Mode {
+        PAUSED,
+        ENABLED,
+        DISABLED
+
     }
 }

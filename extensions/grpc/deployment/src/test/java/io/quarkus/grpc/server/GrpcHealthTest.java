@@ -36,7 +36,6 @@ public class GrpcHealthTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HealthGrpc.class.getPackage())
                     .addPackage(GreeterGrpc.class.getPackage())
                     .addClass(HelloService.class))
             .withConfigurationResource("health-config.properties");

@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
@@ -55,7 +53,7 @@ public class StartupActionImpl implements StartupAction {
         //test mode only has a single class loader, while dev uses a disposable runtime class loader
         //that is discarded between restarts
         Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(true));
-        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
+        if (curatedApplication.getQuarkusBootstrap().isFlatClassPath()) {
             resources.putAll(extractGeneratedResources(false));
             baseClassLoader.reset(resources, transformedClasses);
             runtimeClassLoader = baseClassLoader;
@@ -66,40 +64,6 @@ public class StartupActionImpl implements StartupAction {
                     resources, transformedClasses);
         }
         this.runtimeClassLoader = runtimeClassLoader;
-    }
-
-    private void handleEagerClasses(QuarkusClassLoader runtimeClassLoader, Set<String> eagerClasses) {
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-        if (availableProcessors == 1) {
-            return;
-        }
-        //leave one processor for the main startup thread
-        ExecutorService loadingExecutor = Executors.newFixedThreadPool(availableProcessors - 1);
-        for (String i : eagerClasses) {
-            loadingExecutor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        //no need to restore the old TCCL, this thread is going away
-                        Thread.currentThread().setContextClassLoader(runtimeClassLoader);
-                        runtimeClassLoader.loadClass(i);
-                    } catch (ClassNotFoundException e) {
-                        log.debug("Failed to eagerly load class", e);
-                        //we just ignore this for now, the problem
-                        //will be reported for real in the startup sequence
-                    }
-                }
-            });
-        }
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                //when all the jobs are done we shut down
-                //we do this in a new thread to allow the main thread to continue doing startup
-                loadingExecutor.shutdown();
-            }
-        });
-        t.start();
     }
 
     /**
@@ -226,7 +190,8 @@ public class StartupActionImpl implements StartupAction {
                         }
                     } finally {
                         ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
-                        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
+                        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST &&
+                                !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
                             //for tests we just always shut down the curated application, as it is only used once
                             //dev mode might be about to restart, so we leave it
                             curatedApplication.close();

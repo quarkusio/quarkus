@@ -73,7 +73,7 @@ public abstract class SerializerFactoryBase {
     }
 
     @SuppressWarnings("unused") // used by a generated subclass
-    void addSerializer(String className, Serializer<?> serializer) {
+    public void addSerializer(String className, Serializer<?> serializer) {
         serializersByClassName.put(className, serializer);
     }
 

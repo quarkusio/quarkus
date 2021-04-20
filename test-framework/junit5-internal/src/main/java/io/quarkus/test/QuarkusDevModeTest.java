@@ -53,6 +53,7 @@ import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.test.common.GroovyCacheCleaner;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestResourceManager;
@@ -89,6 +90,7 @@ public class QuarkusDevModeTest
     private DevModeMain devModeMain;
     private Path deploymentDir;
     private Supplier<JavaArchive> archiveProducer;
+    private Supplier<JavaArchive> testArchiveProducer;
     private List<String> codeGenSources = Collections.emptyList();
     private String logFileName;
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
@@ -96,6 +98,11 @@ public class QuarkusDevModeTest
     private Path deploymentSourceParentPath;
     private Path deploymentSourcePath;
     private Path deploymentResourcePath;
+
+    private Path deploymentTestSourceParentPath;
+    private Path deploymentTestSourcePath;
+    private Path deploymentTestResourcePath;
+
     private Path projectSourceRoot;
     private Path testLocation;
     private String[] commandLineArgs = new String[0];
@@ -118,6 +125,11 @@ public class QuarkusDevModeTest
 
     public QuarkusDevModeTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
         this.archiveProducer = archiveProducer;
+        return this;
+    }
+
+    public QuarkusDevModeTest setTestArchiveProducer(Supplier<JavaArchive> testArchiveProducer) {
+        this.testArchiveProducer = testArchiveProducer;
         return this;
     }
 
@@ -224,6 +236,8 @@ public class QuarkusDevModeTest
     public void afterAll(ExtensionContext context) throws Exception {
         rootLogger.setHandlers(originalRootLoggerHandlers);
         inMemoryLogHandler.clearRecords();
+        ClearCache.clearAnnotationCache();
+        GroovyCacheCleaner.clearGroovyCache();
     }
 
     @Override
@@ -292,14 +306,67 @@ public class QuarkusDevModeTest
             DevModeContext context = new DevModeContext();
             context.setCacheDir(cache.toFile());
 
+            DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
+                    .setAppArtifactKey(AppArtifactKey.fromString("io.quarkus.test:app-under-test"))
+                    .setName("default")
+                    .setProjectDirectory(deploymentDir.toAbsolutePath().toString())
+                    .setSourcePaths(Collections.singleton(deploymentSourcePath.toAbsolutePath().toString()))
+                    .setClassesPath(classes.toAbsolutePath().toString())
+                    .setResourcePath(deploymentResourcePath.toAbsolutePath().toString())
+                    .setResourcesOutputPath(classes.toAbsolutePath().toString())
+                    .setSourceParents(Collections.singleton(deploymentSourceParentPath.toAbsolutePath().toString()))
+                    .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
+                    .setTargetDir(targetDir.toAbsolutePath().toString());
+
+            //now tests, if required
+            if (testArchiveProducer != null) {
+
+                deploymentTestSourcePath = deploymentDir.resolve("src/test/java");
+                deploymentTestSourceParentPath = deploymentDir.resolve("src/test");
+                deploymentTestResourcePath = deploymentDir.resolve("src/test/resources");
+                Path testClasses = deploymentDir.resolve("target/test-classes");
+                Files.createDirectories(deploymentTestSourcePath);
+                Files.createDirectories(deploymentTestResourcePath);
+                Files.createDirectories(testClasses);
+
+                //first we export the archive
+                //then we attempt to generate a source tree
+                JavaArchive testArchive = testArchiveProducer.get();
+                testArchive.as(ExplodedExporter.class).exportExplodedInto(testClasses.toFile());
+                copyFromSource(testSourceDir, deploymentTestSourcePath, testClasses);
+
+                //now copy resources
+                //we assume everything that is not a .class file is a resource
+                //resources are handled differently to sources as they are often not in the same location
+                //in the FS, or are dynamically created
+                try (Stream<Path> stream = Files.walk(testClasses)) {
+                    stream.forEach(s -> {
+                        if (s.toString().endsWith(".class") ||
+                                Files.isDirectory(s)) {
+                            return;
+                        }
+                        String relative = testClasses.relativize(s).toString();
+                        try {
+                            try (InputStream in = Files.newInputStream(s)) {
+                                byte[] data = FileUtil.readFileContents(in);
+                                Path resolved = deploymentTestResourcePath.resolve(relative);
+                                Files.createDirectories(resolved.getParent());
+                                Files.write(resolved, data);
+                            }
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+                }
+                moduleBuilder
+                        .setTestSourcePaths(Collections.singleton(deploymentTestSourcePath.toAbsolutePath().toString()))
+                        .setTestClassesPath(testClasses.toAbsolutePath().toString())
+                        .setTestResourcePath(deploymentTestResourcePath.toAbsolutePath().toString());
+            }
+
             context.setApplicationRoot(
-                    new DevModeContext.ModuleInfo(AppArtifactKey.fromString("io.quarkus.test:app-under-test"), "default",
-                            deploymentDir.toAbsolutePath().toString(),
-                            Collections.singleton(deploymentSourcePath.toAbsolutePath().toString()),
-                            classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString(),
-                            deploymentSourceParentPath.toAbsolutePath().toString(),
-                            targetDir.resolve("generated-sources").toAbsolutePath().toString(),
-                            targetDir.toAbsolutePath().toString()));
+                    moduleBuilder
+                            .build());
 
             setDevModeRunnerJarFile(context);
             return context;
@@ -409,7 +476,8 @@ public class QuarkusDevModeTest
                     continue;
                 }
 
-                Path intelliJPath = Paths.get(context.getApplicationRoot().getClassesPath()).getParent().resolve("intellij");
+                Path intelliJPath = Paths.get(context.getApplicationRoot().getMain().getClassesPath()).getParent()
+                        .resolve("intellij");
                 Path dummyJar = intelliJPath.resolve("dummy.jar");
 
                 // create the empty dummy jar
@@ -453,6 +521,16 @@ public class QuarkusDevModeTest
      */
     public void modifySourceFile(Class<?> sourceFile, Function<String, String> mutator) {
         modifyFile(sourceFile.getSimpleName() + ".java", mutator, deploymentSourcePath);
+    }
+
+    /**
+     * Modifies a source file.
+     *
+     * @param sourceFile The Class corresponding to the source file to modify
+     * @param mutator A function that will modify the source code
+     */
+    public void modifyTestSourceFile(Class<?> sourceFile, Function<String, String> mutator) {
+        modifyFile(sourceFile.getSimpleName() + ".java", mutator, deploymentTestSourcePath);
     }
 
     /**

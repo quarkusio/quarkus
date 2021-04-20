@@ -19,7 +19,7 @@ public abstract class AbstractTokensProducer {
 
     @Inject
     @ConfigProperty(name = "quarkus.oidc-client.early-tokens-acquisition")
-    boolean earlyTokenAcquisition;
+    public boolean earlyTokenAcquisition;
 
     final TokensHelper tokensHelper = new TokensHelper();
 

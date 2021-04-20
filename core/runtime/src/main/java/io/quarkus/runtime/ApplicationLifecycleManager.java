@@ -61,9 +61,10 @@ public class ApplicationLifecycleManager {
     //guard for all state
     private static final Lock stateLock = Locks.reentrantLock();
     private static final Condition stateCond = stateLock.newCondition();
+    private static ShutdownHookThread shutdownHookThread;
 
     private static int exitCode = -1;
-    private static boolean shutdownRequested;
+    private static volatile boolean shutdownRequested;
     private static Application currentApplication;
     private static boolean hooksRegistered;
     private static boolean vmShuttingDown;
@@ -81,9 +82,8 @@ public class ApplicationLifecycleManager {
         //in tests we might pass this method an already started application
         //in this case we don't shut it down at the end
         boolean alreadyStarted = application.isStarted();
-        if (!hooksRegistered) {
+        if (shutdownHookThread == null) {
             registerHooks(exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler);
-            hooksRegistered = true;
         }
         if (currentApplication != null && !shutdownRequested) {
             throw new IllegalStateException("Quarkus already running");
@@ -139,7 +139,7 @@ public class ApplicationLifecycleManager {
                 try {
                     while (!shutdownRequested) {
                         Thread.interrupted();
-                        stateCond.await();
+                        stateCond.awaitUninterruptibly();
                     }
                 } finally {
                     stateLock.unlock();
@@ -186,6 +186,16 @@ public class ApplicationLifecycleManager {
             application.stop();
             (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(1, e);
             return;
+        } finally {
+            try {
+                ShutdownHookThread sh = shutdownHookThread;
+                shutdownHookThread = null;
+                if (sh != null) {
+                    Runtime.getRuntime().removeShutdownHook(sh);
+                }
+            } catch (IllegalStateException ignore) {
+
+            }
         }
         if (!alreadyStarted) {
             application.stop(); //this could have already been called
@@ -209,7 +219,7 @@ public class ApplicationLifecycleManager {
         if (ImageInfo.inImageRuntimeCode() && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
             registerSignalHandlers(exitCodeHandler);
         }
-        final ShutdownHookThread shutdownHookThread = new ShutdownHookThread();
+        shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 

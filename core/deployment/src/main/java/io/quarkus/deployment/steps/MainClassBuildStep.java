@@ -55,6 +55,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -134,6 +135,11 @@ public class MainClassBuildStep {
 
         FieldCreator scField = file.getFieldCreator(STARTUP_CONTEXT_FIELD);
         scField.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+
+        MethodCreator ctor = file.getMethodCreator("<init>", void.class);
+        ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(Application.class, "<init>", void.class, boolean.class),
+                ctor.getThis(), ctor.load(launchMode.isAuxiliaryApplication()));
+        ctor.returnValue(null);
 
         MethodCreator mv = file.getMethodCreator("<clinit>", void.class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
@@ -284,6 +290,9 @@ public class MainClassBuildStep {
                 featuresHandle,
                 activeProfile,
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
+
+        tryBlock.invokeStaticMethod(
+                ofMethod(QuarkusConsole.class, "start", void.class));
         cb = tryBlock.addCatch(Throwable.class);
 
         // an exception was thrown before logging was actually setup, we simply dump everything to the console

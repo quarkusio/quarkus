@@ -181,7 +181,7 @@ final class IntegrationTestUtil {
         }
 
         // If gradle project running directly with IDE
-        if (System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL) == null) {
+        if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
             QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
             if (model != null) {
                 final Set<File> classDirectories = model.getWorkspace().getMainModule().getSourceSet()

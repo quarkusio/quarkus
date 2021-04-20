@@ -93,7 +93,7 @@ public class Timing {
         bootStartTime = -1;
     }
 
-    public static void printStopTime(String name) {
+    public static void printStopTime(String name, boolean auxilaryApplication) {
         final long stopTimeNanoSeconds = System.nanoTime() - bootStopTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
@@ -102,14 +102,16 @@ public class Timing {
                 secondsRepresentation);
         bootStopTime = -1;
 
-        /**
-         * We can safely close log handlers after stop time has been printed.
-         */
-        Handler[] handlers = InitialConfigurator.DELAYED_HANDLER.clearHandlers();
-        for (Handler handler : handlers) {
-            try {
-                handler.close();
-            } catch (Throwable ignored) {
+        if (!auxilaryApplication) {
+            /**
+             * We can safely close log handlers after stop time has been printed.
+             */
+            Handler[] handlers = InitialConfigurator.DELAYED_HANDLER.clearHandlers();
+            for (Handler handler : handlers) {
+                try {
+                    handler.close();
+                } catch (Throwable ignored) {
+                }
             }
         }
     }

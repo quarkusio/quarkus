@@ -21,11 +21,14 @@
     margin-right: 5px;
 }
 
-.navbar-text {
+.navbar-right {
     font-size: 0.9em;
     position: absolute;
     right: 5px;
     bottom: 9px;
+    display: inline-block;
+    padding-top: .5rem;
+    padding-bottom: .5rem;
 }
 
 .navbar {

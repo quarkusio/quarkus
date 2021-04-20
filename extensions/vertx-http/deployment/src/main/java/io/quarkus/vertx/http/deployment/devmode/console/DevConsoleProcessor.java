@@ -53,6 +53,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
@@ -96,6 +97,7 @@ import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.HistoryHandler;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -134,16 +136,16 @@ public class DevConsoleProcessor {
             @Override
             public void run() {
                 virtualBootstrap = null;
-                if (devConsoleVertx != null) {
-                    devConsoleVertx.close();
-                    devConsoleVertx = null;
-                }
                 if (channel != null) {
                     try {
                         channel.close().sync();
                     } catch (InterruptedException e) {
                         throw new RuntimeException("failed to close virtual http");
                     }
+                }
+                if (devConsoleVertx != null) {
+                    devConsoleVertx.close();
+                    devConsoleVertx = null;
                 }
             }
         });
@@ -229,6 +231,23 @@ public class DevConsoleProcessor {
         router.route()
                 .order(Integer.MIN_VALUE)
                 .handler(new FlashScopeHandler());
+        router.route()
+                .order(Integer.MIN_VALUE)
+                .handler(new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext event) {
+                        event.addEndHandler(new Handler<AsyncResult<Void>>() {
+                            @Override
+                            public void handle(AsyncResult<Void> e) {
+                                //we only have one request per connection
+                                //as we don't have a nice way to close them on shutdown
+                                //they are not real TCP connections so this is fine
+                                event.request().connection().close();
+                            }
+                        });
+                        event.next();
+                    }
+                });
         router.route().method(HttpMethod.GET)
                 .order(Integer.MIN_VALUE + 1)
                 .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
@@ -362,6 +381,15 @@ public class DevConsoleProcessor {
                 .route("dev/logstream")
                 .handler(logStreamRecorder.websocketHandler(historyHandlerBuildItem.value))
                 .build());
+
+        if (TestSupport.instance().isPresent()) {
+            // Add continuous testing
+            routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .route("dev/test")
+                    .handler(recorder.continousTestHandler())
+                    .build());
+            TestSupport.instance().get().addListener(new ContinuousTestingWebSocketListener());
+        }
 
         for (DevConsoleRouteBuildItem i : routes) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);

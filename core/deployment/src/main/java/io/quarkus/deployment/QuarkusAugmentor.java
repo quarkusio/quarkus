@@ -60,6 +60,7 @@ public class QuarkusAugmentor {
     private final String baseName;
     private final Consumer<ConfigBuilder> configCustomizer;
     private final boolean rebuild;
+    private final boolean auxiliaryApplication;
 
     QuarkusAugmentor(Builder builder) {
         this.classLoader = builder.classLoader;
@@ -78,6 +79,7 @@ public class QuarkusAugmentor {
         this.deploymentClassLoader = builder.deploymentClassLoader;
         this.rebuild = builder.rebuild;
         this.devModeType = builder.devModeType;
+        this.auxiliaryApplication = builder.auxiliaryApplication;
     }
 
     public BuildResult run() throws Exception {
@@ -141,7 +143,7 @@ public class QuarkusAugmentor {
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode,
-                            devModeType == null ? Optional.empty() : Optional.of(devModeType)))
+                            devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication))
                     .produce(new BuildSystemTargetBuildItem(targetDir, baseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
                     .produce(new DeploymentClassLoaderBuildItem(deploymentClassLoader))
@@ -196,6 +198,7 @@ public class QuarkusAugmentor {
         Consumer<ConfigBuilder> configCustomizer;
         ClassLoader deploymentClassLoader;
         DevModeType devModeType;
+        boolean auxiliaryApplication;
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
             this.buildChainCustomizers.add(customizer);
@@ -213,6 +216,11 @@ public class QuarkusAugmentor {
 
         public Builder excludeFromIndexing(Collection<Path> excludedFromIndexing) {
             this.excludedFromIndexing = excludedFromIndexing;
+            return this;
+        }
+
+        public Builder setAuxiliaryApplication(boolean auxiliaryApplication) {
+            this.auxiliaryApplication = auxiliaryApplication;
             return this;
         }
 

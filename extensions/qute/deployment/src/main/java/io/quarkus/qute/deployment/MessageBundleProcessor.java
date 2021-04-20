@@ -935,7 +935,8 @@ public class MessageBundleProcessor {
             }
             // E.g. to match the bundle class generated for a localized file; org.acme.Foo_en -> org.acme.Foo
             className = additionalClassNameSanitizer.apply(className);
-            return applicationArchives.containingArchive(className) != null;
+            return applicationArchives.containingArchive(className) != null
+                    || GeneratedClassGizmoAdaptor.isApplicationClass(name);
         }
     }
 }

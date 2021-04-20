@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppDependency;
 
 /**
@@ -32,9 +33,9 @@ import io.quarkus.bootstrap.model.AppDependency;
  *
  * @author Stuart Douglas
  */
-public class ClassLoaderCompiler implements Closeable {
+public class QuarkusCompiler implements Closeable {
 
-    private static final Logger log = Logger.getLogger(ClassLoaderCompiler.class);
+    private static final Logger log = Logger.getLogger(QuarkusCompiler.class);
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile(" ");
 
     private final List<CompilationProvider> compilationProviders;
@@ -44,8 +45,7 @@ public class ClassLoaderCompiler implements Closeable {
     private final Map<String, CompilationProvider.Context> compilationContexts = new HashMap<>();
     private final Set<String> allHandledExtensions;
 
-    public ClassLoaderCompiler(ClassLoader classLoader,
-            CuratedApplication application,
+    public QuarkusCompiler(CuratedApplication application,
             List<CompilationProvider> compilationProviders,
             DevModeContext context)
             throws IOException {
@@ -65,8 +65,13 @@ public class ClassLoaderCompiler implements Closeable {
         }
         Set<File> classPathElements = new HashSet<>();
         for (DevModeContext.ModuleInfo i : context.getAllModules()) {
-            if (i.getClassesPath() != null) {
-                classPathElements.add(new File(i.getClassesPath()));
+            if (i.getMain().getClassesPath() != null) {
+                classPathElements.add(new File(i.getMain().getClassesPath()));
+            }
+            if (application.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
+                if (i.getTest().isPresent()) {
+                    classPathElements.add(new File(i.getTest().get().getClassesPath()));
+                }
             }
         }
         final String devModeRunnerJarCanonicalPath = context.getDevModeRunnerJarFile() == null
@@ -135,32 +140,41 @@ public class ClassLoaderCompiler implements Closeable {
             }
         }
         for (DevModeContext.ModuleInfo i : context.getAllModules()) {
-            if (!i.getSourcePaths().isEmpty()) {
-                if (i.getClassesPath() == null) {
-                    log.warn("No classes directory found for module '" + i.getName()
-                            + "'. It is advised that this module be compiled before launching dev mode");
-                    continue;
-                }
-                i.getSourcePaths().forEach(sourcePath -> {
-                    this.compilationContexts.put(sourcePath,
-                            new CompilationProvider.Context(
-                                    i.getName(),
-                                    classPathElements,
-                                    i.getProjectDirectory() == null ? null : new File(i.getProjectDirectory()),
-                                    new File(sourcePath),
-                                    new File(i.getClassesPath()),
-                                    context.getSourceEncoding(),
-                                    context.getCompilerOptions(),
-                                    context.getSourceJavaVersion(),
-                                    context.getTargetJvmVersion(),
-                                    context.getCompilerPluginArtifacts(),
-                                    context.getCompilerPluginsOptions()));
-                });
+            setupSourceCompilationContext(context, classPathElements, i, i.getMain(),
+                    "classes");
+            if (application.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST && i.getTest().isPresent()) {
+                setupSourceCompilationContext(context, classPathElements, i, i.getTest().get(), "test classes");
             }
         }
         this.allHandledExtensions = new HashSet<>();
         for (CompilationProvider compilationProvider : compilationProviders) {
             allHandledExtensions.addAll(compilationProvider.handledExtensions());
+        }
+    }
+
+    public void setupSourceCompilationContext(DevModeContext context, Set<File> classPathElements, DevModeContext.ModuleInfo i,
+            DevModeContext.CompilationUnit compilationUnit, String name) {
+        if (!compilationUnit.getSourcePaths().isEmpty()) {
+            if (compilationUnit.getClassesPath() == null) {
+                log.warn("No " + name + " directory found for module '" + i.getName()
+                        + "'. It is advised that this module be compiled before launching dev mode");
+                return;
+            }
+            compilationUnit.getSourcePaths().forEach(sourcePath -> {
+                this.compilationContexts.put(sourcePath,
+                        new CompilationProvider.Context(
+                                i.getName(),
+                                classPathElements,
+                                i.getProjectDirectory() == null ? null : new File(i.getProjectDirectory()),
+                                new File(sourcePath),
+                                new File(compilationUnit.getClassesPath()),
+                                context.getSourceEncoding(),
+                                context.getCompilerOptions(),
+                                context.getSourceJavaVersion(),
+                                context.getTargetJvmVersion(),
+                                context.getCompilerPluginArtifacts(),
+                                context.getCompilerPluginsOptions()));
+            });
         }
     }
 

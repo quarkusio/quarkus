@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 
@@ -16,7 +17,9 @@ public class MutinyInfrastructure {
 
     public static final String VERTX_EVENT_LOOP_THREAD_PREFIX = "vert.x-eventloop-thread-";
 
-    public void configureMutinyInfrastructure(ExecutorService exec) {
+    public void configureMutinyInfrastructure(ExecutorService exec, ShutdownContext shutdownContext) {
+        //mutiny leaks a ScheduledExecutorService if you don't do this
+        Infrastructure.getDefaultWorkerPool().shutdown();
         Infrastructure.setDefaultExecutor(new Executor() {
             @Override
             public void execute(Runnable command) {
@@ -28,6 +31,12 @@ public class MutinyInfrastructure {
                     }
                     // Ignore the failure - the application has been shutdown.
                 }
+            }
+        });
+        shutdownContext.addLastShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                Infrastructure.getDefaultWorkerPool().shutdown();
             }
         });
     }

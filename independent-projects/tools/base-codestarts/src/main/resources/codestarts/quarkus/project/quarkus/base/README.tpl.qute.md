@@ -44,8 +44,8 @@ Or, if you don't have GraalVM installed, you can run the native executable build
 You can then execute your native executable with: `./{buildtool.build-dir}/{project.artifact-id}-{project.version}-runner`
 
 If you want to learn more about building native executables, please consult {buildtool.guide}.
-
 {#if input.selected-extensions}
+
 ## Related guides
 
 {#for ext in input.selected-extensions}
@@ -53,9 +53,9 @@ If you want to learn more about building native executables, please consult {bui
 - {ext.name} ([guide]({ext.guide})): {ext.description}
 {/if}
 {/for}
-
 {/if}
 {#if input.selected-examples}
-## Provided examples
-{/if}
 
+## Provided examples
+
+{/if}

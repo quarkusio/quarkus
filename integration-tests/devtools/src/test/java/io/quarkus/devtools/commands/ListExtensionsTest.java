@@ -21,12 +21,12 @@ import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;

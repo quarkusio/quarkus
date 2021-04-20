@@ -29,7 +29,7 @@ repositories {
 
 dependencies {
     testImplementation "io.quarkus:quarkus-project-core-extension-codestarts:${version}@pom"
-    testImplementation "io.quarkus:quarkus-test-devtools:${version}"
+    testImplementation "io.quarkus:quarkus-devtools-testing:${version}"
     testImplementation "io.quarkus:quarkus-bootstrap-core:${version}"
     testImplementation "io.quarkus:quarkus-core-deployment:${version}"
     testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"

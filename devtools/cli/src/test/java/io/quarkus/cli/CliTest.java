@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.core.ExecuteUtil;
-import io.quarkus.devtools.test.RegistryClientTestHelper;
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
 public class CliTest {

@@ -60,7 +60,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-devtools</artifactId>
+            <artifactId>quarkus-devtools-testing</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

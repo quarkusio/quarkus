@@ -7,7 +7,7 @@ import java.util.Properties;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
-import io.quarkus.devtools.test.RegistryClientTestHelper;
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 
 public class QuarkusGradleDevToolsTestBase extends QuarkusGradleWrapperTestBase {
 

@@ -1,6 +1,7 @@
 package io.quarkus.devtools.testing;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -49,6 +50,20 @@ public final class WrapperRunner {
                     throw new IllegalStateException("No wrapper linked to buildtool: " + buildtool);
             }
         }
+
+        public static Wrapper detect(Path projectDir) {
+            for (Wrapper value : Wrapper.values()) {
+                final File file = projectDir.resolve(value.getExec()).toFile();
+                if (file.isFile() && file.canExecute()) {
+                    return value;
+                }
+            }
+            throw new IllegalStateException("No supported wrapper that can be executed found in this directory: " + projectDir);
+        }
+    }
+
+    public static int run(Path projectDir) {
+        return run(projectDir, Wrapper.detect(projectDir));
     }
 
     public static int run(Path projectDir, Wrapper wrapper) {

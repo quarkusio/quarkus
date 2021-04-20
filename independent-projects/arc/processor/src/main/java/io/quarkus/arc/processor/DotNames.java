@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import io.quarkus.arc.AlternativePriority;
+import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
@@ -107,6 +108,7 @@ public final class DotNames {
     public static final DotName INITIALIZED = create(Initialized.class);
     public static final DotName TRANSIENT_REFERENCE = create(TransientReference.class);
     public static final DotName INVOCATION_CONTEXT = create(InvocationContext.class);
+    public static final DotName ARC_INVOCATION_CONTEXT = create(ArcInvocationContext.class);
     public static final DotName DECORATOR = create(Decorator.class);
     public static final DotName DELEGATE = create(Delegate.class);
     public static final DotName SERIALIZABLE = create(Serializable.class);

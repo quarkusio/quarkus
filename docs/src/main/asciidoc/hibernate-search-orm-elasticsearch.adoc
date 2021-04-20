@@ -707,7 +707,7 @@ Entities are attached to a persistence unit by
 link:hibernate-orm#multiple-persistence-units-attaching-model-classes[configuring the Hibernate ORM extension].
 
 [[multiple-persistence-units-attaching-cdi]]
-=== CDI integration
+== CDI integration
 
 You can inject Hibernate Search's main entry points, `SearchSession` and `SearchMapping`, using CDI:
 

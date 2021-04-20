@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import io.quarkus.cache.Cache;
+import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractCache implements Cache {
 
@@ -32,4 +33,11 @@ public abstract class AbstractCache implements Cache {
     public abstract void invalidate(Object key);
 
     public abstract void invalidateAll();
+
+    /**
+     * Replaces the cache value associated with the given key by an item emitted by a {@link Uni}. This method can be called
+     * several times for the same key, each call will then always replace the existing cache entry with the given emitted
+     * value. If the key no longer identifies a cache entry, this method must not put the emitted item into the cache.
+     */
+    public abstract Uni<Void> replaceUniValue(Object key, Object emittedValue);
 }

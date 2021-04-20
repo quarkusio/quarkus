@@ -241,7 +241,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-JVM Tests - JDK ${{matrix.java.name}}"
           path: "**/target/*-reports/TEST-*.xml"
@@ -294,7 +294,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-JVM Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
@@ -351,7 +351,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Maven Tests - JDK ${{matrix.java.name}}"
           path: "**/target/*-reports/TEST-*.xml"
@@ -403,7 +403,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Maven Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
@@ -472,7 +472,7 @@ jobs:
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl integration-tests/gradle ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Gradle Tests - JDK 11 ${{matrix.os.family}}"
           path: "**/build/test-results/test/TEST-*.xml"
@@ -527,7 +527,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Devtools Tests - JDK ${{matrix.java.name}}"
           path: "**/target/*-reports/TEST-*.xml"
@@ -577,7 +577,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Devtools Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
@@ -641,7 +641,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-MicroProfile TCKs Tests"
           path: "**/target/*-reports/TEST-*.xml"
@@ -730,7 +730,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Native Tests - ${{matrix.category}}"
           path: "**/target/*-reports/TEST-*.xml"
@@ -817,7 +817,7 @@ jobs:
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Native Tests - Windows - ${{matrix.category}}"
           path: "**/target/*-reports/TEST-*.xml"

@@ -418,7 +418,7 @@ triage:
         - extensions/websockets/
     - labels: [area/swagger-ui]
       title: "swagger"
-      notify: [phillip-kruger]
+      notify: [phillip-kruger, MikeEdgar]
       directories:
         - extensions/swagger-ui/
     - labels: [area/security]

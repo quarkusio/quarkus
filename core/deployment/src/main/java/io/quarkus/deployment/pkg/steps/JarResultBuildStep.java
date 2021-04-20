@@ -110,6 +110,8 @@ public class JarResultBuildStep {
             "META-INF/LICENSE",
             "META-INF/LICENSE.txt",
             "META-INF/LICENSE.md",
+            "META-INF/LGPL-3.0.txt",
+            "META-INF/ASL-2.0.txt",
             "META-INF/NOTICE",
             "META-INF/NOTICE.txt",
             "META-INF/NOTICE.md",

@@ -11,7 +11,6 @@ import java.util.function.Supplier;
 
 import javax.enterprise.inject.literal.NamedLiteral;
 
-import org.graalvm.home.Version;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
@@ -112,8 +111,6 @@ public class HibernateSearchElasticsearchRecorder {
     private static final class HibernateSearchIntegrationStaticInitListener
             implements HibernateOrmIntegrationStaticInitListener {
 
-        private static final Version GRAAL_VM_VERSION_21 = Version.create(21);
-
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
 
         private HibernateSearchIntegrationStaticInitListener(
@@ -151,6 +148,8 @@ public class HibernateSearchElasticsearchRecorder {
                     ElasticsearchBackendSettings.TYPE_NAME);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
                     elasticsearchBackendConfig.version);
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
+                    elasticsearchBackendConfig.versionCheck);
             addBackendConfig(propertyCollector, backendName,
                     ElasticsearchBackendSettings.LAYOUT_STRATEGY,
                     elasticsearchBackendConfig.layout.strategy);

@@ -327,10 +327,67 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     @ConfigGroup
     public static class SchemaManagementConfig {
 
+        // @formatter:off
         /**
-         * The strategy used for index lifecycle.
+         * The schema management strategy, controlling how indexes and their schema
+         * are created, updated, validated or dropped on startup and shutdown.
+         *
+         * Available values:
+         *
+         * [cols=2]
+         * !===
+         * h!Strategy
+         * h!Definition
+         *
+         * !none
+         * !Do nothing: assume that indexes already exist and that their schema matches Hibernate Search's expectations.
+         *
+         * !validate
+         * !Validate that indexes exist and that their schema matches Hibernate Search's expectations.
+         *
+         * If it does not, throw an exception, but make no attempt to fix the problem.
+         *
+         * !create
+         * !For indexes that do not exist, create them along with their schema.
+         *
+         * For indexes that already exist, do nothing: assume that their schema matches Hibernate Search's expectations.
+         *
+         * !create-or-validate (**default**)
+         * !For indexes that do not exist, create them along with their schema.
+         *
+         * For indexes that already exist, validate that their schema matches Hibernate Search's expectations.
+         *
+         * If it does not, throw an exception, but make no attempt to fix the problem.
+         *
+         * !create-or-update
+         * !For indexes that do not exist, create them along with their schema.
+         *
+         * For indexes that already exist, validate that their schema matches Hibernate Search's expectations;
+         * if it does not match expectations, try to update it.
+         *
+         * **This strategy is unfit for production environments**,
+         * due to several important limitations,
+         * but can be useful when developing.
+         *
+         * !drop-and-create
+         * !For indexes that do not exist, create them along with their schema.
+         *
+         * For indexes that already exist, drop them, then create them along with their schema.
+         *
+         * !drop-and-create-and-drop
+         * !For indexes that do not exist, create them along with their schema.
+         *
+         * For indexes that already exist, drop them, then create them along with their schema.
+         *
+         * Also, drop indexes and their schema on shutdown.
+         * !===
+         *
+         * See https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#mapper-orm-schema-management-strategy[this section of the reference documentation]
+         * for more information.
+         *
+         * @asciidoclet
          */
-        // We can't set an actual default value here: see comment on this class.
+        // @formatter:on
         @ConfigItem(defaultValue = "create-or-validate")
         SchemaManagementStrategyName strategy;
 

@@ -72,7 +72,7 @@ public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
         }
     }
 
-    private void actionSuccess(RoutingContext event) {
+    protected void actionSuccess(RoutingContext event) {
         event.response().setStatusCode(HttpResponseStatus.SEE_OTHER.code()).headers()
                 .set(HttpHeaderNames.LOCATION, event.request().absoluteURI());
         event.response().end();

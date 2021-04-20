@@ -79,4 +79,16 @@ public class TestStatus {
         this.testsSkipped = testsSkipped;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "TestStatus{" +
+                "lastRun=" + lastRun +
+                ", running=" + running +
+                ", testsRun=" + testsRun +
+                ", testsPassed=" + testsPassed +
+                ", testsFailed=" + testsFailed +
+                ", testsSkipped=" + testsSkipped +
+                '}';
+    }
 }

@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 This guide explains how to use:
 
- - `quarkus-oidc-client` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak]
+ - `quarkus-oidc-client` and `quarkus-oidc-client-filter` (or `quarkus-oidc-client-reactive-filter`) extensions to acquire and refresh access tokens from OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak]
  - `quarkus-oidc-token-propagation` extension to propagate the current bearer or authorization code flow access tokens
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
@@ -132,6 +132,31 @@ public interface ProtectedResourceService {
 ----
 
 Alternatively, `OidcClientRequestFilter` can be registered automatically with all MP Rest or JAX-RS clients if `quarkus.oidc-client-filter.register-filter=true` property is set.
+
+=== Use OidcClient in MicroProfile RestClient Reactive client filter
+
+`quarkus-oidc-client-reactive-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestReactiveFilter`.
+
+It works similary to the way `OidcClientRequestFilter` (described in the previous section) does - it uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value. The difference is that it works with link:rest-client-reactive[Reactive RestClient] and implements a non-blocking client filter which does not block the current IO thread when acquring or refreshing the tokens.
+
+`OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread and it currently can only be registered with `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation:
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.client.reactive.filter.OidcClientRequestReactiveFilter;
+import io.smallrye.mutiny.Uni;
+
+@RegisterRestClient
+@RegisterProvider(OidcClientRequestReactiveFilter.class)
+@Path("/")
+public interface ProtectedResourceService {
+
+    @GET
+    Uni<String> getUserName();
+}
+----
 
 === Use injected Tokens
 

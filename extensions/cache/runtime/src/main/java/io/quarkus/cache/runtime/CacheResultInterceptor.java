@@ -14,6 +14,7 @@ import javax.interceptor.InvocationContext;
 import org.jboss.logging.Logger;
 
 import io.quarkus.cache.CacheResult;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 @CacheResult(cacheName = "") // The `cacheName` attribute is @Nonbinding.
@@ -26,6 +27,14 @@ public class CacheResultInterceptor extends CacheInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext invocationContext) throws Throwable {
+        /*
+         * io.smallrye.mutiny.Multi values are never cached.
+         * There's already a WARN log entry at build time so we don't need to log anything at run time.
+         */
+        if (Multi.class.isAssignableFrom(invocationContext.getMethod().getReturnType())) {
+            return invocationContext.proceed();
+        }
+
         CacheInterceptionContext<CacheResult> interceptionContext = getInterceptionContext(invocationContext,
                 CacheResult.class, true);
 

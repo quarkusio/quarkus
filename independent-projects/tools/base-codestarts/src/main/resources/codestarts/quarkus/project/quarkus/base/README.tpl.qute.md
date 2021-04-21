@@ -1,4 +1,4 @@
-# {project.artifact-id} project
+# {project.artifact-id} Project
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
@@ -46,7 +46,7 @@ You can then execute your native executable with: `./{buildtool.build-dir}/{proj
 If you want to learn more about building native executables, please consult {buildtool.guide}.
 {#if input.selected-extensions}
 
-## Related guides
+## Related Guides
 
 {#for ext in input.selected-extensions}
 {#if ext.guide}
@@ -54,8 +54,7 @@ If you want to learn more about building native executables, please consult {bui
 {/if}
 {/for}
 {/if}
-{#if input.selected-examples}
+{#if input.provided-code}
 
-## Provided examples
-
+## Provided Code
 {/if}

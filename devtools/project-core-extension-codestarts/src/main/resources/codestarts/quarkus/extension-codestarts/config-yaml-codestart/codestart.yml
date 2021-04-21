@@ -1,0 +1,8 @@
+name: config-yaml-codestart
+ref: config-yaml
+type: code
+tags: extension-codestart
+metadata:
+  title: YAML Config
+  description: Configure your application with YAML
+  related-guide-section: https://quarkus.io/guides/config-reference#configuration-examples

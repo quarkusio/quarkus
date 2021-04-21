@@ -1,0 +1,23 @@
+name: azure-functions-http-example
+ref: azure-functions-http
+type: code
+tags:
+  - example
+  - maven-only
+metadata:
+  title: Azure Functions HTTP Integration example
+  description: This example contains a HTTP function ready for Azure.
+  related-guide-section: https://quarkus.io/guides/azure-functions-http
+language:
+  base:
+    data:
+      # /api is the default root context azure functions will prepend
+      root-context-path: "/api"
+      app-region:
+        westus
+      resource-group:
+        java-functions-group
+      function:
+        greeting
+    dependencies:
+      - io.quarkus:quarkus-azure-functions-http

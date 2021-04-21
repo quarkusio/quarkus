@@ -1,0 +1,14 @@
+name: amazon-lambda-example
+ref: amazon-lambda
+type: code
+tags: example
+metadata:
+  title: Amazon Lambda Integration example
+  description: This example contains a Quarkus Greeting Lambda ready for Amazon.
+  related-guide-section: https://quarkus.io/guides/amazon-lambda
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-amazon-lambda
+    test-dependencies:
+      - io.quarkus:quarkus-test-amazon-lambda

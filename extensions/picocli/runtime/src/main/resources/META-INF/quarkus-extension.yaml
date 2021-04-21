@@ -9,7 +9,6 @@ metadata:
   status: "experimental"
   codestart:
     name: "picocli"
-    kind: "example"
     languages:
       - "java"
       - "kotlin"

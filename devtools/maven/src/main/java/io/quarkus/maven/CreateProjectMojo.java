@@ -75,16 +75,13 @@ public class CreateProjectMojo extends AbstractMojo {
     private String projectVersion;
 
     /**
-     * When true, do not include any example code in the generated Quarkus project.
+     * When true, do not include any code in the generated Quarkus project.
      */
-    @Parameter(property = "noExamples", defaultValue = "false")
-    private boolean noExamples;
+    @Parameter(property = "noCode", defaultValue = "false")
+    private boolean noCode;
 
-    /**
-     * Choose which example(s) you want in the generated Quarkus application.
-     */
-    @Parameter(property = "examples")
-    private Set<String> examples;
+    @Parameter(property = "example")
+    private String example;
 
     /**
      * Group ID of the target platform BOM
@@ -286,8 +283,8 @@ public class CreateProjectMojo extends AbstractMojo {
                     .className(className)
                     .packageName(packageName)
                     .extensions(extensions)
-                    .overrideExamples(examples)
-                    .noExamples(noExamples);
+                    .example(example)
+                    .noCode(noCode);
             if (path != null) {
                 createProject.setValue("path", path);
             }
@@ -420,7 +417,7 @@ public class CreateProjectMojo extends AbstractMojo {
                         DEFAULT_VERSION);
             }
 
-            if (examples.isEmpty()) {
+            if (!noCode && StringUtils.isBlank(example)) {
                 if (extensions.isEmpty()) {
                     extensions = Arrays
                             .stream(prompter
@@ -430,8 +427,8 @@ public class CreateProjectMojo extends AbstractMojo {
                             .map(String::trim).filter(StringUtils::isNotEmpty).collect(Collectors.toSet());
                 }
                 String answer = prompter.promptWithDefaultValue(
-                        "Do you want example code to get started (yes), or just an empty project (no)", "yes");
-                noExamples = answer.startsWith("n");
+                        "Would you like some code to start (yes), or just an empty Quarkus project (no)", "yes");
+                noCode = answer.startsWith("n");
             }
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);

@@ -16,7 +16,6 @@ public class PicocliCodestartTest {
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
             .codestarts("picocli")
             .languages(JAVA, KOTLIN)
-            .skipGenerateRealDataProject()
             .build();
 
     @RegisterExtension
@@ -24,20 +23,18 @@ public class PicocliCodestartTest {
             .codestarts("picocli")
             .buildTool(BuildTool.GRADLE)
             .languages(JAVA)
-            .skipGenerateRealDataProject()
             .build();
 
     @Test
     void testContent() throws Throwable {
-        codestartTest.checkGeneratedSource("org.acme.picocli.EntryCommand");
-        codestartTest.checkGeneratedSource("org.acme.picocli.GoodbyeCommand");
-        codestartTest.checkGeneratedSource("org.acme.picocli.HelloCommand");
-        codestartTest.checkGeneratedSource("org.acme.picocli.GreetingService");
+        codestartTest.checkGeneratedSource("org.acme.GreetingCommand");
 
         codestartTest.assertThatGeneratedFile(JAVA, "README.md")
-                .satisfies(checkContains("./mvnw compile quarkus:dev -Dquarkus.args='hello --first-name=Quarky"));
+                .satisfies(checkContains("./mvnw compile quarkus:dev -Dquarkus.args='Quarky"));
 
         codestartGradleTest.assertThatGeneratedFile(JAVA, "README.md")
-                .satisfies(checkContains("./gradlew quarkusDev --quarkus-args='hello --first-name=Quarky'"));
+                .satisfies(checkContains("./gradlew quarkusDev --quarkus-args='Quarky'"));
+
+        //codestartTest.buildAllProjects();
     }
 }

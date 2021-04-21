@@ -11,15 +11,15 @@ import java.util.stream.Collectors;
 public final class ExtensionProcessor {
 
     private static final String STABLE_STATS = "stable";
-    public static final String PROVIDES_EXAMPLE_TAG = "provides-example";
+    public static final String PROVIDES_CODE_TAG = "provides-code";
 
     public enum CodestartKind {
         CORE,
-        EXAMPLE,
-        SINGLETON_EXAMPLE;
+        EXTENSION_CODESTART,
+        EXAMPLE;
 
-        public boolean isExample() {
-            return name().contains("EXAMPLE");
+        public boolean providesCode() {
+            return this == EXTENSION_CODESTART || this == EXAMPLE;
         }
     }
 
@@ -59,12 +59,13 @@ public final class ExtensionProcessor {
     }
 
     public static CodestartKind getCodestartKind(Extension extension) {
-        return getMetadataValue(extension, MD_NESTED_CODESTART_KIND).toEnum(CodestartKind.class);
+        return getMetadataValue(extension, MD_NESTED_CODESTART_KIND).toEnum(CodestartKind.class,
+                CodestartKind.EXTENSION_CODESTART);
     }
 
-    public static boolean providesExampleCode(Extension extension) {
+    public static boolean providesCode(Extension extension) {
         final CodestartKind codestartKind = getCodestartKind(extension);
-        return codestartKind != null && codestartKind.isExample();
+        return codestartKind != null && codestartKind.providesCode();
     }
 
     public static boolean isUnlisted(Extension extension) {
@@ -101,8 +102,8 @@ public final class ExtensionProcessor {
                 .filter(tag -> !STABLE_STATS.equals(tag))
                 .map(String::toLowerCase)
                 .collect(Collectors.toCollection(ArrayList::new));
-        if (providesExampleCode(extension)) {
-            tags.add(PROVIDES_EXAMPLE_TAG);
+        if (providesCode(extension)) {
+            tags.add(PROVIDES_CODE_TAG);
         }
         return tags;
     }
@@ -142,8 +143,8 @@ public final class ExtensionProcessor {
         return getCodestartKind(extension);
     }
 
-    public boolean providesExampleCode() {
-        return providesExampleCode(extension);
+    public boolean providesCode() {
+        return providesCode(extension);
     }
 
     public boolean isUnlisted() {
@@ -179,8 +180,8 @@ public final class ExtensionProcessor {
                 .filter(tag -> !STABLE_STATS.equals(tag))
                 .map(String::toLowerCase)
                 .collect(Collectors.toCollection(ArrayList::new));
-        if (providesExampleCode()) {
-            tags.add(PROVIDES_EXAMPLE_TAG);
+        if (providesCode()) {
+            tags.add(PROVIDES_CODE_TAG);
         }
         return tags;
     }

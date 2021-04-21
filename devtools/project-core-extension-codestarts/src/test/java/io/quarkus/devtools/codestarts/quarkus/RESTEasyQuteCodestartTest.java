@@ -14,14 +14,12 @@ public class RESTEasyQuteCodestartTest {
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
             .codestarts("resteasy-qute")
             .languages(JAVA, KOTLIN)
-            .skipGenerateRealDataProject()
             .build();
 
     @Test
     void testContent() throws Throwable {
-        codestartTest.checkGeneratedSource("org.acme.resteasyqute.Quark");
-        codestartTest.checkGeneratedSource("org.acme.resteasyqute.QuteResource");
+        codestartTest.checkGeneratedSource("org.acme.SomePage");
         codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/templates/page.qute.html");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(KOTLIN, "src/main/resources/templates/page.qute.html");
+        //codestartTest.buildAllProjects();
     }
 }

@@ -4,28 +4,19 @@
 
 //JAVAC_OPTIONS -parameters
 //
-import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Parameters;
 
-@TopCommand
-@CommandLine.Command(mixinStandardHelpOptions = true, subcommands = {HelloCommand.class, GoodByeCommand.class})
+@Command(name = "Greeting", mixinStandardHelpOptions = true)
 public class GreetingCommand {
-}
 
-@CommandLine.Command(name = "hello", description = "Greet World!")
-class HelloCommand implements Runnable {
-
-    @Override
-    public void run() {
-        System.out.println("Hello World!");
-    }
-}
-
-@CommandLine.Command(name = "goodbye", description = "Say goodbye to World!")
-class GoodByeCommand implements Runnable {
+    @Parameters(paramLabel = "<name>", defaultValue = "picocli",
+        description = "Your name.")
+    String name;
 
     @Override
     public void run() {
-        System.out.println("Goodbye World!");
+        System.out.printf("Hello %s, go go commando!\n", name);
     }
 }

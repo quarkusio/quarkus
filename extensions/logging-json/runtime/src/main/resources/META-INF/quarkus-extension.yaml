@@ -9,10 +9,3 @@ metadata:
   - "core"
   status: "preview"
   guide: "https://quarkus.io/guides/logging#json-logging"
-  codestart:
-    name: "logging-json"
-    kind: "example"
-    languages:
-      - "java"
-      - "kotlin"
-    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

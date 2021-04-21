@@ -1,0 +1,12 @@
+name: google-cloud-functions-example
+ref: google-cloud-functions
+type: code
+tags: example
+metadata:
+  title: Google Cloud Functions Integration examples
+  description: Examples of Google Cloud HTTP and Background Functions for Quarkus.
+  related-guide-section: https://quarkus.io/guides/gcp-functions#choose-your-function
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-google-cloud-functions

@@ -2,6 +2,7 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent.CODE;
 import static io.quarkus.devtools.project.QuarkusProjectHelper.getCodestartResourceLoaders;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getCodestartName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
@@ -22,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +37,18 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     public static final String QUARKUS_CODESTARTS_DIR = "codestarts/quarkus";
     public static final String INPUT_SELECTED_EXTENSIONS_KEY = "selected-extensions";
     public static final String INPUT_SELECTED_EXTENSIONS_GA_KEY = "selected-extensions-ga";
-    public static final String INPUT_SELECTED_EXAMPLES_KEY = "selected-examples";
+    public static final String INPUT_PROVIDED_CODE_KEY = "provided-code";
     private final Map<String, Extension> extensionsMapping;
 
+    public enum AppContent implements DataKey {
+        BUILD_TOOL_WRAPPER,
+        DOCKERFILES,
+        CODE,
+    }
+
     public enum Tag implements DataKey {
+        EXTENSION_CODESTART,
         EXAMPLE,
-        SINGLETON_EXAMPLE,
         MAVEN_ONLY;
     }
 
@@ -58,9 +64,10 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         DOCKERFILES
     }
 
-    public enum Example implements DataKey {
-        RESTEASY_EXAMPLE,
-        COMMANDMODE_EXAMPLE
+    public enum ExtensionCodestart implements DataKey {
+        RESTEASY,
+        RESTEAST_REACTIVE,
+        SPRING_WEB
     }
 
     private QuarkusCodestartCatalog(Collection<Codestart> codestarts,
@@ -97,23 +104,24 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         // Add codestarts from extension and for tooling
         projectInput.getSelection().addNames(getExtensionCodestarts(projectInput));
         projectInput.getSelection().addNames(getToolingCodestarts(projectInput));
-        projectInput.getSelection().addNames(projectInput.getOverrideExamples());
+        if (projectInput.getExample() != null) {
+            projectInput.getSelection().addName(projectInput.getExample());
+        }
 
-        // Filter out examples if noExamples
+        // Filter out extension codestarts and examples
         final List<Codestart> projectCodestarts = super.select(projectInput).stream()
-                .filter(c -> !isExample(c) || !projectInput.noExamples())
-                .filter(c -> !isExample(c) || projectInput.getOverrideExamples().isEmpty()
-                        || c.isSelected(projectInput.getOverrideExamples()))
+                .filter(c -> c.getType() != CodestartType.CODE || projectInput.getAppContent().contains(CODE))
+                .filter(c -> !isExample(c) || projectInput.getExample() == null || c.matches(projectInput.getExample()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        // include default example codestarts if none selected
-        if (!projectInput.noExamples()
+        // include default codestarts if no code selected
+        if (projectInput.getAppContent().contains(CODE)
                 && projectCodestarts.stream()
-                        .noneMatch(c -> isExample(c) && !c.getSpec().isPreselected())) {
+                        .noneMatch(c -> c.getType() == CodestartType.CODE && !c.getSpec().isPreselected())) {
             final Codestart defaultCodestart = codestarts.stream()
-                    .filter(c -> c.isSelected(Collections.singleton(Example.RESTEASY_EXAMPLE.key())))
+                    .filter(c -> c.matches(ExtensionCodestart.RESTEASY.key()))
                     .findFirst().orElseThrow(() -> new CodestartStructureException(
-                            Example.RESTEASY_EXAMPLE.key() + " codestart not found"));
+                            ExtensionCodestart.RESTEASY.key() + " codestart not found"));
             final String languageName = findLanguageName(projectCodestarts);
             if (defaultCodestart.implementsLanguage(languageName)) {
                 projectCodestarts.add(defaultCodestart);
@@ -125,18 +133,17 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             }
         }
 
-        // check compatibility issues
-        final long examplesWithCompatIssues = projectCodestarts.stream()
+        // check only one example
+        final long examples = projectCodestarts.stream()
                 .filter(QuarkusCodestartCatalog::isExample)
-                .filter(c -> c.containsTag(Tag.SINGLETON_EXAMPLE.key()))
                 .count();
 
-        if (examplesWithCompatIssues == 1) {
-            // remove other examples
-            projectCodestarts.removeIf(c -> isExample(c) && !c.containsTag(Tag.SINGLETON_EXAMPLE.key()));
-        } else if (examplesWithCompatIssues > 1) {
+        if (examples == 1) {
+            // remove extension codestarts
+            projectCodestarts.removeIf(QuarkusCodestartCatalog::isExtensionCodestart);
+        } else if (examples > 1) {
             throw new CodestartException(
-                    "Only one extension with singleton example can be selected at a time (you can always use 'noExamples' if needed)");
+                    "Only example can be selected at a time (you can always use 'noCode' if needed)");
         }
 
         projectInput.getData().putAll(generateSelectionData(projectInput, projectCodestarts));
@@ -161,7 +168,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     private List<String> getToolingCodestarts(QuarkusCodestartProjectInput projectInput) {
         final List<String> codestarts = new ArrayList<>();
         codestarts.add(projectInput.getBuildTool().getKey());
-        if (!projectInput.noBuildToolWrapper()) {
+        if (projectInput.getAppContent().contains(AppContent.BUILD_TOOL_WRAPPER)) {
             switch (projectInput.getBuildTool()) {
                 case GRADLE:
                 case GRADLE_KOTLIN_DSL:
@@ -174,7 +181,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                     throw new IllegalArgumentException("Unsupported build tool wrapper: " + projectInput.getBuildTool());
             }
         }
-        if (!projectInput.noDockerfiles()) {
+        if (projectInput.getAppContent().contains(AppContent.DOCKERFILES)) {
             codestarts.add(QuarkusCodestartCatalog.Tooling.DOCKERFILES.key());
         }
         return codestarts;
@@ -184,8 +191,8 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             List<Codestart> projectCodestarts) {
         Map<String, Object> data = new HashMap<>();
         final Map<String, Object> inputData = new HashMap<>();
-        inputData.put(INPUT_SELECTED_EXAMPLES_KEY,
-                projectCodestarts.stream().filter(QuarkusCodestartCatalog::isExample).map(c -> {
+        inputData.put(INPUT_PROVIDED_CODE_KEY,
+                projectCodestarts.stream().filter(c -> c.getType() == CodestartType.CODE).map(c -> {
                     Map<String, Object> eData = new HashMap<>();
                     eData.put("name", c.getName());
                     eData.put("tags", c.getTags());
@@ -205,8 +212,12 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return data;
     }
 
+    public static boolean isExtensionCodestart(Codestart codestart) {
+        return codestart.getType() == CodestartType.CODE && codestart.containsTag(Tag.EXTENSION_CODESTART.key());
+    }
+
     public static boolean isExample(Codestart codestart) {
-        return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.key());
+        return codestart.getType() == CodestartType.CODE && codestart.containsTag(Tag.EXAMPLE.key());
     }
 
     private static Map<String, Extension> buildExtensionsMapping(

@@ -1,0 +1,12 @@
+name: picocli-codestart
+ref: picocli
+type: code
+tags: extension-codestart
+metadata:
+  title: Picocli Example
+  description: Hello and goodbye are civilization fundamentals. Let's not forget it with this example picocli application by changing the <code>command</code> and <code>parameters</code>.
+  related-guide-section: https://quarkus.io/guides/picocli#command-line-application-with-multiple-commands
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-picocli

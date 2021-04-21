@@ -12,10 +12,3 @@ metadata:
   - "web"
   - "serialization"
   status: "stable"
-  codestart:
-    name: "resteasy-jackson"
-    kind: "example"
-    languages:
-      - "java"
-      - "kotlin"
-    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

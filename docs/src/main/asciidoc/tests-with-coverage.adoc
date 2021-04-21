@@ -175,6 +175,9 @@ Now we need to add Jacoco to our project. To do this we need to add the followin
 This Quarkus extension takes care of everything that would usually be done via the Jacoco maven plugin, so no additional
 config is required.
 
+WARNING: Using both the extension and the plugin requires special configuration, if you add both you will get lots of errors about classes
+already being instrumented. The configuration needed is detailed below.
+
 == Running the tests with coverage
 
 Run `mvn verify`, the tests will be run and the results will end up in `target/jacoco-reports`. This is all that is needed,
@@ -189,86 +192,48 @@ include::{generated-dir}/config/quarkus-jacoco-jacoco-config.adoc[opts=optional,
 The Quarkus automatic Jacoco config will only work for tests that are annotated with `@QuarkusTest`. If you want to check
 the coverage of other tests as well then you will need to fall back to the Jacoco maven plugin.
 
-Because Quarkus uses class file transformation it is not possible to use online transformation with the Jacoco agent.
-Instead we need to use offline transformation.
-
-Instead of including the `quarkus-jacoco` extension in your pom you will need the following config:
+In addition to including the `quarkus-jacoco` extension in your pom you will need the following config:
 
 [source,xml,subs=attributes+]
 ----
 <project>
-    ...
-    <dependencies>
-    ...
-        <dependency>
-          <groupId>org.jacoco</groupId>
-          <artifactId>org.jacoco.agent</artifactId>
-          <classifier>runtime</classifier>
-          <scope>test</scope>
-          <version>${jacoco.version}</version>
-        </dependency>
-    ...
-    </dependencies>
     <build>
         <plugins>
             ...
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
-                <executions>
-                    <execution>
-                        <id>instrument-ut</id>
-                        <goals>
-                            <goal>instrument</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>restore-ut</id>
-                        <goals>
-                            <goal>restore-instrumented-classes</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report-ut</id>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.reporting.outputDirectory}/jacoco-reports</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-</project>
-----
-
-It also requires a small change in the Surefire configuration. Note below that we specified `jacoco-agent.destfile` as a system property in the default case (unit tests) and for the integration tests.
-
-[source,xml,subs=attributes+]
-----
-<project>
-    ...
-    <build>
-        <plugins>
-            ...
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default-prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
                 <configuration>
-                    <systemPropertyVariables>
-                        <jacoco-agent.destfile>${project.build.directory}/jacoco.exec</jacoco-agent.destfile>
-                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <maven.home>${maven.home}</maven.home>
-                    </systemPropertyVariables>
+                  <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>  <1>
                 </configuration>
-            </plugin>
+              </execution>
+              <execution>
+                <id>default-prepare-agent-integration</id> <2>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
         </plugins>
     </build>
 </project>
 ----
+<1> This config tells it to ignore `@QuarkusTest` related classes, as they are loaded by `QuarkusClassLoader`
+<2> This is only needed if you are using Failsafe to run integration tests
+
+WARNING: This config will only work if at least one `@QuarkusTest` is being run. If you are not using `@QuarkusTest` then
+you can simply use the Jacoco plugin in the standard manner with no additional config.
+
 
 == Conclusion
 

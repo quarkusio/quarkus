@@ -8,9 +8,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+
 import io.smallrye.mutiny.Uni;
 
 @Path("")
+@RegisterProvider(DefaultCtorTestFilter.class)
+@RegisterProvider(NonDefaultCtorTestFilter.class)
 public interface SimpleClient {
     @POST
     @Produces(MediaType.APPLICATION_JSON)

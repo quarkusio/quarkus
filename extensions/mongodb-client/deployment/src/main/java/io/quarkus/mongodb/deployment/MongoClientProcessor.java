@@ -62,8 +62,6 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class MongoClientProcessor {
     private static final String MONGODB_TRACING_COMMANDLISTENER_CLASSNAME = "io.quarkus.mongodb.tracing.MongoTracingCommandListener";
-    private static final DotName LEGACY_MONGO_CLIENT_ANNOTATION = DotName
-            .createSimple(io.quarkus.mongodb.runtime.MongoClientName.class.getName());
     private static final DotName MONGO_CLIENT_ANNOTATION = DotName.createSimple(MongoClientName.class.getName());
 
     private static final DotName MONGO_CLIENT = DotName.createSimple(MongoClient.class.getName());
@@ -129,7 +127,6 @@ public class MongoClientProcessor {
             BuildProducer<MongoClientNameBuildItem> mongoClientName) {
         Set<String> values = new HashSet<>();
         IndexView indexView = indexBuildItem.getIndex();
-        addMongoClientNameValues(LEGACY_MONGO_CLIENT_ANNOTATION, indexView, values);
         addMongoClientNameValues(MONGO_CLIENT_ANNOTATION, indexView, values);
         for (String value : values) {
             mongoClientName.produce(new MongoClientNameBuildItem(value));
@@ -175,8 +172,6 @@ public class MongoClientProcessor {
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         // add the @MongoClientName class otherwise it won't registered as a qualifier
-        additionalBeans.produce(
-                AdditionalBeanBuildItem.builder().addBeanClass(io.quarkus.mongodb.runtime.MongoClientName.class).build());
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MongoClientName.class).build());
         // make MongoClients an unremoveable bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MongoClients.class).setUnremovable().build());
@@ -314,7 +309,6 @@ public class MongoClientProcessor {
             configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", namedQualifier).done();
             if (addMongoClientQualifier) {
                 configurator.addQualifier().annotation(MONGO_CLIENT_ANNOTATION).addValue("value", clientName).done();
-                configurator.addQualifier().annotation(LEGACY_MONGO_CLIENT_ANNOTATION).addValue("value", clientName).done();
             }
         }
         return configurator.done();

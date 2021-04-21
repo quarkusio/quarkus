@@ -32,7 +32,7 @@ class DefaultPersistenceUnitConfigTest {
                 .setArchiveProducer {
                     ShrinkWrap.create(JavaArchive::class.java)
                             .addClasses(FirstEntity::class.java, SecondEntity::class.java, PanacheTestResource::class.java)
-                            .addAsResource("application.properties")
+                            .addAsResource("application-test.properties", "application.properties")
                 }
     }
 }

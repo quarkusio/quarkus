@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.kotlin
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations.implementationInjectionMissing
-import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.INSTANCE
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge

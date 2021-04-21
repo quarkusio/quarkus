@@ -156,10 +156,10 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 ----
 
 [NOTE]
-===
+====
 If more than one custom `SecurityIdentityAugmentor` is registered then they will be considered equal candidates and invoked in random order.
 You can enforce the order by implementing a default `SecurityIdentityAugmentor#priority` method. Augmentors with higher priorities will be invoked first.
-===
+====
 
 [[jaxrs-security-context]]
 == Custom JAX-RS SecurityContext

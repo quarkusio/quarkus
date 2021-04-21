@@ -38,6 +38,25 @@ env:
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
 jobs:
+  # This is a hack to work around a GitHub API limitation:
+  # when the PR is coming from another fork, the pull_requests field of the
+  # workflow_run payload is empty.
+  # For more details, see
+  # https://github.community/t/pull-request-attribute-empty-in-workflow-run-event-object-for-pr-from-forked-repo/154682
+  attach-pr-number:
+    runs-on: ubuntu-latest
+    name: Attach pull request number
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Create file
+        shell: bash
+        run: |
+          echo -n ${{ github.event.number }} > pull-request-number
+      - name: Upload pull request number
+        uses: actions/upload-artifact@v2
+        with:
+          name: pull-request-number-${{ github.event.number }}
+          path: pull-request-number
   ci-sanity-check:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
@@ -174,6 +193,13 @@ jobs:
         with:
           name: test-reports-linux-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-JVM Tests - JDK ${{matrix.java.name}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-tests:
     name: JVM Tests - JDK 11 Windows
@@ -215,6 +241,13 @@ jobs:
         with:
           name: test-reports-windows-jdk11-jvm
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-JVM Tests - JDK 11 Windows"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   linux-jvm-maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -258,6 +291,13 @@ jobs:
         with:
           name: test-reports-linux-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-Maven Tests - JDK ${{matrix.java.name}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-maven-tests:
     name: Maven Tests - JDK 11 Windows
@@ -296,6 +336,13 @@ jobs:
         with:
           name: test-reports-windows-maven-java11
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-Maven Tests - JDK 11 Windows"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   linux-jvm-gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
@@ -336,6 +383,13 @@ jobs:
           wrapper-directory: integration-tests/gradle
           build-root-directory: integration-tests/gradle
           arguments: clean test -i -S --stacktrace --no-daemon
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-Gradle Tests - JDK ${{matrix.java.name}}"
+          path: "**/build/test-results/test/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-gradle-tests:
     name: Gradle Tests - JDK 11 Windows
@@ -369,6 +423,13 @@ jobs:
           wrapper-directory: integration-tests/gradle
           build-root-directory: integration-tests/gradle
           arguments: clean test -i -S --stacktrace --no-daemon
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-Gradle Tests - JDK 11 Windows"
+          path: "**/build/test-results/test/TEST-*.xml"
+          retention-days: 2
 
   linux-jvm-devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
@@ -412,6 +473,13 @@ jobs:
         with:
           name: test-reports-linux-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-Devtools Tests - JDK ${{matrix.java.name}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   windows-jdk11-jvm-devtools-tests:
     name: Devtools Tests - JDK 11 Windows
@@ -450,6 +518,13 @@ jobs:
         with:
           name: test-reports-windows-devtools-java11
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-Devtools Tests - JDK 11 Windows"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   tcks-test:
     name: MicroProfile TCKs Tests
@@ -501,6 +576,13 @@ jobs:
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-MicroProfile TCKs Tests"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2
 
   native-tests-read-json-matrix:
     name: Native Tests - Read JSON matrix
@@ -571,3 +653,10 @@ jobs:
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
+      - name: Upload Surefire reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "surefire-reports-Native Tests - ${{matrix.category}}"
+          path: "**/target/*-reports/TEST-*.xml"
+          retention-days: 2

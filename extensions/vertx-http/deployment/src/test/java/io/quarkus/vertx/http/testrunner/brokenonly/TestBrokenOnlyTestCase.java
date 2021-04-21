@@ -22,7 +22,7 @@ public class TestBrokenOnlyTestCase {
             .setArchiveProducer(new Supplier<JavaArchive>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class)
+                    return ShrinkWrap.create(JavaArchive.class).addClass(BrokenOnlyResource.class)
                             .add(new StringAsset(TestRunnerTestUtils.appProperties()),
                                     "application.properties");
                 }
@@ -59,7 +59,7 @@ public class TestBrokenOnlyTestCase {
         Assertions.assertEquals(0L, ts.getTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 
-        test.modifySourceFile(HelloResource.class, new Function<String, String>() {
+        test.modifySourceFile(BrokenOnlyResource.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
                 return s.replace("//setup(router);", "setup(router);");

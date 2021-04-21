@@ -485,6 +485,16 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return ret;
     }
 
+    public List<String> getLocalClassNames() {
+        List<String> ret = new ArrayList<>();
+        for (String name : getState().loadableResources.keySet()) {
+            if (name.endsWith(".class")) {
+                ret.add(name.substring(0, name.length() - 6).replace("/", "."));
+            }
+        }
+        return ret;
+    }
+
     @SuppressWarnings("unused")
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
         return super.defineClass(name, b, off, len);

@@ -31,7 +31,7 @@ public class TestRunnerSmokeTestCase {
             .setTestArchiveProducer(new Supplier<JavaArchive>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(SimpleET.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, UnitET.class);
                 }
             });
 
@@ -39,18 +39,25 @@ public class TestRunnerSmokeTestCase {
     public void checkTestsAreRun() throws InterruptedException {
         TestStatus ts = TestRunnerTestUtils.waitForFirstRunToComplete();
         Assertions.assertEquals(1L, ts.getLastRun());
-        Assertions.assertEquals(1L, ts.getTestsFailed());
+        Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         SuiteResult suiteResult = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/result")
                 .as(SuiteResult.class);
-        Assertions.assertEquals(1, suiteResult.getResults().size());
-        ClassResult cr = suiteResult.getResults().values().iterator().next();
-        Assertions.assertEquals(SimpleET.class.getName(), cr.getClassName());
-        Assertions.assertEquals(1, cr.getFailing().size());
-        Assertions.assertEquals(1, cr.getPassing().size());
+        Assertions.assertEquals(2, suiteResult.getResults().size());
+        for (ClassResult cr : suiteResult.getResults().values()) {
+            if (cr.getClassName().equals(SimpleET.class.getName())) {
+                Assertions.assertEquals(1, cr.getFailing().size());
+                Assertions.assertEquals(1, cr.getPassing().size());
+            } else if (cr.getClassName().equals(UnitET.class.getName())) {
+                Assertions.assertEquals(1, cr.getFailing().size());
+                Assertions.assertEquals(0, cr.getPassing().size());
+            } else {
+                Assertions.fail("Unexpected test " + cr.getClassName());
+            }
+        }
 
         //now add the functionality
         test.modifySourceFile(HelloResource.class, new Function<String, String>() {
@@ -61,8 +68,23 @@ public class TestRunnerSmokeTestCase {
         });
         ts = TestRunnerTestUtils.waitForRun(2);
         Assertions.assertEquals(2L, ts.getLastRun());
-        Assertions.assertEquals(0L, ts.getTestsFailed());
+        Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
+        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(-1L, ts.getRunning());
+
+        //fix the unit test
+
+        test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
+            @Override
+            public String apply(String s) {
+                return s.replace("Hi", "hello");
+            }
+        });
+        ts = TestRunnerTestUtils.waitForRun(3);
+        Assertions.assertEquals(3L, ts.getLastRun());
+        Assertions.assertEquals(0L, ts.getTestsFailed());
+        Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 

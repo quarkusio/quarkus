@@ -148,7 +148,6 @@ public class TestsProcessor {
                 if (testRunResults == null) {
                     event.response().setStatusCode(204).end();
                 } else {
-
                     jsonResponse(event);
                     Map<String, ClassResult> results = new HashMap<>();
                     for (Map.Entry<String, TestClassResult> entry : testRunResults.getResults().entrySet()) {

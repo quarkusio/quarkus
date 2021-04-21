@@ -294,12 +294,6 @@ MongoClient mongoClient1;
 ReactiveMongoClient mongoClient2;
 ----
 
-[NOTE]
-====
-The old `io.quarkus.mongodb.runtime.MongoClientName` has been deprecated. It still works, but will soon be removed, therefore users are encouraged to not use it.
-====
-
-
 == Running a MongoDB Database
 As by default, `MongoClient` is configured to access a local MongoDB database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!
 

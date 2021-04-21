@@ -21,7 +21,6 @@ import com.mongodb.client.internal.MongoClientImpl;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.ClientProxyUnwrapper;
 import io.quarkus.mongodb.health.MongoHealthCheck;
-import io.quarkus.mongodb.runtime.MongoClientName;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestBase {

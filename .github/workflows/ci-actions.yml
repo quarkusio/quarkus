@@ -181,7 +181,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         run: eval mvn $JVM_TEST_MAVEN_OPTS install -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args}}
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -226,7 +226,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         shell: bash
         run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dno-native -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install
       - name: Prepare failure archive (if maven failed)
@@ -279,7 +279,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-      - name: Run Maven integration tests
+      - name: Build
         run: eval mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven'
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -323,7 +323,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Run Maven integration tests
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven'
       - name: Prepare failure archive (if maven failed)
@@ -374,7 +374,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-      - name: Build with Gradle
+      - name: Build
         uses: eskatos/gradle-command-action@v1
         env:
           GRADLE_OPTS: -Xmx1408m
@@ -413,7 +413,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Gradle
+      - name: Build
         uses: eskatos/gradle-command-action@v1
         timeout-minutes: 60
         env:
@@ -461,7 +461,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-      - name: Run Devtools integration tests
+      - name: Build
         run: eval mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -505,7 +505,7 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Run Devtools integration tests
+      - name: Build
         shell: bash
         run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
       - name: Prepare failure archive (if maven failed)
@@ -628,7 +628,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Maven
+      - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CATEGORY: ${{matrix.category}}

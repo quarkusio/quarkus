@@ -435,7 +435,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
     private void addProvider(MethodCreator ctor, AssignableResultHandle target, IndexView index,
             AnnotationInstance registerProvider) {
-        // if a registered provider is a cdi bean, it has to be reused
+        // if a registered provider is a CDI bean, it has to be reused
         // take the name of the provider class from the annotation:
         String providerClass = registerProvider.value().asString();
 
@@ -456,14 +456,21 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         beanProviderAvailable.assign(target, alteredTarget);
 
         // else, create a new instance of the provider class
+        ClassInfo providerClassInfo = index.getClassByName(DotName.createSimple(providerClass));
         BytecodeCreator beanProviderNotAvailable = branchResult.falseBranch();
-        ResultHandle provider = beanProviderNotAvailable.newInstance(MethodDescriptor.ofConstructor(providerClass));
-        alteredTarget = beanProviderNotAvailable.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class,
-                        int.class),
-                target, provider,
-                beanProviderNotAvailable.load(registerProvider.valueWithDefault(index, "priority").asInt()));
-        beanProviderNotAvailable.assign(target, alteredTarget);
+        if ((providerClassInfo != null) && providerClassInfo.hasNoArgsConstructor()) { // if the filter has a no-args constructor, use it
+            ResultHandle provider = beanProviderNotAvailable.newInstance(MethodDescriptor.ofConstructor(providerClass));
+            alteredTarget = beanProviderNotAvailable.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class,
+                            int.class),
+                    target, provider,
+                    beanProviderNotAvailable.load(registerProvider.valueWithDefault(index, "priority").asInt()));
+            beanProviderNotAvailable.assign(target, alteredTarget);
+        } else { // the filter does not have a no-args constructor, so we can do nothing but fail
+            beanProviderNotAvailable.throwException(IllegalStateException.class,
+                    "Provider " + providerClass + " must either be a CDI bean or have a no-args constructor");
+        }
+
     }
 
 }

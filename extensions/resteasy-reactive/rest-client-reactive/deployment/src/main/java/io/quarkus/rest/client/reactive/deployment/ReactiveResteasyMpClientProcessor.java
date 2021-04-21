@@ -1,11 +1,15 @@
 package io.quarkus.rest.client.reactive.deployment;
 
+import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +31,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -132,7 +137,7 @@ class ReactiveResteasyMpClientProcessor {
     @BuildStep
     void registerHeaderFactoryBeans(CombinedIndexBuildItem index,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        Collection<AnnotationInstance> annotations = index.getIndex().getAnnotations(DotNames.REGISTER_CLIENT_HEADERS);
+        Collection<AnnotationInstance> annotations = index.getIndex().getAnnotations(REGISTER_CLIENT_HEADERS);
 
         for (AnnotationInstance registerClientHeaders : annotations) {
             AnnotationValue value = registerClientHeaders.value();
@@ -144,6 +149,25 @@ class ReactiveResteasyMpClientProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem registerProviderBeans(CombinedIndexBuildItem combinedIndex) {
+        IndexView index = combinedIndex.getIndex();
+        List<AnnotationInstance> allInstances = new ArrayList<>(index.getAnnotations(REGISTER_PROVIDER));
+        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
+            allInstances.addAll(Arrays.asList(annotation.value().asNestedArray()));
+        }
+        allInstances.addAll(index.getAnnotations(REGISTER_CLIENT_HEADERS));
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
+        for (AnnotationInstance annotationInstance : allInstances) {
+            // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as beans
+            AnnotationValue value = annotationInstance.value();
+            if (value != null) {
+                builder.addBeanClass(value.asClass().toString());
+            }
+        }
+        return builder.build();
     }
 
     @BuildStep

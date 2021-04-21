@@ -52,6 +52,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.dev.testing.TestScanningLock;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -582,24 +583,30 @@ public class QuarkusDevModeTest
     }
 
     void modifyFile(String name, Function<String, String> mutator, Path path) {
-        AtomicBoolean found = new AtomicBoolean(false);
-        try (Stream<Path> sources = Files.walk(path)) {
-            sources.forEach(s -> {
-                if (s.endsWith(name)) {
-                    found.set(true);
-                    modifyPath(mutator, path, s);
-                }
-            });
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        TestScanningLock.lockForTests();
+        try {
+            AtomicBoolean found = new AtomicBoolean(false);
+            try (Stream<Path> sources = Files.walk(path)) {
+                sources.forEach(s -> {
+                    if (s.endsWith(name)) {
+                        found.set(true);
+                        modifyPath(mutator, path, s);
+                    }
+                });
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
 
-        if (!found.get()) {
-            throw new IllegalArgumentException("File " + name + " was not part of the test application");
+            if (!found.get()) {
+                throw new IllegalArgumentException("File " + name + " was not part of the test application");
+            }
+        } finally {
+            TestScanningLock.unlockForTests();
         }
     }
 
     private void modifyPath(Function<String, String> mutator, Path sourceDirectory, Path input) {
+        TestScanningLock.lockForTests();
         try {
             long old = modTime(input);
             long oldSrc = modTime(sourceDirectory);
@@ -619,6 +626,8 @@ public class QuarkusDevModeTest
             sleepForFileChanges(input, old);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        } finally {
+            TestScanningLock.unlockForTests();
         }
     }
 

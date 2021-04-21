@@ -64,6 +64,12 @@ public class TestConsoleHandler implements TestListener {
                         TestSupport.instance().get().stop();
                     } else if (k == 'h') {
                         printUsage();
+                    } else if (k == 'b') {
+                        if (testController.toggleBrokenOnlyMode()) {
+                            log.info("Broken only mode enabled");
+                        } else {
+                            log.info("Broken only mode disabled");
+                        }
                     }
                 }
             }
@@ -84,6 +90,7 @@ public class TestConsoleHandler implements TestListener {
     public void printUsage() {
         System.out.println("r - Re-run all tests");
         System.out.println("f - Re-run failed tests");
+        System.out.println("b - Toggle 'broken only' mode, where only failing tests are run");
         System.out.println("v - Print failures from the last test run");
         System.out.println("o - Toggle test output");
         System.out.println("i - Toggle instrumentation based reload");

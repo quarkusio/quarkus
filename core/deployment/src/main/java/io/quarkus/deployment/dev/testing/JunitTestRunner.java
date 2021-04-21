@@ -86,6 +86,7 @@ public class JunitTestRunner {
     private final Pattern include;
     private final Pattern exclude;
     private final boolean displayInConsole;
+    private final boolean failingTestsOnly;
 
     private volatile boolean testsRunning = false;
     private volatile boolean aborted;
@@ -105,6 +106,7 @@ public class JunitTestRunner {
         this.include = builder.include;
         this.exclude = builder.exclude;
         this.displayInConsole = builder.displayInConsole;
+        this.failingTestsOnly = builder.failingTestsOnly;
     }
 
     public void runTests() {
@@ -136,6 +138,9 @@ public class JunitTestRunner {
             }
             if (!additionalFilters.isEmpty()) {
                 launchBuilder.filters(additionalFilters.toArray(new PostDiscoveryFilter[0]));
+            }
+            if (failingTestsOnly) {
+                launchBuilder.filters(new CurrentlyFailingFilter());
             }
             LauncherDiscoveryRequest request = launchBuilder
                     .build();
@@ -466,7 +471,7 @@ public class JunitTestRunner {
             while (cl.getParent() != null) {
                 if (cl == testApplication.getAugmentClassLoader()
                         || cl == testApplication.getBaseRuntimeClassLoader()) {
-                    //TODO: for convenience we save the log records as HTML rather than ansci here
+                    //TODO: for convenience we save the log records as HTML rather than ANSI here
                     synchronized (logOutput) {
                         ByteArrayOutputStream out = new ByteArrayOutputStream();
                         HtmlAnsiOutputStream outputStream = new HtmlAnsiOutputStream(out) {
@@ -501,6 +506,7 @@ public class JunitTestRunner {
         private Pattern include;
         private Pattern exclude;
         private boolean displayInConsole;
+        private boolean failingTestsOnly;
 
         public Builder setRunId(long runId) {
             this.runId = runId;
@@ -575,6 +581,10 @@ public class JunitTestRunner {
             return new JunitTestRunner(this);
         }
 
+        public Builder setFailingTestsOnly(boolean failingTestsOnly) {
+            this.failingTestsOnly = failingTestsOnly;
+            return this;
+        }
     }
 
     private static class TagFilter implements PostDiscoveryFilter {
@@ -647,6 +657,37 @@ public class JunitTestRunner {
                         return FilterResult.includedIf(!exclude);
                     }
                     return FilterResult.includedIf(exclude);
+                }
+            }
+            return FilterResult.included("not a method");
+        }
+    }
+
+    /**
+     * filter for tests that are currently failing.
+     *
+     * Note that this also includes newly written tests, as we don't know if they
+     * will fail or not yet.
+     */
+    private class CurrentlyFailingFilter implements PostDiscoveryFilter {
+
+        @Override
+        public FilterResult apply(TestDescriptor testDescriptor) {
+            if (testDescriptor.getSource().isPresent()) {
+                if (testDescriptor.getSource().get() instanceof MethodSource) {
+                    MethodSource methodSource = (MethodSource) testDescriptor.getSource().get();
+
+                    String name = methodSource.getJavaClass().getName();
+                    Map<UniqueId, TestResult> results = testState.getCurrentResults().get(name);
+                    if (results == null) {
+                        return FilterResult.included("new test");
+                    }
+                    TestResult testResult = results.get(testDescriptor.getUniqueId());
+                    if (testResult == null) {
+                        return FilterResult.included("new test");
+                    }
+                    return FilterResult
+                            .includedIf(testResult.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED);
                 }
             }
             return FilterResult.included("not a method");

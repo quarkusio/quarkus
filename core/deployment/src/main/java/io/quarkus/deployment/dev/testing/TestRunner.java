@@ -206,7 +206,8 @@ public class TestRunner {
                     .setIncludeTags(testSupport.includeTags)
                     .setExcludeTags(testSupport.excludeTags)
                     .setInclude(testSupport.include)
-                    .setExclude(testSupport.exclude);
+                    .setExclude(testSupport.exclude)
+                    .setFailingTestsOnly(testSupport.failingTestsOnly);
             if (reRunFailures) {
                 Set<UniqueId> ids = new HashSet<>();
                 for (Map.Entry<String, TestClassResult> e : testSupport.testRunResults.getCurrentFailing().entrySet()) {

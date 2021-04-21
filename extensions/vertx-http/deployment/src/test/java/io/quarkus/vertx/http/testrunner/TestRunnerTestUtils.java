@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 
 import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
 import io.restassured.RestAssured;
@@ -19,13 +20,22 @@ public class TestRunnerTestUtils {
     }
 
     public static TestStatus waitForRun(long id) {
-        Awaitility.waitAtMost(1, TimeUnit.MINUTES).pollInterval(50, TimeUnit.MILLISECONDS).until(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                TestStatus ts = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/status").as(TestStatus.class);
-                return ts.getLastRun() == id;
-            }
-        });
+        try {
+            Awaitility.waitAtMost(1, TimeUnit.MINUTES).pollInterval(50, TimeUnit.MILLISECONDS).until(new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    TestStatus ts = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/status").as(TestStatus.class);
+                    if (ts.getLastRun() > id) {
+                        throw new RuntimeException(
+                                "Waiting for run " + id + " but run " + ts.getLastRun() + " has already occurred");
+                    }
+                    return ts.getLastRun() == id;
+                }
+            });
+        } catch (Exception e) {
+            TestStatus ts = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/status").as(TestStatus.class);
+            throw new ConditionTimeoutException("Failed to wait for test run" + id + " " + ts);
+        }
         return RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/status").as(TestStatus.class);
     }
 

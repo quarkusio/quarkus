@@ -45,28 +45,27 @@ public class TestTracingProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    ServiceStartBuildItem setupConsole(TestConfig config) {
+    void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
-            return null;
+            return;
         }
         if (consoleInstalled) {
-            return null;
+            return;
         }
         consoleInstalled = true;
         if (config.console) {
             ConsoleHelper.installConsole(config);
             TestConsoleHandler consoleHandler = new TestConsoleHandler();
             consoleHandler.install();
-            TestSupport.instance().get().addListener(consoleHandler);
+            testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(consoleHandler));
         }
-        return null;
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(LogHandlerBuildItem.class)
     ServiceStartBuildItem startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
-            LaunchModeBuildItem launchModeBuildItem) {
+            LaunchModeBuildItem launchModeBuildItem, List<TestListenerBuildItem> testListenerBuildItems) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
             return null;
@@ -75,6 +74,9 @@ public class TestTracingProcessor {
             return null;
         }
         TestSupport testSupport = TestSupport.instance().get();
+        for (TestListenerBuildItem i : testListenerBuildItems) {
+            testSupport.addListener(i.listener);
+        }
         testSupport.setTags(config.includeTags.orElse(Collections.emptyList()),
                 config.excludeTags.orElse(Collections.emptyList()));
         testSupport.setPatterns(config.includePattern.orElse(null),

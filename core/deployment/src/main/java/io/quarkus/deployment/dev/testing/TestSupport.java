@@ -1,10 +1,10 @@
 package io.quarkus.deployment.dev.testing;
 
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
@@ -24,7 +24,7 @@ public class TestSupport implements TestController {
     final CuratedApplication curatedApplication;
     final List<CompilationProvider> compilationProviders;
     final DevModeContext context;
-    final List<TestListener> testListeners = new ArrayList<>();
+    final List<TestListener> testListeners = new CopyOnWriteArrayList<>();
     final TestState testState = new TestState();
 
     volatile CuratedApplication testCuratedApplication;
@@ -38,6 +38,7 @@ public class TestSupport implements TestController {
     volatile Pattern exclude = null;
     volatile boolean displayTestOutput;
     volatile Boolean explicitDisplayTestOutput;
+    volatile boolean failingTestsOnly;
 
     public TestSupport(CuratedApplication curatedApplication, List<CompilationProvider> compilationProviders,
             DevModeContext context) {
@@ -234,6 +235,11 @@ public class TestSupport implements TestController {
     @Override
     public void runFailedTests() {
         getTestRunner().runFailedTests();
+    }
+
+    @Override
+    public boolean toggleBrokenOnlyMode() {
+        return failingTestsOnly = !failingTestsOnly;
     }
 
     public static class RunStatus {

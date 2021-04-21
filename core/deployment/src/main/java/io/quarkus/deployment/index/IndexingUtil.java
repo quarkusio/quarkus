@@ -1,5 +1,8 @@
 package io.quarkus.deployment.index;
 
+import static io.quarkus.bootstrap.classloading.JarClassPathElement.JAVA_VERSION;
+import static io.quarkus.bootstrap.classloading.JarClassPathElement.META_INF_VERSIONS;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +23,7 @@ import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.util.IoUtil;
+import io.smallrye.common.io.jar.JarFiles;
 
 public class IndexingUtil {
 
@@ -59,11 +63,29 @@ public class IndexingUtil {
     private static Index indexJar(JarFile file) throws IOException {
         Indexer indexer = new Indexer();
         Enumeration<JarEntry> e = file.entries();
+        boolean multiRelease = JarFiles.isMultiRelease(file);
         while (e.hasMoreElements()) {
             JarEntry entry = e.nextElement();
             if (entry.getName().endsWith(".class")) {
-                try (InputStream inputStream = file.getInputStream(entry)) {
-                    indexer.index(inputStream);
+                if (multiRelease && entry.getName().startsWith(META_INF_VERSIONS)) {
+                    String part = entry.getName().substring(META_INF_VERSIONS.length());
+                    int slash = part.indexOf("/");
+                    if (slash != -1) {
+                        try {
+                            int ver = Integer.parseInt(part.substring(0, slash));
+                            if (ver <= JAVA_VERSION) {
+                                try (InputStream inputStream = file.getInputStream(entry)) {
+                                    indexer.index(inputStream);
+                                }
+                            }
+                        } catch (NumberFormatException ex) {
+                            log.debug("Failed to parse META-INF/versions entry", ex);
+                        }
+                    }
+                } else {
+                    try (InputStream inputStream = file.getInputStream(entry)) {
+                        indexer.index(inputStream);
+                    }
                 }
             }
         }

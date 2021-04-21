@@ -37,6 +37,7 @@ import io.quarkus.arc.InstanceHandle;
 public class RestClientBuilderImpl implements RestClientBuilder {
 
     private static final String DEFAULT_MAPPER_DISABLED = "microprofile.rest.client.disable.default.mapper";
+    private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
 
     private final ClientBuilderImpl clientBuilder = (ClientBuilderImpl) new ClientBuilderImpl()
             .withConfig(new ConfigurationImpl(RuntimeType.CLIENT));
@@ -250,8 +251,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         clientBuilder.multiQueryParamMode(toMultiQueryParamMode(queryParamStyle));
 
-        ClientImpl client = (ClientImpl) clientBuilder.build();
-        WebTargetImpl target = null;
+        Boolean trustAll = ConfigProvider.getConfig().getOptionalValue(TLS_TRUST_ALL, Boolean.class)
+                .orElse(false);
+
+        clientBuilder.trustAll(trustAll);
+
+        ClientImpl client = clientBuilder.build();
+        WebTargetImpl target;
         try {
             target = (WebTargetImpl) client.target(url.toURI());
         } catch (URISyntaxException e) {

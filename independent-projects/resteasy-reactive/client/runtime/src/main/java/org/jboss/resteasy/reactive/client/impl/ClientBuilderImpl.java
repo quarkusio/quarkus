@@ -43,6 +43,8 @@ public class ClientBuilderImpl extends ClientBuilder {
     private String proxyHost;
     private int proxyPort;
     private boolean followRedirects;
+    private boolean trustAll;
+
     private MultiQueryParamMode multiQueryParamMode;
 
     private HttpClientOptions httpClientOptions = new HttpClientOptions();
@@ -127,6 +129,11 @@ public class ClientBuilderImpl extends ClientBuilder {
         Buffer trustStore = asBuffer(this.trustStore, EMPTY_CHAR_ARARAY);
 
         HttpClientOptions options = httpClientOptions == null ? new HttpClientOptions() : httpClientOptions;
+
+        if (trustAll) {
+            options.setTrustAll(true);
+            options.setVerifyHost(false);
+        }
 
         if (keyStore != null || trustStore != null) {
             options = options.setSsl(true);
@@ -230,6 +237,11 @@ public class ClientBuilderImpl extends ClientBuilder {
     @Override
     public ClientBuilderImpl register(Object component, Map<Class<?>, Integer> contracts) {
         configuration.register(component, contracts);
+        return this;
+    }
+
+    public ClientBuilderImpl trustAll(boolean trustAll) {
+        this.trustAll = trustAll;
         return this;
     }
 }

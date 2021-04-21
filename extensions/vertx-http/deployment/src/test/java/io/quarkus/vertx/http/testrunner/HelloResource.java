@@ -24,9 +24,13 @@ public class HelloResource {
         router.route("/hello").handler(new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext routingContext) {
-                routingContext.response().end("hello");
+                routingContext.response().end(sayHello());
             }
         });
+    }
+
+    public String sayHello() {
+        return "hello";
     }
 
 }

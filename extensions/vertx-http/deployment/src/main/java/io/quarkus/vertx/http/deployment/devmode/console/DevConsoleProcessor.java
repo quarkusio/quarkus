@@ -96,7 +96,6 @@ import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.HistoryHandler;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -230,23 +229,7 @@ public class DevConsoleProcessor {
         router.route()
                 .order(Integer.MIN_VALUE)
                 .handler(new FlashScopeHandler());
-        router.route()
-                .order(Integer.MIN_VALUE)
-                .handler(new Handler<RoutingContext>() {
-                    @Override
-                    public void handle(RoutingContext event) {
-                        event.addEndHandler(new Handler<AsyncResult<Void>>() {
-                            @Override
-                            public void handle(AsyncResult<Void> e) {
-                                //we only have one request per connection
-                                //as we don't have a nice way to close them on shutdown
-                                //they are not real TCP connections so this is fine
-                                event.request().connection().close();
-                            }
-                        });
-                        event.next();
-                    }
-                });
+
         router.route().method(HttpMethod.GET)
                 .order(Integer.MIN_VALUE + 1)
                 .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));

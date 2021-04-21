@@ -274,10 +274,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         return builder.build();
     }
 
-    public QuarkusClassLoader createRuntimeClassLoader(QuarkusClassLoader loader,
-            Map<String, byte[]> resources, Map<String, byte[]> transformedClasses) {
+    public QuarkusClassLoader createRuntimeClassLoader(Map<String, byte[]> resources, Map<String, byte[]> transformedClasses) {
         QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Quarkus Runtime ClassLoader",
-                loader, false)
+                getBaseRuntimeClassLoader(), false)
                 .setAggregateParentResources(true);
         builder.setTransformedClasses(transformedClasses);
 

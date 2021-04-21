@@ -8,7 +8,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
-public class HelloResource {
+public class BrokenOnlyResource {
 
     public void route(@Observes Router router) {
         router.route("/hello/greeting/:name").handler(new Handler<RoutingContext>() {

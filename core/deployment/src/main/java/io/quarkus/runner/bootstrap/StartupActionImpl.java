@@ -60,7 +60,7 @@ public class StartupActionImpl implements StartupAction {
         } else {
             baseClassLoader.reset(extractGeneratedResources(false),
                     transformedClasses);
-            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
+            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(
                     resources, transformedClasses);
         }
         this.runtimeClassLoader = runtimeClassLoader;

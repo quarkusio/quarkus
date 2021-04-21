@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 
 import org.jboss.logging.Logger;
 
+import io.netty.buffer.Unpooled;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.DevConsoleRequest;
 import io.quarkus.dev.console.DevConsoleResponse;
@@ -71,7 +72,7 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
                         event.response().headers().add(entry.getKey(), entry.getValue());
                     }
                     event.response().setStatusCode(devConsoleResponse.getStatus())
-                            .end(Buffer.buffer(devConsoleResponse.getBody()));
+                            .end(Buffer.buffer(Unpooled.copiedBuffer(devConsoleResponse.getBody())));
                 }
                 return null;
             }

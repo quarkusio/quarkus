@@ -88,7 +88,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
-        super(new GetPackageBlockingClassLoader(builder.parent));
+        super(builder.parent);
         this.name = builder.name;
         this.elements = builder.elements;
         this.bannedElements = builder.bannedElements;
@@ -354,7 +354,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      * @param name
      * @return
      */
-    //@Override
+    @Override
     protected Class<?> findClass(String moduleName, String name) {
         try {
             return loadClass(name, false);
@@ -706,23 +706,4 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
-    /**
-     * Horrible JDK8 hack
-     *
-     * getPackage() on JDK8 will always delegate to the parent, so QuarkusClassLoader will never define a package,
-     * which can cause issues if you then try and read package annotations as they will be from the wrong ClassLoader.
-     *
-     * We add this ClassLoader into the mix to block the getPackage() delegation.
-     */
-    private static class GetPackageBlockingClassLoader extends ClassLoader {
-
-        protected GetPackageBlockingClassLoader(ClassLoader parent) {
-            super(parent);
-        }
-
-        @Override
-        protected Package getPackage(String name) {
-            return null;
-        }
-    }
 }

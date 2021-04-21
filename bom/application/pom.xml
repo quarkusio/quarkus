@@ -212,7 +212,7 @@
         <log4j-jboss-logmanager.version>1.2.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.10.2</avro.version>
         <jacoco.version>0.8.6</jacoco.version>
-        <testcontainers.version>1.15.2</testcontainers.version>
+        <testcontainers.version>1.15.3</testcontainers.version>
         <aesh-readline.version>2.1</aesh-readline.version>
     </properties>
 

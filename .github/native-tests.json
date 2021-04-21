@@ -1,28 +1,4 @@
 {
-    "category": [
-        "Main",
-        "Data1",
-        "Data2",
-        "Data3",
-        "Data4",
-        "Data5",
-        "Data6",
-        "Data7",
-        "Security1",
-        "Security2",
-        "Security3",
-        "Amazon",
-        "Messaging1",
-        "Messaging2",
-        "Cache",
-        "HTTP",
-        "Misc1",
-        "Misc2",
-        "Misc3",
-        "Misc4",
-        "Spring",
-        "gRPC"
-    ],
     "include": [
         {
             "category": "Main",

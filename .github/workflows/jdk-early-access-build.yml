@@ -105,6 +105,8 @@ jobs:
         run: rm -r ~/.m2/repository/io/quarkus
       - name: Report status
         if: "always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
+        env:
+          JDK_JAVA_OPTIONS: --add-opens=java.base/java.net=ALL-UNNAMED
         shell: bash
         run: |
           curl -Ls https://sh.jbang.dev | bash -s - app setup

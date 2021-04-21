@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -106,6 +107,8 @@ public class JarResultBuildStep {
             "META-INF/LICENSE",
             "META-INF/LICENSE.txt",
             "META-INF/LICENSE.md",
+            "META-INF/LGPL-3.0.txt",
+            "META-INF/ASL-2.0.txt",
             "META-INF/NOTICE",
             "META-INF/NOTICE.txt",
             "META-INF/NOTICE.md",
@@ -115,7 +118,6 @@ public class JarResultBuildStep {
             "META-INF/DEPENDENCIES",
             "META-INF/DEPENDENCIES.txt",
             "META-INF/beans.xml",
-            "META-INF/io.netty.versions.properties",
             "META-INF/quarkus-config-roots.list",
             "META-INF/quarkus-javadoc.properties",
             "META-INF/quarkus-extension.properties",
@@ -126,6 +128,14 @@ public class JarResultBuildStep {
             "META-INF/panache-archive.marker",
             "META-INF/build.metadata", // present in the Red Hat Build of Quarkus
             "LICENSE");
+
+    private static final Predicate<String> CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
+        @Override
+        public boolean test(String path) {
+            return "META-INF/io.netty.versions.properties".equals(path) ||
+                    (path.startsWith("META-INF/services/") && path.length() > 18);
+        }
+    };
 
     private static final Logger log = Logger.getLogger(JarResultBuildStep.class);
     // we shouldn't have to specify these flags when opening a ZipFS (since they are the default ones), but failure to do so
@@ -296,7 +306,7 @@ public class JarResultBuildStep {
 
             final Map<String, String> seen = new HashMap<>();
             final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
-            final Map<String, List<byte[]>> services = new HashMap<>();
+            final Map<String, List<byte[]>> concatenatedEntries = new HashMap<>();
             Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
             packageConfig.userConfiguredIgnoredEntries.ifPresent(finalIgnoredEntries::addAll);
 
@@ -323,13 +333,13 @@ public class JarResultBuildStep {
                     if (!Files.isDirectory(resolvedDep)) {
                         try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
                             for (final Path root : artifactFs.getRootDirectories()) {
-                                walkFileDependencyForDependency(root, runnerZipFs, seen, duplicateCatcher, services,
+                                walkFileDependencyForDependency(root, runnerZipFs, seen, duplicateCatcher, concatenatedEntries,
                                         finalIgnoredEntries, appDep, transformedFromThisArchive);
                             }
                         }
                     } else {
                         walkFileDependencyForDependency(resolvedDep, runnerZipFs, seen, duplicateCatcher,
-                                services, finalIgnoredEntries, appDep, transformedFromThisArchive);
+                                concatenatedEntries, finalIgnoredEntries, appDep, transformedFromThisArchive);
                     }
                 }
             }
@@ -342,7 +352,8 @@ public class JarResultBuildStep {
                     }
                 }
             }
-            copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, generatedClasses,
+            copyCommonContent(runnerZipFs, concatenatedEntries, applicationArchivesBuildItem, transformedClasses,
+                    generatedClasses,
                     generatedResources, seen, finalIgnoredEntries);
         }
 
@@ -376,7 +387,7 @@ public class JarResultBuildStep {
     }
 
     private void walkFileDependencyForDependency(Path root, FileSystem runnerZipFs, Map<String, String> seen,
-            Map<String, Set<AppDependency>> duplicateCatcher, Map<String, List<byte[]>> services,
+            Map<String, Set<AppDependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
             Set<String> finalIgnoredEntries, AppDependency appDep, Set<String> transformedFromThisArchive) throws IOException {
         final Path metaInfDir = root.resolve("META-INF");
         Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
@@ -409,8 +420,8 @@ public class JarResultBuildStep {
                         boolean transformed = transformedFromThisArchive != null
                                 && transformedFromThisArchive.contains(relativePath);
                         if (!transformed) {
-                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
-                                services.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
+                            if (CONCATENATED_ENTRIES_PREDICATE.test(relativePath)) {
+                                concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
                                         .add(Files.readAllBytes(file));
                                 return FileVisitResult.CONTINUE;
                             } else if (!finalIgnoredEntries.contains(relativePath)) {
@@ -420,11 +431,6 @@ public class JarResultBuildStep {
                                     seen.put(relativePath, appDep.toString());
                                     Files.copy(file, runnerZipFs.getPath(relativePath),
                                             StandardCopyOption.REPLACE_EXISTING);
-                                } else if (!relativePath.endsWith(".class")) {
-                                    //for .class entries we warn as a group
-                                    log.warn("Duplicate entry " + relativePath + " entry from " + appDep
-                                            + " will be ignored. Existing file was provided by "
-                                            + seen.get(relativePath));
                                 }
                             }
                         }
@@ -1066,7 +1072,7 @@ public class JarResultBuildStep {
         }
     }
 
-    private void copyCommonContent(FileSystem runnerZipFs, Map<String, List<byte[]>> services,
+    private void copyCommonContent(FileSystem runnerZipFs, Map<String, List<byte[]>> concatenatedEntries,
             ApplicationArchivesBuildItem appArchives, TransformedClassesBuildItem transformedClassesBuildItem,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources, Map<String, String> seen,
@@ -1110,8 +1116,8 @@ public class JarResultBuildStep {
             if (Files.exists(target)) {
                 continue;
             }
-            if (i.getName().startsWith("META-INF/services")) {
-                services.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getClassData());
+            if (i.getName().startsWith("META-INF/services/")) {
+                concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getClassData());
             } else {
                 try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target, DEFAULT_OPEN_OPTIONS))) {
                     os.write(i.getClassData());
@@ -1120,10 +1126,10 @@ public class JarResultBuildStep {
         }
 
         for (Path root : appArchives.getRootArchive().getRootDirs()) {
-            copyFiles(root, runnerZipFs, services, ignoredEntries);
+            copyFiles(root, runnerZipFs, concatenatedEntries, ignoredEntries);
         }
 
-        for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
+        for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             try (final OutputStream os = wrapForJDK8232879(
                     Files.newOutputStream(runnerZipFs.getPath(entry.getKey()), DEFAULT_OPEN_OPTIONS))) {
                 for (byte[] i : entry.getValue()) {

@@ -277,11 +277,13 @@ final class Methods {
 
         final String name;
         final List<DotName> params;
+        final DotName returnType;
         final MethodInfo method;
 
         public MethodKey(MethodInfo method) {
-            this.method = method;
+            this.method = Objects.requireNonNull(method, "Method must not be null");
             this.name = method.name();
+            this.returnType = method.returnType().name();
             this.params = new ArrayList<>();
             for (Type i : method.parameters()) {
                 params.add(i.name());
@@ -292,8 +294,9 @@ final class Methods {
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + ((name == null) ? 0 : name.hashCode());
-            result = prime * result + ((params == null) ? 0 : params.hashCode());
+            result = prime * result + name.hashCode();
+            result = prime * result + params.hashCode();
+            result = prime * result + returnType.hashCode();
             return result;
         }
 
@@ -313,6 +316,9 @@ final class Methods {
                 return false;
             }
             if (!params.equals(other.params)) {
+                return false;
+            }
+            if (!returnType.equals(other.returnType)) {
                 return false;
             }
             return true;

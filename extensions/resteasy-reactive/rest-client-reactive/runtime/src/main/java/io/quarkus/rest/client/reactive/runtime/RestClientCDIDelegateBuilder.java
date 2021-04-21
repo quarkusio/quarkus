@@ -45,10 +45,6 @@ public class RestClientCDIDelegateBuilder {
 
     private static final String MAX_REDIRECTS = "quarkus.rest.client.max-redirects";
 
-    private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
-
-    private static final String REST_NOOP_HOSTNAME_VERIFIER = "io.quarkus.restclient.NoopHostnameVerifier";
-
     private final Class<?> jaxrsInterface;
     private final String baseUriFromAnnotation;
     private final String propertyPrefix;
@@ -74,8 +70,7 @@ public class RestClientCDIDelegateBuilder {
         configureRedirects(builder);
         configureQueryParamStyle(builder);
         configureProxy(builder);
-        Object result = builder.build(jaxrsInterface);
-        return result;
+        return builder.build(jaxrsInterface);
     }
 
     private void configureProxy(RestClientBuilder builder) {
@@ -90,9 +85,9 @@ public class RestClientCDIDelegateBuilder {
             }
 
             String host = proxyString.substring(0, lastColonIndex);
-            int port = 0;
+            int port;
             try {
-                port = Integer.valueOf(proxyString.substring(lastColonIndex + 1));
+                port = Integer.parseInt(proxyString.substring(lastColonIndex + 1));
             } catch (NumberFormatException e) {
                 throw new RuntimeException("Invalid proxy setting. The port is not a number in '" + proxyString + "'", e);
             }
@@ -123,11 +118,6 @@ public class RestClientCDIDelegateBuilder {
     }
 
     private void configureSsl(RestClientBuilder builder) {
-
-        Optional<Boolean> trustAll = getOptionalProperty(TLS_TRUST_ALL, Boolean.class);
-        if (trustAll.isPresent() && trustAll.get()) {
-            registerHostnameVerifier(REST_NOOP_HOSTNAME_VERIFIER, builder);
-        }
 
         Optional<String> maybeTrustStore = getOptionalDynamicProperty(REST_TRUST_STORE, String.class);
         if (maybeTrustStore.isPresent()) {

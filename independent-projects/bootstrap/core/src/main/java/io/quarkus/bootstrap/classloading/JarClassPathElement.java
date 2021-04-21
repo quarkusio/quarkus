@@ -34,7 +34,7 @@ import org.jboss.logging.Logger;
  */
 public class JarClassPathElement implements ClassPathElement {
 
-    private static final int JAVA_VERSION;
+    public static final int JAVA_VERSION;
 
     static {
         int version = 8;

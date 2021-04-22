@@ -24,7 +24,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE (Eclipse is preferred with the BPMN modeller plugin)
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker
 

@@ -20,7 +20,7 @@ To complete this guide, you need:
 
 * 60+ minutes
 * Read about link:funqy[Funqy Basics].  This is a short read!
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Have gone through the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[Knative Tutorial], specifically link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial-eventing/eventing-trigger-broker.html[Brokers and Triggers]
 

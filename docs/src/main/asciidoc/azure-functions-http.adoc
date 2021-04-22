@@ -22,7 +22,7 @@ NOTE: Only text based media types are supported at the moment as Azure Functions
 To complete this guide, you need:
 
 * less than 15 minutes
-* JDK 1.8 (Azure requires JDK 1.8)
+* JDK 11 (Azure requires JDK 1.8 or 11)
 * Apache Maven {maven-version}
 * https://azure.microsoft.com[An Azure Account].  Free accounts work.
 * https://docs.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI Installed]

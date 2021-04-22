@@ -89,7 +89,7 @@ public class Fruit {
 
 To complete this guide, you need:
 
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * an IDE
 * Apache Maven {maven-version}
 * Access to a Neo4j Database

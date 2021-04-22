@@ -1,9 +1,7 @@
 package io.quarkus.resteasy.mutiny.common.deployment;
 
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.mutiny.common.runtime.MultiInvokerProvider;
 import io.quarkus.resteasy.mutiny.common.runtime.MultiProvider;
@@ -15,11 +13,6 @@ import io.quarkus.resteasy.mutiny.common.runtime.UniRxInvoker;
 import io.quarkus.resteasy.mutiny.common.runtime.UniRxInvokerImpl;
 
 public class ResteasyMutinyCommonProcessor {
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.RESTEASY_MUTINY);
-    }
 
     @BuildStep
     public void registerProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider) {

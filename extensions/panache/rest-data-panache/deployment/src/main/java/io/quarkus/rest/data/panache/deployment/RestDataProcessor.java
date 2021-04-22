@@ -92,6 +92,7 @@ public class RestDataProcessor {
     }
 
     private boolean hasHalCapability(Capabilities capabilities) {
-        return capabilities.isPresent(Capability.RESTEASY_JSONB) || capabilities.isPresent(Capability.RESTEASY_JACKSON);
+        return capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
+                || capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON);
     }
 }

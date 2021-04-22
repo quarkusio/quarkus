@@ -32,6 +32,7 @@ public interface BootstrapConstants {
     String DESCRIPTOR_PATH = META_INF + '/' + DESCRIPTOR_FILE_NAME;
 
     String PROP_DEPLOYMENT_ARTIFACT = "deployment-artifact";
+    String PROP_PROVIDES_CAPABILITIES = "provides-capabilities";
     String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
     String EXCLUDED_ARTIFACTS = "excluded-artifacts";
     String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";

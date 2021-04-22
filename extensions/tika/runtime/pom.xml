@@ -46,7 +46,7 @@
                     <artifactId>checker-qual</artifactId>
                 </exclusion>
                 <exclusion>
-	                <groupId>com.google.code.findbugs</groupId>
+                    <groupId>com.google.code.findbugs</groupId>
                     <artifactId>jsr305</artifactId>
                </exclusion>
                 <exclusion>
@@ -93,6 +93,11 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.tika</provides>
+                    </capabilities>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

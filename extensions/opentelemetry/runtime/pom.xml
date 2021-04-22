@@ -53,6 +53,14 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <providesIf>
+                            <positive>io.quarkus.opentelemetry.tracing.TracerProcessor$TracerEnabled</positive>
+                            <name>io.quarkus.opentelemetry.tracer</name>
+                        </providesIf>
+                    </capabilities>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

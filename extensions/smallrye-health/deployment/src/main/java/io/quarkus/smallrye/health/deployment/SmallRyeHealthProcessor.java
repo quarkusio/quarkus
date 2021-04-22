@@ -45,7 +45,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -97,7 +96,7 @@ class SmallRyeHealthProcessor {
     private static final String JS_FILE_TO_UPDATE = "healthui.js";
     private static final String INDEX_FILE_TO_UPDATE = "index.html";
 
-    // Branding files to monitor for changes 
+    // Branding files to monitor for changes
     private static final String BRANDING_DIR = "META-INF/branding/";
     private static final String BRANDING_LOGO_GENERAL = BRANDING_DIR + "logo.png";
     private static final String BRANDING_LOGO_MODULE = BRANDING_DIR + "smallrye-health-ui.png";
@@ -140,11 +139,6 @@ class SmallRyeHealthProcessor {
                 }
             }
         }
-    }
-
-    @BuildStep
-    public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.SMALLRYE_HEALTH);
     }
 
     @BuildStep

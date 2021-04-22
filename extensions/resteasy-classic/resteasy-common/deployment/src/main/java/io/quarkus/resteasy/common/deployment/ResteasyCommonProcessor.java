@@ -123,7 +123,10 @@ public class ResteasyCommonProcessor {
     @BuildStep
     ResteasyConfigBuildItem resteasyConfig(ResteasyJsonConfig resteasyJsonConfig, Capabilities capabilities) {
         return new ResteasyConfigBuildItem(resteasyJsonConfig.jsonDefault &&
-                (capabilities.isPresent(Capability.REST_JACKSON) || capabilities.isPresent(Capability.REST_JSONB)));
+        // RESTEASY_JACKSON or RESTEASY_JACKSON_CLIENT
+                (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)
+                        // RESTEASY_JSONB or RESTEASY_JSONB_CLIENT
+                        || capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JSONB)));
     }
 
     @BuildStep
@@ -189,7 +192,8 @@ public class ResteasyCommonProcessor {
         // add the other providers detected
         Set<String> providersToRegister = new HashSet<>(otherProviders);
 
-        if (!capabilities.isPresent(Capability.RESTEASY_JSON)) {
+        if (!capabilities.isPresent(Capability.VERTX)
+                && !capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON)) {
 
             boolean needJsonSupport = restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.CONSUMES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.PRODUCES)
@@ -277,7 +281,7 @@ public class ResteasyCommonProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<UnremovableBeanBuildItem> unremovable) {
 
-        if (capabilities.isPresent(Capability.REST_JACKSON)) {
+        if (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)) {
             registerJsonContextResolver(OBJECT_MAPPER, QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER, combinedIndexBuildItem,
                     jaxrsProvider, additionalBean, unremovable);
             if (resteasyJsonConfig.jsonDefault) {
@@ -285,7 +289,7 @@ public class ResteasyCommonProcessor {
             }
         }
 
-        if (capabilities.isPresent(Capability.REST_JSONB)) {
+        if (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JSONB)) {
             registerJsonContextResolver(JSONB, QUARKUS_JSONB_CONTEXT_RESOLVER, combinedIndexBuildItem, jaxrsProvider,
                     additionalBean, unremovable);
             if (resteasyJsonConfig.jsonDefault) {

@@ -25,7 +25,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.opentelemetry.OpenTelemetryConfig;
@@ -44,11 +43,6 @@ public class TracerProcessor {
             return otelConfig.tracer.enabled.map(tracerEnabled -> otelConfig.enabled && tracerEnabled)
                     .orElseGet(() -> otelConfig.enabled);
         }
-    }
-
-    @BuildStep(onlyIf = TracerEnabled.class)
-    CapabilityBuildItem tracingCapability() {
-        return new CapabilityBuildItem(Capability.OPENTELEMETRY_TRACER);
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)

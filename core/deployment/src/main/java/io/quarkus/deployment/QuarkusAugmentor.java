@@ -96,12 +96,14 @@ public class QuarkusAugmentor {
             final BuildChainBuilder chainBuilder = BuildChain.builder();
             chainBuilder.setClassLoader(deploymentClassLoader);
 
+            //provideCapabilities(chainBuilder);
+
             //TODO: we load everything from the deployment class loader
             //this allows the deployment config (application.properties) to be loaded, but in theory could result
             //in additional stuff from the deployment leaking in, this is unlikely but has a bit of a smell.
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
                     buildSystemProperties == null ? new Properties() : buildSystemProperties,
-                    effectiveModel.getPlatformProperties(), launchMode, devModeType, configCustomizer)
+                    effectiveModel, launchMode, devModeType, configCustomizer)
                     .accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);

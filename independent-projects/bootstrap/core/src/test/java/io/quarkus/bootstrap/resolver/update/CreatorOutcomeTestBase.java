@@ -55,8 +55,16 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
         }
 
         initProps(bootstrap);
-        testCreator(bootstrap.build());
+        try {
+            testCreator(bootstrap.build());
+        } catch (Exception e) {
+            assertError(e);
+        }
 
+    }
+
+    protected void assertError(Exception e) throws Exception {
+        throw e;
     }
 
     protected abstract TsArtifact modelApp() throws Exception;

@@ -1,5 +1,7 @@
 package io.quarkus.deployment.builditem;
 
+import java.util.Objects;
+
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -15,26 +17,40 @@ import io.quarkus.deployment.Capability;
  * Capabilities should follow the naming conventions of Java packages; e.g. {@code io.quarkus.security.jpa}. Capabilities
  * provided by core extensions should be listed in the {@link Capability} enum and their name should always start with the
  * {@code io.quarkus} prefix.
- * 
+ *
  * @see Capabilities
  * @see Capability
  */
 public final class CapabilityBuildItem extends MultiBuildItem {
 
     private final String name;
+    private final String provider;
 
-    public CapabilityBuildItem(Capability capability) {
-        this(capability.getName());
+    /**
+     * @deprecated in favor of {@link #CapabilityBuildItem(String, String))} that also accepts the provider
+     *             of the capability to be highlighted in the error messages in case of detected capability conflicts.
+     *
+     * @param name capability name
+     */
+    @Deprecated
+    public CapabilityBuildItem(String name) {
+        this(name, "<unknown>");
     }
 
-    public CapabilityBuildItem(String name) {
-        if (name == null) {
-            throw new IllegalArgumentException("name cannot be null");
-        }
-        this.name = name;
+    /**
+     * @param name capability name
+     * @param provider capability provider
+     */
+    public CapabilityBuildItem(String name, String provider) {
+        this.name = Objects.requireNonNull(name, "name cannot be null");
+        this.provider = Objects.requireNonNull(provider, "provider cannot be null");
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getProvider() {
+        return provider;
     }
 }

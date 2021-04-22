@@ -3,83 +3,102 @@ package io.quarkus.deployment;
 /**
  * Represents a capability of a core extension.
  */
-public enum Capability {
+public interface Capability {
+
+    String QUARKUS_PREFIX = "io.quarkus.";
 
     /**
      * A datasource connection pool implementation
      */
-    AGROAL,
+    String AGROAL = QUARKUS_PREFIX + "agroal";
+
     /**
      * JSR 365 compatible contexts and dependency injection
      */
-    CDI,
-    CONFIG_YAML,
+    String CDI = QUARKUS_PREFIX + "cdi";
+
+    String CONFIG_YAML = QUARKUS_PREFIX + "config.yaml";
+
     /**
      * Java Servlet API
      */
-    SERVLET,
+    String SERVLET = QUARKUS_PREFIX + "servlet";
+
     /**
      * Java Transaction API (JTA)
      */
-    TRANSACTIONS,
-    JACKSON,
-    JSONB,
-    REST_JACKSON,
-    REST_JSONB,
-    RESTEASY,
-    RESTEASY_JSON,
-    RESTEASY_MUTINY,
-    RESTEASY_REACTIVE,
-    RESTEASY_JACKSON,
-    RESTEASY_JSONB,
-    JWT,
-    TIKA,
-    MONGODB_PANACHE,
-    MONGODB_PANACHE_KOTLIN,
-    FLYWAY,
-    LIQUIBASE,
-    SECURITY,
-    SECURITY_ELYTRON_OAUTH2,
-    SECURITY_ELYTRON_JDBC,
-    SECURITY_ELYTRON_LDAP,
-    SECURITY_JPA,
-    QUARTZ,
-    KUBERNETES_SERVICE_BINDING,
+    String TRANSACTIONS = QUARKUS_PREFIX + "transactions";
+
+    String JACKSON = QUARKUS_PREFIX + "jackson";
+
+    String JSONB = QUARKUS_PREFIX + "jsonb";
+
+    String REST_JACKSON = QUARKUS_PREFIX + "rest.jackson";
+
+    String REST_JSONB = QUARKUS_PREFIX + "rest.jsonb";
+
+    String RESTEASY = QUARKUS_PREFIX + "resteasy";
+    String RESTEASY_JSON = RESTEASY + ".json";
+
+    String RESTEASY_JSON_JACKSON = RESTEASY_JSON + ".jackson";
+    String RESTEASY_JSON_JACKSON_CLIENT = RESTEASY_JSON_JACKSON + ".client";
+
+    String RESTEASY_JSON_JSONB = RESTEASY_JSON + ".jsonb";
+    String RESTEASY_JSON_JSONB_CLIENT = RESTEASY_JSON_JSONB + ".client";
+
+    String RESTEASY_MUTINY = RESTEASY + ".mutiny";
+    String RESTEASY_REACTIVE = RESTEASY + ".reactive";
+
+    String JWT = QUARKUS_PREFIX + "jwt";
+
+    String TIKA = QUARKUS_PREFIX + "tika";
+
+    String MONGODB_PANACHE = QUARKUS_PREFIX + "mongodb.panache";
+    String MONGODB_PANACHE_KOTLIN = MONGODB_PANACHE + ".kotlin";
+
+    String FLYWAY = QUARKUS_PREFIX + "flyway";
+    String LIQUIBASE = QUARKUS_PREFIX + "liquibase";
+
+    String SECURITY = QUARKUS_PREFIX + "security";
+    String SECURITY_ELYTRON_OAUTH2 = SECURITY + ".elytron.oauth2";
+    String SECURITY_ELYTRON_JDBC = SECURITY + ".elytron.jdbc";
+    String SECURITY_ELYTRON_LDAP = SECURITY + ".elytron.ldap";
+    String SECURITY_JPA = SECURITY + ".jpa";
+
+    String QUARTZ = QUARKUS_PREFIX + "quartz";
+    String KUBERNETES_SERVICE_BINDING = QUARKUS_PREFIX + "kubernetes.service.binding";
+
     /**
      * @deprecated
      * @see io.quarkus.deployment.metrics.MetricsCapabilityBuildItem
      */
-    METRICS,
-    CONTAINER_IMAGE_JIB,
-    CONTAINER_IMAGE_DOCKER,
-    CONTAINER_IMAGE_S2I,
-    CONTAINER_IMAGE_OPENSHIFT,
-    HIBERNATE_ORM,
-    HIBERNATE_ENVERS,
-    HIBERNATE_REACTIVE,
-    HIBERNATE_VALIDATOR,
-    OPENTELEMETRY_TRACER,
+    String METRICS = QUARKUS_PREFIX + "metrics";
+    String CONTAINER_IMAGE_JIB = QUARKUS_PREFIX + "container.image.jib";
+    String CONTAINER_IMAGE_DOCKER = QUARKUS_PREFIX + "container.image.docker";
+    String CONTAINER_IMAGE_S2I = QUARKUS_PREFIX + "container.image.openshift";
+    String CONTAINER_IMAGE_OPENSHIFT = QUARKUS_PREFIX + "container.image.openshift";
+    String HIBERNATE_ORM = QUARKUS_PREFIX + "hibernate.orm";
+    String HIBERNATE_ENVERS = QUARKUS_PREFIX + "hibernate.envers";
+    String HIBERNATE_REACTIVE = QUARKUS_PREFIX + "hibernate.reactive";
+    String HIBERNATE_VALIDATOR = QUARKUS_PREFIX + "hibernate.validator";
+    String OPENTELEMETRY_TRACER = QUARKUS_PREFIX + "opentelemetry.tracer";
+
+    String OPENSHIFT = QUARKUS_PREFIX + "openshift";
+    String OPENSHIFT_CLIENT = OPENSHIFT + ".client";
+
     /**
      * Presence of an io.opentracing tracer (for example, Jaeger).
      */
-    OPENTRACING,
+    String OPENTRACING = QUARKUS_PREFIX + "opentracing";
     /**
      * Presence of SmallRye OpenTracing.
      */
-    SMALLRYE_OPENTRACING,
-    SPRING_WEB,
-    SMALLRYE_HEALTH,
-    SMALLRYE_OPENAPI,
-    OPENSHIFT_CLIENT,
+    String SMALLRYE_OPENTRACING = QUARKUS_PREFIX + "smallrye.opentracing";
+    String SMALLRYE_HEALTH = QUARKUS_PREFIX + "smallrye.health";
+    String SMALLRYE_OPENAPI = QUARKUS_PREFIX + "smallrye.openapi";
 
-    VERTX_CORE;
+    String SPRING_WEB = QUARKUS_PREFIX + "spring.web";
 
-    /**
-     *
-     * @return the name
-     */
-    public String getName() {
-        return "io.quarkus." + toString().toLowerCase().replace("_", ".");
-    }
-
+    String VERTX = QUARKUS_PREFIX + "vertx";
+    String VERTX_CORE = VERTX + ".core";
 }

@@ -18,7 +18,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
@@ -46,11 +45,6 @@ import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 public class ResteasyBuiltinsProcessor {
 
     protected static final String META_INF_RESOURCES = "META-INF/resources";
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.RESTEASY);
-    }
 
     @BuildStep
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,

@@ -134,6 +134,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.rest</provides>
+                        <provides>io.quarkus.resteasy.reactive</provides>
+                    </capabilities>
+                </configuration>
             </plugin>
         </plugins>
     </build>

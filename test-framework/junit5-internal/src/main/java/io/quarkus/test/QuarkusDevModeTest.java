@@ -539,11 +539,13 @@ public class QuarkusDevModeTest
      * @param sourceFile
      */
     public void addSourceFile(Class<?> sourceFile) {
-        Path path = copySourceFilesForClass(projectSourceRoot, deploymentSourcePath, testLocation,
+        Path path = findTargetSourceFilesForPath(projectSourceRoot, deploymentSourcePath, testLocation,
                 testLocation.resolve(sourceFile.getName().replace(".", "/") + ".class"));
-        sleepForFileChanges(path);
+        long old = modTime(path.getParent());
+        copySourceFilesForClass(projectSourceRoot, deploymentSourcePath, testLocation,
+                testLocation.resolve(sourceFile.getName().replace(".", "/") + ".class"));
         // since this is a new file addition, even wait for the parent dir's last modified timestamp to change
-        sleepForFileChanges(path.getParent());
+        sleepForFileChanges(path.getParent(), old);
     }
 
     public String[] getCommandLineArgs() {
@@ -575,6 +577,8 @@ public class QuarkusDevModeTest
 
     private void modifyPath(Function<String, String> mutator, Path sourceDirectory, Path input) {
         try {
+            long old = modTime(input);
+            long oldSrc = modTime(sourceDirectory);
             byte[] data;
             try (InputStream in = Files.newInputStream(input)) {
                 data = FileUtil.readFileContents(in);
@@ -586,28 +590,44 @@ public class QuarkusDevModeTest
                 throw new RuntimeException("File was not modified, mutator function had no effect");
             }
 
-            sleepForFileChanges(sourceDirectory);
             Files.write(input, content.getBytes(StandardCharsets.UTF_8));
+            sleepForFileChanges(sourceDirectory, oldSrc);
+            sleepForFileChanges(input, old);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    public void sleepForFileChanges(Path path) {
+    private void sleepForFileChanges(Path path, long oldTime) {
         try {
+            //we avoid modifying the file twice
+            //this can cause intermittent failures in the continous testing tests
+            long fm = modTime(path);
+            if (fm > oldTime) {
+                return;
+            }
             //we want to make sure the last modified time is larger than both the current time
             //and the current last modified time. Some file systems only resolve file
             //time to the nearest second, so this is necessary for dev mode to pick up the changes
-            long timeToBeat = Math.max(System.currentTimeMillis(), Files.getLastModifiedTime(path).toMillis());
+            long timeToBeat = Math.max(System.currentTimeMillis(), modTime(path));
             for (;;) {
+                Thread.sleep(1000);
                 Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
-                long fm = Files.getLastModifiedTime(path).toMillis();
-                Thread.sleep(10);
+                fm = modTime(path);
+                Thread.sleep(100);
                 if (fm > timeToBeat) {
                     return;
                 }
             }
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private long modTime(Path path) {
+        try {
+            return Files.getLastModifiedTime(path).toMillis();
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -619,6 +639,7 @@ public class QuarkusDevModeTest
     public void modifyResourceFile(String path, Function<String, String> mutator) {
         try {
             Path resourcePath = deploymentResourcePath.resolve(path);
+            long old = modTime(resourcePath);
             byte[] data;
             try (InputStream in = Files.newInputStream(resourcePath)) {
                 data = FileUtil.readFileContents(in);
@@ -628,7 +649,7 @@ public class QuarkusDevModeTest
             content = mutator.apply(content);
 
             Files.write(resourcePath, content.getBytes(StandardCharsets.UTF_8));
-            sleepForFileChanges(resourcePath);
+            sleepForFileChanges(resourcePath, old);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -640,14 +661,14 @@ public class QuarkusDevModeTest
      */
     public void addResourceFile(String path, byte[] data) {
         final Path resourceFilePath = deploymentResourcePath.resolve(path);
+        long oldParent = modTime(resourceFilePath.getParent());
         try {
             Files.write(resourceFilePath, data);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        sleepForFileChanges(resourceFilePath);
         // since this is a new file addition, even wait for the parent dir's last modified timestamp to change
-        sleepForFileChanges(resourceFilePath.getParent());
+        sleepForFileChanges(resourceFilePath.getParent(), oldParent);
     }
 
     /**
@@ -656,6 +677,7 @@ public class QuarkusDevModeTest
      */
     public void deleteResourceFile(String path) {
         final Path resourceFilePath = deploymentResourcePath.resolve(path);
+        long old = modTime(resourceFilePath.getParent());
         long timeout = System.currentTimeMillis() + 5000;
         //in general there is a potential race here
         //if you serve a file you will send the data to the client, then close the resource
@@ -679,7 +701,7 @@ public class QuarkusDevModeTest
             }
         }
         // wait for last modified time of the parent to get updated
-        sleepForFileChanges(resourceFilePath.getParent());
+        sleepForFileChanges(resourceFilePath.getParent(), old);
     }
 
     /**
@@ -724,4 +746,23 @@ public class QuarkusDevModeTest
         return null;
     }
 
+    private Path findTargetSourceFilesForPath(Path projectSourcesDir, Path deploymentSourcesDir, Path classesDir,
+            Path classFile) {
+        for (CompilationProvider provider : compilationProviders) {
+            Path source = provider.getSourcePath(classFile,
+                    Collections.singleton(projectSourcesDir.toAbsolutePath().toString()),
+                    classesDir.toAbsolutePath().toString());
+            if (source != null) {
+                String relative = projectSourcesDir.relativize(source).toString();
+                try {
+                    Path resolved = deploymentSourcesDir.resolve(relative);
+                    Files.createDirectories(resolved.getParent());
+                    return resolved;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        }
+        throw new RuntimeException("Could not find source file for " + classFile);
+    }
 }

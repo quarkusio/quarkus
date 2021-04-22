@@ -1,7 +1,5 @@
 package io.quarkus.micrometer.deployment.binder;
 
-import static io.restassured.RestAssured.given;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
@@ -33,11 +31,10 @@ public class UriTagCorsTest {
                             VertxWebEndpoint.class,
                             HelloResource.class));
 
-    static SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
     @BeforeAll
     static void setRegistry() {
-        registry = new SimpleMeterRegistry();
         Metrics.addRegistry(registry);
     }
 
@@ -47,7 +44,7 @@ public class UriTagCorsTest {
     }
 
     @Test
-    public void testCORSPreflightRequest() {
+    public void testCORSPreflightRequest() throws InterruptedException {
         String origin = "http://custom.origin.quarkus";
         String methods = "GET,POST";
         String headers = "X-Custom";
@@ -59,7 +56,7 @@ public class UriTagCorsTest {
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
                 .header("Access-Control-Allow-Headers", headers)
-                .log().all();
+                .statusCode(200);
 
         RestAssured.given()
                 .header("Origin", origin)
@@ -69,7 +66,7 @@ public class UriTagCorsTest {
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
                 .header("Access-Control-Allow-Headers", headers)
-                .log().all();
+                .statusCode(200);
 
         RestAssured.given()
                 .header("Origin", origin)
@@ -79,21 +76,25 @@ public class UriTagCorsTest {
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
                 .header("Access-Control-Allow-Headers", headers)
-                .log().all();
+                .statusCode(200);
 
         RestAssured.given()
                 .when().options("/vertx/echo/anything").then()
-                .log().all();
+                .statusCode(200);
 
         RestAssured.given()
                 .when().options("/hello/world").then()
-                .log().all();
+                .statusCode(200);
+
+        // Make sure other threads have time to finish
+        Thread.sleep(3);
 
         // CORS pre-flight
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/cors-preflight").timers().size(),
                 Util.foundServerRequests(registry, "/cors-preflight should be used for preflight requests"));
+
         Timer t = registry.find("http.server.requests").tag("uri", "/cors-preflight").timer();
-        Assertions.assertEquals(3, t.count(), "/cors-preflight checked twice");
+        Assertions.assertEquals(3, t.count(), "/cors-preflight should be checked 3 times");
 
         // Normal OPTIONS requests
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/vertx/echo/{msg}").timers().size(),

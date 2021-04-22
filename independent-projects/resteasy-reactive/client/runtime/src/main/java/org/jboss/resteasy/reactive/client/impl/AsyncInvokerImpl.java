@@ -16,7 +16,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -32,12 +31,11 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
     final Map<String, Object> properties;
     final ClientImpl restClient;
     final HandlerChain handlerChain;
-    final ClientRestHandler[] abortHandlerChain;
     final ThreadSetupAction requestContext;
 
     public AsyncInvokerImpl(ClientImpl restClient, HttpClient httpClient, URI uri, RequestSpec requestSpec,
             ConfigurationImpl configuration,
-            Map<String, Object> properties, HandlerChain handlerChain, ClientRestHandler[] abortHandlerChain,
+            Map<String, Object> properties, HandlerChain handlerChain,
             ThreadSetupAction requestContext) {
         this.restClient = restClient;
         this.httpClient = httpClient;
@@ -46,7 +44,6 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
         this.configuration = configuration;
         this.properties = new HashMap<>(properties);
         this.handlerChain = handlerChain;
-        this.abortHandlerChain = abortHandlerChain;
         this.requestContext = requestContext;
     }
 
@@ -258,8 +255,8 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
             boolean registerBodyHandler) {
         RestClientRequestContext restClientRequestContext = new RestClientRequestContext(restClient, httpClient, httpMethodName,
                 uri, requestSpec.configuration, requestSpec.headers,
-                entity, responseType, registerBodyHandler, properties, handlerChain.toRestHandler(configuration),
-                abortHandlerChain, requestContext);
+                entity, responseType, registerBodyHandler, properties, handlerChain.createHandlerChain(configuration),
+                handlerChain.createAbortHandlerChain(configuration), requestContext);
         restClientRequestContext.run();
         return restClientRequestContext;
     }

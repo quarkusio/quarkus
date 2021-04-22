@@ -25,7 +25,6 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
@@ -41,14 +40,12 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     final ConfigurationImpl configuration;
     final ClientImpl restClient;
     final HandlerChain handlerChain;
-    final ClientRestHandler[] abortHandlerChain;
     final ThreadSetupAction requestContext;
     final long readTimeoutMs;
 
     public InvocationBuilderImpl(URI uri, ClientImpl restClient, HttpClient httpClient,
             WebTargetImpl target,
-            ConfigurationImpl configuration, HandlerChain handlerChain,
-            ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
+            ConfigurationImpl configuration, HandlerChain handlerChain, ThreadSetupAction requestContext) {
         this.uri = uri;
         this.restClient = restClient;
         this.httpClient = httpClient;
@@ -56,7 +53,6 @@ public class InvocationBuilderImpl implements Invocation.Builder {
         this.requestSpec = new RequestSpec(configuration);
         this.configuration = configuration;
         this.handlerChain = handlerChain;
-        this.abortHandlerChain = abortHandlerChain;
         this.requestContext = requestContext;
         Object readTimeoutMs = configuration.getProperty(READ_TIMEOUT);
         if (readTimeoutMs == null) {
@@ -99,7 +95,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     @Override
     public AsyncInvokerImpl async() {
         return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration,
-                properties, handlerChain, abortHandlerChain, requestContext);
+                properties, handlerChain, requestContext);
     }
 
     @Override
@@ -171,7 +167,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     @Override
     public CompletionStageRxInvoker rx() {
         return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration,
-                properties, handlerChain, abortHandlerChain, requestContext);
+                properties, handlerChain, requestContext);
     }
 
     @Override

@@ -57,9 +57,7 @@ import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
-import org.jboss.resteasy.reactive.client.handlers.ClientErrorHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
@@ -76,7 +74,6 @@ public class ClientImpl implements Client {
     final SSLContext sslContext;
     private boolean isClosed;
     final HandlerChain handlerChain;
-    final ClientRestHandler[] abortHandlerChain;
     final Vertx vertx;
     private final MultiQueryParamMode multiQueryParamMode;
 
@@ -117,7 +114,6 @@ public class ClientImpl implements Client {
             options.setMaxRedirects((Integer) maxRedirects);
         }
         this.httpClient = this.vertx.createHttpClient(options);
-        abortHandlerChain = new ClientRestHandler[] { new ClientErrorHandler() };
         handlerChain = new HandlerChain(followRedirects);
     }
 
@@ -162,8 +158,7 @@ public class ClientImpl implements Client {
         if (uriBuilder instanceof UriBuilderImpl && multiQueryParamMode != null) {
             ((UriBuilderImpl) uriBuilder).multiQueryParamMode(multiQueryParamMode);
         }
-        return new WebTargetImpl(this, httpClient, uriBuilder, new ConfigurationImpl(configuration), handlerChain,
-                abortHandlerChain, null);
+        return new WebTargetImpl(this, httpClient, uriBuilder, new ConfigurationImpl(configuration), handlerChain, null);
     }
 
     @Override

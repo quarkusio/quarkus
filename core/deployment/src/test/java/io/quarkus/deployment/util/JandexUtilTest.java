@@ -1,6 +1,7 @@
 package io.quarkus.deployment.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -152,6 +153,20 @@ public class JandexUtilTest {
                 A.class);
         checkRepoArg(index, ErasedRepo1.class, Repo.class, A.class);
         checkRepoArg(index, ErasedRepo2.class, Repo.class, A.class);
+    }
+
+    @Test
+    public void testNonProblematicUnindexed() {
+        final Index index = index(Single.class, SingleFromInterfaceAndSuperClass.class);
+        checkRepoArg(index, SingleFromInterfaceAndSuperClass.class, Single.class, String.class);
+    }
+
+    @Test
+    public void testProblematicUnindexed() {
+        final Index index = index(Single.class, AbstractSingleImpl.class, ExtendsAbstractSingleImpl.class);
+        assertThatThrownBy(() -> {
+            JandexUtil.resolveTypeParameters(name(ExtendsAbstractSingleImpl.class), name(Single.class), index);
+        }).isInstanceOf(IllegalArgumentException.class);
     }
 
     public interface Single<T> {

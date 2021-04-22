@@ -315,7 +315,8 @@ public class QuarkusTestExtension
             // we need to write the Index to make it reusable from other parts of the testing infrastructure that run in different ClassLoaders
             TestClassIndexer.writeIndex(testClassesIndex, requiredTestClass);
 
-            Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader());
+            Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader(),
+                    curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication());
             final Map<String, Object> props = new HashMap<>();
             props.put(TEST_LOCATION, testClassLocation);
             props.put(TEST_CLASS, requiredTestClass);

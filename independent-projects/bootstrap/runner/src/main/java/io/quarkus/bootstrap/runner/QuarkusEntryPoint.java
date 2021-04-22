@@ -21,7 +21,7 @@ public class QuarkusEntryPoint {
 
     public static void main(String... args) throws Throwable {
         System.setProperty("java.util.logging.manager", org.jboss.logmanager.LogManager.class.getName());
-        Timing.staticInitStarted();
+        Timing.staticInitStarted(false);
         doRun(args);
     }
 

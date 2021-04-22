@@ -157,7 +157,8 @@ public class MainClassBuildStep {
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
 
-        mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
+        mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class, boolean.class),
+                mv.load(launchMode.isAuxiliaryApplication()));
 
         // ensure that the config class is initialized
         mv.invokeStaticMethod(RunTimeConfigurationGenerator.C_ENSURE_INITIALIZED);
@@ -283,13 +284,14 @@ public class MainClassBuildStep {
         ResultHandle featuresHandle = tryBlock.load(featureNames.stream().sorted().collect(Collectors.joining(", ")));
         tryBlock.invokeStaticMethod(
                 ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class, String.class,
-                        String.class, boolean.class),
+                        String.class, boolean.class, boolean.class),
                 tryBlock.load(applicationInfo.getName()),
                 tryBlock.load(applicationInfo.getVersion()),
                 tryBlock.load(Version.getVersion()),
                 featuresHandle,
                 activeProfile,
-                tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
+                tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())),
+                tryBlock.load(launchMode.isAuxiliaryApplication()));
 
         tryBlock.invokeStaticMethod(
                 ofMethod(QuarkusConsole.class, "start", void.class));

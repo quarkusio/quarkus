@@ -179,7 +179,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     @Override
     public void accept(CuratedApplication o, Map<String, Object> o2) {
         LoggingSetupRecorder.handleFailedStart(); //we are not going to actually run an app
-        Timing.staticInitStarted(o.getBaseRuntimeClassLoader());
+        Timing.staticInitStarted(o.getBaseRuntimeClassLoader(), false);
         try {
             curatedApplication = o;
             Object potentialContext = o2.get(DevModeContext.class.getName());

@@ -296,7 +296,8 @@ class VertxHttpProcessor {
                 httpBuildTimeConfig, httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
                 eventLoopCount.getEventLoopCount(),
                 websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
-                        .collect(Collectors.toList()));
+                        .collect(Collectors.toList()),
+                launchMode.isAuxiliaryApplication());
     }
 
     @BuildStep

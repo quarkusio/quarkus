@@ -221,7 +221,7 @@ public class VertxHttpRecorder {
                 public Integer get() {
                     return ProcessorInfo.availableProcessors() * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
                 }
-            }, null);
+            }, null, false);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -237,7 +237,8 @@ public class VertxHttpRecorder {
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
             LaunchMode launchMode,
-            boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, List<String> websocketSubProtocols)
+            boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, List<String> websocketSubProtocols,
+            boolean auxiliaryApplication)
             throws IOException {
 
         if (startVirtual) {
@@ -247,7 +248,7 @@ public class VertxHttpRecorder {
             // Start the server
             if (closeTask == null) {
                 doServerStart(vertx.get(), httpBuildTimeConfig, httpConfiguration, launchMode, ioThreads,
-                        websocketSubProtocols);
+                        websocketSubProtocols, auxiliaryApplication);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
                 }
@@ -459,7 +460,7 @@ public class VertxHttpRecorder {
 
     private static void doServerStart(Vertx vertx, HttpBuildTimeConfig httpBuildTimeConfig,
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
-            Supplier<Integer> eventLoops, List<String> websocketSubProtocols) throws IOException {
+            Supplier<Integer> eventLoops, List<String> websocketSubProtocols, boolean auxiliaryApplication) throws IOException {
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
@@ -532,12 +533,13 @@ public class VertxHttpRecorder {
             throw new RuntimeException("Unable to start HTTP server", e);
         }
 
-        setHttpServerTiming(httpConfiguration.insecureRequests, httpServerOptions, sslConfig, domainSocketOptions);
+        setHttpServerTiming(httpConfiguration.insecureRequests, httpServerOptions, sslConfig, domainSocketOptions,
+                auxiliaryApplication);
     }
 
     private static void setHttpServerTiming(InsecureRequests insecureRequests, HttpServerOptions httpServerOptions,
             HttpServerOptions sslConfig,
-            HttpServerOptions domainSocketOptions) {
+            HttpServerOptions domainSocketOptions, boolean auxiliaryApplication) {
         String serverListeningMessage = "Listening on: ";
         int socketCount = 0;
 
@@ -561,7 +563,7 @@ public class VertxHttpRecorder {
             }
             serverListeningMessage += String.format("unix:%s", domainSocketOptions.getHost());
         }
-        Timing.setHttpServer(serverListeningMessage);
+        Timing.setHttpServer(serverListeningMessage, auxiliaryApplication);
     }
 
     /**

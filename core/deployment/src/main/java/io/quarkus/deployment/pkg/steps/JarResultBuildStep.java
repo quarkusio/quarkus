@@ -1,9 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.bootstrap.util.ZipUtils.wrapForJDK8232879;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -138,9 +135,6 @@ public class JarResultBuildStep {
     };
 
     private static final Logger log = Logger.getLogger(JarResultBuildStep.class);
-    // we shouldn't have to specify these flags when opening a ZipFS (since they are the default ones), but failure to do so
-    // makes a subsequent uberJar creation fail in java 8 (but works fine in Java 11)
-    private static final StandardOpenOption[] DEFAULT_OPEN_OPTIONS = { TRUNCATE_EXISTING, WRITE, CREATE };
     private static final BiPredicate<Path, BasicFileAttributes> IS_JSON_FILE_PREDICATE = new IsJsonFilePredicate();
     public static final String DEPLOYMENT_CLASS_PATH_DAT = "deployment-class-path.dat";
     public static final String BUILD_SYSTEM_PROPERTIES = "build-system.properties";
@@ -1088,7 +1082,7 @@ public class JarResultBuildStep {
             for (TransformedClassesBuildItem.TransformedClass i : transformed) {
                 Path target = runnerZipFs.getPath(i.getFileName());
                 handleParent(runnerZipFs, i.getFileName(), seen);
-                try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target, DEFAULT_OPEN_OPTIONS))) {
+                try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target))) {
                     out.write(i.getData());
                 }
                 seen.put(i.getFileName(), "Current Application");
@@ -1102,7 +1096,7 @@ public class JarResultBuildStep {
             if (Files.exists(target)) {
                 continue;
             }
-            try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target, DEFAULT_OPEN_OPTIONS))) {
+            try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target))) {
                 os.write(i.getClassData());
             }
         }
@@ -1119,7 +1113,7 @@ public class JarResultBuildStep {
             if (i.getName().startsWith("META-INF/services/")) {
                 concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getClassData());
             } else {
-                try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target, DEFAULT_OPEN_OPTIONS))) {
+                try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target))) {
                     os.write(i.getClassData());
                 }
             }
@@ -1131,7 +1125,7 @@ public class JarResultBuildStep {
 
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             try (final OutputStream os = wrapForJDK8232879(
-                    Files.newOutputStream(runnerZipFs.getPath(entry.getKey()), DEFAULT_OPEN_OPTIONS))) {
+                    Files.newOutputStream(runnerZipFs.getPath(entry.getKey())))) {
                 for (byte[] i : entry.getValue()) {
                     os.write(i);
                     os.write('\n');
@@ -1234,7 +1228,7 @@ public class JarResultBuildStep {
                 }
             }
         }
-        try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(manifestPath, DEFAULT_OPEN_OPTIONS))) {
+        try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(manifestPath))) {
             manifest.write(os);
         }
     }

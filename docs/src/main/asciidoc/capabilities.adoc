@@ -1,0 +1,124 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Extension Capabilities
+
+include::./attributes.adoc[]
+
+Quarkus extensions may declare in their descriptors (`META-INF/quarkus-extension.properties` found in the runtime extension JAR artifact) that they provide certain capabilities. A capability represents a technical aspect, e.g. an implementation of some functionality or a specification. Each capability has a name which should follow the Java package naming convetion, e.g. `io.quarkus.rest`.
+
+IMPORTANT: Only a single provider of any given capability is allowed in an application. If more than one provider of a capability is detected, the application build will fail with the corresponding error message.
+
+At build time all the capabilities found in the application will be aggregated in an instance of the `io.quarkus.deployment.Capabilities` build item that extension build steps can inject to check whether a given capability is available or not.
+
+== Declaring capabilities
+
+The `quarkus-bootstrap-maven-plugin:extension-descriptor` Maven goal, that generates the extension descriptor, allows to declare provided capabilities in the following way:
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <configuration>
+        <capabilities>
+            <provides>io.quarkus.rest</provides>
+            <provides>io.quarkus.resteasy</provides>
+        </capabilities>
+    </configuration>
+</plugin>
+----
+
+In this case, the extension is declaring two capabilities.
+
+=== Declaring conditional capabilities
+
+A capability may be provided only if a certain condition is satisfied, e.g. if a certain configuration option is enabled or based on some other condition. This could be expressed in the following way:
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <configuration>
+        <capabilities>
+            <providesIf> <1>
+                <positive>io.quarkus.container.image.openshift.deployment.OpenshiftBuild</positive> <2>
+                <name>io.quarkus.container.image.openshift</name> <3>
+            </providesIf>
+        </capabilities>
+    </configuration>
+</plugin>
+----
+<1> declaration of a conditional capability
+<2> condition that must be resolved to `true` by a class implementing `java.util.function.BooleanSupplier`
+<3> provided capability name
+
+NOTE: `providesIf` allows listing multiple `<positive>` as well as `<negative>` elements.
+
+In this case, `io.quarkus.container.image.openshift.deployment.OpenshiftBuild` should be included in one of the extension deployment dependencies and implement `java.util.function.BooleanSupplier`. At build time, the Quarkus bootstrap will create an instance of it and register `io.quarkus.container.image.openshift` capability only if its `getAsBoolean()` method returns true. 
+
+An implementation of the `OpenshiftBuild` could look like this:
+[source,java]
+----
+import java.util.function.BooleanSupplier;
+
+import io.quarkus.container.image.deployment.ContainerImageConfig;
+
+public class OpenshiftBuild implements BooleanSupplier {
+
+    private ContainerImageConfig containerImageConfig;
+
+    OpenshiftBuild(ContainerImageConfig containerImageConfig) {
+        this.containerImageConfig = containerImageConfig;
+    }
+
+    @Override
+    public boolean getAsBoolean() {
+        return containerImageConfig.builder.map(b -> b.equals(OpenshiftProcessor.OPENSHIFT)).orElse(true);
+    }
+}
+----
+
+== CapabilityBuildItem
+
+Each provided capability will be represented with an instance of `io.quarkus.deployment.builditem.CapabilityBuildItem` at build time. Theoretically, `CapabilityBuildItem`'s could be produced by extension build steps directly, bypassing the corresponding declaration in the extension descriptors. However, this way of providing capabilities should be avoided, unless there is a very good reason not to declare a capability in the descriptor.
+
+IMPORTANT: Capabilities produced from extension build steps aren't available for the Quarkus dev tools. As a consequences, such capabilities can not be taken into account when analyzing extension compatibility during project creation or when adding new extensions to a project.
+
+== Querying capabilities
+
+All the capabilities found in an application will be aggregated during the build in an instance of `io.quarkus.deployment.Capabilities` build item, which can be injected by extension build steps to check whether a certain capability is present or not. E.g.
+
+[source,java]
+----
+    @BuildStep
+    HealthBuildItem addHealthCheck(Capabilities capabilities, DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
+        if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+            return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
+                    dataSourcesBuildTimeConfig.healthEnabled);
+        } else {
+            return null;
+        }
+    }
+----
+
+=== Capability prefixes
+
+Like a capability name, a capability prefix is a dot-separated string that is composed of either the first capability name element or a dot-separated sequence of the capability name elements starting from the first one. E.g. for capability `io.quarkus.resteasy.json.jackson` the following prefixes will be registered:
+
+* `io`
+* `io.quarkus`
+* `io.quarkus.resteasy`
+* `io.quarkus.resteasy.json`
+
+`Capabilities.isCapabilityWithPrefixPresent(prefix)` could be used to check whether a capability with a given prefix is present.
+
+Given that only a single provider of a given capability is allowed in an application, capability prefixes allow expressing a certain common aspect among different but somewhat related capabilities. E.g. there could be extensions providing the following capabilities:
+
+* `io.quarkus.resteasy.json.jackson`
+* `io.quarkus.resteasy.json.jackson.client`
+* `io.quarkus.resteasy.json.jsonb`
+* `io.quarkus.resteasy.json.jsonb.client`
+
+Including any one of those extensions in an application will enable the RESTEasy JSON serializer. In case a build step needs to check whether the RESTEasy JSON serializer is already enabled in an application, instead of checking whether any of those capabilities is present, it could simply check whether an extension with prefix `io.quarkus.resteasy.json` is present.

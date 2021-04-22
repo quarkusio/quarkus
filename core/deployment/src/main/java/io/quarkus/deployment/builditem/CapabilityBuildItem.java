@@ -11,11 +11,12 @@ import io.quarkus.deployment.Capability;
  * <p>
  * Build steps can inject {@link Capabilities} - a convenient build item that holds the set of registered capabilities.
  * <p>
- * An extension may provide multiple capabilities. Multiple extensions can provide the same capability. By default, capabilities
- * are not displayed to users.
+ * An extension may provide multiple capabilities. But only a single provider of a given capability is allowed
+ * in an application. If multiple providers of the same capability are detected during the build of an application,
+ * the build will fail with the corresponding error message. By default, capabilities are not displayed to users.
  * <p>
  * Capabilities should follow the naming conventions of Java packages; e.g. {@code io.quarkus.security.jpa}. Capabilities
- * provided by core extensions should be listed in the {@link Capability} enum and their name should always start with the
+ * provided by core extensions should be listed in the {@link Capability} interface and their name should always start with the
  * {@code io.quarkus} prefix.
  *
  * @see Capabilities
@@ -38,6 +39,12 @@ public final class CapabilityBuildItem extends MultiBuildItem {
     }
 
     /**
+     * <b>IMPORTANT:</b> in most cases, capability build items should not be produced by build steps of specific
+     * extensions but be configured in their extension descriptors instead. Capabilities produced from
+     * extension build steps aren't available for the Quarkus dev tools. As a consequences, such capabilities
+     * can not be taken into account when analyzing extension compatibility during project creation or when
+     * adding new extensions to a project.
+     *
      * @param name capability name
      * @param provider capability provider
      */

@@ -3,6 +3,7 @@ package io.quarkus.devtools.codestarts.quarkus;
 import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent.CODE;
+import static io.quarkus.devtools.project.QuarkusProjectHelper.getBaseCodestartResourceLoaders;
 import static io.quarkus.devtools.project.QuarkusProjectHelper.getCodestartResourceLoaders;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getCodestartName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +78,19 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         this.extensionsMapping = extensionsMapping;
     }
 
-    public static QuarkusCodestartCatalog fromQuarkusPlatformDescriptorAndDirectories(
+    public static QuarkusCodestartCatalog fromBaseCodestartsResources(Map<String, Extension> extensionsMapping)
+            throws IOException {
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getBaseCodestartResourceLoaders(),
+                QUARKUS_CODESTARTS_DIR);
+        return new QuarkusCodestartCatalog(codestarts.values(), extensionsMapping);
+    }
+
+    public static QuarkusCodestartCatalog fromBaseCodestartsResources()
+            throws IOException {
+        return fromBaseCodestartsResources(Collections.emptyMap());
+    }
+
+    public static QuarkusCodestartCatalog fromExtensionsCatalogAndDirectories(
             ExtensionCatalog catalog, Collection<Path> directories)
             throws IOException {
         final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(catalog),
@@ -220,7 +234,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return codestart.getType() == CodestartType.CODE && codestart.containsTag(Tag.EXAMPLE.key());
     }
 
-    private static Map<String, Extension> buildExtensionsMapping(
+    public static Map<String, Extension> buildExtensionsMapping(
             Collection<Extension> extensions) {
         final Map<String, Extension> map = new HashMap<>(extensions.size());
         extensions.forEach(e -> {

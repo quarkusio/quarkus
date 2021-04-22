@@ -1,12 +1,12 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
+import static io.quarkus.devtools.codestarts.quarkus.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.ArtifactKey;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
+class QuarkusCodestartCatalogTest {
 
     private final Path projectPath = Paths.get("target/quarkus-codestart-catalog-test");
 
@@ -140,7 +140,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     }
 
     private QuarkusCodestartCatalog getCatalog() throws IOException {
-        return QuarkusCodestartCatalog.fromExtensionsCatalog(getExtensionsCatalog(), getCodestartsResourceLoaders());
+        return FAKE_QUARKUS_CODESTART_CATALOG;
     }
 
 }

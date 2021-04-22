@@ -47,6 +47,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     private final BuildTool buildTool;
     private final Set<Language> hasGeneratedProjectsWithMockedData = new HashSet<>();
     private final Set<Language> hasGeneratedProjectsWithRealData = new HashSet<>();
+    private final boolean enableRegistryClient;
     private Path targetDir;
     private ExtensionCatalog extensionCatalog;
     private QuarkusCodestartCatalog quarkusCodestartCatalog;
@@ -55,6 +56,9 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
         this.codestarts = builder.codestarts;
         this.languages = builder.languages;
         this.buildTool = builder.buildTool;
+        this.quarkusCodestartCatalog = builder.quarkusCodestartCatalog;
+        this.extensionCatalog = builder.extensionCatalog;
+        this.enableRegistryClient = builder.extensionCatalog == null;
         this.data = builder.data;
     }
 
@@ -64,7 +68,9 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
-        enableRegistryClientTestConfig();
+        if (enableRegistryClient) {
+            enableRegistryClientTestConfig();
+        }
         targetDir = Paths.get("target/quarkus-codestart-test/" + getTestId());
         SnapshotTesting.deleteTestDirectory(targetDir.toFile());
     }
@@ -200,7 +206,9 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
 
     @Override
     public void afterAll(ExtensionContext extensionContext) throws Exception {
-        disableRegistryClientTestConfig();
+        if (enableRegistryClient) {
+            disableRegistryClientTestConfig();
+        }
     }
 
     protected List<ResourceLoader> getCodestartsResourceLoaders() {

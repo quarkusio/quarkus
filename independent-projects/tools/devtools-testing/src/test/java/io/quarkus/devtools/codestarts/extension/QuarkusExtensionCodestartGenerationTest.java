@@ -3,7 +3,6 @@ package io.quarkus.devtools.codestarts.extension;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatDirectoryTreeMatchSnapshots;
 
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
-import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,7 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-class QuarkusExtensionCodestartGenerationTest extends PlatformAwareTestBase {
+class QuarkusExtensionCodestartGenerationTest {
 
     private static final Path testDirPath = Paths.get("target/extension-codestart-gen-test");
 

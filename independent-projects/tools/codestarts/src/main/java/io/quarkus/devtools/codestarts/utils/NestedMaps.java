@@ -46,10 +46,22 @@ public final class NestedMaps {
                 c.addAll((Collection) leftValue);
                 c.addAll((Collection) rightValue);
                 left.put(key, c);
-            } else {
+            } else if (rightValue instanceof Map) {
+                final Map map = new HashMap();
+                deepMerge(map, (Map) rightValue);
+                left.put(key, map);
+            } else if (rightValue instanceof Collection) {
+                left.put(key, new LinkedHashSet((Collection) rightValue));
+            } else if (rightValue instanceof Integer
+                    || rightValue instanceof Boolean
+                    || rightValue instanceof Float
+                    || rightValue instanceof Long
+                    || rightValue instanceof Double
+                    || rightValue instanceof String) {
                 // Override
                 left.put(key, rightValue);
             }
+            // else ignore
         }
     }
 

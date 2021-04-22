@@ -1,5 +1,6 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
+import static io.quarkus.devtools.codestarts.quarkus.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.PROJECT_PACKAGE_NAME;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.RESTEASY_CODESTART_RESOURCE_CLASS_NAME;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.RESTEASY_CODESTART_RESOURCE_PATH;
@@ -8,12 +9,10 @@ import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -22,7 +21,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
+class QuarkusCodestartGenerationTest {
 
     private static final Path testDirPath = Paths.get("target/quarkus-codestart-gen-test");
 
@@ -364,8 +363,8 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("rootProject.name=\"test-codestart\""));
     }
 
-    private QuarkusCodestartCatalog getCatalog() throws IOException {
-        return QuarkusCodestartCatalog.fromExtensionsCatalog(getExtensionsCatalog(), getCodestartsResourceLoaders());
+    private QuarkusCodestartCatalog getCatalog() {
+        return FAKE_QUARKUS_CODESTART_CATALOG;
     }
 
 }

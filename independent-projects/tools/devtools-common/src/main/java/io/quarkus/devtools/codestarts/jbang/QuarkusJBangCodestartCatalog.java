@@ -1,6 +1,7 @@
 package io.quarkus.devtools.codestarts.jbang;
 
 import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
+import static io.quarkus.devtools.project.QuarkusProjectHelper.getBaseCodestartResourceLoaders;
 
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.DataKey;
@@ -44,6 +45,13 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
 
     private QuarkusJBangCodestartCatalog(Collection<Codestart> codestarts) {
         super(codestarts);
+    }
+
+    public static QuarkusJBangCodestartCatalog fromBaseCodestartsResources()
+            throws IOException {
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getBaseCodestartResourceLoaders(),
+                QUARKUS_JBANG_CODESTARTS_DIR);
+        return new QuarkusJBangCodestartCatalog(codestarts.values());
     }
 
     public static QuarkusJBangCodestartCatalog fromResourceLoaders(List<ResourceLoader> resourceLoaders)

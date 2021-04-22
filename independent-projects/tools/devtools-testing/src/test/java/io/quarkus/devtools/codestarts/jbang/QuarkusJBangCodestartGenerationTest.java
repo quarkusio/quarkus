@@ -6,7 +6,6 @@ import static io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartCatalog.
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatDirectoryTreeMatchSnapshots;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapshot;
 
-import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,7 +14,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
+class QuarkusJBangCodestartGenerationTest {
 
     private static final Path testDirPath = Paths.get("target/jbang-codestart-gen-test");
 
@@ -52,7 +51,7 @@ class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     private QuarkusJBangCodestartCatalog getCatalog() throws IOException {
-        return QuarkusJBangCodestartCatalog.fromResourceLoaders(getCodestartsResourceLoaders());
+        return QuarkusJBangCodestartCatalog.fromBaseCodestartsResources();
     }
 
 }

@@ -16,7 +16,7 @@ To complete this guide, you need:
 
 * roughly 5 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * access to an OpenShift cluster (Minishift is a viable option)
 * OpenShift CLI (Optional. Only required for manually deploying)

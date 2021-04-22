@@ -50,7 +50,7 @@ To complete this guide, you need:
 
 * about 30 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version} or Gradle 4+
 
 == The build file and the dependencies

@@ -41,7 +41,7 @@ To complete this guide, you need:
 * to complete the "Starting Vault" section of the {base-guide}
 * roughly 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker installed
 

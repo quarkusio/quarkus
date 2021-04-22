@@ -17,8 +17,8 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
 * A running Redis server, or Docker Compose to start one
 * GraalVM installed if you want to run in native mode.
 

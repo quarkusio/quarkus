@@ -18,7 +18,7 @@ To complete this guide, you need:
 
 * roughly 10 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * access to a Kubernetes cluster (Minikube is a viable option)
 

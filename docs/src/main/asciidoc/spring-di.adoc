@@ -216,20 +216,11 @@ public class AppConfiguration {
     }
 }
 ----
-As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs link:cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
-In the same vein, Quarkus does not support the Spring `@Import` annotation.
-=======
 +
 As a Spring developer, you might be tempted to add the `@ComponentScan` annotation to define specific packages to scan for additional beans.
-<<<<<<< HEAD
-Note, that `@ComponentScan` is unnecessary because {BrandName} performs link:cdi#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries.
-Moreover, note, that the bean discovery in {BrandName} happens at build time.
-Similarly, {BrandName} does not support the Spring `@Import` annotation.
-=======
-Note, that `@ComponentScan` is unnecessary because {brand-name} performs https://quarkus.io/guides/cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries.
+Note, that `@ComponentScan` is unnecessary because {brand-name} performs link:cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries.
 Moreover, note, that the bean discovery in {brand-name} happens at build time.
 Similarly, {brand-name} does not support the Spring `@Import` annotation.
->>>>>>> 49cc6e9b34 (QUARKUS-184: switch to consistent lowercase attributes)
 
 . Create a `NoOpSingleStringFunction` bean inside the the `src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java` file.
 The `NoOpSingleStringFunction` implements the `StringFunction` interface using the `@Component` stereotype annotation provided by Spring.

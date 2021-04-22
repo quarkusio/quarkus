@@ -16,9 +16,9 @@ public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final String DISABLED_PROMPT = "\u001b[33mTests Disabled, press [e] to enable\u001b[0m";
+    public static final String PAUSED_PROMPT = "\u001b[33mTests paused, press [r] to resume\u001b[0m";
     public static final String FIRST_RUN_PROMPT = "\u001b[33mRunning Tests for the first time\u001b[0m";
-    public static final String RUNNING_PROMPT = "Press [r] to re-run, [v] to view full results, [d] to disable, [h] for more options>";
+    public static final String RUNNING_PROMPT = "Press [r] to re-run, [v] to view full results, [p] to pause, [h] for more options>";
     public static final String ABORTED_PROMPT = "Test run aborted.";
 
     boolean firstRun = true;
@@ -37,7 +37,7 @@ public class TestConsoleHandler implements TestListener {
         public void handleInput(int[] keys) {
             if (disabled) {
                 for (int i : keys) {
-                    if (i == 'e') {
+                    if (i == 'r') {
                         TestSupport.instance().get().start();
                     }
                 }
@@ -60,7 +60,7 @@ public class TestConsoleHandler implements TestListener {
                         } else {
                             log.info("Test output disabled");
                         }
-                    } else if (k == 'd') {
+                    } else if (k == 'p') {
                         TestSupport.instance().get().stop();
                     } else if (k == 'h') {
                         printUsage();
@@ -84,7 +84,7 @@ public class TestConsoleHandler implements TestListener {
     @Override
     public void listenerRegistered(TestController testController) {
         this.testController = testController;
-        promptHandler.setStatus(DISABLED_PROMPT);
+        promptHandler.setStatus(PAUSED_PROMPT);
     }
 
     public void printUsage() {
@@ -130,7 +130,7 @@ public class TestConsoleHandler implements TestListener {
     @Override
     public void testsDisabled() {
         disabled = true;
-        promptHandler.setPrompt(DISABLED_PROMPT);
+        promptHandler.setPrompt(PAUSED_PROMPT);
         promptHandler.setStatus(null);
     }
 

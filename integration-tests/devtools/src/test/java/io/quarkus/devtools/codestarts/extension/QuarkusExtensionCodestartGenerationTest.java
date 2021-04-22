@@ -2,15 +2,17 @@ package io.quarkus.devtools.codestarts.extension;
 
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatDirectoryTreeMatchSnapshots;
 
-import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
-import io.quarkus.devtools.testing.PlatformAwareTestBase;
-import io.quarkus.devtools.testing.SnapshotTesting;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
+import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusExtensionCodestartGenerationTest extends PlatformAwareTestBase {
 

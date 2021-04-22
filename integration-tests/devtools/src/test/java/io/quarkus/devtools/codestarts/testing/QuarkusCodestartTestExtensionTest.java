@@ -1,4 +1,4 @@
-package io.quarkus.devtools.testing.codestarts;
+package io.quarkus.devtools.codestarts.testing;
 
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language.JAVA;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language.KOTLIN;
@@ -6,6 +6,8 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Lan
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 
 class QuarkusCodestartTestExtensionTest {
 

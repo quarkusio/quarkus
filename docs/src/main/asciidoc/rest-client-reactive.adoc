@@ -121,13 +121,18 @@ import java.util.Set;
 public interface CountriesService {
 
     @GET
-    @Path("/name/{name}")
-    Set<Country> getByName(@PathParam("name") String name);
+    @Path("/name/{countryName}")
+    Set<Country> getByName(String countryName);
 }
 ----
 
 The `getByName` method gives our code the ability to query a country by name from the REST Countries API.
 The client will handle all the networking and marshalling leaving our code clean of such technical details.
+
+[NOTE]
+====
+No `@PathParam` annotation is necessary on `countryName` as the name of the parameter matches the value used in the `@Path` annotation
+====
 
 The purpose of the annotations in the code above is the following:
 
@@ -174,7 +179,7 @@ public interface CountriesService {
 
     @GET
     @Path("/name/{region}")
-    Set<Country> getByRegion(@PathParam("region") String region, @QueryParam("city") String city);
+    Set<Country> getByRegion(String region, @QueryParam("city") String city);
 }
 ----
 
@@ -240,7 +245,7 @@ public class CountriesResource {
     @GET
     @Path("/name/{name}")
     @Blocking // <2>
-    public Set<Country> name(@RestPath String name) {
+    public Set<Country> name(String name) {
         return countriesService.getByName(name);
     }
 }
@@ -315,13 +320,13 @@ public interface CountriesService {
 
     @GET
     @Path("/name/{name}")
-    Set<Country> getByName(@PathParam("name") String name);
+    Set<Country> getByName(String name);
 
 
     @GET
     @Path("/name/{name}")
     @Produces("application/json")
-    CompletionStage<Set<Country>> getByNameAsync(@PathParam("name") String name);
+    CompletionStage<Set<Country>> getByNameAsync(String name);
 }
 ----
 
@@ -350,13 +355,13 @@ public class CountriesResource {
     @GET
     @Path("/name/{name}")
     @Blocking
-    public Set<Country> name(@PathParam("name") String name) {
+    public Set<Country> name(String name) {
         return countriesService.getByName(name);
     }
 
     @GET
     @Path("/name-async/{name}")
-    public CompletionStage<Set<Country>> nameAsync(@PathParam("name") String name) {
+    public CompletionStage<Set<Country>> nameAsync(String name) {
         return countriesService.getByNameAsync(name);
     }
 }
@@ -409,8 +414,7 @@ public interface CountriesService {
 
     @GET
     @Path("/name/{name}")
-    @Produces("application/json")
-    Uni<Set<Country>> getByNameAsUni(@PathParam("name") String name);
+    Uni<Set<Country>> getByNameAsUni(String name);
 }
 ----
 
@@ -441,7 +445,7 @@ public class CountriesResource {
 
     @GET
     @Path("/name-uni/{name}")
-    public Uni<Set<Country>> nameUni(@PathParam("name") String name) {
+    public Uni<Set<Country>> nameUni(String name) {
         return countriesService.getByNameAsUni(name);
     }
 }
@@ -497,12 +501,10 @@ public interface CountriesService {
 
     @GET
     @Path("/name/{name}")
-    @Produces("application/json")
     Set<Country> getByName(@PathParam("name") String name);
 
     @GET
     @Path("/name/{name}")
-    @Produces("application/json")
     CompletionStage<Set<Country>> getByNameAsync(@PathParam("name") String name);
 }
 ----

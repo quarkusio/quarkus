@@ -37,7 +37,7 @@ public class InjectJobTest {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Starter.class, Service.class, CountDownLatchProducer.class)
-                    .addAsResource(new StringAsset("quarkus.quartz.force-start=true"),
+                    .addAsResource(new StringAsset("quarkus.quartz.start-mode=forced"),
                             "application.properties"));
 
     @Test

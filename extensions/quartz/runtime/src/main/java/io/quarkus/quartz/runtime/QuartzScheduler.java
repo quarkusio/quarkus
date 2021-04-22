@@ -72,7 +72,6 @@ public class QuartzScheduler implements Scheduler {
             Event<SkippedExecution> skippedExecutionEvent, Instance<Job> jobs, Instance<UserTransaction> userTransaction) {
         enabled = schedulerRuntimeConfig.enabled;
         final QuartzRuntimeConfig runtimeConfig = quartzSupport.getRuntimeConfig();
-        warnDeprecated(runtimeConfig);
 
         boolean forceStart;
         if (runtimeConfig.startMode != QuartzStartMode.NORMAL) {
@@ -80,7 +79,7 @@ public class QuartzScheduler implements Scheduler {
             forceStart = startHalted || (runtimeConfig.startMode == QuartzStartMode.FORCED);
         } else {
             startHalted = false;
-            forceStart = runtimeConfig.forceStart.orElse(false);
+            forceStart = false;
         }
 
         if (!enabled) {
@@ -203,18 +202,6 @@ public class QuartzScheduler implements Scheduler {
                 }
                 throw new IllegalStateException("Unable to create Scheduler", e);
             }
-        }
-    }
-
-    /**
-     * Warn if there's any deprecated configuration
-     *
-     * @param runtimeConfig {@link QuartzRuntimeConfig} quartz scheduler configurations
-     */
-    private static void warnDeprecated(QuartzRuntimeConfig runtimeConfig) {
-        if (runtimeConfig.forceStart.isPresent()) {
-            LOGGER.warn("`quarkus.quartz.force-start` is deprecated and will be removed in a future version - it is "
-                    + "recommended to switch to `quarkus.quartz.start-mode`");
         }
     }
 

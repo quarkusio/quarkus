@@ -23,7 +23,7 @@ public class KafkaConsumerTest {
 
     public static Producer<Integer, String> createProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaTestResource.getBootstrapServers());
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "test-consumer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
@@ -31,14 +31,14 @@ public class KafkaConsumerTest {
     }
 
     @Test
-    public void test() throws Exception {
+    public void test() {
         Producer<Integer, String> producer = createProducer();
         producer.send(new ProducerRecord<>("test-consumer", 1, "hi world"));
         RestAssured.when().get("/kafka").then().body(Matchers.is("hi world"));
     }
 
     @Test
-    public void metrics() throws Exception {
+    public void metrics() {
         // Look for kafka consumer metrics (add .log().all() to examine what they are
         RestAssured.when().get("/q/metrics").then()
                 .statusCode(200)

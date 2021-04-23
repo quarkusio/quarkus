@@ -13,6 +13,6 @@ metadata:
   status: "experimental"
   codestart:
     name: "funqy-google-cloud-functions-example"
-    kind: "singleton-example"
+    kind: "example"
     languages: "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

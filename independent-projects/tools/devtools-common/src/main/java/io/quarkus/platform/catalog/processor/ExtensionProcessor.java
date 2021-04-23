@@ -59,6 +59,9 @@ public final class ExtensionProcessor {
     }
 
     public static CodestartKind getCodestartKind(Extension extension) {
+        if (getCodestartName(extension) == null) {
+            return null;
+        }
         return getMetadataValue(extension, MD_NESTED_CODESTART_KIND).toEnum(CodestartKind.class,
                 CodestartKind.EXTENSION_CODESTART);
     }

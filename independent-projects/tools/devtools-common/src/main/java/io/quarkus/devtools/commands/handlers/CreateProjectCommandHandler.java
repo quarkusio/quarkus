@@ -1,6 +1,7 @@
 package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.commands.CreateProject.EXAMPLE;
+import static io.quarkus.devtools.commands.CreateProject.EXTRA_CODESTARTS;
 import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_CODE;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
@@ -93,6 +94,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .buildTool(invocation.getQuarkusProject().getBuildTool())
                     .example(invocation.getValue(EXAMPLE))
                     .noCode(invocation.getValue(NO_CODE, false))
+                    .addCodestarts(invocation.getValue(EXTRA_CODESTARTS, Collections.emptySet()))
                     .noBuildToolWrapper(invocation.getValue(NO_BUILDTOOL_WRAPPER, false))
                     .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))
                     .addData(platformData)

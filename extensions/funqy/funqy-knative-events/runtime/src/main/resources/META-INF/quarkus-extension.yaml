@@ -11,6 +11,6 @@ metadata:
   status: "experimental"
   codestart:
     name: "funqy-knative-events"
-    kind: "singleton-example"
+    kind: "example"
     languages: "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

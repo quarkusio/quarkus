@@ -10,6 +10,6 @@ metadata:
   status: "preview"
   codestart:
     name: "azure-functions-http"
-    kind: "singleton-example"
+    kind: "example"
     languages: "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

@@ -15,7 +15,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 
 public class PostgresqlDevServicesProcessor {
 
-    public static final String DEFAULT = PostgreSQLContainer.IMAGE + ":" + PostgreSQLContainer.DEFAULT_TAG;
+    public static final String TAG = "13.2";
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupPostgres() {
@@ -24,7 +24,7 @@ public class PostgresqlDevServicesProcessor {
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
                 PostgreSQLContainer container = new PostgreSQLContainer(
-                        DockerImageName.parse(imageName.orElse(DEFAULT))
+                        DockerImageName.parse(imageName.orElse(PostgreSQLContainer.IMAGE + ":" + TAG))
                                 .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)))
                                         .withPassword(password.orElse("quarkus"))
                                         .withUsername(username.orElse("quarkus"))

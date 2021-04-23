@@ -15,6 +15,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 
 public class MariaDBDevServicesProcessor {
 
+    public static final String TAG = "10.5.9";
+
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMariaDB() {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MARIADB, new DevServicesDatasourceProvider() {
@@ -22,7 +24,7 @@ public class MariaDBDevServicesProcessor {
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
                 MariaDBContainer container = new MariaDBContainer(
-                        DockerImageName.parse(imageName.orElse(MariaDBContainer.IMAGE + ":" + MariaDBContainer.DEFAULT_TAG))
+                        DockerImageName.parse(imageName.orElse(MariaDBContainer.IMAGE + ":" + TAG))
                                 .asCompatibleSubstituteFor(DockerImageName.parse(MariaDBContainer.IMAGE)))
                                         .withPassword(password.orElse("quarkus"))
                                         .withUsername(username.orElse("quarkus"))

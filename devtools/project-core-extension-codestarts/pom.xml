@@ -17,13 +17,6 @@
         <gradle-wrapper.path>${project.basedir}/../gradle</gradle-wrapper.path>
         <gradle.executable>gradlew</gradle.executable>
     </properties>
-    <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-testing</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
     <build>
         <resources>
             <resource>

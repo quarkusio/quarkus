@@ -6,17 +6,18 @@ import javax.inject.Inject
 import javax.ws.rs.GET
 import javax.ws.rs.Path
 import javax.ws.rs.Produces
+import javax.ws.rs.QueryParam
 import javax.ws.rs.core.MediaType
 
 @Path("/some-page")
 class SomePage {
 
     @Inject
-    lateinit var somePage: Template
+    lateinit var page: Template
 
     @GET
     @Produces(MediaType.TEXT_HTML)
-    operator fun get(name: String?): TemplateInstance {
-        return somePage.data("name", name)
+    operator fun get(@QueryParam("name") name: String?): TemplateInstance {
+        return page.data("name", name)
     }
 }

@@ -16,6 +16,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 
 public class MSSQLDevServicesProcessor {
 
+    /**
+     * If you update this remember to update the container-license-acceptance.txt in the tests
+     */
+    public static final String TAG = "2019-CU10-ubuntu-20.04";
+
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL() {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
@@ -24,7 +29,7 @@ public class MSSQLDevServicesProcessor {
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
                 JdbcDatabaseContainer container = new MSSQLServerContainer(
                         DockerImageName
-                                .parse(imageName.orElse(MSSQLServerContainer.IMAGE + ":" + MSSQLServerContainer.DEFAULT_TAG))
+                                .parse(imageName.orElse(MSSQLServerContainer.IMAGE + ":" + TAG))
                                 .asCompatibleSubstituteFor(MSSQLServerContainer.IMAGE))
                                         .withPassword(password.orElse("Quarkuspassword1"));
                 additionalProperties.forEach(container::withUrlParam);

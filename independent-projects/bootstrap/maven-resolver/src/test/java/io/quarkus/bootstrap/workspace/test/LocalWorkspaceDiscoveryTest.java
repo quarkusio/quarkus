@@ -118,6 +118,26 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void loadOverlappingWorkspaceLayout() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("overlapping-workspace-layout/root/root/module1");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Paths.get(moduleUrl.toURI());
+
+        final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setCurrentProject(moduleDir.toString()))
+                        .getCurrentProject();
+        final LocalWorkspace ws = module1.getWorkspace();
+
+        final LocalProject wsModule1 = ws.getProject("org.acme", "module1");
+        assertNotNull(wsModule1);
+        assertEquals(module1.getDir().toAbsolutePath(), wsModule1.getDir().toAbsolutePath());
+        assertTrue(module1 == wsModule1);
+        assertNotNull(ws.getProject("org.acme", "root"));
+        assertEquals(2, ws.getProjects().size());
+    }
+
+    @Test
     public void loadWorkspaceWithDirBreaks() throws Exception {
         final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-with-dir-breaks/root");
         assertNotNull(projectUrl);

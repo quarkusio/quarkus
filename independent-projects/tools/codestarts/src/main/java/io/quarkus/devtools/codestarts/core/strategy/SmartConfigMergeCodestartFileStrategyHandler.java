@@ -36,8 +36,8 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
         for (TargetFile codestartFile : codestartFiles) {
             final String content = codestartFile.getContent();
             if (!content.trim().isEmpty()) {
-                final Map o = YAML_MAPPER.readerFor(Map.class).readValue(content);
-                NestedMaps.deepMerge(config, o);
+                final Map<String, Object> o = YAML_MAPPER.readerFor(Map.class).readValue(content);
+                config.putAll(NestedMaps.deepMerge(config, o));
             }
         }
         final Path targetPath = targetDirectory.resolve(relativePath);

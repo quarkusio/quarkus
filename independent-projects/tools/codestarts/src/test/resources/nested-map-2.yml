@@ -8,6 +8,6 @@ bar:
       foo: bar
       baz: foo
 hello:
-  world
+  world: helloworld
 list:
   - baz

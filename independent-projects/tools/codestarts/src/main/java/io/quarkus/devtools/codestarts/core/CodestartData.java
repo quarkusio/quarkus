@@ -34,11 +34,11 @@ public final class CodestartData {
     public static Map<String, Object> buildCodestartData(final Codestart codestart, final String languageName,
             final Map<String, Object> data) {
         final Optional<Map<String, Object>> value = NestedMaps.getValue(data, codestart.getName());
-        Map<String, Object> codestartData = new HashMap<>();
-        codestartData.putAll(data);
-        NestedMaps.deepMerge(codestartData, codestart.getLocalData(languageName));
-        value.ifPresent(map -> NestedMaps.deepMerge(codestartData, map));
-        return codestartData;
+        Map<String, Object> withLocalCodestartData = NestedMaps.deepMerge(data, codestart.getLocalData(languageName));
+        if (!value.isPresent()) {
+            return withLocalCodestartData;
+        }
+        return NestedMaps.deepMerge(withLocalCodestartData, value.get());
     }
 
     public static Map<String, Object> buildCodestartProjectData(Collection<Codestart> baseCodestarts,

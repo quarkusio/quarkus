@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,12 +24,12 @@ class NestedMapsTest {
 
     @Test
     void testDeepMerge() {
-        final HashMap<String, Object> target = new HashMap<>();
-
-        NestedMaps.deepMerge(target, NESTED_MAP_1);
-        NestedMaps.deepMerge(target, NESTED_MAP_2);
+        final Map<String, Object> target = NestedMaps.deepMerge(NESTED_MAP_1, NESTED_MAP_2);
 
         checkTargetMap(target);
+        ((Map) target.get("hello")).put("world", "changed");
+        final Map<String, Object> targetAgain = NestedMaps.deepMerge(NESTED_MAP_1, NESTED_MAP_2);
+        checkTargetMap(targetAgain);
     }
 
     @Test
@@ -67,7 +68,7 @@ class NestedMapsTest {
 
         assertThat(NestedMaps.getValue(target, "bar.foo.bar.foo")).hasValue("bar");
         assertThat(NestedMaps.getValue(target, "bar.foo.bar.baz")).hasValue("foo");
-        assertThat(NestedMaps.getValue(target, "hello")).hasValue("world");
+        assertThat(NestedMaps.getValue(target, "hello.world")).hasValue("helloworld");
         assertThat((Collection) NestedMaps.getValue(target, "list").get()).containsExactly("foo", "bar", "baz");
     }
 
@@ -82,7 +83,7 @@ class NestedMapsTest {
         data.put("baz", "bar");
         data.put("bar.foo.bar.foo", "bar");
         data.put("bar.foo.bar.baz", "foo");
-        data.put("hello", "world");
+        data.put("hello", Collections.singletonMap("world", "helloworld"));
         data.put("list", Arrays.asList("foo", "bar", "baz"));
         final Map<String, Object> target = NestedMaps.unflatten(data);
 

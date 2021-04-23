@@ -1,7 +1,7 @@
 {
-  "id": "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT",
+  "id": "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE",
   "platform": true,
-  "bom": "io.quarkus:quarkus-bom::pom:999-SNAPSHOT",
+  "bom": "io.quarkus:quarkus-bom::pom:999-FAKE",
   "derived-from": [],
   "extensions": [
     {
@@ -26,13 +26,13 @@
             "kotlin",
             "scala"
           ],
-          "artifact": "io.quarkus:quarkus-descriptor-json"
+          "artifact": "io.quarkus:fake-artifact"
         },
-        "built-with-quarkus-core": "999-SNAPSHOT"
+        "built-with-quarkus-core": "999-FAKE"
       },
-      "artifact": "io.quarkus:quarkus-resteasy-reactive::jar:999-SNAPSHOT",
+      "artifact": "io.quarkus:quarkus-resteasy-reactive::jar:999-FAKE",
       "origins": [
-        "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT"
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
     },
     {
@@ -56,13 +56,13 @@
             "java",
             "kotlin"
           ],
-          "artifact": "io.quarkus:quarkus-descriptor-json"
+          "artifact": "io.quarkus:fake-artifact"
         },
-        "built-with-quarkus-core": "999-SNAPSHOT"
+        "built-with-quarkus-core": "999-FAKE"
       },
-      "artifact": "io.quarkus:quarkus-config-yaml::jar:999-SNAPSHOT",
+      "artifact": "io.quarkus:quarkus-config-yaml::jar:999-FAKE",
       "origins": [
-        "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT"
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
     },
     {
@@ -88,13 +88,13 @@
             "kotlin",
             "scala"
           ],
-          "artifact": "io.quarkus:quarkus-descriptor-json"
+          "artifact": "io.quarkus:fake-artifact"
         },
-        "built-with-quarkus-core": "999-SNAPSHOT"
+        "built-with-quarkus-core": "999-FAKE"
       },
-      "artifact": "io.quarkus:quarkus-resteasy::jar:999-SNAPSHOT",
+      "artifact": "io.quarkus:quarkus-resteasy::jar:999-FAKE",
       "origins": [
-        "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT"
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
     },
     {
@@ -117,13 +117,13 @@
             "kotlin",
             "scala"
           ],
-          "artifact": "io.quarkus:quarkus-descriptor-json"
+          "artifact": "io.quarkus:fake-artifact"
         },
-        "built-with-quarkus-core": "999-SNAPSHOT"
+        "built-with-quarkus-core": "999-FAKE"
       },
-      "artifact": "io.quarkus:quarkus-spring-web::jar:999-SNAPSHOT",
+      "artifact": "io.quarkus:quarkus-spring-web::jar:999-FAKE",
       "origins": [
-        "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT"
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
     },
     {
@@ -141,13 +141,13 @@
         "codestart": {
           "name": "kotlin",
           "kind": "core",
-          "artifact": "io.quarkus:quarkus-descriptor-json"
+          "artifact": "io.quarkus:fake-artifact"
         },
-        "built-with-quarkus-core": "999-SNAPSHOT"
+        "built-with-quarkus-core": "999-FAKE"
       },
-      "artifact": "io.quarkus:quarkus-kotlin::jar:999-SNAPSHOT",
+      "artifact": "io.quarkus:quarkus-kotlin::jar:999-FAKE",
       "origins": [
-        "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT"
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
     },
     {
@@ -164,13 +164,13 @@
         "codestart": {
           "name": "scala",
           "kind": "core",
-          "artifact": "io.quarkus:quarkus-descriptor-json"
+          "artifact": "io.quarkus:fake-artifact"
         },
-        "built-with-quarkus-core": "999-SNAPSHOT"
+        "built-with-quarkus-core": "999-FAKE"
       },
-      "artifact": "io.quarkus:quarkus-scala::jar:999-SNAPSHOT",
+      "artifact": "io.quarkus:quarkus-scala::jar:999-FAKE",
       "origins": [
-        "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT"
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
     }
   ],
@@ -305,12 +305,12 @@
         "kotlin-version": "1.4.31",
         "scala-version": "2.12.13",
         "scala-plugin-version": "4.4.0",
-        "quarkus-core-version": "999-SNAPSHOT",
+        "quarkus-core-version": "999-FAKE",
         "maven-plugin-groupId": "io.quarkus",
         "maven-plugin-artifactId": "quarkus-maven-plugin",
-        "maven-plugin-version": "999-SNAPSHOT",
+        "maven-plugin-version": "999-FAKE",
         "gradle-plugin-id": "io.quarkus",
-        "gradle-plugin-version": "999-SNAPSHOT",
+        "gradle-plugin-version": "999-FAKE",
         "supported-maven-versions": "[3.6.2,)",
         "proposed-maven-version": "3.6.3",
         "maven-wrapper-version": "0.7.7",
@@ -318,8 +318,8 @@
       }
     },
     "codestarts-artifacts": [
-      "io.quarkus:quarkus-platform-descriptor-json::jar:999-SNAPSHOT"
+      "io.quarkus:fake-artifact::jar:999-FAKE"
     ]
   },
-  "quarkus-core-version": "999-SNAPSHOT"
+  "quarkus-core-version": "999-FAKE"
 }

@@ -5,6 +5,7 @@ import static org.apache.kafka.common.record.CompressionType.NONE;
 
 import java.lang.invoke.MethodHandle;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.kafka.common.metrics.JmxReporter;
 import org.apache.kafka.common.metrics.KafkaMetric;
@@ -80,6 +81,11 @@ final class RemoveJMXAccess {
 
 @TargetClass(value = JmxReporter.class)
 final class JMXReporting {
+
+    @Substitute
+    public void reconfigure(Map<String, ?> configs) {
+
+    }
 
     @Substitute
     public void init(List<KafkaMetric> metrics) {

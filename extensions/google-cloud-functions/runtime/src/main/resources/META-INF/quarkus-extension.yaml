@@ -11,6 +11,6 @@ metadata:
   status: "preview"
   codestart:
     name: "google-cloud-functions"
-    kind: "singleton-example"
+    kind: "example"
     languages: "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

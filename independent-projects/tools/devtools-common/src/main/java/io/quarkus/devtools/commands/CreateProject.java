@@ -35,6 +35,7 @@ public class CreateProject {
     public static final String NO_BUILDTOOL_WRAPPER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-buildtool-wrapper");
     public static final String NO_CODE = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-code");
     public static final String EXAMPLE = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "example");
+    public static final String EXTRA_CODESTARTS = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "extra-codestarts");
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
@@ -86,6 +87,11 @@ public class CreateProject {
 
     public CreateProject sourceType(SourceType sourceType) {
         setValue(SOURCE_TYPE, sourceType);
+        return this;
+    }
+
+    public CreateProject extraCodestarts(Set<String> extraCodestarts) {
+        setValue(EXTRA_CODESTARTS, extraCodestarts);
         return this;
     }
 

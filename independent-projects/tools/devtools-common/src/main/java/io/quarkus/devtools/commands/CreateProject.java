@@ -33,9 +33,8 @@ public class CreateProject {
 
     public static final String NO_DOCKERFILES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-dockerfiles");
     public static final String NO_BUILDTOOL_WRAPPER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-buildtool-wrapper");
-    public static final String NO_EXAMPLES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-examples");
-    public static final String CODESTARTS = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "codestarts");
-    public static final String OVERRIDE_EXAMPLES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "examples");
+    public static final String NO_CODE = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-code");
+    public static final String EXAMPLE = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "example");
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
@@ -134,23 +133,18 @@ public class CreateProject {
         return this;
     }
 
-    public CreateProject codestarts(Set<String> codestarts) {
-        setValue(CODESTARTS, codestarts);
+    public CreateProject example(String example) {
+        setValue(EXAMPLE, example);
         return this;
     }
 
-    public CreateProject overrideExamples(Set<String> overrideExamples) {
-        setValue(OVERRIDE_EXAMPLES, overrideExamples);
+    public CreateProject noCode(boolean value) {
+        setValue(NO_CODE, value);
         return this;
     }
 
-    public CreateProject noExamples(boolean value) {
-        setValue(NO_EXAMPLES, value);
-        return this;
-    }
-
-    public CreateProject noExamples() {
-        return noExamples(true);
+    public CreateProject noCode() {
+        return noCode(true);
     }
 
     public CreateProject noBuildToolWrapper(boolean value) {

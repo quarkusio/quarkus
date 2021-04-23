@@ -12,7 +12,6 @@ metadata:
   status: "stable"
   codestart:
     name: "resteasy"
-    kind: "example"
     languages:
       - "java"
       - "kotlin"

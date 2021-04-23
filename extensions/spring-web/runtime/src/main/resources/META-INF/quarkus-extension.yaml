@@ -9,7 +9,6 @@ metadata:
   status: "preview"
   codestart:
     name: "spring-web"
-    kind: "example"
     languages:
       - "java"
       - "kotlin"

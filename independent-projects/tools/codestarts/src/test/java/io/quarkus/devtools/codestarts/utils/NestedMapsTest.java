@@ -22,22 +22,6 @@ class NestedMapsTest {
     private static final Map<String, Object> NESTED_MAP_2 = readTestYamlMap("/nested-map-2.yml");
 
     @Test
-    void testGetValue() {
-        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.baz")).hasValue("baz");
-        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.foo")).hasValue("bar");
-        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.baz")).isEmpty();
-        assertThat(NestedMaps.getValue(NESTED_MAP_1, "baa")).isEmpty();
-        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.foo")).hasValue("bar");
-        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.bar")).hasValue("foo");
-        assertThat(NestedMaps.getValue(NESTED_MAP_1, "bar.foo.bar.foo")).hasValue("baz");
-        assertThat((Collection) NestedMaps.getValue(NESTED_MAP_1, "list").get()).containsExactly("foo", "bar");
-        assertThat(NestedMaps.getValue(NESTED_MAP_1, "bar.foo.bar")).hasValueSatisfying(v -> {
-            assertThat(v).isInstanceOf(Map.class);
-            assertThat((Map) v).hasFieldOrPropertyWithValue("foo", "baz");
-        });
-    }
-
-    @Test
     void testDeepMerge() {
         final HashMap<String, Object> target = new HashMap<>();
 
@@ -54,10 +38,30 @@ class NestedMapsTest {
         checkTargetMap(target);
     }
 
+    @Test
+    void testGetValue() {
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.baz")).hasValue("baz");
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.int")).hasValue(1);
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bool")).hasValue(false);
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.foo")).hasValue("bar");
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.baz")).isEmpty();
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "baa")).isEmpty();
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.foo")).hasValue("bar");
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.bar")).hasValue("foo");
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "bar.foo.bar.foo")).hasValue("baz");
+        assertThat((Collection) NestedMaps.getValue(NESTED_MAP_1, "list").get()).containsExactly("foo", "bar");
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "bar.foo.bar")).hasValueSatisfying(v -> {
+            assertThat(v).isInstanceOf(Map.class);
+            assertThat((Map) v).hasFieldOrPropertyWithValue("foo", "baz");
+        });
+    }
+
     private void checkTargetMap(Map<String, Object> target) {
         assertThat(NestedMaps.getValue(target, "foo.baz")).hasValue("baz");
         assertThat(NestedMaps.getValue(target, "foo.foo")).hasValue("bar");
         assertThat(NestedMaps.getValue(target, "foo.bar")).hasValue("foo");
+        assertThat(NestedMaps.getValue(target, "foo.int")).hasValue(1);
+        assertThat(NestedMaps.getValue(target, "foo.bool")).hasValue(false);
         assertThat(NestedMaps.getValue(target, "foo.bar.baz")).isEmpty();
         assertThat(NestedMaps.getValue(target, "baz")).hasValue("bar");
 
@@ -73,6 +77,8 @@ class NestedMapsTest {
         data.put("foo.baz", "baz");
         data.put("foo.foo", "bar");
         data.put("foo.bar", "foo");
+        data.put("foo.int", 1);
+        data.put("foo.bool", false);
         data.put("baz", "bar");
         data.put("bar.foo.bar.foo", "bar");
         data.put("bar.foo.bar.baz", "foo");

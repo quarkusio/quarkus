@@ -1,12 +1,12 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
+import static io.quarkus.devtools.codestarts.quarkus.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.ArtifactKey;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
+class QuarkusCodestartCatalogTest {
 
     private final Path projectPath = Paths.get("target/quarkus-codestart-catalog-test");
 
@@ -32,15 +32,10 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .extracting(Codestart::getImplementedLanguages)
                 .allSatisfy(s -> assertThat(s.isEmpty() || s.size() == 3).isTrue());
 
-        assertThat(catalog.getCodestarts()).filteredOn("ref", "commandmode")
+        assertThat(catalog.getCodestarts()).filteredOn("ref", "resteasy-reactive")
                 .extracting(Codestart::getImplementedLanguages)
                 .hasSize(1)
-                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin"));
-
-        assertThat(catalog.getCodestarts()).filteredOn("ref", "resteasy-qute")
-                .extracting(Codestart::getImplementedLanguages)
-                .hasSize(1)
-                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin"));
+                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin", "scala"));
 
         assertThat(catalog.getCodestarts()).filteredOn("ref", "resteasy")
                 .extracting(Codestart::getImplementedLanguages)
@@ -51,7 +46,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     @Test
     void createProjectTestEmpty() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .noExamples()
+                .noCode()
                 .noBuildToolWrapper()
                 .noDockerfiles()
                 .build();
@@ -72,7 +67,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     @Test
     void createProjectTestNoExample() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .noExamples()
+                .noCode()
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.PROJECT)).extracting(Codestart::getName)
@@ -141,26 +136,11 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .containsExactlyInAnyOrder(
                         "dockerfiles",
                         "maven-wrapper",
-                        "resteasy-example");
-    }
-
-    @Test
-    void prepareProjectTestCommandMode() throws IOException {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addCodestart("commandmode")
-                .build();
-        final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getBaseCodestarts()).extracting(Codestart::getName)
-                .contains("config-properties");
-        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
-                .containsExactlyInAnyOrder(
-                        "dockerfiles",
-                        "maven-wrapper",
-                        "commandmode-example");
+                        "resteasy-codestart");
     }
 
     private QuarkusCodestartCatalog getCatalog() throws IOException {
-        return QuarkusCodestartCatalog.fromExtensionsCatalog(getExtensionsCatalog(), getCodestartsResourceLoaders());
+        return FAKE_QUARKUS_CODESTART_CATALOG;
     }
 
 }

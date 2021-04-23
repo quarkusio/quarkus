@@ -2,25 +2,28 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
 import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
+    private static final List<AppContent> FULL_CONTENT = Arrays.asList(AppContent.values());
+
     Collection<ArtifactCoords> extensions = new ArrayList<>();
-    Set<String> overrideExamples = new HashSet<>();
-    boolean noExamples;
-    boolean noDockerfiles;
-    boolean noBuildToolWrapper;
+    Set<AppContent> appContent = new HashSet<>(FULL_CONTENT);
+    String example;
     BuildTool buildTool = BuildTool.MAVEN;
 
     QuarkusCodestartProjectInputBuilder() {
@@ -41,13 +44,8 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
         return this.addExtension(Extensions.toCoords(extension, null));
     }
 
-    public QuarkusCodestartProjectInputBuilder addOverrideExamples(Collection<String> overrideExamples) {
-        this.overrideExamples.addAll(overrideExamples);
-        return this;
-    }
-
-    public QuarkusCodestartProjectInputBuilder addExample(String overrideExample) {
-        this.overrideExamples.add(overrideExample);
+    public QuarkusCodestartProjectInputBuilder example(String example) {
+        this.example = example;
         return this;
     }
 
@@ -87,12 +85,16 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
         return this;
     }
 
-    public QuarkusCodestartProjectInputBuilder noExamples() {
-        return this.noExamples(true);
+    public QuarkusCodestartProjectInputBuilder noCode() {
+        return this.noCode(true);
     }
 
-    public QuarkusCodestartProjectInputBuilder noExamples(boolean noExamples) {
-        this.noExamples = noExamples;
+    public QuarkusCodestartProjectInputBuilder noCode(boolean noCode) {
+        if (noCode) {
+            appContent.remove(AppContent.CODE);
+        } else {
+            appContent.add(AppContent.CODE);
+        }
         return this;
     }
 
@@ -101,7 +103,11 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     }
 
     public QuarkusCodestartProjectInputBuilder noDockerfiles(boolean noDockerfiles) {
-        this.noDockerfiles = noDockerfiles;
+        if (noDockerfiles) {
+            appContent.remove(AppContent.DOCKERFILES);
+        } else {
+            appContent.add(AppContent.DOCKERFILES);
+        }
         return this;
     }
 
@@ -110,7 +116,11 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     }
 
     public QuarkusCodestartProjectInputBuilder noBuildToolWrapper(boolean noBuildToolWrapper) {
-        this.noBuildToolWrapper = noBuildToolWrapper;
+        if (noBuildToolWrapper) {
+            appContent.remove(AppContent.BUILD_TOOL_WRAPPER);
+        } else {
+            appContent.add(AppContent.BUILD_TOOL_WRAPPER);
+        }
         return this;
     }
 

@@ -12,7 +12,6 @@ metadata:
   status: "experimental"
   codestart:
     name: "resteasy-reactive"
-    kind: "example"
     languages:
       - "java"
       - "kotlin"

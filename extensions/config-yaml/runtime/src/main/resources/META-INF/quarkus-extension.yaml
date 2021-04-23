@@ -10,7 +10,6 @@ metadata:
   guide: "https://quarkus.io/guides/config#yaml"
   codestart:
     name: "config-yaml"
-    kind: "example"
     languages:
       - "java"
       - "kotlin"

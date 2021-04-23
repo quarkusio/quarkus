@@ -14,12 +14,13 @@ public class ConfigYamlCodestartTest {
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
             .codestarts("config-yaml")
             .languages(JAVA, KOTLIN)
-            .skipGenerateRealDataProject()
             .build();
 
     @Test
     void testContent() throws Throwable {
-        codestartTest.checkGeneratedSource("org.acme.config.ConfigResource");
+        codestartTest.checkGeneratedSource("org.acme.GreetingConfig");
         codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/application.yml");
+        //codestartTest.buildAllProjects();
     }
+
 }

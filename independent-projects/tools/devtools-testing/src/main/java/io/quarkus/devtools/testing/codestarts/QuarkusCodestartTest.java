@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,10 +42,12 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
 
     private final Set<String> codestarts;
     private final Set<Language> languages;
+    private final Map<String, Object> data;
     private final AtomicReference<ExtensionContext> currentTestContext = new AtomicReference<>();
     private final BuildTool buildTool;
-    private final boolean skipGenerateRealDataProject;
-    private final boolean skipGenerateMockedDataProject;
+    private final Set<Language> hasGeneratedProjectsWithMockedData = new HashSet<>();
+    private final Set<Language> hasGeneratedProjectsWithRealData = new HashSet<>();
+    private final boolean enableRegistryClient;
     private Path targetDir;
     private ExtensionCatalog extensionCatalog;
     private QuarkusCodestartCatalog quarkusCodestartCatalog;
@@ -53,8 +56,10 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
         this.codestarts = builder.codestarts;
         this.languages = builder.languages;
         this.buildTool = builder.buildTool;
-        skipGenerateRealDataProject = builder.skipGenerateRealDataProject;
-        skipGenerateMockedDataProject = builder.skipGenerateMockedDataProject;
+        this.quarkusCodestartCatalog = builder.quarkusCodestartCatalog;
+        this.extensionCatalog = builder.extensionCatalog;
+        this.enableRegistryClient = builder.extensionCatalog == null;
+        this.data = builder.data;
     }
 
     public static QuarkusCodestartTestBuilder builder() {
@@ -63,17 +68,11 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
-        enableRegistryClientTestConfig();
+        if (enableRegistryClient) {
+            enableRegistryClientTestConfig();
+        }
         targetDir = Paths.get("target/quarkus-codestart-test/" + getTestId());
         SnapshotTesting.deleteTestDirectory(targetDir.toFile());
-        for (Language language : languages) {
-            if (!skipGenerateMockedDataProject) {
-                generateMockedDataProject(language);
-            }
-            if (!skipGenerateRealDataProject) {
-                generateRealDataProject(language);
-            }
-        }
     }
 
     private String getTestId() {
@@ -99,22 +98,28 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
         return extensionCatalog;
     }
 
-    private void generateRealDataProject(Language language) throws IOException {
-        generateProject(getProjectWithRealDataDir(language), language,
-                getRealTestInputData(getExtensionsCatalog(), Collections.emptyMap()));
+    private void generateRealDataProjectIfNeeded(Path path, Language language) throws IOException {
+        if (!hasGeneratedProjectsWithRealData.contains(language)) {
+            generateProject(path, language,
+                    getRealTestInputData(getExtensionsCatalog(), Collections.emptyMap()));
+        }
+        hasGeneratedProjectsWithRealData.add(language);
     }
 
-    private void generateMockedDataProject(Language language) throws IOException {
-        generateProject(getProjectWithMockedDataDir(language), language, getMockedTestInputData(Collections.emptyMap()));
+    private void generateMockedDataProjectIfNeeded(Path path, Language language) throws IOException {
+        if (!hasGeneratedProjectsWithMockedData.contains(language)) {
+            generateProject(path, language, getMockedTestInputData(Collections.emptyMap()));
+        }
+        hasGeneratedProjectsWithMockedData.add(language);
     }
 
-    public void buildAllProjects() {
+    public void buildAllProjects() throws IOException {
         for (Language language : languages) {
             buildProject(language);
         }
     }
 
-    public void buildProject(Language language) {
+    public void buildProject(Language language) throws IOException {
         final int exitCode = WrapperRunner.run(getProjectWithRealDataDir(language));
         Assertions.assertThat(exitCode).as("Run project return status is zero").isZero();
     }
@@ -181,22 +186,29 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
                 .buildTool(buildTool)
                 .addCodestarts(codestarts)
                 .addData(inputData)
+                .addData(data)
                 .putData(PROJECT_PACKAGE_NAME, DEFAULT_PACKAGE_FOR_TESTING)
                 .build();
         getQuarkusCodestartCatalog().createProject(input).generate(projectDir);
     }
 
-    private Path getProjectWithRealDataDir(Language language) {
-        return targetDir.resolve("real-data").resolve(language.key());
+    private Path getProjectWithRealDataDir(Language language) throws IOException {
+        final Path dir = targetDir.resolve("real-data").resolve(language.key());
+        generateRealDataProjectIfNeeded(dir, language);
+        return dir;
     }
 
-    private Path getProjectWithMockedDataDir(Language language) {
-        return targetDir.resolve("mocked-data").resolve(language.key());
+    private Path getProjectWithMockedDataDir(Language language) throws IOException {
+        final Path dir = targetDir.resolve("mocked-data").resolve(language.key());
+        generateMockedDataProjectIfNeeded(dir, language);
+        return dir;
     }
 
     @Override
     public void afterAll(ExtensionContext extensionContext) throws Exception {
-        disableRegistryClientTestConfig();
+        if (enableRegistryClient) {
+            disableRegistryClientTestConfig();
+        }
     }
 
     protected List<ResourceLoader> getCodestartsResourceLoaders() {

@@ -1,4 +1,4 @@
-        <div class="example-code">
+        <div class="provided-code">
             <h3>{title}</h3>
             <p>{description}</p>
             {#if path}<p><code>@Path: <a href="{path}" class="path-link" target="_blank">{path}</a></code></p>{/if}

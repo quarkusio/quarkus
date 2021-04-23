@@ -27,12 +27,12 @@ public class Create extends BaseSubCommand implements Callable<Integer> {
     String version = "1.0.0-SNAPSHOT";
 
     @CommandLine.Option(names = { "-0",
-            "--no-examples" }, order = 4, description = "Generate without example code.")
-    boolean noExamples = false;
+            "--no-code" }, order = 4, description = "Generate an empty Quarkus project.")
+    boolean noCode = false;
 
     @CommandLine.Option(names = { "-x",
-            "--examples" }, order = 4, description = "Choose which example(s) you want in the generated Quarkus application.")
-    Set<String> examples;
+            "--example" }, order = 4, description = "Choose a specific example for the generated Quarkus application.")
+    String example;
 
     @CommandLine.ArgGroup()
     TargetBuildTool targetBuildTool = new TargetBuildTool();
@@ -116,9 +116,9 @@ public class Create extends BaseSubCommand implements Callable<Integer> {
                     .artifactId(artifactId)
                     .version(version)
                     .sourceType(sourceType)
-                    .overrideExamples(examples)
+                    .example(example)
                     .extensions(extensions)
-                    .noExamples(noExamples)
+                    .noCode(noCode)
                     .execute().isSuccess();
 
             if (status) {

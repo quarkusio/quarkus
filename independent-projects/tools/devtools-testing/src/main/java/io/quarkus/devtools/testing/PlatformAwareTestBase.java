@@ -6,23 +6,15 @@ import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.util.List;
 import java.util.Properties;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class PlatformAwareTestBase {
 
+    @RegisterExtension
+    static final RegistryClientTest registryClientTest = new RegistryClientTest();
+
     private ExtensionCatalog catalog;
     private Properties quarkusProps;
-
-    @BeforeAll
-    static void enableDevToolsTestConfig() {
-        RegistryClientTestHelper.enableRegistryClientTestConfig();
-    }
-
-    @AfterAll
-    static void disableDevToolsTestConfig() {
-        RegistryClientTestHelper.disableRegistryClientTestConfig();
-    }
 
     protected List<ResourceLoader> getCodestartsResourceLoaders() {
         return QuarkusProjectHelper.getCodestartResourceLoaders(getExtensionsCatalog());

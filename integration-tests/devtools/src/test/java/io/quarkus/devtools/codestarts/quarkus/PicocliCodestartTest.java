@@ -5,6 +5,7 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Lan
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devtools.project.BuildTool;
@@ -34,7 +35,11 @@ public class PicocliCodestartTest {
 
         codestartGradleTest.assertThatGeneratedFile(JAVA, "README.md")
                 .satisfies(checkContains("./gradlew quarkusDev --quarkus-args='Quarky'"));
+    }
 
-        //codestartTest.buildAllProjects();
+    @Test
+    @EnabledIfSystemProperty(named = "build-projects", matches = "true")
+    void buildAllProjectsForLocalUse() throws Throwable {
+        codestartTest.buildAllProjects();
     }
 }

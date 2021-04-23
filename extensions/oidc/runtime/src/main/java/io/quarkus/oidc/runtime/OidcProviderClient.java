@@ -113,7 +113,7 @@ public class OidcProviderClient {
         Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(formBody))
                 .onFailure(ConnectException.class)
                 .retry()
-                .atMost(3);
+                .atMost(oidcConfig.connectionRetryCount).onFailure().transform(t -> t.getCause());
         return response.onItem();
     }
 

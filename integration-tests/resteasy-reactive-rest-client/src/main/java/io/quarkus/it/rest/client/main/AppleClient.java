@@ -1,4 +1,4 @@
-package io.quarkus.it.rest.client;
+package io.quarkus.it.rest.client.main;
 
 import java.util.concurrent.CompletionStage;
 
@@ -15,7 +15,7 @@ import io.smallrye.mutiny.Uni;
 @Path("")
 @RegisterProvider(DefaultCtorTestFilter.class)
 @RegisterProvider(NonDefaultCtorTestFilter.class)
-public interface SimpleClient {
+public interface AppleClient {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)

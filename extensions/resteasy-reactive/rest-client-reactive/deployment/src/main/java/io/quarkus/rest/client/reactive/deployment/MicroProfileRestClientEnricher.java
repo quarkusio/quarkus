@@ -4,8 +4,6 @@ import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
-import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
-import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static org.jboss.resteasy.reactive.common.processor.HashUtil.sha1;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
@@ -43,7 +41,6 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -56,7 +53,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
 import io.quarkus.rest.client.reactive.HeaderFiller;
-import io.quarkus.rest.client.reactive.runtime.BeanGrabber;
 import io.quarkus.rest.client.reactive.runtime.MicroProfileRestClientRequestFilter;
 import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import io.quarkus.runtime.util.HashUtil;
@@ -90,16 +86,6 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     @Override
     public void forClass(MethodCreator constructor, AssignableResultHandle webTargetBase,
             ClassInfo interfaceClass, IndexView index) {
-
-        AnnotationInstance annotation = interfaceClass.classAnnotation(REGISTER_PROVIDER);
-        AnnotationInstance groupAnnotation = interfaceClass.classAnnotation(REGISTER_PROVIDERS);
-
-        if (annotation != null) {
-            addProvider(constructor, webTargetBase, index, annotation);
-        }
-        for (AnnotationInstance annotationInstance : extractAnnotations(groupAnnotation)) {
-            addProvider(constructor, webTargetBase, index, annotationInstance);
-        }
 
         ResultHandle clientHeadersFactory = null;
 
@@ -493,54 +479,14 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         return EMPTY_ANNOTATION_INSTANCES;
     }
 
-    private void addProvider(MethodCreator ctor, AssignableResultHandle target, IndexView index,
-            AnnotationInstance registerProvider) {
-        // if a registered provider is a CDI bean, it has to be reused
-        // take the name of the provider class from the annotation:
-        String providerClass = registerProvider.value().asString();
-
-        // get bean, or null, with BeanGrabber.getBeanIfDefined(providerClass)
-        ResultHandle providerBean = ctor.invokeStaticMethod(
-                MethodDescriptor.ofMethod(BeanGrabber.class, "getBeanIfDefined", Object.class, Class.class),
-                ctor.loadClass(providerClass));
-
-        // if bean != null, register the bean
-        BranchResult branchResult = ctor.ifNotNull(providerBean);
-        BytecodeCreator beanProviderAvailable = branchResult.trueBranch();
-
-        ResultHandle alteredTarget = beanProviderAvailable.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class,
-                        int.class),
-                target, providerBean,
-                beanProviderAvailable.load(registerProvider.valueWithDefault(index, "priority").asInt()));
-        beanProviderAvailable.assign(target, alteredTarget);
-
-        // else, create a new instance of the provider class
-        ClassInfo providerClassInfo = index.getClassByName(DotName.createSimple(providerClass));
-        BytecodeCreator beanProviderNotAvailable = branchResult.falseBranch();
-        if ((providerClassInfo != null) && providerClassInfo.hasNoArgsConstructor()) { // if the filter has a no-args constructor, use it
-            ResultHandle provider = beanProviderNotAvailable.newInstance(MethodDescriptor.ofConstructor(providerClass));
-            alteredTarget = beanProviderNotAvailable.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class,
-                            int.class),
-                    target, provider,
-                    beanProviderNotAvailable.load(registerProvider.valueWithDefault(index, "priority").asInt()));
-            beanProviderNotAvailable.assign(target, alteredTarget);
-        } else { // the filter does not have a no-args constructor, so we can do nothing but fail
-            beanProviderNotAvailable.throwException(IllegalStateException.class,
-                    "Provider " + providerClass + " must either be a CDI bean or have a no-args constructor");
-        }
-
-    }
-
     /**
      * ClientHeaderParam annotations can be defined on a JAX-RS interface or a sub-client (sub-resource).
      * If we're filling headers for a sub-client, we need to know the defining class of the ClientHeaderParam
      * to properly resolve default methods of the "root" client
      */
     private static class HeaderData {
-        private AnnotationInstance annotation;
-        private ClassInfo definingClass;
+        private final AnnotationInstance annotation;
+        private final ClassInfo definingClass;
 
         public HeaderData(AnnotationInstance annotation, ClassInfo definingClass) {
             this.annotation = annotation;

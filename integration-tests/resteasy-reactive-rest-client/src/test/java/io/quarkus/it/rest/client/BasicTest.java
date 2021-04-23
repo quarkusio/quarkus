@@ -19,10 +19,12 @@ public class BasicTest {
 
     @TestHTTPResource("/apples")
     String appleUrl;
+    @TestHTTPResource()
+    String baseUrl;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
-    public void shouldWork() {
+    void shouldWork() {
         List<Map> results = RestAssured.with().body(appleUrl).post("/call-client")
                 .then()
                 .statusCode(200)
@@ -32,6 +34,20 @@ public class BasicTest {
             assertThat(m).containsOnlyKeys("cultivar");
         });
         Map<Object, Long> valueByCount = results.stream().collect(Collectors.groupingBy(m -> m.get("cultivar"), counting()));
-        assertThat(valueByCount).containsOnly(entry("cortland", 3L), entry("cortland2", 3L), entry("cortland3", 3L));
+        assertThat(valueByCount).containsOnly(entry("cortland", 3L), entry("lobo", 3L), entry("golden delicious", 3L));
+    }
+
+    @Test
+    void shouldMapException() {
+        RestAssured.with().body(baseUrl).post("/call-client-with-exception-mapper")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    void shouldMapExceptionCdi() {
+        RestAssured.with().body(baseUrl).post("/call-cdi-client-with-exception-mapper")
+                .then()
+                .statusCode(200);
     }
 }

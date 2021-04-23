@@ -1,5 +1,6 @@
 package io.quarkus.rest.client.reactive.deployment;
 
+import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
@@ -11,13 +12,16 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import javax.enterprise.context.SessionScoped;
 import javax.enterprise.inject.Typed;
+import javax.inject.Singleton;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.Config;
@@ -40,6 +44,7 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
@@ -61,6 +66,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricherBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
+import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
 import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilder;
@@ -68,9 +74,9 @@ import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 
-class ReactiveResteasyMpClientProcessor {
+class RestClientReactiveProcessor {
 
-    private static final Logger log = Logger.getLogger(ReactiveResteasyMpClientProcessor.class);
+    private static final Logger log = Logger.getLogger(RestClientReactiveProcessor.class);
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
     private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
@@ -149,6 +155,67 @@ class ReactiveResteasyMpClientProcessor {
                 }
             }
         }
+    }
+
+    /**
+     * Creates an implementation of `AnnotationRegisteredProviders` class with a constructor that
+     * puts all the providers registered by the @RegisterProvider annotation in a
+     * map using the {@link AnnotationRegisteredProviders#addProviders(String, Map)} method
+     *
+     * @param indexBuildItem index
+     * @param generatedBeans build producer for generated beans
+     */
+    @BuildStep
+    void registerProvidersFromAnnotations(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        String annotationRegisteredProvidersImpl = AnnotationRegisteredProviders.class.getName() + "Implementation";
+        IndexView index = indexBuildItem.getIndex();
+        Map<String, List<AnnotationInstance>> annotationsByClassName = new HashMap<>();
+
+        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDER)) {
+            String targetClass = annotation.target().asClass().name().toString();
+            annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>())
+                    .add(annotation);
+        }
+
+        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
+            String targetClass = annotation.target().asClass().name().toString();
+            annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>())
+                    .addAll(Arrays.asList(annotation.value().asNestedArray()));
+        }
+
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .className(annotationRegisteredProvidersImpl)
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
+                .superClass(AnnotationRegisteredProviders.class)
+                .build()) {
+
+            classCreator.addAnnotation(Singleton.class.getName());
+            MethodCreator constructor = classCreator
+                    .getMethodCreator(MethodDescriptor.ofConstructor(annotationRegisteredProvidersImpl));
+            constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationRegisteredProviders.class),
+                    constructor.getThis());
+
+            for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
+                ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+                for (AnnotationInstance value : annotationsForClass.getValue()) {
+                    String className = value.value().asString();
+                    AnnotationValue priority = value.value("priority");
+
+                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(className),
+                            constructor.load(priority == null ? -1 : priority.asInt()));
+                }
+                constructor.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
+                                Map.class),
+                        constructor.getThis(), constructor.load(annotationsForClass.getKey()), map);
+            }
+
+            constructor.returnValue(null);
+        }
+
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(annotationRegisteredProvidersImpl));
     }
 
     @BuildStep

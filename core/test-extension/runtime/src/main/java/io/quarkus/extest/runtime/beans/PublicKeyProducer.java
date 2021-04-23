@@ -24,7 +24,7 @@ public class PublicKeyProducer {
     }
 
     public void setPublicKey(DSAPublicKey publicKey) {
-        log.infof("setPublicKey, key=%s", publicKey);
+        log.debugf("setPublicKey, key=%s", publicKey);
         this.publicKey = publicKey;
     }
 }

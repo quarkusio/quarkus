@@ -186,7 +186,8 @@ public class VaultITCase {
     @Test
     public void httpclient() {
 
-        String anotherWrappingToken = System.getProperty("vault-test.another-password-kv-v2-wrapping-token");
+        String anotherWrappingToken = ConfigProviderResolver.instance().getConfig()
+                .getValue("vault-test.another-password-kv-v2-wrapping-token", String.class);
         VaultKvSecretV2 unwrap = vaultInternalSystemBackend.unwrap(anotherWrappingToken, VaultKvSecretV2.class);
         assertEquals(VAULT_AUTH_USERPASS_PASSWORD, unwrap.data.data.get(USERPASS_WRAPPING_TOKEN_PASSWORD_KEY));
         try {
@@ -197,8 +198,10 @@ public class VaultITCase {
             assertEquals(400, e.getStatus());
         }
 
-        String appRoleRoleId = System.getProperty("vault-test.role-id");
-        String appRoleSecretId = System.getProperty("vault-test.secret-id");
+        String appRoleRoleId = ConfigProviderResolver.instance().getConfig()
+                .getValue("vault-test.role-id", String.class);
+        String appRoleSecretId = ConfigProviderResolver.instance().getConfig()
+                .getValue("vault-test.secret-id", String.class);
         VaultAppRoleAuth vaultAppRoleAuth = vaultInternalAppRoleAuthMethod.login(appRoleRoleId, appRoleSecretId);
         String appRoleClientToken = vaultAppRoleAuth.auth.clientToken;
         assertNotNull(appRoleClientToken);

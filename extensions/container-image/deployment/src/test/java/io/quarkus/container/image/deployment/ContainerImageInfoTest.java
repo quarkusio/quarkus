@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
@@ -105,7 +106,7 @@ public class ContainerImageInfoTest {
     private void whenPublishImageInfo() {
         BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(
                 Collections.singletonList(ContainerImageConfig.class));
-        SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false);
+        SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, LaunchMode.NORMAL);
 
         DefaultValuesConfigurationSource ds = new DefaultValuesConfigurationSource(
                 reader.getBuildTimePatternMap());

@@ -1,8 +1,14 @@
 package io.quarkus.bootstrap.app;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 public interface StartupAction {
+
+    /**
+     * Overrides runtime config.
+     */
+    void overrideConfig(Map<String, String> config);
 
     RunningQuarkusApplication run(String... args) throws Exception;
 

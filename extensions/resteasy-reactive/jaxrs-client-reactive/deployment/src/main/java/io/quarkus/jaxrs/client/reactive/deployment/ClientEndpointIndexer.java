@@ -68,6 +68,7 @@ public class ClientEndpointIndexer
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
                     clazz.getPathParameters());
             clazz.getMethods().addAll(methods);
+
             return MaybeRestClientInterface.success(clazz);
         } catch (Exception e) {
             //kinda bogus, but we just ignore failed interfaces for now
@@ -76,6 +77,17 @@ public class ClientEndpointIndexer
             log.warn("Ignoring interface for creating client proxy" + classInfo.name(), e);
             return MaybeRestClientInterface.failure(e.getMessage());
         }
+    }
+
+    @Override
+    protected void handleClientSubResource(ResourceMethod resourceMethod, MethodInfo method, IndexView index) {
+        ClassInfo subResourceClass = index.getClassByName(method.returnType().name());
+        if (subResourceClass == null) {
+            throw new IllegalStateException("Subresource method returns an invalid type: " + method.returnType().name());
+        }
+
+        List<ResourceMethod> endpoints = createEndpoints(subResourceClass, subResourceClass, new HashSet<>(), new HashSet<>());
+        resourceMethod.setSubResourceMethods(endpoints);
     }
 
     @Override

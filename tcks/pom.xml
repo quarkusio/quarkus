@@ -25,9 +25,7 @@
         <module>microprofile-metrics</module>
         <module>microprofile-reactive-messaging</module>
         <module>microprofile-rest-client</module>
-        <!-- TODO - MP4 - Require Support for Rest Client Reactive update
         <module>microprofile-rest-client-reactive</module>
-        -->
         <module>microprofile-openapi</module>
         <module>microprofile-opentracing</module>
         <module>resteasy-reactive</module>

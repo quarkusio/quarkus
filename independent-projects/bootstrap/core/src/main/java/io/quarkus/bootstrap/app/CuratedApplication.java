@@ -178,6 +178,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             //any of the runtime artifacts, or user classes
             //this will load any deployment artifacts from the parent CL if they are present
             for (AppDependency i : appModel.getFullDeploymentDeps()) {
+                if (configuredClassLoading.reloadableArtifacts.contains(i.getArtifact().getKey())) {
+                    continue;
+                }
                 processCpElement(i.getArtifact(), element -> addCpElement(builder, i.getArtifact(), element));
             }
 
@@ -267,6 +270,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
             for (Path root : i.getArchivePath()) {
                 builder.addElement(ClassPathElement.fromPath(root));
+            }
+        }
+        for (AppDependency dependency : appModel.getUserDependencies()) {
+            if (configuredClassLoading.reloadableArtifacts.contains(dependency.getArtifact().getKey())) {
+                processCpElement(dependency.getArtifact(), element -> addCpElement(builder, dependency.getArtifact(), element));
             }
         }
         return builder.build();

@@ -2,7 +2,6 @@ package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -110,16 +109,14 @@ public class OidcClientRecorder {
         try {
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false);
         } catch (Throwable t) {
+            LOG.debug(t.getMessage());
             String message = String.format("'%s' client configuration is not initialized", oidcClientId);
-            LOG.debug(message);
             return Uni.createFrom().item(new DisabledOidcClient(message));
         }
 
         String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
-
         WebClientOptions options = new WebClientOptions();
 
-        URI authServerUri = URI.create(authServerUriString); // create uri for parse exception
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
@@ -127,9 +124,9 @@ public class OidcClientRecorder {
         Uni<String> tokenRequestUriUni = null;
         if (!oidcConfig.discoveryEnabled) {
             tokenRequestUriUni = Uni.createFrom()
-                    .item(OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.tokenPath));
+                    .item(OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath));
         } else {
-            tokenRequestUriUni = discoverTokenRequestUri(client, authServerUri.toString(), oidcConfig);
+            tokenRequestUriUni = discoverTokenRequestUri(client, authServerUriString.toString(), oidcConfig);
         }
         return tokenRequestUriUni.onItemOrFailure()
                 .transform(new BiFunction<String, Throwable, OidcClient>() {
@@ -137,7 +134,7 @@ public class OidcClientRecorder {
                     @Override
                     public OidcClient apply(String tokenRequestUri, Throwable t) {
                         if (t != null) {
-                            throw toOidcClientException(authServerUri.toString(), t);
+                            throw toOidcClientException(authServerUriString, t);
                         }
 
                         if (tokenRequestUri == null) {
@@ -204,7 +201,8 @@ public class OidcClientRecorder {
         }).onFailure(ConnectException.class)
                 .retry()
                 .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
-                .expireIn(expireInDelay);
+                .expireIn(expireInDelay)
+                .onFailure().transform(t -> t.getCause());
     }
 
     protected static OidcClientException toOidcClientException(String authServerUrlString, Throwable cause) {

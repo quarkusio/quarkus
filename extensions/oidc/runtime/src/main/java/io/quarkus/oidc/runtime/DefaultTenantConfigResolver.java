@@ -75,12 +75,26 @@ public class DefaultTenantConfigResolver {
     }
 
     Uni<TenantConfigContext> resolveContext(RoutingContext context) {
-        Uni<TenantConfigContext> tenantContext = getDynamicTenantContext(context);
-
-        if (tenantContext == null) {
-            tenantContext = Uni.createFrom().item(getStaticTenantContext(context));
+        Uni<TenantConfigContext> uniTenantContext = getDynamicTenantContext(context);
+        if (uniTenantContext != null) {
+            return uniTenantContext;
         }
-        return tenantContext;
+        TenantConfigContext tenantContext = getStaticTenantContext(context);
+        if (tenantContext != null && !tenantContext.ready) {
+
+            // check if it the connection has already been created            
+            TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
+                    .get(tenantContext.oidcConfig.tenantId.get());
+            if (readyTenantContext == null) {
+                LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
+                        tenantContext.oidcConfig.tenantId.get());
+                return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
+            } else {
+                tenantContext = readyTenantContext;
+            }
+        }
+
+        return Uni.createFrom().item(tenantContext);
     }
 
     private TenantConfigContext getStaticTenantContext(RoutingContext context) {
@@ -108,11 +122,6 @@ public class DefaultTenantConfigResolver {
             }
             configContext = tenantConfigBean.getDefaultTenant();
         }
-        if (!configContext.ready) {
-            LOG.debugf("Tenant '%s' is not initialized", tenantId);
-            configContext = null;
-        }
-
         return configContext;
     }
 

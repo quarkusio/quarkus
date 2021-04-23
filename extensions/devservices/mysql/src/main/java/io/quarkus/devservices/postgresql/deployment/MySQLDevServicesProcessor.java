@@ -15,6 +15,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 
 public class MySQLDevServicesProcessor {
 
+    public static final String TAG = "8.0.24";
+
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMysql() {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MYSQL, new DevServicesDatasourceProvider() {
@@ -22,7 +24,7 @@ public class MySQLDevServicesProcessor {
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
                 MySQLContainer container = new MySQLContainer(
-                        DockerImageName.parse(imageName.orElse(MySQLContainer.IMAGE + ":" + MySQLContainer.DEFAULT_TAG))
+                        DockerImageName.parse(imageName.orElse(MySQLContainer.IMAGE + ":" + TAG))
                                 .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.IMAGE)))
                                         .withPassword(password.orElse("quarkus"))
                                         .withUsername(username.orElse("quarkus"))

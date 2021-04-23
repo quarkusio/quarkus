@@ -31,7 +31,7 @@ public class SseEventSourceBuilderImpl extends SseEventSource.Builder {
 
     @Override
     public SseEventSource build() {
-        return new SseEventSourceImpl((WebTargetImpl) endpoint, reconnectDelay, reconnectUnit);
+        return new SseEventSourceImpl((WebTargetImpl) endpoint, endpoint.request(), reconnectDelay, reconnectUnit);
     }
 
 }

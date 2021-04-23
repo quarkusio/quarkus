@@ -158,7 +158,7 @@ public class SseParserTest {
     }
 
     private void testParserWithBytes(List<byte[]> events, List<InboundSseEvent> expectedEvents) {
-        SseEventSourceImpl eventSource = new SseEventSourceImpl(null, 500, TimeUnit.MILLISECONDS);
+        SseEventSourceImpl eventSource = new SseEventSourceImpl(null, null, 500, TimeUnit.MILLISECONDS);
         SseParser parser = eventSource.getSseParser();
         CountDownLatch latch = new CountDownLatch(expectedEvents.size());
         List<InboundSseEvent> receivedEvents = Collections.synchronizedList(new ArrayList<>(expectedEvents.size()));

@@ -1,0 +1,33 @@
+{#include main}
+{#style}
+{/style}
+{#title}Managed Entities{/title}
+{#body}
+
+{#if info:persistence.managedEntities.isEmpty}
+<p>No entities were found.</p>
+{#else}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Class name</th>
+        <th scope="col">Table name</th>
+        <th scope="col">Persistence Unit</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for entity in info:persistence.managedEntities}
+    <tr>
+        <td>{count}.</td>
+        <td>{entity.className}</td>
+        <td>{entity.tableName}</td>
+        <td>{entity.persistenceUnitName}</td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+{/if}
+
+{/body}
+{/include}

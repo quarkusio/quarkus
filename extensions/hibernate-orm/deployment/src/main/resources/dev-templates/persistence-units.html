@@ -1,0 +1,58 @@
+{#include main}
+{#style}
+.ddl-script {
+    background-color: white;
+    padding: 5px;
+}
+{/style}
+{#title}Persistence Units{/title}
+{#body}
+
+{#if info:persistence.persistenceUnits.isEmpty}
+<p>No persistence units found.</p>
+{#else}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Persistence Unit Name</th>
+        <th scope="col">DDL</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for unit in info:persistence.persistenceUnits}
+    <tr>
+        <td>{count}.</td>
+        <td>{unit.name}</td>
+        <td>
+            <p>
+                <b>Create script:</b>
+                <a href="#" onclick="copyToClipboard('create-script-{count}');">
+                    <i class="fa fa-clipboard"></i><span class="badge">Copy</span></a>
+            </p>
+            <pre id="create-script-{count}" class="ddl-script">{info:persistence.createDDLs.get(unit.getName())}</pre>
+        </td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+{/if}
+
+<script>
+<!--
+function copyToClipboard(elementId) {
+    var element = document.getElementById(elementId);
+    var range = document.createRange();
+    range.setStartBefore(element.firstChild);
+    range.setEndAfter(element.lastChild);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.execCommand('copy');
+}
+//-->
+
+</script>
+
+{/body}
+{/include}

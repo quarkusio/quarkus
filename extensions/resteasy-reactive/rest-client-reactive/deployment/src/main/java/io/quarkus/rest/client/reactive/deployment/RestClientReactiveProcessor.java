@@ -11,13 +11,16 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import javax.enterprise.context.SessionScoped;
 import javax.enterprise.inject.Typed;
+import javax.inject.Singleton;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.Config;
@@ -40,6 +43,7 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
@@ -53,6 +57,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -61,16 +66,18 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricherBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
+import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
 import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilder;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
+import io.quarkus.rest.client.reactive.runtime.RestClientRecorder.RegisteredProvider;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 
-class ReactiveResteasyMpClientProcessor {
+class RestClientReactiveProcessor {
 
-    private static final Logger log = Logger.getLogger(ReactiveResteasyMpClientProcessor.class);
+    private static final Logger log = Logger.getLogger(RestClientReactiveProcessor.class);
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
     private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
@@ -149,6 +156,59 @@ class ReactiveResteasyMpClientProcessor {
                 }
             }
         }
+    }
+
+    /**
+     * Creates an implementation of `AnnotationRegisteredProviders` class with a constructor that
+     * puts all the providers registered by the @RegisterProvider annotation in a
+     * map using the {@link AnnotationRegisteredProviders#addProviders(String, Map)} method
+     *
+     * @param indexBuildItem index
+     * @param generatedBeans build producer for generated beans
+     */
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerProvidersFromAnnotations(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            RestClientRecorder recorder, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+
+        IndexView index = indexBuildItem.getIndex();
+        Map<String, List<RegisteredProvider>> annotationsByClassName = new HashMap<>();
+
+        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDER)) {
+            String targetClass = annotation.target().asClass().name().toString();
+            addProviderFromAnnotation(annotationsByClassName, annotation, targetClass, reflectiveClasses);
+        }
+
+        for (AnnotationInstance groupAnnotation : index.getAnnotations(REGISTER_PROVIDERS)) {
+            String targetClass = groupAnnotation.target().asClass().name().toString();
+
+            for (AnnotationInstance annotation : groupAnnotation.value().asNestedArray()) {
+                addProviderFromAnnotation(annotationsByClassName, annotation, targetClass, reflectiveClasses);
+            }
+        }
+
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(AnnotationRegisteredProviders.class)
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .unremovable()
+                .runtimeValue(recorder.registeredProviders(annotationsByClassName));
+        syntheticBeanBuildItemBuildProducer.produce(configurator.done());
+    }
+
+    private void addProviderFromAnnotation(Map<String, List<RegisteredProvider>> annotationsByClassName,
+            AnnotationInstance annotation, String targetClass, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        AnnotationValue priority = annotation.value("priority");
+
+        RegisteredProvider provider = new RegisteredProvider();
+        provider.className = annotation.value().asString();
+        provider.priority = priority == null ? -1 : priority.asInt();
+
+        annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>()).add(provider);
+
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, provider.className));
     }
 
     @BuildStep

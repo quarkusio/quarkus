@@ -1,4 +1,4 @@
-package io.quarkus.it.rest.client;
+package io.quarkus.it.rest.client.main;
 
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7,11 +7,13 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
+import io.quarkus.it.rest.client.main.MyResponseExceptionMapper.MyException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -21,11 +23,26 @@ import io.vertx.ext.web.handler.BodyHandler;
 public class ClientCallingResource {
     private static final ObjectMapper mapper = new JsonMapper();
 
-    private static final String[] RESPONSES = { "cortland", "cortland2", "cortland3" };
+    private static final String[] RESPONSES = { "cortland", "lobo", "golden delicious" };
     private final AtomicInteger count = new AtomicInteger(0);
+
+    @RestClient
+    ClientWithExceptionMapper clientWithExceptionMapper;
 
     void init(@Observes Router router) {
         router.post().handler(BodyHandler.create());
+
+        router.get("/unprocessable").handler(rc -> rc.response().setStatusCode(422).end("the entity was unprocessable"));
+
+        router.post("/call-client-with-exception-mapper").blockingHandler(rc -> {
+            String url = rc.getBody().toString();
+            ClientWithExceptionMapper client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .register(MyResponseExceptionMapper.class)
+                    .build(ClientWithExceptionMapper.class);
+            callGet(rc, client);
+        });
+
+        router.post("/call-cdi-client-with-exception-mapper").blockingHandler(rc -> callGet(rc, clientWithExceptionMapper));
 
         router.post("/apples").handler(rc -> {
             int count = this.count.getAndIncrement();
@@ -35,8 +52,8 @@ public class ClientCallingResource {
 
         router.route("/call-client").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            SimpleClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
-                    .build(SimpleClient.class);
+            AppleClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(AppleClient.class);
             Uni<Apple> apple1 = Uni.createFrom().item(client.swapApple(new Apple("lobo")));
             Uni<Apple> apple2 = Uni.createFrom().completionStage(client.completionSwapApple(new Apple("lobo2")));
             Uni<Apple> apple3 = client.uniSwapApple(new Apple("lobo3"));
@@ -56,10 +73,21 @@ public class ClientCallingResource {
                         } catch (JsonProcessingException e) {
                             fail(rc, e.getMessage());
                         }
-                    }, t -> {
-                        fail(rc, t.getMessage());
-                    });
+                    }, t -> fail(rc, t.getMessage()));
         });
+    }
+
+    private void callGet(RoutingContext rc, ClientWithExceptionMapper client) {
+        try {
+            client.get();
+        } catch (MyException expected) {
+            rc.response().setStatusCode(200).end();
+            return;
+        } catch (Exception unexpected) {
+            rc.response().setStatusCode(500).end("Expected MyException to be thrown, got " + unexpected.getClass());
+            return;
+        }
+        rc.response().setStatusCode(500).end("Expected MyException to be thrown but no exception has been thrown");
     }
 
     private void fail(RoutingContext rc, String message) {

@@ -12,6 +12,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
@@ -32,7 +33,8 @@ public class ClasspathResources {
                 () -> assertCorrectExactFileLocation(),
                 () -> assertInvalidDirectory(),
                 () -> assertCorrectDirectory(),
-                () -> assertMultiRelease()
+                () -> assertMultiRelease(),
+                () -> assertUniqueDirectories()
         );
     }
 
@@ -154,6 +156,22 @@ public class ClasspathResources {
             }
 
 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return errorResult(testType, "exception during resolution of resource");
+        }
+    }
+
+    private String assertUniqueDirectories() {
+        final String testType = "unique-directories";
+        try {
+            Enumeration<URL> resources = this.getClass().getClassLoader().getResources("META-INF/kie.conf");
+            List<URL> resourcesList = Collections.list(resources);
+            // 'META-INF/kie.conf' should be present in 'kie-internal', 'drools-core', 'drools-compiler' and 'drools-model-compiler'
+            if (resourcesList.size() != 4) {
+                return errorResult(testType, "wrong number of directory urls");
+            }
+            return SUCCESS;
         } catch (Exception e) {
             e.printStackTrace();
             return errorResult(testType, "exception during resolution of resource");

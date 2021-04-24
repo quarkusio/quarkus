@@ -36,6 +36,7 @@
         <module>common-jpa-entities</module>
         <module>infinispan-client</module>
         <module>devtools</module>
+        <module>jbang</module>
         <module>gradle</module>
         <module>main</module>
         <module>kafka</module>
@@ -320,4 +321,3 @@
         </profile>
     </profiles>
 </project>
-

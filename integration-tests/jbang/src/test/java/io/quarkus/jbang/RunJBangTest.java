@@ -14,18 +14,18 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
@@ -34,8 +34,6 @@ class RunJBangTest {
     private static final String LATEST_DOWNLOAD_JBANG_ZIP = "https://www.jbang.dev/releases/latest/download/jbang.zip";
     private static Path DEVMODE_SCRIPT;
     private static Path JBANG_DIR = null;
-
-    int port;
 
     /**
      * Downloads latest jbang in static dir and setup JBANG_DIR to be 100% isolated
@@ -52,11 +50,6 @@ class RunJBangTest {
         //copy over files to allow edit
         DEVMODE_SCRIPT = tempdir.resolve("devmode.java");
         Files.copy(new File("target/test-classes/devmode.java").toPath(), DEVMODE_SCRIPT, StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    @BeforeEach
-    void init() {
-        port = TestHelper.getRandomNumber(8000, 9999);
     }
 
     private ProcessExecutor getJBangExecutor(String... args) {
@@ -91,12 +84,11 @@ class RunJBangTest {
     @Test
     void testRunJBangInDevMode() throws Throwable {
 
-        final CountDownLatch listening = new CountDownLatch(1);
+        final CompletableFuture<Integer> listening = new CompletableFuture<>();
         final CountDownLatch devmode = new CountDownLatch(1);
-        String base = "http://localhost:" + port;
 
         StartedProcess exec = getJBangExecutor("-Dquarkus.dev", "-Dq.v=999-SNAPSHOT",
-                "-Dquarkus.http.port=" + port,
+                "-Dquarkus.http.port=0",
                 DEVMODE_SCRIPT.toAbsolutePath().toString())
                         .exitValue(77) // 77 - means we explicitly killed it. Anything else something went wrong
                         .redirectOutput(new LogOutputStream() {
@@ -104,7 +96,14 @@ class RunJBangTest {
                             protected void processLine(String line) {
                                 System.out.println(line);
                                 if (line.contains("Listening on:")) {
-                                    listening.countDown();
+                                    Pattern p = Pattern.compile("http://localhost:(\\d+)");
+                                    Matcher matcher = p.matcher(line);
+                                    if (!matcher.find()) {
+                                        listening.completeExceptionally(
+                                                new RuntimeException("Unable to determine port: " + line));
+                                        return;
+                                    }
+                                    listening.complete(Integer.parseInt(matcher.group(1)));
                                 } else if (line.contains("Profile dev activated")) {
                                     devmode.countDown();
                                 }
@@ -113,10 +112,7 @@ class RunJBangTest {
                         .start();
 
         try {
-            Future<ProcessResult> future = exec.getFuture();
-
-            //wait for listening to show up
-            listening.await(10, TimeUnit.SECONDS);
+            String base = "http://localhost:" + listening.get(10, TimeUnit.SECONDS);
 
             //check quarkus is running and responding
             String result = TestHelper.performRequest(base + "/hello", 200);
@@ -125,16 +121,14 @@ class RunJBangTest {
             //if listening then devmode should also already be there
             assertThatNoException().as("dev mode not activated while running jbang")
                     .isThrownBy(() -> devmode.await(5, TimeUnit.MILLISECONDS));
-        } catch (Throwable t) {
-            exec.getProcess().destroyForcibly();
-            throw t;
-        } finally {
             //kill quarkus process
-            String result = TestHelper.performRequest(base + "/hello/kill", 200);
+            result = TestHelper.performRequest(base + "/hello/kill", 200);
             assertThat(result).isEqualTo("KILLED");
             exec.getFuture().get(10, TimeUnit.SECONDS);
             Assertions.assertEquals(77, exec.getProcess().exitValue());
-
+        } catch (Throwable t) {
+            exec.getProcess().destroyForcibly();
+            throw t;
         }
     }
 

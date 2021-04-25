@@ -30,15 +30,15 @@ your `application.properties`, you can use the `--set-env-vars` option of `gclou
 To deploy a background function that listen to PubSub event, you can use the following `gcloud` command:
 
 ```shell script
-gcloud beta functions deploy quarkus-funqy-pubsub --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
+gcloud functions deploy quarkus-funqy-pubsub --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
   --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish \
-  --runtime=java11 --source=target/deployment
+  --runtime=java11 --source=target/deployment --set-env-vars=QUARKUS_FUNQY_EXPORT=helloPubSubWorld
 ```
 
 You can then invoke your function via `gcloud`:
 
 ```shell script
-gcloud functions call quarkus-example-pubsub --data '{"data":"HelloWorld"}'
+gcloud functions call quarkus-funqy-pubsub --data '{"data":"HelloWorld"}'
 ```
 
 ### Storage event
@@ -46,13 +46,13 @@ gcloud functions call quarkus-example-pubsub --data '{"data":"HelloWorld"}'
 To deploy a background function that listen to Storage event, you can use the following `gcloud` command:
 
 ```shell script
-gcloud beta functions deploy quarkus-funqy-storage --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
+gcloud functions deploy quarkus-funqy-storage --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
   --trigger-resource my_java11_gcs_bucket --trigger-event google.storage.object.finalize \
-  --runtime=java11 --source=target/deployment
+  --runtime=java11 --source=target/deployment --set-env-vars=QUARKUS_FUNQY_EXPORT=helloGCSWorld
 ```
 
 You can then invoke your function via `gcloud`:
 
 ```shell script
-gcloud functions call quarkus-example-storage --data '{"name":"hello.txt"}'
+gcloud functions call quarkus-funqy-storage --data '{"name":"hello.txt"}'
 ```

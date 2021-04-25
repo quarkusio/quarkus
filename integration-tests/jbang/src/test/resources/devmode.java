@@ -2,15 +2,19 @@
 //DEPS io.quarkus:quarkus-resteasy
 //JAVAC_OPTIONS -parameters
 
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Quarkus;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+
+import java.util.function.Consumer;
 
 import static io.quarkus.runtime.LaunchMode.current;
 
@@ -29,15 +33,14 @@ public class devmode {
     @GET
     public String hello() {
         killed = true;
+        ApplicationLifecycleManager.setDefaultExitCodeHandler(new Consumer<Integer>() {
+            @Override
+            public void accept(Integer integer) {
+                System.out.println("Forced exit!");
+                System.exit(integer);
+            }
+        });
         Quarkus.asyncExit(77);
         return "KILLED";
-    }
-
-    void onStop(@Observes ShutdownEvent ev) {
-        if(killed && current().equals(LaunchMode.DEVELOPMENT)) {
-            //force system exit in case of devmode
-            System.out.println("Forced exit!");
-            System.exit(77);
-        }
     }
 }

@@ -15,11 +15,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,7 +89,7 @@ class RunJBangTest {
     }
 
     @Test
-    void testRunJBangInDevMode() throws IOException, InterruptedException, TimeoutException, ExecutionException {
+    void testRunJBangInDevMode() throws Throwable {
 
         final CountDownLatch listening = new CountDownLatch(1);
         final CountDownLatch devmode = new CountDownLatch(1);
@@ -105,7 +105,7 @@ class RunJBangTest {
                                 System.out.println(line);
                                 if (line.contains("Listening on:")) {
                                     listening.countDown();
-                                } else if(line.contains("Profile dev activated")) {
+                                } else if (line.contains("Profile dev activated")) {
                                     devmode.countDown();
                                 }
                             }
@@ -123,18 +123,17 @@ class RunJBangTest {
             assertThat(result).isEqualTo("Hello from Quarkus with jbang.dev");
 
             //if listening then devmode should also already be there
-            assertThatNoException().as("dev mode not activated while running jbang").isThrownBy(() -> devmode.await(5, TimeUnit.MILLISECONDS));
-
-            
-            String output = future.get(5, TimeUnit.SECONDS).outputUTF8();
-
+            assertThatNoException().as("dev mode not activated while running jbang")
+                    .isThrownBy(() -> devmode.await(5, TimeUnit.MILLISECONDS));
+        } catch (Throwable t) {
+            exec.getProcess().destroyForcibly();
+            throw t;
         } finally {
             //kill quarkus process
             String result = TestHelper.performRequest(base + "/hello/kill", 200);
             assertThat(result).isEqualTo("KILLED");
-
-            exec.getProcess().destroyForcibly();
-
+            exec.getFuture().get(10, TimeUnit.SECONDS);
+            Assertions.assertEquals(77, exec.getProcess().exitValue());
 
         }
     }

@@ -27,12 +27,9 @@ public class devmode {
         return "Hello from Quarkus with jbang.dev";
     }
 
-    boolean killed = false;
-
     @Path("/kill")
     @GET
     public String hello() {
-        killed = true;
         ApplicationLifecycleManager.setDefaultExitCodeHandler(new Consumer<Integer>() {
             @Override
             public void accept(Integer integer) {

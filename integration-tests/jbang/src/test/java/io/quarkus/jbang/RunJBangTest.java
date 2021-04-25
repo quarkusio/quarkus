@@ -86,6 +86,7 @@ class RunJBangTest {
 
         final CompletableFuture<Integer> listening = new CompletableFuture<>();
         final CountDownLatch devmode = new CountDownLatch(1);
+        final CountDownLatch replaced = new CountDownLatch(1);
 
         StartedProcess exec = getJBangExecutor("-Dquarkus.dev", "-Dq.v=999-SNAPSHOT",
                 "-Dquarkus.http.port=0",
@@ -106,6 +107,8 @@ class RunJBangTest {
                                     listening.complete(Integer.parseInt(matcher.group(1)));
                                 } else if (line.contains("Profile dev activated")) {
                                     devmode.countDown();
+                                } else if (line.contains("Changed source files detected, recompiling devmode.java")) {
+                                    replaced.countDown();
                                 }
                             }
                         })
@@ -121,6 +124,23 @@ class RunJBangTest {
             //if listening then devmode should also already be there
             assertThatNoException().as("dev mode not activated while running jbang")
                     .isThrownBy(() -> devmode.await(5, TimeUnit.MILLISECONDS));
+
+            String script = Files.readString(DEVMODE_SCRIPT);
+
+            script = script.replace("return \"Hello from Quarkus with jbang.dev\";", "return \"replaced\";");
+
+            Files.writeString(DEVMODE_SCRIPT, script);
+
+            assertThat(Files.readString(DEVMODE_SCRIPT)).contains("return \"replaced\";");
+
+            //check devmode had an affect
+            result = TestHelper.performRequest(base + "/hello", 200);
+
+            assertThatNoException().as("code not replaced by updates")
+                    .isThrownBy(() -> replaced.await(2, TimeUnit.MILLISECONDS));
+
+            assertThat(result).isEqualTo("replaced");
+
             //kill quarkus process
             result = TestHelper.performRequest(base + "/hello/kill", 200);
             assertThat(result).isEqualTo("KILLED");

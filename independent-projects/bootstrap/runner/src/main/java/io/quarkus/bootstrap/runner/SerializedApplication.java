@@ -20,6 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -39,6 +40,9 @@ public class SerializedApplication {
 
     private static final int MAGIC = 0XF0315432;
     private static final int VERSION = 2;
+
+    private static final ClassLoadingResource[] EMPTY_ARRAY = new ClassLoadingResource[0];
+    private static final JarResource SENTINEL = new JarResource(null, Path.of("wqxehxivam"));
 
     private final RunnerClassLoader runnerClassLoader;
     private final String mainClass;
@@ -108,7 +112,7 @@ public class SerializedApplication {
                 throw new RuntimeException("Wrong class path version");
             }
             String mainClass = in.readUTF();
-            Map<String, ClassLoadingResource[]> resourceDirectoryMap = new HashMap<>();
+            ResourceDirectoryTracker resourceDirectoryTracker = new ResourceDirectoryTracker();
             Set<String> parentFirstPackages = new HashSet<>();
             int numPaths = in.readUnsignedShort();
             ClassLoadingResource[] allClassLoadingResources = new ClassLoadingResource[numPaths];
@@ -127,10 +131,10 @@ public class SerializedApplication {
                     String dir = in.readUTF();
                     int j = dir.indexOf('/');
                     while (j >= 0) {
-                        addResourceDir(dir.substring(0, j), resource, resourceDirectoryMap);
+                        resourceDirectoryTracker.addResourceDir(dir.substring(0, j), resource);
                         j = dir.indexOf('/', j + 1);
                     }
-                    addResourceDir(dir, resource, resourceDirectoryMap);
+                    resourceDirectoryTracker.addResourceDir(dir, resource);
                 }
             }
             int packages = in.readUnsignedShort();
@@ -156,25 +160,12 @@ public class SerializedApplication {
                 directlyIndexedResourcesIndexMap.put(resource, matchingResources);
             }
             RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(),
-                    resourceDirectoryMap, parentFirstPackages,
+                    resourceDirectoryTracker.getResult(), parentFirstPackages,
                     nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap);
             for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {
                 classLoadingResource.init(runnerClassLoader);
             }
             return new SerializedApplication(runnerClassLoader, mainClass);
-        }
-    }
-
-    private static void addResourceDir(String dir, JarResource resource,
-            Map<String, ClassLoadingResource[]> resourceDirectoryMap) {
-        ClassLoadingResource[] existing = resourceDirectoryMap.get(dir);
-        if (existing == null) {
-            resourceDirectoryMap.put(dir, new ClassLoadingResource[] { resource });
-        } else {
-            ClassLoadingResource[] newResources = new ClassLoadingResource[existing.length + 1];
-            System.arraycopy(existing, 0, newResources, 0, existing.length);
-            newResources[existing.length] = resource;
-            resourceDirectoryMap.put(dir, newResources);
         }
     }
 
@@ -318,6 +309,60 @@ public class SerializedApplication {
         } else {
             out.writeBoolean(true);
             out.writeUTF(string);
+        }
+    }
+
+    /**
+     * This class is to build up the final directory to Resource map
+     * The idea here is that directories will only be contained by a single resource, so we optimistically
+     * create a single item array when we encounter a directory for the first time.
+     * However, when a resource is added for the same directory, we switch to using a Set to track the resources
+     * of that directory and then at the end use those sets to override to create the final array of resources.
+     * The reason for doing it this way to only create Sets when needed (which is only a fraction of the cases)
+     */
+    private static class ResourceDirectoryTracker {
+        private final Map<String, ClassLoadingResource[]> result = new HashMap<>();
+        private final Map<String, Set<ClassLoadingResource>> overrides = new HashMap<>();
+
+        void addResourceDir(String dir, JarResource resource) {
+            ClassLoadingResource[] existing = result.get(dir);
+            if (existing == null) {
+                // this is the first the dir was ever tracked
+                result.put(dir, new JarResource[] { resource });
+            } else {
+                ClassLoadingResource existingResource = existing[0];
+                if (existingResource.equals(resource)) {
+                    // we don't need to do anything as the resource has already been tracked and an attempt
+                    // to add it again was made
+                } else {
+                    Set<ClassLoadingResource> dirOverrides = overrides.get(dir);
+                    if (dirOverrides == null) {
+                        // we need to create the override set as this is the first time we find a resource for the dir
+                        // that is not the same as the one in the array
+                        dirOverrides = new LinkedHashSet<>(2);
+                        dirOverrides.add(existingResource);
+                        dirOverrides.add(resource);
+                        overrides.put(dir, dirOverrides);
+
+                        //replace the value in the original array with a sentinel in order to allow for quick comparisons
+                        existing[0] = SENTINEL;
+                    } else {
+                        // in this case, overrides has already been created in a previous invocation so all we need to
+                        // do is add the new resource
+                        dirOverrides.add(resource);
+                    }
+                }
+            }
+        }
+
+        Map<String, ClassLoadingResource[]> getResult() {
+            overrides.forEach(new BiConsumer<String, Set<? extends ClassLoadingResource>>() {
+                @Override
+                public void accept(String dir, Set<? extends ClassLoadingResource> jarResources) {
+                    result.put(dir, jarResources.toArray(EMPTY_ARRAY));
+                }
+            });
+            return result;
         }
     }
 

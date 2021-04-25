@@ -19,25 +19,25 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
     }
 
     public static String getConfluentSchemaRegistryUrl() {
-        return "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api/ccompat";
+        return "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/apis/ccompat/v6";
     }
 
     public static String getApicurioSchemaRegistryUrl() {
-        return "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api";
+        return "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/apis/registry/v2";
     }
 
     @Override
     public Map<String, String> start() {
         kafka.start();
-        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:1.2.2.Final")
+        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.0.0.Final")
                 .withExposedPorts(8080)
                 .withEnv("QUARKUS_PROFILE", "prod");
         registry.start();
         Map<String, String> properties = new HashMap<>();
         properties.put("schema.url.confluent",
-                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api/ccompat");
+                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/apis/ccompat/v6");
         properties.put("schema.url.apicurio",
-                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api");
+                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/apis/registry/v2");
         properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());
         return properties;
     }

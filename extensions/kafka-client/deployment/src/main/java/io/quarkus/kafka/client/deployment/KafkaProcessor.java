@@ -52,12 +52,15 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -104,6 +107,11 @@ public class KafkaProcessor {
     static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
 
     @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.KAFKA_CLIENT);
+    }
+
+    @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<IndexDependencyBuildItem> indexDependency) {
         // This is needed for SASL authentication
@@ -124,7 +132,8 @@ public class KafkaProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
             Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> beans,
-            BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
+            BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig,
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         final Set<DotName> toRegister = new HashSet<>();
 
         collectImplementors(toRegister, indexBuildItem, Serializer.class);
@@ -177,7 +186,7 @@ public class KafkaProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.nio.DirectByteBuffer"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "sun.misc.Cleaner"));
 
-        handleAvro(reflectiveClass, proxies, serviceProviders);
+        handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport);
         handleOpenTracing(reflectiveClass, capabilities);
         handleStrimziOAuth(reflectiveClass);
         if (config.snappyEnabled) {
@@ -259,8 +268,11 @@ public class KafkaProcessor {
 
     private void handleAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
-            BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+            BuildProducer<ServiceProviderBuildItem> serviceProviders,
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         // Avro - for both Confluent and Apicurio
+
+        // --- Confluent ---
         try {
             Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer", false,
                     Thread.currentThread().getContextClassLoader());
@@ -310,6 +322,8 @@ public class KafkaProcessor {
         } catch (ClassNotFoundException e) {
             // ignore, Confluent schema registry client not in the classpath
         }
+
+        // --- Apicurio Registry 1.x ---
         try {
             Class.forName("io.apicurio.registry.utils.serde.AvroKafkaDeserializer", false,
                     Thread.currentThread().getContextClassLoader());
@@ -319,6 +333,7 @@ public class KafkaProcessor {
                             "io.apicurio.registry.utils.serde.AvroKafkaSerializer"));
 
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
+                    "io.apicurio.registry.utils.serde.avro.DefaultAvroDatumProvider",
                     "io.apicurio.registry.utils.serde.avro.ReflectAvroDatumProvider",
                     "io.apicurio.registry.utils.serde.strategy.AutoRegisterIdStrategy",
                     "io.apicurio.registry.utils.serde.strategy.CachedSchemaIdStrategy",
@@ -333,6 +348,38 @@ public class KafkaProcessor {
             // Apicurio uses dynamic proxies, register them
             proxies.produce(new NativeImageProxyDefinitionBuildItem("io.apicurio.registry.client.RegistryService",
                     "java.lang.AutoCloseable"));
+
+        } catch (ClassNotFoundException e) {
+            //ignore, Apicurio Avro is not in the classpath
+        }
+
+        // --- Apicurio Registry 2.x ---
+        try {
+            Class.forName("io.apicurio.registry.serde.avro.AvroKafkaDeserializer", false,
+                    Thread.currentThread().getContextClassLoader());
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(true, true, false,
+                            "io.apicurio.registry.serde.avro.AvroKafkaDeserializer",
+                            "io.apicurio.registry.serde.avro.AvroKafkaSerializer"));
+
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
+                    "io.apicurio.registry.serde.strategy.SimpleTopicIdStrategy",
+                    "io.apicurio.registry.serde.strategy.TopicIdStrategy",
+                    "io.apicurio.registry.serde.avro.DefaultAvroDatumProvider",
+                    "io.apicurio.registry.serde.avro.ReflectAvroDatumProvider",
+                    "io.apicurio.registry.serde.avro.strategy.RecordIdStrategy",
+                    "io.apicurio.registry.serde.avro.strategy.TopicRecordIdStrategy"));
+
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
+                    "io.apicurio.registry.serde.DefaultSchemaResolver",
+                    "io.apicurio.registry.serde.DefaultIdHandler",
+                    "io.apicurio.registry.serde.Legacy4ByteIdHandler",
+                    "io.apicurio.registry.serde.DefaultSchemaResolver",
+                    "io.apicurio.registry.serde.fallback.DefaultFallbackArtifactProvider",
+                    "io.apicurio.registry.serde.headers.DefaultHeadersHandler"));
+
+            // Apicurio Registry 2.x uses the JDK 11 HTTP client, which unconditionally requires SSL
+            sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KAFKA_CLIENT));
 
         } catch (ClassNotFoundException e) {
             //ignore, Apicurio Avro is not in the classpath

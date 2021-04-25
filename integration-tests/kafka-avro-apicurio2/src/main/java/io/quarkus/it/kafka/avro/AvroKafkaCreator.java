@@ -14,13 +14,10 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import io.apicurio.registry.utils.serde.AbstractKafkaSerDe;
-import io.apicurio.registry.utils.serde.AbstractKafkaSerializer;
-import io.apicurio.registry.utils.serde.AvroKafkaDeserializer;
-import io.apicurio.registry.utils.serde.AvroKafkaSerializer;
-import io.apicurio.registry.utils.serde.avro.AvroDatumProvider;
-import io.apicurio.registry.utils.serde.avro.DefaultAvroDatumProvider;
-import io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy;
+import io.apicurio.registry.serde.SerdeConfig;
+import io.apicurio.registry.serde.avro.AvroKafkaDeserializer;
+import io.apicurio.registry.serde.avro.AvroKafkaSerdeConfig;
+import io.apicurio.registry.serde.avro.AvroKafkaSerializer;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
@@ -107,12 +104,8 @@ public class AvroKafkaCreator {
     public static Properties getApicurioConsumerProperties(String bootstrap, String apicurio, String groupdIdConfig) {
         Properties props = getGenericConsumerProperties(bootstrap, groupdIdConfig);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());
-        props.put(AbstractKafkaSerDe.REGISTRY_URL_CONFIG_PARAM, apicurio);
-        // this is a workaround for Apicurio Registry 1.2.2.Final bug: if `avro-datum-provider`
-        // isn't set to `DefaultAvroDatumProvider` explicitly, `use-specific-avro-reader` isn't processed
-        props.put(AvroDatumProvider.REGISTRY_AVRO_DATUM_PROVIDER_CONFIG_PARAM,
-                DefaultAvroDatumProvider.class.getName());
-        props.put(AvroDatumProvider.REGISTRY_USE_SPECIFIC_AVRO_READER_CONFIG_PARAM, true);
+        props.put(SerdeConfig.REGISTRY_URL, apicurio);
+        props.put(AvroKafkaSerdeConfig.USE_SPECIFIC_AVRO_READER, true);
         return props;
     }
 
@@ -138,9 +131,8 @@ public class AvroKafkaCreator {
         Properties props = getGenericProducerProperties(bootstrap, clientId);
         props.put(ProducerConfig.ACKS_CONFIG, "all");
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, AvroKafkaSerializer.class.getName());
-        props.put(AbstractKafkaSerDe.REGISTRY_URL_CONFIG_PARAM, apicurio);
-        props.put(AbstractKafkaSerializer.REGISTRY_GLOBAL_ID_STRATEGY_CONFIG_PARAM,
-                GetOrCreateIdStrategy.class.getName());
+        props.put(SerdeConfig.REGISTRY_URL, apicurio);
+        props.put(SerdeConfig.AUTO_REGISTER_ARTIFACT, true);
         return props;
     }
 

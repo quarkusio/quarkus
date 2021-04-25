@@ -53,6 +53,7 @@ public enum Feature {
     JDBC_ORACLE,
     JGIT,
     JSCH,
+    KAFKA_CLIENT,
     KAFKA_STREAMS,
     KEYCLOAK_AUTHORIZATION,
     KOTLIN,

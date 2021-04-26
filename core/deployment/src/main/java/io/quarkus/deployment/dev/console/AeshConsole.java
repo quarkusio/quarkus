@@ -15,6 +15,7 @@ import io.quarkus.dev.console.QuarkusConsole;
 public class AeshConsole extends QuarkusConsole {
 
     private final Connection connection;
+    private final boolean inputSupport;
     private Size size;
     private Attributes attributes;
 
@@ -39,7 +40,8 @@ public class AeshConsole extends QuarkusConsole {
         }
     };
 
-    public AeshConsole(Connection connection) {
+    public AeshConsole(Connection connection, boolean inputSupport) {
+        this.inputSupport = inputSupport;
         INSTANCE = this;
         this.connection = connection;
         connection.openNonBlocking();
@@ -86,6 +88,9 @@ public class AeshConsole extends QuarkusConsole {
 
     private AeshConsole setPromptMessage(String promptMessage) {
         synchronized (this) {
+            if (!inputSupport) {
+                return this;
+            }
             StringBuilder buffer = new StringBuilder();
             clearStatusMessages(buffer);
             int newLines = countLines(statusMessage) + countLines(promptMessage);
@@ -150,38 +155,38 @@ public class AeshConsole extends QuarkusConsole {
     private void setup(Connection conn) {
         synchronized (this) {
             size = conn.size();
-            // Ctrl-C ends the game
-            conn.setSignalHandler(event -> {
-                switch (event) {
-                    case INT:
-                        //todo: why does async exit not work here
-                        //Quarkus.asyncExit();
-                        //end(conn);
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                System.exit(0);
-                            }
-                        }).start();
-                        break;
-                }
-            });
-            // Keyboard handling
-            conn.setStdinHandler(keys -> {
-                InputHolder handler = inputHandlers.peek();
-                if (handler != null) {
-                    handler.handler.handleInput(keys);
-                }
-            });
-
+            if (inputSupport) {
+                conn.setSignalHandler(event -> {
+                    switch (event) {
+                        case INT:
+                            //todo: why does async exit not work here
+                            //Quarkus.asyncExit();
+                            //end(conn);
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    System.exit(0);
+                                }
+                            }).start();
+                            break;
+                    }
+                });
+                // Keyboard handling
+                conn.setStdinHandler(keys -> {
+                    InputHolder handler = inputHandlers.peek();
+                    if (handler != null) {
+                        handler.handler.handleInput(keys);
+                    }
+                });
+            }
             conn.setCloseHandler(close -> end(conn));
             conn.setSizeHandler(size -> setup(conn));
 
-            //switch to alternate buffer
-            //conn.write(ANSI.ALTERNATE_BUFFER);
-            //conn.write(ANSI.CURSOR_HIDE);
-
-            attributes = conn.enterRawMode();
+            if (inputSupport) {
+                attributes = conn.enterRawMode();
+            } else {
+                attributes = conn.getAttributes();
+            }
 
             StringBuilder sb = new StringBuilder();
             printStatusAndPrompt(sb);

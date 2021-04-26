@@ -39,6 +39,7 @@ public class TestSupport implements TestController {
     volatile boolean displayTestOutput;
     volatile Boolean explicitDisplayTestOutput;
     volatile boolean failingTestsOnly;
+    volatile TestType testType = TestType.ALL;
 
     public TestSupport(CuratedApplication curatedApplication, List<CompilationProvider> compilationProviders,
             DevModeContext context) {
@@ -143,7 +144,6 @@ public class TestSupport implements TestController {
             }
         }
         if (testRunner != null) {
-
             testRunner.disable();
         }
     }
@@ -214,6 +214,11 @@ public class TestSupport implements TestController {
             this.displayTestOutput = displayTestOutput;
         }
         this.displayTestOutput = displayTestOutput;
+        return this;
+    }
+
+    public TestSupport setTestType(TestType testType) {
+        this.testType = testType;
         return this;
     }
 

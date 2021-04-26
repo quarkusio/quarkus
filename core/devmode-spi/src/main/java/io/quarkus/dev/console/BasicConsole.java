@@ -12,10 +12,12 @@ public class BasicConsole extends QuarkusConsole {
     private static final Logger statusLogger = Logger.getLogger("quarkus");
 
     final PrintStream printStream;
+    final boolean inputSupport;
     final boolean noColor;
 
     public BasicConsole(boolean noColor, boolean inputSupport, PrintStream printStream) {
         this.noColor = noColor;
+        this.inputSupport = inputSupport;
         this.printStream = printStream;
         if (inputSupport) {
             Thread t = new Thread(new Runnable() {
@@ -49,6 +51,9 @@ public class BasicConsole extends QuarkusConsole {
         return new InputHolder(inputHandler) {
             @Override
             protected void setPromptMessage(String prompt) {
+                if (!inputSupport) {
+                    return;
+                }
                 if (prompt == null) {
                     return;
                 }

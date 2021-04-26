@@ -1,4 +1,4 @@
-package io.quarkus.deployment;
+package io.quarkus.deployment.dev.testing;
 
 import java.time.Duration;
 import java.util.List;
@@ -95,6 +95,13 @@ public class TestConfig {
     public boolean console;
 
     /**
+     * Disables the ability to enter input on the console.
+     *
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean disableConsoleInput;
+
+    /**
      * Changes tests to use the 'flat' ClassPath used in Quarkus 1.x versions.
      *
      * This means all Quarkus and test classes are loaded in the same ClassLoader,
@@ -134,6 +141,17 @@ public class TestConfig {
     @ConfigItem(defaultValue = "10m")
     Duration hangDetectionTimeout;
 
+    /**
+     * The type of test to run, this can be either:
+     *
+     * quarkus-test: Only runs {@code @QuarkusTest} annotated test classes
+     * unit: Only runs classes that are not annotated with {@code @QuarkusTest}
+     * all: Runs both, running the unit tests first
+     *
+     */
+    @ConfigItem(defaultValue = "all")
+    TestType type;
+
     @ConfigGroup
     public static class Profile {
 
@@ -157,6 +175,5 @@ public class TestConfig {
         PAUSED,
         ENABLED,
         DISABLED
-
     }
 }

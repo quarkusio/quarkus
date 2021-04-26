@@ -9,8 +9,10 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,6 +77,8 @@ public class QuarkusDevModeTest
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
     private static final Logger rootLogger;
+    public static final OpenOption[] OPEN_OPTIONS = { StandardOpenOption.SYNC, StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE };
     private Handler[] originalRootLoggerHandlers;
 
     static {
@@ -292,7 +296,7 @@ public class QuarkusDevModeTest
                             byte[] data = FileUtil.readFileContents(in);
                             Path resolved = deploymentResourcePath.resolve(relative);
                             Files.createDirectories(resolved.getParent());
-                            Files.write(resolved, data);
+                            Files.write(resolved, data, OPEN_OPTIONS);
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
@@ -351,7 +355,7 @@ public class QuarkusDevModeTest
                                 byte[] data = FileUtil.readFileContents(in);
                                 Path resolved = deploymentTestResourcePath.resolve(relative);
                                 Files.createDirectories(resolved.getParent());
-                                Files.write(resolved, data);
+                                Files.write(resolved, data, OPEN_OPTIONS);
                             }
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
@@ -590,7 +594,7 @@ public class QuarkusDevModeTest
                 throw new RuntimeException("File was not modified, mutator function had no effect");
             }
 
-            Files.write(input, content.getBytes(StandardCharsets.UTF_8));
+            Files.write(input, content.getBytes(StandardCharsets.UTF_8), OPEN_OPTIONS);
             sleepForFileChanges(sourceDirectory, oldSrc);
             sleepForFileChanges(input, old);
         } catch (IOException e) {
@@ -648,7 +652,7 @@ public class QuarkusDevModeTest
             String content = new String(data, StandardCharsets.UTF_8);
             content = mutator.apply(content);
 
-            Files.write(resourcePath, content.getBytes(StandardCharsets.UTF_8));
+            Files.write(resourcePath, content.getBytes(StandardCharsets.UTF_8), OPEN_OPTIONS);
             sleepForFileChanges(resourcePath, old);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -663,7 +667,7 @@ public class QuarkusDevModeTest
         final Path resourceFilePath = deploymentResourcePath.resolve(path);
         long oldParent = modTime(resourceFilePath.getParent());
         try {
-            Files.write(resourceFilePath, data);
+            Files.write(resourceFilePath, data, OPEN_OPTIONS);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -736,7 +740,7 @@ public class QuarkusDevModeTest
                     byte[] data = FileUtil.readFileContents(in);
                     Path resolved = deploymentSourcesDir.resolve(relative);
                     Files.createDirectories(resolved.getParent());
-                    Files.write(resolved, data);
+                    Files.write(resolved, data, OPEN_OPTIONS);
                     return resolved;
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);

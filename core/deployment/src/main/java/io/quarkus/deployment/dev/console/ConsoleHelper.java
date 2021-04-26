@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import org.aesh.readline.tty.terminal.TerminalConnection;
 import org.aesh.terminal.Connection;
 
-import io.quarkus.deployment.TestConfig;
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;
 import io.quarkus.dev.console.QuarkusConsole;
 
@@ -18,22 +18,23 @@ public class ConsoleHelper {
         }
         QuarkusConsole.installed = true;
         if (config.basicConsole) {
-            QuarkusConsole.INSTANCE = new BasicConsole(config.disableColor, true, System.out);
+            QuarkusConsole.INSTANCE = new BasicConsole(config.disableColor, !config.disableConsoleInput, System.out);
         } else {
             try {
                 new TerminalConnection(new Consumer<Connection>() {
                     @Override
                     public void accept(Connection connection) {
                         if (connection.supportsAnsi()) {
-                            QuarkusConsole.INSTANCE = new AeshConsole(connection);
+                            QuarkusConsole.INSTANCE = new AeshConsole(connection, !config.disableConsoleInput);
                         } else {
                             connection.close();
-                            QuarkusConsole.INSTANCE = new BasicConsole(config.disableColor, true, System.out);
+                            QuarkusConsole.INSTANCE = new BasicConsole(config.disableColor, !config.disableConsoleInput,
+                                    System.out);
                         }
                     }
                 });
             } catch (IOException e) {
-                QuarkusConsole.INSTANCE = new BasicConsole(config.disableColor, true, System.out);
+                QuarkusConsole.INSTANCE = new BasicConsole(config.disableColor, !config.disableConsoleInput, System.out);
             }
         }
         RedirectPrintStream ps = new RedirectPrintStream();

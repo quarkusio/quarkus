@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Properties;
 
@@ -27,6 +28,7 @@ import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
@@ -225,8 +227,22 @@ public class QuartzScheduler implements Scheduler {
                     scheduler.standby();
                 }
             } catch (SchedulerException e) {
-                LOGGER.warn("Unable to pause scheduler", e);
+                throw new RuntimeException("Unable to pause scheduler", e);
             }
+        }
+    }
+
+    @Override
+    public void pause(String identity) {
+        Objects.requireNonNull(identity, "Cannot pause - identity is null");
+        if (identity.isEmpty()) {
+            LOGGER.warn("Cannot pause - identity is empty");
+            return;
+        }
+        try {
+            scheduler.pauseJob(new JobKey(SchedulerUtils.lookUpPropertyValue(identity), Scheduler.class.getName()));
+        } catch (SchedulerException e) {
+            throw new RuntimeException("Unable to pause job", e);
         }
     }
 
@@ -240,8 +256,22 @@ public class QuartzScheduler implements Scheduler {
                     scheduler.start();
                 }
             } catch (SchedulerException e) {
-                LOGGER.warn("Unable to resume scheduler", e);
+                throw new RuntimeException("Unable to resume scheduler", e);
             }
+        }
+    }
+
+    @Override
+    public void resume(String identity) {
+        Objects.requireNonNull(identity, "Cannot resume - identity is null");
+        if (identity.isEmpty()) {
+            LOGGER.warn("Cannot resume - identity is empty");
+            return;
+        }
+        try {
+            scheduler.resumeJob(new JobKey(SchedulerUtils.lookUpPropertyValue(identity), Scheduler.class.getName()));
+        } catch (SchedulerException e) {
+            throw new RuntimeException("Unable to resume job", e);
         }
     }
 

@@ -7,6 +7,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.ExecutorService;
@@ -142,11 +143,43 @@ public class SimpleScheduler implements Scheduler {
     }
 
     @Override
+    public void pause(String identity) {
+        Objects.requireNonNull(identity, "Cannot pause - identity is null");
+        if (identity.isEmpty()) {
+            LOGGER.warn("Cannot pause - identity is empty");
+            return;
+        }
+        String parsedIdentity = SchedulerUtils.lookUpPropertyValue(identity);
+        for (ScheduledTask task : scheduledTasks) {
+            if (parsedIdentity.equals(task.trigger.id)) {
+                task.trigger.setRunning(false);
+                return;
+            }
+        }
+    }
+
+    @Override
     public void resume() {
         if (!enabled) {
             LOGGER.warn("Scheduler is disabled and cannot be resumed");
         } else {
             running = true;
+        }
+    }
+
+    @Override
+    public void resume(String identity) {
+        Objects.requireNonNull(identity, "Cannot resume - identity is null");
+        if (identity.isEmpty()) {
+            LOGGER.warn("Cannot resume - identity is empty");
+            return;
+        }
+        String parsedIdentity = SchedulerUtils.lookUpPropertyValue(identity);
+        for (ScheduledTask task : scheduledTasks) {
+            if (parsedIdentity.equals(task.trigger.id)) {
+                task.trigger.setRunning(true);
+                return;
+            }
         }
     }
 
@@ -205,6 +238,9 @@ public class SimpleScheduler implements Scheduler {
         }
 
         void execute(ZonedDateTime now, ExecutorService executor) {
+            if (!trigger.isRunning()) {
+                return;
+            }
             ZonedDateTime scheduledFireTime = trigger.evaluate(now);
             if (scheduledFireTime != null) {
                 try {
@@ -230,11 +266,13 @@ public class SimpleScheduler implements Scheduler {
     static abstract class SimpleTrigger implements Trigger {
 
         private final String id;
+        private volatile boolean running;
         protected final ZonedDateTime start;
 
         public SimpleTrigger(String id, ZonedDateTime start) {
             this.id = id;
             this.start = start;
+            this.running = true;
         }
 
         /**
@@ -246,6 +284,14 @@ public class SimpleScheduler implements Scheduler {
 
         public String getId() {
             return id;
+        }
+
+        public synchronized boolean isRunning() {
+            return running;
+        }
+
+        public synchronized void setRunning(boolean running) {
+            this.running = running;
         }
 
     }

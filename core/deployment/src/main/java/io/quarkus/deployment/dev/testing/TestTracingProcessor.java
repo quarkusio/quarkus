@@ -28,6 +28,7 @@ import io.quarkus.deployment.dev.console.ConsoleHelper;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.gizmo.Gizmo;
 
 /**
  * processor that instruments test and application classes to trace the code path that is in use during a test run.
@@ -128,7 +129,7 @@ public class TestTracingProcessor {
         private final String theClassName;
 
         public TracingClassVisitor(ClassVisitor classVisitor, String theClassName) {
-            super(Opcodes.ASM9, classVisitor);
+            super(Gizmo.ASM_API_VERSION, classVisitor);
             this.theClassName = theClassName;
         }
 
@@ -139,7 +140,7 @@ public class TestTracingProcessor {
             if (name.equals("<init>") || name.equals("<clinit>")) {
                 return mv;
             }
-            return new MethodVisitor(Opcodes.ASM9, mv) {
+            return new MethodVisitor(Gizmo.ASM_API_VERSION, mv) {
                 @Override
                 public void visitCode() {
                     super.visitCode();

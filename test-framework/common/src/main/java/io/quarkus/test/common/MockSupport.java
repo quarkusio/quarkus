@@ -1,4 +1,4 @@
-package io.quarkus.test.junit;
+package io.quarkus.test.common;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -7,15 +7,15 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
-class MockSupport {
+public class MockSupport {
 
     private static final Deque<List<Object>> contexts = new ArrayDeque<>();
 
-    static void pushContext() {
+    public static void pushContext() {
         contexts.push(new ArrayList<>());
     }
 
-    static void popContext() {
+    public static void popContext() {
         List<Object> val = contexts.pop();
         for (Object i : val) {
             try {
@@ -30,7 +30,7 @@ class MockSupport {
         }
     }
 
-    static <T> void installMock(T instance, T mock) {
+    public static <T> void installMock(T instance, T mock) {
         //due to class loading issues we can't access the interface directly
         List<Object> inst = contexts.peek();
         if (inst == null) {

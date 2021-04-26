@@ -93,6 +93,7 @@ import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.test.common.MockSupport;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -714,9 +715,7 @@ public class QuarkusTestExtension
             //classloader issues
             Method pushContext = runningQuarkusApplication.getClassLoader().loadClass(MockSupport.class.getName())
                     .getDeclaredMethod("pushContext");
-            pushContext.setAccessible(true);
-            pushContext
-                    .invoke(null);
+            pushContext.invoke(null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -727,9 +726,7 @@ public class QuarkusTestExtension
             //classloader issues
             Method popContext = runningQuarkusApplication.getClassLoader().loadClass(MockSupport.class.getName())
                     .getDeclaredMethod("popContext");
-            popContext.setAccessible(true);
-            popContext
-                    .invoke(null);
+            popContext.invoke(null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

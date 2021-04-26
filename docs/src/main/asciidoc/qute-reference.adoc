@@ -1358,7 +1358,8 @@ These extension methods can be used as follows.
 <1> The output is `Hello world!`
 <2> The output is `olleh`
 
-==== Built-in Template Extension
+[[built-in-template-extension]]
+==== Built-in Template Extensions
 
 Quarkus provides a set of built-in extension methods.
 
@@ -1395,6 +1396,15 @@ TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 
 * `mod`: Modulo operation
 ** `{#if counter.mod(5) == 0}`
+
+==== Strings
+
+* `fmt` or `format`: format the string instance via `java.lang.String.format()`
+** `{myStr.fmt("arg1","arg2")}`
+** `{myStr.format(locale,arg1)}`
+* `str:fmt` or `str:format`: format the supplied string value via `java.lang.String.format()`
+** `{str:format("Hello %s!",name)}`
+** `{str:fmt(locale,'%tA',now)}`
 
 ===== Config 
 

@@ -65,7 +65,7 @@ public class NamespaceTemplateExtensionTest {
             return "Quark!";
         }
 
-        @TemplateExtension(namespace = "str", matchName = ANY, priority = 1)
+        @TemplateExtension(namespace = "str", matchName = ANY, priority = 4)
         static String quarkAny(String key) {
             return key.toUpperCase() + "!";
         }

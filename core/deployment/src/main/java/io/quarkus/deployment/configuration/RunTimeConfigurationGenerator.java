@@ -228,6 +228,9 @@ public final class RunTimeConfigurationGenerator {
             "withSources", ConfigBuilder.class, ConfigSource[].class);
     static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
             SmallRyeConfig.class);
+    static final MethodDescriptor SRCB_WITH_SECRET_KEYS = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
+            "withSecretKeys",
+            SmallRyeConfigBuilder.class, String[].class);
 
     // todo: more space-efficient sorted map impl
     static final MethodDescriptor TM_NEW = MethodDescriptor.ofConstructor(TreeMap.class);
@@ -292,6 +295,7 @@ public final class RunTimeConfigurationGenerator {
          * Converter fields have numeric names to keep space down.
          */
         int converterIndex = 0;
+        final String[] secretKeys;
 
         GenerateOperation(Builder builder) {
             this.devMode = builder.devMode;
@@ -306,6 +310,7 @@ public final class RunTimeConfigurationGenerator {
             runTimeDefaults = Assert.checkNotNullParam("runTimeDefaults", builder.getRunTimeDefaults());
             additionalTypes = Assert.checkNotNullParam("additionalTypes", builder.getAdditionalTypes());
             additionalBootstrapConfigSourceProviders = builder.additionalBootstrapConfigSourceProviders;
+            secretKeys = builder.getBuildTimeReadResult().getSecretKeys();
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
             generateEmptyParsers(cc);
             // not instantiable
@@ -366,6 +371,13 @@ public final class RunTimeConfigurationGenerator {
 
             // the build time config, which is for user use only (not used by us other than for loading converters)
             final ResultHandle buildTimeBuilder = clinit.invokeStaticMethod(CU_CONFIG_BUILDER, clinit.load(true));
+
+            final ResultHandle secretKeysArray = clinit.newArray(String[].class, secretKeys.length);
+            for (int i = 0; i < secretKeys.length; i++) {
+                clinit.writeArrayValue(secretKeysArray, i, clinit.load(secretKeys[i]));
+            }
+            clinit.invokeVirtualMethod(SRCB_WITH_SECRET_KEYS, buildTimeBuilder, secretKeysArray);
+
             final ResultHandle array = clinit.newArray(ConfigSource[].class, 2);
             // build time values
             clinit.writeArrayValue(array, 0, buildTimeConfigSource);
@@ -476,6 +488,12 @@ public final class RunTimeConfigurationGenerator {
 
             // create the run time config
             final ResultHandle runTimeBuilder = readConfig.invokeStaticMethod(CU_CONFIG_BUILDER, readConfig.load(true));
+
+            final ResultHandle secretKeysArray = readConfig.newArray(String[].class, secretKeys.length);
+            for (int i = 0; i < secretKeys.length; i++) {
+                readConfig.writeArrayValue(secretKeysArray, i, readConfig.load(secretKeys[i]));
+            }
+            readConfig.invokeVirtualMethod(SRCB_WITH_SECRET_KEYS, runTimeBuilder, secretKeysArray);
 
             // add in our run time only config source provider
             readConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, runTimeBuilder, readConfig.newInstance(

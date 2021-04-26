@@ -3,7 +3,6 @@ package io.quarkus.kafka.client.runtime.graal;
 import static org.apache.kafka.common.record.CompressionType.GZIP;
 import static org.apache.kafka.common.record.CompressionType.NONE;
 
-import java.lang.invoke.MethodHandle;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -15,8 +14,6 @@ import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.graalvm.home.Version;
 
-import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -25,19 +22,6 @@ import com.oracle.svm.core.annotate.TargetClass;
  * * Remove Snappy if not available (require GraalVM 21+).
  * * Remove JMX
  */
-
-@TargetClass(value = CompressionType.class, innerClass = "SnappyConstructors", onlyWith = GraalVM20OrEarlier.class)
-final class SubstituteSnappy {
-
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    static MethodHandle INPUT = null;
-
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    static MethodHandle OUTPUT = null;
-
-}
 
 final class GraalVM20OrEarlier implements BooleanSupplier {
 
@@ -48,7 +32,7 @@ final class GraalVM20OrEarlier implements BooleanSupplier {
 }
 
 @TargetClass(value = CompressionType.class, onlyWith = GraalVM20OrEarlier.class)
-final class FixEnumAccess {
+final class SubstituteSnappy {
 
     @Substitute
     public static CompressionType forName(String name) {

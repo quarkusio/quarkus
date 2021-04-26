@@ -15,6 +15,11 @@
     <name>Quarkus - Integration Tests - JBang enablement</name>
 
     <dependencies>
+  		<dependency>
+           <groupId>org.apache.commons</groupId>
+           <artifactId>commons-compress</artifactId>
+           <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-testing</artifactId>

@@ -197,18 +197,22 @@ public class JunitTestRunner {
                 });
 
                 Map<String, Map<UniqueId, TestResult>> resultsByClass = new HashMap<>();
-
                 launcher.execute(testPlan, new TestExecutionListener() {
 
                     @Override
                     public void executionStarted(TestIdentifier testIdentifier) {
                         String className = "";
+                        Class<?> clazz = null;
                         if (testIdentifier.getSource().isPresent()) {
                             if (testIdentifier.getSource().get() instanceof MethodSource) {
-                                className = ((MethodSource) testIdentifier.getSource().get()).getClassName();
+                                clazz = ((MethodSource) testIdentifier.getSource().get()).getJavaClass();
                             } else if (testIdentifier.getSource().get() instanceof ClassSource) {
-                                className = ((ClassSource) testIdentifier.getSource().get()).getClassName();
+                                clazz = ((ClassSource) testIdentifier.getSource().get()).getJavaClass();
                             }
+                        }
+                        if (clazz != null) {
+                            className = clazz.getName();
+                            Thread.currentThread().setContextClassLoader(clazz.getClassLoader());
                         }
                         for (TestRunListener listener : listeners) {
                             listener.testStarted(testIdentifier, className);
@@ -513,7 +517,8 @@ public class JunitTestRunner {
                 }
 
             }
-            cl = testApplication.createRuntimeClassLoader(Collections.emptyMap(), transformedClasses);
+            cl = testApplication.createRuntimeClassLoader(testApplication.getAugmentClassLoader(), Collections.emptyMap(),
+                    transformedClasses);
             for (String i : unitTestClasses) {
                 try {
                     qtClasses.add(cl.loadClass(i));

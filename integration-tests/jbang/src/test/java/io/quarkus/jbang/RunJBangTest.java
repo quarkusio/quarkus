@@ -91,28 +91,28 @@ class RunJBangTest {
         StartedProcess exec = getJBangExecutor("-Dquarkus.dev", "-Dq.v=999-SNAPSHOT",
                 "-Dquarkus.http.port=0",
                 DEVMODE_SCRIPT.toAbsolutePath().toString())
-                        .exitValue(77) // 77 - means we explicitly killed it. Anything else something went wrong
-                        .redirectOutput(new LogOutputStream() {
-                            @Override
-                            protected void processLine(String line) {
-                                System.out.println(line);
-                                if (line.contains("Listening on:")) {
-                                    Pattern p = Pattern.compile("http://localhost:(\\d+)");
-                                    Matcher matcher = p.matcher(line);
-                                    if (!matcher.find()) {
-                                        listening.completeExceptionally(
-                                                new RuntimeException("Unable to determine port: " + line));
-                                        return;
-                                    }
-                                    listening.complete(Integer.parseInt(matcher.group(1)));
-                                } else if (line.contains("Profile dev activated")) {
-                                    devmode.countDown();
-                                } else if (line.contains("Changed source files detected, recompiling devmode.java")) {
-                                    replaced.countDown();
-                                }
+                .exitValue(77) // 77 - means we explicitly killed it. Anything else something went wrong
+                .redirectOutput(new LogOutputStream() {
+                    @Override
+                    protected void processLine(String line) {
+                        System.out.println(line);
+                        if (line.contains("Listening on:")) {
+                            Pattern p = Pattern.compile("http://localhost:(\\d+)");
+                            Matcher matcher = p.matcher(line);
+                            if (!matcher.find()) {
+                                listening.completeExceptionally(
+                                        new RuntimeException("Unable to determine port: " + line));
+                                return;
                             }
-                        })
-                        .start();
+                            listening.complete(Integer.parseInt(matcher.group(1)));
+                        } else if (line.contains("Profile dev activated")) {
+                            devmode.countDown();
+                        } else if (line.contains("Changed source files detected, recompiling devmode.java")) {
+                            replaced.countDown();
+                        }
+                    }
+                })
+                .start();
 
         try {
             String base = "http://localhost:" + listening.get(10, TimeUnit.SECONDS);

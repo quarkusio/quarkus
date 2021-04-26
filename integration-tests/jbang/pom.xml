@@ -15,29 +15,18 @@
     <name>Quarkus - Integration Tests - JBang enablement</name>
 
     <dependencies>
+  		<dependency>
+           <groupId>org.apache.commons</groupId>
+           <artifactId>commons-compress</artifactId>
+           <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-testing</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
-            <version>${project.version}</version>
-            <type>json</type>
-            <classifier>${project.version}</classifier>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+       
+     
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
@@ -121,40 +110,7 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>platform-descriptor-tests</id>
-            <activation>
-                <property>
-                    <name>!no-descriptor-tests</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
-                        <version>${project.version}</version>
-                        <executions>
-                            <execution>
-                                <phase>test</phase>
-                                <goals>
-                                    <goal>validate-extensions-json</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>${skipTests}</skip>
-                                    <jsonGroupId>io.quarkus</jsonGroupId>
-                                    <jsonArtifactId>quarkus-bom-quarkus-platform-descriptor</jsonArtifactId>
-                                    <jsonVersion>${project.version}</jsonVersion>
-                                    <ignoredGroupIds>
-                                        <ignoredGroupId>software.amazon.awssdk</ignoredGroupId>
-                                    </ignoredGroupIds>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
+       
         <profile>
             <id>basic-test-suite</id>
             <activation>

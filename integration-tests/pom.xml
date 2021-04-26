@@ -139,6 +139,7 @@
         <module>smallrye-context-propagation</module>
         <module>smallrye-metrics</module>
         <module>smallrye-graphql</module>
+        <module>smallrye-graphql-client</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>
         <module>redis-client</module>

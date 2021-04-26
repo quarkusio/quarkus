@@ -90,7 +90,7 @@ NOTE: If no default scope is specified the `@Dependent` pseudo-scope is used.
 
 In Quarkus, the application is represented by a single bean archive with the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"].
 Therefore, bean classes that don't have a https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[bean defining annotation, window="_blank"] are ignored.
-Bean defining annotations are declared on the class-level and incluce scopes, stereotypes and `@Interceptor`.
+Bean defining annotations are declared on the class-level and include scopes, stereotypes and `@Interceptor`.
 
 _Solution 1_: Use the `AutoAddScopeBuildItem`. This build item can be used to add a scope to a class that meets certain conditions.
 

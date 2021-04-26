@@ -15,6 +15,7 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
@@ -153,21 +154,51 @@ public class ApplicationLifecycleManager {
                 }
                 Logger applicationLogger = Logger.getLogger(Application.class);
                 if (rootCause instanceof BindException) {
-                    int port = ConfigProviderResolver.instance().getConfig()
-                            .getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
-                    applicationLogger.error("Port " + port + " seems to be in use by another process. " +
-                            "Quarkus may already be running or the port is used by another application.");
+                    Config config = ConfigProviderResolver.instance().getConfig();
+                    Integer port = null;
+                    Integer sslPort = null;
+
+                    if (config.getOptionalValue("quarkus.http.insecure-requests", String.class).orElse("")
+                            .equalsIgnoreCase("disabled")) {
+                        // If http port is disabled, then the exception must have been thrown because of the https port
+                        port = config.getOptionalValue("quarkus.http.ssl-port", Integer.class).orElse(8443);
+                        applicationLogger.errorf("Port %d seems to be in use by another process. " +
+                                "Quarkus may already be running or the port is used by another application.", port);
+                    } else if (config.getOptionalValue("quarkus.http.ssl.certificate.file", String.class).isPresent()
+                            || config.getOptionalValue("quarkus.http.ssl.certificate.key-file", String.class).isPresent()
+                            || config.getOptionalValue("quarkus.http.ssl.certificate.key-store-file", String.class)
+                                    .isPresent()) {
+                        // The port which is already bound could be either http or https, so we check if https is enabled by looking at the config properties
+                        port = config.getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+                        sslPort = config.getOptionalValue("quarkus.http.ssl-port", Integer.class).orElse(8443);
+                        applicationLogger.errorf(
+                                "Either port %d or port %d seem to be in use by another process. " +
+                                        "Quarkus may already be running or one of the ports is used by another application.",
+                                port, sslPort);
+                    } else {
+                        // If no ssl configuration is found, and http port is not disabled, then it must be the one which is already bound
+                        port = config.getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+                        applicationLogger.errorf("Port %d seems to be in use by another process. " +
+                                "Quarkus may already be running or the port is used by another application.", port);
+                    }
                     if (IS_WINDOWS) {
-                        applicationLogger.info("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
-                        applicationLogger.info("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
+                        applicationLogger.warn("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
+                        applicationLogger.warn("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
                     } else if (IS_MAC) {
                         applicationLogger
-                                .info("Use 'netstat -anv | grep " + port + "' to identify the process occupying the port.");
-                        applicationLogger.info("You can try to kill it with 'kill -9 <pid>'.");
+                                .warnf("Use 'netstat -anv | grep %d' to identify the process occupying the port.", port);
+                        if (sslPort != null)
+                            applicationLogger
+                                    .warnf("Use 'netstat -anv | grep %d' to identify the process occupying the port.", sslPort);
+                        applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                     } else {
                         applicationLogger
-                                .info("Use 'netstat -anop | grep " + port + "' to identify the process occupying the port.");
-                        applicationLogger.info("You can try to kill it with 'kill -9 <pid>'.");
+                                .warnf("Use 'netstat -anop | grep %d' to identify the process occupying the port.", port);
+                        if (sslPort != null)
+                            applicationLogger
+                                    .warnf("Use 'netstat -anop | grep %d' to identify the process occupying the port.",
+                                            sslPort);
+                        applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                     }
                 } else if (rootCause instanceof ConfigurationException) {
                     System.err.println(rootCause.getMessage());

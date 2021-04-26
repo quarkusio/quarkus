@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -236,7 +237,8 @@ public class ResteasyServerCommonProcessor {
         final Collection<AnnotationInstance> allPaths;
         if (filterClasses) {
             allPaths = paths.stream().filter(
-                    annotationInstance -> keepEnclosingClass(allowedClasses, excludedClasses, annotationInstance))
+                    annotationInstance -> keepAnnotation(beanArchiveIndexBuildItem.getIndex(), allowedClasses, excludedClasses,
+                            annotationInstance))
                     .collect(Collectors.toList());
         } else {
             allPaths = new ArrayList<>(paths);
@@ -889,21 +891,32 @@ public class ResteasyServerCommonProcessor {
     }
 
     /**
-     * @param allowedClasses the classes returned by the methods {@link Application#getClasses()} and
-     *        {@link Application#getSingletons()} to keep.
-     * @param excludedClasses the classes that have been annotated wih unsuccessful build time conditions and that
+     * @param index the Jandex index view from which the class information is extracted.
+     * @param allowedClasses the classes to keep provided by the methods {@link Application#getClasses()} and
+     *        {@link Application#getSingletons()}.
+     * @param excludedClasses the classes that have been annotated with unsuccessful build time conditions and that
      *        need to be excluded from the list of paths.
-     * @param annotationInstance the annotation instance from which the enclosing class will be extracted.
-     * @return {@code true} if the enclosing class of the annotation is part of the allowed classes if not empty
-     *         or if is not part of the excluded classes, {@code false} otherwise.
+     * @param annotationInstance the annotation instance to test.
+     * @return {@code true} if the enclosing class of the annotation is a concrete class and is part of the allowed
+     *         classes, or is an interface and at least one concrete implementation is included, or is an abstract class
+     *         and at least one concrete sub class is included, or is not part of the excluded classes, {@code false} otherwise.
      */
-    private static boolean keepEnclosingClass(Set<String> allowedClasses, Set<String> excludedClasses,
+    private static boolean keepAnnotation(IndexView index, Set<String> allowedClasses, Set<String> excludedClasses,
             AnnotationInstance annotationInstance) {
-        final String className = JandexUtil.getEnclosingClass(annotationInstance).toString();
+        final ClassInfo classInfo = JandexUtil.getEnclosingClass(annotationInstance);
+        final String className = classInfo.toString();
         if (allowedClasses.isEmpty()) {
             // No allowed classes have been set, meaning that only excluded classes have been provided.
             // Keep the enclosing class only if not excluded
             return !excludedClasses.contains(className);
+        } else if (Modifier.isAbstract(classInfo.flags())) {
+            // Only keep the annotation if a concrete implementation or a sub class has been included
+            return (Modifier.isInterface(classInfo.flags()) ? index.getAllKnownImplementors(classInfo.name())
+                    : index.getAllKnownSubclasses(classInfo.name()))
+                            .stream()
+                            .filter(clazz -> !Modifier.isAbstract(clazz.flags()))
+                            .map(Objects::toString)
+                            .anyMatch(allowedClasses::contains);
         }
         return allowedClasses.contains(className);
     }

@@ -74,6 +74,29 @@ public final class ConfigUtils {
      * @return the configuration builder
      */
     public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered) {
+        final SmallRyeConfigBuilder builder = emptyConfigBuilder();
+
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem().getConfigSources(classLoader));
+        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath().getConfigSources(classLoader));
+        if (runTime) {
+            builder.addDefaultSources();
+            builder.withSources(dotEnvSources(classLoader));
+        } else {
+            final List<ConfigSource> sources = new ArrayList<>();
+            sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
+            sources.addAll(new BuildTimeDotEnvConfigSourceProvider().getConfigSources(classLoader));
+            sources.add(new BuildTimeEnvConfigSource());
+            sources.add(new BuildTimeSysPropConfigSource());
+            builder.withSources(sources);
+        }
+        if (addDiscovered) {
+            builder.addDiscoveredSources();
+        }
+        return builder;
+    }
+
+    public static SmallRyeConfigBuilder emptyConfigBuilder() {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         builder.withDefaultValue(SMALLRYE_PROFILE, ProfileManager.getActiveProfile());
 
@@ -93,26 +116,9 @@ public final class ConfigUtils {
             }
         });
 
-        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem().getConfigSources(classLoader));
-        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath().getConfigSources(classLoader));
         builder.addDefaultInterceptors();
-        if (runTime) {
-            builder.addDefaultSources();
-            builder.withSources(dotEnvSources(classLoader));
-        } else {
-            final List<ConfigSource> sources = new ArrayList<>();
-            sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
-            sources.addAll(new BuildTimeDotEnvConfigSourceProvider().getConfigSources(classLoader));
-            sources.add(new BuildTimeEnvConfigSource());
-            sources.add(new BuildTimeSysPropConfigSource());
-            builder.withSources(sources);
-        }
-        if (addDiscovered) {
-            builder.addDiscoveredSources();
-            builder.addDiscoveredInterceptors();
-            builder.addDiscoveredConverters();
-        }
+        builder.addDiscoveredInterceptors();
+        builder.addDiscoveredConverters();
         return builder;
     }
 

@@ -240,13 +240,25 @@ public final class RunTimeConfigurationGenerator {
     private RunTimeConfigurationGenerator() {
     }
 
-    public static void generate(BuildTimeConfigurationReader.ReadResult readResult, final ClassOutput classOutput,
-            boolean devMode,
-            final Map<String, String> runTimeDefaults, List<Class<?>> additionalTypes,
-            List<String> additionalBootstrapConfigSourceProviders) {
-        new GenerateOperation.Builder().setBuildTimeReadResult(readResult).setClassOutput(classOutput).setDevMode(devMode)
-                .setRunTimeDefaults(runTimeDefaults).setAdditionalTypes(additionalTypes)
-                .setAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders).build().run();
+    public static void generate(
+            final BuildTimeConfigurationReader.ReadResult readResult,
+            final ClassOutput classOutput,
+            final boolean devMode,
+            final Map<String, String> runTimeDefaults,
+            final List<Class<?>> additionalTypes,
+            final List<String> additionalStaticInitConfigSourceProviders,
+            final List<String> additionalBootstrapConfigSourceProviders) {
+
+        new GenerateOperation.Builder()
+                .setBuildTimeReadResult(readResult)
+                .setClassOutput(classOutput)
+                .setDevMode(devMode)
+                .setRunTimeDefaults(runTimeDefaults)
+                .setAdditionalTypes(additionalTypes)
+                .setAdditionalStaticInitConfigSourceProviders(additionalStaticInitConfigSourceProviders)
+                .setAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders)
+                .build()
+                .run();
     }
 
     static final class GenerateOperation implements AutoCloseable {
@@ -275,6 +287,7 @@ public final class RunTimeConfigurationGenerator {
         final ResultHandle clinitConfig;
         final Map<FieldDescriptor, Class<?>> convertersToRegister = new HashMap<>();
         final List<Class<?>> additionalTypes;
+        final List<String> additionalStaticInitConfigSourceProviders;
         final List<String> additionalBootstrapConfigSourceProviders;
         /**
          * Regular converters organized by type. Each converter is stored in a separate field. Some are used
@@ -305,7 +318,8 @@ public final class RunTimeConfigurationGenerator {
             roots = Assert.checkNotNullParam("builder.roots", builder.getBuildTimeReadResult().getAllRoots());
             runTimeDefaults = Assert.checkNotNullParam("runTimeDefaults", builder.getRunTimeDefaults());
             additionalTypes = Assert.checkNotNullParam("additionalTypes", builder.getAdditionalTypes());
-            additionalBootstrapConfigSourceProviders = builder.additionalBootstrapConfigSourceProviders;
+            additionalStaticInitConfigSourceProviders = builder.getAdditionalStaticInitConfigSourceProviders();
+            additionalBootstrapConfigSourceProviders = builder.getAdditionalBootstrapConfigSourceProviders();
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
             generateEmptyParsers(cc);
             // not instantiable
@@ -365,13 +379,19 @@ public final class RunTimeConfigurationGenerator {
             clinit.writeStaticField(C_RUN_TIME_DEFAULTS_CONFIG_SOURCE, clinit.newInstance(RTDVCS_NEW));
 
             // the build time config, which is for user use only (not used by us other than for loading converters)
-            final ResultHandle buildTimeBuilder = clinit.invokeStaticMethod(CU_CONFIG_BUILDER, clinit.load(true));
+            final ResultHandle buildTimeBuilder = clinit.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED,
+                    clinit.load(true), clinit.load(false));
             final ResultHandle array = clinit.newArray(ConfigSource[].class, 2);
             // build time values
             clinit.writeArrayValue(array, 0, buildTimeConfigSource);
             // build time defaults
             clinit.writeArrayValue(array, 1, buildTimeRunTimeDefaultValuesConfigSource);
             clinit.invokeVirtualMethod(SRCB_WITH_SOURCES, buildTimeBuilder, array);
+            // add static init sources
+            for (String providerClass : additionalStaticInitConfigSourceProviders) {
+                ResultHandle providerInstance = clinit.newInstance(MethodDescriptor.ofConstructor(providerClass));
+                clinit.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, buildTimeBuilder, providerInstance);
+            }
             clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
                     SmallRyeConfig.class);
 
@@ -1571,6 +1591,7 @@ public final class RunTimeConfigurationGenerator {
             private BuildTimeConfigurationReader.ReadResult buildTimeReadResult;
             private Map<String, String> runTimeDefaults;
             private List<Class<?>> additionalTypes;
+            private List<String> additionalStaticInitConfigSourceProviders;
             private List<String> additionalBootstrapConfigSourceProviders;
 
             Builder() {
@@ -1612,13 +1633,26 @@ public final class RunTimeConfigurationGenerator {
                 return this;
             }
 
-            public boolean isDevMode() {
+            boolean isDevMode() {
                 return devMode;
             }
 
-            public Builder setDevMode(boolean devMode) {
+            Builder setDevMode(boolean devMode) {
                 this.devMode = devMode;
                 return this;
+            }
+
+            List<String> getAdditionalStaticInitConfigSourceProviders() {
+                return additionalStaticInitConfigSourceProviders;
+            }
+
+            Builder setAdditionalStaticInitConfigSourceProviders(List<String> additionalStaticInitConfigSourceProviders) {
+                this.additionalStaticInitConfigSourceProviders = additionalStaticInitConfigSourceProviders;
+                return this;
+            }
+
+            List<String> getAdditionalBootstrapConfigSourceProviders() {
+                return additionalBootstrapConfigSourceProviders;
             }
 
             Builder setAdditionalBootstrapConfigSourceProviders(List<String> additionalBootstrapConfigSourceProviders) {

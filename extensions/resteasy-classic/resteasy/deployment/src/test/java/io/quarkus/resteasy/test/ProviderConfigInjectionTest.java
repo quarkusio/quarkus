@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.test;
 
+import javax.enterprise.inject.Instance;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -47,11 +48,11 @@ public class ProviderConfigInjectionTest {
     public static class FooProvider implements ContextResolver<String> {
 
         @ConfigProperty(name = "foo")
-        String foo;
+        Instance<String> foo;
 
         @Override
         public String getContext(Class<?> type) {
-            return foo;
+            return foo.get();
         }
     }
 }

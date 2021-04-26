@@ -17,10 +17,12 @@ import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
+import org.jboss.resteasy.reactive.server.runtime.kotlin.ApplicationCoroutineScope;
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineEndpointInvoker;
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineMethodProcessor;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -34,6 +36,11 @@ public class KotlinCoroutineIntegrationProcessor {
 
     static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
     public static final String NAME = KotlinCoroutineIntegrationProcessor.class.getName();
+
+    @BuildStep
+    AdditionalBeanBuildItem produceCoroutineScope() {
+        return AdditionalBeanBuildItem.builder().addBeanClass(ApplicationCoroutineScope.class).setUnremovable().build();
+    }
 
     @BuildStep
     MethodScannerBuildItem scanner() {

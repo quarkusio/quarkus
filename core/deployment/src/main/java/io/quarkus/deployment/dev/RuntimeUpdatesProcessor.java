@@ -451,7 +451,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     ClassScanResult checkForChangedClasses(boolean firstScan) {
         ClassScanResult classScanResult = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, firstScan, main);
-        test.merge(main);
+        if (firstScan) {
+            test.merge(main);
+        }
         return classScanResult;
     }
 
@@ -819,8 +821,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     }
                     if (includeTest) {
                         test.watchedFileTimestamps.put(config, 0L);
-                        main.watchedFileTimestamps.putAll(extraWatchedFileTimestamps);
                     }
+                    main.watchedFileTimestamps.putAll(extraWatchedFileTimestamps);
                 }
             }
         }

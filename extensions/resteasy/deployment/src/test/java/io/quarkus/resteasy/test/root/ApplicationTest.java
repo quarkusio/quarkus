@@ -38,7 +38,10 @@ class ApplicationTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(
-                            ResourceTest1.class, ResourceTest2.class, ResponseFilter1.class, ResponseFilter2.class,
+                            IResourceTest.class, ResourceInheritedInterfaceTest.class,
+                            AResourceTest.class, ResourceInheritedClassTest.class,
+                            ResourceTest1.class, ResourceTest2.class,
+                            ResponseFilter1.class, ResponseFilter2.class,
                             ResponseFilter3.class, ResponseFilter4.class, ResponseFilter5.class, ResponseFilter6.class,
                             Feature1.class, Feature2.class, DynamicFeature1.class, DynamicFeature2.class,
                             ExceptionMapper1.class, ExceptionMapper2.class, AppTest.class));
@@ -74,6 +77,79 @@ class ApplicationTest {
                 .get("/rt-2/ok")
                 .then()
                 .statusCode(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+    }
+
+    @DisplayName("Should access to path inherited from an interface")
+    @Test
+    void should_call_inherited_from_interface() {
+        when()
+                .get("/rt-i/ok")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body(Matchers.is("ok-i"));
+    }
+
+    @DisplayName("Should access to path inherited from a class where method is implemented")
+    @Test
+    void should_call_inherited_from_class_implemented() {
+        when()
+                .get("/rt-a/ok-1")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body(Matchers.is("ok-a-1"));
+    }
+
+    @DisplayName("Should access to path inherited from a class where method is overridden")
+    @Test
+    void should_call_inherited_from_class_overridden() {
+        when()
+                .get("/rt-a/ok-2")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body(Matchers.is("ok-a-2"));
+    }
+
+    @Path("rt-i")
+    public interface IResourceTest {
+
+        @GET
+        @Path("ok")
+        String ok();
+    }
+
+    public static class ResourceInheritedInterfaceTest implements IResourceTest {
+
+        @Override
+        public String ok() {
+            return "ok-i";
+        }
+    }
+
+    @Path("rt-a")
+    public abstract static class AResourceTest {
+
+        @GET
+        @Path("ok-1")
+        public abstract String ok1();
+
+        @GET
+        @Path("ok-2")
+        public String ok2() {
+            return "ok-a";
+        }
+    }
+
+    public static class ResourceInheritedClassTest extends AResourceTest {
+
+        @Override
+        public String ok1() {
+            return "ok-a-1";
+        }
+
+        @Override
+        public String ok2() {
+            return "ok-a-2";
+        }
     }
 
     @Path("rt-1")
@@ -224,6 +300,7 @@ class ApplicationTest {
         public Set<Class<?>> getClasses() {
             return new HashSet<>(
                     Arrays.asList(
+                            ResourceInheritedInterfaceTest.class, ResourceInheritedClassTest.class,
                             ResourceTest1.class, Feature1.class, ExceptionMapper1.class));
         }
 

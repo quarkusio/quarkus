@@ -44,7 +44,7 @@
     </div>
     {/for}
     <hr/>
-    {#for cn in info:tests.results.passing}
+    {#for cn in info:tests.results.passing.orEmpty}
     <div class="col mb-12">
         <div class="card h-100 shadow">
             <div class="card-header bg-success text-light">
@@ -85,7 +85,7 @@
         </div>
     </div>
     {/for}
-    {#for cn in info:tests.results.skipped}
+    {#for cn in info:tests.results.skipped.orEmpty}
     <div class="col mb-12">
         <div class="card h-100 shadow">
             <div class="card-header bg-warning text-light">

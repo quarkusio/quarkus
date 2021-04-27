@@ -197,7 +197,7 @@ public abstract class Application implements Closeable {
         } finally {
             stateLock.unlock();
         }
-        Timing.staticInitStopped();
+        Timing.staticInitStopped(auxilaryApplication);
         try {
             ShutdownRecorder.runShutdown();
             doStop();

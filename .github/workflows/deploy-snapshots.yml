@@ -46,6 +46,7 @@ jobs:
           ./mvnw -e -B --settings .github/mvn-settings.xml \
             -DskipITs -Dno-format -Dinvoker.skip=true \
             -DretryFailedDeploymentCount=10 \
+            -pl !integration-tests/gradle \
             clean deploy
       - name: Delete Local Artifacts From Cache
         shell: bash

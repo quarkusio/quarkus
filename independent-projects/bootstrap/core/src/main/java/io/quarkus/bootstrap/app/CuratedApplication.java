@@ -216,6 +216,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 for (Path root : quarkusBootstrap.getApplicationRoot()) {
                     builder.addElement(ClassPathElement.fromPath(root));
                 }
+            } else {
+                for (Path root : quarkusBootstrap.getApplicationRoot()) {
+                    builder.addBannedElement(ClassPathElement.fromPath(root));
+                }
             }
 
             //additional user class path elements first
@@ -228,6 +232,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 } else {
                     for (Path root : i.getArchivePath()) {
                         hotReloadPaths.add(root);
+                        builder.addBannedElement(ClassPathElement.fromPath(root));
                     }
                 }
             }

@@ -51,6 +51,7 @@ public class GrpcReflectionTest {
                     .addPackage(HealthGrpc.class.getPackage())
                     .addPackage(MutinyReflectableServiceGrpc.class.getPackage())
                     .addClass(MyReflectionService.class))
+            .setFlatClassPath(true)
             .withConfigurationResource("reflection-config.properties");
 
     @Inject

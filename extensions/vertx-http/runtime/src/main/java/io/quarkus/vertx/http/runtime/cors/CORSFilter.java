@@ -23,8 +23,11 @@ public class CORSFilter implements Handler<RoutingContext> {
     // Must be static because the filter is created(deployed) at build time and runtime config is still not available
     final CORSConfig corsConfig;
 
+    final List<Pattern> allowedOriginsRegex;
+
     public CORSFilter(CORSConfig corsConfig) {
         this.corsConfig = corsConfig;
+        this.allowedOriginsRegex = parseAllowedOriginsRegex(this.corsConfig.origins);
     }
 
     public static boolean isConfiguredWithWildcard(Optional<List<String>> optionalList) {
@@ -34,6 +37,48 @@ public class CORSFilter implements Handler<RoutingContext> {
 
         List<String> list = optionalList.get();
         return list.isEmpty() || (list.size() == 1 && "*".equals(list.get(0)));
+    }
+
+    /**
+     * Parse the provided allowed origins for any regexes
+     * 
+     * @param allowedOrigins
+     * @return a list of compiled regular expressions. If none configured, and empty list is returned
+     */
+    public static List<Pattern> parseAllowedOriginsRegex(Optional<List<String>> allowedOrigins) {
+        if (allowedOrigins == null || !allowedOrigins.isPresent()) {
+            return Collections.emptyList();
+        }
+
+        // extract configured origins and find any Regular Expressions
+        List<Pattern> allowOriginsRegex = new ArrayList<>();
+        for (String o : allowedOrigins.get()) {
+            if (o != null && o.startsWith("/") && o.endsWith("/")) {
+                allowOriginsRegex.add(Pattern.compile(o.substring(1, o.length() - 1)));
+            }
+        }
+
+        return allowOriginsRegex;
+    }
+
+    /**
+     * If any regular expression origins are configured, try to match on them.
+     * Regular expressions must begin and end with '/'
+     * 
+     * @param allowedOrigins the configured regex origins.
+     * @param origin the specified origin
+     * @return true if any configured regular expressions match the specified origin, false otherwise
+     */
+    public static boolean isOriginAllowedByRegex(List<Pattern> allowOriginsRegex, String origin) {
+        if (allowOriginsRegex == null) {
+            return false;
+        }
+        for (Pattern pattern : allowOriginsRegex) {
+            if (pattern.matcher(origin).matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void processRequestedHeaders(HttpServerResponse response, String allowHeadersValue) {
@@ -103,7 +148,8 @@ public class CORSFilter implements Handler<RoutingContext> {
                 processRequestedHeaders(response, requestedHeaders);
             }
 
-            boolean allowsOrigin = isConfiguredWithWildcard(corsConfig.origins) || corsConfig.origins.get().contains(origin);
+            boolean allowsOrigin = isConfiguredWithWildcard(corsConfig.origins) || corsConfig.origins.get().contains(origin)
+                    || isOriginAllowedByRegex(allowedOriginsRegex, origin);
 
             if (allowsOrigin) {
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);

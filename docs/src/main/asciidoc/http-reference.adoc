@@ -189,7 +189,7 @@ following properties will be applied before passing the request on to its actual
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.http.cors.origins|*|The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not set or set to '*'.
+|quarkus.http.cors.origins|*|The comma-separated list of origins allowed for CORS. Values starting and ending with '/'' will be treated as regular expressions. The filter allows any origin if this is not set or set to '*'.
 |quarkus.http.cors.methods|*|The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
 not set or set to '*'.
 |quarkus.http.cors.headers|*|The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
@@ -205,12 +205,12 @@ when the request’s credentials mode Request.credentials is “include”
 
 include::duration-format-note.adoc[]
 
-Here's what a full CORS filter configuration could look like:
+Here's what a full CORS filter configuration could look like, including a regular expression defining an allowed origin:
 
 [source, properties]
 ----
 quarkus.http.cors=true
-quarkus.http.cors.origins=http://foo.com,http://www.bar.io
+quarkus.http.cors.origins=http://foo.com,http://www.bar.io,/https://([a-z0-9\\-_]+)\\.app\\.mydomain\\.com/
 quarkus.http.cors.methods=GET,PUT,POST
 quarkus.http.cors.headers=X-Custom
 quarkus.http.cors.exposed-headers=Content-Disposition

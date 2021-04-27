@@ -876,12 +876,44 @@ public class PanacheFunctionalityTest {
 <1> Be sure to call your `verify` and `do*` methods on `PanacheMock` rather than `Mockito`, otherwise you won't know
 what mock object to pass.
 
+==== Mocking `EntityManager`, `Session` and entity instance methods
+
+If you need to mock entity instance methods, such as `persist()` you can do it by mocking the Hibernate ORM `Session` object:
+
+[source,java]
+----
+@QuarkusTest
+public class PanacheMockingTest {
+
+    @InjectMock
+    Session session;
+
+    @BeforeEach
+    public void setup() {
+        Query mockQuery = Mockito.mock(Query.class);
+        Mockito.doNothing().when(session).persist(Mockito.any());
+        Mockito.when(session.createQuery(Mockito.anyString())).thenReturn(mockQuery);
+        Mockito.when(mockQuery.getSingleResult()).thenReturn(0l);
+    }
+
+    @Test
+    public void testPanacheMocking() {
+        Person p = new Person();
+        // mocked via EntityManager mocking
+        p.persist();
+        Assertions.assertNull(p.id);
+
+        Mockito.verify(session, Mockito.times(1)).persist(Mockito.any());
+    }
+}
+----
+
 === Using the repository pattern
 
 If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit5-mockito` module,
 which makes mocking beans much easier:
 
-[source,java]
+[source,xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>

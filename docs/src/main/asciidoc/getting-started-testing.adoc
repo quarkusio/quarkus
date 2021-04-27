@@ -754,6 +754,10 @@ public class MockTestCase {
 Note that there is no dependency on Mockito, you can use any mocking library you like, or even manually override the
 objects to provide the behaviour you require.
 
+NOTE: Using `@Inject` will get you a CDI proxy to the mock instance you install, which is not suitable for passing to methods such as `Mockito.verify`
+which want the mock instance itself. So if you need to call methods such as `verify` you need to hang on to the mock instance in your test, or use `@InjectMock`
+as shown below.
+
 ==== Further simplification with `@InjectMock`
 
 Building on the features provided by `QuarkusMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for mocking the beans supported by `QuarkusMock`.

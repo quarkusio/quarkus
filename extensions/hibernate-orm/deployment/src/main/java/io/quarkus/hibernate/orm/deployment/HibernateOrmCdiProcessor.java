@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
-import javax.inject.Singleton;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -153,7 +153,9 @@ public class HibernateOrmCdiProcessor {
             Class<T> type, List<DotName> allExposedTypes, Supplier<T> supplier, boolean defaultBean) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
-                .scope(Singleton.class)
+                // NOTE: this is using ApplicationScope and not Singleton, by design, in order to be mockable
+                // See https://github.com/quarkusio/quarkus/issues/16437
+                .scope(ApplicationScoped.class)
                 .unremovable()
                 .supplier(supplier);
 

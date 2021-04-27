@@ -154,7 +154,7 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public Uni<Long> count() {
         if (count == null) {
-            count = collection.countDocuments(mongoQuery);
+            count = mongoQuery == null ? collection.countDocuments() : collection.countDocuments(mongoQuery);
         }
         return count;
     }

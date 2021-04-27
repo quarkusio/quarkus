@@ -11,9 +11,9 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.deployment.processor.ResteasyReactiveJacksonProviderDefinedBuildItem;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonBasicMessageBodyReader;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonBasicMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayBasicMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayBasicMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectBasicMessageBodyReader;
@@ -42,7 +42,7 @@ public class RestClientReactiveJacksonProcessor {
         // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object
         additionalBean.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(JacksonBasicMessageBodyReader.class.getName())
-                .addBeanClass(JacksonBasicMessageBodyWriter.class.getName())
+                .addBeanClass(ClientJacksonMessageBodyWriter.class.getName())
                 .setUnremovable().build());
 
         additionalReaders
@@ -57,7 +57,7 @@ public class RestClientReactiveJacksonProcessor {
                         JsonObject.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters
-                .produce(new MessageBodyWriterBuildItem(JacksonBasicMessageBodyWriter.class.getName(), Object.class.getName(),
+                .produce(new MessageBodyWriterBuildItem(ClientJacksonMessageBodyWriter.class.getName(), Object.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(VertxJsonArrayBasicMessageBodyWriter.class.getName(),

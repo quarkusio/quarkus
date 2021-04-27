@@ -121,9 +121,9 @@
         <cronutils.version>9.1.3</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
-        <postgresql-jdbc.version>42.2.19</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.2.20</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.7.2</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.23</mysql-jdbc.version>
+        <mysql-jdbc.version>8.0.24</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <oracle-jdbc.version>21.1.0.0</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
@@ -155,7 +155,7 @@
         <awssdk.version>2.16.19</awssdk.version>
         <aws-alexa-sdk.version>2.37.1</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.4.0</azure-functions-java-library.version>
-        <kotlin.version>1.4.31</kotlin.version>
+        <kotlin.version>1.4.32</kotlin.version>
         <dekorate.version>0.14.2</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
@@ -163,14 +163,14 @@
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
         <jgit.version>5.11.0.202103091610-r</jgit.version>
-        <flyway.version>7.7.0</flyway.version>
-        <yasson.version>1.0.8</yasson.version>
-        <liquibase.version>4.3.2</liquibase.version>
+        <flyway.version>7.7.3</flyway.version>
+        <yasson.version>1.0.9</yasson.version>
+        <liquibase.version>4.3.4</liquibase.version>
         <snakeyaml.version>1.28</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <neo4j-java-driver.version>4.2.3</neo4j-java-driver.version>
-        <mongo-client.version>4.1.0</mongo-client.version>
-        <mongo-crypt.version>1.0.1</mongo-crypt.version>
+        <neo4j-java-driver.version>4.2.5</neo4j-java-driver.version>
+        <mongo-client.version>4.2.3</mongo-client.version>
+        <mongo-crypt.version>1.2.0</mongo-crypt.version>
         <artemis.version>2.17.0</artemis.version>
         <proton-j.version>0.33.8</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>

@@ -15,6 +15,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 
 public class DB2DevServicesProcessor {
 
+    /**
+     * If you update this remember to update the container-license-acceptance.txt in the tests
+     */
+    public static final String TAG = "11.5.5.1";
+
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupDB2() {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.DB2, new DevServicesDatasourceProvider() {
@@ -22,7 +27,7 @@ public class DB2DevServicesProcessor {
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
                 Db2Container container = new Db2Container(
-                        DockerImageName.parse(imageName.orElse("ibmcom/db2:" + Db2Container.DEFAULT_TAG))
+                        DockerImageName.parse(imageName.orElse("ibmcom/db2:" + TAG))
                                 .asCompatibleSubstituteFor(DockerImageName.parse("ibmcom/db2")))
                                         .withPassword(password.orElse("quarkus"))
                                         .withUsername(username.orElse("quarkus"))

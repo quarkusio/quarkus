@@ -372,7 +372,7 @@ public class QuteProcessor {
         }
 
         builder.computeSectionHelper(name -> {
-            // Create a dummy section helper factory for an uknown section that could be potentially registered at runtime 
+            // Create a dummy section helper factory for an uknown section that could be potentially registered at runtime
             return new SectionHelperFactory<SectionHelper>() {
                 @Override
                 public SectionHelper initialize(SectionInitContext context) {
@@ -466,6 +466,7 @@ public class QuteProcessor {
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             BuildProducer<ImplicitValueResolverBuildItem> implicitClasses,
+            BuildProducer<TemplateExpressionMatchesBuildItem> expressionMatches,
             BeanDiscoveryFinishedBuildItem beanDiscovery) {
 
         IndexView index = beanArchiveIndex.getIndex();
@@ -476,8 +477,8 @@ public class QuteProcessor {
             }
         };
 
-        // IMPLEMENTATION NOTE: 
-        // We do not support injection of synthetic beans with names 
+        // IMPLEMENTATION NOTE:
+        // We do not support injection of synthetic beans with names
         // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
         Map<String, BeanInfo> namedBeans = beanDiscovery.beanStream().withName()
                 .collect(toMap(BeanInfo::getName, Function.identity()));
@@ -510,6 +511,9 @@ public class QuteProcessor {
                                     generatedIdsToMatches));
                 }
             }
+
+            expressionMatches
+                    .produce(new TemplateExpressionMatchesBuildItem(templateAnalysis.generatedId, generatedIdsToMatches));
         }
 
         for (Entry<DotName, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
@@ -597,7 +601,7 @@ public class QuteProcessor {
                         iterator = parts.iterator();
                     }
                 } else {
-                    // No type info available 
+                    // No type info available
                     results.put(expression.toOriginalString(), match);
                     return match;
                 }
@@ -613,7 +617,7 @@ public class QuteProcessor {
             if (!match.isEmpty()) {
 
                 // Arrays are handled specifically
-                // We use the built-in resolver at runtime because the extension methods cannot be used to cover all combinations of dimensions and component types 
+                // We use the built-in resolver at runtime because the extension methods cannot be used to cover all combinations of dimensions and component types
                 if (match.isArray()) {
                     if (info.isProperty()) {
                         String name = info.asProperty().name;
@@ -787,7 +791,7 @@ public class QuteProcessor {
 
     private void produceExtensionMethod(IndexView index, BuildProducer<TemplateExtensionMethodBuildItem> extensionMethods,
             MethodInfo method, AnnotationInstance extensionAnnotation) {
-        // Analyze matchName and priority so that it could be used during validation 
+        // Analyze matchName and priority so that it could be used during validation
         String matchName = null;
         AnnotationValue matchNameValue = extensionAnnotation.value(ExtensionMethodGenerator.MATCH_NAME);
         if (matchNameValue != null) {
@@ -1122,7 +1126,7 @@ public class QuteProcessor {
 
         if (config.typeCheckExcludes.isPresent()) {
             for (String exclude : config.typeCheckExcludes.get()) {
-                //  
+                //
                 String[] parts = exclude.split("\\.");
                 if (parts.length < 2) {
                     // An exclude rule must have at least two parts separated by dot
@@ -1332,7 +1336,7 @@ public class QuteProcessor {
                     }
                 }
             } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
-                // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant  
+                // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant
                 // This basically transforms the type info "ON<when:12345>" into something like "|org.acme.Status|.ON"
                 Expression valueExpr = findExpression(helperHint, WhenSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
                 if (valueExpr != null) {
@@ -1462,7 +1466,7 @@ public class QuteProcessor {
         }
 
         boolean isEmpty() {
-            // For arrays the class is null 
+            // For arrays the class is null
             return type == null;
         }
 
@@ -1495,7 +1499,7 @@ public class QuteProcessor {
                 continue;
             }
             if (!Types.isAssignableFrom(extensionMethod.getMatchType(), matchType, index)) {
-                // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"   
+                // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"
                 continue;
             }
             if (!extensionMethod.matchesName(name)) {
@@ -1584,7 +1588,7 @@ public class QuteProcessor {
             // Fields
             for (FieldInfo field : clazz.fields()) {
                 if (!Modifier.isPublic(field.flags()) || ValueResolverGenerator.isSynthetic(field.flags())) {
-                    // Skip non-public and synthetic fields 
+                    // Skip non-public and synthetic fields
                     continue;
                 }
                 if (field.name().equals(name) && (field.isEnumConstant() || !Modifier.isStatic(field.flags()))) {
@@ -1838,7 +1842,7 @@ public class QuteProcessor {
         String fullPath = basePath + filePath;
         LOGGER.debugf("Produce template build items [filePath: %s, fullPath: %s, originalPath: %s", filePath, fullPath,
                 originalPath);
-        // NOTE: we cannot just drop the template because a template param can be added 
+        // NOTE: we cannot just drop the template because a template param can be added
         watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, true));
         nativeImageResources.produce(new NativeImageResourceBuildItem(fullPath));
         templatePaths.produce(new TemplatePathBuildItem(filePath, originalPath));

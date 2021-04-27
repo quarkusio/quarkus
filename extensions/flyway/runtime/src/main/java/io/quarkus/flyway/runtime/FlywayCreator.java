@@ -51,6 +51,7 @@ class FlywayCreator {
         if (flywayRuntimeConfig.repeatableSqlMigrationPrefix.isPresent()) {
             configure.repeatableSqlMigrationPrefix(flywayRuntimeConfig.repeatableSqlMigrationPrefix.get());
         }
+        configure.cleanDisabled(flywayRuntimeConfig.cleanDisabled);
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
         configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
         configure.ignoreMissingMigrations(flywayRuntimeConfig.ignoreMissingMigrations);

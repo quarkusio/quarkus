@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
@@ -36,10 +37,10 @@ public class KubernetesClientProcessor {
             .createSimple("io.fabric8.kubernetes.client.informers.ResourceEventHandler");
     private static final DotName KUBERNETES_RESOURCE = DotName
             .createSimple("io.fabric8.kubernetes.api.model.KubernetesResource");
-    private static final DotName KUBERNETES_RESOURCE_LIST = DotName
-            .createSimple("io.fabric8.kubernetes.api.model.KubernetesResourceList");
 
     private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
+
+    private static final Predicate<DotName> IS_OKHTTP_CLASS = d -> d.toString().startsWith("okhttp3");
 
     @BuildStep
     public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
@@ -70,7 +71,12 @@ public class KubernetesClientProcessor {
         findWatchedClasses(WATCHER, applicationIndex, combinedIndexBuildItem, watchedClasses);
         findWatchedClasses(RESOURCE_EVENT_HANDLER, applicationIndex, combinedIndexBuildItem, watchedClasses);
 
+        Predicate<DotName> reflectionIgnorePredicate = ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
+                .or(IS_OKHTTP_CLASS);
         for (DotName className : watchedClasses) {
+            if (reflectionIgnorePredicate.test(className)) {
+                continue;
+            }
             final ClassInfo watchedClass = combinedIndexBuildItem.getIndex().getClassByName(className);
             if (watchedClass == null) {
                 log.warnv("Unable to lookup class: {0}", className);
@@ -78,6 +84,7 @@ public class KubernetesClientProcessor {
                 reflectiveHierarchies
                         .produce(new ReflectiveHierarchyBuildItem.Builder()
                                 .type(Type.create(watchedClass.name(), Type.Kind.CLASS))
+                                .ignoreTypePredicate(reflectionIgnorePredicate)
                                 .source(getClass().getSimpleName() + " > " + watchedClass.name())
                                 .build());
             }

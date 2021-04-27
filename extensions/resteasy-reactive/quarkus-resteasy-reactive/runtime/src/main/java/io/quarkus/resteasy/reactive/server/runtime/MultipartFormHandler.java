@@ -47,12 +47,15 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
     private volatile String uploadsDirectory;
     private volatile boolean deleteUploadedFilesOnEnd;
     private volatile Optional<Long> maxBodySize;
+    private volatile ClassLoader tccl;
 
     @Override
     public void configure(RuntimeConfiguration configuration) {
         uploadsDirectory = configuration.body().uploadsDirectory();
         deleteUploadedFilesOnEnd = configuration.body().deleteUploadedFilesOnEnd();
         maxBodySize = configuration.limits().maxBodySize();
+        // capture the proper TCCL in order to avoid losing it to Vert.x in dev-mode
+        tccl = Thread.currentThread().getContextClassLoader();
 
         try {
             Files.createDirectories(Paths.get(uploadsDirectory));
@@ -80,7 +83,7 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
             httpServerRequest.setExpectMultipart(true);
             httpServerRequest.pause();
             context.suspend();
-            MultipartFormVertxHandler handler = new MultipartFormVertxHandler(context, uploadsDirectory,
+            MultipartFormVertxHandler handler = new MultipartFormVertxHandler(context, tccl, uploadsDirectory,
                     deleteUploadedFilesOnEnd, maxBodySize);
             httpServerRequest.handler(handler);
             httpServerRequest.endHandler(new Handler<Void>() {
@@ -96,6 +99,7 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
     private static class MultipartFormVertxHandler implements Handler<Buffer> {
         private final ResteasyReactiveRequestContext rrContext;
         private final RoutingContext context;
+        private final ClassLoader tccl;
 
         private final String uploadsDirectory;
         private final boolean deleteUploadedFilesOnEnd;
@@ -107,10 +111,11 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
         boolean ended;
         long uploadSize = 0L;
 
-        public MultipartFormVertxHandler(ResteasyReactiveRequestContext rrContext, String uploadsDirectory,
+        public MultipartFormVertxHandler(ResteasyReactiveRequestContext rrContext, ClassLoader tccl, String uploadsDirectory,
                 boolean deleteUploadedFilesOnEnd, Optional<Long> maxBodySize) {
             this.rrContext = rrContext;
             this.context = rrContext.serverRequest().unwrap(RoutingContext.class);
+            this.tccl = tccl;
             this.uploadsDirectory = uploadsDirectory;
             this.deleteUploadedFilesOnEnd = deleteUploadedFilesOnEnd;
             this.maxBodySize = maxBodySize;
@@ -134,6 +139,7 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
                         long size = uploadSize + upload.size();
                         if (size > MultipartFormVertxHandler.this.maxBodySize.get()) {
                             failed = true;
+                            restoreProperTCCL();
                             rrContext.resume(new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE));
                             return;
                         }
@@ -183,8 +189,13 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
                         MultipartFormVertxHandler.this.deleteFileUploads();
                     }
                 });
+                restoreProperTCCL();
                 rrContext.resume(new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE));
             }
+        }
+
+        private void restoreProperTCCL() {
+            Thread.currentThread().setContextClassLoader(tccl);
         }
 
         void uploadEnded() {
@@ -214,6 +225,7 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
                 context.addBodyEndHandler(x -> deleteFileUploads());
             }
             rrContext.setInputStream(NO_BYTES_INPUT_STREAM);
+            restoreProperTCCL();
             rrContext.resume();
         }
 

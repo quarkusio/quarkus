@@ -377,7 +377,6 @@ public class KafkaProcessor {
                     "io.apicurio.registry.serde.DefaultSchemaResolver",
                     "io.apicurio.registry.serde.DefaultIdHandler",
                     "io.apicurio.registry.serde.Legacy4ByteIdHandler",
-                    "io.apicurio.registry.serde.DefaultSchemaResolver",
                     "io.apicurio.registry.serde.fallback.DefaultFallbackArtifactProvider",
                     "io.apicurio.registry.serde.headers.DefaultHeadersHandler"));
 

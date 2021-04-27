@@ -262,12 +262,12 @@ kafka.bootstrap.servers=localhost:9092
 # Configure the Kafka sink (we write to it)
 mp.messaging.outgoing.generated-price.connector=smallrye-kafka
 mp.messaging.outgoing.generated-price.topic=prices
-mp.messaging.incoming.prices.health-readiness-enabled=false
 mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.serialization.IntegerSerializer
 
 # Configure the Kafka source (we read from it)
 mp.messaging.incoming.prices.connector=smallrye-kafka
 mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
+mp.messaging.incoming.prices.health-readiness-enabled=false
 ----
 
 More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`.
@@ -495,6 +495,7 @@ To do this, we will need to setup JSON serialization with Jackson or JSON-B.
 
 NOTE: With JSON serialization correctly configured, you can also use `Publisher<Fruit>` and `Emitter<Fruit>`.
 
+[[jackson-serialization]]
 === Serializing via Jackson
 
 First, you need to include the `quarkus-jackson` extension (if you already use the `quarkus-resteasy-jackson` extension, this is not needed).
@@ -507,9 +508,10 @@ First, you need to include the `quarkus-jackson` extension (if you already use t
 </dependency>
 ----
 
-There is an existing `ObjectMapperSerializer` that can be used to serialize all pojos via Jackson,
-but the corresponding deserializer is generic, so it needs to be subclassed.
+There is an existing `ObjectMapperSerializer` that can be used to serialize all pojos via Jackson.
+You may create an empty subclass if you want to use <<serialization-autodetection>>.
 
+The corresponding deserializer class needs to be subclassed.
 So, let's create a `FruitDeserializer` that extends the `ObjectMapperDeserializer`.
 
 [source,java]
@@ -519,7 +521,7 @@ package com.acme.fruit.jackson;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 
 public class FruitDeserializer extends ObjectMapperDeserializer<Fruit> {
-    public FruitDeserializer(){
+    public FruitDeserializer() {
         // pass the class to the parent.
         super(Fruit.class);
     }
@@ -543,6 +545,7 @@ mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.seriali
 
 Now, your Kafka messages will contain a Jackson serialized representation of your Fruit pojo.
 
+[[jsonb-serialization]]
 === Serializing via JSON-B
 
 First, you need to include the `quarkus-jsonb` extension (if you already use the `quarkus-resteasy-jsonb` extension, this is not needed).
@@ -555,9 +558,10 @@ First, you need to include the `quarkus-jsonb` extension (if you already use the
 </dependency>
 ----
 
-There is an existing `JsonbSerializer` that can be used to serialize all pojos via JSON-B,
-but the corresponding deserializer is generic, so it needs to be subclassed.
+There is an existing `JsonbSerializer` that can be used to serialize all pojos via JSON-B.
+You may create an empty subclass if you want to use <<serialization-autodetection>>.
 
+The corresponding deserializer class needs to be subclassed.
 So, let's create a `FruitDeserializer` that extends the generic `JsonbDeserializer`.
 
 [source,java]
@@ -567,7 +571,7 @@ package com.acme.fruit.jsonb;
 import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 
 public class FruitDeserializer extends JsonbDeserializer<Fruit> {
-    public FruitDeserializer(){
+    public FruitDeserializer() {
         // pass the class to the parent.
         super(Fruit.class);
     }
@@ -575,7 +579,7 @@ public class FruitDeserializer extends JsonbDeserializer<Fruit> {
 ----
 
 NOTE: If you don't want to create a deserializer for each of your pojo, you can use the generic `io.vertx.kafka.client.serialization.JsonObjectDeserializer`
-that will deserialize to a `javax.json.JsonObject`. The corresponding serializer can also be used: `io.vertx.kafka.client.serialization.JsonObjectSerializer`.
+that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding serializer can also be used: `io.vertx.kafka.client.serialization.JsonObjectSerializer`.
 
 Finally, configure your streams to use the JSON-B serializer and deserializer.
 
@@ -628,6 +632,76 @@ public class FruitResource {
     }
 }
 ----
+
+== Avro serialization
+
+This is described in a dedicated guide: link:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+
+[[serialization-autodetection]]
+== Serializer/deserializer autodetection
+
+When using SmallRye Reactive Messaging with Kafka, Quarkus can often automatically detect the correct serializer and deserializer class.
+This autodetection is based on declarations of `@Incoming` and `@Outgoing` methods, as well as injected ``@Channel``s.
+
+For example, if you declare
+
+[source,java]
+----
+@Outgoing("generated-price")
+public Multi<Integer> generate() {
+    ...
+}
+----
+
+and your configuration indicates that the `generated-price` channel uses the `smallrye-kafka` connector, then Quarkus will automatically set the `value.serializer` to Kafka's built-in `IntegerSerializer`.
+
+Similarly, if you declare
+
+[source,java]
+----
+@Incoming("my-kafka-records")
+public void consume(KafkaRecord<Long, byte[]> record) {
+    ...
+}
+----
+
+and your configuration indicates that the `my-kafka-records` channel uses the `smallrye-kafka` connector, then Quarkus will automatically set the `key.deserializer` to Kafka's built-in `LongDeserializer`, as well as the `value.deserializer` to `ByteArrayDeserializer`.
+
+Finally, if you declare
+
+[source,java]
+----
+@Inject
+@Channel("price-create")
+Emitter<Double> priceEmitter;
+----
+
+and your configuration indicates that the `price-create` channel uses the `smallrye-kafka` connector, then Quarkus will automatically set the `value.serializer` to Kafka's built-in `DoubleSerializer`.
+
+The full set of types supported by the serializer/deserializer autodetection is:
+
+* `short` and `java.lang.Short`
+* `int` and `java.lang.Integer`
+* `long` and `java.lang.Long`
+* `float` and `java.lang.Float`
+* `double` and `java.lang.Double`
+* `byte[]`
+* `java.lang.String`
+* `java.util.UUID`
+* `java.nio.ByteBuffer`
+* `org.apache.kafka.common.utils.Bytes`
+* `io.vertx.core.buffer.Buffer`
+* `io.vertx.core.json.JsonObject`
+* `io.vertx.core.json.JsonArray`
+* classes generated from Avro schemas, if Confluent or Apicurio _serde_ is present
+** see link:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio libraries
+* classes for which a subclass of `ObjectMapperSerializer` / `ObjectMapperDeserializer` is present, as described in <<jackson-serialization>>
+** it is technically not needed to subclass `ObjectMapperSerializer`, but in such case, autodetection isn't possible
+* classes for which a subclass of `JsonbSerializer` / `JsonbDeserializer` is present, as described in <<jsonb-serialization>>
+** it is technically not needed to subclass `JsonbSerializer`, but in such case, autodetection isn't possible
+
+In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
+If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
 == Blocking processing
 

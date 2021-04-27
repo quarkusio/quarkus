@@ -13,3 +13,11 @@ metadata:
   - "web"
   - "serialization"
   status: "experimental"
+  codestart:
+    name: "resteasy-reactive"
+    kind: "example"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-platform-descriptor-json"

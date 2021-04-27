@@ -36,7 +36,7 @@ public class LoopSectionHelper implements SectionHelper {
         return context.resolutionContext().evaluate(iterable).thenCompose(it -> {
             if (it == null) {
                 throw new TemplateException(String.format(
-                        "Loop error in template [%s] on line %s: {%s} resolved to null, use {%<s.orEmpty} to ignore this error",
+                        "Iteration error in template [%s] on line %s: {%s} resolved to null, use {%<s.orEmpty} to ignore this error",
                         iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString()));
             }
             // Try to extract the capacity for collections, maps and arrays to avoid resize
@@ -108,11 +108,11 @@ public class LoopSectionHelper implements SectionHelper {
             String msg;
             if (Result.NOT_FOUND.equals(it)) {
                 msg = String.format(
-                        "Loop error in template [%s] on line %s: {%s} not found, use {%<s.orEmpty} to ignore this error",
+                        "Iteration error in template [%s] on line %s: {%s} not found, use {%<s.orEmpty} to ignore this error",
                         iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString());
             } else {
                 msg = String.format(
-                        "Loop error in template [%s] on line %s: {%s} resolved to [%s] which is not iterable",
+                        "Iteration error in template [%s] on line %s: {%s} resolved to [%s] which is not iterable",
                         iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString(),
                         it.getClass().getName());
             }

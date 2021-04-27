@@ -23,5 +23,6 @@
         <module>sqs</module>
         <module>ses</module>
         <module>kms</module>
+        <module>ssm</module>
     </modules>
 </project>

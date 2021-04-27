@@ -21,6 +21,7 @@
         <kms.url>http://localhost:8011</kms.url>
         <ses.url>http://localhost:8012</ses.url>
         <iam.url>http://localhost:8013</iam.url>
+        <ssm.url>http://localhost:8014</ssm.url>
     </properties>
 
     <dependencies>
@@ -63,6 +64,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-kms</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-ssm</artifactId>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
@@ -108,6 +113,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-kms-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-ssm-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -303,7 +321,7 @@
                                     <alias>aws-local-stack</alias>
                                     <run>
                                         <env>
-                                            <SERVICES>s3,dynamodb,sns,sqs,kms,ses</SERVICES>
+                                            <SERVICES>s3,dynamodb,sns,sqs,kms,ssm,ses</SERVICES>
                                             <START_WEB>0</START_WEB>
                                         </env>
                                         <ports>
@@ -314,6 +332,7 @@
                                             <port>8011:4599</port> <!-- KMS -->
                                             <port>8012:4566</port> <!-- SES -->
                                             <port>8013:4593</port> <!-- IAM -->
+                                            <port>8014:4583</port> <!-- SSM -->
                                         </ports>
                                         <log/>
                                         <wait>

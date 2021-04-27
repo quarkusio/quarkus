@@ -139,7 +139,7 @@
         <netty.version>4.1.60.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.1.Final</jboss-logging.version>
-        <mutiny.version>0.15.0</mutiny.version>
+        <mutiny.version>0.16.0</mutiny.version>
         <mutiny-vertx.version>2.3.0</mutiny-vertx.version>
         <kafka2.version>2.8.0</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>

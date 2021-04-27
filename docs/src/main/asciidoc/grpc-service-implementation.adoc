@@ -37,11 +37,16 @@ The second implementation base is: `MutinyGreeterGrpc.GreeterImplBase`.
 Note that these classes are not interfaces but regular classes.
 When extending them, you need to override the service methods defined in the service definition.
 
+gRPC service implementations have to be annotated with `@GrpcService` annotation.
+
+NOTE: gRPC services have to be CDI beans with `Singleton` scope. The `@GrpcService` annotation makes sure of that
+and, additionally, makes sure that `RequestContext`, needed e.g. to make database calls, is enabled in your service.
+
 == Implementing a service with the default gRPC API
 
 To implement a gRPC service using the default gRPC API, create a class extending the default implementation base.
 Then, override the methods defined in the service interface.
-Finally, implement the service as a CDI bean using the `@GrpcService` annotation:
+Finally, implement the service and add the `@GrpcService` annotation:
 
 [source, java]
 ----
@@ -65,7 +70,7 @@ public class HelloService extends GreeterGrpc.GreeterImplBase {
 To implement a gRPC service using the Mutiny gRPC API, create a class extending the Mutiny implementation base.
 Then, override the methods defined in the service interface.
 These methods are using Mutiny types.
-Finally, implement the service as a CDI bean using the `@Singleton` annotation:
+Finally, implement the service and add the `@GrpcService` annotation:
 
 [source, java]
 ----

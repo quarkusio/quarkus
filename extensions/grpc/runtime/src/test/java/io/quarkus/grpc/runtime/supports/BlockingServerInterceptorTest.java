@@ -27,7 +27,7 @@ class BlockingServerInterceptorTest {
     @BeforeEach
     void setup() {
         vertx = Vertx.vertx();
-        blockingServerInterceptor = new BlockingServerInterceptor(vertx, Arrays.asList("blocking"));
+        blockingServerInterceptor = new BlockingServerInterceptor(vertx, Arrays.asList("blocking"), false);
     }
 
     @Test

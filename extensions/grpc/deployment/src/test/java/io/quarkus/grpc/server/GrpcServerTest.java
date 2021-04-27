@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
+import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -39,7 +39,7 @@ public class GrpcServerTest {
         assertThat(GrpcServerRecorder.getVerticleCount()).isGreaterThan(0);
     }
 
-    @Singleton
+    @GrpcService
     static class MyFakeService implements BindableService {
 
         @Override
@@ -48,7 +48,7 @@ public class GrpcServerTest {
         }
     }
 
-    @Singleton
+    @GrpcService
     static class MySecondFakeService implements BindableService {
 
         @Override

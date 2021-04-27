@@ -5,17 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Singleton;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.EmptyProtos;
 
 import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.MutinyTestServiceGrpc;
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-@Singleton
+@GrpcService
 public class MutinyTestService extends MutinyTestServiceGrpc.TestServiceImplBase {
 
     @Override

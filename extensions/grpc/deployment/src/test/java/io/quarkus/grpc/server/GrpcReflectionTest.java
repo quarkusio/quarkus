@@ -6,8 +6,6 @@ import static org.awaitility.Awaitility.await;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.inject.Singleton;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +32,7 @@ import io.grpc.reflection.v1alpha.ServerReflectionRequest;
 import io.grpc.reflection.v1alpha.ServerReflectionResponse;
 import io.grpc.reflection.v1alpha.ServiceResponse;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -279,7 +278,7 @@ public class GrpcReflectionTest {
         }
     }
 
-    @Singleton
+    @GrpcService
     public static class MyReflectionService extends MutinyReflectableServiceGrpc.ReflectableServiceImplBase {
         @Override
         public Uni<Reply> method(Request request) {

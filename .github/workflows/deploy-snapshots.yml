@@ -36,7 +36,7 @@ jobs:
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
-          key: q2maven-${{ steps.get-date.outputs.date }}
+          key: deploy-snapshots-${{ steps.get-date.outputs.date }}
       - name: Build and Deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}

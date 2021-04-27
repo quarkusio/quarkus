@@ -11,3 +11,4 @@ metadata:
   categories:
   - "web"
   status: "experimental"
+  codestart: "resteasy-reactive"

@@ -120,6 +120,7 @@ public class TestRunner {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
+                Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
                 try {
                     try {
                         runInternal(classScanResult, reRunFailures);

@@ -30,7 +30,7 @@
         <opentelemetry.version>1.0.1</opentelemetry.version>
         <opentelemetry-alpha.version>1.0.1-alpha</opentelemetry-alpha.version>
         <jaeger.version>0.34.3</jaeger.version>
-        <quarkus-http.version>3.1.0.Final</quarkus-http.version>
+        <quarkus-http.version>3.1.1.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <threetenbp.version>1.4.3</threetenbp.version>
         <micrometer.version>1.6.5</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->
@@ -177,7 +177,7 @@
         <sentry.version>4.3.0</sentry.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.3.0</kubernetes-client.version>
+        <kubernetes-client.version>5.3.1</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>

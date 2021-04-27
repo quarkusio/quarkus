@@ -63,7 +63,12 @@ public class LocalProject {
         }
 
         private LocalProject loadAndCache(Path pomFile) throws BootstrapMavenException {
-            final LocalProject project = new LocalProject(readModel(pomFile), workspace);
+            final Model model = readModel(pomFile);
+            if (workspace != null && workspace.getProject(ModelUtils.getGroupId(model), model.getArtifactId()) != null) {
+                // this could happen in case of an overlapping workspace layout, see LocalWorkspaceDiscoveryTest.loadOverlappingWorkspaceLayout()
+                return null;
+            }
+            final LocalProject project = new LocalProject(model, workspace);
             projectCache.put(pomFile.getParent(), project);
             return project;
         }
@@ -78,6 +83,10 @@ public class LocalProject {
             do {
                 final LocalProject project = loadProjectWithModules(projectPom,
                         childProject == null ? null : childProject.getDir().relativize(projectPom.getParent()).toString());
+                if (project == null) {
+                    // should be an overlapping workspace layout
+                    break;
+                }
                 if (childProject != null) {
                     project.modules.add(childProject);
                 } else {
@@ -107,13 +116,19 @@ public class LocalProject {
 
         private LocalProject loadProjectWithModules(Path projectPom, String skipModule) throws BootstrapMavenException {
             final LocalProject project = project(projectPom);
+            if (project == null) {
+                return null;
+            }
             final List<String> modules = project.getRawModel().getModules();
             if (!modules.isEmpty()) {
                 for (String module : modules) {
                     if (module.equals(skipModule)) {
                         continue;
                     }
-                    project.modules.add(loadProjectWithModules(project.getDir().resolve(module).resolve(POM_XML), null));
+                    final LocalProject child = loadProjectWithModules(project.getDir().resolve(module).resolve(POM_XML), null);
+                    if (child != null) {
+                        project.modules.add(child);
+                    }
                 }
             }
             return project;

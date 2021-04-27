@@ -432,7 +432,7 @@ Additionally a custom `SecurityIdentityAugmentor` can also be used to add the ro
 
 If you have a link:security-openid-connect#single-page-applications[Single Page Application for Service Applications] where your OpenId Connect Provider script such as `keycloak.js` is managing an authoriization code flow then that script will also control the SPA authentication session lifespan.
 
-If your work with a Quarkus OIDC `web-app` application then it is Quarkus OIDC Code Authentication mechanism which is managing the user session lifespan.
+If you work with a Quarkus OIDC `web-app` application then it is Quarkus OIDC Code Authentication mechanism which is managing the user session lifespan.
 
 The session age is calculated by adding the lifespan value of the current IDToken and the values of the `quarkus.oidc.authentication.session-age-extension` and `quarkus.oidc.token.lifespan-grace` properties. Of the last two properties only `quarkus.oidc.authentication.session-age-extension` should be used to significantly extend the session lifespan if required since `quarkus.oidc.token.lifespan-grace` is only meant for taking some small clock skews into consideration.
 
@@ -450,7 +450,7 @@ Note this user session can not be extended forever - the returning user with the
 
 === TokenStateManager
 
-OIDC `CodeAuthenticationMechanism` is using the default `io.quarkus.oidc.TokenStateManager' interface implementation to keep the ID, access and refresh tokens returned in the authorization code or refresh grant responses in a session cookie. It makes Quarkus OIDC endpoints completely stateless.
+OIDC `CodeAuthenticationMechanism` is using the default `io.quarkus.oidc.TokenStateManager` interface implementation to keep the ID, access and refresh tokens returned in the authorization code or refresh grant responses in a session cookie. It makes Quarkus OIDC endpoints completely stateless.
 
 Note that some endpoints do not require the access token. An access token is only required if the endpoint needs to retrieve `UserInfo` or access the downstream service with this access token or use the roles associated with the access token (the roles in the ID token are checked by default). In such cases you can set either `quarkus.oidc.token-state-manager.strategy=id-refresh-token` (keep ID and refresh tokens only) or `quarkus.oidc.token-state-manager.strategy=id-token` (keep ID token only).
 

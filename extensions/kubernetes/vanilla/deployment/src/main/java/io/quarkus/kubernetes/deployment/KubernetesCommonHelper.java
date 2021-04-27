@@ -201,6 +201,7 @@ public class KubernetesCommonHelper {
         List<DecoratorBuildItem> result = new ArrayList<>();
         if (config.getNamespace().isPresent()) {
             result.add(new DecoratorBuildItem(target, new AddNamespaceDecorator(config.getNamespace().get())));
+            result.add(new DecoratorBuildItem(target, new AddNamespaceToSubjectDecorator(config.getNamespace().get())));
         }
 
         config.getWorkingDir().ifPresent(w -> {

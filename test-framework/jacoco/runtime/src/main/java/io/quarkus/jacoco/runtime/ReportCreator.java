@@ -3,6 +3,7 @@ package io.quarkus.jacoco.runtime;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -102,9 +103,17 @@ public class ReportCreator implements Runnable {
             System.out.println("Generated Jacoco reports in " + targetdir);
             System.out.flush();
         } catch (Exception e) {
-            System.err.println("Failed to generate Jacoco reports ");
+            System.err.println("Failed to generate Jacoco reports");
             e.printStackTrace();
             System.err.flush();
+            File error = new File(targetdir, "error.txt");
+            try (FileOutputStream out = new FileOutputStream(error)) {
+                PrintStream ps = new PrintStream(out);
+                ps.println("Failed to generate Jacoco reports");
+                e.printStackTrace(ps);
+            } catch (IOException iugnore) {
+                //ignore
+            }
         }
     }
 

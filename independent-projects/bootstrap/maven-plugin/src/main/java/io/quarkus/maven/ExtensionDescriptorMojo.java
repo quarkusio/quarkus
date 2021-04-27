@@ -29,16 +29,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -69,7 +60,7 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
- *
+ * <p>
  * <p/>
  * Also generates META-INF/quarkus-extension.json which includes properties of
  * the extension such as name, labels, maven coordinates, etc that are used by
@@ -147,7 +138,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     /**
      * Artifacts that are always loaded parent first when running in dev or test mode. This is an advanced option
      * and should only be used if you are sure that this is the correct solution for the use case.
-     *
+     * <p>
      * A possible example of this would be logging libraries, as these need to be loaded by the system class loader.
      */
     @Parameter
@@ -156,7 +147,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     /**
      * Artifacts that are always loaded parent when the fast-jar is used. This is an advanced option
      * and should only be used if you are sure that this is the correct solution for the use case.
-     *
+     * <p>
      * A possible example of this would be logging libraries, as these need to be loaded by the system class loader.
      */
     @Parameter
@@ -401,26 +392,37 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
             return;
         }
-        org.eclipse.aether.artifact.Artifact codestartArtifact = DependencyNodeUtils.toArtifact(mvalue.asText());
 
-        if (codestartArtifact.getVersion() == null || codestartArtifact.getVersion().isEmpty()) {
-            codestartArtifact = codestartArtifact.setVersion(project.getVersion());
-            codestartObject.put("artifact",
-                    codestartArtifact.getGroupId() + ":" + codestartArtifact.getArtifactId() + ":"
-                            + codestartArtifact.getClassifier() + ":" + codestartArtifact.getExtension() + ":"
-                            + codestartArtifact.getVersion());
-        }
+        String codestartArtifact = getCodestartArtifact(mvalue.asText(), project.getVersion());
+        final AppArtifactCoords codestartArtifactCoords = AppArtifactCoords.fromString(codestartArtifact);
+        codestartObject.put("artifact", codestartArtifactCoords.toString());
         if (!skipCodestartValidation) {
             // first we look for it in the workspace, if it's in there we don't need to actually resolve the artifact, because it might not have been built yet
-            if (workspaceProvider.workspace().getProject(codestartArtifact.getGroupId(),
-                    codestartArtifact.getArtifactId()) == null) {
+            if (workspaceProvider.workspace().getProject(codestartArtifactCoords.getGroupId(),
+                    codestartArtifactCoords.getArtifactId()) == null) {
                 try {
-                    resolve(codestartArtifact);
+                    resolve(new DefaultArtifact(codestartArtifact));
                 } catch (MojoExecutionException e) {
-                    throw new MojoExecutionException("Failed to resolve codestart artifact " + codestartArtifact, e);
+                    throw new MojoExecutionException("Failed to resolve codestart artifact " + codestartArtifactCoords, e);
                 }
             }
         }
+    }
+
+    /**
+     * If artifact contains "G:A" the project version is added to have "G:A:V" <br>
+     * else the version must be defined either with ${project.version} or hardcoded <br>
+     * to be compatible with AppArtifactCoords.fromString
+     *
+     * @param originalArtifact
+     * @param projectVersion
+     * @return
+     */
+    static String getCodestartArtifact(String originalArtifact, String projectVersion) {
+        if (originalArtifact.matches("^[^:]+:[^:]+$")) {
+            return originalArtifact + ":" + projectVersion;
+        }
+        return originalArtifact.replace("${project.version}", projectVersion);
     }
 
     private static JsonNode getJsonElement(ObjectNode extObject, String... elements) {
@@ -867,7 +869,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     /**
      * parse yaml or json and then return jackson JSonNode for furhter processing
-     *
      ***/
     private ObjectNode processPlatformArtifact(Path descriptor, ObjectMapper mapper)
             throws IOException {

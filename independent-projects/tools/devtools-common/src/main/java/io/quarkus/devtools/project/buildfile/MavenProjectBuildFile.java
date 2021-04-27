@@ -1,5 +1,6 @@
 package io.quarkus.devtools.project.buildfile;
 
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
 import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
@@ -12,6 +13,7 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
@@ -96,8 +98,10 @@ public class MavenProjectBuildFile extends BuildFile {
         }
         final MavenProjectBuildFile extensionManager = new MavenProjectBuildFile(projectDir, extensionCatalog,
                 projectModel, deps, managedDeps, projectProps);
+        final List<ResourceLoader> codestartResourceLoaders = codestartLoadersBuilder().catalog(extensionCatalog)
+                .artifactResolver(mvnResolver).build();
         return QuarkusProject.of(projectDir, extensionCatalog,
-                QuarkusProjectHelper.getCodestartResourceLoaders(extensionCatalog, mvnResolver), log, extensionManager);
+                codestartResourceLoaders, log, extensionManager);
     }
 
     private static MavenArtifactResolver getMavenResolver(Path projectDir) {

@@ -1,63 +1,25 @@
 package io.quarkus.devtools.project;
 
-import static io.quarkus.platform.catalog.processor.CatalogProcessor.getCodestartArtifacts;
-import static io.quarkus.platform.descriptor.loader.json.ResourceLoaders.resolveFileResourceLoader;
-import static java.util.Objects.requireNonNull;
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.platform.catalog.processor.ExtensionProcessor;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.config.PropertiesUtil;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import org.eclipse.aether.artifact.Artifact;
 
 public class QuarkusProjectHelper {
-
-    private static final String BASE_CODESTARTS_ARTIFACT_PROPERTY = "quarkus-base-codestart-artifact";
-    private static final String BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME = "/quarkus-devtools-base-codestarts.properties";
 
     private static RegistriesConfig toolsConfig;
     private static MessageWriter log;
     private static MavenArtifactResolver artifactResolver;
     private static ExtensionCatalogResolver catalogResolver;
-    private static final String BASE_CODESTARTS_ARTIFACT_COORDS = retrieveBaseCodestartsArtifactCoords();
-
-    private static String retrieveBaseCodestartsArtifactCoords() {
-        final String artifact = PropertiesUtil.getProperty(BASE_CODESTARTS_ARTIFACT_PROPERTY);
-        if (artifact != null) {
-            return artifact;
-        }
-        try (final InputStream resource = QuarkusProjectHelper.class
-                .getResourceAsStream(BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME)) {
-            final Properties properties = new Properties();
-            requireNonNull(resource,
-                    BASE_CODESTARTS_ARTIFACT_PROPERTIES_NAME + " resource not found.");
-            properties.load(resource);
-            return requireNonNull(properties.getProperty("artifact"),
-                    "base codestarts 'artifact' property not found");
-        } catch (IOException e) {
-            throw new IllegalStateException("Couldn't load the base codestarts artifact properties", e);
-        }
-    }
 
     public static QuarkusProject getProject(Path projectDir) {
         BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectDir);
@@ -131,57 +93,6 @@ public class QuarkusProjectHelper {
             MessageWriter log) {
         return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
                 log, extManager);
-    }
-
-    public static List<ResourceLoader> getCodestartResourceLoaders(ExtensionCatalog catalog) {
-        return getCodestartResourceLoaders(catalog, artifactResolver());
-    }
-
-    public static List<ResourceLoader> getBaseCodestartResourceLoaders() {
-        return getCodestartResourceLoaders(null, artifactResolver());
-    }
-
-    public static List<ResourceLoader> getCodestartResourceLoaders(ExtensionCatalog catalog,
-            MavenArtifactResolver mvn) {
-        return getCodestartResourceLoaders(BASE_CODESTARTS_ARTIFACT_COORDS, catalog, mvn);
-    }
-
-    public static List<ResourceLoader> getCodestartResourceLoaders(String baseCodestartsArtifactCoords,
-            ExtensionCatalog catalog,
-            MavenArtifactResolver mvn) {
-        final Map<String, Artifact> codestartsArtifacts = new LinkedHashMap<>();
-        if (catalog != null) {
-            // Load codestarts from each extensions codestart artifacts
-            for (Extension e : catalog.getExtensions()) {
-                final String artifactCoords = ExtensionProcessor.of(e).getCodestartArtifact();
-                if (artifactCoords == null || codestartsArtifacts.containsKey(artifactCoords)) {
-                    continue;
-                }
-                codestartsArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
-            }
-
-            // Load codestarts from catalog codestart artifacts
-            final List<String> catalogCodestartArtifacts = getCodestartArtifacts(catalog);
-            for (String artifactCoords : catalogCodestartArtifacts) {
-                if (codestartsArtifacts.containsKey(artifactCoords)) {
-                    continue;
-                }
-                codestartsArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
-            }
-        }
-        // Load codestarts from the base artifact
-        codestartsArtifacts.put(baseCodestartsArtifactCoords, DependencyNodeUtils.toArtifact(baseCodestartsArtifactCoords));
-
-        final List<ResourceLoader> codestartResourceLoaders = new ArrayList<>(codestartsArtifacts.size());
-        for (Artifact a : codestartsArtifacts.values()) {
-            try {
-                final File artifactFile = mvn.resolve(a).getArtifact().getFile();
-                codestartResourceLoaders.add(resolveFileResourceLoader(artifactFile));
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to resolve codestart artifact " + a, e);
-            }
-        }
-        return codestartResourceLoaders;
     }
 
     public static ExtensionCatalogResolver getCatalogResolver() {

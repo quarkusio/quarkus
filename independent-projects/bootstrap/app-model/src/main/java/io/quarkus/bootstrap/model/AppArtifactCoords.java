@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.model;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -18,7 +20,17 @@ public class AppArtifactCoords implements Serializable {
     }
 
     protected static String[] split(String str, String[] parts) {
+        requireNonNull(str, "str is required");
+        final int firstSep = str.indexOf(':');
         final int versionSep = str.lastIndexOf(':');
+        if (firstSep < 0) {
+            throw new IllegalArgumentException(
+                    "Invalid AppArtifactCoords string without any separator: " + str);
+        }
+        if (firstSep == versionSep) {
+            throw new IllegalArgumentException(
+                    "Use AppArtifactKey instead of AppArtifactCoords to deal with 'groupId:artifactId': " + str);
+        }
         if (versionSep <= 0 || versionSep == str.length() - 1) {
             throw new IllegalArgumentException("One of type, version or separating them ':' is missing from '" + str + "'");
         }

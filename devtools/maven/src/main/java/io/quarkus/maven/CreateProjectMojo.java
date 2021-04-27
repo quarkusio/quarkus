@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
 import static org.fusesource.jansi.Ansi.ansi;
 
 import java.io.BufferedWriter;
@@ -43,6 +44,7 @@ import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
@@ -140,7 +142,7 @@ public class CreateProjectMojo extends AbstractMojo {
      * Set the package name of the generated classes.
      * <br />
      * If not set, {@link #projectGroupId} will be used as {@link #packageName}
-     *
+     * <p>
      * {@code packageName}
      */
     @Parameter(property = "packageName")
@@ -273,8 +275,12 @@ public class CreateProjectMojo extends AbstractMojo {
             final SourceType sourceType = CreateProject.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 
+            final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder()
+                    .catalog(catalog)
+                    .artifactResolver(mvn)
+                    .build();
             QuarkusProject newProject = QuarkusProject.of(projectDirPath, catalog,
-                    QuarkusProjectHelper.getCodestartResourceLoaders(catalog, mvn), log, buildToolEnum);
+                    codestartsResourceLoader, log, buildToolEnum);
             final CreateProject createProject = new CreateProject(newProject)
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)

@@ -1,5 +1,7 @@
 package io.quarkus.maven;
 
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -30,6 +32,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
@@ -92,9 +95,9 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(), baseDir(),
                     project.getModel().getProperties(), artifactResolver(), getMessageWriter(), null);
         } else {
+            final List<ResourceLoader> codestartsResourceLoader = getCodestartResourceLoaders(resolveExtensionsCatalog());
             quarkusProject = QuarkusProject.of(baseDir(), resolveExtensionsCatalog(),
-                    QuarkusProjectHelper.getCodestartResourceLoaders(resolveExtensionsCatalog(),
-                            artifactResolver()),
+                    codestartsResourceLoader,
                     log, buildTool);
         }
 

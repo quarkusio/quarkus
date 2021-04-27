@@ -238,6 +238,12 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         RestClientListeners.get().forEach(listener -> listener.onNewClient(aClass, this));
 
+        AnnotationRegisteredProviders annotationRegisteredProviders = Arc.container()
+                .instance(AnnotationRegisteredProviders.class).get();
+        for (Map.Entry<Class<?>, Integer> mapper : annotationRegisteredProviders.getProviders(aClass).entrySet()) {
+            register(mapper.getKey(), mapper.getValue());
+        }
+
         Object defaultMapperDisabled = getConfiguration().getProperty(DEFAULT_MAPPER_DISABLED);
         Boolean globallyDisabledMapper = ConfigProvider.getConfig()
                 .getOptionalValue(DEFAULT_MAPPER_DISABLED, Boolean.class).orElse(false);

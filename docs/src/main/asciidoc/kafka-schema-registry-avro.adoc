@@ -71,6 +71,11 @@ In this guide, we will use the ones provided by Apicurio.
     <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
     <version>2.0.0.Final</version>
 </dependency>
+<!-- Apicurio Registry libraries use Keycloak client, which requires Apache HTTP Client -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-apache-httpclient</artifactId>
+</dependency>
 ----
 
 [TIP]

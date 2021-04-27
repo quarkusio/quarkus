@@ -231,9 +231,8 @@ public final class PathTestHelper {
         if (resource == null) {
             return false;
         }
-        String classFileName = className.replace('.', File.separatorChar) + ".class";
         if (Files.isDirectory(testLocation)) {
-            return resource.getProtocol().startsWith("file") && isInTestDir(resource);
+            return resource.getProtocol().startsWith("file") && toPath(resource).startsWith(testLocation);
         }
         if (!resource.getProtocol().equals("jar")) {
             return false;

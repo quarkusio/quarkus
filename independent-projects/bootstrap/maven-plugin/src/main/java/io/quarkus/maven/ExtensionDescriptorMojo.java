@@ -29,7 +29,17 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -178,6 +188,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     AppArtifactCoords deploymentCoords;
     CollectResult collectedDeploymentDeps;
+    DependencyResult runtimeDeps;
 
     MavenArtifactResolver resolver;
 
@@ -303,12 +314,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         ObjectMapper mapper = null;
         if (extensionFile.exists()) {
             mapper = getMapper(extensionFile.toString().endsWith(".yaml"));
-
-            try {
-                extObject = processPlatformArtifact(extensionFile.toPath(), mapper);
-            } catch (IOException e) {
-                throw new MojoExecutionException("Failed to parse " + extensionFile, e);
-            }
+            extObject = readJsonNode(extensionFile.toPath(), mapper);
         } else {
             mapper = getMapper(true);
             extObject = getMapper(true).createObjectNode();
@@ -316,15 +322,17 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         transformLegacyToNew(output, extObject, mapper);
 
-        if (extObject.get("groupId") == null) {
-            extObject.put(GROUP_ID, project.getGroupId());
+        JsonNode artifactNode = extObject.get("artifact");
+        if (artifactNode == null) {
+            final AppArtifactCoords coords = new AppArtifactCoords(
+                    extObject.has("groupId") ? extObject.get("groupId").asText() : project.getGroupId(),
+                    extObject.has("artifactId") ? extObject.get("artifactId").asText() : project.getArtifactId(),
+                    null,
+                    "jar",
+                    extObject.has("version") ? extObject.get("version").asText() : project.getVersion());
+            extObject.put("artifact", coords.toString());
         }
-        if (extObject.get("artifactId") == null) {
-            extObject.put(ARTIFACT_ID, project.getArtifactId());
-        }
-        if (extObject.get("version") == null) {
-            extObject.put("version", project.getVersion());
-        }
+
         if (extObject.get("name") == null) {
             if (project.getName() != null) {
                 extObject.put("name", project.getName());
@@ -364,6 +372,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         setBuiltWithQuarkusCoreVersion(extObject);
         addCapabilities(extObject);
+        addExtensionDependencies(extObject);
 
         completeCodestartArtifact(mapper, extObject);
 
@@ -376,6 +385,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
+        }
+    }
+
+    private ObjectNode readJsonNode(Path extensionFile, ObjectMapper mapper) throws MojoExecutionException {
+        try {
+            return readExtensionYaml(extensionFile, mapper);
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to parse " + extensionFile, e);
         }
     }
 
@@ -479,10 +496,58 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     }
 
-    private void addCapabilities(ObjectNode extObject) {
+    private void addExtensionDependencies(ObjectNode extObject) throws MojoExecutionException {
+        final AtomicReference<ArrayNode> extensionDeps = new AtomicReference<>();
+        final DependencyVisitor capabilityCollector = new DependencyVisitor() {
+            @Override
+            public boolean visitEnter(DependencyNode node) {
+                final org.eclipse.aether.artifact.Artifact a = node.getArtifact();
+                if (a != null && a.getFile() != null && a.getExtension().equals("jar")) {
+                    final Path p = a.getFile().toPath();
+                    boolean isExtension = false;
+                    if (Files.isDirectory(p)) {
+                        isExtension = getExtensionDescriptorOrNull(p) != null;
+                    } else {
+                        try (FileSystem fs = FileSystems.newFileSystem(p, (ClassLoader) null)) {
+                            isExtension = getExtensionDescriptorOrNull(fs.getPath("")) != null;
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to read " + p, e);
+                        }
+                    }
+                    if (isExtension) {
+                        ArrayNode deps = extensionDeps.get();
+                        if (deps == null) {
+                            deps = getMetadataNode(extObject).putArray("extension-dependencies");
+                            extensionDeps.set(deps);
+                        }
+                        deps.add(new AppArtifactKey(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension())
+                                .toString());
+                    }
+                }
+                return true;
+            }
+
+            @Override
+            public boolean visitLeave(DependencyNode node) {
+                return true;
+            }
+        };
+        final DependencyNode rootNode = resolveRuntimeDeps().getRoot();
+        rootNode.accept(capabilityCollector);
+    }
+
+    private void addCapabilities(ObjectNode extObject) throws MojoExecutionException {
         if (capabilities.isEmpty()) {
             return;
         }
+        final ObjectNode capsNode = getMetadataNode(extObject).putObject("capabilities");
+        final ArrayNode provides = capsNode.putArray("provides");
+        for (CapabilityConfig cap : capabilities) {
+            provides.add(cap.getName());
+        }
+    }
+
+    private static ObjectNode getMetadataNode(ObjectNode extObject) {
         JsonNode mvalue = extObject.get(METADATA);
         ObjectNode metadata;
         if (mvalue != null && mvalue.isObject()) {
@@ -490,11 +555,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         } else {
             metadata = extObject.putObject(METADATA);
         }
-        final ObjectNode capsNode = metadata.putObject("capabilities");
-        final ArrayNode provides = capsNode.putArray("provides");
-        for (CapabilityConfig cap : capabilities) {
-            provides.add(cap.getName());
-        }
+        return metadata;
     }
 
     private void validateExtensionDeps() throws MojoExecutionException {
@@ -510,12 +571,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         // collect transitive extension deps
         final DependencyResult resolvedDeps;
 
-        try {
-            resolvedDeps = repoSystem.resolveDependencies(repoSession,
-                    new DependencyRequest().setCollectRequest(newCollectRuntimeDepsRequest()));
-        } catch (Exception e) {
-            throw new MojoExecutionException("Failed to resolve dependencies of " + project.getArtifact(), e);
-        }
+        resolvedDeps = resolveRuntimeDeps();
 
         for (DependencyNode node : resolvedDeps.getRoot().getChildren()) {
             rootDeployment.directRuntimeDeps.add(toKey(node.getArtifact()));
@@ -609,6 +665,18 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             throw new MojoExecutionException(buf.toString());
         }
 
+    }
+
+    private DependencyResult resolveRuntimeDeps() throws MojoExecutionException {
+        if (runtimeDeps == null) {
+            try {
+                runtimeDeps = repoSystem.resolveDependencies(repoSession,
+                        new DependencyRequest().setCollectRequest(newCollectRuntimeDepsRequest()));
+            } catch (Exception e) {
+                throw new MojoExecutionException("Failed to resolve dependencies of " + project.getArtifact(), e);
+            }
+        }
+        return runtimeDeps;
     }
 
     private void highlightInTree(DependencyNode node, Collection<AppArtifactKey> keys) {
@@ -742,10 +810,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
         try {
             if (f.isDirectory()) {
-                return readExtensionDescriptor(f.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH));
+                final Path p = getExtensionDescriptorOrNull(f.toPath());
+                return p == null ? null : readExtensionDescriptor(p);
             } else {
                 try (FileSystem fs = FileSystems.newFileSystem(f.toPath(), (ClassLoader) null)) {
-                    return readExtensionDescriptor(fs.getPath(BootstrapConstants.DESCRIPTOR_PATH));
+                    final Path p = getExtensionDescriptorOrNull(fs.getPath(""));
+                    return p == null ? null : readExtensionDescriptor(p);
                 }
             }
         } catch (Throwable e) {
@@ -753,10 +823,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
+    private Path getExtensionDescriptorOrNull(Path runtimeExtRootDir) {
+        final Path p = runtimeExtRootDir.resolve(BootstrapConstants.DESCRIPTOR_PATH);
+        return Files.exists(p) ? p : null;
+    }
+
     private Properties readExtensionDescriptor(final Path extDescr) throws IOException {
-        if (!Files.exists(extDescr)) {
-            return null;
-        }
         final Properties props = new Properties();
         try (BufferedReader reader = Files.newBufferedReader(extDescr)) {
             props.load(reader);
@@ -870,7 +942,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     /**
      * parse yaml or json and then return jackson JSonNode for furhter processing
      ***/
-    private ObjectNode processPlatformArtifact(Path descriptor, ObjectMapper mapper)
+    private ObjectNode readExtensionYaml(Path descriptor, ObjectMapper mapper)
             throws IOException {
         try (InputStream is = Files.newInputStream(descriptor)) {
             return mapper.readValue(is, ObjectNode.class);

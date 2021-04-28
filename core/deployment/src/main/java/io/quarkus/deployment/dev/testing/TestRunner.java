@@ -98,6 +98,7 @@ public class TestRunner {
             log.error("Not re-running failed tests, as all tests passed");
             return;
         }
+        log.error("RUNNING TESTS", new RuntimeException("RUN STACK TRACE"));
         synchronized (TestRunner.this) {
             if (testsRunning) {
                 if (reRunFailures) {

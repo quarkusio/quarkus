@@ -1,7 +1,7 @@
+.gitignore
 /
 README.md
 jbang
-.gitignore
 jbang.cmd
 src/
 src/GreetingCommand.java

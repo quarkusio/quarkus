@@ -166,6 +166,7 @@ public class SnapshotTesting {
                     }
                     return r;
                 })
+                .sorted()
                 .collect(toList());
 
         final boolean updateSnapshot = shouldUpdateSnapshot(snapshotName);

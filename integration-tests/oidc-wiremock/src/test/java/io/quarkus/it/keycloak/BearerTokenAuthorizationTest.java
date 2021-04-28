@@ -24,7 +24,7 @@ public class BearerTokenAuthorizationTest {
     public void testSecureAccessSuccessPreferredUsername() {
         for (String username : Arrays.asList("alice", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username, new HashSet<>(Arrays.asList("user", "admin"))))
-                    .when().get("/api/users/preferredUserName")
+                    .when().get("/api/users/preferredUserName/bearer")
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo(username));
@@ -34,7 +34,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testAccessAdminResource() {
         RestAssured.given().auth().oauth2(getAccessToken("admin", new HashSet<>(Arrays.asList("admin"))))
-                .when().get("/api/admin")
+                .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
@@ -43,7 +43,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testAccessAdminResourceAudienceArray() {
         RestAssured.given().auth().oauth2(getAccessTokenAudienceArray("admin", new HashSet<>(Arrays.asList("admin"))))
-                .when().get("/api/admin")
+                .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
@@ -52,7 +52,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testDeniedAccessAdminResource() {
         RestAssured.given().auth().oauth2(getAccessToken("alice", new HashSet<>(Arrays.asList("user"))))
-                .when().get("/api/admin")
+                .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(403);
     }
@@ -60,7 +60,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testDeniedNoBearerToken() {
         RestAssured.given()
-                .when().get("/api/users/me").then()
+                .when().get("/api/users/me/bearer").then()
                 .statusCode(401)
                 .header("WWW-Authenticate", equalTo("Bearer"));
     }
@@ -70,7 +70,7 @@ public class BearerTokenAuthorizationTest {
         String token = getExpiredAccessToken("alice", new HashSet<>(Arrays.asList("user")));
 
         RestAssured.given().auth().oauth2(token).when()
-                .get("/api/users/me")
+                .get("/api/users/me/bearer")
                 .then()
                 .statusCode(401)
                 .header("WWW-Authenticate", equalTo("Bearer"));
@@ -81,7 +81,7 @@ public class BearerTokenAuthorizationTest {
         String token = getAccessTokenWrongIssuer("alice", new HashSet<>(Arrays.asList("user")));
 
         RestAssured.given().auth().oauth2(token).when()
-                .get("/api/users/me")
+                .get("/api/users/me/bearer")
                 .then()
                 .statusCode(401)
                 .header("WWW-Authenticate", equalTo("Bearer"));
@@ -92,7 +92,7 @@ public class BearerTokenAuthorizationTest {
         String token = getAccessTokenWrongAudience("alice", new HashSet<>(Arrays.asList("user")));
 
         RestAssured.given().auth().oauth2(token).when()
-                .get("/api/users/me")
+                .get("/api/users/me/bearer")
                 .then()
                 .statusCode(401)
                 .header("WWW-Authenticate", equalTo("Bearer"));

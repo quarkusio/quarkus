@@ -77,8 +77,8 @@ class QuarkusModelBuilderTest {
                 new File(projectDir, "build/classes/java/test"));
         final SourceSet sourceSourceSet = workspaceModule.getSourceSourceSet();
         assertEquals(new File(projectDir, "src/main/resources"), sourceSourceSet.getResourceDirectory());
-        assertEquals(1, sourceSourceSet.getSourceDirectories().size());
-        assertEquals(new File(projectDir, "src/main/java"), sourceSourceSet.getSourceDirectories().iterator().next());
+        assertEquals(5, sourceSourceSet.getSourceDirectories().size());
+        assertThat(sourceSourceSet.getSourceDirectories()).contains(new File(projectDir, "src/main/java"));
     }
 
     private File getResourcesProject(String projectName) throws URISyntaxException, IOException {

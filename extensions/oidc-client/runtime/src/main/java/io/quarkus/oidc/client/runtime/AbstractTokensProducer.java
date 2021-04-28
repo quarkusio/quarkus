@@ -24,12 +24,16 @@ public abstract class AbstractTokensProducer {
     final TokensHelper tokensHelper = new TokensHelper();
 
     @PostConstruct
-    public void initTokens() {
+    public void init() {
         OidcClients oidcClients = Arc.container().instance(OidcClients.class).get();
-        oidcClient = Objects.requireNonNull(clientId(), "clientId must not be null")
-                .map(oidcClient -> Objects.requireNonNull(oidcClients.getClient(oidcClient), "Unknown client"))
-                .orElseGet(oidcClients::getClient);
+        Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
+        oidcClient = clientId.isPresent() ? Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client")
+                : oidcClients.getClient();
 
+        initTokens();
+    }
+
+    protected void initTokens() {
         if (earlyTokenAcquisition) {
             tokensHelper.initTokens(oidcClient);
         }

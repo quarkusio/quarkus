@@ -129,6 +129,7 @@
         <module>oidc-token-propagation</module>
         <module>oidc-client</module>
         <module>oidc-client-filter</module>
+        <module>oidc-client-reactive-filter</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
 

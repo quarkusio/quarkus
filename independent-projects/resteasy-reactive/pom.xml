@@ -51,7 +51,7 @@
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jakarta.json.version>1.1.6</jakarta.json.version>
         <mutiny.version>0.16.0</mutiny.version>
-        <smallrye-common-annotation.version>1.5.0</smallrye-common-annotation.version>
+        <smallrye-common.version>1.6.0</smallrye-common.version>
         <vertx.version>4.0.3</vertx.version>
         <rest-assured.version>4.3.3</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
@@ -149,8 +149,10 @@
 
             <dependency>
                 <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-annotation</artifactId>
-                <version>${smallrye-common-annotation.version}</version>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${smallrye-common.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
 
             <!-- JUnit 5 dependencies, imported as a BOM -->

@@ -70,6 +70,7 @@ public class AccessLogFileTestCase {
                         p.setProperty("quarkus.http.access-log.base-file-name", "server");
                         p.setProperty("quarkus.http.access-log.log-directory", logDirectory.toAbsolutePath().toString());
                         p.setProperty("quarkus.http.access-log.pattern", "long");
+                        p.setProperty("quarkus.http.access-log.exclude-pattern", "/health|/liveliness");
                         ByteArrayOutputStream out = new ByteArrayOutputStream();
                         p.store(out, null);
 
@@ -104,6 +105,8 @@ public class AccessLogFileTestCase {
                 new HttpClientConfig().setParam(CoreProtocolPNames.PROTOCOL_VERSION, new ProtocolVersion("HTTP", 1, 0)));
         final RequestSpecification requestSpec = new RequestSpecBuilder().setConfig(http10Config).build();
         final String paramValue = UUID.randomUUID().toString();
+        RestAssured.given(requestSpec).get("/health"); //should be ignored
+        RestAssured.given(requestSpec).get("/liveliness"); //should be ignored
         RestAssured.given(requestSpec).get("/does-not-exist?foo=" + paramValue);
 
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
@@ -117,6 +120,8 @@ public class AccessLogFileTestCase {
                         Path path = logDirectory.resolve("server.log");
                         Assertions.assertTrue(Files.exists(path));
                         String data = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+                        Assertions.assertFalse(data.contains("/health"));
+                        Assertions.assertFalse(data.contains("/liveliness"));
                         Assertions.assertTrue(data.contains("/does-not-exist"));
                         Assertions.assertTrue(data.contains("?foo=" + paramValue),
                                 "access log is missing query params");

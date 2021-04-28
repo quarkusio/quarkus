@@ -15,6 +15,12 @@ public class AccessLogConfig {
     public boolean enabled;
 
     /**
+     * A regular expression that can be used to exclude some paths from logging.
+     */
+    @ConfigItem
+    Optional<String> excludePattern;
+
+    /**
      * The access log pattern.
      *
      * If this is the string `common`, `combined` or `long` then this will use one of the specified named formats:

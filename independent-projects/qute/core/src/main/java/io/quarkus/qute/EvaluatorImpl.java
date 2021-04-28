@@ -4,9 +4,14 @@ import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.ExpressionImpl.PartImpl;
 import io.quarkus.qute.Results.Result;
 import io.smallrye.mutiny.Uni;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.jboss.logging.Logger;
@@ -19,11 +24,29 @@ class EvaluatorImpl implements Evaluator {
     private static final Logger LOGGER = Logger.getLogger(EvaluatorImpl.class);
 
     private final List<ValueResolver> resolvers;
-    private final List<NamespaceResolver> namespaceResolvers;
+    private final Map<String, List<NamespaceResolver>> namespaceResolvers;
 
     EvaluatorImpl(List<ValueResolver> valueResolvers, List<NamespaceResolver> namespaceResolvers) {
         this.resolvers = valueResolvers;
-        this.namespaceResolvers = namespaceResolvers;
+        Map<String, List<NamespaceResolver>> namespaceResolversMap = new HashMap<>();
+        for (NamespaceResolver namespaceResolver : namespaceResolvers) {
+            List<NamespaceResolver> matching = namespaceResolversMap.get(namespaceResolver.getNamespace());
+            if (matching == null) {
+                matching = new ArrayList<>();
+                namespaceResolversMap.put(namespaceResolver.getNamespace(), matching);
+            }
+            matching.add(namespaceResolver);
+        }
+        for (Entry<String, List<NamespaceResolver>> entry : namespaceResolversMap.entrySet()) {
+            List<NamespaceResolver> list = entry.getValue();
+            if (list.size() == 1) {
+                entry.setValue(Collections.singletonList(list.get(0)));
+            } else {
+                // Sort by priority - higher priority wins
+                list.sort(Comparator.comparingInt(WithPriority::getPriority).reversed());
+            }
+        }
+        this.namespaceResolvers = namespaceResolversMap;
     }
 
     @Override
@@ -31,26 +54,26 @@ class EvaluatorImpl implements Evaluator {
         Iterator<Part> parts;
         if (expression.hasNamespace()) {
             parts = expression.getParts().iterator();
-            NamespaceResolver resolver = null;
-            for (NamespaceResolver namespaceResolver : namespaceResolvers) {
-                if (namespaceResolver.getNamespace().equals(expression.getNamespace())) {
-                    resolver = namespaceResolver;
-                    break;
-                }
-            }
-            if (resolver == null) {
-                LOGGER.errorf("No namespace resolver found for: %s", expression.getNamespace());
-                return Futures.failure(new TemplateException("No resolver for namespace: " + expression.getNamespace()));
+            List<NamespaceResolver> matching = namespaceResolvers.get(expression.getNamespace());
+            if (matching == null) {
+                String msg = "No namespace resolver found for: " + expression.getNamespace();
+                LOGGER.errorf(msg);
+                return Futures.failure(new TemplateException(msg));
             }
             EvalContext context = new EvalContextImpl(false, null, parts.next(), resolutionContext);
-            LOGGER.debugf("Found '%s' namespace resolver: %s", expression.getNamespace(), resolver.getClass());
-            return resolver.resolve(context).thenCompose(r -> {
-                if (parts.hasNext()) {
-                    return resolveReference(false, r, parts, resolutionContext);
-                } else {
-                    return toCompletionStage(r);
-                }
-            });
+            if (matching.size() == 1) {
+                // Very often a single matching resolver will be found
+                return matching.get(0).resolve(context).thenCompose(r -> {
+                    if (parts.hasNext()) {
+                        return resolveReference(false, r, parts, resolutionContext);
+                    } else {
+                        return toCompletionStage(r);
+                    }
+                });
+            } else {
+                // Multiple namespace resolvers match
+                return resolveNamespace(context, resolutionContext, parts, matching.iterator());
+            }
         } else {
             if (expression.isLiteral()) {
                 return expression.getLiteralValue();
@@ -59,6 +82,24 @@ class EvaluatorImpl implements Evaluator {
                 return resolveReference(true, resolutionContext.getData(), parts, resolutionContext);
             }
         }
+    }
+
+    private CompletionStage<Object> resolveNamespace(EvalContext context, ResolutionContext resolutionContext,
+            Iterator<Part> parts, Iterator<NamespaceResolver> resolvers) {
+        NamespaceResolver resolver = resolvers.next();
+        return resolver.resolve(context).thenCompose(r -> {
+            if (Result.NOT_FOUND.equals(r)) {
+                if (resolvers.hasNext()) {
+                    return resolveNamespace(context, resolutionContext, parts, resolvers);
+                } else {
+                    return Results.NOT_FOUND;
+                }
+            } else if (parts.hasNext()) {
+                return resolveReference(false, r, parts, resolutionContext);
+            } else {
+                return toCompletionStage(r);
+            }
+        });
     }
 
     private CompletionStage<Object> resolveReference(boolean tryParent, Object ref, Iterator<Part> parts,

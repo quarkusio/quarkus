@@ -185,8 +185,8 @@ public class ExtensionMethodGenerator {
         valueResolver.close();
     }
 
-    public NamespaceResolverCreator createNamespaceResolver(ClassInfo declaringClass, String namespace) {
-        return new NamespaceResolverCreator(declaringClass, namespace);
+    public NamespaceResolverCreator createNamespaceResolver(ClassInfo declaringClass, String namespace, int priority) {
+        return new NamespaceResolverCreator(declaringClass, namespace, priority);
     }
 
     private void implementGetNamespace(ClassCreator namespaceResolver, String namespace) {
@@ -408,7 +408,7 @@ public class ExtensionMethodGenerator {
 
         private final ClassCreator namespaceResolver;
 
-        public NamespaceResolverCreator(ClassInfo declaringClass, String namespace) {
+        public NamespaceResolverCreator(ClassInfo declaringClass, String namespace, int priority) {
             String baseName;
             if (declaringClass.enclosingClass() != null) {
                 baseName = simpleName(declaringClass.enclosingClass()) + ValueResolverGenerator.NESTED_SEPARATOR
@@ -418,7 +418,7 @@ public class ExtensionMethodGenerator {
             }
             String targetPackage = packageName(declaringClass.name());
 
-            String suffix = NAMESPACE_SUFFIX + sha1(namespace);
+            String suffix = NAMESPACE_SUFFIX + "_" + sha1(namespace) + "_" + priority;
             String generatedName = generatedNameFromTarget(targetPackage, baseName, suffix);
             generatedTypes.add(generatedName.replace('/', '.'));
 
@@ -426,6 +426,7 @@ public class ExtensionMethodGenerator {
                     .interfaces(NamespaceResolver.class).build();
 
             implementGetNamespace(namespaceResolver, namespace);
+            implementGetPriority(namespaceResolver, priority);
         }
 
         public ResolveCreator implementResolve() {

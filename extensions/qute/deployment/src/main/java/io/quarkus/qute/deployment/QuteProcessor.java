@@ -16,7 +16,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -123,6 +122,7 @@ import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.ConfigTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
+import io.quarkus.qute.runtime.extensions.StringTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.TimeTemplateExtensions;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -209,7 +209,7 @@ public class QuteProcessor {
                 .addBeanClasses(EngineProducer.class, TemplateProducer.class, ContentTypes.class, Template.class,
                         TemplateInstance.class, CollectionTemplateExtensions.class,
                         MapTemplateExtensions.class, NumberTemplateExtensions.class, ConfigTemplateExtensions.class,
-                        TimeTemplateExtensions.class)
+                        TimeTemplateExtensions.class, StringTemplateExtensions.class)
                 .build();
     }
 
@@ -1038,19 +1038,28 @@ public class QuteProcessor {
             }
         }
 
-        // Generate a namespace resolver for extension methods declared on the same class
-        for (Entry<DotName, Map<String, List<TemplateExtensionMethodBuildItem>>> entry1 : classToNamespaceExtensions
+        // Generate a namespace resolver for extension methods declared on the same class and of the same priority
+        for (Entry<DotName, Map<String, List<TemplateExtensionMethodBuildItem>>> classEntry : classToNamespaceExtensions
                 .entrySet()) {
-            Map<String, List<TemplateExtensionMethodBuildItem>> namespaceToMethods = entry1.getValue();
-            for (Entry<String, List<TemplateExtensionMethodBuildItem>> entry2 : namespaceToMethods.entrySet()) {
-                List<TemplateExtensionMethodBuildItem> methods = entry2.getValue();
-                // Methods with higher priority take precedence
-                methods.sort(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority).reversed());
-                try (NamespaceResolverCreator namespaceResolverCreator = extensionMethodGenerator
-                        .createNamespaceResolver(methods.get(0).getMethod().declaringClass(), entry2.getKey())) {
-                    try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {
-                        for (TemplateExtensionMethodBuildItem method : methods) {
-                            resolveCreator.addMethod(method.getMethod(), method.getMatchName(), method.getMatchRegex());
+            Map<String, List<TemplateExtensionMethodBuildItem>> namespaceToMethods = classEntry.getValue();
+            for (Entry<String, List<TemplateExtensionMethodBuildItem>> nsEntry : namespaceToMethods.entrySet()) {
+                Map<Integer, List<TemplateExtensionMethodBuildItem>> priorityToMethods = new HashMap<>();
+                for (TemplateExtensionMethodBuildItem method : nsEntry.getValue()) {
+                    List<TemplateExtensionMethodBuildItem> methods = priorityToMethods.get(method.getPriority());
+                    if (methods == null) {
+                        methods = new ArrayList<>();
+                        priorityToMethods.put(method.getPriority(), methods);
+                    }
+                    methods.add(method);
+                }
+                for (Entry<Integer, List<TemplateExtensionMethodBuildItem>> priorityEntry : priorityToMethods.entrySet()) {
+                    try (NamespaceResolverCreator namespaceResolverCreator = extensionMethodGenerator
+                            .createNamespaceResolver(priorityEntry.getValue().get(0).getMethod().declaringClass(),
+                                    nsEntry.getKey(), priorityEntry.getKey())) {
+                        try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {
+                            for (TemplateExtensionMethodBuildItem method : priorityEntry.getValue()) {
+                                resolveCreator.addMethod(method.getMethod(), method.getMatchName(), method.getMatchRegex());
+                            }
                         }
                     }
                 }

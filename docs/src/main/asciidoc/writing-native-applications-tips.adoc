@@ -27,6 +27,14 @@ Resources that are meant to be part of the native executable need to be configur
 
 Quarkus automatically includes the resources present in `META-INF/resources` (the web resources) but, outside of this directory, you are on your own.
 
+[WARNING]
+====
+Note that you need to be extremely careful here as anything in `META-INF/resources` will be exposed as static web resources.
+So this directory is not a shortcut for "let's automatically include these resources in the native executable" and should only be used for static web resources.
+
+Other resources should be declared explicitly.
+====
+
 To include more resources in the native executable, create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
 
 [source,json]

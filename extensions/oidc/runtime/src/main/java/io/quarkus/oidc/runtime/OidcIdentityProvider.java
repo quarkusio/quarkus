@@ -169,16 +169,21 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             builder.addCredential(tokenCred);
                             OidcUtils.setSecurityIdentityUserInfo(builder, userInfo);
                             OidcUtils.setSecurityIdentityConfigMetadata(builder, resolvedContext);
+                            String principalMember = "";
                             if (result.introspectionResult.containsKey(OidcConstants.INTROSPECTION_TOKEN_USERNAME)) {
-                                final String userName = result.introspectionResult
-                                        .getString(OidcConstants.INTROSPECTION_TOKEN_USERNAME);
-                                builder.setPrincipal(new Principal() {
-                                    @Override
-                                    public String getName() {
-                                        return userName;
-                                    }
-                                });
+                                principalMember = OidcConstants.INTROSPECTION_TOKEN_USERNAME;
+                            } else if (result.introspectionResult.containsKey(OidcConstants.INTROSPECTION_TOKEN_SUB)) {
+                                // fallback to "sub", if "username" is not present
+                                principalMember = OidcConstants.INTROSPECTION_TOKEN_SUB;
                             }
+                            final String userName = principalMember.isEmpty() ? ""
+                                    : result.introspectionResult.getString(principalMember);
+                            builder.setPrincipal(new Principal() {
+                                @Override
+                                public String getName() {
+                                    return userName;
+                                }
+                            });
                             if (result.introspectionResult.containsKey(OidcConstants.TOKEN_SCOPE)) {
                                 for (String role : result.introspectionResult.getString(OidcConstants.TOKEN_SCOPE).split(" ")) {
                                     builder.addRole(role.trim());

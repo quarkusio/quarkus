@@ -34,7 +34,10 @@ public class ConfigAdapter {
     }
 
     public static <T extends MeterRegistryConfig> T validate(T config) {
-        Validated validated = config.validate();
+        return validate(config, config.validate());
+    }
+
+    public static <T extends MeterRegistryConfig> T validate(T config, Validated validated) {
         List<Validated.Invalid<T>> errors = validated.failures();
         if (validated.isInvalid()) {
             errors.stream().forEach(x -> {

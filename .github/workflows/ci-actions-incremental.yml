@@ -34,8 +34,7 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
-  NATIVE_TEST_MAVEN_OPTS: "-Dquarkus.native.container-build=true -Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
-  WINDOWS_NATIVE_TEST_MAVEN_OPTS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
+  NATIVE_TEST_MAVEN_OPTS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
   JVM_TEST_MAVEN_OPTS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
@@ -470,13 +469,11 @@ jobs:
         os:
           - {
             name: "ubuntu-latest",
-            family: "Linux",
-            path: "linux"
+            family: "Linux"
           }
           - {
             name: "windows-latest",
-            family: "Windows",
-            path: "windows"
+            family: "Windows"
           }
     steps:
       - uses: actions/checkout@v2
@@ -685,7 +682,7 @@ jobs:
   native-tests:
     name: Native Tests - ${{matrix.category}}
     needs: calculate-test-jobs
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os-name}}
     env:
       # leave more space for the actual native compilation and execution
       MAVEN_OPTS: -Xmx1g
@@ -699,13 +696,28 @@ jobs:
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
       - uses: actions/checkout@v2
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Reclaim Disk Space
-        run: .github/ci-prerequisites.sh
+      - name: Install cl.exe
+        if: startsWith(matrix.os-name, 'windows')
+        uses: ilammy/msvc-dev-cmd@v1
+      - uses: microsoft/setup-msbuild@v1
+        if: startsWith(matrix.os-name, 'windows')
+      - name: Setup GraalVM
+        id: setup-graalvm
+        uses: DeLaGuardo/setup-graalvm@master
+        if: startsWith(matrix.os-name, 'windows')
+        with:
+          graalvm-version: '21.0.0.java11'
+      - name: Install native-image component
+        if: startsWith(matrix.os-name, 'windows')
+        run: |
+          gu.cmd install native-image
       # We do this so we can get better analytics for the downloaded version of the build images
       - name: Update Docker Client User Agent
         shell: bash
@@ -720,9 +732,11 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build
+        shell: bash
         env:
           TEST_MODULES: ${{matrix.test-modules}}
-        run: ./mvnw $COMMON_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_OPTS
+          CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
+        run: ./mvnw $COMMON_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_OPTS -Dquarkus.native.container-build=$CONTAINER_BUILD
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -738,93 +752,5 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Native Tests - ${{matrix.category}}"
-          path: "**/target/*-reports/TEST-*.xml"
-          retention-days: 2
-
-  native-tests-windows:
-    name: Native Tests - Windows - ${{matrix.category}}
-    needs: build-jdk11
-    #needs: needs.calculate-test-jobs.outputs.native_matrix
-    runs-on: windows-latest
-    env:
-      # leave more space for the actual native compilation and execution
-      MAVEN_OPTS: -Xmx1g
-    # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    # Ignore the following YAML Schema error
-    timeout-minutes: ${{matrix.timeout}}
-    strategy:
-      max-parallel: 8
-      fail-fast: false
-      # we only run a native build on Windows for Hibernate Validator just to be sure
-      # that we can build native executables on Windows
-      # matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
-      matrix:
-        include:
-          - category: hibernate-validator
-            timeout: 20
-            test-modules: hibernate-validator
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-      - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: 11
-      - name: Install cl.exe
-        uses: ilammy/msvc-dev-cmd@v1
-      - uses: microsoft/setup-msbuild@v1
-      - name: Setup GraalVM
-        id: setup-graalvm
-        uses: DeLaGuardo/setup-graalvm@master
-        with:
-          graalvm-version: '21.0.0.java11'
-      - name: Install native-image component
-        run: |
-          gu.cmd install native-image
-      - name: Reclaim Disk Space
-        run: .github/ci-prerequisites.sh
-      # We do this so we can get better analytics for the downloaded version of the build images
-      - name: Update Docker Client User Agent
-        shell: bash
-        run: |
-          cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Build
-        shell: bash
-        env:
-          TEST_MODULES: ${{matrix.test-modules}}
-          CATEGORY: ${{matrix.category}}
-        run: |
-          for i in $TEST_MODULES
-          do modules+="integration-tests/$i,"; done
-          ./mvnw $COMMON_MAVEN_ARGS -pl "${modules}" $WINDOWS_NATIVE_TEST_MAVEN_OPTS ${{ needs.build-jdk11.outputs.gib_args }}
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-native-windows-${{matrix.category}}
-          path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "surefire-reports-Native Tests - Windows - ${{matrix.category}}"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2

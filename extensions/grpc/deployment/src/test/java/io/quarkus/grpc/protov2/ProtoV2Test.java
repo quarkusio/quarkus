@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
-import javax.inject.Inject;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -17,7 +15,7 @@ import io.grpc.examples.helloworld.v2.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.v2.HelloRequest;
 import io.grpc.examples.helloworld.v2.HelloRequestOrBuilder;
 import io.grpc.examples.helloworld.v2.MutinyGreeterGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ProtoV2Test {
@@ -30,8 +28,7 @@ public class ProtoV2Test {
                             HelloRequestOrBuilder.class, HelloReplyOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
-    @Inject
-    @GrpcService("hello-service")
+    @GrpcClient("hello-service")
     MutinyGreeterGrpc.MutinyGreeterStub stub;
 
     @Test

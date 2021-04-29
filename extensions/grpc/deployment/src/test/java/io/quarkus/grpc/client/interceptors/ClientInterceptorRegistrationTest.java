@@ -15,7 +15,7 @@ import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.MutinyHelloService;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -32,8 +32,7 @@ public class ClientInterceptorRegistrationTest {
     @Inject
     MyFirstClientInterceptor interceptor;
 
-    @Inject
-    @GrpcService("hello-service")
+    @GrpcClient("hello-service")
     GreeterGrpc.GreeterBlockingStub client;
 
     @Test

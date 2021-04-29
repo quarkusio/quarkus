@@ -1,13 +1,12 @@
 package io.quarkus.grpc.server.services;
 
-import javax.inject.Singleton;
-
 import io.grpc.examples.goodbyeworld.FarewellGrpc;
 import io.grpc.examples.goodbyeworld.GoodbyeReply;
 import io.grpc.examples.goodbyeworld.GoodbyeRequest;
 import io.grpc.stub.StreamObserver;
+import io.quarkus.grpc.GrpcService;
 
-@Singleton
+@GrpcService
 public class GoodbyeService extends FarewellGrpc.FarewellImplBase {
 
     @Override

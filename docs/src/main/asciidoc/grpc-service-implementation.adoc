@@ -41,13 +41,13 @@ When extending them, you need to override the service methods defined in the ser
 
 To implement a gRPC service using the default gRPC API, create a class extending the default implementation base.
 Then, override the methods defined in the service interface.
-Finally, implement the service as a CDI bean using the `@Singleton` annotation:
+Finally, implement the service as a CDI bean using the `@GrpcService` annotation:
 
 [source, java]
 ----
-import javax.inject.Singleton;
+import io.quarkus.grpc.GrpcService;
 
-@Singleton
+@GrpcService
 public class HelloService extends GreeterGrpc.GreeterImplBase {
 
     @Override
@@ -69,9 +69,9 @@ Finally, implement the service as a CDI bean using the `@Singleton` annotation:
 
 [source, java]
 ----
-import javax.inject.Singleton;
+import io.quarkus.grpc.GrpcService;
 
-@Singleton
+@GrpcService
 public class ReactiveHelloService extends MutinyGreeterGrpc.GreeterImplBase {
 
     @Override
@@ -115,7 +115,9 @@ Using Mutiny, you can implement these as follows:
 
 [source, java]
 ----
-@Singleton
+import io.quarkus.grpc.GrpcService;
+
+@GrpcService
 public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
 
     @Override

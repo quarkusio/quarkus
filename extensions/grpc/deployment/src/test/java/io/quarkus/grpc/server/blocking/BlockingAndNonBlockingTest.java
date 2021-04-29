@@ -25,7 +25,7 @@ import io.grpc.reflection.v1alpha.ServerReflectionResponse;
 import io.grpc.reflection.v1alpha.ServiceResponse;
 import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.TestServiceGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingMutinyHelloService;
@@ -50,16 +50,13 @@ public class BlockingAndNonBlockingTest {
     @Inject
     GrpcHealthStorage healthService;
 
-    @Inject
-    @GrpcService("reflection-service")
+    @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
 
-    @Inject
-    @GrpcService("test-service")
+    @GrpcClient("test-service")
     TestServiceGrpc.TestServiceBlockingStub test;
 
-    @Inject
-    @GrpcService("greeter-service")
+    @GrpcClient("greeter-service")
     GreeterGrpc.GreeterBlockingStub greeter;
 
     @Test

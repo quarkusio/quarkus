@@ -2,15 +2,14 @@ package io.quarkus.grpc.example.streaming;
 
 import java.time.Duration;
 
-import javax.inject.Singleton;
-
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.MutinyStreamingGrpc;
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-@Singleton
+@GrpcService
 public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
 
     @Override

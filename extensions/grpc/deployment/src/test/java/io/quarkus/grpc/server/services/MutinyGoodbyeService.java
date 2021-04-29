@@ -1,13 +1,12 @@
 package io.quarkus.grpc.server.services;
 
-import javax.inject.Singleton;
-
 import io.grpc.examples.goodbyeworld.GoodbyeReply;
 import io.grpc.examples.goodbyeworld.GoodbyeRequest;
 import io.grpc.examples.goodbyeworld.MutinyFarewellGrpc;
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
-@Singleton
+@GrpcService
 public class MutinyGoodbyeService extends MutinyFarewellGrpc.FarewellImplBase {
 
     @Override

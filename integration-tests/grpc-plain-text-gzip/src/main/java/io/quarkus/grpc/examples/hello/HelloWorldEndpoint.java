@@ -10,17 +10,16 @@ import examples.GreeterGrpc;
 import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 
 @Path("/hello")
 public class HelloWorldEndpoint {
 
-    @Inject
-    @GrpcService("hello")
+    @GrpcClient("hello")
     GreeterGrpc.GreeterBlockingStub blockingHelloService;
-    @Inject
-    @GrpcService("hello")
+
+    @GrpcClient("hello")
     MutinyGreeterGrpc.MutinyGreeterStub mutinyHelloService;
 
     @Inject

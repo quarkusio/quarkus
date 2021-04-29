@@ -30,8 +30,8 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
-import io.quarkus.grpc.runtime.annotations.GrpcServiceLiteral;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 
 @SuppressWarnings({ "OptionalIsPresent", "Convert2Lambda" })
@@ -163,7 +163,7 @@ public class Channels {
     }
 
     public static Channel retrieveChannel(String name) {
-        InstanceHandle<Channel> instance = Arc.container().instance(Channel.class, GrpcServiceLiteral.of(name));
+        InstanceHandle<Channel> instance = Arc.container().instance(Channel.class, GrpcClient.Literal.of(name));
         if (!instance.isAvailable()) {
             throw new IllegalStateException("Unable to retrieve the gRPC Channel " + name);
         }
@@ -174,7 +174,7 @@ public class Channels {
     public static class ChannelDestroyer implements BeanDestroyer<Channel> {
 
         @Override
-        public void destroy(Channel instance, CreationalContext creationalContext, Map params) {
+        public void destroy(Channel instance, CreationalContext<Channel> creationalContext, Map<String, Object> params) {
             if (instance instanceof ManagedChannel) {
                 ManagedChannel channel = (ManagedChannel) instance;
                 LOGGER.info("Shutting down gRPC channel " + channel);

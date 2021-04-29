@@ -15,7 +15,7 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -41,8 +41,7 @@ public class BlockingStubInjectionTest {
     @ApplicationScoped
     static class MyConsumer {
 
-        @Inject
-        @GrpcService("hello-service")
+        @GrpcClient("hello-service")
         GreeterGrpc.GreeterBlockingStub service;
 
         public String invoke(String s) {

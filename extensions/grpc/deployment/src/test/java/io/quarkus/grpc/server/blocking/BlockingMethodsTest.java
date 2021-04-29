@@ -7,8 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.inject.Inject;
-
 import org.assertj.core.api.Assertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -21,9 +19,9 @@ import com.google.protobuf.EmptyProtos;
 
 import io.grpc.StatusRuntimeException;
 import io.grpc.testing.integration.Messages;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.blocking.BlockingTestServiceGrpc;
 import io.quarkus.grpc.blocking.MutinyBlockingTestServiceGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingTestService;
 import io.quarkus.test.QuarkusUnitTest;
@@ -45,12 +43,10 @@ public class BlockingMethodsTest {
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);
 
-    @Inject
-    @GrpcService("blocking-test")
+    @GrpcClient("blocking-test")
     BlockingTestServiceGrpc.BlockingTestServiceBlockingStub service;
 
-    @Inject
-    @GrpcService("blocking-test")
+    @GrpcClient("blocking-test")
     MutinyBlockingTestServiceGrpc.MutinyBlockingTestServiceStub mutiny;
 
     @Test

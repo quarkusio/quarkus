@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -26,6 +27,7 @@ public class SimpleJsonTest {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Person.class, SimpleJsonResource.class, User.class, Views.class, SuperClass.class,
+                                    DataItem.class, Item.class,
                                     NoopReaderInterceptor.class);
                 }
             });
@@ -292,5 +294,18 @@ public class SimpleJsonTest {
                 .statusCode(500);
         // a new instance should have been created
         assertEquals(3, SimpleJsonResource.UnquotedFieldsPersonBiFunction.count.intValue());
+    }
+
+    @Test
+    public void testGenericInput() {
+        RestAssured
+                .with()
+                .body("{\"content\": {\"name\":\"foo\", \"email\":\"bar\"}}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/genericInput")
+                .then()
+                .statusCode(200)
+                .contentType("text/plain")
+                .body(is("foo"));
     }
 }

@@ -73,6 +73,7 @@ import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.DotName;
+import org.jboss.resteasy.reactive.DummyElementType;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestForm;
@@ -163,6 +164,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName SET = DotName.createSimple(Set.class.getName());
     public static final DotName SORTED_SET = DotName.createSimple(SortedSet.class.getName());
     public static final DotName MAP = DotName.createSimple(Map.class.getName());
+    public static final DotName DUMMY_ELEMENT_TYPE = DotName.createSimple(DummyElementType.class.getName());
     public static final DotName MULTI_VALUED_MAP = DotName.createSimple(MultivaluedMap.class.getName());
     public static final DotName PATH_SEGMENT = DotName.createSimple(PathSegment.class.getName());
     public static final DotName LOCAL_DATE = DotName.createSimple(LocalDate.class.getName());

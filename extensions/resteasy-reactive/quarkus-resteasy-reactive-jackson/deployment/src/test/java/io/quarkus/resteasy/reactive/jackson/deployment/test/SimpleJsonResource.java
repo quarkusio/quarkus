@@ -235,6 +235,12 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return Multi.createFrom().empty();
     }
 
+    @POST
+    @Path("/genericInput")
+    public String genericInputTest(DataItem<Item> item) {
+        return item.getContent().getName();
+    }
+
     public static class UnquotedFieldsPersonBiFunction implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 
         public static final AtomicInteger count = new AtomicInteger();

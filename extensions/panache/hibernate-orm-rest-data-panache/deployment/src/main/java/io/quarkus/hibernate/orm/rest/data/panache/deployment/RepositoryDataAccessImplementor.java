@@ -66,9 +66,8 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     @Override
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
         MethodDescriptor getEntityManager = ofMethod(PanacheRepositoryBase.class, "getEntityManager",
-                EntityManager.class, Class.class);
-        ResultHandle entityManager = creator.invokeInterfaceMethod(getEntityManager, getRepositoryInstance(creator),
-                creator.invokeVirtualMethod(ofMethod(Object.class, "getClass", Class.class), entity));
+                EntityManager.class);
+        ResultHandle entityManager = creator.invokeInterfaceMethod(getEntityManager, getRepositoryInstance(creator));
         return creator.invokeInterfaceMethod(
                 ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, entity);
     }

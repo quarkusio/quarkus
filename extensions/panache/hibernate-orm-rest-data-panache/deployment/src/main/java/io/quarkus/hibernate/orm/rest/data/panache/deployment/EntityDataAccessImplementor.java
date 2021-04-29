@@ -55,12 +55,12 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
-     * Implements <code>JpaOperations.getEntityManager().merge(entity)</code>
+     * Implements <code>Entity.getEntityManager().merge(entity)</code>
      */
     @Override
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
-        ResultHandle entityManager = creator.invokeVirtualMethod(
-                ofMethod(entityClassName, "getEntityManager", EntityManager.class), entity);
+        ResultHandle entityManager = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "getEntityManager", EntityManager.class));
         return creator.invokeInterfaceMethod(
                 ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, entity);
     }

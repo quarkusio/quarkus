@@ -21,18 +21,23 @@ import kotlin.reflect.KClass
 interface PanacheRepositoryBase<Entity : Any, Id: Any> {
 
     /**
-     * Returns the default [EntityManager] for extra operations (eg. CriteriaQueries)
+     * Returns the [EntityManager] for the <Entity> for extra operations (eg. CriteriaQueries)
      *
-     * @return the default [EntityManager]
+     * @return the [EntityManager] for the <Entity>
      */
-    fun getEntityManager(): EntityManager = AbstractJpaOperations.getEntityManager()
+    @GenerateBridge
+    fun getEntityManager(): EntityManager = throw implementationInjectionMissing()
 
     /**
      * Returns the [EntityManager] tied to the given class for extra operations (eg. CriteriaQueries)
      *
-     * @return the default [EntityManager]
+     * @return the [EntityManager] tied to the given class
+     *
+     * @deprecated use {@link Panache#getEntityManager(Class)} instead to access an entity manager for any entity class
      */
-    fun getEntityManager(clazz: KClass<Any>): EntityManager = AbstractJpaOperations.getEntityManager(clazz.java)
+    @GenerateBridge
+    @Deprecated(message="use Panache.getEntityManager(Class) instead to access an entity manager for any entity class")
+    fun getEntityManager(clazz: KClass<Any>): EntityManager = throw implementationInjectionMissing()
 
     /**
      * Persist the given entity in the database, if not already persisted.

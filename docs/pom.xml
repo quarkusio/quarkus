@@ -2575,7 +2575,7 @@
             <plugin>
                 <groupId>dev.jbang</groupId>
                 <artifactId>jbang-maven-plugin</artifactId>
-                <version>0.0.6</version>
+                <version>0.0.7</version>
                 <executions>
                     <execution>
                         <id>generate-build-item-doc</id>
@@ -2584,7 +2584,6 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <jbangVersion>0.56.0</jbangVersion>
                             <script>${project.basedir}/../.github/quarkusbuilditemdoc.java</script>
                             <args>
                                 <arg>--outputFile ${project.basedir}/../target/asciidoc/generated/config/quarkus-all-build-items.adoc</arg>

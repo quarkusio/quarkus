@@ -35,7 +35,26 @@ So this directory is not a shortcut for "let's automatically include these resou
 Other resources should be declared explicitly.
 ====
 
-To include more resources in the native executable, create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
+To include more resources in the native executable, the easiest way is to use the `quarkus.native.resources.includes` configuration property,
+and its counterpart to exclude resources `quarkus.native.resources.excludes`.
+
+Both configuration properties support glob patterns.
+
+For instance, having the following properties in your `application.properties`:
+
+[source,properties]
+----
+quarkus.native.resources.includes=foo/**,bar/**/*.txt
+quarkus.native.resources.excludes=foo/private/**
+----
+
+will include:
+
+* all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
+* all text files in the `bar/` directory and its subdirectories.
+
+If globs are not sufficiently precise for your use case and you need to rely on regular expressions or if you prefer relying on the GraalVM infrastructure,
+you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
 
 [source,json]
 ----

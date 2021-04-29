@@ -5,6 +5,7 @@ import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,8 +29,8 @@ public class DockerContainerLauncher implements ArtifactLauncher {
     private final String containerImage;
     private final String profile;
     private Process quarkusProcess;
-    private final int httpPort;
-    private final int httpsPort;
+    private int httpPort;
+    private int httpsPort;
     private final long jarWaitTime;
     private final Map<String, String> systemProps = new HashMap<>();
 
@@ -59,6 +60,13 @@ public class DockerContainerLauncher implements ArtifactLauncher {
     public void start() throws IOException {
 
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
+
+        if (httpPort == 0) {
+            httpPort = getRandomPort();
+        }
+        if (httpsPort == 0) {
+            httpsPort = getRandomPort();
+        }
 
         List<String> args = new ArrayList<>();
         args.add("docker"); // TODO: determine this dynamically?
@@ -95,6 +103,12 @@ public class DockerContainerLauncher implements ArtifactLauncher {
         ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, jarWaitTime);
         updateConfigForPort(result.getPort());
         isSsl = result.isSsl();
+    }
+
+    private int getRandomPort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
     }
 
     public boolean listensOnSsl() {

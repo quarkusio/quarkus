@@ -318,7 +318,7 @@ public class BootstrapMavenContext {
                     if (!tmp.isDirectory()) {
                         tmp = tmp.getParentFile();
                     }
-                    alternatePomDir = tmp.toString();
+                    alternatePomDir = tmp == null ? null : tmp.toString();
                 }
             }
 

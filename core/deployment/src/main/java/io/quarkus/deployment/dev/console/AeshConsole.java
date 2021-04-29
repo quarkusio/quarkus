@@ -1,5 +1,9 @@
 package io.quarkus.deployment.dev.console;
 
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.Connection;
 import org.aesh.terminal.tty.Size;
@@ -18,6 +22,22 @@ public class AeshConsole extends QuarkusConsole {
     private String promptMessage;
     private int totalStatusLines = 0;
     private int lastWriteCursorX;
+    /**
+     * The write queue
+     * <p>
+     * Data must be added to this, before it is written out by {@link #deadlockSafeWrite()}
+     * <p>
+     * Because Aesh can log deadlocks are possible on windows if a write fails, unless care
+     * is taken.
+     */
+    private final LinkedBlockingDeque<String> writeQueue = new LinkedBlockingDeque<>();
+    private final Lock connectionLock = new ReentrantLock();
+    private static final ThreadLocal<Boolean> IN_WRITE = new ThreadLocal<>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     public AeshConsole(Connection connection) {
         INSTANCE = this;
@@ -32,28 +52,31 @@ public class AeshConsole extends QuarkusConsole {
         }, "Console Shutdown Hoot"));
     }
 
-    private synchronized AeshConsole setStatusMessage(String statusMessage) {
-        StringBuilder buffer = new StringBuilder();
-        clearStatusMessages(buffer);
-        int newLines = countLines(statusMessage) + countLines(promptMessage);
-        if (statusMessage == null) {
-            if (promptMessage != null) {
+    private AeshConsole setStatusMessage(String statusMessage) {
+        synchronized (this) {
+            StringBuilder buffer = new StringBuilder();
+            clearStatusMessages(buffer);
+            int newLines = countLines(statusMessage) + countLines(promptMessage);
+            if (statusMessage == null) {
+                if (promptMessage != null) {
+                    newLines += 2;
+                }
+            } else if (promptMessage == null) {
                 newLines += 2;
+            } else {
+                newLines += 3;
             }
-        } else if (promptMessage == null) {
-            newLines += 2;
-        } else {
-            newLines += 3;
-        }
-        if (newLines > totalStatusLines) {
-            for (int i = 0; i < newLines - totalStatusLines; ++i) {
-                buffer.append("\n");
+            if (newLines > totalStatusLines) {
+                for (int i = 0; i < newLines - totalStatusLines; ++i) {
+                    buffer.append("\n");
+                }
             }
+            this.statusMessage = statusMessage;
+            this.totalStatusLines = newLines;
+            printStatusAndPrompt(buffer);
+            writeQueue.add(buffer.toString());
         }
-        this.statusMessage = statusMessage;
-        this.totalStatusLines = newLines;
-        printStatusAndPrompt(buffer);
-        connection.write(buffer.toString());
+        deadlockSafeWrite();
         return this;
     }
 
@@ -61,76 +84,110 @@ public class AeshConsole extends QuarkusConsole {
         return new AeshInputHolder(inputHandler);
     }
 
-    private synchronized AeshConsole setPromptMessage(String promptMessage) {
-        StringBuilder buffer = new StringBuilder();
-        clearStatusMessages(buffer);
-        int newLines = countLines(statusMessage) + countLines(promptMessage);
-        if (statusMessage == null) {
-            if (promptMessage != null) {
+    private AeshConsole setPromptMessage(String promptMessage) {
+        synchronized (this) {
+            StringBuilder buffer = new StringBuilder();
+            clearStatusMessages(buffer);
+            int newLines = countLines(statusMessage) + countLines(promptMessage);
+            if (statusMessage == null) {
+                if (promptMessage != null) {
+                    newLines += 2;
+                }
+            } else if (promptMessage == null) {
                 newLines += 2;
+            } else {
+                newLines += 3;
             }
-        } else if (promptMessage == null) {
-            newLines += 2;
-        } else {
-            newLines += 3;
-        }
-        if (newLines > totalStatusLines) {
-            for (int i = 0; i < newLines - totalStatusLines; ++i) {
-                buffer.append("\n");
+            if (newLines > totalStatusLines) {
+                for (int i = 0; i < newLines - totalStatusLines; ++i) {
+                    buffer.append("\n");
+                }
             }
+            this.promptMessage = promptMessage;
+            this.totalStatusLines = newLines;
+            printStatusAndPrompt(buffer);
+            writeQueue.add(buffer.toString());
         }
-        this.promptMessage = promptMessage;
-        this.totalStatusLines = newLines;
-        printStatusAndPrompt(buffer);
-        connection.write(buffer.toString());
+        deadlockSafeWrite();
         return this;
     }
 
-    private synchronized void end(Connection conn) {
-        conn.write(ANSI.MAIN_BUFFER);
-        conn.write(ANSI.CURSOR_SHOW);
+    private void end(Connection conn) {
         conn.setAttributes(attributes);
-        conn.write("\u001B[0m");
+        StringBuilder sb = new StringBuilder();
+        sb.append(ANSI.MAIN_BUFFER);
+        sb.append(ANSI.CURSOR_SHOW);
+        sb.append("\u001B[0m");
+        writeQueue.add(sb.toString());
+        deadlockSafeWrite();
+    }
+
+    private void deadlockSafeWrite() {
+        for (;;) {
+            //after we have unlocked we always need to check again
+            //another thread may have added something to the queue after our last write but before
+            //we unlocked. Checking again makes sure we are safe
+            if (writeQueue.isEmpty()) {
+                return;
+            }
+            if (connectionLock.tryLock()) {
+                //we need to guard against Aesh logging something if there is a problem
+                //it results in an infinite loop otherwise
+                IN_WRITE.set(true);
+                try {
+                    while (!writeQueue.isEmpty()) {
+                        String s = writeQueue.poll();
+                        connection.write(s);
+                    }
+                } finally {
+                    IN_WRITE.set(false);
+                    connectionLock.unlock();
+                }
+            }
+        }
     }
 
     private void setup(Connection conn) {
-        size = conn.size();
-        // Ctrl-C ends the game
-        conn.setSignalHandler(event -> {
-            switch (event) {
-                case INT:
-                    //todo: why does async exit not work here
-                    //Quarkus.asyncExit();
-                    //end(conn);
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            System.exit(0);
-                        }
-                    }).start();
-                    break;
-            }
-        });
-        // Keyboard handling
-        conn.setStdinHandler(keys -> {
-            InputHolder handler = inputHandlers.peek();
-            if (handler != null) {
-                handler.handler.handleInput(keys);
-            }
-        });
+        synchronized (this) {
+            size = conn.size();
+            // Ctrl-C ends the game
+            conn.setSignalHandler(event -> {
+                switch (event) {
+                    case INT:
+                        //todo: why does async exit not work here
+                        //Quarkus.asyncExit();
+                        //end(conn);
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                System.exit(0);
+                            }
+                        }).start();
+                        break;
+                }
+            });
+            // Keyboard handling
+            conn.setStdinHandler(keys -> {
+                InputHolder handler = inputHandlers.peek();
+                if (handler != null) {
+                    handler.handler.handleInput(keys);
+                }
+            });
 
-        conn.setCloseHandler(close -> end(conn));
-        conn.setSizeHandler(size -> setup(conn));
+            conn.setCloseHandler(close -> end(conn));
+            conn.setSizeHandler(size -> setup(conn));
 
-        //switch to alternate buffer
-        //conn.write(ANSI.ALTERNATE_BUFFER);
-        //conn.write(ANSI.CURSOR_HIDE);
+            //switch to alternate buffer
+            //conn.write(ANSI.ALTERNATE_BUFFER);
+            //conn.write(ANSI.CURSOR_HIDE);
 
-        attributes = conn.enterRawMode();
+            attributes = conn.enterRawMode();
 
-        StringBuilder sb = new StringBuilder();
-        printStatusAndPrompt(sb);
-        conn.write(sb.toString());
+            StringBuilder sb = new StringBuilder();
+            printStatusAndPrompt(sb);
+            writeQueue.add(sb.toString());
+        }
+        deadlockSafeWrite();
     }
 
     /**
@@ -193,54 +250,59 @@ public class AeshConsole extends QuarkusConsole {
         return lines;
     }
 
-    public synchronized void write(String s) {
-        if (outputFilter != null) {
-            if (!outputFilter.test(s)) {
-                return;
-            }
-        }
-        StringBuilder buffer = new StringBuilder();
-        clearStatusMessages(buffer);
-        int cursorPos = lastWriteCursorX;
-        gotoLine(buffer, size.getHeight());
-        String stripped = stripAnsiCodes(s);
-        int lines = countLines(s, cursorPos);
-        int trailing = 0;
-        int index = stripped.lastIndexOf("\n");
-        if (index == -1) {
-            trailing = stripped.length();
-        } else {
-            trailing = stripped.length() - index - 1;
-        }
-
-        int newCursorPos;
-        if (lines == 0) {
-            newCursorPos = trailing + cursorPos;
-        } else {
-            newCursorPos = trailing;
-        }
-
-        if (cursorPos > 1 && lines == 0) {
-            buffer.append(s);
-            lastWriteCursorX = newCursorPos;
-            //partial line, just write it
-            connection.write(buffer.toString());
+    public void write(String s) {
+        if (IN_WRITE.get()) {
             return;
         }
-        if (lines == 0) {
-            lines++;
-        }
-        //move the existing content up by the number of lines
-        int appendLines = cursorPos > 1 ? lines - 1 : lines;
-        for (int i = 0; i < appendLines; ++i) {
-            buffer.append("\n");
-        }
-        buffer.append("\033[").append(size.getHeight() - totalStatusLines - lines).append(";").append(0).append("H");
-        buffer.append(s);
-        lastWriteCursorX = newCursorPos;
-        printStatusAndPrompt(buffer);
-        connection.write(buffer.toString());
+        StringBuilder buffer = new StringBuilder();
+        synchronized (this) {
+            if (outputFilter != null) {
+                if (!outputFilter.test(s)) {
+                    return;
+                }
+            }
+            clearStatusMessages(buffer);
+            int cursorPos = lastWriteCursorX;
+            gotoLine(buffer, size.getHeight());
+            String stripped = stripAnsiCodes(s);
+            int lines = countLines(s, cursorPos);
+            int trailing = 0;
+            int index = stripped.lastIndexOf("\n");
+            if (index == -1) {
+                trailing = stripped.length();
+            } else {
+                trailing = stripped.length() - index - 1;
+            }
 
+            int newCursorPos;
+            if (lines == 0) {
+                newCursorPos = trailing + cursorPos;
+            } else {
+                newCursorPos = trailing;
+            }
+
+            if (cursorPos > 1 && lines == 0) {
+                buffer.append(s);
+                lastWriteCursorX = newCursorPos;
+                //partial line, just write it
+                connection.write(buffer.toString());
+                return;
+            }
+            if (lines == 0) {
+                lines++;
+            }
+            //move the existing content up by the number of lines
+            int appendLines = cursorPos > 1 ? lines - 1 : lines;
+            for (int i = 0; i < appendLines; ++i) {
+                buffer.append("\n");
+            }
+            buffer.append("\033[").append(size.getHeight() - totalStatusLines - lines).append(";").append(0).append("H");
+            buffer.append(s);
+            lastWriteCursorX = newCursorPos;
+            printStatusAndPrompt(buffer);
+            writeQueue.add(buffer.toString());
+        }
+        deadlockSafeWrite();
     }
 
     public void write(byte[] buf, int off, int len) {

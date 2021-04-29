@@ -308,11 +308,14 @@ Create a `security-jwt-quickstart/src/main/resources/application.properties` wit
 .application.properties for TokenSecuredResource
 [source, properties]
 ----
-mp.jwt.verify.publickey.location=META-INF/resources/publicKey.pem #<1>
+mp.jwt.verify.publickey.location=publicKey.pem #<1>
 mp.jwt.verify.issuer=https://example.com/issuer #<2>
+
+quarkus.native.resources.includes=publicKey.pem #<3>
 ----
-<1> We are setting public key location to point to a classpath publicKey.pem resource location. We will add this key in part B, <<Adding a Public Key>>.
+<1> We are setting public key location to point to a classpath publicKey.pem location. We will add this key in part B, <<Adding a Public Key>>.
 <2> We are setting the issuer to the URL string `https://example.com/issuer`.
+<3> We are including the public key as a resource in the native executable.
  
 === Adding a Public Key
 
@@ -321,9 +324,7 @@ The {mp-jwt} specification requires that JWTs that are signed with the RSA-256 s
 turn requires a RSA public key pair. On the REST endpoint server side, you need to configure the location of the RSA public
 key to use to verify the JWT sent along with requests. The `mp.jwt.verify.publickey.location=publicKey.pem` setting configured
 previously expects that the public key is available on the classpath as `publicKey.pem`. To accomplish this, copy the following
-content to a `security-jwt-quickstart/src/main/resources/META-INF/resources/publicKey.pem` file.
-
-NOTE: Adding `publicKey.pem` to `resources/META-INF/resources` ensures that it is available in the native image without having to provide a GraalVM resource file.
+content to a `security-jwt-quickstart/src/main/resources/publicKey.pem` file.
 
 .RSA Public Key PEM Content
 [source, text]

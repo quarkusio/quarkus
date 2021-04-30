@@ -75,7 +75,7 @@ class BuildIT extends MojoTestBase {
     @Test
     void testModuleWithBuildProfileInProperty() throws MavenInvocationException, InterruptedException, IOException {
         testDir = initProject("projects/build-mode-quarkus-profile-property");
-        build(null);
+        build();
         launch();
     }
 
@@ -89,7 +89,7 @@ class BuildIT extends MojoTestBase {
     @Test
     void testMultiBuildMode() throws MavenInvocationException, InterruptedException, IOException {
         testDir = initProject("projects/multi-build-mode");
-        build(null);
+        build();
 
         for (TestContext context : TestContext.values()) {
             if (context == TestContext.FAST_NO_PREFIX) {
@@ -100,6 +100,13 @@ class BuildIT extends MojoTestBase {
             launch(context, "foo-full-", "Foo: hello, from foo-FileUtils/MultiSet");
             launch(context, "bar-empty-", "Bar: hello, from bar-?/?");
         }
+    }
+
+    @Test
+    public void testModulesInProfiles()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/modules-in-profiles");
+        build("-Dquarkus.bootstrap.effective-model-builder");
     }
 
     private void launch() throws IOException {
@@ -121,14 +128,16 @@ class BuildIT extends MojoTestBase {
         }
     }
 
-    private void build(String arg) throws MavenInvocationException, InterruptedException, IOException {
+    private void build(String... arg) throws MavenInvocationException, InterruptedException, IOException {
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
 
         final List<String> args = new ArrayList<>(2);
         args.add("package");
-        if (arg != null) {
-            args.add(arg);
+        if (arg.length > 0) {
+            for (String a : arg) {
+                args.add(a);
+            }
         }
         MavenProcessInvocationResult result = running.execute(args, Collections.emptyMap());
         assertThat(result.getProcess().waitFor()).isZero();

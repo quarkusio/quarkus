@@ -136,9 +136,9 @@ public class SecurityProcessor {
 
     private static void prepareBouncyCastleProvider(BuildProducer<ReflectiveClassBuildItem> reflection,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
-            boolean inFipsMode) {
+            boolean isFipsMode) {
         reflection.produce(new ReflectiveClassBuildItem(true, true,
-                inFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                isFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
                         : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME));
         reflection.produce(new ReflectiveClassBuildItem(true, true,
                 "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi"));
@@ -146,7 +146,7 @@ public class SecurityProcessor {
                 "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA"));
         runtimeReInitialized
                 .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
-        if (!inFipsMode) {
+        if (!isFipsMode) {
             reflection.produce(new ReflectiveClassBuildItem(true, true, true,
                     "org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
             runtimeReInitialized
@@ -154,10 +154,35 @@ public class SecurityProcessor {
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
         } else {
-            reflection.produce(new ReflectiveClassBuildItem(true, true, true,
-                    "org.bouncycastle.crypto.general.AES"));
+            reflection.produce(new ReflectiveClassBuildItem(true, true, true, "org.bouncycastle.crypto.general.AES"));
+            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.general.AES"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.general.AES"));
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.math.ec.custom.sec.SecP521R1Curve"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.math.ec.custom.sec.SecP384R1Curve"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.math.ec.custom.sec.SecP256R1Curve"));
+            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.math.ec.ECPoint"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem(
+                            "org.bouncycastle.crypto.asymmetric.NamedECDomainParameters"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.asymmetric.CustomNamedCurves"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.ua.DSTU4145NamedCurves"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.sec.SECNamedCurves"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.cryptopro.ECGOST3410NamedCurves"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.x9.X962NamedCurves"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.x9.ECNamedCurveTable"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.anssi.ANSSINamedCurves"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.teletrust.TeleTrusTNamedCurves"));
+            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.spec.ECUtil"));
         }
 
     }

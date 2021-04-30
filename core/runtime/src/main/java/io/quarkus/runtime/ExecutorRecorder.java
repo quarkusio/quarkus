@@ -26,56 +26,20 @@ public class ExecutorRecorder {
     public ExecutorRecorder() {
     }
 
-    /**
-     * In dev mode for now we need the executor to last for the life of the app, as it is used by Undertow. This will likely
-     * change
-     */
-    static volatile CleanableExecutor devModeExecutor;
-
     private static volatile Executor current;
 
     public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode) {
-        if (devModeExecutor != null) {
-            current = devModeExecutor;
-            return devModeExecutor;
-        }
         final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig);
         ExecutorService executor;
         Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
-        if (launchMode == LaunchMode.DEVELOPMENT) {
-            devModeExecutor = new CleanableExecutor(underlying);
-            shutdownContext.addShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    devModeExecutor.clean();
-                }
-            });
-            executor = devModeExecutor;
-        } else {
-            shutdownContext.addLastShutdownTask(shutdownTask);
-            executor = underlying;
-        }
+        shutdownContext.addLastShutdownTask(shutdownTask);
+        executor = underlying;
         if (threadPoolConfig.prefill) {
             underlying.prestartAllCoreThreads();
         }
         current = executor;
         return executor;
-    }
-
-    public static ExecutorService createDevModeExecutorForFailedStart(ThreadPoolConfig config) {
-        EnhancedQueueExecutor underlying = createExecutor(config);
-        Runnable task = createShutdownTask(config, underlying);
-        devModeExecutor = new CleanableExecutor(underlying);
-        Runtime.getRuntime().addShutdownHook(new Thread(task, "Executor shutdown thread"));
-        current = devModeExecutor;
-        return devModeExecutor;
-    }
-
-    static void shutdownDevMode() {
-        if (devModeExecutor != null) {
-            devModeExecutor.shutdown();
-        }
     }
 
     private static Runnable createShutdownTask(ThreadPoolConfig threadPoolConfig, EnhancedQueueExecutor executor) {

@@ -82,7 +82,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class SmallRyeGraphQLProcessor {
     private static final Logger LOG = Logger.getLogger(SmallRyeGraphQLProcessor.class);
-    private static final String SCHEMA_PATH = "/schema.graphql";
+    private static final String SCHEMA_PATH = "schema.graphql";
     private static final String SPI_PATH = "META-INF/services/";
 
     // For Service integration
@@ -194,14 +194,15 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void buildSchemaEndpoint(
             BuildProducer<RouteBuildItem> routeProducer,
+            HttpRootPathBuildItem httpRootPathBuildItem,
             SmallRyeGraphQLInitializedBuildItem graphQLInitializedBuildItem,
             SmallRyeGraphQLRecorder recorder,
             SmallRyeGraphQLConfig graphQLConfig) {
 
         Handler<RoutingContext> schemaHandler = recorder.schemaHandler(graphQLInitializedBuildItem.getInitialized());
 
-        routeProducer.produce(new RouteBuildItem.Builder()
-                .route(graphQLConfig.rootPath + SCHEMA_PATH)
+        routeProducer.produce(httpRootPathBuildItem.routeBuilder()
+                .nestedRoute(graphQLConfig.rootPath, SCHEMA_PATH)
                 .handler(schemaHandler)
                 .displayOnNotFoundPage("MicroProfile GraphQL Schema")
                 .blockingRoute()
@@ -214,6 +215,7 @@ public class SmallRyeGraphQLProcessor {
     @Consume(BeanContainerBuildItem.class)
     void buildExecutionEndpoint(
             BuildProducer<RouteBuildItem> routeProducer,
+            HttpRootPathBuildItem httpRootPathBuildItem,
             SmallRyeGraphQLInitializedBuildItem graphQLInitializedBuildItem,
             SmallRyeGraphQLRecorder recorder,
             ShutdownContextBuildItem shutdownContext,
@@ -238,9 +240,10 @@ public class SmallRyeGraphQLProcessor {
 
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
                 allowGet);
-        routeProducer.produce(new RouteBuildItem.Builder()
+        routeProducer.produce(httpRootPathBuildItem.routeBuilder()
                 .routeFunction(graphQLConfig.rootPath, recorder.routeFunction(bodyHandlerBuildItem.getHandler()))
                 .handler(executionHandler)
+                .routeConfigKey("quarkus.smallrye-graphql.root-path")
                 .displayOnNotFoundPage("MicroProfile GraphQL Endpoint")
                 .blockingRoute()
                 .build());
@@ -540,6 +543,7 @@ public class SmallRyeGraphQLProcessor {
                     smallRyeGraphQLBuildItem.getGraphqlUiPath(), runtimeConfig);
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(graphQLConfig.ui.rootPath)
+                    .routeConfigKey("quarkus.smallrye-graphql.ui.root-path")
                     .displayOnNotFoundPage("MicroProfile GraphQL UI")
                     .handler(handler)
                     .requiresLegacyRedirect()

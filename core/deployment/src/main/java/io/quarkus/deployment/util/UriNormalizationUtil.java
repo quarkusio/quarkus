@@ -104,4 +104,12 @@ public class UriNormalizationUtil {
         URI resolvedUri = base.resolve(segmentUri);
         return resolvedUri;
     }
+
+    public static String relativize(String rootPath, String leafPath) {
+        if (leafPath.startsWith(rootPath)) {
+            return leafPath.substring(rootPath.length());
+        }
+
+        return null;
+    }
 }

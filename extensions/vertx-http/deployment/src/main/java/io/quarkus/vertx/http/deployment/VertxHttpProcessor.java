@@ -120,14 +120,13 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    void notRoundRoutes(
+    void notFoundRoutes(
             List<RouteBuildItem> routes,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFound) {
         for (RouteBuildItem i : routes) {
             if (i.getNotFoundPageDisplayableEndpoint() != null) {
                 notFound.produce(i.getNotFoundPageDisplayableEndpoint());
             }
-
         }
     }
 

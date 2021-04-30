@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;
@@ -24,6 +25,7 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final RouteType routeType;
     private final boolean requiresLegacyRedirect;
     private final NotFoundPageDisplayableEndpointBuildItem notFoundPageDisplayableEndpoint;
+    private final ConfiguredPathInfo devConsoleResolvedPathBuildItem;
 
     /**
      * @deprecated Use the Builder instead.
@@ -36,6 +38,7 @@ public final class RouteBuildItem extends MultiBuildItem {
         this.routeType = RouteType.APPLICATION_ROUTE;
         this.requiresLegacyRedirect = false;
         this.notFoundPageDisplayableEndpoint = null;
+        this.devConsoleResolvedPathBuildItem = null;
     }
 
     /**
@@ -85,6 +88,7 @@ public final class RouteBuildItem extends MultiBuildItem {
         this.routeType = routeType;
         this.requiresLegacyRedirect = requiresLegacyRedirect;
         this.notFoundPageDisplayableEndpoint = builder.getNotFoundEndpoint();
+        this.devConsoleResolvedPathBuildItem = builder.getRouteConfigInfo();
     }
 
     public Handler<RoutingContext> getHandler() {
@@ -119,6 +123,10 @@ public final class RouteBuildItem extends MultiBuildItem {
         return notFoundPageDisplayableEndpoint;
     }
 
+    public ConfiguredPathInfo getDevConsoleResolvedPath() {
+        return devConsoleResolvedPathBuildItem;
+    }
+
     public enum RouteType {
         FRAMEWORK_ROUTE,
         APPLICATION_ROUTE,
@@ -126,7 +134,7 @@ public final class RouteBuildItem extends MultiBuildItem {
     }
 
     /**
-     * NonApplicationRootPathBuildItem.Builder extends this.
+     * HttpRootPathBuildItem.Builder and NonApplicationRootPathBuildItem.Builder extend this.
      * Please verify the extended builders behavior when changing this one.
      */
     public static class Builder {
@@ -136,12 +144,27 @@ public final class RouteBuildItem extends MultiBuildItem {
         protected boolean displayOnNotFoundPage;
         protected String notFoundPageTitle;
         protected String notFoundPagePath;
+        protected String routePath;
+        protected String routeConfigKey;
+        protected String absolutePath;
+
+        /**
+         * Use HttpRootPathBuildItem and NonApplicationRootPathBuildItem to
+         * ensure paths are constructed/normalized correctly
+         *
+         * @deprecated
+         * @see HttpRootPathBuildItem#routeBuilder()
+         * @see NonApplicationRootPathBuildItem#routeBuilder()
+         */
+        @Deprecated
+        public Builder() {
+        }
 
         /**
          * {@link #routeFunction(String, Consumer)} should be used instead
          *
          * @param routeFunction
-         * @return
+         * @see #routeFunction(String, Consumer)
          */
         @Deprecated
         public Builder routeFunction(Function<Router, Route> routeFunction) {
@@ -149,15 +172,25 @@ public final class RouteBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @param path A normalized path (e.g. use HttpRootPathBuildItem to construct/resolve the path value) defining
+         *        the route. This path this is also used on the "Not Found" page in dev mode.
+         * @param routeFunction a Consumer of Route
+         */
         public Builder routeFunction(String path, Consumer<Route> routeFunction) {
             this.routeFunction = new BasicRoute(path, null, routeFunction);
-            this.notFoundPagePath = path;
+            this.notFoundPagePath = this.routePath = path;
             return this;
         }
 
+        /**
+         * @param route A normalized path used to define a basic route
+         *        (e.g. use HttpRootPathBuildItem to construct/resolve the path value). This path this is also
+         *        used on the "Not Found" page in dev mode.
+         */
         public Builder route(String route) {
             this.routeFunction = new BasicRoute(route);
-            this.notFoundPagePath = route;
+            this.notFoundPagePath = this.routePath = route;
             return this;
         }
 
@@ -192,6 +225,12 @@ public final class RouteBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @deprecated Specify the path as part of defining the route
+         * @see #route(String)
+         * @see #routeFunction(String, Consumer)
+         */
+        @Deprecated
         public Builder displayOnNotFoundPage(String notFoundPageTitle, String notFoundPagePath) {
             this.displayOnNotFoundPage = true;
             this.notFoundPageTitle = notFoundPageTitle;
@@ -199,8 +238,27 @@ public final class RouteBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public Builder routeConfigKey(String attributeName) {
+            this.routeConfigKey = attributeName;
+            return this;
+        }
+
         public RouteBuildItem build() {
             return new RouteBuildItem(this, RouteType.APPLICATION_ROUTE, false);
+        }
+
+        protected ConfiguredPathInfo getRouteConfigInfo() {
+            if (routeConfigKey == null) {
+                return null;
+            }
+            if (routePath == null) {
+                throw new RuntimeException("Cannot discover value of " + routeConfigKey
+                        + " as no explicit path was specified and a route function is in use");
+            }
+            if (absolutePath != null) {
+                return new ConfiguredPathInfo(routeConfigKey, absolutePath, true);
+            }
+            return new ConfiguredPathInfo(routeConfigKey, routePath, false);
         }
 
         protected NotFoundPageDisplayableEndpointBuildItem getNotFoundEndpoint() {
@@ -211,7 +269,10 @@ public final class RouteBuildItem extends MultiBuildItem {
                 throw new RuntimeException("Cannot display " + routeFunction
                         + " on not found page as no explicit path was specified and a route function is in use");
             }
-            return new NotFoundPageDisplayableEndpointBuildItem(notFoundPagePath, notFoundPageTitle);
+            if (absolutePath != null) {
+                return new NotFoundPageDisplayableEndpointBuildItem(absolutePath, notFoundPageTitle, true);
+            }
+            return new NotFoundPageDisplayableEndpointBuildItem(notFoundPagePath, notFoundPageTitle, false);
         }
     }
 }

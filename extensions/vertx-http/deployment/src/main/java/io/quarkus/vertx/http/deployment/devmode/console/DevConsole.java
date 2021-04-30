@@ -44,8 +44,13 @@ public class DevConsole implements Handler<RoutingContext> {
 
     DevConsole(Engine engine, String httpRootPath, String frameworkRootPath) {
         this.engine = engine;
+        // Both of these paths will end in slash
         this.globalData.put("httpRootPath", httpRootPath);
         this.globalData.put("frameworkRootPath", frameworkRootPath);
+
+        // This includes the dev segment, but does not include a trailing slash (for append)
+        this.globalData.put("devRootAppend", frameworkRootPath + "dev");
+
         this.globalData.put("quarkusVersion", Version.getVersion());
         this.globalData.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         this.globalData.put("applicationVersion",

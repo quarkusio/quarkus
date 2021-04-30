@@ -1,7 +1,7 @@
 package io.quarkus.devtools.codestarts.extension;
 
 import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
-import static io.quarkus.devtools.project.QuarkusProjectHelper.getBaseCodestartResourceLoaders;
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.DataKey;
@@ -71,7 +71,7 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
 
     public static QuarkusExtensionCodestartCatalog fromBaseCodestartsResources()
             throws IOException {
-        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getBaseCodestartResourceLoaders(),
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(),
                 QUARKUS_EXTENSION_CODESTARTS_DIR);
         return new QuarkusExtensionCodestartCatalog(codestarts.values());
     }

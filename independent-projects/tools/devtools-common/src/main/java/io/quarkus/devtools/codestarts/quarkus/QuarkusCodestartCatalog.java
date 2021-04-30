@@ -3,8 +3,7 @@ package io.quarkus.devtools.codestarts.quarkus;
 import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent.CODE;
-import static io.quarkus.devtools.project.QuarkusProjectHelper.getBaseCodestartResourceLoaders;
-import static io.quarkus.devtools.project.QuarkusProjectHelper.getCodestartResourceLoaders;
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getCodestartName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 
@@ -80,7 +79,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     public static QuarkusCodestartCatalog fromBaseCodestartsResources(Map<String, Extension> extensionsMapping)
             throws IOException {
-        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getBaseCodestartResourceLoaders(),
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(),
                 QUARKUS_CODESTARTS_DIR);
         return new QuarkusCodestartCatalog(codestarts.values(), extensionsMapping);
     }
@@ -93,7 +92,8 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     public static QuarkusCodestartCatalog fromExtensionsCatalogAndDirectories(
             ExtensionCatalog catalog, Collection<Path> directories)
             throws IOException {
-        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(catalog),
+        final List<ResourceLoader> loaders = getCodestartResourceLoaders(catalog);
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(loaders,
                 QUARKUS_CODESTARTS_DIR);
         for (Path directory : directories) {
             final Map<String, Codestart> dirCodestarts = CodestartCatalogLoader.loadCodestartsFromDir(directory).stream()

@@ -17,6 +17,7 @@ public interface Extension {
     String MD_UNLISTED = "unlisted";
     String MD_CATEGORIES = "categories";
     String MD_STATUS = "status";
+    String MD_BUILT_WITH_QUARKUS_CORE = "built-with-quarkus-core";
 
     String getName();
 

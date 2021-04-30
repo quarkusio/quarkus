@@ -1,5 +1,7 @@
 package io.quarkus.devtools.testing;
 
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
+
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -17,7 +19,7 @@ public class PlatformAwareTestBase {
     private Properties quarkusProps;
 
     protected List<ResourceLoader> getCodestartsResourceLoaders() {
-        return QuarkusProjectHelper.getCodestartResourceLoaders(getExtensionsCatalog());
+        return getCodestartResourceLoaders(getExtensionsCatalog());
     }
 
     protected ExtensionCatalog getExtensionsCatalog() {

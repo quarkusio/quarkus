@@ -46,6 +46,10 @@ public final class ExtensionProcessor {
         return getMetadataValue(extension, MD_CATEGORIES).asStringList();
     }
 
+    public static String getBuiltWithQuarkusCore(Extension extension) {
+        return getMetadataValue(extension, MD_BUILT_WITH_QUARKUS_CORE).asString();
+    }
+
     public static String getCodestartName(Extension extension) {
         return getMetadataValue(extension, MD_NESTED_CODESTART_NAME).asString();
     }
@@ -113,6 +117,10 @@ public final class ExtensionProcessor {
 
     public Extension getExtension() {
         return extension;
+    }
+
+    public String getBuiltWithQuarkusCore() {
+        return getBuiltWithQuarkusCore(extension);
     }
 
     /**

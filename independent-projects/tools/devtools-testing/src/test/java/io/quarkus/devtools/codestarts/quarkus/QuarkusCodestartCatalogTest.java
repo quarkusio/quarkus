@@ -1,6 +1,6 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
-import static io.quarkus.devtools.codestarts.quarkus.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
+import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.devtools.codestarts.Codestart;

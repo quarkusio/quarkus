@@ -42,7 +42,7 @@
         <smallrye-config.version>1.10.2</smallrye-config.version>
         <smallrye-health.version>2.2.5</smallrye-health.version>
         <smallrye-metrics.version>2.4.6</smallrye-metrics.version>
-        <smallrye-open-api.version>2.0.22</smallrye-open-api.version>
+        <smallrye-open-api.version>2.0.23</smallrye-open-api.version>
         <smallrye-graphql.version>1.0.21</smallrye-graphql.version>
         <smallrye-opentracing.version>1.3.5</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>4.3.2</smallrye-fault-tolerance.version>
@@ -96,7 +96,7 @@
         <hibernate-search.version>6.0.0.Final</hibernate-search.version>
         <narayana.version>5.10.6.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
-        <agroal.version>1.9</agroal.version>
+        <agroal.version>1.11</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <elasticsearch-rest-client.version>7.10.0</elasticsearch-rest-client.version>
         <rxjava1.version>1.3.8</rxjava1.version>
@@ -110,7 +110,7 @@
         <wildfly-elytron.version>1.14.1.Final</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.2.0.Final</jboss-threads.version>
-        <vertx.version>3.9.5</vertx.version>
+        <vertx.version>3.9.6</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
@@ -138,10 +138,10 @@
         <mutiny.version>0.12.5</mutiny.version>
         <axle-client.version>1.3.0</axle-client.version>
         <mutiny-client.version>1.3.0</mutiny-client.version>
-        <kafka2.version>2.5.0</kafka2.version>
+        <kafka2.version>2.7.0</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
-        <scala.version>2.12.9</scala.version>
+        <scala.version>2.12.13</scala.version>
         <tika.version>1.24.1</tika.version>
         <ooxml-schemas.version>1.4</ooxml-schemas.version>
         <aws-lambda-java.version>1.2.1</aws-lambda-java.version>

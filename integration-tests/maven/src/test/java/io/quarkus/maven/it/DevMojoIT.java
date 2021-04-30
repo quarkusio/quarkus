@@ -14,6 +14,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -219,7 +220,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         testDir = initProject("projects/classic-inst", "projects/project-intrumentation-reload");
         runAndCheck();
 
-        //if there is an insturmentation based reload this will stay the same
+        // Enable instrumentation based reload to begin with
+        DevModeTestUtils.getHttpResponse("/app/enable");
+
+        //if there is an instrumentation based reload this will stay the same
         String firstUuid = DevModeTestUtils.getHttpResponse("/app/uuid");
 
         // Edit the "Hello" message.
@@ -276,6 +280,25 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         //verify that this was an instrumentation based reload
         Assertions.assertEquals(secondUUid, DevModeTestUtils.getHttpResponse("/app/uuid"));
+
+        // verify that add + change results in full reload
+        // add a new class
+        Files.write(Paths.get(testDir.toString(), "src/main/java/org/acme/AnotherClass.java"),
+                "package org.acme;\nclass ItDoesntMatter{}".getBytes());
+
+        // change back to hello
+        source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
+
+        // Wait until we get "hello"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello"));
+
+        //verify that this was not instrumentation based reload
+        Assertions.assertNotEquals(secondUUid, DevModeTestUtils.getHttpResponse("/app/uuid"));
+        secondUUid = DevModeTestUtils.getHttpResponse("/app/uuid");
+
     }
 
     @Test

@@ -11,6 +11,15 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class LiveReloadConfig {
 
     /**
+     * Whether or not Quarkus should enable its ability to not do a full restart
+     * when changes to classes are compatible with JVM instrumentation.
+     *
+     * If this is set to true, Quarkus will perform class redefinition when possible.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean instrumentation;
+
+    /**
      * The names of additional resource files to watch for changes, triggering a reload on change. Directories are <em>not</em>
      * supported.
      */

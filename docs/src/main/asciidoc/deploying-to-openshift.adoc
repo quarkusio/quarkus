@@ -94,8 +94,8 @@ Similarly, `oc get route` will list the route URL for the exposed service "greet
 
 Out of the box the openshift extension is configured to use link:container-image#s2i[container-image-s2i]. However, it's still possible to use other container image extensions like:
 
-- link:container-image#s2i[container-image-docker]
-- link:container-image#s2i[container-image-jib]
+- link:container-image#docker[container-image-docker]
+- link:container-image#jib[container-image-jib]
 
 When a non-s2i container image extension is used, an ImageStream is created that is pointing to an external `dockerImageRepository`. The image is built and pushed to the registry and the ImageStream populates the tags that are available in the `dockerImageRepository`. 
 

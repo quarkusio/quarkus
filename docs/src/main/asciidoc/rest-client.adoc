@@ -603,7 +603,7 @@ public class WiremockCountries implements QuarkusTestResourceLifecycleManager { 
 
 		stubFor(get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://restcountries.eu/rest")));   // <5>
 
-		return Collections.singletonMap("org.acme.getting.started.country.CountriesService/mp-rest/url", wireMockServer.baseUrl()); // <6>
+		return Collections.singletonMap("org.acme.rest.client.CountriesService/mp-rest/url", wireMockServer.baseUrl()); // <6>
 	}
 
 	@Override

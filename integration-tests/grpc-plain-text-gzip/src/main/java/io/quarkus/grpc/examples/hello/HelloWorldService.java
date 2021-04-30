@@ -2,14 +2,13 @@ package io.quarkus.grpc.examples.hello;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Singleton;
-
 import examples.GreeterGrpc;
 import examples.HelloReply;
 import examples.HelloRequest;
 import io.grpc.stub.StreamObserver;
+import io.quarkus.grpc.GrpcService;
 
-@Singleton
+@GrpcService
 public class HelloWorldService extends GreeterGrpc.GreeterImplBase {
 
     AtomicInteger counter = new AtomicInteger();

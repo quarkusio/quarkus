@@ -15,9 +15,13 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
+import io.grpc.BindableService;
 import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -32,6 +36,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
@@ -65,14 +70,26 @@ public class GrpcServerProcessor {
         Collection<ClassInfo> bindableServices = combinedIndexBuildItem.getIndex()
                 .getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
         for (ClassInfo service : bindableServices) {
-            if (!Modifier.isAbstract(service.flags()) && service.classAnnotation(DotNames.SINGLETON) != null) {
-                BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
-                for (MethodInfo method : service.methods()) {
-                    if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
-                        item.registerBlockingMethod(method.name());
-                    }
+            if (Modifier.isAbstract(service.flags())) {
+                continue;
+            }
+            BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
+            for (MethodInfo method : service.methods()) {
+                if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
+                    item.registerBlockingMethod(method.name());
                 }
-                bindables.produce(item);
+            }
+            bindables.produce(item);
+        }
+    }
+
+    @BuildStep
+    void validateBindableServices(ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationErrorBuildItem> errors) {
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans().withBeanType(BindableService.class)) {
+            if (!bean.getScope().getDotName().equals(BuiltinScope.SINGLETON.getName())) {
+                errors.produce(new ValidationErrorBuildItem(
+                        new IllegalStateException("A gRPC service bean must have the javax.inject.Singleton scope: " + bean)));
             }
         }
     }
@@ -88,8 +105,10 @@ public class GrpcServerProcessor {
     }
 
     @BuildStep
-    void buildContainerBean(BuildProducer<AdditionalBeanBuildItem> beans,
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
             List<BindableServiceBuildItem> bindables, BuildProducer<FeatureBuildItem> features) {
+        // @GrpcService is a CDI stereotype
+        beans.produce(new AdditionalBeanBuildItem(GrpcService.class));
         if (!bindables.isEmpty()) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcContainer.class));
             features.produce(new FeatureBuildItem(GRPC_SERVER));

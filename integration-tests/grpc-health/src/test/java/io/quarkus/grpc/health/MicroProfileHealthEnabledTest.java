@@ -27,7 +27,7 @@ import grpc.health.v1.HealthOuterClass.HealthCheckResponse.ServingStatus;
 import grpc.health.v1.MutinyHealthGrpc;
 import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 
@@ -100,8 +100,7 @@ public class MicroProfileHealthEnabledTest {
     @ApplicationScoped
     static class HealthConsumer {
 
-        @Inject
-        @GrpcService("health-service")
+        @GrpcClient("health-service")
         MutinyHealthGrpc.MutinyHealthStub healthMutiny;
 
         public Multi<HealthOuterClass.HealthCheckResponse> getStatusStream(

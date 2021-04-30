@@ -25,7 +25,7 @@ import io.grpc.reflection.v1alpha.MutinyServerReflectionGrpc;
 import io.grpc.reflection.v1alpha.ServerReflectionRequest;
 import io.grpc.reflection.v1alpha.ServerReflectionResponse;
 import io.grpc.reflection.v1alpha.ServiceResponse;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.server.services.BlockingMutinyHelloService;
 import io.quarkus.test.QuarkusUnitTest;
@@ -48,8 +48,7 @@ public class BlockingServiceTest {
     @Inject
     GrpcHealthStorage healthService;
 
-    @Inject
-    @GrpcService("reflection-service")
+    @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
 
     @BeforeEach

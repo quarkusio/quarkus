@@ -3,7 +3,6 @@ package io.quarkus.grpc.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -17,7 +16,7 @@ import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class InstanceInjectionTest {
@@ -31,16 +30,13 @@ public class InstanceInjectionTest {
                             HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
-    @Inject
-    @GrpcService("hello-service")
+    @GrpcClient("hello-service")
     Instance<Channel> channel;
 
-    @Inject
-    @GrpcService("hello-service-2")
+    @GrpcClient("hello-service-2")
     Instance<GreeterGrpc.GreeterBlockingStub> blocking;
 
-    @Inject
-    @GrpcService("hello-service")
+    @GrpcClient("hello-service")
     Instance<MutinyGreeterGrpc.MutinyGreeterStub> mutiny;
 
     @Test

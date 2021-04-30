@@ -17,16 +17,19 @@ import javax.inject.Singleton;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.grpc.Channel;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
-import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -36,8 +39,8 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.quarkus.grpc.runtime.supports.IOThreadClientInterceptor;
@@ -53,39 +56,60 @@ public class GrpcClientProcessor {
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcService.class));
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcClientConfigProvider.class));
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcClientInterceptorContainer.class));
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(IOThreadClientInterceptor.class));
+        // @GrpcClient is a CDI qualifier
+        beans.produce(new AdditionalBeanBuildItem(GrpcClient.class));
+        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(GrpcClientConfigProvider.class,
+                GrpcClientInterceptorContainer.class, IOThreadClientInterceptor.class).build());
     }
 
     @BuildStep
-    void discoverInjectedGrpcServices(
-            BeanRegistrationPhaseBuildItem phase,
+    void discoverInjectedGrpcServices(BeanDiscoveryFinishedBuildItem beanDiscovery,
             BuildProducer<GrpcServiceBuildItem> services,
             BuildProducer<FeatureBuildItem> features) {
 
         Map<String, GrpcServiceBuildItem> items = new HashMap<>();
 
-        for (InjectionPointInfo injectionPoint : phase.getContext()
-                .get(BuildExtension.Key.INJECTION_POINTS)) {
-            AnnotationInstance instance = injectionPoint.getRequiredQualifier(GrpcDotNames.GRPC_SERVICE);
-            if (instance == null) {
+        for (InjectionPointInfo injectionPoint : beanDiscovery.getInjectionPoints()) {
+            AnnotationInstance clientAnnotation = injectionPoint.getRequiredQualifier(GrpcDotNames.GRPC_CLIENT);
+            if (clientAnnotation == null) {
                 continue;
             }
 
-            String name = instance.value().asString();
-            if (name.trim().isEmpty()) {
+            String serviceName;
+            AnnotationValue serviceNameValue = clientAnnotation.value();
+            if (serviceNameValue == null || serviceNameValue.asString().equals(GrpcClient.ELEMENT_NAME)) {
+                // Determine the service name from the annotated element
+                if (clientAnnotation.target().kind() == Kind.FIELD) {
+                    serviceName = clientAnnotation.target().asField().name();
+                } else if (clientAnnotation.target().kind() == Kind.METHOD_PARAMETER) {
+                    MethodParameterInfo param = clientAnnotation.target().asMethodParameter();
+                    serviceName = param.method().parameterName(param.position());
+                    if (serviceName == null) {
+                        throw new DeploymentException("Unable to determine the service name from the parameter at position "
+                                + param.position()
+                                + " in method "
+                                + param.method().declaringClass().name() + "#" + param.method().name()
+                                + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or use GrpcClient#value() to specify the service name");
+                    }
+                } else {
+                    // This should never happen because @GrpcClient has @Target({ FIELD, PARAMETER })
+                    throw new IllegalStateException(clientAnnotation + " may not be declared at " + clientAnnotation.target());
+                }
+            } else {
+                serviceName = serviceNameValue.asString();
+            }
+
+            if (serviceName.trim().isEmpty()) {
                 throw new DeploymentException(
-                        "Invalid @GrpcService `" + injectionPoint.getTargetInfo() + "` - missing configuration key");
+                        "Invalid @GrpcClient `" + injectionPoint.getTargetInfo() + "` - service name cannot be empty");
             }
 
             GrpcServiceBuildItem item;
-            if (items.containsKey(name)) {
-                item = items.get(name);
+            if (items.containsKey(serviceName)) {
+                item = items.get(serviceName);
             } else {
-                item = new GrpcServiceBuildItem(name);
-                items.put(name, item);
+                item = new GrpcServiceBuildItem(serviceName);
+                items.put(serviceName, item);
             }
 
             Type injectionType = injectionPoint.getRequiredType();
@@ -136,7 +160,7 @@ public class GrpcClientProcessor {
             BeanConfigurator<Object> channelProducer = phase.getContext()
                     .configure(GrpcDotNames.CHANNEL)
                     .types(Channel.class)
-                    .addQualifier().annotation(GrpcDotNames.GRPC_SERVICE).addValue("value", svc.getServiceName()).done()
+                    .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", svc.getServiceName()).done()
                     .scope(Singleton.class)
                     .unremovable()
                     .creator(new Consumer<MethodCreator>() {
@@ -155,7 +179,7 @@ public class GrpcClientProcessor {
                 BeanConfigurator<Object> stubProducer = phase.getContext()
                         .configure(stubClassName)
                         .types(stubClass)
-                        .addQualifier().annotation(GrpcDotNames.GRPC_SERVICE).addValue("value", svcName).done()
+                        .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", svcName).done()
                         .scope(Singleton.class)
                         .creator(new Consumer<MethodCreator>() {
                             @Override

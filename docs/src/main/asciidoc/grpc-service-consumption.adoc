@@ -24,15 +24,19 @@ In addition, it also can inject the gRPC `io.grpc.Channel`, that lets you create
 
 [source, java]
 ----
-@Inject @GrpcService("hello-service")
+import io.quarkus.grpc.GrpcClient;
+
+@GrpcClient("helloService")                   // <1>
 MutinyGreeterGrpc.MutinyGreeterStub mutiny;
 
-@Inject @GrpcService("hello-service")
-GreeterGrpc.GreeterBlockingStub blocking;
+@GrpcClient
+GreeterGrpc.GreeterBlockingStub helloService; // <2>
 
-@Inject @GrpcService("hello-service")
+@GrpcClient("hello-service")
 Channel channel;
 ----
+1. Note that in Quarkus, you can skip the `@Inject` annotation completely if the injected point declares at least one qualifier.
+2. If the service name is not specified via `GrpcClient#value()` then the field name is used instead: `helloService` in this particular case.
 
 The stub class names are computed from the service name.
 For example, if you use `Greeter` as service name as in:
@@ -47,7 +51,7 @@ service Greeter {
 The Mutiny stub name is: `MutinyGreeterGrpc.MutinyGreeterStub`
 The blocking stub name is: `GreeterGrpc.GreeterBlockingStub`
 
-Client injection must be qualified using `@GrpcService`.
+Client injection must be qualified using `@GrpcClient`.
 This annotation indicates the configuration prefix used to configure the service.
 For example, if you set it to `hello-service`, configuring the host of the service is done using `hello-service.host`.
 
@@ -57,8 +61,8 @@ For example, if you set it to `hello-service`, configuring the host of the servi
 
 [source, java]
 ----
-@Inject @GrpcService("hello") GreeterGrpc.GreeterBlockingStub blockingHelloService;
-@Inject @GrpcService("hello") MutinyGreeterGrpc.MutinyGreeterStub mutinyHelloService;
+@GrpcClient("hello") GreeterGrpc.GreeterBlockingStub blockingHelloService;
+@GrpcClient("hello") MutinyGreeterGrpc.MutinyGreeterStub mutinyHelloService;
 
 @GET
 @Path("/blocking/{name}")
@@ -98,7 +102,8 @@ package io.quarkus.grpc.example.streaming;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.MutinyStreamingGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
+
 import io.smallrye.mutiny.Multi;
 
 import javax.inject.Inject;
@@ -112,7 +117,8 @@ import javax.ws.rs.core.MediaType;
 @Produces(MediaType.APPLICATION_JSON)
 public class StreamingEndpoint {
 
-    @Inject @GrpcService("streaming") MutinyStreamingGrpc.MutinyStreamingStub client;
+    @GrpcClient
+    MutinyStreamingGrpc.MutinyStreamingStub streaming;
 
     @GET
     public Multi<String> invokeSource() {
@@ -151,12 +157,12 @@ For each gRPC service you inject in your application, you can configure the foll
 
 include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-client-configuration.adoc[opts=optional, leveloffset=+1]
 
-The `service-name` is the name set in the `@GrpcService`.
+The `service-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 
 == Example of configuration
 
 The 2 following examples uses _hello_ as service name.
-Don't forget to replace it with the name you used in in the `@GrpcService` annotation.
+Don't forget to replace it with the name you used in in the `@GrpcClient` annotation.
 
 === Enabling TLS
 

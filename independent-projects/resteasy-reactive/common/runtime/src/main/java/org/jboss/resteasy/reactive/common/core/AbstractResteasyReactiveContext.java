@@ -198,6 +198,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     }
 
+    /**
+     * Ensures the CDI request scope is running when inside a handler chain
+     */
     public void requireCDIRequestScope() {
         if (!running) {
             throw new RuntimeException("Cannot be called when outside a handler chain");

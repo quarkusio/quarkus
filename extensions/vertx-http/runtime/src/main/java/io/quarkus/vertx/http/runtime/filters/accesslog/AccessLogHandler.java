@@ -19,7 +19,10 @@
 package io.quarkus.vertx.http.runtime.filters.accesslog;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttribute;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeParser;
@@ -90,18 +93,26 @@ public class AccessLogHandler implements Handler<RoutingContext> {
     private final AccessLogReceiver accessLogReceiver;
     private final String formatString;
     private final ExchangeAttribute tokens;
+    private final Pattern excludePattern;
 
-    public AccessLogHandler(final AccessLogReceiver accessLogReceiver, final String formatString, ClassLoader classLoader) {
+    public AccessLogHandler(final AccessLogReceiver accessLogReceiver, final String formatString, ClassLoader classLoader,
+            Optional<String> excludePattern) {
         this.accessLogReceiver = accessLogReceiver;
         this.formatString = handleCommonNames(formatString);
         this.tokens = new ExchangeAttributeParser(classLoader, Collections.singletonList(new SubstituteEmptyWrapper("-")))
                 .parse(this.formatString);
+        if (excludePattern.isPresent()) {
+            this.excludePattern = Pattern.compile(excludePattern.get());
+        } else {
+            this.excludePattern = null;
+        }
     }
 
     public AccessLogHandler(final AccessLogReceiver accessLogReceiver, String formatString, final ExchangeAttribute attribute) {
         this.accessLogReceiver = accessLogReceiver;
         this.formatString = handleCommonNames(formatString);
         this.tokens = attribute;
+        this.excludePattern = null;
     }
 
     private static String handleCommonNames(String formatString) {
@@ -122,6 +133,13 @@ public class AccessLogHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext rc) {
+        if (excludePattern != null) {
+            Matcher m = excludePattern.matcher(rc.request().path());
+            if (m.matches()) {
+                rc.next();
+                return;
+            }
+        }
         QuarkusRequestWrapper.get(rc.request()).addRequestDoneHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 
 import javax.persistence.SharedCacheMode;
@@ -249,14 +250,17 @@ public final class HibernateReactiveProcessor {
         }
 
         // Query
-        if (persistenceUnitConfig.batchFetchSize > 0) {
-            desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
-                    Integer.toString(persistenceUnitConfig.batchFetchSize));
-            desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
+        if (persistenceUnitConfig.fetch.batchSize > 0) {
+            setBatchFetchSize(desc, persistenceUnitConfig.fetch.batchSize);
+        } else if (persistenceUnitConfig.batchFetchSize > 0) {
+            setBatchFetchSize(desc, persistenceUnitConfig.batchFetchSize);
         }
 
-        persistenceUnitConfig.maxFetchDepth.ifPresent(
-                depth -> desc.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(depth)));
+        if (persistenceUnitConfig.fetch.maxDepth.isPresent()) {
+            setMaxFetchDepth(desc, persistenceUnitConfig.fetch.maxDepth);
+        } else if (persistenceUnitConfig.maxFetchDepth.isPresent()) {
+            setMaxFetchDepth(desc, persistenceUnitConfig.maxFetchDepth);
+        }
 
         desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, Integer.toString(
                 persistenceUnitConfig.query.queryPlanCacheMaxSize));
@@ -315,6 +319,16 @@ public final class HibernateReactiveProcessor {
         }
 
         return desc;
+    }
+
+    private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {
+        descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
+    }
+
+    private static void setBatchFetchSize(ParsedPersistenceXmlDescriptor descriptor, int batchFetchSize) {
+        descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
+                Integer.toString(batchFetchSize));
+        descriptor.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
     }
 
     private static Optional<String> getSqlLoadScript(Optional<String> sqlLoadScript, LaunchMode launchMode) {

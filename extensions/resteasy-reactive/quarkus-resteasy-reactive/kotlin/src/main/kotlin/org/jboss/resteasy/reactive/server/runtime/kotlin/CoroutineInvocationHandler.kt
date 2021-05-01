@@ -2,8 +2,9 @@ package org.jboss.resteasy.reactive.server.runtime.kotlin
 
 import io.vertx.core.Vertx
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.eclipse.microprofile.context.ManagedExecutor
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler
@@ -11,7 +12,12 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger(CoroutineInvocationHandler::class.java)
 
-class CoroutineInvocationHandler(private val invoker: EndpointInvoker, private val coroutineScope: ApplicationCoroutineScope) : ServerRestHandler {
+class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
+                                 private val coroutineScope: CoroutineScope,
+                                 managedExecutor: ManagedExecutor) : ServerRestHandler {
+
+    private val executorDispatcher = ExecutorDispatcher(managedExecutor)
+
     override fun handle(requestContext: ResteasyReactiveRequestContext) {
         if (requestContext.result != null) {
             return
@@ -23,7 +29,7 @@ class CoroutineInvocationHandler(private val invoker: EndpointInvoker, private v
 
         val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let(::VertxDispatcher)
                 // The @Blocking annotation will not run in a Vertx context
-                ?: Dispatchers.IO
+                ?: executorDispatcher
 
         logger.debug("Handling request with dispatcher {}", dispatcher)
 

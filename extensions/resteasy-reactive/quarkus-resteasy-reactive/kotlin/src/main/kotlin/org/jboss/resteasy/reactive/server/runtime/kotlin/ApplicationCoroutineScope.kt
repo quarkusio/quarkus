@@ -2,8 +2,8 @@ package org.jboss.resteasy.reactive.server.runtime.kotlin
 
 import io.vertx.core.Context
 import kotlinx.coroutines.*
+import org.eclipse.microprofile.context.ManagedExecutor
 import javax.enterprise.context.ApplicationScoped
-import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -25,13 +25,18 @@ class ApplicationCoroutineScope : CoroutineScope, AutoCloseable {
 /**
  * Dispatches the coroutine in a worker thread from Vertx.
  */
-class VertxDispatcher(val vertxContext: Context) : CoroutineDispatcher() {
+class VertxDispatcher(private val vertxContext: Context) : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         // todo sync context variables
         vertxContext.runOnContext {
             block.run()
         }
     }
+}
 
-    override val key: CoroutineContext.Key<*> = ContinuationInterceptor
+class ExecutorDispatcher(private val managedExecutor: ManagedExecutor): CoroutineDispatcher() {
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        managedExecutor.runAsync(block)
+    }
+
 }

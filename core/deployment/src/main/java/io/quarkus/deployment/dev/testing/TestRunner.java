@@ -25,6 +25,7 @@ import org.opentest4j.TestAbortedException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 
 public class TestRunner {
 
@@ -55,6 +56,7 @@ public class TestRunner {
     String appPropertiesExcludeTags;
     String appPropertiesIncludePattern;
     String appPropertiesExcludePattern;
+    String appPropertiesTestType;
 
     public TestRunner(TestSupport testSupport, DevModeContext devModeContext, CuratedApplication testApplication) {
         this.testSupport = testSupport;
@@ -83,9 +85,6 @@ public class TestRunner {
 
     private void runTests(ClassScanResult classScanResult, boolean reRunFailures) {
         if (compileProblem != null) {
-            return;
-        }
-        if (testApplication == null) {
             return;
         }
         if (disabled) {
@@ -137,7 +136,7 @@ public class TestRunner {
                                 current = queuedChanges;
                                 queuedChanges = null;
                             }
-                            testsRunning = run;
+                            testsRunning = false;
                         }
                         if (run) {
                             runTests(current);
@@ -208,6 +207,7 @@ public class TestRunner {
                     .setExcludeTags(testSupport.excludeTags)
                     .setInclude(testSupport.include)
                     .setExclude(testSupport.exclude)
+                    .setTestType(testSupport.testType)
                     .setFailingTestsOnly(testSupport.failingTestsOnly);
             if (reRunFailures) {
                 Set<UniqueId> ids = new HashSet<>();
@@ -278,6 +278,7 @@ public class TestRunner {
                 String excludeTags = p.getProperty("quarkus.test.exclude-tags");
                 String includePattern = p.getProperty("quarkus.test.include-pattern");
                 String excludePattern = p.getProperty("quarkus.test.exclude-pattern");
+                String testType = p.getProperty("quarkus.test.type");
                 if (!firstRun) {
                     if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
                         if (includeTags == null) {
@@ -309,11 +310,19 @@ public class TestRunner {
                             testSupport.exclude = Pattern.compile(excludePattern);
                         }
                     }
+                    if (!Objects.equals(testType, appPropertiesTestType)) {
+                        if (testType == null) {
+                            testSupport.testType = TestType.ALL;
+                        } else {
+                            testSupport.testType = new HyphenateEnumConverter<>(TestType.class).convert(testType);
+                        }
+                    }
                 }
                 appPropertiesIncludeTags = includeTags;
                 appPropertiesExcludeTags = excludeTags;
                 appPropertiesIncludePattern = includePattern;
                 appPropertiesExcludePattern = excludePattern;
+                appPropertiesTestType = testType;
                 break;
             }
         }

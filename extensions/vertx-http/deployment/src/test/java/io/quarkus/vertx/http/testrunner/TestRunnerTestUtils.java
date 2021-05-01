@@ -40,7 +40,7 @@ public class TestRunnerTestUtils {
     }
 
     public static String appProperties(String... props) {
-        return "quarkus.test.continuous-testing=enabled\nquarkus.test.console=false\nquarkus.test.display-test-output=true\n"
+        return "quarkus.test.continuous-testing=enabled\nquarkus.test.display-test-output=true\nquarkus.test.basic-console=true\nquarkus.test.disable-console-input=true\n"
                 + String.join("\n", Arrays.asList(props));
     }
 }

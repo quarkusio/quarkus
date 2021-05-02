@@ -4,6 +4,7 @@ import org.jboss.resteasy.reactive.server.core.CurrentRequest;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusCurrentRequest implements CurrentRequest {
 
@@ -20,6 +21,12 @@ public class QuarkusCurrentRequest implements CurrentRequest {
 
     @Override
     public void set(ResteasyReactiveRequestContext set) {
-        currentVertxRequest.setOtherHttpContextObject(set);
+        if (set == null) {
+            currentVertxRequest.setOtherHttpContextObject(null);
+            currentVertxRequest.setCurrent(null);
+        } else {
+            currentVertxRequest.setOtherHttpContextObject(set);
+            currentVertxRequest.setCurrent(set.unwrap(RoutingContext.class));
+        }
     }
 }

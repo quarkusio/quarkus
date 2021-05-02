@@ -103,8 +103,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
-                .jws()
-                .keyId("1")
                 .sign();
     }
 
@@ -113,8 +111,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience("https://services.com")
-                .jws()
-                .keyId("1")
                 .sign();
     }
 
@@ -123,8 +119,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience(new HashSet<>(Arrays.asList("https://service.example.com", "https://frontendservice.example.com")))
-                .jws()
-                .keyId("1")
                 .sign();
     }
 
@@ -134,8 +128,6 @@ public class BearerTokenAuthorizationTest {
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
                 .expiresAt(Instant.MIN)
-                .jws()
-                .keyId("1")
                 .sign();
     }
 
@@ -144,8 +136,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://example.com")
                 .audience("https://service.example.com")
-                .jws()
-                .keyId("1")
                 .sign();
     }
 

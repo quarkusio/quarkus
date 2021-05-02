@@ -565,8 +565,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
-                .jws()
-                .keyId("1")
                 .sign();
     }
 }

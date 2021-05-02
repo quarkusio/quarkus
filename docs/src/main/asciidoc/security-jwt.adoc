@@ -766,6 +766,12 @@ See <<generate-jwt-tokens, Generate JWT tokens with SmallRye JWT>> and learn how
 
 Set `quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".level=TRACE` and `quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-level=TRACE` to see more details about the token verification or decryption errors.
 
+== Proactive Authentication
+
+If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the link:security-built-in-authentication#proactive-authentication[proactive authentication].
+
+Note that you can't access the injected `JsonWebToken` in the public methods if the token verification has not been done.
+
 == Custom Factories
 
 `io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipalFactory` is used by default to parse and verify JWT tokens and convert them to `JsonWebToken` principals.
@@ -1015,7 +1021,7 @@ String jwt1 = Jwt.claims("/tokenClaims.json").sign();
 String jwt2 = Jwt.claims("/tokenClaims.json").jws().keyId("kid1").header("custom-header", "custom-value").sign(getPrivateKey());
 ----
 
-Note the `alg` (algorithm) header is set to `RS256` by default.
+Note the `alg` (algorithm) header is set to `RS256` by default and `keyId` (key identifier) does not have to be set if a single JSON Web Key (JWK) containing a `kid` property is used.
 
 === Encrypt the claims
 

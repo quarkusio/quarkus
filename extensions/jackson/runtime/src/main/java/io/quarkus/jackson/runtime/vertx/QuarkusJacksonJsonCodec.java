@@ -72,7 +72,11 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
         mapper.registerModule(module);
     }
 
-    private ObjectMapper prettyMapper() {
+    public static ObjectMapper mapper() {
+        return mapper;
+    }
+
+    public static ObjectMapper prettyMapper() {
         if (prettyMapper == null) {
             prettyMapper = mapper.copy();
             prettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true);

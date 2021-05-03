@@ -1,5 +1,8 @@
 package io.quarkus.opentelemetry;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
+
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
@@ -15,6 +18,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.opentelemetry.tracing.TracerProviderBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 
 public class OpenTelemetryProcessor {
 
@@ -47,6 +51,16 @@ public class OpenTelemetryProcessor {
                 "META-INF/services/io.opentelemetry.context.ContextStorageProvider"));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(true, true, QuarkusContextStorage.class));
+    }
+
+    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    @Record(value = STATIC_INIT)
+    void vertxOptions(
+            OpenTelemetryRecorder recorder,
+            BuildProducer<VertxOptionsConsumerBuildItem> vertxOptionsBuildItem) {
+
+        vertxOptionsBuildItem.produce(
+                new VertxOptionsConsumerBuildItem(recorder.setVertxOpenTelemetryOptions(), LIBRARY_AFTER));
     }
 
     @BuildStep(onlyIf = OpenTelemetryEnabled.class)

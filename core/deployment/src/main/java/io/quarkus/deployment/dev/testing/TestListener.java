@@ -18,4 +18,16 @@ public interface TestListener {
     default void testRunStarted(Consumer<TestRunListener> listenerConsumer) {
 
     }
+
+    default void setBrokenOnly(boolean bo) {
+
+    }
+
+    default void setTestOutput(boolean to) {
+
+    }
+
+    default void setInstrumentationBasedReload(boolean ibr) {
+
+    }
 }

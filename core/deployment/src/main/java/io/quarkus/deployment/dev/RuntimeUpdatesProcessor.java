@@ -876,13 +876,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return files;
     }
 
-    public void toggleInstrumentation() {
+    public boolean toggleInstrumentation() {
         instrumentationEnabled = !instrumentationEnabled();
         if (instrumentationEnabled) {
             log.info("Instrumentation based restart enabled");
         } else {
             log.info("Instrumentation based restart disabled");
         }
+        return instrumentationEnabled;
     }
 
     static class TimestampSet {

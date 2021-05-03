@@ -1,8 +1,6 @@
 
-#logstreamFooter {
-    background: #343a40;
-    overflow-y: auto;
-    height: unset;
+.logstreamIcon {
+    color: #9a9da0 !important;
 }
 
 .logstreamIcon:hover {
@@ -13,7 +11,6 @@
 .logstreamFilteredOut {
     display: none;
 }
-
 
 #logstreamLogTerminalText {
     font-size: 0.9em;
@@ -46,44 +43,6 @@
 .logstreamStopLogHr {
     margin-top: 10px;
     border-top: 1px dashed #3366ac;
-}
-
-#logstreamManagerNav {
-    border-bottom: 1px solid #414850;
-    max-height: 32px;
-    position: absolute;
-    width: 100%;
-    top: 0px;
-}
-
-#logstreamManagerNavAppInfo, #logstreamManagerNavBrand {
-    display: none;
-}
-
-#logstreamViewLogButton, #logstreamHideLogButton {
-    color: #9a9da0;
-    font-size:0.73em;
-}
-
-#logstreamHideLogButton {
-    position: absolute;
-    right: 6px;
-    bottom: -3px;
-}
-
-#logstreamResizeButton {
-    position: absolute;
-    right: 50%;
-    bottom: -3px;
-}
-
-#logstreamResizeButton:hover {
-    color: #3366ac !important;
-    cursor: row-resize !important;
-}
-
-#logstreamViewLogButtonIcon:hover {
-    color: #3366ac !important;
 }
 
 .clickable-app-class:hover {

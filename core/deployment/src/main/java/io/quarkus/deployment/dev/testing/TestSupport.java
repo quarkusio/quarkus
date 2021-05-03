@@ -239,7 +239,65 @@ public class TestSupport implements TestController {
 
     @Override
     public boolean toggleBrokenOnlyMode() {
-        return failingTestsOnly = !failingTestsOnly;
+
+        failingTestsOnly = !failingTestsOnly;
+
+        if (failingTestsOnly) {
+            log.info("Broken only mode enabled");
+        } else {
+            log.info("Broken only mode disabled");
+        }
+
+        for (TestListener i : testListeners) {
+            i.setBrokenOnly(failingTestsOnly);
+        }
+
+        return failingTestsOnly;
+    }
+
+    @Override
+    public boolean toggleTestOutput() {
+
+        setDisplayTestOutput(!displayTestOutput);
+        if (displayTestOutput) {
+            log.info("Test output enabled");
+        } else {
+            log.info("Test output disabled");
+        }
+
+        for (TestListener i : testListeners) {
+            i.setTestOutput(displayTestOutput);
+        }
+
+        return displayTestOutput;
+    }
+
+    @Override
+    public boolean toggleInstrumentation() {
+
+        boolean ibr = RuntimeUpdatesProcessor.INSTANCE.toggleInstrumentation();
+
+        for (TestListener i : testListeners) {
+            i.setInstrumentationBasedReload(ibr);
+        }
+
+        return ibr;
+    }
+
+    @Override
+    public void printFullResults() {
+        if (currentState().getFailingClasses().isEmpty()) {
+            log.info("All tests passed, no output to display");
+        }
+        for (TestClassResult i : currentState().getFailingClasses()) {
+            for (TestResult failed : i.getFailing()) {
+                log.error(
+                        "Test " + failed.getDisplayName() + " failed "
+                                + failed.getTestExecutionResult().getStatus()
+                                + "\n",
+                        failed.getTestExecutionResult().getThrowable().get());
+            }
+        }
     }
 
     public static class RunStatus {

@@ -24,24 +24,18 @@ public class ContinuousTestWebSocketHandler implements Handler<RoutingContext> {
         ContinuousTestingWebsocketListener.setStateListener(new Consumer<ContinuousTestingWebsocketListener.State>() {
             @Override
             public void accept(ContinuousTestingWebsocketListener.State state) {
-                StringBuilder sb = new StringBuilder();
-                //we don't have JSON support so we manually build it
-                //pretty yuck
-                //maybe we should try and move this to the deployment side somehow
-                sb.append("{\"running\":");
-                sb.append(state.running);
-                sb.append(", \"inProgress\":");
-                sb.append(state.inProgress);
-                sb.append(", \"run\":");
-                sb.append(state.run);
-                sb.append(", \"passed\":");
-                sb.append(state.passed);
-                sb.append(", \"failed\":");
-                sb.append(state.failed);
-                sb.append(", \"skipped\":");
-                sb.append(state.skipped);
-                sb.append("}");
-                lastMessage = sb.toString();
+                Json.JsonObjectBuilder response = Json.object();
+                response.put("running", state.running);
+                response.put("inProgress", state.inProgress);
+                response.put("run", state.run);
+                response.put("passed", state.passed);
+                response.put("failed", state.failed);
+                response.put("skipped", state.skipped);
+                response.put("isBrokenOnly", state.isBrokenOnly);
+                response.put("isTestOutput", state.isTestOutput);
+                response.put("isInstrumentationBasedReload", state.isInstrumentationBasedReload);
+
+                lastMessage = response.build();
                 for (ServerWebSocket i : sockets) {
                     i.writeTextMessage(lastMessage);
                 }

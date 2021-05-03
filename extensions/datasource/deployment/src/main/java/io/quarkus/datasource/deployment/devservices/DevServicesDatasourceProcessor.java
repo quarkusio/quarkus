@@ -21,6 +21,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildIt
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -40,6 +41,8 @@ public class DevServicesDatasourceProcessor {
     static volatile List<RunTimeConfigurationDefaultBuildItem> databaseConfig;
 
     static volatile boolean first = true;
+
+    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class)
     DevServicesDatasourceResultBuildItem launchDatabases(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -180,6 +183,11 @@ public class DevServicesDatasourceProcessor {
             //explicitly disabled
             log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
                     + " as it has been disabled in the config");
+            return null;
+        }
+        if (!isDockerWorking.getAsBoolean()) {
+            log.warn("Please configure datasource URL for "
+                    + (dbName == null ? "default datasource" : dbName) + " or get a working docker instance");
             return null;
         }
 

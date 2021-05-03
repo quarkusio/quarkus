@@ -1,5 +1,5 @@
 
-package io.quarkus.container.image.docker.deployment;
+package io.quarkus.deployment;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,9 +13,19 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.util.ExecUtil;
 
-public class DockerWorking implements BooleanSupplier {
+public class IsDockerWorking implements BooleanSupplier {
 
-    private static final Logger LOGGER = Logger.getLogger(DockerWorking.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(IsDockerWorking.class.getName());
+
+    private final boolean silent;
+
+    public IsDockerWorking() {
+        this(false);
+    }
+
+    public IsDockerWorking(boolean silent) {
+        this.silent = silent;
+    }
 
     @Override
     public boolean getAsBoolean() {
@@ -35,7 +45,9 @@ public class DockerWorking implements BooleanSupplier {
                 LOGGER.info("Docker daemon found. Version:" + filter.getOutput());
                 return true;
             } else {
-                LOGGER.warn("Could not determine version of Docker daemon");
+                if (!silent) {
+                    LOGGER.warn("Could not determine version of Docker daemon");
+                }
                 return false;
             }
         } catch (Exception e) {

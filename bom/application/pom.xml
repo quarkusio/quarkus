@@ -30,7 +30,7 @@
         <opentelemetry.version>1.0.1</opentelemetry.version>
         <opentelemetry-alpha.version>1.0.1-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.4.0</jaeger.version>
-        <quarkus-http.version>4.0.0.Alpha4</quarkus-http.version>
+        <quarkus-http.version>4.0.0</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <micrometer.version>1.6.6</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <google-auth.version>0.22.0</google-auth.version>

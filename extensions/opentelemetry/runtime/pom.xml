@@ -22,14 +22,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-context-propagation</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http</artifactId>
+            <artifactId>quarkus-vertx-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -56,7 +58,7 @@
                 <configuration>
                     <capabilities>
                         <providesIf>
-                            <positive>io.quarkus.opentelemetry.tracing.TracerProcessor$TracerEnabled</positive>
+                            <positive>io.quarkus.opentelemetry.deployment.tracing.TracerProcessor$TracerEnabled</positive>
                             <name>io.quarkus.opentelemetry.tracer</name>
                         </providesIf>
                     </capabilities>

@@ -1,6 +1,8 @@
 package io.quarkus.deployment.dev.testing;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -9,9 +11,9 @@ import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusCompiler;
@@ -115,6 +117,9 @@ public class TestSupport implements TestController {
         }
         if (testCuratedApplication == null) {
             try {
+                List<Path> paths = new ArrayList<>();
+                paths.add(Paths.get(context.getApplicationRoot().getTest().get().getClassesPath()));
+                paths.addAll(curatedApplication.getQuarkusBootstrap().getApplicationRoot().toList());
                 testCuratedApplication = curatedApplication.getQuarkusBootstrap().clonedBuilder()
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .setDisableClasspathCache(false)
@@ -122,9 +127,7 @@ public class TestSupport implements TestController {
                         .setBaseClassLoader(getClass().getClassLoader())
                         .setTest(true)
                         .setAuxiliaryApplication(true)
-                        .addAdditionalApplicationArchive(new AdditionalDependency(
-                                Paths.get(context.getApplicationRoot().getTest().get().getClassesPath()), true,
-                                true))
+                        .setApplicationRoot(PathsCollection.from(paths))
                         .build()
                         .bootstrap();
                 compiler = new QuarkusCompiler(testCuratedApplication, compilationProviders, context);

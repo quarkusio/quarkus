@@ -142,7 +142,7 @@ public class OpenTelemetryTestCase {
                 .setSpanKind(SpanKind.CLIENT)
                 .startSpan();
 
-        Context parentContext = Context.current().with(parentSpan);
+        Context parentContext = Context.root().with(parentSpan);
 
         RequestSpecification requestSpec = given().contentType("application/json");
 

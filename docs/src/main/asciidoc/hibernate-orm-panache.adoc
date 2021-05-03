@@ -607,9 +607,10 @@ public class PersonName {
 PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
 ----
 
-1. If you plan to deploy your application as a native executable, you must register manually the projection class for reflection.
+1. The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on  the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 2. We use public fields here, but you can use private fields and getters/setters if you prefer.
 3. This constructor will be used by Hibernate, it must be the only constructor in your class and have all the class attributes as parameters.
+
 
 [WARNING]
 ====

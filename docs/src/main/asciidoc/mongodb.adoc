@@ -659,6 +659,7 @@ link:https://docs.mongodb.com/manual/core/security-client-side-encryption/[Clien
 If you encounter the following error when running your application in native mode: +
 `Failed to encode 'MyObject'. Encoding 'myVariable' errored with: Can't find a codec for class org.acme.MyVariable.` +
 This means that the `org.acme.MyVariable` class is not known to GraalVM, the remedy is to add the `@RegisterForReflection` annotation to your `MyVariable class`.
+More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 ====
 
 == Conclusion

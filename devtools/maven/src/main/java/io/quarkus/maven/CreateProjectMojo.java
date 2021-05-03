@@ -187,6 +187,9 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "enableRegistryClient")
     private boolean enableRegistryClient;
 
+    @Parameter(property = "appConfig")
+    private String appConfig;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -290,7 +293,8 @@ public class CreateProjectMojo extends AbstractMojo {
                     .packageName(packageName)
                     .extensions(extensions)
                     .example(example)
-                    .noCode(noCode);
+                    .noCode(noCode)
+                    .appConfig(appConfig);
             if (path != null) {
                 createProject.setValue("path", path);
             }

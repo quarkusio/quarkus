@@ -20,6 +20,7 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
 
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(
             new YAMLFactory().configure(YAMLGenerator.Feature.WRITE_DOC_START_MARKER, false));
+    private static final String APP_CONFIG = "app-config";
 
     @Override
     public String name() {
@@ -32,7 +33,7 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
         checkNotEmptyCodestartFiles(codestartFiles);
 
         final String configType = getConfigType(data);
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = initConfigMap(data);
         for (TargetFile codestartFile : codestartFiles) {
             final String content = codestartFile.getContent();
             if (!content.trim().isEmpty()) {
@@ -87,4 +88,14 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
         final Optional<String> config = CodestartData.getInputCodestartForType(data, CodestartType.CONFIG);
         return config.orElseThrow(() -> new CodestartException("Config type is required"));
     }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> initConfigMap(final Map<String, Object> data) {
+        if (data.get(APP_CONFIG) instanceof Map) {
+            return NestedMaps.unflatten((Map<String, Object>) data.get(APP_CONFIG));
+        }
+
+        return new HashMap<>();
+    }
+
 }

@@ -1,5 +1,6 @@
 package io.quarkus.devtools.commands;
 
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.APP_CONFIG;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.*;
 import static java.util.Objects.requireNonNull;
 
@@ -13,6 +14,7 @@ import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -21,6 +23,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.lang.model.SourceVersion;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Instances of this class are not thread-safe. They are created per invocation.
@@ -102,6 +105,16 @@ public class CreateProject {
 
     public CreateProject resourcePath(String resourcePath) {
         setValue(RESOURCE_PATH, resourcePath);
+        return this;
+    }
+
+    public CreateProject appConfig(String appConfigAsString) {
+        Map<String, String> configMap = Collections.emptyMap();
+
+        if (StringUtils.isNoneBlank(appConfigAsString)) {
+            configMap = ToolsUtils.stringToMap(appConfigAsString, ",", "=");
+        }
+        setValue(APP_CONFIG.key(), configMap);
         return this;
     }
 

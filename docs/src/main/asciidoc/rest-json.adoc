@@ -463,6 +463,8 @@ public class Legume {
 }
 ----
 
+TIP: The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
+
 Let's do that and follow the same steps as before:
 
  * hit `Ctrl+C` to stop the application

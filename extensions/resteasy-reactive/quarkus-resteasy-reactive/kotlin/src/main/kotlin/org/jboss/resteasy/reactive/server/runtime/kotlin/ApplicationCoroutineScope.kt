@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.runtime.kotlin
 import io.vertx.core.Context
 import kotlinx.coroutines.*
 import org.eclipse.microprofile.context.ManagedExecutor
+import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
 import kotlin.coroutines.CoroutineContext
 
@@ -17,6 +18,7 @@ import kotlin.coroutines.CoroutineContext
 class ApplicationCoroutineScope : CoroutineScope, AutoCloseable {
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
+    @PreDestroy
     override fun close() {
         coroutineContext.cancel()
     }
@@ -27,16 +29,18 @@ class ApplicationCoroutineScope : CoroutineScope, AutoCloseable {
  */
 class VertxDispatcher(private val vertxContext: Context) : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
-        // todo sync context variables
         vertxContext.runOnContext {
             block.run()
         }
     }
 }
 
+/**
+ * Dispatches coroutine into the managed thread pool
+ */
 class ExecutorDispatcher(private val managedExecutor: ManagedExecutor): CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
-        managedExecutor.runAsync(block)
+        // todo may need to handle failed job submissions
+        managedExecutor.execute(block)
     }
-
 }

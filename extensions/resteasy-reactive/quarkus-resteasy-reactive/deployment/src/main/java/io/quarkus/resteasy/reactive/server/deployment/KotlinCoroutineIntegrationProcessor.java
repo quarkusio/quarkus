@@ -1,14 +1,11 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
+import java.lang.reflect.Modifier;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -26,11 +23,15 @@ import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineInvocationHand
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineMethodProcessor;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
-import java.lang.reflect.Modifier;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 
 public class KotlinCoroutineIntegrationProcessor {
 
@@ -39,12 +40,9 @@ public class KotlinCoroutineIntegrationProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem produceCoroutineScope() {
-        return AdditionalBeanBuildItem.builder().addBeanClass(ApplicationCoroutineScope.class).setUnremovable().build();
-    }
-
-    @BuildStep
-    AdditionalBeanBuildItem produceCoroutineInvocationHandlerFactory() {
-        return AdditionalBeanBuildItem.builder().addBeanClass(CoroutineInvocationHandlerFactory.class).setUnremovable().build();
+        return AdditionalBeanBuildItem.builder()
+                .addBeanClasses(CoroutineInvocationHandlerFactory.class, ApplicationCoroutineScope.class)
+                .setUnremovable().build();
     }
 
     @BuildStep

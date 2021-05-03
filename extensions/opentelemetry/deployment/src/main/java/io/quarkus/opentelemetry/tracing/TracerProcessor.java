@@ -28,9 +28,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.opentelemetry.OpenTelemetryConfig;
-import io.quarkus.opentelemetry.tracing.vertx.VertxTracerFilter;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.vertx.http.deployment.FilterBuildItem;
 
 public class TracerProcessor {
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
@@ -98,12 +96,6 @@ public class TracerProcessor {
         }
 
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(retainProducers));
-    }
-
-    //TODO This needs modification to use conditional behaviors when it's present
-    @BuildStep(onlyIf = TracerEnabled.class)
-    FilterBuildItem addVertxTracerFilter() {
-        return new FilterBuildItem(new VertxTracerFilter(), Integer.MAX_VALUE);
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)

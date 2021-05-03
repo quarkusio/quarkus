@@ -744,9 +744,11 @@ class VertxWebProcessor {
                 block.assign(res, value);
             }
             CatchBlockCreator caught = block.addCatch(Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION);
+            boolean forceJsonEncoding = !descriptor.isContentTypeString() && !descriptor.isContentTypeBuffer()
+                    && !descriptor.isContentTypeMutinyBuffer();
             caught.invokeStaticMethod(
                     Methods.VALIDATION_HANDLE_VIOLATION_EXCEPTION,
-                    caught.getCaughtException(), invoke.getMethodParam(0));
+                    caught.getCaughtException(), invoke.getMethodParam(0), invoke.load(forceJsonEncoding));
             caught.returnValue(caught.loadNull());
         }
 
@@ -1028,7 +1030,7 @@ class VertxWebProcessor {
         // Encode to Json
         Methods.setContentTypeToJson(response, writer);
         // Validate res if needed
-        if (descriptor.isProducedResponseValidated()) {
+        if (descriptor.isProducedResponseValidated() && (descriptor.isReturningUni() || descriptor.isReturningMulti())) {
             return Methods.validateProducedItem(response, writer, res, validatorField, owner);
         } else {
             return writer.invokeStaticMethod(Methods.JSON_ENCODE, res);

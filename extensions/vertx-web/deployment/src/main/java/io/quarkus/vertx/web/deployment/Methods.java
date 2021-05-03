@@ -180,7 +180,7 @@ class Methods {
     static final MethodDescriptor VALIDATION_HANDLE_VIOLATION_EXCEPTION = MethodDescriptor
             .ofMethod(ValidationSupport.class.getName(), "handleViolationException",
                     Void.TYPE.getName(), Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION,
-                    RoutingContext.class.getName());
+                    RoutingContext.class.getName(), Boolean.TYPE.getName());
 
     static final MethodDescriptor VALIDATOR_VALIDATE = MethodDescriptor
             .ofMethod("javax.validation.Validator", "validate", "java.util.Set",

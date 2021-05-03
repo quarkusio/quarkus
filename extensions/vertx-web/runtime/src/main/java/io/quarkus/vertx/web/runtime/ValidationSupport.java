@@ -64,9 +64,9 @@ public class ValidationSupport {
         return json;
     }
 
-    public static void handleViolationException(ConstraintViolationException ex, RoutingContext rc) {
+    public static void handleViolationException(ConstraintViolationException ex, RoutingContext rc, boolean forceJsonEncoding) {
         String accept = rc.request().getHeader(ACCEPT_HEADER);
-        if (accept != null && accept.contains(APPLICATION_JSON)) {
+        if (forceJsonEncoding || accept != null && accept.contains(APPLICATION_JSON)) {
             rc.response().putHeader(RouteHandlers.CONTENT_TYPE, APPLICATION_JSON);
             JsonObject json = generateJsonResponse(ex.getConstraintViolations(), false);
             rc.response().setStatusCode(json.getInteger(PROBLEM_STATUS));

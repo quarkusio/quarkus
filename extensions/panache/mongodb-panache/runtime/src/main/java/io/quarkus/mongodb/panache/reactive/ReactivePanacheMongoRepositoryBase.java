@@ -39,8 +39,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    default Uni<Void> persist(Entity entity) {
-        return INSTANCE.persist(entity);
+    default Uni<Entity> persist(Entity entity) {
+        return INSTANCE.persist(entity).map(v -> entity);
     }
 
     /**
@@ -51,8 +51,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #update(Stream)
      * @see #update(Object, Object...)
      */
-    default Uni<Void> update(Entity entity) {
-        return INSTANCE.update(entity);
+    default Uni<Entity> update(Entity entity) {
+        return INSTANCE.update(entity).map(v -> entity);
     }
 
     /**
@@ -63,8 +63,8 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Object, Object...)
      */
-    default Uni<Void> persistOrUpdate(Entity entity) {
-        return INSTANCE.persistOrUpdate(entity);
+    default Uni<Entity> persistOrUpdate(Entity entity) {
+        return INSTANCE.persistOrUpdate(entity).map(v -> entity);
     }
 
     /**

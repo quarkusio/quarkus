@@ -3,6 +3,7 @@ package io.quarkus.netty.deployment;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.function.Supplier;
 
@@ -37,7 +38,7 @@ class NettyProcessor {
 
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
-    private static final int DEFAULT_NETTY_ALLOCATOR_MAX_ORDER = 1;
+    private static final int DEFAULT_NETTY_ALLOCATOR_MAX_ORDER = 3;
 
     static {
         InternalLoggerFactory.setDefaultFactory(new JBossNettyLoggerFactory());
@@ -51,8 +52,10 @@ class NettyProcessor {
     }
 
     @BuildStep
-    public SystemPropertyBuildItem limitArenaSize(List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
-        String maxOrder = calculateMaxOrder(minMaxOrderBuildItems);
+    public SystemPropertyBuildItem limitArenaSize(NettyBuildTimeConfig config,
+            List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
+        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, true);
+
         //in native mode we limit the size of the epoll array
         //if the array overflows the selector just moves the overflow to a map
         return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", maxOrder);
@@ -73,7 +76,9 @@ class NettyProcessor {
     }
 
     @BuildStep
-    NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    NativeImageConfigBuildItem build(
+            NettyBuildTimeConfig config,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
@@ -83,7 +88,7 @@ class NettyProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "sun.nio.ch.SelectorImpl"));
 
-        String maxOrder = calculateMaxOrder(minMaxOrderBuildItems);
+        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")
@@ -258,12 +263,24 @@ class NettyProcessor {
                 "jdk.internal.misc.Unsafe", "sun.misc.Unsafe");
     }
 
-    private String calculateMaxOrder(List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
+    private String calculateMaxOrder(OptionalInt userConfig, List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems,
+            boolean shouldWarn) {
         int result = DEFAULT_NETTY_ALLOCATOR_MAX_ORDER;
         for (MinNettyAllocatorMaxOrderBuildItem minMaxOrderBuildItem : minMaxOrderBuildItems) {
             if (minMaxOrderBuildItem.getMaxOrder() > result) {
                 result = minMaxOrderBuildItem.getMaxOrder();
             }
+        }
+
+        if (userConfig.isPresent()) {
+            int v = userConfig.getAsInt();
+            if (result > v && shouldWarn) {
+                log.warnf(
+                        "The configuration set `quarkus.netty.allocator-max-order` to %d. This value is lower than the value requested by the extensions (%d). %d will be used anyway.",
+                        v, result, v);
+
+            }
+            return Integer.toString(v);
         }
 
         return Integer.toString(result);

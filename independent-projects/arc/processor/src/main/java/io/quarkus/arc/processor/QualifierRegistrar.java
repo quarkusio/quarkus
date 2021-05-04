@@ -12,7 +12,8 @@ public interface QualifierRegistrar extends BuildExtension {
 
     /**
      * Returns a map of additional qualifers where the key represents the annotation type and the value is an optional set of
-     * non-binding members.
+     * non-binding members. Here, "non-binding" is meant in the sense of {@code javax.enterprise.util.Nonbinding}. I.e. members
+     * named in the set will be ignored when the CDI container is selecting a bean instance for a particular injection point.
      */
     Map<DotName, Set<String>> getAdditionalQualifiers();
 }

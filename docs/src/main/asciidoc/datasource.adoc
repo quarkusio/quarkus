@@ -74,6 +74,11 @@ ibmcom/db2:11.5.0.0a
 mcr.microsoft.com/mssql/server:2017-CU12
 ----
 
+[NOTE]
+====
+All services based on containers are ran using `testcontainers`. Even though extra URL properties can be set in your `application.properties` file, specific `testcontainers` properties such as `TC_INITSCRIPT`, `TC_INITFUNCTION`, `TC_DAEMON`, `TC_TMPFS` are not supported.
+====
+
 === JDBC datasource
 
 Add the `agroal` extension plus one of `jdbc-db2`, `jdbc-derby`, `jdbc-h2`, `jdbc-mariadb`, `jdbc-mssql`, `jdbc-mysql`, `jdbc-oracle` or `jdbc-postgresql`.

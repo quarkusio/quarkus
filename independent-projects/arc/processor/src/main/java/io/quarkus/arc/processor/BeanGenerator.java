@@ -147,7 +147,8 @@ public class BeanGenerator extends AbstractGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(bean.getImplClazz().name());
+        boolean isApplicationClass = applicationClassPredicate.test(bean.getImplClazz().name())
+                || bean.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 
@@ -264,7 +265,7 @@ public class BeanGenerator extends AbstractGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(beanClass.name());
+        boolean isApplicationClass = applicationClassPredicate.test(beanClass.name()) || bean.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 
@@ -366,7 +367,7 @@ public class BeanGenerator extends AbstractGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
+        boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name()) || bean.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 
@@ -457,7 +458,7 @@ public class BeanGenerator extends AbstractGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
+        boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name()) || bean.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 

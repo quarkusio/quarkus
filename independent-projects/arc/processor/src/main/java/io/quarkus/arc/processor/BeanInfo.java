@@ -77,6 +77,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final Map<String, Object> params;
 
+    private final boolean forceApplicationClass;
+
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers,
             List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
@@ -85,7 +87,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternativePriority,
                 stereotypes, name, isDefaultBean, null, null,
-                Collections.emptyMap(), true);
+                Collections.emptyMap(), true, false);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
@@ -95,7 +97,7 @@ public class BeanInfo implements InjectionTargetInfo {
             List<StereotypeInfo> stereotypes,
             String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
             Consumer<MethodCreator> destroyerConsumer,
-            Map<String, Object> params, boolean isRemovable) {
+            Map<String, Object> params, boolean isRemovable, boolean forceApplicationClass) {
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
             implClazz = initImplClazz(target, beanDeployment);
@@ -133,6 +135,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.identifier = Hashes.sha1(toString());
         this.interceptedMethods = new ConcurrentHashMap<>();
         this.lifecycleInterceptors = new ConcurrentHashMap<>();
+        this.forceApplicationClass = forceApplicationClass;
     }
 
     @Override
@@ -285,6 +288,10 @@ public class BeanInfo implements InjectionTargetInfo {
         } else {
             return disposer == null && destroyerConsumer == null;
         }
+    }
+
+    public boolean isForceApplicationClass() {
+        return forceApplicationClass;
     }
 
     /**
@@ -617,6 +624,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private boolean removable = true;
 
+        private boolean forceApplicationClass;
+
         Builder() {
             injections = Collections.emptyList();
             stereotypes = Collections.emptyList();
@@ -715,9 +724,13 @@ public class BeanInfo implements InjectionTargetInfo {
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean, creatorConsumer,
-                    destroyerConsumer, params, removable);
+                    destroyerConsumer, params, removable, forceApplicationClass);
         }
 
+        public Builder forceApplicationClass(boolean forceApplicationClass) {
+            this.forceApplicationClass = forceApplicationClass;
+            return this;
+        }
     }
 
 }

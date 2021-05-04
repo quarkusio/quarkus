@@ -79,6 +79,8 @@ public class SubResourceTest {
         }
     }
 
+    @Consumes("text/plain")
+    @Produces("text/plain")
     interface SubClient {
         @GET
         @Path("/simple")

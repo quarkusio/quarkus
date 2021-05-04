@@ -36,7 +36,7 @@
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
-        <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
+        <microprofile-context-propagation.version>1.2</microprofile-context-propagation.version>
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
         <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
@@ -50,7 +50,7 @@
         <smallrye-opentracing.version>2.0.0</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.0.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.1.1</smallrye-jwt.version>
-        <smallrye-context-propagation.version>1.1.0</smallrye-context-propagation.version>
+        <smallrye-context-propagation.version>1.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-utils.version>2.3.0</smallrye-reactive-utils.version>
         <smallrye-reactive-messaging.version>3.2.0</smallrye-reactive-messaging.version>

@@ -94,10 +94,10 @@ $ qs create --group-id com.foo --artifact-id bar --version 1.0
 ----
 
 [TIP]
-----
+====
 `-g`,`-a`,`-v` are short hand options for the full name counter parts: `--group-id`,`--artifact-id` and `--version`.
 We use both short and full names in this guide interchangeably.
-----
+====
 
 Use the help option to display all the possible options:
 

@@ -49,10 +49,12 @@ import io.smallrye.mutiny.Multi;
 public class MicroProfileHealthEnabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HealthGrpc.class.getPackage())
-                    .addClass(FakeService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setFlatClassPath(true)
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addPackage(HealthGrpc.class.getPackage())
+                            .addClass(FakeService.class))
             .withConfigurationResource("health-config.properties");
 
     @Inject

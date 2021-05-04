@@ -34,8 +34,7 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
-  NATIVE_TEST_MAVEN_OPTS: "-Dquarkus.native.container-build=true -Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
-  WINDOWS_NATIVE_TEST_MAVEN_OPTS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
+  NATIVE_TEST_MAVEN_OPTS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
   JVM_TEST_MAVEN_OPTS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
@@ -86,8 +85,16 @@ jobs:
              ) \
            ) \
          )"
+    outputs:
+      gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
+      gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - uses: n1hility/cancel-previous-runs@v2
         # quarkus-bot will handle this much more efficiently, but it's not active in/for forks
         if: github.repository != 'quarkusio/quarkus'
@@ -113,10 +120,8 @@ jobs:
           # refresh cache every month to avoid unlimited growth
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build
-        # note: '-Pincremental -Dgib.disable' shall only trigger the download of gitflow-incremental-builder, not activate it
-        #       since -Dincremental deactivates dependencies in bom-descriptor-json (which we do need here), -P is used instead
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks -Pincremental -Dgib.disable clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
       - name: Verify extension dependencies
         shell: bash
         run: |
@@ -129,17 +134,6 @@ jobs:
             git --no-pager diff '*pom.xml' 1>&2
             exit 1
           fi
-      - name: Tar Maven Repo
-        shell: bash
-        run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
-      - name: Persist Maven Repo
-        uses: actions/upload-artifact@v1
-        with:
-          name: maven-repo
-          path: maven-repo.tgz
-      - name: Delete Local Artifacts From Cache
-        shell: bash
-        run: rm -r ~/.m2/repository/io/quarkus
       - name: Get GIB arguments
         id: get-gib-args
         env:
@@ -152,19 +146,77 @@ jobs:
           GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
           if [ -n "$PULL_REQUEST_BASE" ]
           then
-              # The PR defines a clear merge target so just use that branch for reference, *unless*:
-              # - the current branch is a backport branch
-              GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfBranchMatches='.*backport.*'"
+            # The PR defines a clear merge target so just use that branch for reference, *unless*:
+            # - the current branch is a backport branch
+            GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfBranchMatches='.*backport.*'"
           else
-              # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
-              # - the current branch is main or some released branch like 1.10
-              # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
-              GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
+            # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
+            # - the current branch is main or some released branch like 1.10
+            # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
+            GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
           fi
           echo "GIB_ARGS: $GIB_ARGS"
           echo "::set-output name=gib_args::${GIB_ARGS}"
+      - name: Get GIB impacted modules
+        id: get-gib-impacted
+        # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
+        run: |
+          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
+          [ -f gib-impacted.log ] && GIB_IMPACTED=$(sed "s|$(pwd)/||" gib-impacted.log) || GIB_IMPACTED=''
+          echo "GIB_IMPACTED: ${GIB_IMPACTED}"
+          echo "::set-output name=impacted_modules::${GIB_IMPACTED//$'\n'/'%0A'}"
+      - name: Tar Maven Repo
+        shell: bash
+        run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
+      - name: Persist Maven Repo
+        uses: actions/upload-artifact@v1
+        with:
+          name: maven-repo
+          path: maven-repo.tgz
+      - name: Delete Local Artifacts From Cache
+        shell: bash
+        run: rm -r ~/.m2/repository/io/quarkus
+
+  calculate-test-jobs:
+    name: Calculate Test Jobs
+    runs-on: ubuntu-latest
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
+    needs: build-jdk11
+    env:
+      GIB_IMPACTED_MODULES: ${{ needs.build-jdk11.outputs.gib_impacted }}
     outputs:
-      gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
+      native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
+      run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
+      run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
+      run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
+      run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Calculate matrix from native-tests.json
+        id: calc-native-matrix
+        run: |
+          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
+          json=$(.github/filter-native-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "${json}"
+          echo "::set-output name=matrix::${json}"
+      - name: Calculate run flags
+        id: calc-run-flags
+        run: |
+          run_devtools=true; run_gradle=true; run_maven=true; run_tcks=true
+          if [ -n "${GIB_IMPACTED_MODULES}" ]
+          then
+            # Important: keep -pl ... in actual jobs in sync with the following grep commands!
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/devtools'; then run_devtools=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'tcks/.*'; then run_tcks=false; fi
+          fi
+          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_tcks=${run_tcks}"
+          echo "::set-output name=run_devtools::${run_devtools}"
+          echo "::set-output name=run_gradle::${run_gradle}"
+          echo "::set-output name=run_maven::${run_maven}"
+          echo "::set-output name=run_tcks::${run_tcks}"
 
   linux-jvm-tests:
     name: JVM Tests - JDK ${{matrix.java.name}}
@@ -303,11 +355,11 @@ jobs:
   linux-jvm-maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
+    needs: calculate-test-jobs
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
+    if: "needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -319,11 +371,6 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -338,7 +385,8 @@ jobs:
         with:
           java-version: ${{ matrix.java.java-version }}
       - name: Build
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -360,21 +408,16 @@ jobs:
   windows-jdk11-jvm-maven-tests:
     name: Maven Tests - JDK 11 Windows
     runs-on: windows-latest
+    needs: calculate-test-jobs
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
+    if: "needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 60
     strategy:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -390,7 +433,8 @@ jobs:
           java-version: 11
       - name: Build
         shell: bash
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -412,12 +456,12 @@ jobs:
   gradle-tests-jdk11-jvm:
     name: Gradle Tests - JDK 11 ${{matrix.os.family}}
     runs-on: ${{matrix.os.name}}
+    needs: calculate-test-jobs
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
       MAVEN_OPTS: -Xmx1g
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
+    if: "needs.calculate-test-jobs.outputs.run_gradle == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 80
     strategy:
       fail-fast: false
@@ -425,21 +469,14 @@ jobs:
         os:
           - {
             name: "ubuntu-latest",
-            family: "Linux",
-            path: "linux"
+            family: "Linux"
           }
           - {
             name: "windows-latest",
-            family: "Windows",
-            path: "windows"
+            family: "Windows"
           }
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -469,7 +506,8 @@ jobs:
           fi
       - name: Build
         shell: bash
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl integration-tests/gradle ${{ needs.build-jdk11.outputs.gib_args }}
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl integration-tests/gradle
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
@@ -481,9 +519,9 @@ jobs:
   linux-jvm-devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
+    needs: calculate-test-jobs
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
+    if: "needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -495,11 +533,6 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -514,7 +547,8 @@ jobs:
         with:
           java-version: ${{ matrix.java.java-version }}
       - name: Build
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -536,19 +570,14 @@ jobs:
   windows-jdk11-jvm-devtools-tests:
     name: Devtools Tests - JDK 11 Windows
     runs-on: windows-latest
+    needs: calculate-test-jobs
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
+    if: "needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 60
     strategy:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -564,7 +593,8 @@ jobs:
           java-version: 11
       - name: Build
         shell: bash
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -585,9 +615,9 @@ jobs:
 
   tcks-test:
     name: MicroProfile TCKs Tests
-    needs: build-jdk11
+    needs: calculate-test-jobs
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
+    if: "needs.calculate-test-jobs.outputs.run_tcks == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     runs-on: ubuntu-latest
     timeout-minutes: 150
 
@@ -614,6 +644,8 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Verify
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        # Despite the pre-calculated run_tcks flag, GIB has to be re-run here to figure out the exact tcks submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS -Dtcks -pl tcks -amd install ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
@@ -647,25 +679,10 @@ jobs:
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
-  native-tests-read-json-matrix:
-    name: Native Tests - Read JSON matrix
-    runs-on: ubuntu-latest
-    # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    outputs:
-      matrix: ${{ steps.read.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v2
-      - id: read
-        run: |
-          json=$(tr -d '\n' < .github/native-tests.json )
-          echo $json
-          echo "::set-output name=matrix::${json}"
-
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: [build-jdk11, native-tests-read-json-matrix]
-    runs-on: ubuntu-latest
+    needs: calculate-test-jobs
+    runs-on: ${{matrix.os-name}}
     env:
       # leave more space for the actual native compilation and execution
       MAVEN_OPTS: -Xmx1g
@@ -676,21 +693,31 @@ jobs:
     strategy:
       max-parallel: 8
       fail-fast: false
-      matrix: ${{ fromJson(needs.native-tests-read-json-matrix.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Reclaim Disk Space
-        run: .github/ci-prerequisites.sh
+      - name: Install cl.exe
+        if: startsWith(matrix.os-name, 'windows')
+        uses: ilammy/msvc-dev-cmd@v1
+      - uses: microsoft/setup-msbuild@v1
+        if: startsWith(matrix.os-name, 'windows')
+      - name: Setup GraalVM
+        id: setup-graalvm
+        uses: DeLaGuardo/setup-graalvm@master
+        if: startsWith(matrix.os-name, 'windows')
+        with:
+          graalvm-version: '21.0.0.java11'
+      - name: Install native-image component
+        if: startsWith(matrix.os-name, 'windows')
+        run: |
+          gu.cmd install native-image
       # We do this so we can get better analytics for the downloaded version of the build images
       - name: Update Docker Client User Agent
         shell: bash
@@ -705,19 +732,11 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build
+        shell: bash
         env:
           TEST_MODULES: ${{matrix.test-modules}}
-          CATEGORY: ${{matrix.category}}
-        run: |
-          for i in $TEST_MODULES
-          do modules+="integration-tests/$i,"; done
-          ./mvnw $COMMON_MAVEN_ARGS -pl "${modules}" $NATIVE_TEST_MAVEN_OPTS ${{ needs.build-jdk11.outputs.gib_args }}
-          # add the 'simple with spaces' project to the run of 'Misc1' by executing it explicitly
-          # done because there is no good way to pass strings with empty values to the previous command
-          # so this hack is as good as any
-          if [ "$CATEGORY" == "Misc1" ]; then
-            ./mvnw $COMMON_MAVEN_ARGS -Dnative -Dquarkus.native.container-build=true -pl 'integration-tests/simple with space/' verify ${{ needs.build-jdk11.outputs.gib_args }}
-          fi
+          CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
+        run: ./mvnw $COMMON_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_OPTS -Dquarkus.native.container-build=$CONTAINER_BUILD
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -733,92 +752,5 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Native Tests - ${{matrix.category}}"
-          path: "**/target/*-reports/TEST-*.xml"
-          retention-days: 2
-  native-tests-windows:
-    name: Native Tests - Windows - ${{matrix.category}}
-    needs: [build-jdk11, native-tests-read-json-matrix]
-    runs-on: windows-latest
-    env:
-      # leave more space for the actual native compilation and execution
-      MAVEN_OPTS: -Xmx1g
-    # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    # Ignore the following YAML Schema error
-    timeout-minutes: ${{matrix.timeout}}
-    strategy:
-      max-parallel: 8
-      fail-fast: false
-      # we only run a native build on Windows for Hibernate Validator just to be sure
-      # that we can build native executables on Windows
-      # matrix: ${{ fromJson(needs.native-tests-read-json-matrix.outputs.matrix) }}
-      matrix:
-        category: [hibernate-validator]
-        include:
-          - category: hibernate-validator
-            timeout: 20
-            test-modules: hibernate-validator
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-      - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: 11
-      - name: Install cl.exe
-        uses: ilammy/msvc-dev-cmd@v1
-      - uses: microsoft/setup-msbuild@v1
-      - name: Setup GraalVM
-        id: setup-graalvm
-        uses: DeLaGuardo/setup-graalvm@master
-        with:
-          graalvm-version: '21.0.0.java11'
-      - name: Install native-image component
-        run: |
-          gu.cmd install native-image
-      - name: Reclaim Disk Space
-        run: .github/ci-prerequisites.sh
-      # We do this so we can get better analytics for the downloaded version of the build images
-      - name: Update Docker Client User Agent
-        shell: bash
-        run: |
-          cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Build
-        shell: bash
-        env:
-          TEST_MODULES: ${{matrix.test-modules}}
-          CATEGORY: ${{matrix.category}}
-        run: |
-          for i in $TEST_MODULES
-          do modules+="integration-tests/$i,"; done
-          ./mvnw $COMMON_MAVEN_ARGS -pl "${modules}" $WINDOWS_NATIVE_TEST_MAVEN_OPTS ${{ needs.build-jdk11.outputs.gib_args }}
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-native-windows-${{matrix.category}}
-          path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "surefire-reports-Native Tests - Windows - ${{matrix.category}}"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2

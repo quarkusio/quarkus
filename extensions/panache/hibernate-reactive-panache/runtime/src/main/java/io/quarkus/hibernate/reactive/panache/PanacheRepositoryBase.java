@@ -49,8 +49,8 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public default Uni<Void> persist(Entity entity) {
-        return INSTANCE.persist(entity);
+    public default Uni<Entity> persist(Entity entity) {
+        return INSTANCE.persist(entity).map(v -> entity);
     }
 
     /**
@@ -64,10 +64,10 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public default Uni<Void> persistAndFlush(Entity entity) {
+    public default Uni<Entity> persistAndFlush(Entity entity) {
         return INSTANCE.persist(entity)
                 .flatMap(v -> INSTANCE.flush())
-                .map(v -> null);
+                .map(v -> entity);
     }
 
     /**

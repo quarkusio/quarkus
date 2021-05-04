@@ -17,6 +17,7 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -35,6 +36,8 @@ public class DevServicesMongoProcessor {
     static volatile List<Closeable> closeables;
     static volatile Map<String, CapturedProperties> capturedProperties;
     static volatile boolean first = true;
+
+    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class)
     public DevServicesMongoResultBuildItem startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
@@ -143,6 +146,13 @@ public class DevServicesMongoProcessor {
             // explicitly disabled
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
                     + " as it has been disabled in the config");
+            return null;
+        }
+
+        if (!isDockerWorking.getAsBoolean()) {
+            log.warn("Please configure datasource URL for "
+                    + (isDefault(connectionName) ? "default datasource" : connectionName)
+                    + " or get a working docker instance");
             return null;
         }
 

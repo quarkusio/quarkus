@@ -28,6 +28,7 @@ import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
+import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -50,7 +51,7 @@ public class DockerProcessor {
     private static final String DOCKER_DIRECTORY_NAME = "docker";
     static final String DOCKER_CONTAINER_IMAGE_NAME = "docker";
 
-    private final DockerWorking dockerWorking = new DockerWorking();
+    private final IsDockerWorking isDockerWorking = new IsDockerWorking();
 
     @BuildStep
     public AvailableContainerImageExtensionBuildItem availability() {
@@ -75,7 +76,7 @@ public class DockerProcessor {
             return;
         }
 
-        if (!dockerWorking.getAsBoolean()) {
+        if (!isDockerWorking.getAsBoolean()) {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 
@@ -107,7 +108,7 @@ public class DockerProcessor {
             return;
         }
 
-        if (!dockerWorking.getAsBoolean()) {
+        if (!isDockerWorking.getAsBoolean()) {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 

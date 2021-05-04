@@ -59,7 +59,6 @@ import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -70,6 +69,7 @@ import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
 import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilder;
+import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -80,9 +80,6 @@ class RestClientReactiveProcessor {
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
     private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
-
-    private static final String DELEGATE = "delegate";
-    private static final String CREATE_DELEGATE = "createDelegate";
 
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
@@ -262,6 +259,7 @@ class RestClientReactiveProcessor {
                         .className(wrapperClassName)
                         .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
                         .interfaces(jaxrsInterface.name().toString())
+                        .superClass(RestClientReactiveCDIWrapperBase.class)
                         .build()) {
 
                     // CLASS LEVEL
@@ -279,39 +277,28 @@ class RestClientReactiveProcessor {
                     classCreator.addAnnotation(Typed.class.getName(), RetentionPolicy.RUNTIME)
                             .addValue("value", new org.objectweb.asm.Type[] { asmType });
 
-                    //private final InterfaceClass delegate;
-                    FieldDescriptor delegateField = FieldDescriptor.of(classCreator.getClassName(), DELEGATE,
-                            jaxrsInterface.name().toString());
-                    classCreator.getFieldCreator(delegateField).setModifiers(Modifier.FINAL | Modifier.PRIVATE);
-
                     // CONSTRUCTOR:
+
                     MethodCreator constructor = classCreator
                             .getMethodCreator(MethodDescriptor.ofConstructor(classCreator.getClassName()));
-                    constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), constructor.getThis());
-
-                    //       Object var1 = RestClientCDIDelegateBuilder.createDelegate(InterfaceClass.class, "/baseUri",
-                    //       "com.example.InterfaceClass");
-                    //      this.delegate = (InterfaceClass)var1;
-                    ResultHandle interfaceHandle = constructor.loadClass(jaxrsInterface.toString());
 
                     AnnotationValue baseUri = registerRestClient.value("baseUri");
 
                     ResultHandle baseUriHandle = constructor.load(baseUri != null ? baseUri.asString() : "");
-                    ResultHandle configPrefixHandle = constructor.load(configPrefix);
-
-                    MethodDescriptor createDelegate = MethodDescriptor.ofMethod(RestClientCDIDelegateBuilder.class,
-                            CREATE_DELEGATE, Object.class, Class.class, String.class, String.class);
-
-                    constructor.writeInstanceField(delegateField, constructor.getThis(),
-                            constructor.invokeStaticMethod(createDelegate, interfaceHandle, baseUriHandle,
-                                    configPrefixHandle));
+                    constructor.invokeSpecialMethod(
+                            MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
+                                    String.class),
+                            constructor.getThis(),
+                            constructor.loadClass(jaxrsInterface.toString()),
+                            baseUriHandle,
+                            constructor.load(configPrefix));
                     constructor.returnValue(null);
 
                     // METHODS:
                     for (MethodInfo method : restMethods) {
                         // for each method method that corresponds to making a rest call, create a method like:
                         // public JsonArray get() {
-                        //      return ((InterfaceClass)this.delegate).get();
+                        //      return ((InterfaceClass)this.getDelegate()).get();
                         // }
                         MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
 
@@ -332,7 +319,10 @@ class RestClientReactiveProcessor {
                             }
                         }
 
-                        ResultHandle delegate = methodCreator.readInstanceField(delegateField, methodCreator.getThis());
+                        ResultHandle delegate = methodCreator.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(RestClientReactiveCDIWrapperBase.class, "getDelegate",
+                                        Object.class),
+                                methodCreator.getThis());
 
                         int parameterCount = method.parameters().size();
                         ResultHandle result;

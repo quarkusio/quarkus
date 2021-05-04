@@ -23,7 +23,7 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 
-public class RestClientCDIDelegateBuilder {
+public class RestClientCDIDelegateBuilder<T> {
 
     private static final String MP_REST = "mp-rest";
     private static final String REST_FOLLOW_REDIRECTS = "%s/" + MP_REST + "/followRedirects";
@@ -45,23 +45,21 @@ public class RestClientCDIDelegateBuilder {
 
     private static final String MAX_REDIRECTS = "quarkus.rest.client.max-redirects";
 
-    private final Class<?> jaxrsInterface;
+    private final Class<T> jaxrsInterface;
     private final String baseUriFromAnnotation;
     private final String propertyPrefix;
 
-    // used by generated code
-    @SuppressWarnings("unused")
-    public static Object createDelegate(Class<?> jaxrsInterface, String baseUriFromAnnotation, String propertyPrefix) {
-        return new RestClientCDIDelegateBuilder(jaxrsInterface, baseUriFromAnnotation, propertyPrefix).build();
+    public static <T> T createDelegate(Class<T> jaxrsInterface, String baseUriFromAnnotation, String propertyPrefix) {
+        return new RestClientCDIDelegateBuilder<T>(jaxrsInterface, baseUriFromAnnotation, propertyPrefix).build();
     }
 
-    private RestClientCDIDelegateBuilder(Class<?> jaxrsInterface, String baseUriFromAnnotation, String propertyPrefix) {
+    private RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String propertyPrefix) {
         this.jaxrsInterface = jaxrsInterface;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.propertyPrefix = propertyPrefix;
     }
 
-    private Object build() {
+    private T build() {
         RestClientBuilder builder = RestClientBuilder.newBuilder();
         configureBaseUrl(builder);
         configureTimeouts(builder);
@@ -291,14 +289,15 @@ public class RestClientCDIDelegateBuilder {
         }
     }
 
-    private <T> Optional<T> getOptionalDynamicProperty(String propertyFormat, Class<T> type) {
+    private <PropertyType> Optional<PropertyType> getOptionalDynamicProperty(String propertyFormat, Class<PropertyType> type) {
         final Config config = ConfigProvider.getConfig();
-        Optional<T> interfaceNameValue = config.getOptionalValue(String.format(propertyFormat, jaxrsInterface.getName()), type);
+        Optional<PropertyType> interfaceNameValue = config
+                .getOptionalValue(String.format(propertyFormat, jaxrsInterface.getName()), type);
         return interfaceNameValue.isPresent() ? interfaceNameValue
                 : config.getOptionalValue(String.format(propertyFormat, propertyPrefix), type);
     }
 
-    private <T> Optional<T> getOptionalProperty(String propertyName, Class<T> type) {
+    private <PropertyType> Optional<PropertyType> getOptionalProperty(String propertyName, Class<PropertyType> type) {
         final Config config = ConfigProvider.getConfig();
         return config.getOptionalValue(propertyName, type);
     }

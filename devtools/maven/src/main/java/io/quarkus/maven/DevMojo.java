@@ -26,10 +26,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.aesh.readline.tty.terminal.TerminalConnection;
+import org.aesh.terminal.Attributes;
+import org.aesh.terminal.Connection;
+import org.aesh.terminal.utils.ANSI;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
@@ -301,6 +306,12 @@ public class DevMojo extends AbstractMojo {
     @Component
     private ToolchainManager toolchainManager;
 
+    /**
+     * console attributes, used to restore the console state
+     */
+    private Attributes attributes;
+    private Connection connection;
+
     @Override
     public void setLog(Log log) {
         super.setLog(log);
@@ -309,6 +320,7 @@ public class DevMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
+        saveTerminalState();
 
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
 
@@ -342,8 +354,7 @@ public class DevMojo extends AbstractMojo {
                 if (System.currentTimeMillis() > nextCheck) {
                     nextCheck = System.currentTimeMillis() + 100;
                     if (!runner.alive()) {
-                        //reset the terminal
-                        System.out.println("\u001B[0m");
+                        restoreTerminalState();
                         if (runner.exitValue() != 0) {
                             throw new MojoExecutionException("Dev mode process did not complete successfully");
                         }
@@ -379,6 +390,39 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+    /**
+     * if the process is forcibly killed then the terminal may be left in raw mode, which
+     * messes everything up. This attempts to fix that by saving the state so it can be restored
+     */
+    private void saveTerminalState() {
+        try {
+            new TerminalConnection(new Consumer<Connection>() {
+                @Override
+                public void accept(Connection connection) {
+                    attributes = connection.getAttributes();
+                    DevMojo.this.connection = connection;
+                }
+            });
+        } catch (IOException e) {
+            getLog().error(
+                    "Failed to setup console restore, console may be left in an inconsistent state if the process is killed",
+                    e);
+        }
+    }
+
+    private void restoreTerminalState() {
+        if (attributes == null || connection == null) {
+            return;
+        }
+        connection.setAttributes(attributes);
+        int height = connection.size().getHeight();
+        connection.write(ANSI.MAIN_BUFFER);
+        connection.write(ANSI.CURSOR_SHOW);
+        connection.write("\u001B[0m");
+        connection.write("\033[" + height + ";0H");
+        connection.close();
     }
 
     private void handleAutoCompile() throws MojoExecutionException {

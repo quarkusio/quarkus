@@ -1,7 +1,5 @@
 package io.quarkus.grpc.server.services;
 
-import javax.inject.Singleton;
-
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
@@ -10,9 +8,10 @@ import io.grpc.examples.helloworld3.HelloReply3;
 import io.grpc.examples.helloworld3.HelloRequest3;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.common.annotation.Blocking;
 
-@Singleton
+@GrpcService
 public class GrpcCallWithinBlockingService extends Greeter3Grpc.Greeter3ImplBase {
 
     @GrpcClient

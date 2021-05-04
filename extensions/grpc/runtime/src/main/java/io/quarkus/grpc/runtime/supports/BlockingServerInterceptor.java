@@ -28,10 +28,12 @@ public class BlockingServerInterceptor implements ServerInterceptor {
     private final Vertx vertx;
     private final List<String> blockingMethods;
     private final Map<String, Boolean> cache = new HashMap<>();
+    private final boolean devMode;
 
-    public BlockingServerInterceptor(Vertx vertx, List<String> blockingMethods) {
+    public BlockingServerInterceptor(Vertx vertx, List<String> blockingMethods, boolean devMode) {
         this.vertx = vertx;
         this.blockingMethods = new ArrayList<>();
+        this.devMode = devMode;
         for (String method : blockingMethods) {
             this.blockingMethods.add(method.toLowerCase());
         }
@@ -98,19 +100,12 @@ public class BlockingServerInterceptor implements ServerInterceptor {
         private synchronized void executeOnContextOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
             if (this.delegate != null) {
                 final Context grpcContext = Context.current();
-                vertx.executeBlocking(new Handler<Promise<Object>>() {
-                    @Override
-                    public void handle(Promise<Object> f) {
-                        final Context previous = Context.current();
-                        grpcContext.attach();
-                        try {
-                            consumer.accept(delegate);
-                            f.complete();
-                        } finally {
-                            grpcContext.detach(previous);
-                        }
-                    }
-                }, true, null);
+                Handler<Promise<Object>> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate);
+                if (devMode) {
+                    blockingHandler = new DevModeBlockingExecutionHandler<ReqT>(Thread.currentThread().getContextClassLoader(),
+                            blockingHandler);
+                }
+                vertx.executeBlocking(blockingHandler, true, null);
             } else {
                 incomingEvents.add(consumer);
             }
@@ -147,4 +142,50 @@ public class BlockingServerInterceptor implements ServerInterceptor {
         }
     }
 
+    private static class DevModeBlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
+
+        final ClassLoader tccl;
+        final Handler<Promise<Object>> delegate;
+
+        public DevModeBlockingExecutionHandler(ClassLoader tccl, Handler<Promise<Object>> delegate) {
+            this.tccl = tccl;
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void handle(Promise<Object> event) {
+            ClassLoader originalTccl = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(tccl);
+            try {
+                delegate.handle(event);
+            } finally {
+                Thread.currentThread().setContextClassLoader(originalTccl);
+            }
+        }
+    }
+
+    private static class BlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
+        private final ServerCall.Listener<ReqT> delegate;
+        private final Context grpcContext;
+        private final Consumer<ServerCall.Listener<ReqT>> consumer;
+
+        public BlockingExecutionHandler(Consumer<ServerCall.Listener<ReqT>> consumer, Context grpcContext,
+                ServerCall.Listener<ReqT> delegate) {
+            this.consumer = consumer;
+            this.grpcContext = grpcContext;
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void handle(Promise<Object> event) {
+            final Context previous = Context.current();
+            grpcContext.attach();
+            try {
+                consumer.accept(delegate);
+                event.complete();
+            } finally {
+                grpcContext.detach(previous);
+            }
+        }
+    }
 }

@@ -1,14 +1,16 @@
 package io.quarkus.grpc.server.devmode;
 
-import javax.inject.Singleton;
+import javax.enterprise.context.RequestScoped;
 
 import devmodetest.v1.Devmodetest;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.stub.StreamObserver;
+import io.quarkus.arc.Arc;
+import io.quarkus.grpc.GrpcService;
 
-@Singleton
+@GrpcService
 public class DevModeTestService extends GreeterGrpc.GreeterImplBase {
 
     @Override
@@ -20,7 +22,11 @@ public class DevModeTestService extends GreeterGrpc.GreeterImplBase {
         } else {
             response = greeting + request.getName();
         }
-        responseObserver.onNext(HelloReply.newBuilder().setMessage(response).build());
+        if (Arc.container().getActiveContext(RequestScoped.class) != null) {
+            responseObserver.onNext(HelloReply.newBuilder().setMessage(response).build());
+        } else {
+            throw new IllegalStateException("request context not active, failing");
+        }
         responseObserver.onCompleted();
     }
 }

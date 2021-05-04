@@ -29,6 +29,7 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
@@ -62,8 +63,8 @@ public final class ConfigUtils {
         return size -> new TreeSet<>();
     }
 
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime) {
-        return configBuilder(runTime, true);
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, LaunchMode launchMode) {
+        return configBuilder(runTime, true, launchMode);
     }
 
     /**
@@ -73,12 +74,29 @@ public final class ConfigUtils {
      * @param addDiscovered {@code true} if the ConfigSource and Converter objects should be auto-discovered
      * @return the configuration builder
      */
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered) {
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered,
+            LaunchMode launchMode) {
+        return configBuilder(runTime, false, addDiscovered, launchMode);
+    }
+
+    /**
+     * Get the basic configuration builder.
+     *
+     * @param runTime {@code true} if the configuration is run time, {@code false} if build time
+     * @param addDiscovered {@code true} if the ConfigSource and Converter objects should be auto-discovered
+     * @return the configuration builder
+     */
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean bootstrap,
+            final boolean addDiscovered,
+            LaunchMode launchMode) {
         final SmallRyeConfigBuilder builder = emptyConfigBuilder();
 
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem().getConfigSources(classLoader));
         builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath().getConfigSources(classLoader));
+        if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
+            builder.withSources(new RuntimeOverrideConfigSource(classLoader));
+        }
         if (runTime) {
             builder.addDefaultSources();
             builder.withSources(dotEnvSources(classLoader));

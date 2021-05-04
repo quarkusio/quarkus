@@ -144,7 +144,7 @@ public final class ExtensionLoader {
         final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(roots);
 
         // now prepare & load the build configuration
-        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false);
+        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
 
         final DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(
                 reader.getBuildTimePatternMap());

@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 import java.lang.reflect.Type;
 import java.util.List;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,7 @@ public class MailerTest {
 
     @BeforeEach
     public void init() {
-        mailServer = "http://" + System.getProperty("fake.mailer") + "/api/emails";
+        mailServer = "http://" + ConfigProvider.getConfig().getValue("fake.mailer", String.class) + "/api/emails";
     }
 
     @AfterEach

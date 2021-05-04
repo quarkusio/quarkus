@@ -110,7 +110,7 @@ public class QuarkusDevModeTest
     private Path projectSourceRoot;
     private Path testLocation;
     private String[] commandLineArgs = new String[0];
-
+    private final Map<String, String> oldSystemProps = new HashMap<>();
     private final Map<String, String> buildSystemProperties = new HashMap<>();
 
     private static final List<CompilationProvider> compilationProviders;
@@ -193,18 +193,31 @@ public class QuarkusDevModeTest
         }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
-            TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            manager.init();
-            manager.start();
-            store.put(TestResourceManager.class.getName(), new ExtensionContext.Store.CloseableResource() {
+            TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
+            testResourceManager.init();
+            Map<String, String> properties = testResourceManager.start();
+            TestResourceManager tm = testResourceManager;
 
+            store.put(TestResourceManager.class.getName(), testResourceManager);
+            store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {
                 @Override
                 public void close() throws Throwable {
-                    manager.close();
+                    tm.close();
                 }
             });
         }
-
+        TestResourceManager tm = (TestResourceManager) store.get(TestResourceManager.class.getName());
+        //dev mode tests just use system properties
+        //we set them here and clear them in afterAll
+        //so they don't interfere with other tests
+        for (Map.Entry<String, String> i : tm.getConfigProperties().entrySet()) {
+            oldSystemProps.put(i.getKey(), System.getProperty(i.getKey()));
+            if (i.getValue() == null) {
+                System.clearProperty(i.getKey());
+            } else {
+                System.setProperty(i.getKey(), i.getValue());
+            }
+        }
         Class<?> testClass = extensionContext.getRequiredTestClass();
         try {
             deploymentDir = Files.createTempDirectory("quarkus-dev-mode-test");
@@ -238,6 +251,13 @@ public class QuarkusDevModeTest
 
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
+        for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
+            if (e.getValue() == null) {
+                System.clearProperty(e.getKey());
+            } else {
+                System.setProperty(e.getKey(), e.getValue());
+            }
+        }
         rootLogger.setHandlers(originalRootLoggerHandlers);
         inMemoryLogHandler.clearRecords();
         ClearCache.clearAnnotationCache();

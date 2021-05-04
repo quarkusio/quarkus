@@ -55,6 +55,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.quarkus.runtime.configuration.ConfigDiagnostic;
@@ -149,10 +150,14 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor CU_SORTED_SET_FACTORY = MethodDescriptor.ofMethod(ConfigUtils.class, "sortedSetFactory",
             IntFunction.class);
     static final MethodDescriptor CU_CONFIG_BUILDER = MethodDescriptor.ofMethod(ConfigUtils.class, "configBuilder",
-            SmallRyeConfigBuilder.class, boolean.class);
+            SmallRyeConfigBuilder.class, boolean.class, LaunchMode.class);
     static final MethodDescriptor CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED = MethodDescriptor.ofMethod(ConfigUtils.class,
             "configBuilder",
-            SmallRyeConfigBuilder.class, boolean.class, boolean.class);
+            SmallRyeConfigBuilder.class, boolean.class, boolean.class, LaunchMode.class);
+    static final MethodDescriptor CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED_AND_BOOTSRAP = MethodDescriptor.ofMethod(
+            ConfigUtils.class,
+            "configBuilder",
+            SmallRyeConfigBuilder.class, boolean.class, boolean.class, boolean.class, LaunchMode.class);
     static final MethodDescriptor CU_ADD_SOURCE_PROVIDER = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProvider",
             void.class, SmallRyeConfigBuilder.class, ConfigSourceProvider.class);
     static final MethodDescriptor CU_ADD_SOURCE_PROVIDERS = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProviders",
@@ -243,7 +248,7 @@ public final class RunTimeConfigurationGenerator {
     public static void generate(
             final BuildTimeConfigurationReader.ReadResult readResult,
             final ClassOutput classOutput,
-            final boolean devMode,
+            LaunchMode launchMode,
             final Map<String, String> runTimeDefaults,
             final List<Class<?>> additionalTypes,
             final List<String> additionalStaticInitConfigSourceProviders,
@@ -252,7 +257,7 @@ public final class RunTimeConfigurationGenerator {
         new GenerateOperation.Builder()
                 .setBuildTimeReadResult(readResult)
                 .setClassOutput(classOutput)
-                .setDevMode(devMode)
+                .setLaunchMode(launchMode)
                 .setRunTimeDefaults(runTimeDefaults)
                 .setAdditionalTypes(additionalTypes)
                 .setAdditionalStaticInitConfigSourceProviders(additionalStaticInitConfigSourceProviders)
@@ -263,6 +268,7 @@ public final class RunTimeConfigurationGenerator {
 
     static final class GenerateOperation implements AutoCloseable {
         final boolean devMode;
+        final LaunchMode launchMode;
         final AccessorFinder accessorFinder;
         final ClassOutput classOutput;
         final ClassCreator cc;
@@ -307,7 +313,8 @@ public final class RunTimeConfigurationGenerator {
         int converterIndex = 0;
 
         GenerateOperation(Builder builder) {
-            this.devMode = builder.devMode;
+            this.launchMode = builder.launchMode;
+            this.devMode = builder.launchMode == LaunchMode.DEVELOPMENT;
             final BuildTimeConfigurationReader.ReadResult buildTimeReadResult = builder.buildTimeReadResult;
             buildTimeConfigResult = Assert.checkNotNullParam("buildTimeReadResult", buildTimeReadResult);
             specifiedRunTimeDefaultValues = Assert.checkNotNullParam("specifiedRunTimeDefaultValues",
@@ -380,7 +387,7 @@ public final class RunTimeConfigurationGenerator {
 
             // the build time config, which is for user use only (not used by us other than for loading converters)
             final ResultHandle buildTimeBuilder = clinit.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED,
-                    clinit.load(true), clinit.load(false));
+                    clinit.load(true), clinit.load(false), clinit.load(launchMode));
             final ResultHandle array = clinit.newArray(ConfigSource[].class, 2);
             // build time values
             clinit.writeArrayValue(array, 0, buildTimeConfigSource);
@@ -440,7 +447,8 @@ public final class RunTimeConfigurationGenerator {
                 final ResultHandle buildTimeConfigSource = reinit.newInstance(PCS_NEW, buildTimeValues,
                         reinit.load("Build time config = Reloaded"), reinit.load(100));
                 // the build time config, which is for user use only (not used by us other than for loading converters)
-                final ResultHandle buildTimeBuilder = reinit.invokeStaticMethod(CU_CONFIG_BUILDER, reinit.load(true));
+                final ResultHandle buildTimeBuilder = reinit.invokeStaticMethod(CU_CONFIG_BUILDER, reinit.load(true),
+                        reinit.load(launchMode));
                 final ResultHandle array = reinit.newArray(ConfigSource[].class, 2);
                 // build time values
                 reinit.writeArrayValue(array, 0, buildTimeConfigSource);
@@ -490,12 +498,14 @@ public final class RunTimeConfigurationGenerator {
             // create the bootstrap config if necessary
             ResultHandle bootstrapBuilder = null;
             if (bootstrapConfigSetupNeeded()) {
-                bootstrapBuilder = readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED,
-                        readBootstrapConfig.load(false), readBootstrapConfig.load(false));
+                bootstrapBuilder = readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED_AND_BOOTSRAP,
+                        readBootstrapConfig.load(false), readBootstrapConfig.load(true), readBootstrapConfig.load(false),
+                        readBootstrapConfig.load(launchMode));
             }
 
             // create the run time config
-            final ResultHandle runTimeBuilder = readConfig.invokeStaticMethod(CU_CONFIG_BUILDER, readConfig.load(true));
+            final ResultHandle runTimeBuilder = readConfig.invokeStaticMethod(CU_CONFIG_BUILDER, readConfig.load(true),
+                    readConfig.load(launchMode));
 
             // add in our run time only config source provider
             readConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, runTimeBuilder, readConfig.newInstance(
@@ -1586,7 +1596,7 @@ public final class RunTimeConfigurationGenerator {
         }
 
         static final class Builder {
-            private boolean devMode;
+            private LaunchMode launchMode;
             private ClassOutput classOutput;
             private BuildTimeConfigurationReader.ReadResult buildTimeReadResult;
             private Map<String, String> runTimeDefaults;
@@ -1633,12 +1643,12 @@ public final class RunTimeConfigurationGenerator {
                 return this;
             }
 
-            boolean isDevMode() {
-                return devMode;
+            public LaunchMode getLaunchMode() {
+                return launchMode;
             }
 
-            Builder setDevMode(boolean devMode) {
-                this.devMode = devMode;
+            public Builder setLaunchMode(LaunchMode launchMode) {
+                this.launchMode = launchMode;
                 return this;
             }
 

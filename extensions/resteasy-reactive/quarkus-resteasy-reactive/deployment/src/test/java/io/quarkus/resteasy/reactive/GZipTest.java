@@ -36,7 +36,7 @@ public class GZipTest {
                     .addClasses(BeanRegisteringRouteUsingObserves.class));
 
     @Test
-    public void test() throws Exception {
+    public void testServerCompression() throws Exception {
 
         RestAssured.given().get("/compression").then().statusCode(200)
                 .header("content-encoding", "gzip")

@@ -47,6 +47,7 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -63,6 +64,7 @@ import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.test.common.MockSupport;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -117,6 +119,8 @@ public class QuarkusUnitTest
     private boolean allowTestClassOutsideDeployment;
     private boolean flatClassPath;
     private List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
+
+    private boolean globalMockContextInitialized = false;
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return assertException(t -> {
@@ -263,6 +267,8 @@ public class QuarkusUnitTest
                 archive.addClass(c);
                 c = c.getSuperclass();
             }
+            archive.addClass(QuarkusMock.class);
+            archive.addClass(MockSupport.class);
             if (customApplicationProperties != null) {
                 archive.add(new PropertiesAsset(customApplicationProperties), "application.properties");
             }
@@ -489,16 +495,23 @@ public class QuarkusUnitTest
                 builder.addClassLoaderEventListeners(this.classLoadListeners);
                 curatedApplication = builder.build().bootstrap();
 
-                runningQuarkusApplication = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
-                        .createInitialRuntimeApplication()
-                        .run(commandLineParameters);
-                //we restore the CL at the end of the test
-                Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
+                StartupAction startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
+                        .createInitialRuntimeApplication();
+
+                // we restore the CL at the end of the test
+                Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
+
+                pushMockContext();
+                globalMockContextInitialized = true;
+
+                runningQuarkusApplication = startupAction.run(commandLineParameters);
+
                 if (assertException != null) {
                     fail(THE_BUILD_WAS_EXPECTED_TO_FAIL);
                 }
                 started = true;
                 System.setProperty("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication));
+
                 try {
                     actualTestClass = Class.forName(testClass.getName(), true,
                             Thread.currentThread().getContextClassLoader());
@@ -564,6 +577,10 @@ public class QuarkusUnitTest
         inMemoryLogHandler.clearRecords();
 
         try {
+            if (globalMockContextInitialized) {
+                popMockContext();
+            }
+
             if (runningQuarkusApplication != null) {
                 runningQuarkusApplication.close();
                 runningQuarkusApplication = null;
@@ -597,6 +614,8 @@ public class QuarkusUnitTest
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (runningQuarkusApplication != null) {
+            popMockContext();
+
             //this kinda sucks, but everything is isolated, so we need to hook into everything via reflection
             runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                     .getDeclaredMethod("clearURL")
@@ -613,6 +632,8 @@ public class QuarkusUnitTest
         if (runningQuarkusApplication != null) {
             runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                     .getDeclaredMethod("setURL", boolean.class).invoke(null, useSecureConnection);
+
+            pushMockContext();
         } else {
             Optional<Class<?>> testClass = context.getTestClass();
             if (testClass.isPresent()) {
@@ -658,5 +679,27 @@ public class QuarkusUnitTest
         }
         customApplicationProperties.put(propertyKey, propertyValue);
         return this;
+    }
+
+    private void pushMockContext() {
+        try {
+            // class loader issues
+            Method pushContext = Thread.currentThread().getContextClassLoader().loadClass(MockSupport.class.getName())
+                    .getDeclaredMethod("pushContext");
+            pushContext.invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void popMockContext() {
+        try {
+            // class loader issues
+            Method popContext = Thread.currentThread().getContextClassLoader().loadClass(MockSupport.class.getName())
+                    .getDeclaredMethod("popContext");
+            popContext.invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

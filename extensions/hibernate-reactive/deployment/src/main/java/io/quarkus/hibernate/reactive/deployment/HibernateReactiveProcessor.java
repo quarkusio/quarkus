@@ -2,6 +2,7 @@ package io.quarkus.hibernate.reactive.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPresent;
 import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 
 import javax.persistence.SharedCacheMode;
@@ -249,14 +251,21 @@ public final class HibernateReactiveProcessor {
         }
 
         // Query
-        if (persistenceUnitConfig.batchFetchSize > 0) {
+        // TODO ideally we should align on ORM and use 16 as a default, but that would break applications
+        //   because of https://github.com/hibernate/hibernate-reactive/issues/742
+        int batchSize = firstPresent(persistenceUnitConfig.fetch.batchSize, persistenceUnitConfig.batchFetchSize)
+                .orElse(-1);
+        if (batchSize > 0) {
             desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
-                    Integer.toString(persistenceUnitConfig.batchFetchSize));
+                    Integer.toString(batchSize));
             desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
         }
 
-        persistenceUnitConfig.maxFetchDepth.ifPresent(
-                depth -> desc.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(depth)));
+        if (persistenceUnitConfig.fetch.maxDepth.isPresent()) {
+            setMaxFetchDepth(desc, persistenceUnitConfig.fetch.maxDepth);
+        } else if (persistenceUnitConfig.maxFetchDepth.isPresent()) {
+            setMaxFetchDepth(desc, persistenceUnitConfig.maxFetchDepth);
+        }
 
         desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, Integer.toString(
                 persistenceUnitConfig.query.queryPlanCacheMaxSize));
@@ -315,6 +324,10 @@ public final class HibernateReactiveProcessor {
         }
 
         return desc;
+    }
+
+    private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {
+        descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
     }
 
     private static Optional<String> getSqlLoadScript(Optional<String> sqlLoadScript, LaunchMode launchMode) {

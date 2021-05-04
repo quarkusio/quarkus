@@ -17,13 +17,12 @@ import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
-import org.jboss.resteasy.reactive.server.runtime.kotlin.ApplicationCoroutineScope;
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineEndpointInvoker;
-import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineInvocationHandlerFactory;
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineMethodProcessor;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -39,20 +38,38 @@ public class KotlinCoroutineIntegrationProcessor {
     public static final String NAME = KotlinCoroutineIntegrationProcessor.class.getName();
 
     @BuildStep
-    AdditionalBeanBuildItem produceCoroutineScope() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClasses(CoroutineInvocationHandlerFactory.class, ApplicationCoroutineScope.class)
-                .setUnremovable().build();
+    CoroutineConfigurationBuildItem producesCoroutineConfiguration() {
+        try {
+            Class.forName("kotlinx.coroutines.CoroutineScope", false, getClass().getClassLoader());
+            return new CoroutineConfigurationBuildItem(true);
+        } catch (ClassNotFoundException e) {
+            return new CoroutineConfigurationBuildItem(false);
+        }
     }
 
     @BuildStep
-    MethodScannerBuildItem scanner() {
+    void produceCoroutineScope(
+            CoroutineConfigurationBuildItem coroutineConfigurationBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer) {
+        if (coroutineConfigurationBuildItem.isEnabled()) {
+            buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(
+                            "org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineInvocationHandlerFactory",
+                            "org.jboss.resteasy.reactive.server.runtime.kotlin.ApplicationCoroutineScope")
+                    .setUnremovable().build());
+        }
+    }
+
+    @BuildStep
+    MethodScannerBuildItem scanner(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem) {
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
                 if (methodContext.containsKey(NAME)) {
                     //method is suspendable, we need to handle the invocation differently
+                    ensureEnabled(coroutineConfigurationBuildItem, method);
+
                     ResteasyReactiveRecorder recorder = (ResteasyReactiveRecorder) methodContext
                             .get(ResteasyReactiveRecorder.class.getName());
                     CoroutineMethodProcessor processor = new CoroutineMethodProcessor(createCoroutineInvoker(
@@ -75,6 +92,14 @@ public class KotlinCoroutineIntegrationProcessor {
                 return null;
             }
         });
+    }
+
+    private void ensureEnabled(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem, MethodInfo method) {
+        if (!coroutineConfigurationBuildItem.isEnabled()) {
+            String format = String.format("Method %s.%s is suspendable but kotlinx-coroutines-core-jvm dependency not detected",
+                    method.declaringClass().name(), method.name());
+            throw new IllegalStateException(format);
+        }
     }
 
     /**
@@ -126,5 +151,17 @@ public class KotlinCoroutineIntegrationProcessor {
 
         }
         return recorder.invoker(baseName);
+    }
+
+    public static final class CoroutineConfigurationBuildItem extends SimpleBuildItem {
+        private final boolean isEnabled;
+
+        public CoroutineConfigurationBuildItem(boolean isEnabled) {
+            this.isEnabled = isEnabled;
+        }
+
+        public boolean isEnabled() {
+            return isEnabled;
+        }
     }
 }

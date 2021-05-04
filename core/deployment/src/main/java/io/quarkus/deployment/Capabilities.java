@@ -90,11 +90,10 @@ public final class Capabilities extends SimpleBuildItem {
      * <li>{@code io.quarkus.resteasy.json.jsonb}</li>
      * <li>{@code io.quarkus.resteasy.json.jsonb.client}</li>
      * </ul>
-     * Including any one of those extensions in an application would enable the RESTEasy JSON serializer.
+     * Including any one of those extensions in an application will enable the RESTEasy JSON serializer.
      * In case a build step needs to check whether the RESTEasy JSON serializer is already enabled in an
      * application, instead of checking whether any of those capabilities is present, it could
-     * simply check whether an extension with prefix {@code io.quarkus.resteasy.json} is present
-     * instead.
+     * simply check whether an extension with prefix {@code io.quarkus.resteasy.json} is present.
      *
      * @param capabilityPrefix capability prefix
      * @return true, in case the capability with the given prefix is present, otherwise - false

@@ -42,6 +42,7 @@ import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusListPlatforms;
 import io.quarkus.gradle.tasks.QuarkusRemoteDev;
 import io.quarkus.gradle.tasks.QuarkusRemoveExtension;
+import io.quarkus.gradle.tasks.QuarkusTest;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusTestNative;
 
@@ -61,6 +62,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String GENERATE_CONFIG_TASK_NAME = "generateConfig";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
     public static final String QUARKUS_REMOTE_DEV_TASK_NAME = "quarkusRemoteDev";
+    public static final String QUARKUS_TEST_TASK_NAME = "quarkusTest";
     public static final String DEV_MODE_CONFIGURATION_NAME = "quarkusDev";
     public static final String ANNOTATION_PROCESSOR_CONFIGURATION_NAME = "quarkusAnnotationProcessor";
 
@@ -110,6 +112,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         quarkusBuild.dependsOn(quarkusGenerateCode);
         Task quarkusDev = tasks.create(QUARKUS_DEV_TASK_NAME, QuarkusDev.class);
         Task quarkusRemoteDev = tasks.create(QUARKUS_REMOTE_DEV_TASK_NAME, QuarkusRemoteDev.class);
+        Task quarkusTest = tasks.create(QUARKUS_TEST_TASK_NAME, QuarkusTest.class);
         tasks.create(QUARKUS_TEST_CONFIG_TASK_NAME, QuarkusTestConfig.class);
 
         Task buildNative = tasks.create(BUILD_NATIVE_TASK_NAME, DefaultTask.class);
@@ -161,8 +164,11 @@ public class QuarkusPlugin implements Plugin<Project> {
                     Task resourcesTask = tasks.getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
                     Task testClassesTask = tasks.getByName(JavaPlugin.TEST_CLASSES_TASK_NAME);
                     Task testResourcesTask = tasks.getByName(JavaPlugin.PROCESS_TEST_RESOURCES_TASK_NAME);
-                    quarkusDev.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask, quarkusGenerateCode);
+                    quarkusDev.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask, quarkusGenerateCode,
+                            quarkusGenerateCodeTests);
                     quarkusRemoteDev.dependsOn(classesTask, resourcesTask);
+                    quarkusTest.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask, quarkusGenerateCode,
+                            quarkusGenerateCodeTests);
                     quarkusBuild.dependsOn(classesTask, resourcesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
 
                     SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class)

@@ -3,6 +3,7 @@ package io.quarkus.reactive.datasource.runtime;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -121,28 +122,22 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
 
     @Override
     public void close(Handler<AsyncResult<Void>> handler) {
-        synchronized (allConnections) {
-            this.closed = true;
-            for (PoolAndThread pair : allConnections) {
-                pair.close();
-            }
-            allConnections.clear();
-            threadLocal.remove();
-        }
-        handler.handle(Future.succeededFuture());
+        handler.handle(close());
     }
 
     @Override
     public Future<Void> close() {
         synchronized (allConnections) {
             this.closed = true;
+            ArrayList<CompletableFuture<Void>> tasks = new ArrayList<>(allConnections.size());
             for (PoolAndThread pair : allConnections) {
-                pair.close();
+                tasks.add(pair.close().toCompletionStage().toCompletableFuture());
             }
+            final CompletableFuture<Void> combinedCloseTask = CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
             allConnections.clear();
             threadLocal.remove();
+            return Future.fromCompletionStage(combinedCloseTask);
         }
-        return Future.succeededFuture();
     }
 
     //Useful for testing mostly
@@ -195,9 +190,11 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
 
         /**
          * Closes the connection
+         * 
+         * @return
          */
-        void close() {
-            pool.close();
+        Future<Void> close() {
+            return pool.close();
         }
 
         /**

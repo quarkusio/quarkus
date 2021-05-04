@@ -30,4 +30,24 @@ public interface TestController {
      * @return <code>true</code> if this change enabled broken only mode
      */
     boolean toggleBrokenOnlyMode();
+
+    /**
+     * Toggles test output
+     *
+     * @return <code>true</code> if this change to test output mode
+     */
+    boolean toggleTestOutput();
+
+    /**
+     * Toggles instrumentation based reload.
+     * 
+     * @return <code>true</code> if this change to do instrumentation based reload
+     */
+    boolean toggleInstrumentation();
+
+    /**
+     * Print the current results and failures
+     */
+    void printFullResults();
+
 }

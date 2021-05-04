@@ -1,0 +1,62 @@
+<!-- Display Help -->
+<div class="modal fade" id="testsHelpModal" tabindex="-1" aria-labelledby="testsHelpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testsHelpModalLabel">Test controls help</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center active" aria-current="true">
+                        <span class="badge badge-secondary">Key</span> Description
+                        <i class="fas fa-icons" data-toggle="tooltip" data-placement="top" title="Button"></i>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="badge badge-secondary">p</span> Pause tests
+                        <i class="fas fa-power-off text-success"></i>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="badge badge-secondary">r</span> Re-run all tests
+                        <i class="fas fa-running text-primary"></i>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="badge badge-secondary">f</span> Re-run failed tests
+                        <i class="fas fa-running text-danger"></i>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="badge badge-secondary">b</span> Toggle 'broken only' mode, where only failing tests are run
+                        <span>
+                            <i class="fas fa-heart-broken text-danger"></i>
+                            <i class="fas fa-heart text-secondary"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="badge badge-secondary">v</span> Print failures from the last test run
+                        <i class="fas fa-print"></i>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="badge badge-secondary">o</span> Toggle test output
+                        <span>
+                            <i class="fas fa-vial text-secondary"></i>
+                            <i class="fas fa-vial text-success"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="badge badge-secondary">i</span> Toggle instrumentation based reload
+                        <span>
+                            <i class="fas fa-sync-alt text-secondary"></i>
+                            <i class="fas fa-sync-alt text-success"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="badge badge-secondary">h</span> Display this help
+                        <i class="far fa-question-circle"></i>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

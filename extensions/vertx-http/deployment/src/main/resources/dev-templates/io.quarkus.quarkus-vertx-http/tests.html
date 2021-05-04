@@ -1,0 +1,257 @@
+{#include main fluid=true}
+
+{#title}Testing{/title}
+
+{#style}
+    #testsInFooter {
+        display: none;
+    }
+    #devUiFooterResizeButton {
+        position: absolute;
+        right: 50vw;
+    }
+    .main-container{
+        margin-top: 0px !important;
+    }
+    .testsFooterButton i::after {
+       font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+        font-weight: normal;
+    }
+    .btnTestsGuide i::after {
+        content: " Guide";
+    }
+    .btnRerunAllTests i::after {
+        content: " Run all";
+    }
+    .btnRerunFailedTests i::after {
+        content: " Run failed";
+    }
+    .btnBrokenOnlyTests i::after {
+        content: " Toggle broken only mode";
+    }
+    .btnPrintFailuresTests i::after {
+        content: " Print failures";
+    }
+    .btnToggleTestOutput i::after{
+        content: " Toggle test output";
+    }
+    .btnToggleInstrumentationBasedReload i::after {
+        content: " Toggle instrumentation based reload";
+    }
+    .btnTestsResults{
+        display: none;
+    }
+    
+{/style}
+
+{#script}
+    var testPageUrl = window.location.protocol + "//" + window.location.host + testsPathname.substr(0, testsPathname.indexOf('/dev/')) + "/dev/io.quarkus.quarkus-vertx-http/tests";
+    document.addEventListener('messageReceived', function (e) {
+        $.get(testPageUrl, function(response){
+            var testsResultsSection = $(response).find("#testsResultsSection");
+            $('#testsResultsSection').html(testsResultsSection);
+        });
+    }, false);
+{/script}
+{#body}
+
+<div class="row p-1 bg-dark">
+    {#include testsNav}{/include}    
+</div>
+
+<div id="testsResultsSection">
+
+    {#for cn in info:tests.results.failing.orEmpty}
+    {#set parentCount=count}
+    
+    <div class="row p-1">
+        <div class="col-sm">
+            <button class="btn btn-danger btn-block" type="button" data-toggle="collapse" data-target="#failedTests{parentCount}" aria-expanded="false" aria-controls="failedTests{parentCount}">
+                <span class="float-left"><i class="fas fa-times-circle"></i> {cn.className}</span>
+            </button>
+            <div class="collapse" id="failedTests{parentCount}">
+                <ul class="list-group">
+                {#for r in cn.failing}
+                    {#if r.test}
+                    <li class="list-group-item">
+  
+                        <a class="btn btn-link btn-block text-danger" data-toggle="collapse" data-target="#failedTests{parentCount}LogFailed{count}" aria-expanded="false" aria-controls="failedTests{parentCount}LogFailed{count}">
+                            <span class="float-left"><i class="fas fa-times-circle"></i> {r.displayName}</span>
+                        </a>
+                        
+                    
+                        <div id="failedTests{parentCount}LogFailed{count}" class="collapse">
+                            <br/>
+                            <div class="bg-dark p-2">
+                                <samp class="text-wrap " style="font-size: 0.9em;">
+                                    {#for log in r.logOutput}
+                                        {log.raw} <br/>
+                                    {/for}
+                                </samp>
+                            </div>
+                        </div>
+                    </li>
+                    {/if}
+                {/for}
+                
+                {#for r in cn.passing}
+                    {#if r.test}
+                    <li class="list-group-item">
+  
+                        <a class="btn btn-link btn-block text-success" data-toggle="collapse" data-target="#failedTests{parentCount}LogPassed{count}" aria-expanded="false" aria-controls="failedTests{parentCount}LogPassed{count}">
+                            <span class="float-left"><i class="fas fa-check-circle"></i> {r.displayName}</span>
+                        </a>
+                        
+                    
+                        <div id="failedTests{parentCount}LogPassed{count}" class="collapse">
+                            <br/>
+                            <div class="bg-dark p-2">
+                                <samp class="text-wrap " style="font-size: 0.9em;">
+                                    {#for log in r.logOutput}
+                                        {log.raw} <br/>
+                                    {/for}
+                                </samp>
+                            </div>
+                        </div>
+                    </li>
+                    {/if}
+                {/for}    
+
+                {#for r in cn.skipped}
+                    {#if r.test}
+                    <li class="list-group-item">
+  
+                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#failedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="failedTests{parentCount}LogSkipped{count}">
+                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
+                        </a>
+                        
+                    
+                        <div id="failedTests{parentCount}LogSkipped{count}" class="collapse">
+                            <br/>
+                            <div class="bg-dark p-2">
+                                <samp class="text-wrap " style="font-size: 0.9em;">
+                                    {#for log in r.logOutput}
+                                        {log.raw} <br/>
+                                    {/for}
+                                </samp>
+                            </div>
+                        </div>
+                    </li>
+                    
+                    {/if}
+                {/for} 
+                </ul>    
+            </div>
+        </div>
+    </div>
+    {/set}
+    {/for}
+    
+    
+    {#for cn in info:tests.results.passing.orEmpty}
+    {#set parentCount=count}
+    
+    <div class="row p-1">
+        <div class="col-sm">
+            <button class="btn btn-success btn-block" type="button" data-toggle="collapse" data-target="#passedTests{parentCount}" aria-expanded="false" aria-controls="passedTests{parentCount}">
+                <span class="float-left"><i class="fas fa-check-circle"></i> {cn.className}</span>
+            </button>
+            <div class="collapse" id="passedTests{parentCount}">
+                <ul class="list-group">
+                {#for r in cn.passing}
+                    {#if r.test}
+                    <li class="list-group-item">
+  
+                        <a class="btn btn-link btn-block text-success" data-toggle="collapse" data-target="#passedTests{parentCount}LogPassed{count}" aria-expanded="false" aria-controls="passedTests{parentCount}LogPassed{count}">
+                            <span class="float-left"><i class="fas fa-check-circle"></i> {r.displayName}</span>
+                        </a>
+                        
+                    
+                        <div id="passedTests{parentCount}LogPassed{count}" class="collapse">
+                            <br/>
+                            <div class="bg-dark p-2">
+                                <samp class="text-wrap " style="font-size: 0.9em;">
+                                    {#for log in r.logOutput}
+                                        {log.raw} <br/>
+                                    {/for}
+                                </samp>
+                            </div>
+                        </div>
+                    </li>
+                    {/if}
+                {/for}    
+
+                {#for r in cn.skipped}
+                    {#if r.test}
+                    <li class="list-group-item">
+  
+                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#passedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="passedTests{parentCount}LogSkipped{count}">
+                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
+                        </a>
+                        
+                    
+                        <div id="passedTests{parentCount}LogSkipped{count}" class="collapse">
+                            <br/>
+                            <div class="bg-dark p-2">
+                                <samp class="text-wrap " style="font-size: 0.9em;">
+                                    {#for log in r.logOutput}
+                                        {log.raw} <br/>
+                                    {/for}
+                                </samp>
+                            </div>
+                        </div>
+                    </li>
+                    
+                    {/if}
+                {/for} 
+                </ul>    
+            </div>
+        </div>
+    </div>
+    {/set}
+    {/for}
+    
+    
+    {#for cn in info:tests.results.skipped.orEmpty}
+    {#set parentCount=count}
+    
+    <div class="row p-1">
+        <div class="col-sm">
+            <button class="btn btn-secondary btn-block" type="button" data-toggle="collapse" data-target="#skippedTests{parentCount}" aria-expanded="false" aria-controls="skippedTests{parentCount}">
+                <span class="float-left"><i class="fas fa-minus-circle"></i> {cn.className}</span>
+            </button>
+            <div class="collapse" id="skippedTests{parentCount}">
+                <ul class="list-group">
+                
+                {#for r in cn.skipped}
+                    {#if r.test}
+                    <li class="list-group-item">
+  
+                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#skippedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="skippedTests{parentCount}LogSkipped{count}">
+                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
+                        </a>
+                        
+                    
+                        <div id="skippedTests{parentCount}LogSkipped{count}" class="collapse">
+                            <br/>
+                            <div class="bg-dark p-2">
+                                <samp class="text-wrap " style="font-size: 0.9em;">
+                                    {#for log in r.logOutput}
+                                        {log.raw} <br/>
+                                    {/for}
+                                </samp>
+                            </div>
+                        </div>
+                    </li>
+                    
+                    {/if}
+                {/for} 
+                </ul>    
+            </div>
+        </div>
+    </div>
+    {/set}
+    {/for}
+</div>
+{/body}
+{/include}

@@ -8,7 +8,6 @@ import org.jboss.logging.Logger;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestIdentifier;
 
-import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.dev.console.InputHandler;
 import io.quarkus.dev.console.QuarkusConsole;
 
@@ -50,26 +49,17 @@ public class TestConsoleHandler implements TestListener {
                     if (k == 'f') {
                         testController.runFailedTests();
                     } else if (k == 'v') {
-                        printFullResults();
+                        testController.printFullResults();
                     } else if (k == 'i') {
-                        RuntimeUpdatesProcessor.INSTANCE.toggleInstrumentation();
+                        testController.toggleInstrumentation();
                     } else if (k == 'o') {
-                        TestSupport.instance().get().setDisplayTestOutput(!TestSupport.instance().get().displayTestOutput);
-                        if (TestSupport.instance().get().displayTestOutput) {
-                            log.info("Test output enabled");
-                        } else {
-                            log.info("Test output disabled");
-                        }
+                        testController.toggleTestOutput();
                     } else if (k == 'p') {
                         TestSupport.instance().get().stop();
                     } else if (k == 'h') {
                         printUsage();
                     } else if (k == 'b') {
-                        if (testController.toggleBrokenOnlyMode()) {
-                            log.info("Broken only mode enabled");
-                        } else {
-                            log.info("Broken only mode disabled");
-                        }
+                        testController.toggleBrokenOnlyMode();
                     }
                 }
             }
@@ -96,22 +86,6 @@ public class TestConsoleHandler implements TestListener {
         System.out.println("i - Toggle instrumentation based reload");
         System.out.println("d - Disable tests");
         System.out.println("h - Display this help");
-
-    }
-
-    private void printFullResults() {
-        if (testController.currentState().getFailingClasses().isEmpty()) {
-            log.info("All tests passed, no output to display");
-        }
-        for (TestClassResult i : testController.currentState().getFailingClasses()) {
-            for (TestResult failed : i.getFailing()) {
-                log.error(
-                        "Test " + failed.getDisplayName() + " failed "
-                                + failed.getTestExecutionResult().getStatus()
-                                + "\n",
-                        failed.getTestExecutionResult().getThrowable().get());
-            }
-        }
 
     }
 

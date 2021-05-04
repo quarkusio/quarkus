@@ -21,7 +21,8 @@ public class ContinuousTestingWebSocketListener implements TestListener {
     @Override
     public void testsEnabled() {
         ContinuousTestingWebsocketListener
-                .setLastState(new ContinuousTestingWebsocketListener.State(true, true, 0L, 0L, 0L, 0L));
+                .setLastState(
+                        new ContinuousTestingWebsocketListener.State(true, true, 0L, 0L, 0L, 0L, false, false, false));
     }
 
     @Override
@@ -51,7 +52,10 @@ public class ContinuousTestingWebSocketListener implements TestListener {
                                         testRunResults.getTestsFailed() +
                                         testRunResults.getTestsSkipped(),
                                 testRunResults.getTestsPassed(),
-                                testRunResults.getTestsFailed(), testRunResults.getTestsSkipped()));
+                                testRunResults.getTestsFailed(), testRunResults.getTestsSkipped(),
+                                ContinuousTestingWebsocketListener.getLastState().isBrokenOnly,
+                                ContinuousTestingWebsocketListener.getLastState().isTestOutput,
+                                ContinuousTestingWebsocketListener.getLastState().isInstrumentationBasedReload));
             }
 
             @Override
@@ -66,4 +70,20 @@ public class ContinuousTestingWebSocketListener implements TestListener {
         });
 
     }
+
+    @Override
+    public void setBrokenOnly(boolean bo) {
+        ContinuousTestingWebsocketListener.setBrokenOnly(bo);
+    }
+
+    @Override
+    public void setTestOutput(boolean to) {
+        ContinuousTestingWebsocketListener.setTestOutput(to);
+    }
+
+    @Override
+    public void setInstrumentationBasedReload(boolean ibr) {
+        ContinuousTestingWebsocketListener.setInstrumentationBasedReload(ibr);
+    }
+
 }

@@ -1,0 +1,50 @@
+<!-- Continuous testing toolbar -->
+<div id="testsNav" class="btn-toolbar float-right" role="toolbar" aria-label="Continuous testing controls">
+    <div class="testsToolbar btn-group" role="group" aria-label="All options">
+        
+        <a class="testsFooterButton btnTestsGuide btn" href="https://quarkus.io/guides/getting-started-testing" target="_blank">
+            <i class="fa fa-book text-secondary" data-toggle="tooltip" data-placement="left" title="Open the Guide"></i>
+        </a>
+        
+        <a class="testsFooterButton btnRerunAllTests btn">
+            <i class="fas fa-running text-primary" data-toggle="tooltip" data-placement="left" title="Re-run all tests"></i>
+        </a>
+
+        <a class="testsFooterButton btnRerunFailedTests btn d-none">
+            <i class="fas fa-running text-danger" data-toggle="tooltip" data-placement="left" title="Re-run failed tests"></i>
+        </a>
+        
+        <a class="testsFooterButton btnBrokenOnlyTests btn" data-toggle="tooltip" data-placement="left" title="Toggle 'broken only' mode, so that only failing tests run">
+            <i class="fas fa-heart text-secondary"></i>
+        </a>
+        
+        <a class="testsFooterButton btnPrintFailuresTests btn d-none">
+            <i class="fas fa-print text-secondary" data-toggle="tooltip" data-placement="left" title="Print failures from the last test run"></i>
+        </a>
+        
+        <a class="testsFooterButton btnToggleTestOutput btn">
+            <i class="fas fa-vial text-secondary" data-toggle="tooltip" data-placement="left" title="Toggle test output"></i>
+        </a>
+        
+        <a class="testsFooterButton btnToggleInstrumentationBasedReload btn">
+            <i class="fas fa-sync-alt text-secondary" data-toggle="tooltip" data-placement="left" title="Toggle instrumentation based reload"></i>
+        </a>
+
+        <a class="testsFooterButton btnTestsResults btn" href="{devRootAppend}/io.quarkus.quarkus-vertx-http/tests">
+            <i class="fas fa-clipboard-list text-secondary" data-toggle="tooltip" data-placement="left" title="Test results"></i>
+        </a>
+        
+        <a class="btn btnPowerOnOffButton text-warning">
+            <i class="fas fa-power-off text-secondary"></i> Tests not running
+        </a>
+        <a class="testsFooterButton btnDisplayTestHelp btn">
+            <i class="far fa-question-circle text-secondary" data-toggle="tooltip" data-placement="left" title="Display help"></i>
+        </a>
+    </div>
+    
+    <div class="btn-group btn-group-sm testsLoading d-none" role="group" aria-label="Loading">
+        <a class="btn">
+            <i class="fas fa-spinner fa-spin text-success"></i>
+        </a>
+    </div>
+</div>

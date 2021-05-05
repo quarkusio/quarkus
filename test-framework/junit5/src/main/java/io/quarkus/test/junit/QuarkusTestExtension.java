@@ -105,7 +105,6 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
-import io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeClassCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
@@ -475,11 +474,6 @@ public class QuarkusTestExtension
                 .load(Class.forName(QuarkusTestAfterConstructCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestAfterConstructCallback : quarkusTestAfterConstructLoader) {
             afterConstructCallbacks.add(quarkusTestAfterConstructCallback);
-        }
-        ServiceLoader<?> quarkusTestLegacyAfterConstructLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestBeforeAllCallback.class.getName(), false, classLoader), classLoader);
-        for (Object quarkusTestLegacyAfterConstructCallback : quarkusTestLegacyAfterConstructLoader) {
-            legacyAfterConstructCallbacks.add(quarkusTestLegacyAfterConstructCallback);
         }
         ServiceLoader<?> quarkusTestBeforeEachLoader = ServiceLoader
                 .load(Class.forName(QuarkusTestBeforeEachCallback.class.getName(), false, classLoader), classLoader);

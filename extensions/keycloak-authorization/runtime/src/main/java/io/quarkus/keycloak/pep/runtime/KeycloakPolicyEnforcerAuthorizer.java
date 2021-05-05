@@ -9,6 +9,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -16,6 +18,7 @@ import org.keycloak.AuthorizationContext;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.authorization.KeycloakAdapterPolicyEnforcer;
 import org.keycloak.adapters.authorization.PolicyEnforcer;
+import org.keycloak.authorization.client.AuthzClient;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
@@ -34,7 +37,9 @@ public class KeycloakPolicyEnforcerAuthorizer
 
     @Inject
     KeycloakPolicyEnforcerConfigBean configBean;
+
     private KeycloakAdapterPolicyEnforcer delegate;
+    private PolicyEnforcer policyEnforcer;
 
     @Override
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
@@ -64,6 +69,12 @@ public class KeycloakPolicyEnforcerAuthorizer
         }
 
         return CheckResult.DENY;
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AuthzClient getAuthzClient() {
+        return policyEnforcer.getClient();
     }
 
     private SecurityIdentity enhanceSecurityIdentity(SecurityIdentity current,
@@ -140,8 +151,8 @@ public class KeycloakPolicyEnforcerAuthorizer
 
         adapterConfig.setPolicyEnforcerConfig(enforcerConfig);
 
-        this.delegate = new KeycloakAdapterPolicyEnforcer(
-                new PolicyEnforcer(KeycloakDeploymentBuilder.build(adapterConfig), adapterConfig));
+        policyEnforcer = new PolicyEnforcer(KeycloakDeploymentBuilder.build(adapterConfig), adapterConfig);
+        delegate = new KeycloakAdapterPolicyEnforcer(policyEnforcer);
     }
 
     private Map<String, Object> getCredentials(OidcTenantConfig oidcConfig) {

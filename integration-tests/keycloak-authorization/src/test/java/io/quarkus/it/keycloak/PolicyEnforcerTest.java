@@ -49,11 +49,16 @@ public class PolicyEnforcerTest {
                 .then()
                 .statusCode(200)
                 .and().body(Matchers.containsString("read"));
-        ;
+
         RestAssured.given().auth().oauth2(getAccessToken("admin"))
                 .when().get("/api/permission")
                 .then()
                 .statusCode(403);
+
+        RestAssured.given().auth().oauth2(getAccessToken("admin"))
+                .when().get("/api/permission/entitlements")
+                .then()
+                .statusCode(200);
     }
 
     @Test

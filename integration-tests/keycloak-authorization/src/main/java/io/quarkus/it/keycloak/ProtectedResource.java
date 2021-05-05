@@ -14,6 +14,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 
+import org.keycloak.authorization.client.AuthzClient;
 import org.keycloak.representations.idm.authorization.Permission;
 
 import io.quarkus.security.identity.SecurityIdentity;
@@ -25,6 +26,9 @@ public class ProtectedResource {
 
     @Inject
     SecurityIdentity identity;
+
+    @Inject
+    AuthzClient authzClient;
 
     @GET
     public Uni<List<Permission>> permissions() {
@@ -73,5 +77,11 @@ public class ProtectedResource {
             return Collections.emptyList();
         }
         return identity.getAttribute("permissions");
+    }
+
+    @Path("/entitlements")
+    @GET
+    public String getEntitlements() {
+        return authzClient.authorization().authorize().getToken();
     }
 }

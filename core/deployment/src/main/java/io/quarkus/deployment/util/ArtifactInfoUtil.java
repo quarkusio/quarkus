@@ -87,11 +87,11 @@ public final class ArtifactInfoUtil {
      */
     public static Map.Entry<String, String> groupIdAndArtifactId(FileSystem fs) throws IOException {
         Path metaInfPath = fs.getPath("/META-INF");
-        return doGroupIdAndArtifactId(metaInfPath);
+        return groupIdAndArtifactId(metaInfPath);
     }
 
-    private static AbstractMap.SimpleEntry<String, String> doGroupIdAndArtifactId(Path metaInfPath) throws IOException {
-        Optional<Path> pomProperties = Files.walk(metaInfPath)
+    public static AbstractMap.SimpleEntry<String, String> groupIdAndArtifactId(Path pomPropertiesContainer) throws IOException {
+        Optional<Path> pomProperties = Files.walk(pomPropertiesContainer)
                 .filter(Files::isRegularFile)
                 .filter(p -> p.toString().endsWith("pom.properties"))
                 .findFirst();

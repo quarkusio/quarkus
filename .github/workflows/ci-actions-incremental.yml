@@ -687,7 +687,7 @@ jobs:
       # leave more space for the actual native compilation and execution
       MAVEN_OPTS: -Xmx1g
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
+    if: "needs.calculate-test-jobs.outputs.native_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:

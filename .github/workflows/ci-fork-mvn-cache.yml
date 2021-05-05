@@ -11,6 +11,7 @@ on:
       - '*.md'
       - '*.adoc'
       - '*.txt'
+      - 'adr/**'
       - 'docs/src/main/asciidoc/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'

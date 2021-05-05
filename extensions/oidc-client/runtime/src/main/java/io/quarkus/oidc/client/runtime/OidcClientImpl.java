@@ -104,10 +104,10 @@ public class OidcClientImpl implements OidcClient {
         if (resp.statusCode() == 200) {
             LOG.debugf("%s OidcClient has %s the tokens", oidcConfig.getId().get(), (refresh ? "refreshed" : "acquired"));
             JsonObject json = resp.bodyAsJsonObject();
-            final String accessToken = json.getString(OidcConstants.ACCESS_TOKEN_VALUE);
-            final String refreshToken = json.getString(OidcConstants.REFRESH_TOKEN_VALUE);
+            final String accessToken = json.getString(oidcConfig.grant.accessTokenProperty);
+            final String refreshToken = json.getString(oidcConfig.grant.refreshTokenProperty);
             Long accessTokenExpiresAt;
-            Long accessTokenExpiresIn = json.getLong(OidcConstants.EXPIRES_IN);
+            Long accessTokenExpiresIn = json.getLong(oidcConfig.grant.expiresInProperty);
             if (accessTokenExpiresIn != null) {
                 accessTokenExpiresAt = Instant.now().getEpochSecond() + accessTokenExpiresIn;
             } else {

@@ -10,6 +10,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.runtime.GeneratedGrpcBean;
+import io.quarkus.grpc.runtime.MutinyGrpc;
 import io.quarkus.grpc.runtime.MutinyStub;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
@@ -17,15 +18,16 @@ import io.smallrye.common.annotation.Blocking;
 
 public class GrpcDotNames {
 
-    static final DotName BINDABLE_SERVICE = DotName.createSimple(BindableService.class.getName());
-    static final DotName CHANNEL = DotName.createSimple(Channel.class.getName());
-    static final DotName GRPC_CLIENT = DotName.createSimple(GrpcClient.class.getName());
-    static final DotName GRPC_SERVICE = DotName.createSimple(GrpcService.class.getName());
+    public static final DotName BINDABLE_SERVICE = DotName.createSimple(BindableService.class.getName());
+    public static final DotName CHANNEL = DotName.createSimple(Channel.class.getName());
+    public static final DotName GRPC_CLIENT = DotName.createSimple(GrpcClient.class.getName());
+    public static final DotName GRPC_SERVICE = DotName.createSimple(GrpcService.class.getName());
 
     static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
 
-    static final DotName ABSTRACT_BLOCKING_STUB = DotName.createSimple(AbstractBlockingStub.class.getName());
-    static final DotName MUTINY_STUB = DotName.createSimple(MutinyStub.class.getName());
+    public static final DotName ABSTRACT_BLOCKING_STUB = DotName.createSimple(AbstractBlockingStub.class.getName());
+    public static final DotName MUTINY_STUB = DotName.createSimple(MutinyStub.class.getName());
+    public static final DotName MUTINY_GRPC = DotName.createSimple(MutinyGrpc.class.getName());
 
     static final DotName GENERATED_GRPC_BEAN = DotName.createSimple(GeneratedGrpcBean.class.getName());
 

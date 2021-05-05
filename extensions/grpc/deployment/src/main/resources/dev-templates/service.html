@@ -1,0 +1,86 @@
+{#include main}
+  {#style}
+   span.app-class {
+     cursor:pointer;
+     color:blue;
+     text-decoration:underline;
+   }
+  {/style}
+  {#script}
+        $(document).ready(function(){
+          if (!ideKnown()) {
+            return;
+          }
+          $(".class-candidate").each(function() {
+            var className = $(this).text();
+            if (appClassLang(className)) {
+              $(this).addClass("app-class");
+            }
+          });
+    
+          $(".app-class").on("click", function() {
+            openInIDE($(this).text());
+          });
+        });
+        
+        function sendTestRequest(serviceName, methodName) {
+            const testRequest = document.getElementById(serviceName + "/" + methodName + "_request");
+            $.ajax({
+                type: "POST",
+                url: "test?serviceName=" + encodeURIComponent(serviceName)  + "&methodName=" + encodeURIComponent(methodName),
+                contentType: "application/json",
+                data: testRequest.value,
+                success: function (data) {
+                    const testResponse = document.getElementById(serviceName + "/" + methodName + "_response");
+                 testResponse.value = JSON.stringify(data);
+                }
+            });
+        }
+        
+  {/script}
+  {#breadcrumbs}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> <a href="/q/dev/io.quarkus.quarkus-grpc/services">Services</a>{/breadcrumbs}
+  {#title}{info:grpcServices.get(currentRequest.params.get('name')).name}{/title}
+  {#body}
+  
+  {#let service=info:grpcServices.get(currentRequest.params.get('name'))}
+  <h1>
+  {#when service.status}
+        {#is SERVING}
+        <span class="badge badge-success larger-badge" title="{service.status}"><i class="fas fa-check-circle badge-success"></i></span>
+        {#is NOT_SERVING}
+        <span class="badge badge-danger larger-badge" title="{service.status}"><i class="fas fa-exclamation-circle"></i></span>
+        {#is in UNKNOWN UNRECOGNIZED}
+        <span class="badge badge-secondary larger-badge" title="{service.status}"><i class="fas fa-question-circle"></i></span>
+  {/when}
+  {service.name}
+  </h1>
+  <div>
+  Implemented by: <span class="class-candidate">{service.serviceClass}</span>
+  </div>
+  
+  {#for method in service.methodsWithPrototypes}
+    <hr>
+    <h2><span class="badge badge-dark">{method.type}</span> {method.bareMethodName}</h2>
+    {#if method.isTestable}
+    {#when method.type}
+        {#is UNARY}
+        <form>
+            <div class="row">
+                <div class="col">
+                    <textarea class="form-control" name="test-request" id="{service.name}/{method.bareMethodName}_request">{method.prototype}</textarea>
+                    <br>
+                    <button type="button" class="btn btn-primary" onclick="sendTestRequest('{service.name}','{method.bareMethodName}')">Send</button>
+                </div>
+                <div class="col">
+                    <textarea class="form-control" name="test-response" id="{service.name}/{method.bareMethodName}_response" readonly></textarea>
+                </div>
+            </div>
+        </form>
+    {/when}
+    {/if}
+  {/for}
+  
+  {/let}
+  
+  {/body}
+{/include}

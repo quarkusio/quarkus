@@ -8,14 +8,13 @@ import static io.grpc.stub.ServerCalls.asyncServerStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncClientStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
 
-
 {{#deprecated}}
 @java.lang.Deprecated
 {{/deprecated}}
 @javax.annotation.Generated(
 value = "by {{classPrefix}} Grpc generator",
 comments = "Source: {{protoName}}")
-public final class {{className}} {
+public final class {{className}} implements io.quarkus.grpc.runtime.MutinyGrpc {
     private {{className}}() {}
 
     public static {{classPrefix}}{{serviceName}}Stub new{{classPrefix}}Stub(io.grpc.Channel channel) {

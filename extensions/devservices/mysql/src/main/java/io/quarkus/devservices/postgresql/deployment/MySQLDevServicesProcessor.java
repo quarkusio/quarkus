@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -22,13 +23,22 @@ public class MySQLDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MYSQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
+                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    OptionalInt fixedExposedPort) {
                 MySQLContainer container = new MySQLContainer(
                         DockerImageName.parse(imageName.orElse(MySQLContainer.IMAGE + ":" + TAG))
-                                .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.IMAGE)))
-                                        .withPassword(password.orElse("quarkus"))
-                                        .withUsername(username.orElse("quarkus"))
-                                        .withDatabaseName(datasourceName.orElse("default"));
+                                .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.IMAGE))) {
+                    @Override
+                    protected void configure() {
+                        super.configure();
+                        if (fixedExposedPort.isPresent()) {
+                            addFixedExposedPort(fixedExposedPort.getAsInt(), MySQLContainer.MYSQL_PORT);
+                        }
+                    };
+                }
+                        .withPassword(password.orElse("quarkus"))
+                        .withUsername(username.orElse("quarkus"))
+                        .withDatabaseName(datasourceName.orElse("default"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
                 return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),

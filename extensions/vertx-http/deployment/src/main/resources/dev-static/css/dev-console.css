@@ -101,3 +101,7 @@ h1 {
     overflow-y: auto;
     overflow-x: hidden;
 }
+
+.guide-padding-right {
+    padding-right: 0.25rem;
+}

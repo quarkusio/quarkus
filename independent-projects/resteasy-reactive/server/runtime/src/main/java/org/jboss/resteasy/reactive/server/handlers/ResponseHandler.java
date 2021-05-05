@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
+import java.io.ByteArrayInputStream;
+import java.util.List;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -22,23 +24,32 @@ public class ResponseHandler implements ServerRestHandler {
             boolean mediaTypeAlreadyExists = false;
             //we already have a response
             //set it explicitly
-            Response.ResponseBuilder responseBuilder;
+            ResponseBuilderImpl responseBuilder;
             Response existing = (Response) result;
             if (existing.getEntity() instanceof GenericEntity) {
                 GenericEntity<?> genericEntity = (GenericEntity<?>) existing.getEntity();
                 requestContext.setGenericReturnType(genericEntity.getType());
-                responseBuilder = Response.fromResponse(existing).entity(genericEntity.getEntity());
+                responseBuilder = fromResponse(existing);
+                responseBuilder.entity(genericEntity.getEntity());
             } else {
                 // TCK says to use the entity type as generic type if we return a response
-                if (existing.hasEntity())
+                if (existing.hasEntity() && (existing.getEntity() != null))
                     requestContext.setGenericReturnType(existing.getEntity().getClass());
-                //TODO: super inefficent
-                responseBuilder = Response.fromResponse((Response) result);
+                //TODO: super inefficient
+                responseBuilder = fromResponse((Response) result);
                 if ((result instanceof ResponseImpl)) {
                     // needed in order to preserve entity annotations
                     ResponseImpl responseImpl = (ResponseImpl) result;
                     if (responseImpl.getEntityAnnotations() != null) {
                         requestContext.setAdditionalAnnotations(responseImpl.getEntityAnnotations());
+                    }
+
+                    // this is a weird case where the response comes from the the rest-client
+                    if (responseBuilder.getEntity() == null) {
+                        if (responseImpl.getEntityStream() instanceof ByteArrayInputStream) {
+                            ByteArrayInputStream byteArrayInputStream = (ByteArrayInputStream) responseImpl.getEntityStream();
+                            responseBuilder.entity(byteArrayInputStream.readAllBytes());
+                        }
                     }
                 }
             }
@@ -99,5 +110,20 @@ public class ResponseHandler implements ServerRestHandler {
             });
 
         }
+    }
+
+    // avoid the runtime overhead of looking up the provider
+    private ResponseBuilderImpl fromResponse(Response response) {
+        Response.ResponseBuilder b = new ResponseBuilderImpl().status(response.getStatus());
+        if (response.hasEntity()) {
+            b.entity(response.getEntity());
+        }
+        for (String headerName : response.getHeaders().keySet()) {
+            List<Object> headerValues = response.getHeaders().get(headerName);
+            for (Object headerValue : headerValues) {
+                b.header(headerName, headerValue);
+            }
+        }
+        return (ResponseBuilderImpl) b;
     }
 }

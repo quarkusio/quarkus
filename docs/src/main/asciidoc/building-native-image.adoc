@@ -513,7 +513,7 @@ Sample Dockerfile for building with Maven:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-native-image:21.0.0-java11 AS build
+FROM quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11 AS build
 COPY pom.xml /project/
 COPY mvnw /project/mvnw
 COPY .mvn /project/.mvn
@@ -551,7 +551,7 @@ Sample Dockerfile for building with Gradle:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-native-image:21.0.0-java11 AS build
+FROM quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11 AS build
 COPY gradlew /project/gradlew
 COPY gradle /project/gradle
 COPY build.gradle /project/

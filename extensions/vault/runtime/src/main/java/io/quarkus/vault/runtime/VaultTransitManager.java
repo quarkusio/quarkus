@@ -12,15 +12,15 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import io.quarkus.vault.VaultException;
-import io.quarkus.vault.VaultTransitExportKeyType;
-import io.quarkus.vault.VaultTransitKeyDetail;
 import io.quarkus.vault.VaultTransitSecretEngine;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitCreateKeyBody;
@@ -34,6 +34,7 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncryptBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncryptDataBatchResult;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitKeyConfigBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitKeyExport;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitKeyVersionData;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitReadKeyData;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRewrapBatchInput;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRewrapBody;
@@ -67,7 +68,13 @@ import io.quarkus.vault.transit.VaultDecryptionBatchException;
 import io.quarkus.vault.transit.VaultEncryptionBatchException;
 import io.quarkus.vault.transit.VaultRewrappingBatchException;
 import io.quarkus.vault.transit.VaultSigningBatchException;
+import io.quarkus.vault.transit.VaultTransitAsymmetricKeyDetail;
+import io.quarkus.vault.transit.VaultTransitAsymmetricKeyVersion;
+import io.quarkus.vault.transit.VaultTransitExportKeyType;
+import io.quarkus.vault.transit.VaultTransitKeyDetail;
 import io.quarkus.vault.transit.VaultTransitKeyExportDetail;
+import io.quarkus.vault.transit.VaultTransitSymmetricKeyDetail;
+import io.quarkus.vault.transit.VaultTransitSymmetricKeyVersion;
 import io.quarkus.vault.transit.VaultVerificationBatchException;
 import io.quarkus.vault.transit.VerificationRequest;
 
@@ -395,7 +402,7 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
     }
 
     @Override
-    public VaultTransitKeyDetail readKey(String keyName) {
+    public VaultTransitKeyDetail<?> readKey(String keyName) {
         try {
             return map(vaultInternalTransitSecretEngine.readTransitKey(getToken(), keyName).data);
         } catch (VaultClientException e) {
@@ -412,14 +419,27 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
         return vaultInternalTransitSecretEngine.listTransitKeys(getToken()).data.keys;
     }
 
-    protected VaultTransitKeyDetail map(VaultTransitReadKeyData data) {
-        VaultTransitKeyDetail result = new VaultTransitKeyDetail();
+    protected VaultTransitKeyDetail<?> map(VaultTransitReadKeyData data) {
+        VaultTransitKeyVersionData latestVersionData = data.keys.get(Integer.toString(data.latestVersion));
+        VaultTransitKeyDetail<?> result;
+        if (latestVersionData.publicKey != null) {
+            Map<String, VaultTransitAsymmetricKeyVersion> versions = data.keys.entrySet().stream()
+                    .collect(Collectors.toMap(Entry::getKey, VaultTransitManager::mapAsymmetricKeyVersion));
+            result = new VaultTransitAsymmetricKeyDetail()
+                    .setVersions(versions);
+        } else {
+            Map<String, VaultTransitSymmetricKeyVersion> versions = data.keys.entrySet().stream()
+                    .collect(Collectors.toMap(Entry::getKey, VaultTransitManager::mapSymmetricKeyVersion));
+            result = new VaultTransitSymmetricKeyDetail()
+                    .setVersions(versions);
+        }
         result.setDetail(data.detail);
         result.setDeletionAllowed(data.deletionAllowed);
         result.setDerived(data.derived);
         result.setExportable(data.exportable);
         result.setAllowPlaintextBackup(data.allowPlaintextBackup);
-        result.setKeys(data.keys);
+        result.setLatestVersion(data.latestVersion);
+        result.setMinAvailableVersion(data.minAvailableVersion);
         result.setMinDecryptionVersion(data.minDecryptionVersion);
         result.setMinEncryptionVersion(data.minEncryptionVersion);
         result.setName(data.name);
@@ -427,7 +447,25 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
         result.setSupportsDecryption(data.supportsDecryption);
         result.setSupportsDerivation(data.supportsDerivation);
         result.setSupportsSigning(data.supportsSigning);
+        result.setType(data.type);
         return result;
+    }
+
+    private static VaultTransitAsymmetricKeyVersion mapAsymmetricKeyVersion(
+            Map.Entry<String, VaultTransitKeyVersionData> entry) {
+        VaultTransitKeyVersionData data = entry.getValue();
+        VaultTransitAsymmetricKeyVersion version = new VaultTransitAsymmetricKeyVersion();
+        version.setName(data.name);
+        version.setPublicKey(data.publicKey);
+        version.setCreationTime(data.creationTime);
+        return version;
+    }
+
+    private static VaultTransitSymmetricKeyVersion mapSymmetricKeyVersion(Map.Entry<String, VaultTransitKeyVersionData> entry) {
+        VaultTransitKeyVersionData data = entry.getValue();
+        VaultTransitSymmetricKeyVersion version = new VaultTransitSymmetricKeyVersion();
+        version.setCreationTime(data.creationTime);
+        return version;
     }
 
     // ---

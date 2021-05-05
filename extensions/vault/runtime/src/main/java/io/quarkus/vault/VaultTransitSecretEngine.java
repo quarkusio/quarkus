@@ -17,6 +17,8 @@ import io.quarkus.vault.transit.VaultDecryptionBatchException;
 import io.quarkus.vault.transit.VaultEncryptionBatchException;
 import io.quarkus.vault.transit.VaultRewrappingBatchException;
 import io.quarkus.vault.transit.VaultSigningBatchException;
+import io.quarkus.vault.transit.VaultTransitExportKeyType;
+import io.quarkus.vault.transit.VaultTransitKeyDetail;
 import io.quarkus.vault.transit.VaultTransitKeyExportDetail;
 import io.quarkus.vault.transit.VaultVerificationBatchException;
 import io.quarkus.vault.transit.VerificationRequest;
@@ -313,7 +315,7 @@ public interface VaultTransitSecretEngine {
      * @return key detail, or null if the key does not exist
      * @see <a href="https://www.vaultproject.io/api-docs/secret/transit#read-key">read key</a>
      */
-    VaultTransitKeyDetail readKey(String keyName);
+    VaultTransitKeyDetail<?> readKey(String keyName);
 
     /**
      * List all Transit keys.

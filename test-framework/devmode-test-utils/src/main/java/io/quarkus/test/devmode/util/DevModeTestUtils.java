@@ -63,11 +63,11 @@ public class DevModeTestUtils {
                 .pollDelay(1, TimeUnit.SECONDS)
                 //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
                 //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
-                .atMost(20, TimeUnit.MINUTES).until(() -> {
+                .atMost(3, TimeUnit.MINUTES).until(() -> {
                     try {
                         String broken = brokenReason.get();
                         if (broken != null) {
-                            //try and avoid waiting 20m
+                            //try and avoid waiting 3m
                             resp.set("BROKEN: " + broken);
                             return true;
                         }

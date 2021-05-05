@@ -320,6 +320,10 @@ error along with the health check response.
         }
 ----
 
+== Context propagation into the health check invocations
+
+For the perfomance reasons the context (e.g., CDI or security context) is not propagated into each health check invocation. However, if you need to enable this functionality you can set the config property `quarkus.smallrye-health.context-propagation=true` to allow the context propagation into every health check call.
+
 == Extension health checks
 
 Some extension may provide default health checks, including the extension will automatically register its health checks.

@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -265,6 +266,14 @@ class SmallRyeHealthProcessor {
                 .blockingRoute()
                 .build());
 
+    }
+
+    @BuildStep
+    public void translateSmallRyeConfigValues(SmallRyeHealthConfig healthConfig,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+        if (healthConfig.contextPropagation) {
+            systemProperties.produce(new SystemPropertyBuildItem("io.smallrye.health.context.propagation", "true"));
+        }
     }
 
     @BuildStep(onlyIf = OpenAPIIncluded.class)

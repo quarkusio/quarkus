@@ -8,8 +8,18 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class RestClientReactiveConfig {
 
     /**
-     * Default scope for MicroProfile Rest Client. Use `javax.enterprise.context.Dependent` for spec-compliant behavior
+     * Default scope for Rest Client Reactive. Use `javax.enterprise.context.Dependent` for spec-compliant behavior
      */
     @ConfigItem(name = "scope", defaultValue = "javax.enterprise.context.ApplicationScoped")
     public String scope;
+
+    /**
+     * By default, RESTEasy Reactive uses text/plain content type for String values
+     * and application/json for everything else.
+     *
+     * MicroProfile Rest Client spec requires the implementations to always default to application/json.
+     * This build item disables the "smart" behavior of RESTEasy Reactive to comply to the spec
+     */
+    @ConfigItem(name = "disable-smart-produces", defaultValue = "false")
+    public boolean disableSmartProduces;
 }

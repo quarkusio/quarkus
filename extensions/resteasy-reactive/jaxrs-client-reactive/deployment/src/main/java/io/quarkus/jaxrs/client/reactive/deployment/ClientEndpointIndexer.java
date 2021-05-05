@@ -44,11 +44,13 @@ public class ClientEndpointIndexer
 
     private final String[] defaultProduces;
     private final String[] defaultProducesNegotiated;
+    private final boolean smartDefaultProduces;
 
-    ClientEndpointIndexer(Builder builder, String defaultProduces) {
+    ClientEndpointIndexer(Builder builder, String defaultProduces, boolean smartDefaultProduces) {
         super(builder);
         this.defaultProduces = new String[] { defaultProduces };
         this.defaultProducesNegotiated = new String[] { defaultProduces, MediaType.WILDCARD };
+        this.smartDefaultProduces = smartDefaultProduces;
     }
 
     public MaybeRestClientInterface createClientProxy(ClassInfo classInfo,
@@ -125,10 +127,14 @@ public class ClientEndpointIndexer
 
     @Override
     protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
-        if (config.isSingleDefaultProduces()) {
-            return defaultProduces;
+        if (smartDefaultProduces) {
+            return super.applyAdditionalDefaults(nonAsyncReturnType);
         } else {
-            return defaultProducesNegotiated;
+            if (config.isSingleDefaultProduces()) {
+                return defaultProduces;
+            } else {
+                return defaultProducesNegotiated;
+            }
         }
     }
 
@@ -166,15 +172,21 @@ public class ClientEndpointIndexer
 
     public static final class Builder extends EndpointIndexer.Builder<ClientEndpointIndexer, Builder, ResourceMethod> {
         private String defaultProduces = MediaType.TEXT_PLAIN;
+        private boolean smartDefaultProduces = true;
 
         public Builder setDefaultProduces(String defaultProduces) {
             this.defaultProduces = defaultProduces;
             return this;
         }
 
+        public Builder setSmartDefaultProduces(boolean smartDefaultProduces) {
+            this.smartDefaultProduces = smartDefaultProduces;
+            return this;
+        }
+
         @Override
         public ClientEndpointIndexer build() {
-            return new ClientEndpointIndexer(this, defaultProduces);
+            return new ClientEndpointIndexer(this, defaultProduces, smartDefaultProduces);
         }
     }
 }

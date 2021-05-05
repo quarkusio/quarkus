@@ -159,7 +159,8 @@ public class JaxrsClientReactiveProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
             List<RestClientDefaultProducesBuildItem> defaultConsumes,
-            List<RestClientDefaultConsumesBuildItem> defaultProduces) {
+            List<RestClientDefaultConsumesBuildItem> defaultProduces,
+            List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces) {
         String defaultConsumesType = defaultMediaType(defaultConsumes, MediaType.APPLICATION_OCTET_STREAM);
         String defaultProducesType = defaultMediaType(defaultProduces, MediaType.TEXT_PLAIN);
 
@@ -194,6 +195,7 @@ public class JaxrsClientReactiveProcessor {
                 .setDefaultBlocking(applicationResultBuildItem.getResult().isBlocking())
                 .setHasRuntimeConverters(false)
                 .setDefaultProduces(defaultProducesType)
+                .setSmartDefaultProduces(disableSmartDefaultProduces.isEmpty())
                 .build();
 
         Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations = new HashMap<>();

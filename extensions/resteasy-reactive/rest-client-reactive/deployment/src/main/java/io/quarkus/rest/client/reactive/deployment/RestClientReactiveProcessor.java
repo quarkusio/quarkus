@@ -65,6 +65,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricherBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
+import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableSmartDefaultProduces;
 import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
 import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
@@ -98,9 +99,14 @@ class RestClientReactiveProcessor {
 
     @BuildStep
     void setUpDefaultMediaType(BuildProducer<RestClientDefaultConsumesBuildItem> consumes,
-            BuildProducer<RestClientDefaultProducesBuildItem> produces) {
+            BuildProducer<RestClientDefaultProducesBuildItem> produces,
+            BuildProducer<RestClientDisableSmartDefaultProduces> disableSmartProduces,
+            RestClientReactiveConfig config) {
         consumes.produce(new RestClientDefaultConsumesBuildItem(MediaType.APPLICATION_JSON, 10));
         produces.produce(new RestClientDefaultProducesBuildItem(MediaType.APPLICATION_JSON, 10));
+        if (config.disableSmartProduces) {
+            disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
+        }
     }
 
     @BuildStep

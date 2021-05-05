@@ -64,7 +64,6 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.ProduceWeak;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
-import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
@@ -487,7 +486,6 @@ public final class ExtensionLoader {
                 method.setAccessible(true);
             }
             final BuildStep buildStep = method.getAnnotation(BuildStep.class);
-            final String[] archiveMarkers = buildStep.applicationArchiveMarkers();
             final Class<? extends BooleanSupplier>[] onlyIf = buildStep.onlyIf();
             final Class<? extends BooleanSupplier>[] onlyIfNot = buildStep.onlyIfNot();
             final Parameter[] methodParameters = method.getParameters();
@@ -520,14 +518,6 @@ public final class ExtensionLoader {
                 }
             }
             final BooleanSupplier finalAddStep = addStep;
-
-            if (archiveMarkers.length > 0) {
-                chainConfig = chainConfig.andThen(bcb -> bcb.addBuildStep(bc -> {
-                    for (String marker : archiveMarkers) {
-                        bc.produce(new AdditionalApplicationArchiveMarkerBuildItem(marker));
-                    }
-                }).produces(AdditionalApplicationArchiveMarkerBuildItem.class).buildIf(finalAddStep));
-            }
 
             if (isRecorder) {
                 assert recordAnnotation != null;

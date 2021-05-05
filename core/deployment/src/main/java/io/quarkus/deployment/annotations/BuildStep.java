@@ -104,10 +104,4 @@ public @interface BuildStep {
      * @return the supplier class array
      */
     Class<? extends BooleanSupplier>[] onlyIfNot() default {};
-
-    /**
-     * This no longer has any effect, and will be removed in future.
-     */
-    @Deprecated
-    boolean loadsApplicationClasses() default false;
 }

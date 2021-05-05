@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -335,10 +334,8 @@ public class ConfiguredBeanTest {
         assertNotNull(defaultValues);
         assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
 
-        // Should be the second, after RuntimeOverrideConfigSource
-        Iterator<ConfigSource> iterator = config.getConfigSources().iterator();
-        iterator.next();
-        ConfigSource applicationProperties = iterator.next();
+        // Should be the first
+        ConfigSource applicationProperties = config.getConfigSources().iterator().next();
         assertNotNull(applicationProperties);
         assertEquals(1000, applicationProperties.getOrdinal());
 

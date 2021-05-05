@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,9 +21,7 @@ public class PausedSchedulerTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(PausedSchedulerTest.Jobs.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.enabled=true"),
-                            "application.properties"));
+                    .addClasses(PausedSchedulerTest.Jobs.class));
 
     @Inject
     Scheduler scheduler;

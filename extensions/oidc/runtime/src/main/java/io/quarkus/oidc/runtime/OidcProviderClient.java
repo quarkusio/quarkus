@@ -3,7 +3,6 @@ package io.quarkus.oidc.runtime;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.time.Duration;
 
 import org.jboss.logging.Logger;
 
@@ -26,7 +25,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcProviderClient {
     private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
 
-    private static final Duration REQUEST_RETRY_BACKOFF_DURATION = Duration.ofSeconds(1);
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
     private final WebClient client;

@@ -143,21 +143,24 @@ public class OidcClientRecorder {
                         }
                         MultiMap tokenGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
 
-                        String grantType = oidcConfig.grant.getType() == Grant.Type.CLIENT
-                                ? OidcConstants.CLIENT_CREDENTIALS_GRANT
-                                : OidcConstants.PASSWORD_GRANT;
+                        String grantType = oidcConfig.grant.getType().getGrantType();
                         setGrantClientParams(oidcConfig, tokenGrantParams, grantType);
 
                         if (oidcConfig.getGrantOptions() != null) {
                             Map<String, String> grantOptions = oidcConfig.getGrantOptions()
                                     .get(oidcConfig.grant.getType().name().toLowerCase());
-                            if (oidcConfig.grant.getType() == Grant.Type.PASSWORD) {
-                                tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
-                                        grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
-                                tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
-                                        grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
-                            } else if (grantOptions != null && oidcConfig.grant.getType() == Grant.Type.CLIENT) {
-                                tokenGrantParams.addAll(grantOptions);
+                            if (grantOptions != null) {
+                                if (oidcConfig.grant.getType() == Grant.Type.PASSWORD) {
+                                    // Without this block `password` will be listed first, before `username`
+                                    // which is not a technical problem but might affect Wiremock tests or the endpoints
+                                    // which expect a specific order.
+                                    tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
+                                            grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
+                                    tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
+                                            grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
+                                } else {
+                                    tokenGrantParams.addAll(grantOptions);
+                                }
                             }
                         }
 
@@ -217,7 +220,7 @@ public class OidcClientRecorder {
         }
 
         @Override
-        public Uni<Tokens> getTokens() {
+        public Uni<Tokens> getTokens(Map<String, String> grantParameters) {
             throw new DisabledOidcClientException(message);
         }
 

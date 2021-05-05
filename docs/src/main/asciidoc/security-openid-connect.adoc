@@ -339,7 +339,9 @@ A request will be sent to the OpenId Provider UserInfo endpoint and  an `io.quar
 [[config-metadata]]
 == Configuration Metadata
 
-The discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenId Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
+The current tenant's discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenId Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
+
+The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is public.
 
 == Token Claims And SecurityIdentity Roles
 

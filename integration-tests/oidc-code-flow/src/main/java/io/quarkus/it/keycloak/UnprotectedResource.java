@@ -1,14 +1,27 @@
 package io.quarkus.it.keycloak;
 
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.NewCookie;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
-import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdToken;
-import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.oidc.OidcConfigurationMetadata;
+import io.quarkus.oidc.client.OidcClient;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcUtils;
 
 @Path("/public-web-app")
 public class UnprotectedResource {
@@ -18,27 +31,52 @@ public class UnprotectedResource {
     JsonWebToken idToken;
 
     @Inject
-    JsonWebToken accessToken;
+    OidcConfigurationMetadata configMetadata;
 
     @Inject
-    SecurityIdentity identity;
+    OidcClient oidcClient;
+
+    @Context
+    UriInfo ui;
 
     @GET
+    @Path("name")
     public String getName() {
-        return idToken.getName();
+        return idToken.getName() == null ? "no user" : idToken.getName();
     }
 
     @GET
-    @Path("access")
-    public String getAccessToken() {
-        return accessToken.getRawToken() != null && !accessToken.getRawToken().isEmpty() ? "AT injected" : "no user";
-        // or get it with identity.getCredential(AccessTokenCredential.class).getToken();
+    @Path("callback")
+    public String callback(@QueryParam("code") String code) {
+        String redirectUriParam = ui.getBaseUriBuilder().path("public-web-app/callback").build().toString();
+
+        Map<String, String> grantParams = new HashMap<>();
+        grantParams.put(OidcConstants.CODE_FLOW_CODE, code);
+        grantParams.put(OidcConstants.CODE_FLOW_REDIRECT_URI, redirectUriParam);
+        String encodedIdToken = oidcClient.getTokens(grantParams).await().indefinitely().get(OidcConstants.ID_TOKEN_VALUE);
+        return OidcUtils.decodeJwtContent(encodedIdToken).getString("preferred_username");
     }
 
     @GET
-    @Path("refresh")
-    public String refresh() {
-        String refreshToken = identity.getCredential(AccessTokenCredential.class).getRefreshToken().getToken();
-        return refreshToken != null && !refreshToken.isEmpty() ? "RT injected" : "";
+    @Path("login")
+    public Response login() {
+        StringBuilder codeFlowParams = new StringBuilder();
+
+        // response_type
+        codeFlowParams.append(OidcConstants.CODE_FLOW_RESPONSE_TYPE).append("=").append(OidcConstants.CODE_FLOW_CODE);
+        // client_id
+        codeFlowParams.append("&").append(OidcConstants.CLIENT_ID).append("=").append("quarkus-app");
+        // scope
+        codeFlowParams.append("&").append(OidcConstants.TOKEN_SCOPE).append("=").append("openid");
+        // redirect_uri
+        String redirectUriParam = ui.getBaseUriBuilder().path("public-web-app/callback").build().toString();
+        codeFlowParams.append("&").append(OidcConstants.CODE_FLOW_REDIRECT_URI).append("=")
+                .append(OidcCommonUtils.urlEncode(redirectUriParam));
+        // state
+        String state = UUID.randomUUID().toString();
+        codeFlowParams.append("&").append(OidcConstants.CODE_FLOW_STATE).append("=").append(state);
+        return Response.seeOther(URI.create(configMetadata.getAuthorizationUri() + "?" + codeFlowParams.toString()))
+                .cookie(new NewCookie("state", state))
+                .build();
     }
 }

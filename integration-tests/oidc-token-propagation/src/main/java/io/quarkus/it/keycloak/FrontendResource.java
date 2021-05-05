@@ -4,6 +4,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -31,8 +32,12 @@ public class FrontendResource {
     @GET
     @Path("access-token-propagation")
     @RolesAllowed("user")
-    public String userNameAccessTokenPropagation() {
-        return accessTokenPropagationService.getUserName();
+    public Response userNameAccessTokenPropagation() {
+        try {
+            return Response.ok(accessTokenPropagationService.getUserName()).build();
+        } catch (Exception ex) {
+            return Response.serverError().entity(ex.getMessage()).build();
+        }
     }
 
     @GET

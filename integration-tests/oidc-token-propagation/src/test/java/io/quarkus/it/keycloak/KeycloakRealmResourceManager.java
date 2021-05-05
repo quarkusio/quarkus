@@ -33,6 +33,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.setAccessTokenLifespan(3);
 
         realm.getClients().add(createClient("quarkus-app"));
+        realm.getClients().add(createClient("quarkus-app-exchange"));
         realm.getUsers().add(createUser("alice", "user"));
         realm.getUsers().add(createUser("bob", "user"));
 

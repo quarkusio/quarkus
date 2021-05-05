@@ -39,6 +39,7 @@ public final class OidcConstants {
     public static final String CODE_FLOW_STATE = "state";
     public static final String CODE_FLOW_REDIRECT_URI = "redirect_uri";
 
-    public static final String EXPIRES_IN = "expires_in";
+    public static final String EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange";
 
+    public static final String EXPIRES_IN = "expires_in";
 }

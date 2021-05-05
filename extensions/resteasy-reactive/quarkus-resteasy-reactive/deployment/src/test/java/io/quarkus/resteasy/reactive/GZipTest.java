@@ -1,7 +1,10 @@
 package io.quarkus.resteasy.reactive;
 
-import javax.enterprise.context.ApplicationScoped;
+import java.util.function.Supplier;
+
 import javax.enterprise.event.Observes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -30,38 +33,63 @@ public class GZipTest {
     }
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addClasses(BeanRegisteringRouteUsingObserves.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(new Supplier<JavaArchive>() {
+                @Override
+                public JavaArchive get() {
+                    return ShrinkWrap.create(JavaArchive.class)
+                            .addAsResource(new StringAsset(APP_PROPS), "application.properties")
+                            .addClasses(TestCompression.class);
+                }
+            });
 
     @Test
     public void testServerCompression() throws Exception {
 
-        RestAssured.given().get("/compression").then().statusCode(200)
+        RestAssured.given().get("/test/compression").then().statusCode(200)
                 .header("content-encoding", "gzip")
                 .header("content-length", Matchers.not(Matchers.equalTo(Integer.toString(longString.length()))))
                 .body(Matchers.equalTo(longString));
 
-        RestAssured.given().get("/nocompression").then().statusCode(200)
+        RestAssured.given().get("/test/nocompression").then().statusCode(200)
                 .header("content-encoding", "identity")
                 .header("content-length", Matchers.equalTo(Integer.toString(longString.length())))
                 .body(Matchers.equalTo(longString));
     }
 
-    @ApplicationScoped
-    static class BeanRegisteringRouteUsingObserves {
+    //        @ApplicationScoped
+    //        static class BeanRegisteringRouteUsingObserves {
+    //
+    //            public void register(@Observes Router router) {
+    //
+    //                router.route("/compression").handler(rc -> {
+    //                    rc.response().end(longString);
+    //                });
+    //                router.route("/nocompression").handler(rc -> {
+    //                    rc.response().headers().set("content-encoding", "identity");
+    //                    rc.response().end(longString);
+    //                });
+    //            }
+    //
+    //        }
 
-        public void register(@Observes Router router) {
+    @Path("/test")
+    public static class TestCompression {
 
-            router.route("/compression").handler(rc -> {
-                rc.response().end(longString);
-            });
-            router.route("/nocompression").handler(rc -> {
-                rc.response().headers().set("content-encoding", "identity");
-                rc.response().end(longString);
+        //TODO - complete logic in method
+        @Path("/compression")
+        @GET
+        public void registerCompression(@Observes Router router) {
+            router.route("/test/compression").handler(routingContext -> {
+                routingContext.response().end(longString);
             });
         }
 
+        @Path("/nocompression")
+        @GET
+        public void registerNoCompression(@Observes Router router) {
+
+        }
     }
+
 }

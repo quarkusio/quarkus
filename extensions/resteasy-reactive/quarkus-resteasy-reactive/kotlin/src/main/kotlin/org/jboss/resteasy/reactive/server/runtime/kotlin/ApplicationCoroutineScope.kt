@@ -4,7 +4,7 @@ import io.vertx.core.Context
 import kotlinx.coroutines.*
 import org.eclipse.microprofile.context.ManagedExecutor
 import javax.annotation.PreDestroy
-import javax.enterprise.context.ApplicationScoped
+import javax.inject.Singleton
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -14,7 +14,7 @@ import kotlin.coroutines.CoroutineContext
  * This should be the main interception point to place user specific [CoroutineContext.Element] objects. Things
  * like activity ids, logger context propagation, tracing, exception handlers, etc.
  */
-@ApplicationScoped
+@Singleton
 class ApplicationCoroutineScope : CoroutineScope, AutoCloseable {
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -29,6 +29,7 @@ class ApplicationCoroutineScope : CoroutineScope, AutoCloseable {
  */
 class VertxDispatcher(private val vertxContext: Context) : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
+        // context propagation for suspending functions is not enabled yet, will be handled later
         vertxContext.runOnContext {
             block.run()
         }

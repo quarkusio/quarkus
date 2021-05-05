@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.h2.tools.Server;
 
@@ -23,9 +24,11 @@ public class H2DevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.H2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
+                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    OptionalInt port) {
                 try {
-                    final Server tcpServer = Server.createTcpServer("-tcpPort", "0");
+                    final Server tcpServer = Server.createTcpServer("-tcpPort",
+                            port.isPresent() ? String.valueOf(port.getAsInt()) : "0");
                     tcpServer.start();
 
                     StringBuilder additionalArgs = new StringBuilder();

@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MSSQLServerContainer;
@@ -26,12 +27,21 @@ public class MSSQLDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
+                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    OptionalInt fixedExposedPort) {
                 JdbcDatabaseContainer container = new MSSQLServerContainer(
                         DockerImageName
                                 .parse(imageName.orElse(MSSQLServerContainer.IMAGE + ":" + TAG))
-                                .asCompatibleSubstituteFor(MSSQLServerContainer.IMAGE))
-                                        .withPassword(password.orElse("Quarkuspassword1"));
+                                .asCompatibleSubstituteFor(MSSQLServerContainer.IMAGE)) {
+                    @Override
+                    protected void configure() {
+                        super.configure();
+                        if (fixedExposedPort.isPresent()) {
+                            addFixedExposedPort(fixedExposedPort.getAsInt(), MSSQLServerContainer.MS_SQL_SERVER_PORT);
+                        }
+                    };
+                }
+                        .withPassword(password.orElse("Quarkuspassword1"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
                 return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),

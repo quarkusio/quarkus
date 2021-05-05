@@ -32,10 +32,11 @@ import javax.ws.rs.client.RxInvoker;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -121,6 +122,8 @@ public class JaxrsClientReactiveProcessor {
             "resolveTemplate",
             WebTarget.class,
             String.class, Object.class);
+    private static final MethodDescriptor MULTIVALUED_MAP_ADD = MethodDescriptor.ofMethod(MultivaluedMap.class, "add",
+            void.class, Object.class, Object.class);
 
     @BuildStep
     void addFeature(BuildProducer<FeatureBuildItem> features) {
@@ -536,6 +539,7 @@ public class JaxrsClientReactiveProcessor {
                                     subMethodCreator.readInstanceField(subWebTarget, subMethodCreator.getThis()));
 
                             ResultHandle bodyParameterValue = null;
+                            AssignableResultHandle formParams = null;
                             Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
 
                             // first go through parameters of the root stub method, we have them copied to fields in the sub stub
@@ -596,6 +600,10 @@ public class JaxrsClientReactiveProcessor {
                                             handleHeaderMethod.getMethodParam(1));
                                     handleHeaderMethod.returnValue(invocationBuilderRef);
                                     invocationBuilderEnrichers.put(handleHeaderDescriptor, paramValue);
+                                } else if (param.parameterType == ParameterType.FORM) {
+                                    formParams = createIfAbsent(subMethodCreator, formParams);
+                                    subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                                            subMethodCreator.load(param.name), paramValue);
                                 }
                             }
                             // handle sub-method parameters:
@@ -658,6 +666,11 @@ public class JaxrsClientReactiveProcessor {
                                     handleHeaderMethod.returnValue(invocationBuilderRef);
                                     invocationBuilderEnrichers.put(handleHeaderDescriptor,
                                             subMethodCreator.getMethodParam(paramIdx));
+                                } else if (param.parameterType == ParameterType.FORM) {
+                                    formParams = createIfAbsent(subMethodCreator, formParams);
+                                    subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                                            subMethodCreator.load(param.name),
+                                            subMethodCreator.getMethodParam(paramIdx));
                                 }
                             }
 
@@ -668,9 +681,10 @@ public class JaxrsClientReactiveProcessor {
                                         methodTarget));
                             } else {
 
-                                ResultHandle array = subMethodCreator.newArray(String.class, method.getProduces().length);
-                                for (int i = 0; i < method.getProduces().length; ++i) {
-                                    subMethodCreator.writeArrayValue(array, i, subMethodCreator.load(method.getProduces()[i]));
+                                ResultHandle array = subMethodCreator.newArray(String.class, subMethod.getProduces().length);
+                                for (int i = 0; i < subMethod.getProduces().length; ++i) {
+                                    subMethodCreator.writeArrayValue(array, i,
+                                            subMethodCreator.load(subMethod.getProduces()[i]));
                                 }
                                 subMethodCreator.assign(builder, subMethodCreator.invokeInterfaceMethod(
                                         MethodDescriptor.ofMethod(WebTarget.class, "request", Invocation.Builder.class,
@@ -698,7 +712,7 @@ public class JaxrsClientReactiveProcessor {
                             consumes = extractProducesConsumesValues(jandexSubMethod.annotation(CONSUMES), consumes);
                             handleReturn(subResourceInterface, defaultMediaType,
                                     getHttpMethod(jandexSubMethod, subMethod.getHttpMethod(), httpAnnotationToMethod),
-                                    consumes, jandexSubMethod, subMethodCreator, bodyParameterValue, builder);
+                                    consumes, jandexSubMethod, subMethodCreator, formParams, bodyParameterValue, builder);
                         }
 
                         if (subConstructor != null) {
@@ -728,6 +742,8 @@ public class JaxrsClientReactiveProcessor {
 
                     Integer bodyParameterIdx = null;
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
+
+                    AssignableResultHandle formParams = null;
 
                     for (int paramIdx = 0; paramIdx < method.getParameters().length; ++paramIdx) {
                         MethodParameter param = method.getParameters()[paramIdx];
@@ -783,6 +799,10 @@ public class JaxrsClientReactiveProcessor {
                                     handleHeaderMethod.getMethodParam(1));
                             handleHeaderMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
+                        } else if (param.parameterType == ParameterType.FORM) {
+                            formParams = createIfAbsent(methodCreator, formParams);
+                            methodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                                    methodCreator.load(param.name), methodCreator.getMethodParam(paramIdx));
                         }
                     }
 
@@ -815,7 +835,7 @@ public class JaxrsClientReactiveProcessor {
                     }
 
                     handleReturn(interfaceClass, defaultMediaType, method.getHttpMethod(),
-                            method.getConsumes(), jandexMethod, methodCreator,
+                            method.getConsumes(), jandexMethod, methodCreator, formParams,
                             bodyParameterIdx == null ? null : methodCreator.getMethodParam(bodyParameterIdx), builder);
                 }
             }
@@ -845,6 +865,15 @@ public class JaxrsClientReactiveProcessor {
 
     }
 
+    private AssignableResultHandle createIfAbsent(MethodCreator methodCreator, AssignableResultHandle formValues) {
+        if (formValues == null) {
+            formValues = methodCreator.createVariable(MultivaluedMap.class);
+            methodCreator.assign(formValues,
+                    methodCreator.newInstance(MethodDescriptor.ofConstructor(MultivaluedHashMap.class)));
+        }
+        return formValues;
+    }
+
     private String[] parametersAsStringArray(MethodInfo subMethod) {
         List<Type> params = subMethod.parameters();
         String[] result = new String[params.size()];
@@ -853,14 +882,6 @@ public class JaxrsClientReactiveProcessor {
             result[i++] = param.name().toString();
         }
 
-        return result;
-    }
-
-    private static Map<DotName, AnnotationInstance> toAnnotationMap(Collection<AnnotationInstance> annotations) {
-        Map<DotName, AnnotationInstance> result = new HashMap<>();
-        for (AnnotationInstance annotation : annotations) {
-            result.put(annotation.name(), annotation);
-        }
         return result;
     }
 
@@ -881,7 +902,8 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void handleReturn(ClassInfo restClientInterface, String defaultMediaType, String httpMethod, String[] consumes,
-            MethodInfo jandexMethod, MethodCreator methodCreator, ResultHandle bodyValue, AssignableResultHandle builder) {
+            MethodInfo jandexMethod, MethodCreator methodCreator, ResultHandle formParams,
+            ResultHandle bodyValue, AssignableResultHandle builder) {
         Type returnType = jandexMethod.returnType();
         ReturnCategory returnCategory = ReturnCategory.BLOCKING;
 
@@ -939,7 +961,13 @@ public class JaxrsClientReactiveProcessor {
 
         catchBlock.throwException(caughtException);
 
-        if (bodyValue != null) {
+        if (bodyValue != null || formParams != null) {
+
+            if (bodyValue != null && formParams != null) {
+                throw new IllegalArgumentException("Attempt to pass both form and regular entity as a request body in " +
+                        restClientInterface.name().toString() + "#" + jandexMethod.name());
+            }
+
             if (consumes != null && consumes.length > 0) {
 
                 if (consumes.length > 1) {
@@ -956,7 +984,8 @@ public class JaxrsClientReactiveProcessor {
 
             ResultHandle entity = tryBlock.invokeStaticMethod(
                     MethodDescriptor.ofMethod(Entity.class, "entity", Entity.class, Object.class, MediaType.class),
-                    bodyValue, mediaType);
+                    bodyValue != null ? bodyValue : formParams,
+                    mediaType);
 
             if (returnCategory == ReturnCategory.COMPLETION_STAGE) {
                 ResultHandle async = tryBlock.invokeInterfaceMethod(

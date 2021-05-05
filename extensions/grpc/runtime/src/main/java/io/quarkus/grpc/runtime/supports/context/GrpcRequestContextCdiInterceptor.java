@@ -1,5 +1,6 @@
 package io.quarkus.grpc.runtime.supports.context;
 
+import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
@@ -11,6 +12,7 @@ import io.vertx.core.Vertx;
 
 @Interceptor
 @GrpcEnableRequestContext
+@Priority(Interceptor.Priority.PLATFORM_BEFORE)
 public class GrpcRequestContextCdiInterceptor {
 
     @AroundInvoke

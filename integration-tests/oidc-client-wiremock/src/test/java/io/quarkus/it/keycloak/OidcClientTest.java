@@ -53,6 +53,14 @@ public class OidcClientTest {
         checkLog();
     }
 
+    @Test
+    public void testEchoTokensNonStandardResponse() {
+        RestAssured.when().get("/frontend/echoTokenNonStandardResponse")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_n refresh_token_n"));
+    }
+
     private void checkLog() {
         final Path logDirectory = Paths.get(".", "target");
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)

@@ -4,6 +4,8 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassFinalFieldsWritablePredicateBuildItem;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 
@@ -37,5 +39,19 @@ public class KotlinProcessor {
     @BuildStep
     ReflectiveClassFinalFieldsWritablePredicateBuildItem dataClassPredicate() {
         return new ReflectiveClassFinalFieldsWritablePredicateBuildItem(new IsDataClassWithDefaultValuesPredicate());
+    }
+
+    /**
+     * Enable reflection on some of the Kotlin classes
+     */
+    @BuildStep
+    void kotlinCore(BuildProducer<ReflectiveClassBuildItem> reflection,
+            BuildProducer<NativeImageResourcePatternsBuildItem> resources) {
+        reflection.produce(new ReflectiveClassBuildItem(true, false, kotlin.Metadata.class));
+        reflection.produce(new ReflectiveClassBuildItem(true, true, kotlin.KotlinVersion.class));
+        reflection.produce(
+                new ReflectiveClassBuildItem(true, false, false, kotlin.reflect.jvm.internal.ReflectionFactoryImpl.class));
+        resources.produce(NativeImageResourcePatternsBuildItem.builder().includePattern("META-INF/.*.kotlin_module$")
+                .includePatterns(".*.kotlin_builtins").build());
     }
 }

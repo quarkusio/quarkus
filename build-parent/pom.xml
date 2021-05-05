@@ -371,7 +371,7 @@
                                 <rules>
                                     <dependencyConvergence/>
                                     <requireJavaVersion>
-                                        <version>[11,)</version>
+                                        <version>[${maven.compiler.release},)</version>
                                     </requireJavaVersion>
                                     <requireMavenVersion>
                                         <version>${supported-maven-versions}</version>
@@ -609,6 +609,14 @@
                     <groupId>org.revapi</groupId>
                     <artifactId>revapi-maven-plugin</artifactId>
                     <version>${revapi-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-maven-plugin</artifactId>
+                    <version>${kotlin.version}</version>
+                    <configuration>
+                        <jvmTarget>${maven.compiler.release}</jvmTarget>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

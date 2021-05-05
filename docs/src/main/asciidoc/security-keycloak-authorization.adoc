@@ -331,6 +331,19 @@ public class ProtectedResource {
 }
 ----
 
+== Injecting the Authorization Client
+
+In some cases, you may want to use the https://www.keycloak.org/docs/latest/authorization_services/#_service_client_api[Keycloak Authorization Client Java API] to perform
+specific operations like managing resources and obtaining permissions directly from Keycloak. For that, you can inject a
+`AuthzClient` instance into your beans as follows:
+
+[source,java]
+----
+    @Inject
+    AuthzClient authzClient;
+}
+----
+
 == Mapping Protected Resources
 
 By default, the extension is going to fetch resources on-demand from Keycloak where their `URI` are used to map the resources in your application that should be protected.

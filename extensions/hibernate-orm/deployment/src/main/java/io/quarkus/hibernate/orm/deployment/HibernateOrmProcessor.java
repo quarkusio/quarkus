@@ -340,6 +340,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<JpaModelBuildItem> domainObjectsProducer,
             List<IgnorableNonIndexedClasses> ignorableNonIndexedClassesBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             List<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions) {
 
         Set<String> ignorableNonIndexedClasses = Collections.emptySet();
@@ -350,9 +351,8 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, jpaModelPuContributions,
-                indexBuildItem.getIndex(),
-                ignorableNonIndexedClasses);
+        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, hotDeploymentWatchedFiles,
+                jpaModelPuContributions, indexBuildItem.getIndex(), ignorableNonIndexedClasses);
         final JpaModelBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
         domainObjectsProducer.produce(domainObjects);
     }

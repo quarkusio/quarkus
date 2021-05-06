@@ -440,8 +440,6 @@ Alternatively or additionally to an interceptor, you can enrich *all* your `@Qua
 * `io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
 
-WARNING: `io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback` has been deprecated in favor of `io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback` and will be removed in future releases of Quarkus
-
 Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.
 
 E.g. the following sample callback:

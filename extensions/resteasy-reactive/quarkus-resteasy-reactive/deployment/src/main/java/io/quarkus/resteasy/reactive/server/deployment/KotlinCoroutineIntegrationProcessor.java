@@ -85,7 +85,7 @@ public class KotlinCoroutineIntegrationProcessor {
 
             private void ensureNotBlocking(MethodInfo method) {
                 if (method.annotation(BLOCKING_ANNOTATION) != null) {
-                    String format = String.format("Suspendable @Blocking methods aren't supported yet: %s.%s",
+                    String format = String.format("Suspendable @Blocking methods are not supported yet: %s.%s",
                             method.declaringClass().name(), method.name());
                     throw new IllegalStateException(format);
                 }

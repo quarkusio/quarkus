@@ -74,8 +74,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                 return;
                             }
                             securityContext
-                                    .authenticate(new UsernamePasswordAuthenticationRequest(jUsername,
-                                            new PasswordCredential(jPassword.toCharArray())))
+                                    .authenticate(HttpSecurityUtils
+                                            .setRoutingContextAttribute(new UsernamePasswordAuthenticationRequest(jUsername,
+                                                    new PasswordCredential(jPassword.toCharArray())), exchange))
                                     .subscribe().with(new Consumer<SecurityIdentity>() {
                                         @Override
                                         public void accept(SecurityIdentity identity) {
@@ -159,7 +160,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             PersistentLoginManager.RestoreResult result = loginManager.restore(context);
             if (result != null) {
                 Uni<SecurityIdentity> ret = identityProviderManager
-                        .authenticate(new TrustedAuthenticationRequest(result.getPrincipal()));
+                        .authenticate(HttpSecurityUtils
+                                .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
                 return ret.onItem().invoke(new Consumer<SecurityIdentity>() {
                     @Override
                     public void accept(SecurityIdentity securityIdentity) {

@@ -57,8 +57,8 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
         }
 
         return identityProviderManager
-                .authenticate(new CertificateAuthenticationRequest(
-                        new CertificateCredential(X509Certificate.class.cast(certificate))));
+                .authenticate(HttpSecurityUtils.setRoutingContextAttribute(new CertificateAuthenticationRequest(
+                        new CertificateCredential(X509Certificate.class.cast(certificate))), context));
     }
 
     @Override

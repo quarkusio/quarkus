@@ -154,6 +154,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
 
                         UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(userName,
                                 new PasswordCredential(password));
+                        HttpSecurityUtils.setRoutingContextAttribute(credential, context);
                         return identityProviderManager.authenticate(credential);
                     }
 

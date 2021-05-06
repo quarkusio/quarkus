@@ -64,20 +64,6 @@ import io.quarkus.runtime.annotations.Recorder;
 public @interface BuildStep {
 
     /**
-     * Indicates that the provided file names should be considered to be application index markers.
-     *
-     * If these are present in library on the class path then the library will be indexed, and this index will be
-     * used when evaluating application components.
-     *
-     * This should not be used, {@link io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem}
-     * should just be produced directly instead.
-     *
-     * This method will be removed at some point post Quarkus 1.1.
-     */
-    @Deprecated
-    String[] applicationArchiveMarkers() default {};
-
-    /**
      * Only include this build step if the given supplier class(es) return {@code true}.
      *
      * @return the supplier class array

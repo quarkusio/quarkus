@@ -1,4 +1,4 @@
-package io.quarkus.devservices.postgresql.deployment;
+package io.quarkus.devservices.h2.deployment;
 
 import java.io.Closeable;
 import java.io.IOException;

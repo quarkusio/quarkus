@@ -101,12 +101,23 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
     }
 
     private static void configurePermissionResourcePermission(ResourceServerRepresentation settings) {
-        PolicyRepresentation policy = createJSPolicy("Confidential Policy", "var identity = $evaluation.context.identity;\n" +
+        PolicyRepresentation policyConfidential = createJSPolicy("Confidential Policy",
+                "var identity = $evaluation.context.identity;\n" +
+                        "\n" +
+                        "if (identity.hasRealmRole(\"confidential\")) {\n" +
+                        "$evaluation.grant();\n" +
+                        "}",
+                settings);
+        createPermission(settings, createResource(settings, "Permission Resource", "/api/permission"), policyConfidential);
+
+        PolicyRepresentation policyAdmin = createJSPolicy("Admin Policy", "var identity = $evaluation.context.identity;\n" +
                 "\n" +
-                "if (identity.hasRealmRole(\"confidential\")) {\n" +
+                "if (identity.hasRealmRole(\"admin\")) {\n" +
                 "$evaluation.grant();\n" +
                 "}", settings);
-        createPermission(settings, createResource(settings, "Permission Resource", "/api/permission"), policy);
+
+        createPermission(settings, createResource(settings, "Permission Resource Tenant", "/api-permission-tenant"),
+                policyAdmin);
     }
 
     private static void configureScopePermission(ResourceServerRepresentation settings) {

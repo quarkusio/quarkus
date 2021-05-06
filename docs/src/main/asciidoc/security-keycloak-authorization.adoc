@@ -363,6 +363,38 @@ In the default configuration, Keycloak is responsible for managing the roles and
 
 To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the link:security-openid-connect[Using OpenID Connect Adapter to Protect JAX-RS Applications] guide. For more details, check the link:security[Security guide].
 
+== Multi-Tenancy
+
+It is possible to configure multiple policy enforcer configurations, one per each tenant, similarly to how it can be done for link:security-openid-connect-multitenancy[Multi-Tenant OpenId Connect Service Applications].
+
+For example:
+
+[source,properties]
+----
+quarkus.keycloak.policy-enforcer.enable=true
+
+# Default Tenant
+quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.secret=secret
+
+quarkus.keycloak.policy-enforcer.enforcement-mode=PERMISSIVE
+quarkus.keycloak.policy-enforcer.paths.1.name=Permission Resource
+quarkus.keycloak.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
+
+# Tenant1
+
+quarkus.oidc.tenant1.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.tenant1.client-id=quarkus-app
+quarkus.oidc.tenant1.credentials.secret=secret
+
+quarkus.keycloak.tenant1.policy-enforcer.enforcement-mode=PERMISSIVE
+quarkus.keycloak.tenant1.policy-enforcer.paths.1.name=Permission Resource
+quarkus.keycloak.tenant1.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.tenant1.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
+----
+
 == Configuration Reference
 
 The configuration is based on the official https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_filter[Keycloak Policy Enforcer Configuration]. If you are looking for more details about the different configuration options, please take a look at this documentation,

@@ -14,8 +14,9 @@
     <description>Module that contains JPA related tests running with the Oracle database</description>
 
     <properties>
-        <oracledb.url>jdbc:oracle:thin:@localhost:1521:ORCLCDB</oracledb.url>
-        <oracle.image>store/oracle/database-enterprise:12.2.0.1-slim</oracle.image>
+        <oracledb.url>jdbc:oracle:thin:@localhost:1521:XE</oracledb.url>
+        <!-- See https://hub.docker.com/r/gvenzl/oracle-xe -->
+        <oracle.image>gvenzl/oracle-xe:11-slim</oracle.image>
     </properties>
 
     <dependencies>
@@ -128,7 +129,7 @@
             <id>test-oracle</id>
             <activation>
                 <property>
-                    <name>test-oracle</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -153,11 +154,11 @@
             <id>docker-oracle</id>
             <activation>
                 <property>
-                    <name>start-oracle-containers</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>
-                <oracledb.url>jdbc:oracle:thin:@localhost:1521:ORCLCDB</oracledb.url>
+                <oracledb.url>jdbc:oracle:thin:@localhost:1521:XE</oracledb.url>
             </properties>
             <build>
                 <plugins>
@@ -168,12 +169,13 @@
                             <images>
                                 <image>
                                     <name>${oracle.image}</name>
-                                    <!-- Be warned: tricky to change! -->
-                                    <alias>ORCLCDB</alias>
                                     <run>
                                         <ports>
                                             <port>1521:1521</port>
                                         </ports>
+                                        <env>
+                                            <ORACLE_PASSWORD>hibernate_orm_test</ORACLE_PASSWORD>
+                                        </env>
                                         <log>
                                             <prefix>Oracle Database: </prefix>
                                             <date>default</date>
@@ -182,10 +184,8 @@
                                         <wait>
                                             <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
                                             <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
-                                            <time>600000</time>
-                                            <!-- Oracle documentation suggests to wait for "healthy status" but in practice this is often
-                                            too early. We're forced to wait for the first log related to interval partitioning: -->
-                                            <log>ADDED INTERVAL PARTITION SYS_P1427</log>
+                                            <time>100000</time>
+                                            <log>DATABASE IS READY TO USE!</log>
                                         </wait>
                                     </run>
                                 </image>

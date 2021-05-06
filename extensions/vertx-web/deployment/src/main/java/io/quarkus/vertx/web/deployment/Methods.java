@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.enterprise.context.spi.Context;
@@ -211,6 +213,10 @@ class Methods {
             Object.class);
     static final MethodDescriptor ITERATOR_NEXT = MethodDescriptor.ofMethod(Iterator.class, "next", Object.class);
     static final MethodDescriptor ITERATOR_HAS_NEXT = MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class);
+
+    public static final MethodDescriptor CS_WHEN_COMPLETE = MethodDescriptor.ofMethod(CompletionStage.class,
+            "whenComplete",
+            CompletionStage.class, BiConsumer.class);
 
     private Methods() {
         // Avoid direct instantiation

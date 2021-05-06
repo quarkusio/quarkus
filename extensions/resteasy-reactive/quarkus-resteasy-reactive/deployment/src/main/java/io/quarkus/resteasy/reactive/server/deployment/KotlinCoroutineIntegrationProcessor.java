@@ -36,6 +36,7 @@ public class KotlinCoroutineIntegrationProcessor {
 
     static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
     public static final String NAME = KotlinCoroutineIntegrationProcessor.class.getName();
+    private static final DotName BLOCKING_ANNOTATION = DotName.createSimple("io.smallrye.common.annotation.Blocking");
 
     @BuildStep
     CoroutineConfigurationBuildItem producesCoroutineConfiguration() {
@@ -69,6 +70,7 @@ public class KotlinCoroutineIntegrationProcessor {
                 if (methodContext.containsKey(NAME)) {
                     //method is suspendable, we need to handle the invocation differently
                     ensureEnabled(coroutineConfigurationBuildItem, method);
+                    ensureNotBlocking(method);
 
                     ResteasyReactiveRecorder recorder = (ResteasyReactiveRecorder) methodContext
                             .get(ResteasyReactiveRecorder.class.getName());
@@ -79,6 +81,23 @@ public class KotlinCoroutineIntegrationProcessor {
                     return Collections.singletonList(processor);
                 }
                 return Collections.emptyList();
+            }
+
+            private void ensureNotBlocking(MethodInfo method) {
+                if (method.annotation(BLOCKING_ANNOTATION) != null) {
+                    String format = String.format("Suspendable @Blocking methods aren't supported yet: %s.%s",
+                            method.declaringClass().name(), method.name());
+                    throw new IllegalStateException(format);
+                }
+            }
+
+            private void ensureEnabled(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem, MethodInfo method) {
+                if (!coroutineConfigurationBuildItem.isEnabled()) {
+                    String format = String.format(
+                            "Method %s.%s is suspendable but kotlinx-coroutines-core-jvm dependency not detected",
+                            method.declaringClass().name(), method.name());
+                    throw new IllegalStateException(format);
+                }
             }
 
             @Override
@@ -92,14 +111,6 @@ public class KotlinCoroutineIntegrationProcessor {
                 return null;
             }
         });
-    }
-
-    private void ensureEnabled(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem, MethodInfo method) {
-        if (!coroutineConfigurationBuildItem.isEnabled()) {
-            String format = String.format("Method %s.%s is suspendable but kotlinx-coroutines-core-jvm dependency not detected",
-                    method.declaringClass().name(), method.name());
-            throw new IllegalStateException(format);
-        }
     }
 
     /**

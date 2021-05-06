@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.server.runtime.kotlin
 
 import io.vertx.core.Context
 import kotlinx.coroutines.*
-import org.eclipse.microprofile.context.ManagedExecutor
 import javax.annotation.PreDestroy
 import javax.inject.Singleton
 import kotlin.coroutines.CoroutineContext
@@ -33,15 +32,5 @@ class VertxDispatcher(private val vertxContext: Context) : CoroutineDispatcher()
         vertxContext.runOnContext {
             block.run()
         }
-    }
-}
-
-/**
- * Dispatches coroutine into the managed thread pool
- */
-class ExecutorDispatcher(private val managedExecutor: ManagedExecutor): CoroutineDispatcher() {
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        // todo may need to handle failed job submissions
-        managedExecutor.execute(block)
     }
 }

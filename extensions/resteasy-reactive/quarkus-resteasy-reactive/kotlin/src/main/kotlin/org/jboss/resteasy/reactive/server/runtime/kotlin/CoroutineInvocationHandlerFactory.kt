@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.runtime.kotlin
 
-import org.eclipse.microprofile.context.ManagedExecutor
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler
 import javax.enterprise.context.ApplicationScoped
@@ -11,10 +10,9 @@ import javax.inject.Inject
  */
 @ApplicationScoped
 class CoroutineInvocationHandlerFactory @Inject constructor(
-        private val applicationCoroutineScope: ApplicationCoroutineScope,
-        private val managedExecutor: ManagedExecutor
+        private val applicationCoroutineScope: ApplicationCoroutineScope
 ) {
     fun createHandler(invoker: EndpointInvoker): ServerRestHandler {
-        return CoroutineInvocationHandler(invoker, applicationCoroutineScope, managedExecutor)
+        return CoroutineInvocationHandler(invoker, applicationCoroutineScope)
     }
 }

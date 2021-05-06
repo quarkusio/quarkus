@@ -13,10 +13,7 @@ import org.slf4j.LoggerFactory
 private val logger = LoggerFactory.getLogger(CoroutineInvocationHandler::class.java)
 
 class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
-                                 private val coroutineScope: CoroutineScope,
-                                 managedExecutor: ManagedExecutor) : ServerRestHandler {
-
-    private val executorDispatcher = ExecutorDispatcher(managedExecutor)
+                                 private val coroutineScope: CoroutineScope) : ServerRestHandler {
 
     override fun handle(requestContext: ResteasyReactiveRequestContext) {
         if (requestContext.result != null) {
@@ -28,8 +25,7 @@ class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
         }
 
         val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let(::VertxDispatcher)
-                // The @Blocking annotation will not run in a Vertx context
-                ?: executorDispatcher
+                ?: throw IllegalStateException("No Vertx context found")
 
         logger.debug("Handling request with dispatcher {}", dispatcher)
 

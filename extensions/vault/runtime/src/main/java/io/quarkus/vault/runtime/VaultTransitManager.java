@@ -59,6 +59,7 @@ import io.quarkus.vault.transit.EncryptionRequest;
 import io.quarkus.vault.transit.KeyConfigRequestDetail;
 import io.quarkus.vault.transit.KeyCreationRequestDetail;
 import io.quarkus.vault.transit.RewrappingRequest;
+import io.quarkus.vault.transit.SignVerifyOptions;
 import io.quarkus.vault.transit.SigningInput;
 import io.quarkus.vault.transit.SigningRequest;
 import io.quarkus.vault.transit.TransitContext;
@@ -228,27 +229,37 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
 
     @Override
     public String sign(String keyName, SigningInput input, TransitContext transitContext) {
+        return sign(keyName, input, null, transitContext);
+    }
+
+    @Override
+    public String sign(String keyName, SigningInput input, SignVerifyOptions options, TransitContext transitContext) {
         SigningRequest item = new SigningRequest(input, transitContext);
         List<SigningRequestResultPair> pairs = singletonList(new SigningRequestResultPair(item));
-        signBatch(keyName, NO_KEY_VERSION, pairs);
+        signBatch(keyName, NO_KEY_VERSION, pairs, options);
         return pairs.get(0).getResult().getValueOrElseError();
     }
 
     @Override
     public Map<SigningRequest, String> sign(String keyName, List<SigningRequest> requests) {
+        return sign(keyName, requests, null);
+    }
+
+    @Override
+    public Map<SigningRequest, String> sign(String keyName, List<SigningRequest> requests, SignVerifyOptions options) {
 
         List<SigningRequestResultPair> pairs = requests.stream().map(SigningRequestResultPair::new).collect(toList());
 
         pairs.stream()
                 .collect(groupingBy(SigningRequestResultPair::getKeyVersion))
-                .forEach((keyVersion, subpairs) -> signBatch(keyName, keyVersion, subpairs));
+                .forEach((keyVersion, subpairs) -> signBatch(keyName, keyVersion, subpairs, options));
 
         List<SigningResult> results = pairs.stream().map(SigningRequestResultPair::getResult).collect(toList());
         checkBatchErrors(results, errors -> new VaultSigningBatchException(errors + " signing errors", zip(requests, results)));
         return zipRequestToValue(requests, results);
     }
 
-    private void signBatch(String keyName, int keyVersion, List<SigningRequestResultPair> pairs) {
+    private void signBatch(String keyName, int keyVersion, List<SigningRequestResultPair> pairs, SignVerifyOptions options) {
 
         String hashAlgorithm = null;
 
@@ -265,6 +276,13 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
             hashAlgorithm = config.hashAlgorithm.orElse(null);
             body.signatureAlgorithm = config.signatureAlgorithm.orElse(null);
             body.prehashed = config.prehashed.orElse(null);
+        }
+
+        if (options != null) {
+            hashAlgorithm = defaultIfNull(options.getHashAlgorithm(), hashAlgorithm);
+            body.signatureAlgorithm = defaultIfNull(options.getSignatureAlgorithm(), body.signatureAlgorithm);
+            body.prehashed = defaultIfNull(options.getPrehashed(), body.prehashed);
+            body.marshalingAlgorithm = defaultIfNull(options.getMarshalingAlgorithm(), null);
         }
 
         VaultTransitSign sign = vaultInternalTransitSecretEngine.sign(getToken(), keyName, hashAlgorithm, body);
@@ -284,8 +302,14 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
 
     @Override
     public void verifySignature(String keyName, String signature, SigningInput input, TransitContext transitContext) {
+        verifySignature(keyName, signature, input, null, transitContext);
+    }
+
+    @Override
+    public void verifySignature(String keyName, String signature, SigningInput input, SignVerifyOptions options,
+            TransitContext transitContext) {
         VerificationRequest item = new VerificationRequest(signature, input, transitContext);
-        Boolean valid = verifyBatch(keyName, singletonList(item)).get(0).getValueOrElseError();
+        Boolean valid = verifyBatch(keyName, singletonList(item), options).get(0).getValueOrElseError();
         if (!TRUE.equals(valid)) {
             throw new VaultException(INVALID_SIGNATURE);
         }
@@ -293,12 +317,18 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
 
     @Override
     public void verifySignature(String keyName, List<VerificationRequest> requests) {
-        List<VerificationResult> results = verifyBatch(keyName, requests);
+        verifySignature(keyName, requests, null);
+    }
+
+    @Override
+    public void verifySignature(String keyName, List<VerificationRequest> requests, SignVerifyOptions options) {
+        List<VerificationResult> results = verifyBatch(keyName, requests, options);
         Map<VerificationRequest, VerificationResult> resultMap = zip(requests, results);
         checkBatchErrors(results, errors -> new VaultVerificationBatchException(errors + " verification errors", resultMap));
     }
 
-    private List<VerificationResult> verifyBatch(String keyName, List<VerificationRequest> requests) {
+    private List<VerificationResult> verifyBatch(String keyName, List<VerificationRequest> requests,
+            SignVerifyOptions options) {
 
         String hashAlgorithm = null;
 
@@ -309,8 +339,15 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
         if (config != null) {
             keyName = config.name.orElse(keyName);
             hashAlgorithm = config.hashAlgorithm.orElse(null);
-            body.prehashed = config.prehashed.orElse(null);
             body.signatureAlgorithm = config.signatureAlgorithm.orElse(null);
+            body.prehashed = config.prehashed.orElse(null);
+        }
+
+        if (options != null) {
+            hashAlgorithm = defaultIfNull(options.getHashAlgorithm(), hashAlgorithm);
+            body.signatureAlgorithm = defaultIfNull(options.getSignatureAlgorithm(), body.signatureAlgorithm);
+            body.prehashed = defaultIfNull(options.getPrehashed(), body.prehashed);
+            body.marshalingAlgorithm = defaultIfNull(options.getMarshalingAlgorithm(), null);
         }
 
         VaultTransitVerify verify = vaultInternalTransitSecretEngine.verify(getToken(), keyName, hashAlgorithm, body);
@@ -482,6 +519,12 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
         Map<K, V> map = new IdentityHashMap<>();
         IntStream.range(0, keys.size()).forEach(i -> map.put(keys.get(i), f.apply(values.get(i))));
         return map;
+    }
+
+    private <T> T defaultIfNull(T value, T defaultValue) {
+        if (value != null)
+            return value;
+        return defaultValue;
     }
 
 }

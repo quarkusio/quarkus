@@ -371,7 +371,7 @@ public class VaultTestExtension {
         execVault(format("vault write -f transit/keys/%s", ENCRYPTION_KEY2_NAME));
         execVault(format("vault write transit/keys/%s derived=true", ENCRYPTION_DERIVED_KEY_NAME));
         execVault(format("vault write transit/keys/%s type=ecdsa-p256", SIGN_KEY_NAME));
-        execVault(format("vault write transit/keys/%s type=ecdsa-p256", SIGN_KEY2_NAME));
+        execVault(format("vault write transit/keys/%s type=rsa-2048", SIGN_KEY2_NAME));
         execVault(format("vault write transit/keys/%s type=ed25519 derived=true", SIGN_DERIVATION_KEY_NAME));
 
         execVault("vault write transit/keys/jws type=ecdsa-p256");

@@ -211,6 +211,13 @@ public void consume(Message<String> msg) {
 }
 ----
 
+=== Handling Failures
+
+If a method annotated with `@ConsumeEvent` throws an exception then:
+
+* if a reply handler is set then the failure is propagated back to the sender via an `io.vertx.core.eventbus.ReplyException` with code `ConsumeEvent#FAILURE_CODE` and the exception message,
+* if no reply handler is set then the exception is rethrown (and wrapped in a `RuntimeException` if necessary) and can be handled by the default exception handler, i.e. `io.vertx.core.Vertx#exceptionHandler()`.
+
 == Sending messages
 
 Ok, we have seen how to receive messages, let's now switch to the _other side_: the sender.

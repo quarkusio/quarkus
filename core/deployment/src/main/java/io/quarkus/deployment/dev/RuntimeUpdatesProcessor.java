@@ -112,6 +112,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final TestSupport testSupport;
     private volatile boolean firstTestScanComplete;
     private volatile Boolean instrumentationEnabled;
+    private volatile boolean liveReloadEnabled = true;
 
     public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, QuarkusCompiler compiler,
             DevModeType devModeType, BiConsumer<Set<String>, ClassScanResult> restartCallback,
@@ -286,6 +287,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public boolean doScan(boolean userInitiated) throws IOException {
+        return doScan(userInitiated, false);
+    }
+
+    public boolean doScan(boolean userInitiated, boolean force) throws IOException {
+        if (!liveReloadEnabled && !force) {
+            return false;
+        }
         scanLock.lock();
         try {
             if (testSupport != null) {
@@ -886,6 +894,16 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             log.info("Instrumentation based restart disabled");
         }
         return instrumentationEnabled;
+    }
+
+    public boolean toggleLiveReloadEnabled() {
+        liveReloadEnabled = !liveReloadEnabled;
+        if (liveReloadEnabled) {
+            log.info("Live reload enabled");
+        } else {
+            log.info("Live reload disabled");
+        }
+        return liveReloadEnabled;
     }
 
     static class TimestampSet {

@@ -16,6 +16,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.processor.AsmUtil;
@@ -262,9 +263,7 @@ final class MultipartPopulatorGenerator {
                         }
                     }
 
-                    boolean isFileRelatedField = fieldDotName.equals(DotNames.FIELD_UPLOAD_NAME)
-                            || fieldDotName.equals(DotNames.PATH_NAME)
-                            || fieldDotName.equals(DotNames.FILE_NAME);
+                    boolean isFileRelatedField = isFileRelatedType(fieldDotName);
                     ResultHandle formAttrNameHandle = populate.load(formAttrName);
                     AssignableResultHandle resultHandle = populate.createVariable(Object.class);
 
@@ -295,6 +294,9 @@ final class MultipartPopulatorGenerator {
                             fileUploadFalse.breakScope();
                         }
                     } else {
+                        // this is a common enough mistake, so let's provide a good error message
+                        failIfFileTypeUsedAsGenericType(field, fieldType, fieldDotName);
+
                         if (fieldDotName.equals(DotNames.STRING_NAME) && partType.equals(MediaType.TEXT_PLAIN)) {
                             // in this case all we need to do is read the value of the form attribute
 
@@ -388,5 +390,24 @@ final class MultipartPopulatorGenerator {
             populate.returnValue(null);
         }
         return generateClassName;
+    }
+
+    private static boolean isFileRelatedType(DotName type) {
+        return type.equals(DotNames.FIELD_UPLOAD_NAME) || type.equals(DotNames.PATH_NAME) || type.equals(DotNames.FILE_NAME);
+    }
+
+    private static void failIfFileTypeUsedAsGenericType(FieldInfo field, Type fieldType, DotName fieldDotName) {
+        if (fieldType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            ParameterizedType parameterizedType = fieldType.asParameterizedType();
+            if (!parameterizedType.arguments().isEmpty()) {
+                DotName argTypeDotName = parameterizedType.arguments().get(0).name();
+                if (isFileRelatedType(argTypeDotName)) {
+                    throw new IllegalArgumentException("Type '" + argTypeDotName.withoutPackagePrefix()
+                            + "' cannot be used as a generic type of '"
+                            + fieldDotName.withoutPackagePrefix() + "'. Offending field is '" + field.name() + "' of class '"
+                            + field.declaringClass().name() + "'");
+                }
+            }
+        }
     }
 }

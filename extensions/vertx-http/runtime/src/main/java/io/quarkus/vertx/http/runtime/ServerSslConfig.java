@@ -30,4 +30,11 @@ public class ServerSslConfig {
     @ConfigItem(defaultValue = "TLSv1.3,TLSv1.2")
     public List<String> protocols;
 
+    /**
+     * Enables Server Name Indication (SNI), an TLS extension allowing the server to use multiple certificates.
+     * The client indicate the server name during the TLS handshake, allowing the server to select the right certificate.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean sni;
+
 }

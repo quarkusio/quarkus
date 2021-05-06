@@ -1,5 +1,6 @@
 package io.quarkus.deployment.dev.testing;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -8,6 +9,7 @@ import org.jboss.logging.Logger;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestIdentifier;
 
+import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.dev.console.InputHandler;
 import io.quarkus.dev.console.QuarkusConsole;
 
@@ -60,6 +62,14 @@ public class TestConsoleHandler implements TestListener {
                         printUsage();
                     } else if (k == 'b') {
                         testController.toggleBrokenOnlyMode();
+                    } else if (k == 'l') {
+                        RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
+                    } else if (k == 's') {
+                        try {
+                            RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+                        } catch (IOException e) {
+                            log.error("Live reload scan failed", e);
+                        }
                     }
                 }
             }
@@ -83,8 +93,10 @@ public class TestConsoleHandler implements TestListener {
         System.out.println("b - Toggle 'broken only' mode, where only failing tests are run");
         System.out.println("v - Print failures from the last test run");
         System.out.println("o - Toggle test output");
+        System.out.println("p - Pause tests");
         System.out.println("i - Toggle instrumentation based reload");
-        System.out.println("d - Disable tests");
+        System.out.println("l - Toggle live reload");
+        System.out.println("s - Force live reload scan");
         System.out.println("h - Display this help");
 
     }

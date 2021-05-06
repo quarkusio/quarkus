@@ -7,6 +7,20 @@ import org.junit.jupiter.api.Test
 
 @QuarkusTest
 class ReactiveGreetingResourceTest {
+
+    @Test
+    fun testResource() {
+        given()
+                .`when`().get("/test.txt")
+                .then()
+                .statusCode(200)
+
+        given()
+                .`when`().get("/test2.txt")
+                .then()
+                .statusCode(404)
+    }
+
     @Test
     fun testHello() {
         given()

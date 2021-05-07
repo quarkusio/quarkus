@@ -14,6 +14,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -95,6 +96,7 @@ public class ClientEndpointIndexer
     @Override
     protected ResourceMethod createResourceMethod(MethodInfo info, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
+
         return new ResourceMethod();
     }
 
@@ -123,6 +125,16 @@ public class ClientEndpointIndexer
         return new MethodParameter(name,
                 elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index), signature, type, single,
                 defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded);
+    }
+
+    @Override
+    protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ClientIndexedParam builder, Type paramType,
+            boolean field, Map<String, Object> methodContext) {
+        if (paramType.name().equals(JaxrsClientReactiveProcessor.CONTINUATION)) {
+            builder.setType(ParameterType.CUSTOM);
+            return true;
+        }
+        return false;
     }
 
     @Override

@@ -4,6 +4,7 @@ import static io.quarkus.deployment.Feature.JAXRS_CLIENT_REACTIVE;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.WEB_APPLICATION_EXCEPTION;
 
@@ -124,6 +125,9 @@ public class JaxrsClientReactiveProcessor {
             String.class, Object.class);
     private static final MethodDescriptor MULTIVALUED_MAP_ADD = MethodDescriptor.ofMethod(MultivaluedMap.class, "add",
             void.class, Object.class, Object.class);
+
+    static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
+    private static final DotName UNI_KT = DotName.createSimple("io.smallrye.mutiny.coroutines.UniKt");
 
     @BuildStep
     void addFeature(BuildProducer<FeatureBuildItem> features) {
@@ -935,6 +939,46 @@ public class JaxrsClientReactiveProcessor {
                 genericReturnType = createGenericTypeFromParameterizedType(methodCreator, paramType);
             }
         }
+        Integer continuationIndex = null;
+        //TODO: there should be an SPI for this
+        if (returnCategory == ReturnCategory.BLOCKING) {
+            List<Type> parameters = jandexMethod.parameters();
+            if (!parameters.isEmpty()) {
+                Type lastParamType = parameters.get(parameters.size() - 1);
+                if (lastParamType.name().equals(CONTINUATION)) {
+                    continuationIndex = parameters.size() - 1;
+                    returnCategory = ReturnCategory.COROUTINE;
+
+                    try {
+                        Thread.currentThread().getContextClassLoader().loadClass(UNI_KT.toString());
+                    } catch (ClassNotFoundException e) {
+                        //TODO: make this automatic somehow
+                        throw new RuntimeException("Suspendable rest client method" + jandexMethod + " is present on class "
+                                + jandexMethod.declaringClass()
+                                + " however io.smallrye.reactive:mutiny-kotlin is not detected. Please add a dependency on this artifact.");
+                    }
+
+                    //we infer the return type from the param type of the continuation
+                    Type type = lastParamType.asParameterizedType().arguments().get(0);
+                    for (;;) {
+                        if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                            genericReturnType = createGenericTypeFromParameterizedType(methodCreator,
+                                    type.asParameterizedType());
+                            break;
+                        } else if (type.kind() == Type.Kind.WILDCARD_TYPE) {
+                            if (type.asWildcardType().extendsBound().name().equals(OBJECT)) {
+                                type = type.asWildcardType().superBound();
+                            } else {
+                                type = type.asWildcardType().extendsBound();
+                            }
+                        } else {
+                            simpleReturnType = type.toString();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         ResultHandle result;
 
@@ -1009,7 +1053,7 @@ public class JaxrsClientReactiveProcessor {
                             async, tryBlock.load(httpMethod), entity,
                             tryBlock.loadClass(simpleReturnType));
                 }
-            } else if (returnCategory == ReturnCategory.UNI) {
+            } else if (returnCategory == ReturnCategory.UNI || returnCategory == ReturnCategory.COROUTINE) {
                 ResultHandle rx = tryBlock.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
                         builder, tryBlock.loadClass(UniInvoker.class));
@@ -1029,6 +1073,12 @@ public class JaxrsClientReactiveProcessor {
                                     Entity.class, Class.class),
                             uniInvoker, tryBlock.load(httpMethod), entity,
                             tryBlock.loadClass(simpleReturnType));
+                }
+                if (returnCategory == ReturnCategory.COROUTINE) {
+                    result = tryBlock.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(UNI_KT.toString(), "awaitSuspending", Object.class, Uni.class,
+                                    CONTINUATION.toString()),
+                            result, tryBlock.getMethodParam(continuationIndex));
                 }
             } else {
                 if (genericReturnType != null) {
@@ -1065,7 +1115,7 @@ public class JaxrsClientReactiveProcessor {
                             async, tryBlock.load(httpMethod),
                             tryBlock.loadClass(simpleReturnType));
                 }
-            } else if (returnCategory == ReturnCategory.UNI) {
+            } else if (returnCategory == ReturnCategory.UNI || returnCategory == ReturnCategory.COROUTINE) {
                 ResultHandle rx = tryBlock.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
                         builder, tryBlock.loadClass(UniInvoker.class));
@@ -1083,6 +1133,12 @@ public class JaxrsClientReactiveProcessor {
                                     Class.class),
                             uniInvoker, tryBlock.load(httpMethod),
                             tryBlock.loadClass(simpleReturnType));
+                }
+                if (returnCategory == ReturnCategory.COROUTINE) {
+                    result = tryBlock.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(UNI_KT.toString(), "awaitSuspending", Object.class, Uni.class,
+                                    CONTINUATION.toString()),
+                            result, tryBlock.getMethodParam(continuationIndex));
                 }
             } else {
                 if (genericReturnType != null) {
@@ -1268,7 +1324,8 @@ public class JaxrsClientReactiveProcessor {
     private enum ReturnCategory {
         BLOCKING,
         COMPLETION_STAGE,
-        UNI
+        UNI,
+        COROUTINE,
     }
 
 }

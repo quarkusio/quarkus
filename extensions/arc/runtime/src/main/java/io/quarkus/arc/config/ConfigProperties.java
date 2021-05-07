@@ -10,7 +10,11 @@ import io.quarkus.runtime.util.StringUtil;
 
 /**
  * Allow configuration properties with a common prefix to be grouped into a single class
+ *
+ * @deprecated Please, use {@link io.smallrye.config.ConfigMapping} instead. This will be removed in a future Quarkus
+ *             version.
  */
+@Deprecated
 @Target({ TYPE })
 @Retention(RUNTIME)
 public @interface ConfigProperties {

@@ -32,7 +32,6 @@
                         <customer_name>Bob</customer_name>
                     </environmentVariables>
                     <systemProperties>
-                        <smallrye.config.mapping.validate-unknown>false</smallrye.config.mapping.validate-unknown>
                         <mp.tck.prop.dummy>dummy</mp.tck.prop.dummy>
                         <customer.hobby>Tennis</customer.hobby>
                         <config_ordinal>120</config_ordinal>

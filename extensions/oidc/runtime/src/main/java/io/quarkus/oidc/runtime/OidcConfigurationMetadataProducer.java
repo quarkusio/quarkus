@@ -20,9 +20,9 @@ public class OidcConfigurationMetadataProducer {
     OidcConfigurationMetadata produce() {
         OidcConfigurationMetadata configMetadata = null;
 
-        if (!identity.isAnonymous()) {
-            configMetadata = (OidcConfigurationMetadata) identity.getAttribute(OidcUtils.CONFIG_METADATA_ATTRIBUTE);
-        } else if (tenantConfig.getDefaultTenant().oidcConfig.tenantEnabled) {
+        configMetadata = (OidcConfigurationMetadata) identity.getAttribute(OidcUtils.CONFIG_METADATA_ATTRIBUTE);
+
+        if (configMetadata == null && tenantConfig.getDefaultTenant().oidcConfig.tenantEnabled) {
             configMetadata = tenantConfig.getDefaultTenant().provider.getMetadata();
         }
         if (configMetadata == null) {

@@ -1,6 +1,6 @@
 package io.quarkus.test.security.jwt;
 
-import java.util.Map;
+import java.lang.annotation.Annotation;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -26,9 +26,10 @@ public class JwtTestSecurityIdentityAugmentorProducer {
     private static class JwtTestSecurityIdentityAugmentor implements TestSecurityIdentityAugmentor {
 
         @Override
-        public SecurityIdentity augment(final SecurityIdentity identity) {
+        public SecurityIdentity augment(final SecurityIdentity identity, final Annotation[] annotations) {
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
 
+            final JwtSecurity jwtSecurity = findJwtSecurity(annotations);
             builder.setPrincipal(new JsonWebToken() {
 
                 @Override
@@ -42,9 +43,11 @@ public class JwtTestSecurityIdentityAugmentorProducer {
                     if (Claims.groups.name().equals(claimName)) {
                         return (T) identity.getRoles();
                     }
-                    for (Map.Entry<String, Object> entry : identity.getAttributes().entrySet()) {
-                        if (entry.getKey().startsWith("claim." + claimName)) {
-                            return (T) entry.getValue();
+                    if (jwtSecurity != null && jwtSecurity.claims() != null) {
+                        for (Claim claim : jwtSecurity.claims()) {
+                            if (claim.key().equals(claimName)) {
+                                return (T) claim.value();
+                            }
                         }
                     }
                     return null;
@@ -58,6 +61,15 @@ public class JwtTestSecurityIdentityAugmentorProducer {
             });
 
             return builder.build();
+        }
+
+        private JwtSecurity findJwtSecurity(Annotation[] annotations) {
+            for (Annotation ann : annotations) {
+                if (ann instanceof JwtSecurity) {
+                    return (JwtSecurity) ann;
+                }
+            }
+            return null;
         }
     }
 }

@@ -22,6 +22,10 @@ public class UserInfo {
         json = toJsonObject(userInfoJson);
     }
 
+    public UserInfo(JsonObject json) {
+        this.json = json;
+    }
+
     public String getString(String name) {
         return json.getString(name);
     }

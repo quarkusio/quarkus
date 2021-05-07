@@ -78,4 +78,10 @@ public class IsDockerWorking implements BooleanSupplier {
             return builder.toString();
         }
     }
+
+    public static class IsDockerRunningSilent extends IsDockerWorking {
+        public IsDockerRunningSilent() {
+            super(true);
+        }
+    }
 }

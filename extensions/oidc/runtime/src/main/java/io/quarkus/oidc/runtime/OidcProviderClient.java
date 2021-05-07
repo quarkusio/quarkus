@@ -53,7 +53,7 @@ public class OidcProviderClient {
     }
 
     public Uni<JsonObject> getUserInfo(String token) {
-        return client.postAbs(metadata.getUserInfoUri())
+        return client.getAbs(metadata.getUserInfoUri())
                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
                 .send().onItem().transform(resp -> getUserInfo(resp));
     }

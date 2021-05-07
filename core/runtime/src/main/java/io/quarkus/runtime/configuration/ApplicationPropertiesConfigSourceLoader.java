@@ -3,6 +3,7 @@ package io.quarkus.runtime.configuration;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +49,9 @@ public class ApplicationPropertiesConfigSourceLoader extends AbstractLocationCon
 
         @Override
         public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
-            return loadConfigSources("config/application.properties", classLoader);
+            return loadConfigSources(
+                    Paths.get(System.getProperty("user.dir"), "config", "application.properties").toUri().toString(),
+                    classLoader);
         }
 
         @Override

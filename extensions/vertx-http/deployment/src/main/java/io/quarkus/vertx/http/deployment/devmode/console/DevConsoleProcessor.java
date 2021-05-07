@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
@@ -581,28 +582,46 @@ public class DevConsoleProcessor {
             ClassLoader classLoader = DevConsoleProcessor.class.getClassLoader();
             Enumeration<URL> devTemplateURLs = classLoader.getResources("/dev-templates");
             while (devTemplateURLs.hasMoreElements()) {
-                String devTemplatesURL = devTemplateURLs.nextElement().toExternalForm();
-                if (devTemplatesURL.startsWith("jar:file:") && devTemplatesURL.endsWith("!/dev-templates")) {
-                    String jarPath = devTemplatesURL.substring(9, devTemplatesURL.length() - 15);
+                URL devTemplatesURL = devTemplateURLs.nextElement();
+                String devTemplatesURLStr = devTemplatesURL.toExternalForm();
+                if (devTemplatesURLStr.startsWith("jar:file:") && devTemplatesURLStr.endsWith("!/dev-templates")) {
+                    String jarPath = devTemplatesURLStr.substring(9, devTemplatesURLStr.length() - 15);
                     if (File.separatorChar == '\\') {
                         // on Windows this will be /C:/some/path, so turn it into C:\some\path
                         jarPath = jarPath.substring(1).replace('/', '\\');
                     }
                     try (FileSystem fs = FileSystems
                             .newFileSystem(Paths.get(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name())), classLoader)) {
-                        scanTemplates(fs, devTemplatePaths);
+                        scanTemplates(fs, null, fs.getRootDirectories(), devTemplatePaths);
+                    }
+                } else if ("file".equals(devTemplatesURL.getProtocol())) {
+                    // This can happen if you run an example app in dev mode 
+                    // and this app is part of a multi-module project which also declares the extension
+                    // Just try to locate the pom.properties file in the target/maven-archiver directory
+                    // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overriden
+                    Path classes = Paths.get(devTemplatesURL.toURI()).getParent();
+                    Path target = classes != null ? classes.getParent() : null;
+                    if (target != null) {
+                        Path mavenArchiver = target.resolve("maven-archiver");
+                        if (mavenArchiver.toFile().canRead()) {
+                            scanTemplates(null, mavenArchiver, Collections.singleton(classes), devTemplatePaths);
+                        }
                     }
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void scanTemplates(FileSystem fs, BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) throws IOException {
-        Entry<String, String> entry = ArtifactInfoUtil.groupIdAndArtifactId(fs);
+    private void scanTemplates(FileSystem fs, Path pomPropertiesPath, Iterable<Path> rootDirectories,
+            BuildProducer<DevTemplatePathBuildItem> devTemplatePaths)
+            throws IOException {
+        Entry<String, String> entry = fs != null ? ArtifactInfoUtil.groupIdAndArtifactId(fs)
+                : ArtifactInfoUtil.groupIdAndArtifactId(pomPropertiesPath);
         if (entry == null) {
-            throw new RuntimeException("Artifact at " + fs + " is missing pom metadata");
+            throw new RuntimeException("Missing pom metadata [fileSystem: " + fs + ", rootDirectories: " + rootDirectories
+                    + ", pomPath: " + pomPropertiesPath + "]");
         }
         String prefix;
         // don't move stuff for our "root" dev console artifact, since it includes the main template
@@ -611,12 +630,13 @@ public class DevConsoleProcessor {
             prefix = "";
         else
             prefix = entry.getKey() + "." + entry.getValue() + "/";
-        for (Path root : fs.getRootDirectories()) {
-            Path devTemplatesPath = fs.getPath("/dev-templates");
+
+        for (Path root : rootDirectories) {
+            Path devTemplatesPath = root.resolve("dev-templates");
             Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    if (dir.toString().equals("/") || dir.startsWith(devTemplatesPath))
+                    if (dir.equals(root) || dir.toString().equals("/") || dir.startsWith(devTemplatesPath))
                         return FileVisitResult.CONTINUE;
                     return FileVisitResult.SKIP_SUBTREE;
                 }
@@ -627,6 +647,9 @@ public class DevConsoleProcessor {
                     // don't move tags yet, since we don't know how to use them afterwards
                     String relativePath = devTemplatesPath.relativize(file).toString();
                     String correctedPath;
+                    if (File.separatorChar == '\\') {
+                        relativePath = relativePath.replace('\\', '/');
+                    }
                     if (relativePath.startsWith(DevTemplatePathBuildItem.TAGS))
                         correctedPath = relativePath;
                     else

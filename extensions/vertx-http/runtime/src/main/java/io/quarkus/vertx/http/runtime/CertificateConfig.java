@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -10,18 +11,42 @@ import io.quarkus.runtime.annotations.ConfigItem;
  * A certificate configuration. Either the certificate and key files must be given, or a key store must be given.
  */
 @ConfigGroup
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class CertificateConfig {
+
     /**
      * The file path to a server certificate or certificate chain in PEM format.
+     *
+     * @deprecated Use {@link #files} instead.
      */
     @ConfigItem
+    @Deprecated
     public Optional<Path> file;
 
     /**
-     * The file path to the corresponding certificate private key file in PEM format.
+     * The list of path to server certificates using the PEM format.
+     * Specifying multiple files require SNI to be enabled.
      */
     @ConfigItem
+    public Optional<List<Path>> files;
+
+    /**
+     * The file path to the corresponding certificate private key file in PEM format.
+     *
+     * @deprecated Use {@link #keyFiles} instead.
+     */
+    @ConfigItem
+    @Deprecated
     public Optional<Path> keyFile;
+
+    /**
+     * The list of path to server certificates private key file using the PEM format.
+     * Specifying multiple files require SNI to be enabled.
+     *
+     * The order of the key files must match the order of the certificates.
+     */
+    @ConfigItem
+    public Optional<List<Path>> keyFiles;
 
     /**
      * An optional key store which holds the certificate information instead of specifying separate files.

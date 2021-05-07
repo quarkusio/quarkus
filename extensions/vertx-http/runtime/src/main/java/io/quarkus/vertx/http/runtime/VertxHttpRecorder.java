@@ -53,6 +53,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
@@ -578,9 +579,24 @@ public class VertxHttpRecorder {
         }
 
         ServerSslConfig sslConfig = httpConfiguration.ssl;
-        //TODO: static fields break config
+
         final Optional<Path> certFile = sslConfig.certificate.file;
         final Optional<Path> keyFile = sslConfig.certificate.keyFile;
+        final List<Path> keys = new ArrayList<>();
+        final List<Path> certificates = new ArrayList<>();
+        if (sslConfig.certificate.keyFiles.isPresent()) {
+            keys.addAll(sslConfig.certificate.keyFiles.get());
+        }
+        if (sslConfig.certificate.files.isPresent()) {
+            certificates.addAll(sslConfig.certificate.files.get());
+        }
+        if (keyFile.isPresent()) {
+            keys.add(keyFile.get());
+        }
+        if (certFile.isPresent()) {
+            certificates.add(certFile.get());
+        }
+
         final Optional<Path> keyStoreFile = sslConfig.certificate.keyStoreFile;
         final String keystorePassword = sslConfig.certificate.keyStorePassword;
         final Optional<Path> trustStoreFile = sslConfig.certificate.trustStoreFile;
@@ -599,8 +615,8 @@ public class VertxHttpRecorder {
         serverOptions.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
         setIdleTimeout(httpConfiguration, serverOptions);
 
-        if (certFile.isPresent() && keyFile.isPresent()) {
-            createPemKeyCertOptions(certFile.get(), keyFile.get(), serverOptions);
+        if (!certificates.isEmpty() && !keys.isEmpty()) {
+            createPemKeyCertOptions(certificates, keys, serverOptions);
         } else if (keyStoreFile.isPresent()) {
             final Path keyStorePath = keyStoreFile.get();
             final Optional<String> keyStoreFileType = sslConfig.certificate.keyStoreFileType;
@@ -649,6 +665,7 @@ public class VertxHttpRecorder {
             }
         }
         serverOptions.setSsl(true);
+        serverOptions.setSni(sslConfig.sni);
         serverOptions.setHost(httpConfiguration.host);
         serverOptions.setPort(httpConfiguration.determineSslPort(launchMode));
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
@@ -676,13 +693,30 @@ public class VertxHttpRecorder {
         return data;
     }
 
-    private static void createPemKeyCertOptions(Path certFile, Path keyFile,
+    private static void createPemKeyCertOptions(List<Path> certFile, List<Path> keyFile,
             HttpServerOptions serverOptions) throws IOException {
-        final byte[] cert = getFileContent(certFile);
-        final byte[] key = getFileContent(keyFile);
+
+        if (certFile.size() != keyFile.size()) {
+            throw new ConfigurationException("Invalid certificate configuration - `files` and `keyFiles` must have the "
+                    + "same number of elements");
+        }
+
+        List<Buffer> certificates = new ArrayList<>();
+        List<Buffer> keys = new ArrayList<>();
+
+        for (Path p : certFile) {
+            final byte[] cert = getFileContent(p);
+            certificates.add(Buffer.buffer(cert));
+        }
+
+        for (Path p : keyFile) {
+            final byte[] key = getFileContent(p);
+            keys.add(Buffer.buffer(key));
+        }
+
         PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions()
-                .setCertValue(Buffer.buffer(cert))
-                .setKeyValue(Buffer.buffer(key));
+                .setCertValues(certificates)
+                .setKeyValues(keys);
         serverOptions.setPemKeyCertOptions(pemKeyCertOptions);
     }
 

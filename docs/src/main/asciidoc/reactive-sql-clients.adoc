@@ -531,6 +531,64 @@ return SqlClientHelper.inTransactionUni(client, tx -> tx
         .onItem().ignore().andContinueWithNull());
 ----
 
+== Working with batch query results
+
+When executing batch queries, reactive SQL clients return a `RowSet` that corresponds to the results of the first element in the batch.
+To get the results of the following batch elements, you must invoke the `RowSet#next` method until it returns `null`.
+
+Let's say you want to update some rows and compute the total number of affected rows.
+You must inspect each `RowSet`:
+
+[source, java]
+----
+PreparedQuery<RowSet<Row>> preparedQuery = client.preparedQuery("UPDATE fruits SET name = $1 WHERE id = $2");
+
+Uni<RowSet<Row>> rowSet = preparedQuery.executeBatch(Arrays.asList(
+        Tuple.of("Orange", 1),
+        Tuple.of("Pear", 2),
+        Tuple.of("Apple", 3)));
+
+Uni<Integer> totalAffected = rowSet.onItem().transform(res -> {
+    int total = 0;
+    do {
+        total += res.rowCount(); // <1>
+    } while ((res = res.next()) != null); // <2>
+    return total;
+});
+----
+<1> Compute the sum of `RowSet#rowCount`.
+<2> Invoke `RowSet#next` until it returns `null`.
+
+As another example, if you want to load all the rows you just inserted, you must concatenate the contents of each `RowSet`:
+
+[source, java]
+----
+PreparedQuery<RowSet<Row>> preparedQuery = client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING *");
+
+Uni<RowSet<Row>> rowSet = preparedQuery.executeBatch(Arrays.asList(
+        Tuple.of("Orange"),
+        Tuple.of("Pear"),
+        Tuple.of("Apple")));
+
+// Generate a Multi of RowSet items
+Multi<RowSet<Row>> rowSets = rowSet.onItem().transformToMulti(res -> {
+    return Multi.createFrom().generator(() -> res, (rs, emitter) -> {
+        RowSet<Row> next = null;
+        if (rs != null) {
+            emitter.emit(rs);
+            next = rs.next();
+        }
+        if (next == null) {
+            emitter.complete();
+        }
+        return next;
+    });
+});
+
+// Transform each RowSet into Multi of Row items and Concatenate
+Multi<Row> rows = rowSets.onItem().transformToMultiAndConcatenate(Multi.createFrom()::iterable);
+----
+
 == Multiple Datasources
 
 The reactive SQL clients support defining several datasources.

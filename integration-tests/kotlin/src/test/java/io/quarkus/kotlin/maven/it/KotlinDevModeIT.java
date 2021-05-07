@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -18,6 +19,7 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
 public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
 
     @Test
+    @Tag("failsOnJDK16")
     public void testThatTheApplicationIsReloadedOnKotlinChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-kotlin", "projects/project-classic-run-kotlin-change");
         runAndCheck(false);

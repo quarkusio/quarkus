@@ -8,8 +8,8 @@ import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.devtools.testing.FakeExtensionCatalog;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
@@ -97,11 +97,9 @@ public class QuarkusCodestartTestBuilder {
     }
 
     public QuarkusCodestartTestBuilder standaloneExtensionCatalog() {
-        final JsonExtensionCatalog catalog = FakeExtensionCatalog.newFakeExtensionCatalog();
-        final ArrayList<Extension> extensions = new ArrayList<>();
         try {
             String quarkusVersion = null;
-            catalog.setQuarkusCoreVersion(null);
+            final ArrayList<Extension> extensions = new ArrayList<>();
             for (URL url : Collections
                     .list(Thread.currentThread().getContextClassLoader().getResources("META-INF/quarkus-extension.yaml"))) {
                 final ObjectMapper mapper = JsonCatalogMapperHelper.initMapper(new YAMLMapper());
@@ -113,15 +111,19 @@ public class QuarkusCodestartTestBuilder {
                     }
                 });
                 extensions.add(extension);
-                if (catalog.getQuarkusCoreVersion() == null) {
-                    catalog.setQuarkusCoreVersion(getBuiltWithQuarkusCore(extension));
+                if (quarkusVersion == null) {
+                    quarkusVersion = getBuiltWithQuarkusCore(extension);
                 }
             }
-
-            Objects.requireNonNull(catalog.getQuarkusCoreVersion(), "quarkus version not found in extensions");
-            catalog.setExtensions(extensions);
-            catalog.setMetadata(new HashMap<>());
-            this.extensionCatalog = catalog;
+            Objects.requireNonNull(quarkusVersion, "quarkus version not found in extensions");
+            final ExtensionCatalog extensionCatalog = QuarkusProjectHelper
+                    .getExtensionCatalog(quarkusVersion);
+            if (!(extensionCatalog instanceof JsonExtensionCatalog)) {
+                throw new IllegalStateException("Problem with the given ExtensionCatalog type");
+            }
+            extensions.addAll(extensionCatalog.getExtensions());
+            ((JsonExtensionCatalog) extensionCatalog).setExtensions(extensions);
+            this.extensionCatalog = extensionCatalog;
         } catch (IOException e) {
             throw new IllegalStateException("Error while reading standalone extension catalog", e);
         }

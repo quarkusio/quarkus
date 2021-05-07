@@ -5087,6 +5087,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-redis-client-deployment-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!--  Qute  -->
             <dependency>
                 <groupId>io.quarkus.qute</groupId>

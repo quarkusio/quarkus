@@ -16,9 +16,10 @@ import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisReplicas;
 import io.vertx.redis.client.RedisRole;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME, name = RedisConfig.REDIS_CONFIG_ROOT_NAME)
 public class RedisConfig {
-
+    public final static String REDIS_CONFIG_ROOT_NAME = "redis";
+    public final static String HOSTS_CONFIG_NAME = "hosts";
     /**
      * The default redis client
      */
@@ -64,7 +65,7 @@ public class RedisConfig {
          * 
          * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
          */
-        @ConfigItem(defaultValueDocumentation = "redis://localhost:6379")
+        @ConfigItem(defaultValueDocumentation = "redis://localhost:6379", name = HOSTS_CONFIG_NAME)
         public Optional<Set<URI>> hosts;
 
         /**

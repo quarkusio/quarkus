@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.mongodb.deployment.devservices.DevServicesMongoResultBuildItem;
+import io.quarkus.redis.client.deployment.devservices.DevServicesRedisResultBuildItem;
 
 public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult> {
     @Override
@@ -35,6 +36,22 @@ public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult>
             }
             for (Map.Entry<String, DevServicesMongoResultBuildItem.Result> map : mongoRes.getNamedConnections().entrySet()) {
                 for (Map.Entry<String, String> entry : map.getValue().getProperties().entrySet()) {
+                    propertyConsumer.accept(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+
+        DevServicesRedisResultBuildItem redisDevServices = buildResult.consumeOptional(DevServicesRedisResultBuildItem.class);
+        if (redisDevServices != null) {
+            if (redisDevServices.getDefaultConnection() != null) {
+                Map<String, String> redisDefaultConfiguration = redisDevServices.getDefaultConnection().getProperties();
+                for (Map.Entry<String, String> entry : redisDefaultConfiguration.entrySet()) {
+                    propertyConsumer.accept(entry.getKey(), entry.getValue());
+                }
+            }
+            for (Map.Entry<String, DevServicesRedisResultBuildItem.Result> redisNamedConfiguration : redisDevServices
+                    .getNamedConnections().entrySet()) {
+                for (Map.Entry<String, String> entry : redisNamedConfiguration.getValue().getProperties().entrySet()) {
                     propertyConsumer.accept(entry.getKey(), entry.getValue());
                 }
             }

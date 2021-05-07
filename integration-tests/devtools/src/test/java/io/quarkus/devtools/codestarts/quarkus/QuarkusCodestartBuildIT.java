@@ -68,6 +68,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     @ParameterizedTest
     @MethodSource("provideLanguages")
+    @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testGradle(String language) throws Exception {
         final List<String> codestarts = getExtensionCodestarts();
         generateProjectRunTests("gradle", language, codestarts, Collections.emptyMap());
@@ -75,6 +76,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     @ParameterizedTest
     @MethodSource("provideLanguages")
+    @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testGradleKotlinDSL(String language) throws Exception {
         final List<String> codestarts = getExtensionCodestarts();
         generateProjectRunTests("gradle-kotlin-dsl", language, codestarts, Collections.emptyMap());

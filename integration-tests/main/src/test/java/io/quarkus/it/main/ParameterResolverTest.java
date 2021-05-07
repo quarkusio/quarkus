@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -29,6 +30,7 @@ public class ParameterResolverTest {
     @Test
     @ExtendWith(ParameterResolverTest.UnusedBeanDummyInputResolver.class)
     @ExtendWith(ParameterResolverTest.SupplierParameterResolver.class)
+    @Tag("failsOnJDK16")
     public void testParameterResolver(UnusedBean.DummyInput dummyInput, Supplier<UnusedBean.DummyInput> supplier) {
         UnusedBean.DummyResult dummyResult = unusedBean.dummy(dummyInput);
         assertEquals("whatever/6", dummyResult.getResult());
@@ -46,6 +48,7 @@ public class ParameterResolverTest {
 
     @Test
     @ExtendWith(ParameterResolverTest.ListWithNonSerializableParameterResolver.class)
+    @Tag("failsOnJDK16")
     public void testSerializableParameterResolverFallbackToXStream(List<NonSerializable> list) {
         assertEquals("foo", list.get(0).value);
         assertEquals("bar", list.get(1).value);

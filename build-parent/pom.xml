@@ -136,6 +136,8 @@
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
 
         <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
+
+        <surefire.argLine.additional></surefire.argLine.additional>
     </properties>
 
     <dependencyManagement>
@@ -316,7 +318,7 @@
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}"</argLine>
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional}</argLine>
                         <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
                         <trimStackTrace>false</trimStackTrace>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>

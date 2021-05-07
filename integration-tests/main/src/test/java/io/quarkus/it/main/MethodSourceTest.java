@@ -10,6 +10,7 @@ import javax.inject.Inject;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,6 +26,7 @@ public class MethodSourceTest {
 
     @ParameterizedTest
     @MethodSource("provideDummyInput")
+    @Tag("failsOnJDK16")
     public void testParameterResolver(UnusedBean.DummyInput dummyInput, Matcher<String> matcher) {
         UnusedBean.DummyResult dummyResult = unusedBean.dummy(dummyInput);
         assertThat(dummyResult.getResult(), matcher);

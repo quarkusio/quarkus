@@ -15,9 +15,11 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodParameterInfo;
 
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.ArcConfig;
+import io.quarkus.arc.deployment.BuildExclusionsBuildItem;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -38,6 +40,7 @@ public class ConfigPropertiesBuildStep {
 
     @BuildStep
     void produceConfigPropertiesMetadata(CombinedIndexBuildItem combinedIndex, ArcConfig arcConfig,
+            BuildExclusionsBuildItem exclusionsBuildItem,
             BuildProducer<ConfigPropertiesMetadataBuildItem> configPropertiesMetadataProducer) {
 
         IndexView index = combinedIndex.getIndex();
@@ -46,9 +49,13 @@ public class ConfigPropertiesBuildStep {
         Map<DotName, Boolean> failOnMismatchingMembers = new HashMap<>();
 
         // handle @ConfigProperties
+        final Set<String> excludedDeclaringClasses = exclusionsBuildItem.getExcludedDeclaringClasses();
         for (AnnotationInstance instance : index.getAnnotations(DotNames.CONFIG_PROPERTIES)) {
-            ClassInfo classInfo = instance.target().asClass();
-
+            final AnnotationTarget target = instance.target();
+            if (exclusionsBuildItem.isExcluded(target)) {
+                continue;
+            }
+            ClassInfo classInfo = target.asClass();
             ConfigProperties.NamingStrategy namingStrategy = getNamingStrategy(arcConfig, instance.value("namingStrategy"));
             namingStrategies.put(classInfo.name(), namingStrategy);
 
@@ -63,12 +70,16 @@ public class ConfigPropertiesBuildStep {
         // handle @ConfigPrefix
         for (AnnotationInstance instance : index.getAnnotations(DotNames.CONFIG_PREFIX)) {
             ClassInfo classInfo;
-            if (instance.target().kind() == AnnotationTarget.Kind.FIELD) {
-                classInfo = index.getClassByName(instance.target().asField().type().name());
-            } else if (instance.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                short position = instance.target().asMethodParameter().position();
-                classInfo = index
-                        .getClassByName(instance.target().asMethodParameter().method().parameters().get(position).name());
+            final AnnotationTarget target = instance.target();
+            if (exclusionsBuildItem.isExcluded(target)) {
+                continue;
+            }
+            if (target.kind() == AnnotationTarget.Kind.FIELD) {
+                classInfo = index.getClassByName(target.asField().type().name());
+            } else if (target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                final MethodParameterInfo parameter = target.asMethodParameter();
+                short position = parameter.position();
+                classInfo = index.getClassByName(parameter.method().parameters().get(position).name());
             } else {
                 break;
             }

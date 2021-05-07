@@ -17,12 +17,16 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.arc.config.ConfigPrefix;
+import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -33,13 +37,25 @@ public class UnlessBuildProfileTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Producer.class, AnotherProducer.class,
                             GreetingBean.class, Hello.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class,
-                            TestInterceptor.class, ProdInterceptor.class, Logging.class));
-
+                            TestInterceptor.class, ProdInterceptor.class, Logging.class, DummyTestBean.class,
+                            DummyProdBean.class)
+                    .addAsResource(
+                            new StringAsset(
+                                    "%test.dummy.message=Hi from not prod\n" +
+                                            "%test.dummy.complex.message=Hi from complex not prod\n" +
+                                            "%test.dummy.complex.bis.message=Hi from complex bis not prod\n"),
+                            "application.properties"));
     @Inject
     Hello hello;
 
     @Inject
     Instance<BarBean> barBean;
+
+    @Inject
+    DummyTestBean dummyTest;
+
+    @Inject
+    Instance<DummyProdBean> dummyProd;
 
     @Test
     public void testInjection() {
@@ -52,11 +68,66 @@ public class UnlessBuildProfileTest {
         assertTrue(barBean.isUnsatisfied());
         assertTrue(TestInterceptor.INTERCEPTED.get());
         assertFalse(ProdInterceptor.INTERCEPTED.get());
+        assertEquals("Hi from not prod", dummyTest.message);
+        assertEquals("Hi from not prod", dummyTest.dummy.message);
+        assertEquals("Hi from complex not prod", dummyTest.dummyComplex.message);
+        assertEquals("Hi from complex bis not prod", dummyTest.dummyComplexBis.message);
+        assertTrue(dummyTest.dummyProd.isUnsatisfied());
+        assertTrue(dummyProd.isUnsatisfied());
+        assertTrue(hello.dummyAbsent().isUnsatisfied());
+        assertTrue(hello.dummyAbsentBis().isUnsatisfied());
     }
 
     @Test
     public void testSelect() {
         assertEquals("hello from not prod. Foo is: foo from not prod", CDI.current().select(GreetingBean.class).get().greet());
+    }
+
+    @ConfigProperties
+    public static class Dummy {
+        public String message;
+    }
+
+    @Singleton
+    @UnlessBuildProfile("prod")
+    static class DummyTestBean {
+        @ConfigProperty(name = "dummy.message")
+        String message;
+        @Inject
+        Dummy dummy;
+        @ConfigPrefix("dummy.complex")
+        Dummy dummyComplex;
+        Dummy dummyComplexBis;
+        @Inject
+        Instance<DummyProd> dummyProd;
+
+        @Inject
+        public void setDummyComplexBis(@ConfigPrefix("dummy.complex.bis") Dummy dummyComplexBis) {
+            this.dummyComplexBis = dummyComplexBis;
+        }
+    }
+
+    @UnlessBuildProfile("test")
+    @ConfigProperties(prefix = "dummy.prod")
+    public static class DummyProd {
+        public String message;
+    }
+
+    @Singleton
+    @UnlessBuildProfile("test")
+    static class DummyProdBean {
+        @ConfigProperty(name = "dummy.message")
+        String message;
+        @ConfigPrefix("dummy.absent") // Should not make it fail as excluded by the UnlessBuildProfile annotation
+        Dummy dummyAbsent;
+        Dummy dummyAbsentBis;
+        @Inject
+        DummyProd dummyProd;
+
+        @Inject
+        public void setDummyAbsentBis(@ConfigPrefix("dummy.absent.bis") Dummy dummyAbsentBis) { // Should not make it fail as excluded by the UnlessBuildProfile annotation
+            this.dummyAbsentBis = dummyAbsentBis;
+        }
     }
 
     @Logging
@@ -91,6 +162,25 @@ public class UnlessBuildProfileTest {
             return fooBean.foo();
         }
 
+        Instance<Dummy> dummyAbsent;
+
+        @UnlessBuildProfile("test")
+        @ConfigPrefix("dummy.absent.bis")
+        Instance<Dummy> dummyAbsentBis;
+
+        @UnlessBuildProfile("test")
+        @Inject
+        public void setDummyAbsent(@ConfigPrefix("dummy.absent") Instance<Dummy> dummyAbsent) {
+            this.dummyAbsent = dummyAbsent;
+        }
+
+        Instance<Dummy> dummyAbsent() {
+            return dummyAbsent;
+        }
+
+        Instance<Dummy> dummyAbsentBis() {
+            return dummyAbsentBis;
+        }
     }
 
     @DefaultBean

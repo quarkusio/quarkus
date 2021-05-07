@@ -364,6 +364,37 @@ complex:
 
 WARNING: A limitation of such configuration is that the types used as the generic types of the lists need to be classes and not interfaces.
 
+=== Combining ConfigProperties with build time conditions
+
+Quarkus allows you to define conditions evaluated at build time (`@IfBuildProfile`, `@UnlessBuildProfile`, `@IfBuildProperty` and `@UnlessBuildProperty`) to enable or not the annotations `@ConfigProperties` and `@ConfigPrefix` which gives you a very flexible way to map your configuration.
+
+Let's assume that the configuration of a service is mapped thanks to a `@ConfigProperties` and you don't need this part of the configuration for your tests as it will be mocked, in that case you can define a build time condition like in the next example:
+
+`ServiceConfiguration.java`
+[source,java]
+----
+@UnlessBuildProfile("test") <1>
+@ConfigProperties
+public class ServiceConfiguration {
+    public String user;
+    public String password;
+}
+----
+<1> The annotation `@ConfigProperties` is considered if and only if the active profile is not `test`.
+
+`SomeBean.java`
+[source,java]
+----
+@ApplicationScoped
+public class SomeBean {
+
+    @Inject
+    Instance<ServiceConfiguration> serviceConfiguration; <1>
+
+}
+----
+<1> As the configuration of the service could be missing, we need to use `Instance<ServiceConfiguration>` as type at the injection point.
+
 [[configuration_profiles]]
 == Configuration Profiles
 

@@ -86,7 +86,7 @@
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
-        <graal-sdk.version>21.0.0</graal-sdk.version>
+        <graal-sdk.version>21.1.0</graal-sdk.version>
         <gizmo.version>1.0.7.Final</gizmo.version>
         <jackson.version>2.12.3</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>

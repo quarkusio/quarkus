@@ -35,6 +35,14 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+        server.stubFor(WireMock.post("/non-standard-tokens")
+                .withRequestBody(matching("grant_type=password&username=alice&password=alice"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"accessToken\":\"access_token_n\", \"expiresIn\":4, \"refreshToken\":\"refresh_token_n\"}")));
+
         server.stubFor(WireMock.post("/tokens")
                 .withRequestBody(matching("grant_type=refresh_token&refresh_token=refresh_token_1"))
                 .willReturn(WireMock
@@ -46,8 +54,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
 
         Map<String, String> conf = new HashMap<>();
-        conf.put("quarkus.oidc-client.auth-server-url", server.baseUrl());
-        conf.put("keycloak-url", server.baseUrl());
+        conf.put("keycloak.url", server.baseUrl());
         return conf;
     }
 

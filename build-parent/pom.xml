@@ -306,14 +306,17 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${version.surefire.plugin}</version>
                     <configuration>
-                        <systemPropertyVariables>
+                        <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+                        <systemPropertyVariables combine.self="override">
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
                             <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
                         </systemPropertyVariables>
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m</argLine> <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
+                        <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
+                        <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
                         <trimStackTrace>false</trimStackTrace>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
@@ -330,6 +333,8 @@
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
                             <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
                         </systemPropertyVariables>
+                        <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+                        <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
                         <trimStackTrace>false</trimStackTrace>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>

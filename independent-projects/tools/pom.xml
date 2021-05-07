@@ -323,7 +323,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${version.surefire.plugin}</version>
                 <configuration>
-                    <argLine>${jacoco.agent.argLine}</argLine>
+                    <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+                    <systemPropertyVariables combine.self="override"/>
+                    <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+                    <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                     <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                 </configuration>
             </plugin>

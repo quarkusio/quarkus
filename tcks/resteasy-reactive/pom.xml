@@ -72,7 +72,7 @@
                         </goals>
                         <configuration>
                             <executable>mvn</executable>
-                            <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args}</commandlineArgs>
+                            <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args} -Dsurefire.excludedEnvironmentVariables=MAVEN_OPTS</commandlineArgs>
                             <skip>${resteasy-reactive-testsuite.test.skip}</skip>
                         </configuration>
                     </execution>

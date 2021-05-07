@@ -16,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.core.ExecuteUtil;
@@ -157,6 +158,7 @@ public class CliTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     public void testGradleAddListRemove() throws Exception {
         // Gradle list command cannot be screen captured with the current implementation
         // so I will just test good return values
@@ -283,6 +285,7 @@ public class CliTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     public void testCreateGradleDefaults() throws Exception {
         Path project = workspace.resolve("code-with-quarkus");
 
@@ -302,6 +305,7 @@ public class CliTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     public void testGradleBuild() throws Exception {
 
         execute("create", "--gradle", "resteasy");

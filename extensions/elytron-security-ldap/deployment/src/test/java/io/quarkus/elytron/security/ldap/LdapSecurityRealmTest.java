@@ -2,6 +2,7 @@ package io.quarkus.elytron.security.ldap;
 
 import static org.hamcrest.Matchers.equalTo;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.elytron.security.ldap.rest.ParametrizedPathsResource;
@@ -33,6 +34,7 @@ public abstract class LdapSecurityRealmTest {
     }
 
     @Test()
+    @Tag("failsOnJDK16")
     public void testNotSearchingRecursiveFailure() {
         RestAssured.given().auth().preemptive().basic("subUser", "subUserPassword")
                 .when().get("/servlet-secured").then()
@@ -40,6 +42,7 @@ public abstract class LdapSecurityRealmTest {
     }
 
     @Test()
+    @Tag("failsOnJDK16")
     public void testSecureRoleFailure() {
         RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUserPassword")
                 .when().get("/servlet-secured").then()
@@ -47,6 +50,7 @@ public abstract class LdapSecurityRealmTest {
     }
 
     @Test()
+    @Tag("failsOnJDK16")
     public void testSecureAccessSuccess() {
         RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
                 .when().get("/servlet-secured").then()
@@ -66,6 +70,7 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, but no authorization. should see 403 error code.
      */
     @Test
+    @Tag("failsOnJDK16")
     public void testJaxrsGetRoleFailure() {
         RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUserPassword")
                 .when().get("/jaxrs-secured/roles-class").then()
@@ -76,6 +81,7 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
     @Test
+    @Tag("failsOnJDK16")
     public void testJaxrsGetRoleSuccess() {
         RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/roles-class").then()
@@ -86,6 +92,7 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
     @Test
+    @Tag("failsOnJDK16")
     public void testJaxrsPathAdminRoleSuccess() {
         RestAssured.given().auth().preemptive().basic("adminUser", "adminUserPassword")
                 .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
@@ -93,6 +100,7 @@ public abstract class LdapSecurityRealmTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     public void testJaxrsPathAdminRoleFailure() {
         RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
@@ -103,6 +111,7 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
     @Test
+    @Tag("failsOnJDK16")
     public void testJaxrsPathUserRoleSuccess() {
         RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/parameterized-paths/my/banking/view").then()
@@ -113,6 +122,7 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
     @Test
+    @Tag("failsOnJDK16")
     public void testJaxrsUserRoleSuccess() {
         RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/subject/secured").then()
@@ -121,6 +131,7 @@ public abstract class LdapSecurityRealmTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     public void testJaxrsInjectedPrincipalSuccess() {
         RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/subject/principal-secured").then()
@@ -151,6 +162,7 @@ public abstract class LdapSecurityRealmTest {
      * Test access a @DenyAll secured jaxrs resource with authentication. should see a 403 success code.
      */
     @Test
+    @Tag("failsOnJDK16")
     public void testJaxrsGetDenyAllWithAuth() {
         RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/subject/denied").then()

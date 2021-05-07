@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -178,6 +179,7 @@ public class RestClientTestCase {
 
     @Test
     @DisableIfBuiltWithGraalVMOlderThan(GRAALVM_21_0)
+    @Tag("failsOnJDK16")
     public void testFaultTolerance() {
         RestAssured.when().get("/client/fault-tolerance").then()
                 .body(is("Hello fallback!"));

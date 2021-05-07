@@ -2,6 +2,7 @@ package io.quarkus.elytron.security.ldap.it;
 
 import static org.hamcrest.Matchers.containsString;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -31,6 +32,7 @@ class ElytronSecurityLdapTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     void standard_role_authenticated() {
         RestAssured.given()
                 .redirects().follow(false)
@@ -42,6 +44,7 @@ class ElytronSecurityLdapTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     void standard_role_not_authorized() {
         RestAssured.given()
                 .redirects().follow(false)
@@ -53,6 +56,7 @@ class ElytronSecurityLdapTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     void admin_role_authorized() {
         RestAssured.given()
                 .when()
@@ -73,6 +77,7 @@ class ElytronSecurityLdapTest {
     }
 
     @Test
+    @Tag("failsOnJDK16")
     void admin_role_not_authorized() {
         RestAssured.given()
                 .redirects().follow(false)

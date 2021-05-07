@@ -36,3 +36,4 @@ nb-configuration.xml
 .cache
 /lsp/
 .jbang
+.sdkmanrc

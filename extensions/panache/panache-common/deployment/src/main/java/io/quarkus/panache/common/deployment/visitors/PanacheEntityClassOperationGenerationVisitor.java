@@ -113,7 +113,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
             if (!userMethods.contains(method.name() + "/" + descriptor)) {
                 AnnotationInstance bridge = method.annotation(PanacheConstants.DOTNAME_GENERATE_BRIDGE);
                 if (bridge != null) {
-                    generateMethod(method, bridge.value("targetReturnTypeErased"));
+                    generateMethod(method, bridge.value("targetReturnTypeErased"), bridge.value("callSuperMethod"));
                 }
             }
         }
@@ -144,7 +144,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
         }
     }
 
-    protected void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased) {
+    protected void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased, AnnotationValue callSuperMethod) {
         List<org.jboss.jandex.Type> parameters = method.parameters();
 
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
@@ -157,9 +157,17 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
         for (PanacheMethodCustomizer customizer : methodCustomizers) {
             customizer.customize(thisClass, method, mv);
         }
-        loadOperations(mv);
-        loadArguments(mv, parameters);
-        invokeOperations(mv, method);
+        if (callSuperMethod != null && callSuperMethod.asBoolean()) {
+            // delegate to super method
+            for (int i = 0; i < parameters.size(); i++) {
+                mv.visitIntInsn(Opcodes.ALOAD, i);
+            }
+            invokeOperations(mv, method, true);
+        } else {
+            loadOperations(mv);
+            loadArguments(mv, parameters);
+            invokeOperations(mv, method, false);
+        }
         mv.visitMaxs(0, 0);
         mv.visitEnd();
     }
@@ -177,11 +185,13 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
         }
     }
 
-    private void invokeOperations(MethodVisitor mv, MethodInfo method) {
+    private void invokeOperations(MethodVisitor mv, MethodInfo method, boolean callSuperMethod) {
         String operationDescriptor;
 
         StringJoiner joiner = new StringJoiner("", "(", ")");
-        joiner.add(CLASS.descriptor());
+        if (!callSuperMethod) {
+            joiner.add(CLASS.descriptor());
+        }
         descriptors(method, joiner);
 
         org.jboss.jandex.Type returnType = method.returnType();
@@ -191,9 +201,15 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
                 : returnType.name().toString();
         operationDescriptor = joiner + erasures.getOrDefault(key, descriptor);
 
-        mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(),
-                operationDescriptor, false);
-        if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE) {
+        if (callSuperMethod) {
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, typeBundle.entityBase().internalName(), method.name(),
+                    operationDescriptor, false);
+        } else {
+            mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(),
+                    operationDescriptor, false);
+        }
+        if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE
+                && returnType.kind() != org.jboss.jandex.Type.Kind.VOID) {
             String cast;
             if (returnType.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
                 TypeVariable typeVariable = returnType.asTypeVariable();

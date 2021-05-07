@@ -2,7 +2,6 @@ package io.quarkus.resteasy.reactive;
 
 import java.util.function.Supplier;
 
-import javax.enterprise.event.Observes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
-import io.vertx.ext.web.Router;
 
 public class GZipTest {
 
@@ -76,20 +74,16 @@ public class GZipTest {
     @Path("/test")
     public static class TestCompression {
 
-        //TODO - complete logic in method
         @Path("/compression")
         @GET
-        public void registerCompression(@Observes Router router) {
-            router.route("/test/compression").handler(routingContext -> {
-                routingContext.response().end(longString);
-            });
+        public String registerCompression() {
+            return longString;
         }
 
         @Path("/nocompression")
         @GET
-        public void registerNoCompression(@Observes Router router) {
-
+        public String registerNoCompression() {
+            return longString;
         }
     }
-
 }

@@ -485,6 +485,7 @@
                     <version>${version.surefire.plugin}</version>
                     <configuration>
                         <argLine>${jacoco.agent.argLine}</argLine>
+                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>

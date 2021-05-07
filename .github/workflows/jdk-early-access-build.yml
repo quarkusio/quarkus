@@ -28,7 +28,8 @@ jobs:
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     timeout-minutes: 360
     env:
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+      # "--add-opens ..." to work around https://youtrack.jetbrains.com/issue/KT-43704
+      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m --add-opens java.base/java.util=ALL-UNNAMED
     steps:
 
       - name: Set up JDK

@@ -30,6 +30,9 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
             RealmRepresentation realm = createRealm(KEYCLOAK_REALM + realmId);
 
             realm.getClients().add(createClient("quarkus-app-" + realmId));
+            if ("b".equals(realmId)) {
+                realm.getClients().add(createClient("quarkus-app-b2"));
+            }
             realm.getUsers().add(createUser("alice", "user"));
             realm.getUsers().add(createUser("admin", "user", "admin"));
             realm.getUsers().add(createUser("jdoe", "user", "confidential"));

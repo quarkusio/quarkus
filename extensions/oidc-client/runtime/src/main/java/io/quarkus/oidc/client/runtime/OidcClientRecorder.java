@@ -107,7 +107,7 @@ public class OidcClientRecorder {
         }
 
         try {
-            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false);
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
         } catch (Throwable t) {
             LOG.debug(t.getMessage());
             String message = String.format("'%s' client configuration is not initialized", oidcClientId);

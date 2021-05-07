@@ -117,7 +117,11 @@ public class OidcProvider {
             if (!details.isEmpty()) {
                 detail = details.get(0).getErrorMessage();
             }
-            LOG.debugf("Token verification has failed: %s", detail);
+            if (oidcConfig.clientId.isPresent()) {
+                LOG.debugf("Verification of the token issued to client %s has failed: %s", oidcConfig.clientId.get(), detail);
+            } else {
+                LOG.debugf("Token verification has failed: %s", detail);
+            }
             throw ex;
         }
         return new TokenVerificationResult(OidcUtils.decodeJwtContent(token), null);

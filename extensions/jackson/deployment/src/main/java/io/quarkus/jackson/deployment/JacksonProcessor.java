@@ -135,6 +135,17 @@ public class JacksonProcessor {
                 // the Deserializers are constructed internally by Jackson using a no-args constructor
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().name().toString()));
             }
+            AnnotationValue keyUsingValue = deserializeInstance.value("keyUsing");
+            if (keyUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, keyUsingValue.asClass().name().toString()));
+            }
+            AnnotationValue contentUsingValue = deserializeInstance.value("contentUsing");
+            if (contentUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(false, false, contentUsingValue.asClass().name().toString()));
+            }
         }
 
         // handle the various @JsonSerialize cases
@@ -143,6 +154,23 @@ public class JacksonProcessor {
             if (usingValue != null) {
                 // the Serializers are constructed internally by Jackson using a no-args constructor
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().name().toString()));
+            }
+            AnnotationValue keyUsingValue = serializeInstance.value("keyUsing");
+            if (keyUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, keyUsingValue.asClass().name().toString()));
+            }
+            AnnotationValue contentUsingValue = serializeInstance.value("contentUsing");
+            if (contentUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(false, false, contentUsingValue.asClass().name().toString()));
+            }
+            AnnotationValue nullsUsingValue = serializeInstance.value("nullsUsing");
+            if (nullsUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(false, false, nullsUsingValue.asClass().name().toString()));
             }
         }
 

@@ -18,6 +18,6 @@ public class BasicTest {
     @Test
     public void shouldWork() {
         Response response = RestAssured.with().body(helloUrl).post("/call-client");
-        assertThat(response.asString()).isEqualTo("Hello, John");
+        assertThat(response.asString()).isEqualTo("Hello, JohnJohn");
     }
 }

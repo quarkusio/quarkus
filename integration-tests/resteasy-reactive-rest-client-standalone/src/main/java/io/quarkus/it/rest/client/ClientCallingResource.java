@@ -1,6 +1,7 @@
 package io.quarkus.it.rest.client;
 
 import java.net.URI;
+import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -18,14 +19,22 @@ public class ClientCallingResource {
         router.post().handler(BodyHandler.create());
 
         router.post("/hello").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
-                .end("Hello, " + rc.getBodyAsString()));
+                .end("Hello, " + (rc.getBodyAsString()).repeat(getCount(rc))));
 
         router.route("/call-client").blockingHandler(rc -> {
             String url = rc.getBody().toString();
             HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(HelloClient.class);
-            String greeting = client.greeting("John");
+            String greeting = client.greeting("John", 2);
             rc.response().end(greeting);
         });
+    }
+
+    private int getCount(io.vertx.ext.web.RoutingContext rc) {
+        List<String> countQueryParam = rc.queryParam("count");
+        if (countQueryParam.isEmpty()) {
+            return 1;
+        }
+        return Integer.parseInt(countQueryParam.get(0));
     }
 }

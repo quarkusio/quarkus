@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.deployment.pkg.steps.GraalVM.Distribution;
 import io.quarkus.deployment.pkg.steps.GraalVM.Version;
 
-public class NativeImageBuildStepTest {
+public class GraalVMTest {
 
     @Test
     public void testGraalVMVersionDetected() {

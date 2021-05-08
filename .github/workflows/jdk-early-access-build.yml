@@ -9,12 +9,11 @@ on:
       jdkVersion:
         description: 'JDK version'
         required: true
-        # switch to 17-ea once 16 has been fixed and is running in regular CI
         # make sure to keep the default of JDK_VERSION in sync!
-        default: '16'
+        default: '17-ea'
 
 env:
-  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '16' }}
+  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '17-ea' }}
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip"

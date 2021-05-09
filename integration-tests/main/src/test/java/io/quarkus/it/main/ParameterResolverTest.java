@@ -3,14 +3,12 @@ package io.quarkus.it.main;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -30,7 +28,6 @@ public class ParameterResolverTest {
     @Test
     @ExtendWith(ParameterResolverTest.UnusedBeanDummyInputResolver.class)
     @ExtendWith(ParameterResolverTest.SupplierParameterResolver.class)
-    @Tag("failsOnJDK16")
     public void testParameterResolver(UnusedBean.DummyInput dummyInput, Supplier<UnusedBean.DummyInput> supplier) {
         UnusedBean.DummyResult dummyResult = unusedBean.dummy(dummyInput);
         assertEquals("whatever/6", dummyResult.getResult());
@@ -48,7 +45,6 @@ public class ParameterResolverTest {
 
     @Test
     @ExtendWith(ParameterResolverTest.ListWithNonSerializableParameterResolver.class)
-    @Tag("failsOnJDK16")
     public void testSerializableParameterResolverFallbackToXStream(List<NonSerializable> list) {
         assertEquals("foo", list.get(0).value);
         assertEquals("bar", list.get(1).value);
@@ -65,7 +61,8 @@ public class ParameterResolverTest {
         @Override
         public Object resolveParameter(ParameterContext parameterContext,
                 ExtensionContext extensionContext) throws ParameterResolutionException {
-            return new UnusedBean.DummyInput("whatever", new UnusedBean.NestedDummyInput(Arrays.asList(1, 2, 3)));
+            // note: List.of(...) or Arrays.asList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
+            return new UnusedBean.DummyInput("whatever", new UnusedBean.NestedDummyInput(new ArrayList<>(List.of(1, 2, 3))));
         }
     }
 
@@ -81,7 +78,8 @@ public class ParameterResolverTest {
         public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
                 throws ParameterResolutionException {
             return (Supplier<UnusedBean.DummyInput>) () -> new UnusedBean.DummyInput("fromSupplier",
-                    new UnusedBean.NestedDummyInput(Collections.emptyList()));
+                    // note: Collections.emptyList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
+                    new UnusedBean.NestedDummyInput(new ArrayList<>()));
         }
     }
 
@@ -111,7 +109,8 @@ public class ParameterResolverTest {
         @Override
         public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
                 throws ParameterResolutionException {
-            return Arrays.asList(new NonSerializable("foo"), new NonSerializable("bar"));
+            // note: List.of(...) or Arrays.asList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
+            return new ArrayList<>(List.of(new NonSerializable("foo"), new NonSerializable("bar")));
         }
     }
 

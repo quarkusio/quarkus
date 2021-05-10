@@ -1220,9 +1220,7 @@ public class JaxrsClientReactiveProcessor {
         ResultHandle paramArray;
         if (type.kind() == Type.Kind.ARRAY) {
             paramArray = methodCreator.checkCast(queryParamHandle, Object[].class);
-        } else if (index
-                .getClassByName(type.name()).interfaceNames().stream()
-                .anyMatch(DotName.createSimple(Collection.class.getName())::equals)) {
+        } else if (isCollection(type, index)) {
             paramArray = methodCreator.invokeStaticMethod(
                     MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
                     queryParamHandle);
@@ -1236,6 +1234,17 @@ public class JaxrsClientReactiveProcessor {
                 MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
                         String.class, Object[].class),
                 target, methodCreator.load(paramName), paramArray);
+    }
+
+    private boolean isCollection(Type type, IndexView index) {
+        if (type.kind() == Type.Kind.PRIMITIVE) {
+            return false;
+        }
+        ClassInfo classInfo = index.getClassByName(type.name());
+        if (classInfo == null) {
+            return false;
+        }
+        return classInfo.interfaceNames().stream().anyMatch(DotName.createSimple(Collection.class.getName())::equals);
     }
 
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

@@ -14,7 +14,6 @@ import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 import org.jacoco.core.instr.Instrumenter;
 import org.jacoco.core.runtime.OfflineInstrumentationAccessGenerator;
-import org.jacoco.report.MultiSourceFileLocator;
 import org.jboss.jandex.ClassInfo;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
@@ -103,11 +102,10 @@ public class JacocoProcessor {
             info.classFiles = classes;
 
             Set<String> sources = new HashSet<>();
-            MultiSourceFileLocator sourceFileLocator = new MultiSourceFileLocator(4);
             if (BuildToolHelper.isMavenProject(targetdir.toPath())) {
                 Set<AppArtifactKey> runtimeDeps = new HashSet<>();
                 for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
-                    runtimeDeps.add(i.getArtifact().getKey());
+                    runtimeDeps.add(new AppArtifactKey(i.getArtifact().getGroupId(), i.getArtifact().getArtifactId()));
                 }
                 LocalProject project = LocalProject.loadWorkspace(targetdir.toPath());
                 runtimeDeps.add(project.getKey());

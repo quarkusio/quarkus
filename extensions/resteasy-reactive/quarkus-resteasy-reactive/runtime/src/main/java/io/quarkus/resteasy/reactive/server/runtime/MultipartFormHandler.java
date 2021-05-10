@@ -171,13 +171,17 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
         private void cancelUploads() {
             for (FileUpload fileUpload : context.fileUploads()) {
                 FileSystem fileSystem = context.vertx().fileSystem();
-                if (!fileUpload.cancel()) {
-                    String uploadedFileName = fileUpload.uploadedFileName();
-                    fileSystem.delete(uploadedFileName, deleteResult -> {
-                        if (deleteResult.failed()) {
-                            LOG.warn("Delete of uploaded file failed: " + uploadedFileName, deleteResult.cause());
-                        }
-                    });
+                try {
+                    if (!fileUpload.cancel()) {
+                        String uploadedFileName = fileUpload.uploadedFileName();
+                        fileSystem.delete(uploadedFileName, deleteResult -> {
+                            if (deleteResult.failed()) {
+                                LOG.warn("Delete of uploaded file failed: " + uploadedFileName, deleteResult.cause());
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    LOG.debug("Unable to cancel file upload:", e);
                 }
             }
         }

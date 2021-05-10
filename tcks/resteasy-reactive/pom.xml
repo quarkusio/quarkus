@@ -16,7 +16,7 @@
     <properties>
 
         <!-- to avoid sudden surprises, checkout is pinned to a specific commit -->
-        <resteasy-reactive-testsuite.repo.ref>82698545ef2f09b6b826d650502238cebf9f6171</resteasy-reactive-testsuite.repo.ref>
+        <resteasy-reactive-testsuite.repo.ref>e3cd2c5e5b9262ae5d1197005c542fdd02f9d4ff</resteasy-reactive-testsuite.repo.ref>
 
         <exec.skip>${skipTests}</exec.skip>
         <resteasy-reactive-testsuite.clone.skip>${exec.skip}</resteasy-reactive-testsuite.clone.skip>
@@ -71,8 +71,8 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>mvn</executable>
-                            <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args} -Dsurefire.excludedEnvironmentVariables=MAVEN_OPTS</commandlineArgs>
+                            <executable>mvnw</executable>
+                            <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args}</commandlineArgs>
                             <skip>${resteasy-reactive-testsuite.test.skip}</skip>
                         </configuration>
                     </execution>

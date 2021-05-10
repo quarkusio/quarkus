@@ -159,7 +159,7 @@
         <dekorate.version>2.1.2</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
-        <awaitility.version>4.0.3</awaitility.version>
+        <awaitility.version>4.1.0</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
         <jgit.version>5.11.0.202103091610-r</jgit.version>

@@ -32,33 +32,44 @@ public abstract class BuildFile implements ExtensionManager {
 
     @Override
     public final InstallResult install(Collection<ArtifactCoords> coords) throws IOException {
-        this.refreshData();
-        final Collection<ArtifactCoords> installed = withoutAlreadyInstalled(coords);
-        installed.forEach(e -> addDependency(e, e.getVersion() == null));
-        this.writeToDisk();
-        return new InstallResult(installed);
+        final ExtensionInstallPlan.Builder builder = ExtensionInstallPlan.builder();
+        for (ArtifactCoords coord : coords) {
+            if ("pom".equals(coord.getType())) {
+                builder.addPlatform(coord);
+            } else if (coord.getVersion() == null) {
+                builder.addManagedExtension(coord);
+            } else {
+                builder.addIndependentExtension(coord);
+            }
+        }
+        return install(builder.build());
     }
 
     @Override
     public InstallResult install(ExtensionInstallPlan plan) throws IOException {
-        List<ArtifactCoords> installed = new ArrayList<>();
-        for (ArtifactCoords platform : withoutAlreadyInstalled(plan.getPlatforms())) {
+        this.refreshData();
+        List<ArtifactCoords> installedManagedExtensions = new ArrayList<>();
+        List<ArtifactCoords> installedIndependentExtensions = new ArrayList<>();
+        List<ArtifactCoords> installedPlatforms = new ArrayList<>();
+        final Set<ArtifactKey> alreadyInstalled = alreadyInstalled(plan.toCollection());
+        for (ArtifactCoords platform : withoutAlreadyInstalled(alreadyInstalled, plan.getPlatforms())) {
             if (addDependency(platform, false)) {
-                installed.add(platform);
+                installedPlatforms.add(platform);
             }
         }
-        for (ArtifactCoords managedExtension : withoutAlreadyInstalled(plan.getManagedExtensions())) {
+        for (ArtifactCoords managedExtension : withoutAlreadyInstalled(alreadyInstalled, plan.getManagedExtensions())) {
             if (addDependency(managedExtension, true)) {
-                installed.add(managedExtension);
+                installedManagedExtensions.add(managedExtension);
             }
         }
-        for (ArtifactCoords independentExtension : withoutAlreadyInstalled(plan.getIndependentExtensions())) {
+        for (ArtifactCoords independentExtension : withoutAlreadyInstalled(alreadyInstalled, plan.getIndependentExtensions())) {
             if (addDependency(independentExtension, false)) {
-                installed.add(independentExtension);
+                installedIndependentExtensions.add(independentExtension);
             }
         }
         writeToDisk();
-        return new InstallResult(installed);
+        return new InstallResult(installedPlatforms, installedManagedExtensions, installedIndependentExtensions,
+                alreadyInstalled);
     }
 
     @Override
@@ -88,8 +99,17 @@ public abstract class BuildFile implements ExtensionManager {
         return new UninstallResult(uninstalled);
     }
 
-    private Collection<ArtifactCoords> withoutAlreadyInstalled(Collection<ArtifactCoords> extensions) throws IOException {
+    private Set<ArtifactKey> alreadyInstalled(Collection<ArtifactCoords> extensions) throws IOException {
         final Set<ArtifactKey> existingKeys = getDependenciesKeys();
+        return extensions.stream()
+                .distinct()
+                .filter(a -> existingKeys.contains(a.getKey()))
+                .map(ArtifactCoords::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    private Collection<ArtifactCoords> withoutAlreadyInstalled(Set<ArtifactKey> existingKeys,
+            Collection<ArtifactCoords> extensions) {
         return extensions.stream()
                 .distinct()
                 .filter(a -> !existingKeys.contains(a.getKey()))

@@ -221,7 +221,13 @@ public class MavenProjectBuildFile extends BuildFile {
         } else if (model().getDependencies()
                 .stream()
                 .noneMatch(thisDep -> d.getManagementKey().equals(thisDep.getManagementKey()))) {
-            model().addDependency(d);
+            final int index = getIndexToAddExtension();
+            if (index >= 0) {
+                model().getDependencies().add(index, d);
+            } else {
+                model().getDependencies().add(d);
+            }
+
             // it could still be a transitive dependency or inherited from the parent
             if (!getDependencies().contains(coords)) {
                 getDependencies().add(coords);
@@ -241,8 +247,8 @@ public class MavenProjectBuildFile extends BuildFile {
                     i.remove();
                     break;
                 }
-                model().getDependencies().removeIf(d -> Objects.equals(toKey(d), key));
             }
+            model().getDependencies().removeIf(d -> Objects.equals(toKey(d), key));
         }
     }
 
@@ -291,6 +297,16 @@ public class MavenProjectBuildFile extends BuildFile {
 
     @Override
     protected void refreshData() {
+    }
+
+    private int getIndexToAddExtension() {
+        final List<Dependency> dependencies = model().getDependencies();
+        for (int i = 0; i < dependencies.size(); i++) {
+            if ("test".equals(dependencies.get(i).getScope())) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private Model model() {

@@ -27,7 +27,7 @@ class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
         val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let(::VertxDispatcher)
                 ?: throw IllegalStateException("No Vertx context found")
 
-        logger.debug("Handling request with dispatcher {}", dispatcher)
+        logger.trace("Handling request with dispatcher {}", dispatcher)
 
         requestContext.requireCDIRequestScope()
         requestContext.suspend()

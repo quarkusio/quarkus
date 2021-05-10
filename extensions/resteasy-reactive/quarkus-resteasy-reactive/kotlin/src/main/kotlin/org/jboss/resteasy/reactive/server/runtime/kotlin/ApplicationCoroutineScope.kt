@@ -24,7 +24,7 @@ class ApplicationCoroutineScope : CoroutineScope, AutoCloseable {
 }
 
 /**
- * Dispatches the coroutine in a worker thread from Vertx.
+ * Dispatches the coroutine in Vertx IO thread.
  */
 class VertxDispatcher(private val vertxContext: Context) : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {

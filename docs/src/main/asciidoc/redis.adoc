@@ -592,6 +592,9 @@ Quarkus supports a feature called DevServices that allows you to create various 
 What that means practically, is that if you have docker running and have not configured `quarkus.redis.hosts`,
 Quarkus will automatically start a Redis container when running tests or dev-mode, and automatically configure the connection.
 
+Available properties to customize the Redis DevService.
+include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
+
 When running the production version of the application, the Redis connection need to be configured as normal,
 so if you want to include a production database config in your `application.properties` and continue to use DevServices
 we recommend that you use the `%prod.` profile to define your Redis settings.

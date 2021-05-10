@@ -476,7 +476,7 @@ public class DevMojo extends AbstractMojo {
         handleResources(test);
 
         // compile the Kotlin sources if needed
-        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "testCompile" : "compile");
+        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile");
 
         // Compile the Java sources if needed
         executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, test ? "testCompile" : "compile");

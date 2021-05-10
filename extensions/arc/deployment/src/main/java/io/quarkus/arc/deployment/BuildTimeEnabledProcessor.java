@@ -1,12 +1,15 @@
 package io.quarkus.arc.deployment;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -233,6 +236,26 @@ public class BuildTimeEnabledProcessor {
                 }
             }
         }));
+    }
+
+    /**
+     * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
+     * @return an instance of {@link BuildExclusionsBuildItem} containing the set of classes
+     *         that have been annotated with unsuccessful build time conditions.
+     */
+    @BuildStep
+    BuildExclusionsBuildItem buildExclusions(List<PreAdditionalBeanBuildTimeConditionBuildItem> buildTimeConditions) {
+        final Map<Kind, Set<String>> map = buildTimeConditions.stream()
+                .filter(item -> !item.isEnabled())
+                .map(PreAdditionalBeanBuildTimeConditionBuildItem::getTarget)
+                .collect(
+                        Collectors.groupingBy(
+                                AnnotationTarget::kind,
+                                Collectors.mapping(BuildExclusionsBuildItem::targetMapper, Collectors.toSet())));
+        return new BuildExclusionsBuildItem(
+                map.getOrDefault(AnnotationTarget.Kind.CLASS, Collections.emptySet()),
+                map.getOrDefault(AnnotationTarget.Kind.METHOD, Collections.emptySet()),
+                map.getOrDefault(AnnotationTarget.Kind.FIELD, Collections.emptySet()));
     }
 
     private String toUniqueString(FieldInfo field) {

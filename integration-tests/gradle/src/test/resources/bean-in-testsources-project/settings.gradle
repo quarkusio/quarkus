@@ -1,5 +1,7 @@
 pluginManagement {
     repositories {
+        mavenCentral()
+        gradlePluginPortal()
         if (System.properties.containsKey('maven.repo.local')) {
             maven {
                 url System.properties.get('maven.repo.local')
@@ -7,8 +9,6 @@ pluginManagement {
         } else {
             mavenLocal()
         }
-        mavenCentral()
-        gradlePluginPortal()
     }
     plugins {
       id 'io.quarkus' version "${quarkusPluginVersion}"

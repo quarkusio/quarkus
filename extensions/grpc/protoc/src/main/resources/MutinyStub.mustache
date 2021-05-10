@@ -23,7 +23,7 @@ public final class {{className}} {
     }
 
     {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
-    public static final class {{classPrefix}}{{serviceName}}Stub extends io.grpc.stub.AbstractStub<{{classPrefix}}{{serviceName}}Stub> {
+    public static final class {{classPrefix}}{{serviceName}}Stub extends io.grpc.stub.AbstractStub<{{classPrefix}}{{serviceName}}Stub> implements io.quarkus.grpc.runtime.MutinyStub {
         private {{serviceName}}Grpc.{{serviceName}}Stub delegateStub;
 
         private {{classPrefix}}{{serviceName}}Stub(io.grpc.Channel channel) {

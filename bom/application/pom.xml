@@ -97,7 +97,7 @@
         <hibernate-reactive.version>1.0.0.CR4</hibernate-reactive.version>
         <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.0.3.Final</hibernate-search.version>
-        <narayana.version>5.11.1.Final</narayana.version>
+        <narayana.version>5.11.2.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.11</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>

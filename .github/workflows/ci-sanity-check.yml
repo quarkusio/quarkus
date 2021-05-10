@@ -9,6 +9,7 @@ on:
       - '*.md'
       - '*.adoc'
       - '*.txt'
+      - 'adr/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
       - '.github/*.java'
@@ -16,6 +17,7 @@ on:
     paths:
       - '.gitignore'
       - '.dockerignore'
+      - 'adr/**'
       - '*.md'
       - '*.adoc'
       - '*.txt'

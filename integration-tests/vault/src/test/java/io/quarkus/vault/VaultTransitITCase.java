@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -38,6 +39,7 @@ import io.quarkus.vault.transit.EncryptionRequest;
 import io.quarkus.vault.transit.KeyConfigRequestDetail;
 import io.quarkus.vault.transit.KeyCreationRequestDetail;
 import io.quarkus.vault.transit.RewrappingRequest;
+import io.quarkus.vault.transit.SignVerifyOptions;
 import io.quarkus.vault.transit.SigningInput;
 import io.quarkus.vault.transit.SigningRequest;
 import io.quarkus.vault.transit.TransitContext;
@@ -126,6 +128,66 @@ public class VaultTransitITCase {
     public void signString() {
         String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, null);
         transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, null);
+    }
+
+    @Test
+    public void signStringExplicitHashAlgorithmSha256() {
+        SignVerifyOptions options = new SignVerifyOptions().setHashAlgorithm("sha2-256");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitHashAlgorithmSha512() {
+        SignVerifyOptions options = new SignVerifyOptions().setHashAlgorithm("sha2-512");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitHashAlgorithmMismatched() {
+        SignVerifyOptions options = new SignVerifyOptions().setHashAlgorithm("sha2-256");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        assertThrows(VaultException.class,
+                () -> transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input,
+                        options.setHashAlgorithm("sha1"), null));
+    }
+
+    @Test
+    public void signStringExplicitMarshalingAlgorithmASN1() {
+        SignVerifyOptions options = new SignVerifyOptions().setMarshalingAlgorithm("asn1");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitMarshalingAlgorithmJWS() {
+        SignVerifyOptions options = new SignVerifyOptions().setMarshalingAlgorithm("jws");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitMarshalingAlgorithmMismatched() {
+        SignVerifyOptions options = new SignVerifyOptions().setMarshalingAlgorithm("jws");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        assertThrows(VaultException.class,
+                () -> transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input,
+                        options.setMarshalingAlgorithm("asn1"), null));
+    }
+
+    @Test
+    public void signStringExplicitSignatureAlgorithmPKCS1() {
+        SignVerifyOptions options = new SignVerifyOptions().setSignatureAlgorithm("pkcs1v15");
+        String signature = transitSecretEngine.sign(SIGN_KEY2_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY2_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitSignatureAlgorithmPSS() {
+        SignVerifyOptions options = new SignVerifyOptions().setSignatureAlgorithm("pss");
+        String signature = transitSecretEngine.sign(SIGN_KEY2_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY2_NAME, signature, input, options, null);
     }
 
     @Test

@@ -70,9 +70,8 @@ jobs:
       - name: Build with Maven
         # -fae to try to gather as many failures as possible
         # (but not maven.test.failure.ignore because test report generation is buggy)
-        # Gradle bits are excluded due to https://github.com/gradle/gradle/issues/13481
         run: |
-          ./mvnw $JVM_TEST_MAVEN_OPTS -Dtcks install -fae -pl '!devtools/gradle' -pl '!integration-tests/gradle'
+          ./mvnw $JVM_TEST_MAVEN_OPTS -Dtcks install -fae
       # Test reports disabled due to: https://github.com/ScaCap/action-surefire-report/issues/39
       #- name: Publish Test Report
       #  if: always()

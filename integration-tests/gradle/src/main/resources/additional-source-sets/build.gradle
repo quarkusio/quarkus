@@ -28,7 +28,7 @@ sourceSets {
             resources.srcDir 'src/funcTest/resources'
         }
 
-        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath + configurations.compileOnly
+        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
         runtimeClasspath += output + compileClasspath
     }
 }

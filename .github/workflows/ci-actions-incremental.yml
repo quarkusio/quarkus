@@ -250,7 +250,7 @@ jobs:
           - {
             name: "16",
             java-version: 16,
-            maven_args: "$JVM_TEST_MAVEN_ARGS -pl '!devtools/gradle'",
+            maven_args: "$JVM_TEST_MAVEN_ARGS",
             maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
             os-name: "ubuntu-latest"
           }

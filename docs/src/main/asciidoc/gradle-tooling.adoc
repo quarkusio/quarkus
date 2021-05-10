@@ -494,3 +494,16 @@ More information on this topic can be found on the link:cdi-reference#bean_disco
 == Building with `./gradlew build`
 
 Starting from 1.1.0.Final, `./gradlew build` will no longer build the native image. Add `-Dquarkus.package.type=native` build argument explicitly as explained above if needed.
+
+== Publishing your application
+
+In order to make sure the right dependency versions are being used by Gradle, the BOM is declared as an `enforcedPlatform` in your build file.
+By default, the `maven-publish` plugin will prevent you from publishing your application due to this `enforcedPlatform`.
+This validation can be skipped by adding the following configuration in your `build.gradle` file:
+
+[source,groovy]
+----
+tasks.withType(GenerateModuleMetadata).configureEach {
+    suppressedValidationErrors.add('enforced-platform')
+}
+----

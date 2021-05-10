@@ -1,4 +1,4 @@
-package io.quarkus.test.security;
+package io.quarkus.test.security.jwt;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,7 +9,7 @@ import io.quarkus.test.security.common.SecurityAttribute;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
-public @interface TestSecurity {
+public @interface TestJwtSecurity {
 
     /**
      * If this is false then all security constraints are disabled.
@@ -27,4 +27,6 @@ public @interface TestSecurity {
     String[] roles() default {};
 
     SecurityAttribute[] attributes() default {};
+
+    Claim[] claims() default {};
 }

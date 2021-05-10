@@ -10,9 +10,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>quarkus-test-security-jwt</artifactId>
-    <name>Quarkus - Test Framework - Security JWT</name>
-    <description>Module that contains utilities to test Quarkus security with JWT token</description>
+    <artifactId>quarkus-test-security-common</artifactId>
+    <name>Quarkus - Test Framework - Security Common</name>
+    <description>Module that contains common utilities to test Quarkus security</description>
 
     <dependencies>
         <dependency>
@@ -21,17 +21,22 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-security-common</artifactId>
+            <artifactId>quarkus-security</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.microprofile.jwt</groupId>
-            <artifactId>microprofile-jwt-auth-api</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- The entity classes need to be indexed -->
+            <!-- The entity classes needs to be indexed -->
             <plugin>
                 <groupId>org.jboss.jandex</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>

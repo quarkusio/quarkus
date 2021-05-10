@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-security</artifactId>
+            <artifactId>quarkus-test-security-common</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

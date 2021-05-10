@@ -12,7 +12,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.quarkus.test.security.TestSecurityIdentityAugmentor;
+import io.quarkus.test.security.common.TestSecurityIdentityAugmentor;
 
 @ApplicationScoped
 public class JwtTestSecurityIdentityAugmentorProducer {

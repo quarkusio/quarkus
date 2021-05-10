@@ -16,7 +16,7 @@ import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.runtime.OidcJwtCallerPrincipal;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.quarkus.test.security.TestSecurityIdentityAugmentor;
+import io.quarkus.test.security.common.TestSecurityIdentityAugmentor;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 

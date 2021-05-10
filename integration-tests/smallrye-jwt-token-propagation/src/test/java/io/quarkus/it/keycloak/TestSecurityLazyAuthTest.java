@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.security.SecurityAttribute;
-import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.jwt.Claim;
+import io.quarkus.test.security.jwt.TestJwtSecurity;
 import io.restassured.RestAssured;
 
 @QuarkusTest
@@ -15,15 +15,15 @@ import io.restassured.RestAssured;
 public class TestSecurityLazyAuthTest {
 
     @Test
-    @TestSecurity(user = "user1", roles = "viewer")
+    @TestJwtSecurity(user = "user1", roles = "viewer")
     public void testWithDummyUser() {
         RestAssured.when().get("test-security").then()
                 .body(is("user1"));
     }
 
     @Test
-    @TestSecurity(user = "userJwt", roles = "viewer", attributes = {
-            @SecurityAttribute(key = "claim.email", value = "user@gmail.com")
+    @TestJwtSecurity(user = "userJwt", roles = "viewer", claims = {
+            @Claim(key = "email", value = "user@gmail.com")
     })
     public void testJwtWithDummyUser() {
         RestAssured.when().get("test-security-jwt").then()

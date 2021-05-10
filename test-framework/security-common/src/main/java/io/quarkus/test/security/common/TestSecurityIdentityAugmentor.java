@@ -1,4 +1,4 @@
-package io.quarkus.test.security;
+package io.quarkus.test.security.common;
 
 import io.quarkus.security.identity.SecurityIdentity;
 

@@ -13,8 +13,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.security.SecurityAttribute;
 import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.common.SecurityAttribute;
 
 @QuarkusTest
 class TestSecurityTestCase {

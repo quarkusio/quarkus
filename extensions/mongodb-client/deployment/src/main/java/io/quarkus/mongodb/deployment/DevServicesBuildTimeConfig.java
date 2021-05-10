@@ -23,4 +23,12 @@ public class DevServicesBuildTimeConfig {
      */
     @ConfigItem
     public Optional<String> imageName;
+
+    /**
+     * Optional fixed port the dev service will listen to.
+     * <p>
+     * If not defined, the port will be chosen randomly.
+     */
+    @ConfigItem
+    public Optional<Integer> port;
 }

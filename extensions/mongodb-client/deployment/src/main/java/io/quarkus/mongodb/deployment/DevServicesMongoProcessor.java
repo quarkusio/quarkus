@@ -169,10 +169,11 @@ public class DevServicesMongoProcessor {
 
         MongoDBContainer mongoDBContainer;
         if (capturedProperties.imageName != null) {
-            mongoDBContainer = new MongoDBContainer(
-                    DockerImageName.parse(capturedProperties.imageName).asCompatibleSubstituteFor("mongo"));
+            mongoDBContainer = new FixedExposedPortMongoDBContainer(
+                    DockerImageName.parse(capturedProperties.imageName).asCompatibleSubstituteFor("mongo"),
+                    capturedProperties.fixedExposedPort);
         } else {
-            mongoDBContainer = new MongoDBContainer();
+            mongoDBContainer = new FixedExposedPortMongoDBContainer(capturedProperties.fixedExposedPort);
         }
         mongoDBContainer.start();
         Optional<String> databaseName = ConfigProvider.getConfig().getOptionalValue(configPrefix + "database", String.class);
@@ -212,7 +213,7 @@ public class DevServicesMongoProcessor {
         DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices;
         boolean devServicesEnabled = devServicesConfig.enabled.orElse(true);
         return new CapturedProperties(databaseName, connectionString, devServicesEnabled,
-                devServicesConfig.imageName.orElse(null));
+                devServicesConfig.imageName.orElse(null), devServicesConfig.port.orElse(null));
     }
 
     private static class StartResult {
@@ -238,28 +239,15 @@ public class DevServicesMongoProcessor {
         private final String connectionString;
         private final boolean devServicesEnabled;
         private final String imageName;
+        private final Integer fixedExposedPort;
 
-        public CapturedProperties(String database, String connectionString, boolean devServicesEnabled, String imageName) {
+        public CapturedProperties(String database, String connectionString, boolean devServicesEnabled, String imageName,
+                Integer fixedExposedPort) {
             this.database = database;
             this.connectionString = connectionString;
             this.devServicesEnabled = devServicesEnabled;
             this.imageName = imageName;
-        }
-
-        public String getDatabase() {
-            return database;
-        }
-
-        public String getConnectionString() {
-            return connectionString;
-        }
-
-        public boolean isDevServicesEnabled() {
-            return devServicesEnabled;
-        }
-
-        public String getImageName() {
-            return imageName;
+            this.fixedExposedPort = fixedExposedPort;
         }
 
         @Override
@@ -270,12 +258,36 @@ public class DevServicesMongoProcessor {
                 return false;
             CapturedProperties that = (CapturedProperties) o;
             return devServicesEnabled == that.devServicesEnabled && Objects.equals(database, that.database)
-                    && Objects.equals(connectionString, that.connectionString) && Objects.equals(imageName, that.imageName);
+                    && Objects.equals(connectionString, that.connectionString) && Objects.equals(imageName, that.imageName)
+                    && Objects.equals(fixedExposedPort, that.fixedExposedPort);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(database, connectionString, devServicesEnabled, imageName);
+            return Objects.hash(database, connectionString, devServicesEnabled, imageName, fixedExposedPort);
+        }
+    }
+
+    private static final class FixedExposedPortMongoDBContainer extends MongoDBContainer {
+
+        private final Integer fixedExposedPort;
+
+        @SuppressWarnings("deprecation")
+        private FixedExposedPortMongoDBContainer(Integer fixedExposedPort) {
+            this.fixedExposedPort = fixedExposedPort;
+        }
+
+        private FixedExposedPortMongoDBContainer(DockerImageName dockerImageName, Integer fixedExposedPort) {
+            super(dockerImageName);
+            this.fixedExposedPort = fixedExposedPort;
+        }
+
+        @Override
+        protected void configure() {
+            super.configure();
+            if (fixedExposedPort != null) {
+                addFixedExposedPort(fixedExposedPort, 27017);
+            }
         }
     }
 }

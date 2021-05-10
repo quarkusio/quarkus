@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -22,13 +23,22 @@ public class PostgresqlDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.POSTGRESQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties) {
+                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    OptionalInt fixedExposedPort) {
                 PostgreSQLContainer container = new PostgreSQLContainer(
                         DockerImageName.parse(imageName.orElse(PostgreSQLContainer.IMAGE + ":" + TAG))
-                                .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)))
-                                        .withPassword(password.orElse("quarkus"))
-                                        .withUsername(username.orElse("quarkus"))
-                                        .withDatabaseName(datasourceName.orElse("default"));
+                                .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE))) {
+                    @Override
+                    protected void configure() {
+                        super.configure();
+                        if (fixedExposedPort.isPresent()) {
+                            addFixedExposedPort(fixedExposedPort.getAsInt(), PostgreSQLContainer.POSTGRESQL_PORT);
+                        }
+                    };
+                }
+                        .withPassword(password.orElse("quarkus"))
+                        .withUsername(username.orElse("quarkus"))
+                        .withDatabaseName(datasourceName.orElse("default"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
                 return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),

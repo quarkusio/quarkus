@@ -3,12 +3,14 @@ package io.quarkus.datasource.deployment.spi;
 import java.io.Closeable;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public interface DevServicesDatasourceProvider {
 
     RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
             Optional<String> datasourceName,
-            Optional<String> imageName, Map<String, String> additionalProperties);
+            Optional<String> imageName, Map<String, String> additionalProperties,
+            OptionalInt port);
 
     class RunningDevServicesDatasource {
 

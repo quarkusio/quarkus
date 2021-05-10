@@ -269,7 +269,7 @@ public class ConfiguredBeanTest {
         Assertions.assertFalse(configuredBean.getRunTimeConfig().objectBoolean);
         Assertions.assertEquals(2, configuredBean.getRunTimeConfig().primitiveInteger);
         Assertions.assertEquals(9, configuredBean.getRunTimeConfig().objectInteger);
-        List<Integer> oneToNine = IntStream.range(1, 10).mapToObj(Integer::new).collect(Collectors.toList());
+        List<Integer> oneToNine = IntStream.range(1, 10).mapToObj(Integer::valueOf).collect(Collectors.toList());
         Assertions.assertEquals(oneToNine, configuredBean.getRunTimeConfig().oneToNine);
         List<Integer> mapValues = new ArrayList<>(Arrays.asList(1, 2));
         List<Integer> actualMapValues = new ArrayList<>(configuredBean.getRunTimeConfig().mapOfNumbers.values());

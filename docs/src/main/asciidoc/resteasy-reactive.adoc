@@ -426,6 +426,8 @@ while the `file` field will contain data about the uploaded file in the `image` 
 
 NOTE: `FileUpload` provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
 
+NOTE: When access to all uploaded files without specifying the form names is needed, RESTEasy Reactive allows the use of `@RestForm List<FileUpload>`, where it is important to **not** set a name for the `@RestForm` annotation.
+
 NOTE: `@PartType` is used to aid in deserialization of the corresponding part of the request into the desired Java type. It is very useful when for example the corresponding body part is JSON
 and needs to be converted to a POJO.
 

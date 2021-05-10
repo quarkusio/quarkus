@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -93,6 +94,16 @@ public final class MultipartSupport {
             }
         }
         return null;
+    }
+
+    public static List<QuarkusFileUpload> getFileUploads(ResteasyReactiveRequestContext context) {
+        RoutingContext routingContext = context.unwrap(RoutingContext.class);
+        Set<FileUpload> fileUploads = routingContext.fileUploads();
+        List<QuarkusFileUpload> result = new ArrayList<>(fileUploads.size());
+        for (FileUpload fileUpload : fileUploads) {
+            result.add(new QuarkusFileUpload(fileUpload));
+        }
+        return result;
     }
 
     private static ByteArrayInputStream formAttributeValueToInputStream(String formAttributeValue) {

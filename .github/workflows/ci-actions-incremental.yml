@@ -29,6 +29,7 @@ on:
       - '.github/*.yml'
       - '.github/*.java'
       - '.github/*.conf'
+  workflow_dispatch:
 
 env:
   # Workaround testsuite locale issue

@@ -1,6 +1,7 @@
 package io.quarkus.devtools.project.extensions;
 
 import io.quarkus.maven.ArtifactCoords;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -11,23 +12,31 @@ public class ExtensionInstallPlan {
     public static final ExtensionInstallPlan EMPTY = new ExtensionInstallPlan(
             Collections.emptySet(),
             Collections.emptySet(),
+            Collections.emptySet(),
             Collections.emptySet());
 
     private final Set<ArtifactCoords> platforms;
     private final Set<ArtifactCoords> managedExtensions;
     private final Set<ArtifactCoords> independentExtensions;
+    private final Collection<String> unmatchedKeywords;
 
     private ExtensionInstallPlan(Set<ArtifactCoords> platforms,
             Set<ArtifactCoords> managedExtensions,
-            Set<ArtifactCoords> independentExtensions) {
+            Set<ArtifactCoords> independentExtensions,
+            Collection<String> unmatchedKeywords) {
         this.platforms = platforms;
         this.managedExtensions = managedExtensions;
         this.independentExtensions = independentExtensions;
+        this.unmatchedKeywords = unmatchedKeywords;
     }
 
     public boolean isNotEmpty() {
         return !this.platforms.isEmpty() || !this.managedExtensions.isEmpty()
                 || !this.independentExtensions.isEmpty();
+    }
+
+    public boolean isInstallable() {
+        return isNotEmpty() && unmatchedKeywords.isEmpty();
     }
 
     /**
@@ -63,12 +72,17 @@ public class ExtensionInstallPlan {
         return independentExtensions;
     }
 
+    public Collection<String> getUnmatchedKeywords() {
+        return unmatchedKeywords;
+    }
+
     @Override
     public String toString() {
         return "InstallRequest{" +
                 "platforms=" + platforms +
                 ", managedExtensions=" + managedExtensions +
                 ", independentExtensions=" + independentExtensions +
+                ", unmatchedKeywords=" + unmatchedKeywords +
                 '}';
     }
 
@@ -81,9 +95,10 @@ public class ExtensionInstallPlan {
         private final Set<ArtifactCoords> platforms = new LinkedHashSet<>();
         private final Set<ArtifactCoords> extensionsInPlatforms = new LinkedHashSet<>();
         private final Set<ArtifactCoords> independentExtensions = new LinkedHashSet<>();
+        private final Collection<String> unmatchedKeywords = new ArrayList<>();
 
         public ExtensionInstallPlan build() {
-            return new ExtensionInstallPlan(platforms, extensionsInPlatforms, independentExtensions);
+            return new ExtensionInstallPlan(platforms, extensionsInPlatforms, independentExtensions, unmatchedKeywords);
         }
 
         public Builder addIndependentExtension(ArtifactCoords artifactCoords) {
@@ -98,6 +113,11 @@ public class ExtensionInstallPlan {
 
         public Builder addPlatform(ArtifactCoords artifactCoords) {
             this.platforms.add(artifactCoords);
+            return this;
+        }
+
+        public Builder addUnmatchedKeyword(String unmatchedKeyword) {
+            this.unmatchedKeywords.add(unmatchedKeyword);
             return this;
         }
 

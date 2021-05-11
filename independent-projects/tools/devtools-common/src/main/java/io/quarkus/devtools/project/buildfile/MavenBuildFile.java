@@ -81,7 +81,13 @@ public class MavenBuildFile extends BuildFile {
             if (model.getDependencies()
                     .stream()
                     .noneMatch(thisDep -> d.getManagementKey().equals(thisDep.getManagementKey()))) {
-                model.addDependency(d);
+                final int index = getIndexToAddExtension();
+                if (index >= 0) {
+                    model.getDependencies().add(index, d);
+                } else {
+                    model.getDependencies().add(d);
+                }
+
                 return true;
             }
         }
@@ -150,6 +156,16 @@ public class MavenBuildFile extends BuildFile {
             }
             return model;
         });
+    }
+
+    private int getIndexToAddExtension() {
+        final List<Dependency> dependencies = getModel().getDependencies();
+        for (int i = 0; i < dependencies.size(); i++) {
+            if ("test".equals(dependencies.get(i).getScope())) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private Model initModel() throws IOException {

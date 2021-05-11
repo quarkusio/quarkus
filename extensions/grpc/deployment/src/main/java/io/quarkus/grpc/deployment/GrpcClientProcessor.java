@@ -6,8 +6,10 @@ import static io.quarkus.grpc.deployment.GrpcDotNames.RETRIEVE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.ResourceRegistrationUtils.registerResourcesForProperties;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -19,8 +21,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassType;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -28,11 +31,12 @@ import org.jboss.logging.Logger;
 import io.grpc.Channel;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.processor.BeanConfigurator;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -40,6 +44,8 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.deployment.GrpcClientBuildItem.StubInfo;
+import io.quarkus.grpc.deployment.GrpcClientBuildItem.StubType;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
@@ -64,10 +70,11 @@ public class GrpcClientProcessor {
 
     @BuildStep
     void discoverInjectedGrpcServices(BeanDiscoveryFinishedBuildItem beanDiscovery,
-            BuildProducer<GrpcServiceBuildItem> services,
-            BuildProducer<FeatureBuildItem> features) {
+            BuildProducer<GrpcClientBuildItem> services,
+            BuildProducer<FeatureBuildItem> features,
+            CombinedIndexBuildItem index) {
 
-        Map<String, GrpcServiceBuildItem> items = new HashMap<>();
+        Map<String, GrpcClientBuildItem> items = new HashMap<>();
 
         for (InjectionPointInfo injectionPoint : beanDiscovery.getInjectionPoints()) {
             AnnotationInstance clientAnnotation = injectionPoint.getRequiredQualifier(GrpcDotNames.GRPC_CLIENT);
@@ -104,52 +111,85 @@ public class GrpcClientProcessor {
                         "Invalid @GrpcClient `" + injectionPoint.getTargetInfo() + "` - service name cannot be empty");
             }
 
-            GrpcServiceBuildItem item;
+            GrpcClientBuildItem item;
             if (items.containsKey(serviceName)) {
                 item = items.get(serviceName);
             } else {
-                item = new GrpcServiceBuildItem(serviceName);
+                item = new GrpcClientBuildItem(serviceName);
                 items.put(serviceName, item);
             }
 
             Type injectionType = injectionPoint.getRequiredType();
-            ClassType type;
-            if (injectionType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                // Instance<X>
-                type = injectionType.asParameterizedType().arguments().get(0).asClassType();
-            } else {
-                // X directly
-                type = injectionType.asClassType();
+
+            // Programmatic lookup - take the param type
+            if (DotNames.INSTANCE.equals(injectionType.name()) || DotNames.INJECTABLE_INSTANCE.equals(injectionType.name())) {
+                injectionType = injectionType.asParameterizedType().arguments().get(0);
             }
-            if (!type.name().equals(GrpcDotNames.CHANNEL)) {
-                item.addStubClass(type);
+
+            if (injectionType.name().equals(GrpcDotNames.CHANNEL)) {
+                // No need to add the stub class for Channel
+                continue;
+            }
+
+            // Only blocking and Mutiny stubs are supported
+            // The required type must have io.grpc.stub.AbstractBlockingStub or io.quarkus.grpc.runtime.MutinyStub in the hierarchy
+            // Note that we must use the computing index because the generated stubs are not part of the app index
+            Set<DotName> rawTypes = getRawTypeClosure(index.getComputingIndex().getClassByName(injectionType.name()),
+                    index.getComputingIndex());
+
+            if (rawTypes.contains(GrpcDotNames.ABSTRACT_BLOCKING_STUB)) {
+                item.addStub(injectionType.name(), StubType.BLOCKING);
+            } else if (rawTypes.contains(GrpcDotNames.MUTINY_STUB)) {
+                item.addStub(injectionType.name(), StubType.MUTINY);
+            } else {
+                throw new DeploymentException(
+                        injectionType + " cannot be injected into " + injectionPoint.getTargetInfo()
+                                + " - only blocking stubs, reactive stubs based on Mutiny and io.grpc.Channel can be injected via @GrpcClient");
             }
         }
 
-        items.values().forEach(new Consumer<GrpcServiceBuildItem>() {
-            @Override
-            public void accept(GrpcServiceBuildItem item) {
-                services.produce(item);
-                LOGGER.debugf("Detected GrpcService associated with the '%s' configuration prefix", item.name);
-            }
-        });
-
         if (!items.isEmpty()) {
+            for (GrpcClientBuildItem item : items.values()) {
+                services.produce(item);
+                LOGGER.debugf("Detected GrpcService associated with the '%s' configuration prefix", item.getServiceName());
+            }
             features.produce(new FeatureBuildItem(GRPC_CLIENT));
         }
     }
 
-    private boolean isMutinyStub(DotName name) {
-        return name.local().startsWith("Mutiny") && name.local().endsWith("Stub");
+    private static Set<DotName> getRawTypeClosure(ClassInfo classInfo, IndexView index) {
+        Set<DotName> types = new HashSet<>();
+        types.add(classInfo.name());
+        // Interfaces
+        for (DotName name : classInfo.interfaceNames()) {
+            ClassInfo interfaceClassInfo = index.getClassByName(name);
+            if (interfaceClassInfo != null) {
+                types.addAll(getRawTypeClosure(interfaceClassInfo, index));
+            } else {
+                // Interface not found in the index
+                types.add(name);
+            }
+        }
+        // Superclass
+        DotName superName = classInfo.superName();
+        if (superName != null && !DotNames.OBJECT.equals(superName)) {
+            ClassInfo superClassInfo = index.getClassByName(superName);
+            if (superClassInfo != null) {
+                types.addAll(getRawTypeClosure(superClassInfo, index));
+            } else {
+                // Superclass not found in the index
+                types.add(superName);
+            }
+        }
+        return types;
     }
 
     @BuildStep
-    public void generateGrpcServicesProducers(List<GrpcServiceBuildItem> services,
-            BeanRegistrationPhaseBuildItem phase,
-            BuildProducer<BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem> beans) {
+    public void generateGrpcServicesProducers(List<GrpcClientBuildItem> services,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
-        for (GrpcServiceBuildItem svc : services) {
-            // We generate 3 producers:
+        for (GrpcClientBuildItem svc : services) {
+            // We generate 3 synthetic beans:
             // 1. the channel
             // 2. the blocking stub - if blocking stub is set
             // 3. the mutiny stub - if mutiny stub is set
@@ -157,9 +197,7 @@ public class GrpcClientProcessor {
             // IMPORTANT: the channel producer relies on the io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider
             // bean that provides the GrpcClientConfiguration for the specific service.
 
-            BeanConfigurator<Object> channelProducer = phase.getContext()
-                    .configure(GrpcDotNames.CHANNEL)
-                    .types(Channel.class)
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(GrpcDotNames.CHANNEL)
                     .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", svc.getServiceName()).done()
                     .scope(Singleton.class)
                     .unremovable()
@@ -169,27 +207,19 @@ public class GrpcClientProcessor {
                             GrpcClientProcessor.this.generateChannelProducer(mc, svc);
                         }
                     })
-                    .destroyer(Channels.ChannelDestroyer.class);
-            channelProducer.done();
-            beans.produce(new BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem(channelProducer));
+                    .destroyer(Channels.ChannelDestroyer.class).done());
 
             String svcName = svc.getServiceName();
-            for (ClassType stubClass : svc.getStubClasses()) {
-                DotName stubClassName = stubClass.name();
-                BeanConfigurator<Object> stubProducer = phase.getContext()
-                        .configure(stubClassName)
-                        .types(stubClass)
+            for (StubInfo stub : svc.getStubs()) {
+                syntheticBeans.produce(SyntheticBeanBuildItem.configure(stub.className)
                         .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", svcName).done()
                         .scope(Singleton.class)
                         .creator(new Consumer<MethodCreator>() {
                             @Override
                             public void accept(MethodCreator mc) {
-                                GrpcClientProcessor.this.generateStubProducer(mc, svcName, stubClassName,
-                                        isMutinyStub(stubClassName));
+                                GrpcClientProcessor.this.generateStubProducer(mc, svcName, stub);
                             }
-                        });
-                stubProducer.done();
-                beans.produce(new BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem(stubProducer));
+                        }).done());
             }
         }
     }
@@ -206,29 +236,21 @@ public class GrpcClientProcessor {
         producer.produce(new RuntimeInitializedClassBuildItem("io.grpc.internal.RetriableStream"));
     }
 
-    private void generateChannelProducer(MethodCreator mc, GrpcServiceBuildItem svc) {
+    private void generateChannelProducer(MethodCreator mc, GrpcClientBuildItem svc) {
         ResultHandle name = mc.load(svc.getServiceName());
         ResultHandle result = mc.invokeStaticMethod(CREATE_CHANNEL_METHOD, name);
         mc.returnValue(result);
         mc.close();
     }
 
-    private void generateStubProducer(MethodCreator mc, String svcName, DotName stubClassName, boolean mutiny) {
+    private void generateStubProducer(MethodCreator mc, String svcName, StubInfo stubInfo) {
         ResultHandle prefix = mc.load(svcName);
         ResultHandle channel = mc.invokeStaticMethod(RETRIEVE_CHANNEL_METHOD, prefix);
 
-        MethodDescriptor descriptor;
-        if (mutiny) {
-            descriptor = MethodDescriptor
-                    .ofMethod(convertToServiceName(stubClassName), "newMutinyStub",
-                            stubClassName.toString(),
-                            Channel.class.getName());
-        } else {
-            descriptor = MethodDescriptor
-                    .ofMethod(convertToServiceName(stubClassName), "newBlockingStub",
-                            stubClassName.toString(),
-                            Channel.class.getName());
-        }
+        MethodDescriptor descriptor = MethodDescriptor
+                .ofMethod(convertToServiceName(stubInfo.className), stubInfo.type.getFactoryMethodName(),
+                        stubInfo.className.toString(),
+                        Channel.class.getName());
 
         ResultHandle stub = mc.invokeStaticMethod(descriptor, channel);
         mc.returnValue(stub);

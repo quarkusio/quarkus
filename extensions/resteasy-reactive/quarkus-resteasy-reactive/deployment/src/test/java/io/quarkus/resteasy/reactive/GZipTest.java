@@ -1,7 +1,12 @@
 package io.quarkus.resteasy.reactive;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.function.Supplier;
 
+import javax.imageio.ImageIO;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -51,25 +56,9 @@ public class GZipTest {
 
         RestAssured.given().get("/test/nocompression").then().statusCode(200)
                 .header("content-encoding", "identity")
-                .header("content-length", Matchers.equalTo(Integer.toString(longString.length())))
-                .body(Matchers.equalTo(longString));
+                .header("content-length", Matchers.equalTo((long) (createImage().getData().getDataBuffer().getSize() * 4L)))
+                .body(Matchers.equalTo(createImage()));
     }
-
-    //        @ApplicationScoped
-    //        static class BeanRegisteringRouteUsingObserves {
-    //
-    //            public void register(@Observes Router router) {
-    //
-    //                router.route("/compression").handler(rc -> {
-    //                    rc.response().end(longString);
-    //                });
-    //                router.route("/nocompression").handler(rc -> {
-    //                    rc.response().headers().set("content-encoding", "identity");
-    //                    rc.response().end(longString);
-    //                });
-    //            }
-    //
-    //        }
 
     @Path("/test")
     public static class TestCompression {
@@ -82,8 +71,35 @@ public class GZipTest {
 
         @Path("/nocompression")
         @GET
-        public String registerNoCompression() {
-            return longString;
+        public BufferedImage registerNoCompression() throws IOException {
+            BufferedImage image = createImage();
+            return image;
         }
+    }
+
+    public static BufferedImage createImage() throws IOException {
+        int width = 300;
+        int height = 300;
+
+        BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        // Create a graphics which can be used to draw into the buffered image
+        Graphics2D graphic = bufferedImage.createGraphics();
+        // fill all the image with white
+        graphic.setColor(Color.white);
+        graphic.fillRect(0, 0, width, height);
+
+        // create a circle with black
+        graphic.setColor(Color.black);
+        graphic.fillOval(0, 0, width, height);
+
+        // create a string with yellow
+        graphic.setColor(Color.yellow);
+        graphic.drawString("Quarkus RESTEasy Reactive", 50, 120);
+        graphic.dispose();
+
+        // Save as PNG
+        File file = new File("src/test/resources/imageForTest.png");
+        ImageIO.write(bufferedImage, "png", file);
+        return bufferedImage;
     }
 }

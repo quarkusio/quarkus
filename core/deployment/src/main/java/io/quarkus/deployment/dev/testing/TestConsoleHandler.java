@@ -39,6 +39,7 @@ public class TestConsoleHandler implements TestListener {
             if (disabled) {
                 for (int i : keys) {
                     if (i == 'r') {
+                        promptHandler.setStatus("\u001B[33mStarting tests\u001b[0m");
                         TestSupport.instance().get().start();
                     }
                 }
@@ -88,16 +89,22 @@ public class TestConsoleHandler implements TestListener {
     }
 
     public void printUsage() {
-        System.out.println("r - Re-run all tests");
-        System.out.println("f - Re-run failed tests");
-        System.out.println("b - Toggle 'broken only' mode, where only failing tests are run");
-        System.out.println("v - Print failures from the last test run");
-        System.out.println("o - Toggle test output");
-        System.out.println("p - Pause tests");
-        System.out.println("i - Toggle instrumentation based reload");
-        System.out.println("l - Toggle live reload");
-        System.out.println("s - Force live reload scan");
-        System.out.println("h - Display this help");
+        System.out.println("\nThe following commands are available:");
+        System.out.println("[\u001b[32mr\u001b[0m] - Re-run all tests");
+        System.out.println("[\u001b[32mf\u001b[0m] - Re-run failed tests");
+        System.out.println("[\u001b[32mb\u001b[0m] - Toggle 'broken only' mode, where only failing tests are run ("
+                + (testController.isBrokenOnlyMode() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
+        System.out.println("[\u001b[32mv\u001b[0m] - Print failures from the last test run");
+        System.out.println("[\u001b[32mo\u001b[0m] - Toggle test output ("
+                + (testController.isDisplayTestOutput() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
+        System.out.println("[\u001b[32mp\u001b[0m] - Pause tests");
+        System.out.println("[\u001b[32mi\u001b[0m] - Toggle instrumentation based reload ("
+                + (testController.isInstrumentationEnabled() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m")
+                + ")");
+        System.out.println("[\u001b[32ml\u001b[0m] - Toggle live reload ("
+                + (testController.isLiveReloadEnabled() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
+        System.out.println("[\u001b[32ms\u001b[0m] - Force live reload scan");
+        System.out.println("[\u001b[32mh\u001b[0m] - Display this help");
 
     }
 

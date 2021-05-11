@@ -309,6 +309,26 @@ public class TestSupport implements TestController {
         }
     }
 
+    @Override
+    public boolean isBrokenOnlyMode() {
+        return failingTestsOnly;
+    }
+
+    @Override
+    public boolean isDisplayTestOutput() {
+        return displayTestOutput;
+    }
+
+    @Override
+    public boolean isInstrumentationEnabled() {
+        return RuntimeUpdatesProcessor.INSTANCE.instrumentationEnabled();
+    }
+
+    @Override
+    public boolean isLiveReloadEnabled() {
+        return RuntimeUpdatesProcessor.INSTANCE.isLiveReloadEnabled();
+    }
+
     public static class RunStatus {
 
         final long lastRun;

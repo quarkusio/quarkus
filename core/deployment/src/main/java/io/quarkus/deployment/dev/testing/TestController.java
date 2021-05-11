@@ -50,4 +50,27 @@ public interface TestController {
      */
     void printFullResults();
 
+    /**
+     *
+     * @return <code>true</code> if broken only mode is enabled
+     */
+    boolean isBrokenOnlyMode();
+
+    /**
+     *
+     * @return <code>true</code> if test output is enabled
+     */
+    boolean isDisplayTestOutput();
+
+    /**
+     *
+     * @return <code>true</code> if live reload is enabled
+     */
+    boolean isInstrumentationEnabled();
+
+    /**
+     *
+     * @return <code>true</code> if live reload is enabled
+     */
+    boolean isLiveReloadEnabled();
 }

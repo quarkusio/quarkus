@@ -167,4 +167,10 @@ public class SimpleJsonResource extends SuperClass<Person> {
     public Multi<Person> getMulti0() {
         return Multi.createFrom().empty();
     }
+
+    @POST
+    @Path("/genericInput")
+    public String genericInputTest(DataItem<Item> item) {
+        return item.getContent().getName();
+    }
 }

@@ -49,7 +49,8 @@ public class ArtemisCoreProcessor {
     @BuildStep
     NativeImageConfigBuildItem config() {
         return NativeImageConfigBuildItem.builder()
-                .addRuntimeInitializedClass("org.apache.activemq.artemis.api.core.ActiveMQBuffers").build();
+                .addRuntimeInitializedClass("org.apache.activemq.artemis.api.core.ActiveMQBuffers")
+                .addRuntimeInitializedClass("org.apache.activemq.artemis.utils.RandomUtil").build();
     }
 
     @BuildStep

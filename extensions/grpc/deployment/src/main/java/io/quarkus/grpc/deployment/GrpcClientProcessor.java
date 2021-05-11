@@ -32,6 +32,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -173,6 +174,12 @@ public class GrpcClientProcessor {
     void registerSslResources(BuildProducer<NativeImageResourceBuildItem> resourceBuildItem) {
         Config config = ConfigProvider.getConfig();
         registerResourcesForProperties(config, resourceBuildItem, TRUST_STORE_PATTERN, CERTIFICATE_PATTERN, KEY_PATTERN);
+    }
+
+    @BuildStep
+    void runtimeInitialize(BuildProducer<RuntimeInitializedClassBuildItem> producer) {
+        // io.grpc.internal.RetriableStream uses j.u.Ramdom, so needs to be runtime-initialized
+        producer.produce(new RuntimeInitializedClassBuildItem("io.grpc.internal.RetriableStream"));
     }
 
     private void generateChannelProducer(MethodCreator mc, GrpcServiceBuildItem svc) {

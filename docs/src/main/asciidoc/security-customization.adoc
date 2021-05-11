@@ -321,6 +321,18 @@ and add the BouncyCastle FIPS provider dependency:
 </dependency>
 ----
 
+[NOTE]
+====
+`BCFIPS` provider option is supported in native image but the algorithm self-tests which rely on `java.security.SecureRandom` to verify the generated keys have been removed for these tests to pass. The following classes have been affected:
+- `org.bouncycastle.crypto.general.DSA`
+- `org.bouncycastle.crypto.general.DSTU4145`
+- `org.bouncycastle.crypto.general.ECGOST3410`
+- `org.bouncycastle.crypto.general.GOST3410`
+- `org.bouncycastle.crypto.fips.FipsDSA`
+- `org.bouncycastle.crypto.fips.FipsEC`
+- `org.bouncycastle.crypto.fips.FipsRSA`
+====
+
 === BouncyCastle JSSE FIPS
 
 If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use it in combination with `org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider` instead of the default SunJSSE provider then please set a `BCFIPSJSSE` provider name:
@@ -364,6 +376,11 @@ One can generate a keystore with this type and provider like this:
 ----
 keytool -genkey -alias server -keyalg RSA -keystore server-keystore.jks -keysize 2048 -keypass password -provider org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider -providerpath $PATH_TO_BC_FIPS_JAR -storetype BCFKS
 ----
+
+[NOTE]
+====
+`BCFIPSJSSE` provider option is currently not supported in native image.
+====
 
 == Reactive Security
 

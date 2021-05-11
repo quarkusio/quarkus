@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -61,12 +62,54 @@ public class OidcClientConfig extends OidcCommonConfig {
         @ConfigItem(defaultValue = "client")
         public Type type = Type.CLIENT;
 
+        /**
+         * Access token property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.ACCESS_TOKEN_VALUE)
+        public String accessTokenProperty = OidcConstants.ACCESS_TOKEN_VALUE;
+
+        /**
+         * Refresh token property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.REFRESH_TOKEN_VALUE)
+        public String refreshTokenProperty = OidcConstants.REFRESH_TOKEN_VALUE;
+
+        /**
+         * Refresh token property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.EXPIRES_IN)
+        public String expiresInProperty = OidcConstants.EXPIRES_IN;
+
         public Type getType() {
             return type;
         }
 
         public void setType(Type type) {
             this.type = type;
+        }
+
+        public String getAccessTokenProperty() {
+            return accessTokenProperty;
+        }
+
+        public void setAccessTokenProperty(String accessTokenProperty) {
+            this.accessTokenProperty = accessTokenProperty;
+        }
+
+        public String getRefreshTokenProperty() {
+            return refreshTokenProperty;
+        }
+
+        public void setRefreshTokenProperty(String refreshTokenProperty) {
+            this.refreshTokenProperty = refreshTokenProperty;
+        }
+
+        public String getExpiresInProperty() {
+            return expiresInProperty;
+        }
+
+        public void setExpiresInProperty(String expiresInProperty) {
+            this.expiresInProperty = expiresInProperty;
         }
     }
 

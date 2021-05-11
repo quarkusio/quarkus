@@ -43,7 +43,10 @@ class JGitProcessor {
     List<RuntimeInitializedClassBuildItem> runtimeInitializedClasses() {
         return Arrays.asList(
                 new RuntimeInitializedClassBuildItem("org.eclipse.jgit.transport.HttpAuthMethod$Digest"),
-                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.lib.GpgSigner"));
+                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.lib.GpgSigner"),
+                // The following classes use j.u.Ramdom, so they need to be runtime-initialized
+                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.internal.storage.file.WindowCache"),
+                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.util.FileUtils"));
     }
 
     @BuildStep

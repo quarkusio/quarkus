@@ -18,6 +18,7 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.maven.capabilities.CapabilityConfig;
 import java.io.BufferedReader;
@@ -503,11 +504,21 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             public boolean visitEnter(DependencyNode node) {
                 final org.eclipse.aether.artifact.Artifact a = node.getArtifact();
                 if (a != null && a.getFile() != null && a.getExtension().equals("jar")) {
-                    final Path p = a.getFile().toPath();
+                    Path p = a.getFile().toPath();
                     boolean isExtension = false;
                     if (Files.isDirectory(p)) {
                         isExtension = getExtensionDescriptorOrNull(p) != null;
                     } else {
+                        // in some cases a local dependency might not producing the classes directory
+                        // but assembling the JAR directly using maven plugins
+                        if (!Files.exists(p)) {
+                            final Path workspaceJar = p.getParent().resolve(LocalWorkspace.getFileName(a));
+                            if (!Files.exists(workspaceJar)) {
+                                getLog().warn("Failed to resolve " + a + ", " + p + " does not exist");
+                                return true;
+                            }
+                            p = workspaceJar;
+                        }
                         try (FileSystem fs = FileSystems.newFileSystem(p, (ClassLoader) null)) {
                             isExtension = getExtensionDescriptorOrNull(fs.getPath("")) != null;
                         } catch (IOException e) {

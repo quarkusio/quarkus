@@ -43,7 +43,7 @@ h5{
  {/if}
  {/for}
  <h5>Static Resources</h5>
- {#for resource in info:staticResourceInfo.resourceMap.get("/").children}
+ {#for resource in info:staticResourceInfo.resourceMap.get("/").children.orEmpty}
  <div class="row">
   <div class="col">
    {#if resource.isFolder}

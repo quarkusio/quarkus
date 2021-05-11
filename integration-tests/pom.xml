@@ -173,6 +173,7 @@
         <module>native-config-profile</module>
         <module>logging-min-level-unset</module>
         <module>logging-min-level-set</module>
+        <module>redis-devservices</module>
 
         <!-- gRPC tests -->
         <module>grpc-tls</module>

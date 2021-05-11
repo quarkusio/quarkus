@@ -967,6 +967,7 @@ and add them to the reflective hierarchy for `BUILD_TIME` analysis.
 
 ----
 
+[[configuration]]
 === Configuration
 
 Configuration in Quarkus is based on SmallRye Config, an implementation of the MicroProfile Config specification.

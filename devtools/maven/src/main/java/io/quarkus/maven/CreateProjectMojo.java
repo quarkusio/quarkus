@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Parent;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -40,7 +38,6 @@ import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
-import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
@@ -71,6 +68,9 @@ public class CreateProjectMojo extends AbstractMojo {
 
     @Parameter(property = "projectVersion")
     private String projectVersion;
+
+    @Parameter(property = "parent")
+    private String parent = "";
 
     /**
      * When true, do not include any code in the generated Quarkus project.
@@ -218,43 +218,12 @@ public class CreateProjectMojo extends AbstractMojo {
                 catalogResolver, mvn, log);
 
         File projectRoot = outputDirectory;
-        File pom = project != null ? project.getFile() : null;
-        Model parentPomModel = null;
-
-        boolean containsAtLeastOneGradleFile = false;
-        for (String gradleFile : Arrays.asList("build.gradle", "settings.gradle", "build.gradle.kts", "settings.gradle.kts")) {
-            containsAtLeastOneGradleFile |= new File(projectRoot, gradleFile).isFile();
-        }
 
         BuildTool buildToolEnum = BuildTool.findTool(buildTool);
         if (buildToolEnum == null) {
-            String validBuildTools = String.join(",",
-                    Arrays.asList(BuildTool.values()).stream().map(BuildTool::toString).collect(Collectors.toList()));
+            String validBuildTools = Arrays.stream(BuildTool.values()).map(BuildTool::toString)
+                    .collect(Collectors.joining(","));
             throw new IllegalArgumentException("Choose a valid build tool. Accepted values are: " + validBuildTools);
-        }
-        if (BuildTool.MAVEN.equals(buildToolEnum)) {
-            if (pom != null && pom.isFile()) {
-                try {
-                    parentPomModel = MojoUtils.readPom(pom);
-                    if (!"pom".equals(parentPomModel.getPackaging())) {
-                        throw new MojoExecutionException(
-                                "The parent project must have a packaging type of POM. Current packaging: "
-                                        + parentPomModel.getPackaging());
-                    }
-                } catch (IOException e) {
-                    throw new MojoExecutionException("Could not access parent pom.", e);
-                }
-            } else if (containsAtLeastOneGradleFile) {
-                throw new MojoExecutionException(
-                        "You are trying to create maven project in a directory that contains only gradle build files.");
-            }
-        } else if (BuildTool.GRADLE.equals(buildToolEnum) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildToolEnum)) {
-            if (containsAtLeastOneGradleFile) {
-                throw new MojoExecutionException("Adding subprojects to gradle projects is not implemented.");
-            } else if (pom != null && pom.isFile()) {
-                throw new MojoExecutionException(
-                        "You are trying to create gradle project in a directory that contains only maven build files.");
-            }
         }
 
         askTheUserForMissingValues();
@@ -287,27 +256,13 @@ public class CreateProjectMojo extends AbstractMojo {
                     .extensions(extensions)
                     .example(example)
                     .noCode(noCode)
-                    .appConfig(appConfig);
+                    .appConfig(appConfig)
+                    .parentProject(parent);
             if (path != null) {
                 createProject.setValue("path", path);
             }
 
             success = createProject.execute().isSuccess();
-            if (success && parentPomModel != null && BuildTool.MAVEN.equals(buildToolEnum)) {
-                // Write to parent pom and submodule pom if project creation is successful
-                if (!parentPomModel.getModules().contains(this.projectArtifactId)) {
-                    parentPomModel.addModule(this.projectArtifactId);
-                }
-                File subModulePomFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
-                Model subModulePomModel = MojoUtils.readPom(subModulePomFile);
-                Parent parent = new Parent();
-                parent.setGroupId(parentPomModel.getGroupId());
-                parent.setArtifactId(parentPomModel.getArtifactId());
-                parent.setVersion(parentPomModel.getVersion());
-                subModulePomModel.setParent(parent);
-                MojoUtils.write(parentPomModel, pom);
-                MojoUtils.write(subModulePomModel, subModulePomFile);
-            }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);
         }
@@ -350,7 +305,6 @@ public class CreateProjectMojo extends AbstractMojo {
     }
 
     private void askTheUserForMissingValues() throws MojoExecutionException {
-
         // If the user has disabled the interactive mode or if the user has specified the artifactId, disable the
         // user interactions.
         if (!session.getRequest().isInteractiveMode() || shouldUseDefaults()) {

@@ -4,6 +4,7 @@ import javax.annotation.security.DenyAll;
 import javax.annotation.security.PermitAll;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
@@ -20,6 +21,13 @@ public class UnsecuredResource {
     @GET
     @PermitAll
     public String permitAll() {
+        return "permitAll";
+    }
+
+    @Path("/permitAllPathParam/{index}")
+    @GET
+    @PermitAll
+    public String permitAllPathParam(@PathParam("index") int i) {
         return "permitAll";
     }
 

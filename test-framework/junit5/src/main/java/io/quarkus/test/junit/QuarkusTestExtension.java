@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
@@ -112,6 +113,8 @@ import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.SerializationWithXStreamFallbackDeepClone;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
+import io.vertx.core.Handler;
 
 public class QuarkusTestExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
@@ -835,7 +838,7 @@ public class QuarkusTestExtension
             invocation.proceed();
             return;
         }
-        runExtensionMethod(invocationContext, extensionContext);
+        runExtensionMethod(invocationContext, extensionContext, true);
         invocation.skip();
     }
 
@@ -885,6 +888,12 @@ public class QuarkusTestExtension
     }
 
     private Object runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext)
+            throws Throwable {
+        return runExtensionMethod(invocationContext, extensionContext, false);
+    }
+
+    private Object runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
+            boolean vertxContextAllowed)
             throws Throwable {
         resetHangTimeout();
 
@@ -949,7 +958,20 @@ public class QuarkusTestExtension
                 // but it's unlikely(?) we will run into this combo
                 effectiveTestInstance = testClassFromTCCL.getConstructor().newInstance();
             }
-            return newMethod.invoke(effectiveTestInstance, argumentsFromTccl.toArray(new Object[0]));
+            if (vertxContextAllowed) {
+                boolean vertxClassAnn = extensionContext.getRequiredTestClass().isAnnotationPresent(RunOnVertxContext.class);
+                boolean vertxMethodAnn = invocationContext.getExecutable().getAnnotation(RunOnVertxContext.class) != null;
+
+                if (vertxClassAnn || vertxMethodAnn) {
+                    // TODO: need to handle exceptions
+                    return invokeOnVertxContext(newMethod, argumentsFromTccl);
+                } else {
+                    return newMethod.invoke(effectiveTestInstance, argumentsFromTccl.toArray(new Object[0]));
+                }
+            } else {
+                return newMethod.invoke(effectiveTestInstance, argumentsFromTccl.toArray(new Object[0]));
+            }
+
         } catch (InvocationTargetException e) {
             throw e.getCause();
         } catch (IllegalAccessException | ClassNotFoundException e) {
@@ -986,6 +1008,41 @@ public class QuarkusTestExtension
             c = c.getSuperclass();
         }
         return newMethod;
+    }
+
+    /**
+     * This is horribly ugly because we have to load Vertx classes from the TCCL and then also invoke the test method
+     * via reflection as well
+     */
+    @SuppressWarnings("unchecked")
+    private Object invokeOnVertxContext(Method testMethod, List<Object> testMethodArgs) throws InvocationTargetException,
+            InstantiationException, InterruptedException, java.util.concurrent.ExecutionException {
+        try {
+            Class<?> vertxCoreRecorder = Class.forName(VertxCoreRecorder.class.getName(), false,
+                    Thread.currentThread().getContextClassLoader());
+            Supplier<Object> vertxSupplier = (Supplier<Object>) vertxCoreRecorder.getMethod("getVertx")
+                    .invoke(null);
+            Object vertx = vertxSupplier.get();
+            Object vertxContext = vertx.getClass()
+                    .getMethod("getOrCreateContext")
+                    .invoke(vertx);
+
+            Class<?> handlerClass = Class.forName(Handler.class.getName(), false,
+                    Thread.currentThread().getContextClassLoader());
+            CompletableFuture<Object> cf = new CompletableFuture<>();
+            Object handler = Class.forName(RunTestMethodOnContextHandler.class.getName(), true,
+                    Thread.currentThread().getContextClassLoader())
+                    .getDeclaredConstructor(Object.class, Method.class, List.class, CompletableFuture.class)
+                    .newInstance(actualTestInstance, testMethod, testMethodArgs, cf);
+
+            Class.forName(io.vertx.core.Context.class.getName(), false, Thread.currentThread().getContextClassLoader())
+                    .getMethod("runOnContext", handlerClass)
+                    .invoke(vertxContext, handler);
+            return cf.get();
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException e) {
+            // TODO make error handling more fine grained
+            throw new IllegalStateException("Unable to load Vertx", e);
+        }
     }
 
     @Override
@@ -1076,6 +1133,31 @@ public class QuarkusTestExtension
         }
         return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
                 + "' disabled because 'quarkus.profile.test.tags' don't match the tags of '" + testProfile + "'");
+    }
+
+    public static class RunTestMethodOnContextHandler implements Handler<Void> {
+        private final Object testInstance;
+        private final Method targetMethod;
+        private final List<Object> methodArgs;
+        private final CompletableFuture<Object> future;
+
+        public RunTestMethodOnContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
+                CompletableFuture<Object> future) {
+            this.testInstance = testInstance;
+            this.future = future;
+            this.targetMethod = targetMethod;
+            this.methodArgs = methodArgs;
+        }
+
+        @Override
+        public void handle(Void event) {
+            try {
+                Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
+                future.complete(testMethodResult);
+            } catch (Throwable t) {
+                future.completeExceptionally(t);
+            }
+        }
     }
 
     class ExtensionState implements ExtensionContext.Store.CloseableResource {

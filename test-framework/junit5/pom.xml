@@ -50,6 +50,12 @@
             <!-- Avoid adding this to the BOM -->
             <version>1.4.17</version>
         </dependency>
+        <!-- TODO: This needs to be made a soft dependency -->
+        <!-- Preferably the feature that it enables will be moved to a separate test module -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-core</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

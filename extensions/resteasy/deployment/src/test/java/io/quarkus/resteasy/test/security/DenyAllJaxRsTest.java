@@ -2,6 +2,7 @@ package io.quarkus.resteasy.test.security;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.equalTo;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -33,6 +34,20 @@ public class DenyAllJaxRsTest {
         TestIdentityController.resetRoles()
                 .add("admin", "admin", "admin")
                 .add("user", "user", "user");
+    }
+
+    @Test
+    public void shouldPermitPermitAllMethodWithPathParam() {
+        assertStatus("/unsecured/permitAllPathParam/1", 200, 200);
+    }
+
+    @Test
+    public void shouldReportErrorNoEndpointDetailsMethodWithWrongPathParam() {
+        when().get("/unsecured/permitAllPathParam/string")
+                .then()
+                .statusCode(404)
+                .body(equalTo(
+                        "RESTEASY003870: Unable to extract parameter from http request: javax.ws.rs.PathParam(\"index\") value is 'string'"));
     }
 
     @Test

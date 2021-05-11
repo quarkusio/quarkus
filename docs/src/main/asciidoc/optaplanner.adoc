@@ -445,13 +445,15 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
         // A room can accommodate at most one lesson at the same time.
 
         // Select a lesson ...
-        return constraintFactory.from(Lesson.class)
-                // ... and pair it with another lesson ...
+        return constraintFactory
+                .from(Lesson.class)
                 .join(Lesson.class,
                         // ... in the same timeslot ...
                         Joiners.equal(Lesson::getTimeslot),
                         // ... in the same room ...
-                        Joiners.equal(Lesson::getRoom))
+                        Joiners.equal(Lesson::getRoom),
+                        // Avoiding repeated pairs (A -> B, B -> A)
+                        Joiners.lessThan(Lesson::getId))
                 // then penalize each pair with a hard weight.
                 .penalize("Room conflict", HardSoftScore.ONE_HARD);
     }

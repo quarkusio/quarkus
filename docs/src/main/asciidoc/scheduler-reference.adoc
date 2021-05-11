@@ -201,7 +201,7 @@ void nonConcurrent() {
 
 == Scheduler
 
-Quarkus provides a built-in bean of type `io.quarkus.scheduler.Scheduler` that can be injected and used to pause/resume the scheduler.
+Quarkus provides a built-in bean of type `io.quarkus.scheduler.Scheduler` that can be injected and used to pause/resume the scheduler and individual scheduled methods identified by a specific `Scheduled#identity()`.
 
 .Scheduler Injection Example
 [source,java]
@@ -215,15 +215,19 @@ class MyService {
 
    void ping() {
       scheduler.pause(); <1>
+      scheduler.pause("myIdentity"); <2>
       if (scheduler.isRunning()) {
          throw new IllegalStateException("This should never happen!");
       }
-      scheduler.resume(); <2>
+      scheduler.resume("myIdentity"); <3>
+      scheduler.resume(); <4>
    }
 }
 ----
 <1> Pause all triggers.
-<2> Resume the scheduler.
+<2> Pause a specific scheduled method by its identity
+<3> Resume a specific scheduled method by its identity
+<4> Resume the scheduler.
 
 == Programmatic Scheduling
 

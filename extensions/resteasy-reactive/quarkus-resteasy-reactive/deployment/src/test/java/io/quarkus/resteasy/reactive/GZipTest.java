@@ -2,8 +2,10 @@ package io.quarkus.resteasy.reactive;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 
 import javax.imageio.ImageIO;
@@ -73,6 +75,12 @@ public class GZipTest {
         @GET
         public BufferedImage registerNoCompression() throws IOException {
             BufferedImage image = createImage();
+            System.out.println(" content-length using  getData().getDataBuffer().getSize() * 4L  => " + (long) (createImage().getData().getDataBuffer().getSize() * 4L));
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", outputStream);
+            outputStream.close();
+            long contentLength = outputStream.size();
+            System.out.println(" content-length using ByteArrayOutputStream => " + contentLength );
             return image;
         }
     }

@@ -1,17 +1,24 @@
-package io.quarkus.resteasy.reactive;
+package io.quarkus.resteasy.reactive.server.test.GZip;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.imageio.ImageIO;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import com.google.common.collect.ImmutableMap;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -27,6 +34,7 @@ public class GZipTest {
     private static final String APP_PROPS = "" +
             "quarkus.http.enable-compression=true\n";
 
+    static long contentLength;
     static String longString;
     static {
 
@@ -58,7 +66,7 @@ public class GZipTest {
 
         RestAssured.given().get("/test/nocompression").then().statusCode(200)
                 .header("content-encoding", "identity")
-                .header("content-length", Matchers.equalTo((long) (createImage().getData().getDataBuffer().getSize() * 4L)))
+                .header("content-length", Matchers.equalTo(contentLength))
                 .body(Matchers.equalTo(createImage()));
     }
 
@@ -73,13 +81,13 @@ public class GZipTest {
 
         @Path("/nocompression")
         @GET
+        @DisableCompression
         public BufferedImage registerNoCompression() throws IOException {
             BufferedImage image = createImage();
-            System.out.println(" content-length using  getData().getDataBuffer().getSize() * 4L  => " + (long) (createImage().getData().getDataBuffer().getSize() * 4L));
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ImageIO.write(image, "png", outputStream);
             outputStream.close();
-            long contentLength = outputStream.size();
+            contentLength = outputStream.size();
             System.out.println(" content-length using ByteArrayOutputStream => " + contentLength );
             return image;
         }

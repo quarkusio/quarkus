@@ -31,6 +31,12 @@ public class ProtectedResource {
     AuthzClient authzClient;
 
     @GET
+    @Path("/tenant")
+    public Uni<List<Permission>> permissionsTenant() {
+        return permissions();
+    }
+
+    @GET
     public Uni<List<Permission>> permissions() {
         return identity.checkPermission(new AuthPermission("Permission Resource")).onItem()
                 .transform(granted -> {

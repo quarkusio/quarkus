@@ -494,8 +494,6 @@ And finally, run it with:
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
 
-NOTE: If you are interested in tiny Docker images, check the {quarkus-images-url}/main/distroless[distroless] version.
-
 === Using a multi-stage Docker build
 
 The previous section showed you how to build a native executable using Maven or Gradle, but it requires you to have created the native executable first.
@@ -599,6 +597,31 @@ Please see link:native-and-ssl#working-with-containers[our Using SSL With Native
 
 NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel:$TAG AS build`.
 `$TAG` can be found on the https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[Quarkus Mandrel Images Tags page].
+
+=== Using a distroless base image
+
+If you are looking for small container images, the https://github.com/GoogleContainerTools/distroless[distroless] approach reduces the size of the base layer.
+The idea behind _distroless_ is the usage of a single and minimal base image containing all the requirements, and sometimes even the application itself.
+
+Quarkus provides a distroless base image that you can use in your `Dockerfile`.
+You only need to copy your application, and you are done:
+
+[source, dockerfile]
+----
+FROM quay.io/quarkus/quarkus-distroless-image:1.0
+COPY target/*-runner /application
+
+EXPOSE 8080
+USER nonroot
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+----
+
+TIP: Projects generated with https://code.quarkus.io already have this Dockerfile in the `src/main/docker` directory.
+
+Quarkus provides the `quay.io/quarkus/quarkus-distroless-image:1.0` image.
+It contains the required packages to run a native executable and is only **9Mb**.
+Just add your application on top of this image, and you will get a tiny container image.
 
 == Debugging native executable
 

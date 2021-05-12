@@ -26,8 +26,9 @@ public class GZipTest {
     private static final String APP_PROPS = "" +
             "quarkus.http.enable-compression=true\n";
 
-    static long contentLength;
+    static long imageSize;
     static String longString;
+    static File imageForTest;
     static {
 
         StringBuilder sb = new StringBuilder();
@@ -58,8 +59,8 @@ public class GZipTest {
 
         RestAssured.given().get("/test/nocompression").then().statusCode(200)
                 .header("content-encoding", "identity")
-                .header("content-length", Matchers.equalTo(contentLength))
-                .body(Matchers.equalTo(createImage()));
+                .header("content-length", Matchers.equalTo(imageSize))
+                .body(Matchers.equalTo(imageForTest));
     }
 
     @Path("/test")
@@ -74,39 +75,11 @@ public class GZipTest {
         @Path("/nocompression")
         @GET
         @DisableCompression
-        public BufferedImage registerNoCompression() throws IOException {
-            BufferedImage image = createImage();
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            ImageIO.write(image, "png", outputStream);
-            outputStream.close();
-            contentLength = outputStream.size();
-            return image;
+        public File registerNoCompression() throws IOException {
+            imageForTest = new File("src/test/resources/imageForTest.png");
+            imageSize = imageForTest.length();
+            return imageForTest;
         }
     }
 
-    public static BufferedImage createImage() throws IOException {
-        int width = 300;
-        int height = 300;
-
-        BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        // Create a graphics which can be used to draw into the buffered image
-        Graphics2D graphic = bufferedImage.createGraphics();
-        // fill all the image with white
-        graphic.setColor(Color.white);
-        graphic.fillRect(0, 0, width, height);
-
-        // create a circle with black
-        graphic.setColor(Color.black);
-        graphic.fillOval(0, 0, width, height);
-
-        // create a string with yellow
-        graphic.setColor(Color.yellow);
-        graphic.drawString("Quarkus RESTEasy Reactive", 50, 120);
-        graphic.dispose();
-
-        // Save as PNG
-        File file = new File("src/test/resources/imageForTest.png");
-        ImageIO.write(bufferedImage, "png", file);
-        return bufferedImage;
-    }
 }

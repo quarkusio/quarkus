@@ -214,6 +214,7 @@
         <testcontainers.version>1.15.3</testcontainers.version>
         <docker-java.version>3.2.8</docker-java.version> <!-- must be the version Testcontainers use -->
         <aesh-readline.version>2.1</aesh-readline.version>
+        <xml-combiner.version>3.0.0</xml-combiner.version>
     </properties>
 
     <dependencyManagement>
@@ -5308,6 +5309,11 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-apache-httpclient-deployment</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.atteo</groupId>
+                <artifactId>xml-combiner</artifactId>
+                <version>${xml-combiner.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

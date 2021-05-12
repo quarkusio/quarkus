@@ -15,6 +15,11 @@ public class UberJarConfigBuildStep {
     }
 
     @BuildStep
+    UberJarMergedResourceBuildItem uberJarMergedResourceBuildItemXml() {
+        return new UberJarMergedResourceBuildItem("META-INF/wsdl.plugin.xml");
+    }
+
+    @BuildStep
     UberJarIgnoredResourceBuildItem uberJarIgnoredResourceBuildItem() {
         return new UberJarIgnoredResourceBuildItem("META-INF/cxf/cxf.fixml");
     }

@@ -4,6 +4,7 @@ import static io.quarkus.bootstrap.util.ZipUtils.wrapForJDK8232879;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +33,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -47,8 +49,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
+
 import org.apache.commons.lang3.SystemUtils;
+import org.atteo.xmlcombiner.XmlCombiner;
 import org.jboss.logging.Logger;
+import org.xml.sax.SAXException;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
@@ -1169,10 +1176,21 @@ public class JarResultBuildStep {
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             try (final OutputStream os = wrapForJDK8232879(
                     Files.newOutputStream(runnerZipFs.getPath(entry.getKey())))) {
-                // TODO: Handle merging of XMLs
-                for (byte[] i : entry.getValue()) {
-                    os.write(i);
-                    os.write('\n');
+                if (entry.getKey().toLowerCase(Locale.ROOT).endsWith(".xml")) {
+                    try {
+                        XmlCombiner combiner = new XmlCombiner();
+                        for (byte[] i : entry.getValue()) {
+                            combiner.combine(new ByteArrayInputStream(i));
+                        }
+                        combiner.buildDocument(os);
+                    } catch (ParserConfigurationException | SAXException | TransformerException e) {
+                        throw new IOException("Error while parsing " + entry.getKey(), e);
+                    }
+                } else {
+                    for (byte[] i : entry.getValue()) {
+                        os.write(i);
+                        os.write('\n');
+                    }
                 }
             }
         }

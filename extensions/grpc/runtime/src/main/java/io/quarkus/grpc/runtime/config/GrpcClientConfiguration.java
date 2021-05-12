@@ -143,4 +143,10 @@ public class GrpcClientConfiguration {
      */
     @ConfigItem(defaultValue = "pick_first")
     public String loadBalancingPolicy;
+
+    /**
+     * The compression to use for each call. The accepted values are {@code gzip} and {@code identity}.
+     */
+    @ConfigItem
+    public Optional<String> compression;
 }

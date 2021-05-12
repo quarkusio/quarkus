@@ -1,6 +1,7 @@
 package io.quarkus.grpc.deployment;
 
 import static io.quarkus.deployment.Feature.GRPC_CLIENT;
+import static io.quarkus.grpc.deployment.GrpcDotNames.CONFIGURE_STUB;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CREATE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RETRIEVE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.ResourceRegistrationUtils.registerResourcesForProperties;
@@ -244,15 +245,21 @@ public class GrpcClientProcessor {
     }
 
     private void generateStubProducer(MethodCreator mc, String svcName, StubInfo stubInfo) {
-        ResultHandle prefix = mc.load(svcName);
-        ResultHandle channel = mc.invokeStaticMethod(RETRIEVE_CHANNEL_METHOD, prefix);
+        ResultHandle serviceName = mc.load(svcName);
 
-        MethodDescriptor descriptor = MethodDescriptor
+        // First obtain the channel instance for the given service name
+        ResultHandle channel = mc.invokeStaticMethod(RETRIEVE_CHANNEL_METHOD, serviceName);
+
+        // Then create the stub, e.g. newBlockingStub(channel)
+        MethodDescriptor factoryMethod = MethodDescriptor
                 .ofMethod(convertToServiceName(stubInfo.className), stubInfo.type.getFactoryMethodName(),
                         stubInfo.className.toString(),
                         Channel.class.getName());
+        ResultHandle stub = mc.invokeStaticMethod(factoryMethod, channel);
 
-        ResultHandle stub = mc.invokeStaticMethod(descriptor, channel);
+        // If needed, modify the call options, e.g. stub = stub.withCompression("gzip")
+        stub = mc.invokeStaticMethod(CONFIGURE_STUB, serviceName, stub);
+
         mc.returnValue(stub);
         mc.close();
     }

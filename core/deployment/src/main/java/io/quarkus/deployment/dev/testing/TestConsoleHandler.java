@@ -84,7 +84,7 @@ public class TestConsoleHandler implements TestListener {
     @Override
     public void listenerRegistered(TestController testController) {
         this.testController = testController;
-        promptHandler.setStatus(PAUSED_PROMPT);
+        promptHandler.setPrompt(PAUSED_PROMPT);
     }
 
     public void printUsage() {

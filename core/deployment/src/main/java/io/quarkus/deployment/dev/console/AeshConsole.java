@@ -266,46 +266,52 @@ public class AeshConsole extends QuarkusConsole {
                     return;
                 }
             }
-            clearStatusMessages(buffer);
-            int cursorPos = lastWriteCursorX;
-            gotoLine(buffer, size.getHeight());
-            String stripped = stripAnsiCodes(s);
-            int lines = countLines(s, cursorPos);
-            int trailing = 0;
-            int index = stripped.lastIndexOf("\n");
-            if (index == -1) {
-                trailing = stripped.length();
+            if (totalStatusLines == 0) {
+                writeQueue.add(s);
             } else {
-                trailing = stripped.length() - index - 1;
-            }
+                clearStatusMessages(buffer);
+                int cursorPos = lastWriteCursorX;
+                gotoLine(buffer, size.getHeight());
+                String stripped = stripAnsiCodes(s);
+                int lines = countLines(s, cursorPos);
+                int trailing = 0;
+                int index = stripped.lastIndexOf("\n");
+                if (index == -1) {
+                    trailing = stripped.length();
+                } else {
+                    trailing = stripped.length() - index - 1;
+                }
 
-            int newCursorPos;
-            if (lines == 0) {
-                newCursorPos = trailing + cursorPos;
-            } else {
-                newCursorPos = trailing;
-            }
+                int newCursorPos;
+                if (lines == 0) {
+                    newCursorPos = trailing + cursorPos;
+                } else {
+                    newCursorPos = trailing;
+                }
 
-            if (cursorPos > 1 && lines == 0) {
+                if (cursorPos > 1 && lines == 0) {
+                    buffer.append(s);
+                    lastWriteCursorX = newCursorPos;
+                    //partial line, just write it
+                    connection.write(buffer.toString());
+                    return;
+                }
+                if (lines == 0) {
+                    lines++;
+                }
+                //move the existing content up by the number of lines
+                int appendLines = Math.max(Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines), 1);
+                clearStatusMessages(buffer);
+                buffer.append("\033[").append(size.getHeight() - totalStatusLines).append(";").append(0).append("H");
                 buffer.append(s);
+                buffer.append("\033[").append(size.getHeight()).append(";").append(0).append("H");
+                for (int i = 0; i < appendLines; ++i) {
+                    buffer.append("\n");
+                }
                 lastWriteCursorX = newCursorPos;
-                //partial line, just write it
-                connection.write(buffer.toString());
-                return;
+                printStatusAndPrompt(buffer);
+                writeQueue.add(buffer.toString());
             }
-            if (lines == 0) {
-                lines++;
-            }
-            //move the existing content up by the number of lines
-            int appendLines = cursorPos > 1 ? lines - 1 : lines;
-            for (int i = 0; i < appendLines; ++i) {
-                buffer.append("\n");
-            }
-            buffer.append("\033[").append(size.getHeight() - totalStatusLines - lines).append(";").append(0).append("H");
-            buffer.append(s);
-            lastWriteCursorX = newCursorPos;
-            printStatusAndPrompt(buffer);
-            writeQueue.add(buffer.toString());
         }
         deadlockSafeWrite();
     }

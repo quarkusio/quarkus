@@ -8,11 +8,15 @@ public class JacksonConfigSupport {
 
     private final boolean writeDatesAsTimestamps;
 
+    private final boolean acceptCaseInsensitiveEnums;
+
     private final ZoneId timeZone;
 
-    public JacksonConfigSupport(boolean failOnUnknownProperties, boolean writeDatesAsTimestamps, ZoneId timeZone) {
+    public JacksonConfigSupport(boolean failOnUnknownProperties, boolean writeDatesAsTimestamps,
+            boolean acceptCaseInsensitiveEnums, ZoneId timeZone) {
         this.failOnUnknownProperties = failOnUnknownProperties;
         this.writeDatesAsTimestamps = writeDatesAsTimestamps;
+        this.acceptCaseInsensitiveEnums = acceptCaseInsensitiveEnums;
         this.timeZone = timeZone;
     }
 
@@ -22,6 +26,10 @@ public class JacksonConfigSupport {
 
     public boolean isWriteDatesAsTimestamps() {
         return writeDatesAsTimestamps;
+    }
+
+    public boolean isAcceptCaseInsensitiveEnums() {
+        return acceptCaseInsensitiveEnums;
     }
 
     public ZoneId getTimeZone() {

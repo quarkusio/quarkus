@@ -24,6 +24,12 @@ public class JacksonBuildTimeConfig {
     public boolean writeDatesAsTimestamps;
 
     /**
+     * If enabled, Jackson will ignore case during Enum deserialization.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean acceptCaseInsensitiveEnums;
+
+    /**
      * If set, Jackson will default to using the specified timezone when formatting dates.
      * Some examples values are "Asia/Jakarta" and "GMT+3".
      * If not set, Jackson will use its own default.

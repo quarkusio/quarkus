@@ -1,4 +1,4 @@
-package io.quarkus.it.rest.client;
+package io.quarkus.it.rest.client.main;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;

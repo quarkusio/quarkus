@@ -511,7 +511,7 @@ public class S3AsyncClientResource extends CommonResource {
         return Uni.createFrom()
                 .completionStage(() -> s3.getObject(buildGetRequest(objectKey), AsyncResponseTransformer.toFile(tempFile)))
                 .onItem()
-                .apply(object -> Response.ok(tempFile)
+                .transform(object -> Response.ok(tempFile)
                         .header("Content-Disposition", "attachment;filename=" + objectKey)
                         .header("Content-Type", object.contentType()).build());
     }

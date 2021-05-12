@@ -12,8 +12,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
+import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
 import io.quarkus.vertx.http.testrunner.HelloResource;
-import io.quarkus.vertx.http.testrunner.TestRunnerTestUtils;
 
 public class IncludeTagsTestCase {
 
@@ -23,7 +23,7 @@ public class IncludeTagsTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class)
-                            .add(new StringAsset(TestRunnerTestUtils.appProperties("quarkus.test.include-tags=a")),
+                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.include-tags=a")),
                                     "application.properties");
                 }
             })
@@ -36,7 +36,7 @@ public class IncludeTagsTestCase {
 
     @Test
     public void checkTestsAreRun() throws InterruptedException {
-        TestStatus ts = TestRunnerTestUtils.waitForFirstRunToComplete();
+        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
         Assertions.assertEquals(1L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
@@ -46,10 +46,10 @@ public class IncludeTagsTestCase {
         test.modifyResourceFile("application.properties", new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return TestRunnerTestUtils.appProperties("quarkus.test.include-tags=c");
+                return ContinuousTestingTestUtils.appProperties("quarkus.test.include-tags=c");
             }
         });
-        ts = TestRunnerTestUtils.waitForRun(2);
+        ts = ContinuousTestingTestUtils.waitForRun(2);
         Assertions.assertEquals(2L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
@@ -59,10 +59,10 @@ public class IncludeTagsTestCase {
         test.modifyResourceFile("application.properties", new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return TestRunnerTestUtils.appProperties();
+                return ContinuousTestingTestUtils.appProperties();
             }
         });
-        ts = TestRunnerTestUtils.waitForRun(3);
+        ts = ContinuousTestingTestUtils.waitForRun(3);
         Assertions.assertEquals(3L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(5L, ts.getTestsPassed());

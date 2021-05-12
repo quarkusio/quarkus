@@ -861,11 +861,9 @@ public final class HibernateOrmProcessor {
                         "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX + "sql-load-script="
                                 + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
             }
-            if (launchMode == LaunchMode.DEVELOPMENT) {
-                // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
-                // as a user could still add it after performing the initial configuration
-                hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile.get()));
-            }
+            // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
+            // as a user could still add it after performing the initial configuration
+            hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile.get()));
         } else {
             //Disable implicit loading of the default import script (import.sql)
             descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");

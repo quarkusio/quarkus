@@ -21,7 +21,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, StartupFailer.class).add(
-                            new StringAsset(TestRunnerTestUtils.appProperties()),
+                            new StringAsset(ContinuousTestingTestUtils.appProperties()),
                             "application.properties");
                 }
             })
@@ -34,7 +34,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
 
     @Test
     public void testChangeTrackingOnStartupFailure() throws InterruptedException {
-        TestStatus ts = TestRunnerTestUtils.waitForFirstRunToComplete();
+        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
         Assertions.assertEquals(1L, ts.getLastRun());
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
@@ -48,7 +48,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                 return s.replace("//fail();", "fail();");
             }
         });
-        ts = TestRunnerTestUtils.waitForRun(2);
+        ts = ContinuousTestingTestUtils.waitForRun(2);
         Assertions.assertEquals(2L, ts.getLastRun());
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
@@ -61,7 +61,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                 return s.replace("fail();", "fail();fail();");
             }
         });
-        ts = TestRunnerTestUtils.waitForRun(3);
+        ts = ContinuousTestingTestUtils.waitForRun(3);
         Assertions.assertEquals(3L, ts.getLastRun());
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
@@ -74,7 +74,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                 return s.replace("fail();fail();", "//fail();");
             }
         });
-        ts = TestRunnerTestUtils.waitForRun(4);
+        ts = ContinuousTestingTestUtils.waitForRun(4);
         Assertions.assertEquals(4L, ts.getLastRun());
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());

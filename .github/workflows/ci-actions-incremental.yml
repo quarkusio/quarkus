@@ -127,16 +127,7 @@ jobs:
           ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
       - name: Verify extension dependencies
         shell: bash
-        run: |
-          ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
-          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
-          then
-            echo -e '\033[0;31mError:\033[0m Dependencies to extension artifacts are outdated!' 1>&2
-            echo -e '\033[0;31mError:\033[0m Run ./update-extension-dependencies.sh and add the modified pom.xml files to your commit.' 1>&2
-            echo -e '\033[0;31mError:\033[0m Diff is:' 1>&2
-            git --no-pager diff '*pom.xml' 1>&2
-            exit 1
-          fi
+        run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Get GIB arguments
         id: get-gib-args
         env:
@@ -499,16 +490,7 @@ jobs:
         # runs on Windows as well but would require newline conversion, not worth it
         if: matrix.os.family == 'Linux'
         shell: bash
-        run: |
-          ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS
-          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
-          then
-            echo -e '\033[0;31mError:\033[0m Dependencies in integration-tests/gradle/pom.xml are outdated!' 1>&2
-            echo -e '\033[0;31mError:\033[0m Run update-dependencies.sh in integration-tests/gradle and add the modified pom.xml file to your commit.' 1>&2
-            echo -e '\033[0;31mError:\033[0m Diff is:' 1>&2
-            git --no-pager diff '*pom.xml' 1>&2
-            exit 1
-          fi
+        run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Build
         shell: bash
         # Important: keep -pl ... in sync with "Calculate run flags"!
@@ -655,17 +637,7 @@ jobs:
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         shell: bash
-        run: |
-          ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
-          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
-          then
-            echo -e '\033[0;31mError:\033[0m Dependencies in tcks/resteasy-reactive/pom.xml are outdated!' 1>&2
-            echo -e '\033[0;31mError:\033[0m Run './mvnw clean process-test-resources -f tcks/resteasy-reactive && tcks/resteasy-reactive/update-dependencies.sh' \
-              and add the modified pom.xml file to your commit.' 1>&2
-            echo -e '\033[0;31mError:\033[0m Diff is:' 1>&2
-            git --no-pager diff '*pom.xml' 1>&2
-            exit 1
-          fi
+        run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash

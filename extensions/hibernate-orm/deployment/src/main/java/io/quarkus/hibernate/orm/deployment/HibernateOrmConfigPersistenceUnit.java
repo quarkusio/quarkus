@@ -113,6 +113,22 @@ public class HibernateOrmConfigPersistenceUnit {
     public Optional<String> implicitNamingStrategy;
 
     /**
+     * Class name of a custom {@link org.hibernate.boot.spi.MetadataBuilderContributor} implementation.
+     *
+     * [NOTE]
+     * ====
+     * Not all customization options exposed by {@link org.hibernate.boot.MetadataBuilder}
+     * will work correctly. Stay clear of options related to classpath scanning in particular.
+     *
+     * This setting is exposed mainly to allow registration of types, converters and SQL functions.
+     * ====
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> metadataBuilderContributor;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem
@@ -183,6 +199,7 @@ public class HibernateOrmConfigPersistenceUnit {
                 maxFetchDepth.isPresent() ||
                 physicalNamingStrategy.isPresent() ||
                 implicitNamingStrategy.isPresent() ||
+                metadataBuilderContributor.isPresent() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||

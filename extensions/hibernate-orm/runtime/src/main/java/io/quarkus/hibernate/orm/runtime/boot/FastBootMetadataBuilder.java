@@ -574,9 +574,7 @@ public class FastBootMetadataBuilder {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void applyMetadataBuilderContributor() {
-
         Object metadataBuilderContributorSetting = buildTimeSettings
                 .get(EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR);
 
@@ -584,36 +582,54 @@ public class FastBootMetadataBuilder {
             return;
         }
 
-        MetadataBuilderContributor metadataBuilderContributor = null;
-        Class<? extends MetadataBuilderContributor> metadataBuilderContributorImplClass = null;
-
-        if (metadataBuilderContributorSetting instanceof MetadataBuilderContributor) {
-            metadataBuilderContributor = (MetadataBuilderContributor) metadataBuilderContributorSetting;
-        } else if (metadataBuilderContributorSetting instanceof Class) {
-            metadataBuilderContributorImplClass = (Class<? extends MetadataBuilderContributor>) metadataBuilderContributorSetting;
-        } else if (metadataBuilderContributorSetting instanceof String) {
-            final ClassLoaderService classLoaderService = standardServiceRegistry.getService(ClassLoaderService.class);
-
-            metadataBuilderContributorImplClass = classLoaderService
-                    .classForName((String) metadataBuilderContributorSetting);
-        } else {
-            throw new IllegalArgumentException(
-                    "The provided " + EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR + " setting value ["
-                            + metadataBuilderContributorSetting + "] is not supported!");
-        }
-
-        if (metadataBuilderContributorImplClass != null) {
-            try {
-                metadataBuilderContributor = metadataBuilderContributorImplClass.getDeclaredConstructor().newInstance();
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                throw new IllegalArgumentException("The MetadataBuilderContributor class ["
-                        + metadataBuilderContributorImplClass + "] could not be instantiated!", e);
-            }
-        }
+        MetadataBuilderContributor metadataBuilderContributor = loadSettingInstance(
+                EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR,
+                metadataBuilderContributorSetting,
+                MetadataBuilderContributor.class);
 
         if (metadataBuilderContributor != null) {
             metadataBuilderContributor.contribute(metamodelBuilder);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T loadSettingInstance(String settingName, Object settingValue, Class<T> clazz) {
+        T instance = null;
+        Class<? extends T> instanceClass = null;
+
+        if (clazz.isAssignableFrom(settingValue.getClass())) {
+            instance = (T) settingValue;
+        } else if (settingValue instanceof Class) {
+            instanceClass = (Class<? extends T>) settingValue;
+        } else if (settingValue instanceof String) {
+            String settingStringValue = (String) settingValue;
+            if (standardServiceRegistry != null) {
+                final ClassLoaderService classLoaderService = standardServiceRegistry.getService(ClassLoaderService.class);
+
+                instanceClass = classLoaderService.classForName(settingStringValue);
+            } else {
+                try {
+                    instanceClass = (Class<? extends T>) Class.forName(settingStringValue);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalArgumentException("Can't load class: " + settingStringValue, e);
+                }
+            }
+        } else {
+            throw new IllegalArgumentException(
+                    "The provided " + settingName + " setting value [" + settingValue + "] is not supported!");
+        }
+
+        if (instanceClass != null) {
+            try {
+                instance = instanceClass.getConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+                throw new IllegalArgumentException(
+                        "The " + clazz.getSimpleName() + " class [" + instanceClass + "] could not be instantiated!",
+                        e);
+            }
+        }
+
+        return instance;
     }
 
 }

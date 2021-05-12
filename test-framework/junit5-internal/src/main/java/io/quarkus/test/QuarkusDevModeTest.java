@@ -337,7 +337,7 @@ public class QuarkusDevModeTest
                     .setProjectDirectory(deploymentDir.toAbsolutePath().toString())
                     .setSourcePaths(Collections.singleton(deploymentSourcePath.toAbsolutePath().toString()))
                     .setClassesPath(classes.toAbsolutePath().toString())
-                    .setResourcePath(deploymentResourcePath.toAbsolutePath().toString())
+                    .setResourcePaths(Collections.singleton(deploymentResourcePath.toAbsolutePath().toString()))
                     .setResourcesOutputPath(classes.toAbsolutePath().toString())
                     .setSourceParents(Collections.singleton(deploymentSourceParentPath.toAbsolutePath().toString()))
                     .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
@@ -386,7 +386,7 @@ public class QuarkusDevModeTest
                 moduleBuilder
                         .setTestSourcePaths(Collections.singleton(deploymentTestSourcePath.toAbsolutePath().toString()))
                         .setTestClassesPath(testClasses.toAbsolutePath().toString())
-                        .setTestResourcePath(deploymentTestResourcePath.toAbsolutePath().toString())
+                        .setTestResourcePaths(Collections.singleton(deploymentTestResourcePath.toAbsolutePath().toString()))
                         .setTestResourcesOutputPath(testClasses.toAbsolutePath().toString());
             }
 

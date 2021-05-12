@@ -37,9 +37,11 @@ import org.aesh.terminal.Connection;
 import org.aesh.terminal.utils.ANSI;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.Profile;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -578,10 +580,11 @@ public class DevMojo extends AbstractMojo {
         String projectDirectory = null;
         Set<String> sourcePaths = null;
         String classesPath = null;
-        String resourcePath = null;
+        Set<String> resourcePaths;
         Set<String> testSourcePaths = null;
         String testClassesPath = null;
-        String testResourcePath = null;
+        Set<String> testResourcePaths;
+        List<Profile> activeProfiles = Collections.emptyList();
 
         final MavenProject mavenProject = session.getProjectMap().get(
                 String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
@@ -613,6 +616,7 @@ public class DevMojo extends AbstractMojo {
                     .filter(Files::isDirectory)
                     .map(src -> src.toAbsolutePath().toString())
                     .collect(Collectors.toSet());
+            activeProfiles = mavenProject.getActiveProfiles();
         }
         Path sourceParent = localProject.getSourcesDir().toAbsolutePath();
 
@@ -624,16 +628,34 @@ public class DevMojo extends AbstractMojo {
         if (Files.isDirectory(testClassesDir)) {
             testClassesPath = testClassesDir.toAbsolutePath().toString();
         }
-        Path resourcesSourcesDir = localProject.getResourcesSourcesDir();
-        if (Files.isDirectory(resourcesSourcesDir)) {
-            resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
-        }
-        Path testResourcesSourcesDir = localProject.getTestResourcesSourcesDir();
-        if (Files.isDirectory(testResourcesSourcesDir)) {
-            testResourcePath = testResourcesSourcesDir.toAbsolutePath().toString();
+        resourcePaths = localProject.getResourcesSourcesDirs().stream()
+                .filter(Files::isDirectory)
+                .map(resourcesSourcesDir -> resourcesSourcesDir.toAbsolutePath().toString())
+                .collect(Collectors.toSet());
+        testResourcePaths = localProject.getTestResourcesSourcesDirs().stream()
+                .filter(Files::isDirectory)
+                .map(resourcesSourcesDir -> resourcesSourcesDir.toAbsolutePath().toString())
+                .collect(Collectors.toSet());
+        // Add the resources and test resources from the profiles
+        for (Profile profile : activeProfiles) {
+            final BuildBase build = profile.getBuild();
+            if (build != null) {
+                resourcePaths.addAll(
+                        build.getResources().stream()
+                                .map(Resource::getDirectory)
+                                .map(localProject::resolveRelativeToBaseDir)
+                                .map(resourcesSourcesDir -> resourcesSourcesDir.toAbsolutePath().toString())
+                                .collect(Collectors.toList()));
+                testResourcePaths.addAll(
+                        build.getTestResources().stream()
+                                .map(Resource::getDirectory)
+                                .map(localProject::resolveRelativeToBaseDir)
+                                .map(resourcesSourcesDir -> resourcesSourcesDir.toAbsolutePath().toString())
+                                .collect(Collectors.toList()));
+            }
         }
 
-        if (classesPath == null && (!sourcePaths.isEmpty() || resourcePath != null)) {
+        if (classesPath == null && (!sourcePaths.isEmpty() || !resourcePaths.isEmpty())) {
             throw new MojoExecutionException("Hot reloadable dependency " + localProject.getAppArtifact()
                     + " has not been compiled yet (the classes directory " + classesDir + " does not exist)");
         }
@@ -646,14 +668,15 @@ public class DevMojo extends AbstractMojo {
                 .setSourcePaths(sourcePaths)
                 .setClassesPath(classesPath)
                 .setResourcesOutputPath(classesPath)
-                .setResourcePath(resourcePath)
+                .setResourcePaths(resourcePaths)
                 .setSourceParents(Collections.singleton(sourceParent.toAbsolutePath().toString()))
                 .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
                 .setTargetDir(targetDir.toAbsolutePath().toString())
                 .setTestSourcePaths(testSourcePaths)
                 .setTestClassesPath(testClassesPath)
-                .setTestResourcePath(testResourcePath)
+                .setTestResourcePaths(testResourcePaths)
                 .setTestResourcesOutputPath(testClassesPath)
+                .setTestResourcePaths(testResourcePaths)
                 .build();
 
         if (root) {

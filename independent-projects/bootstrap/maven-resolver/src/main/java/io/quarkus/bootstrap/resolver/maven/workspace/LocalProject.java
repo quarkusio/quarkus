@@ -11,7 +11,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -228,20 +230,28 @@ public class LocalProject {
         return getSourcesSourcesDir().getParent();
     }
 
-    public Path getResourcesSourcesDir() {
+    public Set<Path> getResourcesSourcesDirs() {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getResources();
-        //todo: support multiple resources dirs for config hot deployment
-        final String resourcesDir = resources.isEmpty() ? null : resources.get(0).getDirectory();
-        return resolveRelativeToBaseDir(resourcesDir, "src/main/resources");
+        if (resources.isEmpty()) {
+            return Collections.singleton(resolveRelativeToBaseDir(null, "src/main/resources"));
+        }
+        return resources.stream()
+                .map(Resource::getDirectory)
+                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/main/resources"))
+                .collect(Collectors.toSet());
     }
 
-    public Path getTestResourcesSourcesDir() {
+    public Set<Path> getTestResourcesSourcesDirs() {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getTestResources();
-        //todo: support multiple resources dirs for config hot deployment
-        final String resourcesDir = resources.isEmpty() ? null : resources.get(0).getDirectory();
-        return resolveRelativeToBaseDir(resourcesDir, "src/test/resources");
+        if (resources.isEmpty()) {
+            return Collections.singleton(resolveRelativeToBaseDir(null, "src/test/resources"));
+        }
+        return resources.stream()
+                .map(Resource::getDirectory)
+                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/test/resources"))
+                .collect(Collectors.toSet());
     }
 
     public ModelBuildingResult getModelBuildingResult() {
@@ -267,6 +277,10 @@ public class LocalProject {
 
     public AppArtifact getAppArtifact(String extension) {
         return new AppArtifact(groupId, artifactId, "", extension, getVersion());
+    }
+
+    public Path resolveRelativeToBaseDir(String path) {
+        return resolveRelativeToBaseDir(path, null);
     }
 
     private Path resolveRelativeToBaseDir(String path, String defaultPath) {

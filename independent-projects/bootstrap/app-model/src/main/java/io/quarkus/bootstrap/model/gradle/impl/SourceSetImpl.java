@@ -4,17 +4,19 @@ import io.quarkus.bootstrap.model.gradle.SourceSet;
 import java.io.File;
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SourceSetImpl implements SourceSet, Serializable {
 
-    private Set<File> sourceDirectories = new HashSet<>();
-    private File resourceDirectory;
+    private final Set<File> sourceDirectories = new HashSet<>();
+    // Use a LinkedHashSet to keep the original order
+    private final Set<File> resourceDirectories = new LinkedHashSet<>();
 
-    public SourceSetImpl(Set<File> sourceDirectories, File resourceDirectory) {
+    public SourceSetImpl(Set<File> sourceDirectories, Set<File> resourceDirectories) {
         this.sourceDirectories.addAll(sourceDirectories);
-        this.resourceDirectory = resourceDirectory;
+        this.resourceDirectories.addAll(resourceDirectories);
     }
 
     public SourceSetImpl(Set<File> sourceDirectories) {
@@ -31,15 +33,15 @@ public class SourceSetImpl implements SourceSet, Serializable {
     }
 
     @Override
-    public File getResourceDirectory() {
-        return resourceDirectory;
+    public Set<File> getResourceDirectories() {
+        return resourceDirectories;
     }
 
     @Override
     public String toString() {
         return "SourceSetImpl{" +
                 "sourceDirectories=" + sourceDirectories.stream().map(File::getPath).collect(Collectors.joining(":")) +
-                ", resourceDirectory=" + resourceDirectory +
+                ", resourceDirectories=" + resourceDirectories.stream().map(File::getPath).collect(Collectors.joining(":")) +
                 '}';
     }
 }

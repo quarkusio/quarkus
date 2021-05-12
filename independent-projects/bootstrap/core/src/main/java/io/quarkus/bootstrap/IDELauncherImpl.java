@@ -55,7 +55,8 @@ public class IDELauncherImpl implements Closeable {
                                 QuarkusModelHelper.toPathsCollection(additionalModule.getSourceSet().getSourceDirectories()),
                                 true, false));
                         builder.addAdditionalApplicationArchive(new AdditionalDependency(
-                                additionalModule.getSourceSet().getResourceDirectory().toPath(), true, false));
+                                QuarkusModelHelper.toPathsCollection(additionalModule.getSourceSet().getResourceDirectories()),
+                                true, false));
                     }
                 }
             } else {

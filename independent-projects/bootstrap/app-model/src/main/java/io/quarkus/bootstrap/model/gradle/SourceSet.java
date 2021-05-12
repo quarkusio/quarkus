@@ -7,5 +7,5 @@ public interface SourceSet {
 
     Set<File> getSourceDirectories();
 
-    File getResourceDirectory();
+    Set<File> getResourceDirectories();
 }

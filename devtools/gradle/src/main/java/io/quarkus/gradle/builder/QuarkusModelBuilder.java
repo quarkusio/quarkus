@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -449,14 +450,14 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         if (sourceSet.getOutput().getResourcesDir().exists()) {
             return new SourceSetImpl(
                     existingSrcDirs,
-                    sourceSet.getOutput().getResourcesDir());
+                    Collections.singleton(sourceSet.getOutput().getResourcesDir()));
         }
         return new SourceSetImpl(existingSrcDirs);
     }
 
     private io.quarkus.bootstrap.model.gradle.SourceSet getSourceSourceSet(SourceSet sourceSet) {
         return new SourceSetImpl(sourceSet.getAllJava().getSrcDirs(),
-                sourceSet.getResources().getSourceDirectories().getSingleFile());
+                sourceSet.getResources().getSourceDirectories().getFiles());
     }
 
     private static boolean isDependency(ResolvedArtifact a) {

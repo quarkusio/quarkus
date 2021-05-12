@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
@@ -102,8 +103,9 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
             sourceParents.add(srcDir.getParent());
         }
         String resourceDirectory = null;
-        if (module.getSourceSet().getResourceDirectory() != null) {
-            resourceDirectory = module.getSourceSet().getResourceDirectory().getPath();
+        if (!module.getSourceSet().getResourceDirectories().isEmpty()) {
+            // Peek the first one as we assume that it is the primary
+            resourceDirectory = module.getSourceSet().getResourceDirectories().iterator().next().getPath();
         }
         return new DevModeContext.ModuleInfo.Builder()
                 .setAppArtifactKey(key)
@@ -111,7 +113,8 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 .setProjectDirectory(module.getProjectRoot().getPath())
                 .setSourcePaths(sourceDirectories)
                 .setClassesPath(QuarkusModelHelper.getClassPath(module).toAbsolutePath().toString())
-                .setResourcePath(module.getSourceSourceSet().getResourceDirectory().toString())
+                .setResourcePaths(module.getSourceSourceSet().getResourceDirectories().stream().map(Object::toString)
+                        .collect(Collectors.toSet()))
                 .setResourcesOutputPath(resourceDirectory)
                 .setSourceParents(sourceParents)
                 .setPreBuildOutputDir(module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString())
@@ -127,7 +130,10 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 .setSourcePaths(Collections.singleton(project.getSourcesSourcesDir().toAbsolutePath().toString()))
                 .setClassesPath(project.getClassesDir().toAbsolutePath().toString())
                 .setResourcesOutputPath(project.getClassesDir().toAbsolutePath().toString())
-                .setResourcePath(project.getResourcesSourcesDir().toAbsolutePath().toString())
+                .setResourcePaths(
+                        project.getResourcesSourcesDirs().stream()
+                                .map(resourcesSourcesDir -> resourcesSourcesDir.toAbsolutePath().toString())
+                                .collect(Collectors.toSet()))
                 .setSourceParents(Collections.singleton(project.getSourcesDir().toString()))
                 .setPreBuildOutputDir(project.getCodeGenOutputDir().toString())
                 .setTargetDir(project.getOutputDir().toString()).build();

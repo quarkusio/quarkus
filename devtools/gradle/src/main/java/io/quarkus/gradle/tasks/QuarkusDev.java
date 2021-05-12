@@ -369,8 +369,10 @@ public class QuarkusDev extends QuarkusTask {
                 sourceParentPaths.add(sourceDir.toPath().getParent().toAbsolutePath().toString());
             }
         }
-        //TODO: multiple resource directories
-        final File resourcesSrcDir = mainSourceSet.getResources().getSourceDirectories().getSingleFile();
+        final Set<String> resourcesSrcDirs = new HashSet<>();
+        for (File resourcesSrcDir : mainSourceSet.getResources().getSourceDirectories().getFiles()) {
+            resourcesSrcDirs.add(resourcesSrcDir.getAbsolutePath());
+        }
         // resourcesSrcDir may exist but if it's empty the resources output dir won't be created
         final File resourcesOutputDir = mainSourceSet.getOutput().getResourcesDir();
 
@@ -405,7 +407,7 @@ public class QuarkusDev extends QuarkusTask {
                 .setProjectDirectory(project.getProjectDir().getAbsolutePath())
                 .setSourcePaths(sourcePaths)
                 .setClassesPath(classesDir)
-                .setResourcePath(resourcesSrcDir.getAbsolutePath())
+                .setResourcePaths(resourcesSrcDirs)
                 .setResourcesOutputPath(resourcesOutputPath)
                 .setSourceParents(sourceParentPaths)
                 .setPreBuildOutputDir(project.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString())
@@ -423,8 +425,10 @@ public class QuarkusDev extends QuarkusTask {
                     testSourceParentPaths.add(sourceDir.toPath().getParent().toAbsolutePath().toString());
                 }
             }
-            //TODO: multiple resource directories
-            final File testResourcesSrcDir = testSourceSet.getResources().getSourceDirectories().getSingleFile();
+            final Set<String> testResourcesSrcDirs = new HashSet<>();
+            for (File testResourcesSrcDir : testSourceSet.getResources().getSourceDirectories().getFiles()) {
+                testResourcesSrcDirs.add(testResourcesSrcDir.getAbsolutePath());
+            }
             // resourcesSrcDir may exist but if it's empty the resources output dir won't be created
             final File testResourcesOutputDir = testSourceSet.getOutput().getResourcesDir();
 
@@ -446,7 +450,7 @@ public class QuarkusDev extends QuarkusTask {
                         }
                         moduleBuilder.setTestSourcePaths(testSourcePaths)
                                 .setTestClassesPath(testClassesDir)
-                                .setTestResourcePath(testResourcesSrcDir.getAbsolutePath())
+                                .setTestResourcePaths(testResourcesSrcDirs)
                                 .setTestResourcesOutputPath(testResourcesOutputPath);
                     }
                 }

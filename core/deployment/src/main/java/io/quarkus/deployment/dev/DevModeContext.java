@@ -242,11 +242,12 @@ public class DevModeContext implements Serializable {
             this.appArtifactKey = builder.appArtifactKey;
             this.name = builder.name;
             this.projectDirectory = builder.projectDirectory;
-            this.main = new CompilationUnit(new LinkedHashSet<>(builder.sourcePaths), builder.classesPath, builder.resourcePath,
+            this.main = new CompilationUnit(new LinkedHashSet<>(builder.sourcePaths), builder.classesPath,
+                    builder.resourcePaths,
                     builder.resourcesOutputPath);
             if (builder.testClassesPath != null) {
                 this.test = new CompilationUnit(new LinkedHashSet<>(builder.testSourcePaths),
-                        builder.testClassesPath, builder.testResourcePath, builder.testResourcesOutputPath);
+                        builder.testClassesPath, builder.testResourcePaths, builder.testResourcesOutputPath);
             } else {
                 this.test = null;
             }
@@ -301,7 +302,7 @@ public class DevModeContext implements Serializable {
             private String projectDirectory;
             private Set<String> sourcePaths = Collections.emptySet();
             private String classesPath;
-            private String resourcePath;
+            private Set<String> resourcePaths = Collections.emptySet();
             private String resourcesOutputPath;
 
             private String preBuildOutputDir;
@@ -310,7 +311,7 @@ public class DevModeContext implements Serializable {
 
             private Set<String> testSourcePaths = Collections.emptySet();
             private String testClassesPath;
-            private String testResourcePath;
+            private Set<String> testResourcePaths = Collections.emptySet();
             private String testResourcesOutputPath;
 
             public Builder setAppArtifactKey(AppArtifactKey appArtifactKey) {
@@ -338,8 +339,8 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setResourcePath(String resourcePath) {
-                this.resourcePath = resourcePath;
+            public Builder setResourcePaths(Set<String> resourcePaths) {
+                this.resourcePaths = resourcePaths;
                 return this;
             }
 
@@ -373,8 +374,8 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setTestResourcePath(String testResourcePath) {
-                this.testResourcePath = testResourcePath;
+            public Builder setTestResourcePaths(Set<String> testResourcePaths) {
+                this.testResourcePaths = testResourcePaths;
                 return this;
             }
 
@@ -392,13 +393,14 @@ public class DevModeContext implements Serializable {
     public static class CompilationUnit implements Serializable {
         private final Set<String> sourcePaths;
         private final String classesPath;
-        private final String resourcePath;
+        private final Set<String> resourcePaths;
         private final String resourcesOutputPath;
 
-        public CompilationUnit(Set<String> sourcePaths, String classesPath, String resourcePath, String resourcesOutputPath) {
+        public CompilationUnit(Set<String> sourcePaths, String classesPath, Set<String> resourcePaths,
+                String resourcesOutputPath) {
             this.sourcePaths = sourcePaths;
             this.classesPath = classesPath;
-            this.resourcePath = resourcePath;
+            this.resourcePaths = resourcePaths;
             this.resourcesOutputPath = resourcesOutputPath;
         }
 
@@ -410,8 +412,8 @@ public class DevModeContext implements Serializable {
             return classesPath;
         }
 
-        public String getResourcePath() {
-            return resourcePath;
+        public Set<String> getResourcePaths() {
+            return resourcePaths;
         }
 
         public String getResourcesOutputPath() {

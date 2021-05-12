@@ -102,3 +102,13 @@ echo 'Sanity check...'
 echo ''
 # sanity check; make sure nothing stupid was added like non-existing deps
 mvn dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" -pl devtools/bom-descriptor-json,docs $*
+
+# CI only: verify that no pom.xml was touched (if changes are found, committer forgot to run script or to add changes)
+if [ "${CI:-}" == true ] && [ $(git status -s -u no '*pom.xml' | wc -l) -ne 0 ]
+then
+  echo -e '\033[0;31mError:\033[0m Dependencies to extension artifacts are outdated!' 1>&2
+  echo -e '\033[0;31mError:\033[0m Run ./update-extension-dependencies.sh and add the modified pom.xml files to your commit.' 1>&2
+  echo -e '\033[0;31mError:\033[0m Diff is:' 1>&2
+  git --no-pager diff '*pom.xml' 1>&2
+  exit 1
+fi

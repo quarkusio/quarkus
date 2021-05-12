@@ -127,16 +127,7 @@ jobs:
           ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
       - name: Verify extension dependencies
         shell: bash
-        run: |
-          ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
-          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
-          then
-            echo -e '\033[0;31mError:\033[0m Dependencies to extension artifacts are outdated!' 1>&2
-            echo -e '\033[0;31mError:\033[0m Run ./update-extension-dependencies.sh and add the modified pom.xml files to your commit.' 1>&2
-            echo -e '\033[0;31mError:\033[0m Diff is:' 1>&2
-            git --no-pager diff '*pom.xml' 1>&2
-            exit 1
-          fi
+        run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Get GIB arguments
         id: get-gib-args
         env:
@@ -190,6 +181,7 @@ jobs:
       GIB_IMPACTED_MODULES: ${{ needs.build-jdk11.outputs.gib_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
+      run_jvm: ${{ steps.calc-run-flags.outputs.run_jvm }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
@@ -206,27 +198,29 @@ jobs:
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_devtools=true; run_gradle=true; run_maven=true; run_tcks=true
+          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_tcks=true
           if [ -n "${GIB_IMPACTED_MODULES}" ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven)|tcks/.*'; then run_jvm=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/devtools'; then run_devtools=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'tcks/.*'; then run_tcks=false; fi
           fi
-          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_tcks=${run_tcks}"
+          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_tcks=${run_tcks}"
+          echo "::set-output name=run_jvm::${run_jvm}"
           echo "::set-output name=run_devtools::${run_devtools}"
           echo "::set-output name=run_gradle::${run_gradle}"
           echo "::set-output name=run_maven::${run_maven}"
           echo "::set-output name=run_tcks::${run_tcks}"
 
-  linux-jvm-tests:
+  jvm-tests:
     name: JVM Tests - JDK ${{matrix.java.name}}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.java.os-name }}
+    needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
+    if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 240
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -237,18 +231,28 @@ jobs:
           - {
             name: "11",
             java-version: 11,
-            maven_args: "",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g"
+            maven_args: "$JVM_TEST_MAVEN_ARGS",
+            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
+            os-name: "ubuntu-latest"
           }
           - {
             name: "16",
             java-version: 16,
-            maven_args: "-pl '!devtools/gradle' -Dno-descriptor-tests",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g --add-opens java.base/java.util=ALL-UNNAMED"
+            maven_args: "$JVM_TEST_MAVEN_ARGS -pl '!devtools/gradle' -Dno-descriptor-tests",
+            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g --add-opens java.base/java.util=ALL-UNNAMED",
+            os-name: "ubuntu-latest"
+          }
+          - {
+            name: "11 Windows",
+            java-version: 11,
+            maven_args: "-DskipDocs -Dformat.skip",
+            maven_opts: "-Xmx1500m -XX:MaxMetaspaceSize=1g",
+            os-name: "windows-latest"
           }
 
     steps:
       - name: Stop mysql
+        if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
         run: |
           ss -ln
@@ -262,18 +266,19 @@ jobs:
         run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
+        if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
         run: sudo apt-get clean
 
       - name: Reclaim Disk Space
+        if: "!startsWith(matrix.java.os-name, 'windows')"
         run: .github/ci-prerequisites.sh
 
-      - name: Set up JDK ${{ matrix.java.name }}
+      - name: Set up JDK ${{ matrix.java.java-version }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-          release: ${{ matrix.java.release }}
 
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -285,7 +290,8 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build
         shell: bash
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -294,7 +300,7 @@ jobs:
         uses: actions/upload-artifact@v1
         if: failure()
         with:
-          name: test-reports-linux-jvm${{matrix.java.name}}
+          name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
@@ -304,62 +310,9 @@ jobs:
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
-  windows-jdk11-jvm-tests:
-    name: JVM Tests - JDK 11 Windows
-    runs-on: windows-latest
-    # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
-    timeout-minutes: 180
-    env:
-      MAVEN_OPTS: -Xmx1500m -XX:MaxMetaspaceSize=1g
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-      - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: 11
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Build
-        shell: bash
-        run: ./mvnw $COMMON_MAVEN_ARGS -DskipDocs -Dformat.skip -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install ${{ needs.build-jdk11.outputs.gib_args }}
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: |
-          # Disambiguate windows find from cygwin find
-          /usr/bin/find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-windows-jdk11-jvm
-          path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "surefire-reports-JVM Tests - JDK 11 Windows"
-          path: "**/target/*-reports/TEST-*.xml"
-          retention-days: 2
-
-  linux-jvm-maven-tests:
+  maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.java.os-name }}
     needs: calculate-test-jobs
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
@@ -372,7 +325,13 @@ jobs:
         java:
           - {
             name: "11",
-            java-version: 11
+            java-version: 11,
+            os-name: "ubuntu-latest"
+          }
+          - {
+            name: "11 Windows",
+            java-version: 11,
+            os-name: "windows-latest"
           }
     steps:
       - uses: actions/checkout@v2
@@ -384,7 +343,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK ${{ matrix.java.name }}
+      - name: Set up JDK ${{ matrix.java.java-version }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
@@ -400,7 +359,7 @@ jobs:
         uses: actions/upload-artifact@v1
         if: failure()
         with:
-          name: test-reports-linux-maven-java${{matrix.java.name}}
+          name: test-reports-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
@@ -410,57 +369,9 @@ jobs:
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
-  windows-jdk11-jvm-maven-tests:
-    name: Maven Tests - JDK 11 Windows
-    runs-on: windows-latest
-    needs: calculate-test-jobs
-    env:
-      MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
-    # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: 11
-      - name: Build
-        shell: bash
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl 'integration-tests/maven'
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-windows-maven-java11
-          path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "surefire-reports-Maven Tests - JDK 11 Windows"
-          path: "**/target/*-reports/TEST-*.xml"
-          retention-days: 2
-
-  gradle-tests-jdk11-jvm:
-    name: Gradle Tests - JDK 11 ${{matrix.os.family}}
-    runs-on: ${{matrix.os.name}}
+  gradle-tests:
+    name: Gradle Tests - JDK ${{matrix.java.name}}
+    runs-on: ${{matrix.java.os-name}}
     needs: calculate-test-jobs
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
@@ -471,14 +382,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
+        java:
           - {
-            name: "ubuntu-latest",
-            family: "Linux"
+            name: "11",
+            java-version: 11,
+            os-name: "ubuntu-latest"
           }
           - {
-            name: "windows-latest",
-            family: "Windows"
+            name: "11 Windows",
+            java-version: 11,
+            os-name: "windows-latest"
           }
     steps:
       - uses: actions/checkout@v2
@@ -490,25 +403,16 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK 11
+      - name: Set up JDK ${{ matrix.java.java-version }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
-          java-version: 11
+          java-version: ${{ matrix.java.java-version }}
       - name: Verify dependencies
         # runs on Windows as well but would require newline conversion, not worth it
-        if: matrix.os.family == 'Linux'
+        if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
-        run: |
-          ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS
-          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
-          then
-            echo -e '\033[0;31mError:\033[0m Dependencies in integration-tests/gradle/pom.xml are outdated!' 1>&2
-            echo -e '\033[0;31mError:\033[0m Run update-dependencies.sh in integration-tests/gradle and add the modified pom.xml file to your commit.' 1>&2
-            echo -e '\033[0;31mError:\033[0m Diff is:' 1>&2
-            git --no-pager diff '*pom.xml' 1>&2
-            exit 1
-          fi
+        run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Build
         shell: bash
         # Important: keep -pl ... in sync with "Calculate run flags"!
@@ -517,13 +421,13 @@ jobs:
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Gradle Tests - JDK 11 ${{matrix.os.family}}"
+          name: "surefire-reports-Gradle Tests - JDK ${{matrix.java.name}}"
           path: "**/build/test-results/test/TEST-*.xml"
           retention-days: 2
 
-  linux-jvm-devtools-tests:
+  devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.java.os-name}}
     needs: calculate-test-jobs
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
@@ -534,7 +438,13 @@ jobs:
         java:
           - {
             name: "11",
-            java-version: 11
+            java-version: 11,
+            os-name: "ubuntu-latest"
+          }
+          - {
+            name: "11 Windows",
+            java-version: 11,
+            os-name: "windows-latest"
           }
     steps:
       - uses: actions/checkout@v2
@@ -546,7 +456,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK ${{ matrix.java.name }}
+      - name: Set up JDK ${{ matrix.java.java-version }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
@@ -562,59 +472,13 @@ jobs:
         uses: actions/upload-artifact@v1
         if: failure()
         with:
-          name: test-reports-linux-devtools-java${{matrix.java.name}}
+          name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Devtools Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
-          retention-days: 2
-
-  windows-jdk11-jvm-devtools-tests:
-    name: Devtools Tests - JDK 11 Windows
-    runs-on: windows-latest
-    needs: calculate-test-jobs
-    # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: 11
-      - name: Build
-        shell: bash
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl 'integration-tests/devtools'
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-windows-devtools-java11
-          path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "surefire-reports-Devtools Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
@@ -655,17 +519,7 @@ jobs:
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         shell: bash
-        run: |
-          ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
-          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
-          then
-            echo -e '\033[0;31mError:\033[0m Dependencies in tcks/resteasy-reactive/pom.xml are outdated!' 1>&2
-            echo -e '\033[0;31mError:\033[0m Run './mvnw clean process-test-resources -f tcks/resteasy-reactive && tcks/resteasy-reactive/update-dependencies.sh' \
-              and add the modified pom.xml file to your commit.' 1>&2
-            echo -e '\033[0;31mError:\033[0m Diff is:' 1>&2
-            git --no-pager diff '*pom.xml' 1>&2
-            exit 1
-          fi
+        run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash

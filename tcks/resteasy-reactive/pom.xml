@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-tck-resteasy-reactive</artifactId>
     <name>Quarkus - TCK - RestEasy Reactive</name>
+    <packaging>pom</packaging>
 
     <properties>
 

@@ -37,3 +37,4 @@ nb-configuration.xml
 /lsp/
 .jbang
 .sdkmanrc
+.envrc

@@ -178,6 +178,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(AwsProxyRequestContext.class, request.getRequestContext());
+        quarkusHeaders.setContextObject(AwsProxyRequest.class, request);
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.valueOf(request.getHttpMethod()), path, quarkusHeaders);
         if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent

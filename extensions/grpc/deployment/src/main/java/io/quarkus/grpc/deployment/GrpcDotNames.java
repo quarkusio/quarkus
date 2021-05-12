@@ -5,11 +5,13 @@ import org.jboss.jandex.DotName;
 import io.grpc.BindableService;
 import io.grpc.Channel;
 import io.grpc.stub.AbstractBlockingStub;
+import io.grpc.stub.AbstractStub;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.runtime.MutinyStub;
 import io.quarkus.grpc.runtime.supports.Channels;
+import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.smallrye.common.annotation.Blocking;
 
 public class GrpcDotNames {
@@ -28,5 +30,8 @@ public class GrpcDotNames {
             Channel.class, String.class);
     static final MethodDescriptor RETRIEVE_CHANNEL_METHOD = MethodDescriptor.ofMethod(Channels.class, "retrieveChannel",
             Channel.class, String.class);
+
+    static final MethodDescriptor CONFIGURE_STUB = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
+            "configureStub", AbstractStub.class, String.class, AbstractStub.class);
 
 }

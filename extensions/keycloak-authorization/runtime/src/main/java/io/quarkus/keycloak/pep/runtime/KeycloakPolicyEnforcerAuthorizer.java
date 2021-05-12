@@ -14,6 +14,8 @@ import javax.inject.Singleton;
 import org.keycloak.AuthorizationContext;
 import org.keycloak.adapters.authorization.KeycloakAdapterPolicyEnforcer;
 import org.keycloak.authorization.client.AuthzClient;
+import org.keycloak.representations.adapters.config.PolicyEnforcerConfig.EnforcementMode;
+import org.keycloak.representations.adapters.config.PolicyEnforcerConfig.PathConfig;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AccessTokenCredential;
@@ -41,11 +43,17 @@ public class KeycloakPolicyEnforcerAuthorizer
     @Override
     public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
 
+        if (identity.isAnonymous()) {
+            PathConfig pathConfig = resolver.getPolicyEnforcer(null).getPathMatcher().matches(routingContext.request().path());
+            if (pathConfig != null && pathConfig.getEnforcementMode() == EnforcementMode.ENFORCING) {
+                return CheckResult.DENY;
+            }
+        }
+
         AccessTokenCredential credential = identity.getCredential(AccessTokenCredential.class);
 
         if (credential == null) {
-            // If SecurityIdentity has been created by the authentication mechanism other than quarkus-oidc then do not block
-            // the request.
+            // SecurityIdentity has been created by the authentication mechanism other than quarkus-oidc
             return CheckResult.PERMIT;
         }
 

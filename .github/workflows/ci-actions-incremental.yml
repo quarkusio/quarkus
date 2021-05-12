@@ -365,9 +365,9 @@ jobs:
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
-  gradle-tests-jdk11-jvm:
-    name: Gradle Tests - JDK 11 ${{matrix.os.family}}
-    runs-on: ${{matrix.os.name}}
+  gradle-tests:
+    name: Gradle Tests - JDK ${{matrix.java.name}}
+    runs-on: ${{matrix.java.os-name}}
     needs: calculate-test-jobs
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
@@ -378,14 +378,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
+        java:
           - {
-            name: "ubuntu-latest",
-            family: "Linux"
+            name: "11",
+            java-version: 11,
+            os-name: "ubuntu-latest"
           }
           - {
-            name: "windows-latest",
-            family: "Windows"
+            name: "11 Windows",
+            java-version: 11,
+            os-name: "windows-latest"
           }
     steps:
       - uses: actions/checkout@v2
@@ -397,14 +399,14 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK 11
+      - name: Set up JDK ${{ matrix.java.java-version }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
-          java-version: 11
+          java-version: ${{ matrix.java.java-version }}
       - name: Verify dependencies
         # runs on Windows as well but would require newline conversion, not worth it
-        if: matrix.os.family == 'Linux'
+        if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Build
@@ -415,7 +417,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Gradle Tests - JDK 11 ${{matrix.os.family}}"
+          name: "surefire-reports-Gradle Tests - JDK ${{matrix.java.name}}"
           path: "**/build/test-results/test/TEST-*.xml"
           retention-days: 2
 

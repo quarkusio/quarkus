@@ -181,6 +181,7 @@ jobs:
       GIB_IMPACTED_MODULES: ${{ needs.build-jdk11.outputs.gib_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
+      run_jvm: ${{ steps.calc-run-flags.outputs.run_jvm }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
@@ -197,16 +198,18 @@ jobs:
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_devtools=true; run_gradle=true; run_maven=true; run_tcks=true
+          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_tcks=true
           if [ -n "${GIB_IMPACTED_MODULES}" ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven)|tcks/.*'; then run_jvm=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/devtools'; then run_devtools=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'tcks/.*'; then run_tcks=false; fi
           fi
-          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_tcks=${run_tcks}"
+          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_tcks=${run_tcks}"
+          echo "::set-output name=run_jvm::${run_jvm}"
           echo "::set-output name=run_devtools::${run_devtools}"
           echo "::set-output name=run_gradle::${run_gradle}"
           echo "::set-output name=run_maven::${run_maven}"
@@ -215,9 +218,9 @@ jobs:
   jvm-tests:
     name: JVM Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.os-name }}
+    needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
+    if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 240
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -287,6 +290,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build
         shell: bash
+        # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()

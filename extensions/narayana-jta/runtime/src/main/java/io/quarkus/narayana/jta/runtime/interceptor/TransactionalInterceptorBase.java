@@ -215,7 +215,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                         if (t instanceof RuntimeException)
                             throw (RuntimeException) t;
                         throw new RuntimeException(t);
-                    }).on().termination(() -> {
+                    }).onTermination().invoke(() -> {
                         try {
                             doInTransaction(tm, tx, () -> endTransaction(tm, tx, () -> {
                             }));

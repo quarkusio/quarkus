@@ -45,7 +45,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         ReactiveMongoCollection<Document> myCollection = database.getCollection(collection);
         Document document = createDoc();
         myCollection.insertOne(document)
-                .then(() -> myCollection.find(eq("foo", "bar")).collect().first())
+                .chain(() -> myCollection.find(eq("foo", "bar")).collect().first())
                 .invoke(found -> {
                     assertThat(found).isNotNull();
                     assertThat(found.getObjectId("_id")).isNotNull();
@@ -60,7 +60,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         ReactiveMongoCollection<Document> myCollection = database.getCollection(collection);
         Document document = createDoc();
         myCollection.insertOne(document)
-                .then(() -> myCollection.find(eq("nothing", "missing")).collect().first())
+                .chain(() -> myCollection.find(eq("nothing", "missing")).collect().first())
                 .invoke(opt -> assertThat(opt).isNull())
                 .await().indefinitely();
     }
@@ -122,7 +122,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         }
         List<Document> documents = new CopyOnWriteArrayList<>();
         myCollection.insertMany(toBeInserted)
-                .then(() -> myCollection.find(new FindOptions().sort(eq("foo", 1)))
+                .chain(() -> myCollection.find(new FindOptions().sort(eq("foo", 1)))
                         .onItem().invoke(documents::add)
                         .onItem().ignoreAsUni())
                 .await().indefinitely();
@@ -143,7 +143,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         }
         List<Document> documents = new CopyOnWriteArrayList<>();
         myCollection.insertMany(toBeInserted)
-                .then(() -> myCollection.find(Document.class, new FindOptions().sort(eq("foo", 1)))
+                .chain(() -> myCollection.find(Document.class, new FindOptions().sort(eq("foo", 1)))
                         .onItem().invoke(documents::add)
                         .onItem().ignoreAsUni())
                 .await().indefinitely();
@@ -164,7 +164,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         }
         List<Document> documents = new CopyOnWriteArrayList<>();
         myCollection.insertMany(toBeInserted)
-                .then(() -> myCollection.find(new FindOptions().filter(eq("num", 123)).sort(eq("foo", 1)))
+                .chain(() -> myCollection.find(new FindOptions().filter(eq("num", 123)).sort(eq("foo", 1)))
                         .onItem().invoke(documents::add)
                         .onItem().ignoreAsUni())
                 .await().indefinitely();
@@ -185,7 +185,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         }
         List<Document> documents = new CopyOnWriteArrayList<>();
         myCollection.insertMany(toBeInserted)
-                .then(() -> myCollection.find(Document.class,
+                .chain(() -> myCollection.find(Document.class,
                         new FindOptions().filter(eq("num", 123)).sort(eq("foo", 1)))
                         .onItem().invoke(documents::add)
                         .onItem().ignoreAsUni())
@@ -264,7 +264,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
         pipeline.add(doc4);
 
         Optional<Integer> optional = client.getDatabase(DATABASE).createCollection(collection)
-                .then(() -> insertDocs(client, collection, numDocs))
+                .chain(() -> insertDocs(client, collection, numDocs))
                 .onItem().transformToMulti(x -> client.getDatabase(DATABASE).getCollection(collection).aggregate(pipeline))
                 .collect().first()
                 .onItem().transform(doc -> doc.getInteger("foo_starting_with_bar1"))

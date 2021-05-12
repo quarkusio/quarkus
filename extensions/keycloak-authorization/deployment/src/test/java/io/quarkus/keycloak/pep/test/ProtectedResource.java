@@ -31,8 +31,8 @@ public class ProtectedResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<Permission>> permissions() {
-        return identity.checkPermission(new AuthPermission("Permission Resource")).onItem()
-                .apply(new Function<Boolean, List<Permission>>() {
+        return identity.checkPermission(new AuthPermission("Permission Resource"))
+                .onItem().transform(new Function<Boolean, List<Permission>>() {
                     @Override
                     public List<Permission> apply(Boolean granted) {
                         if (granted) {

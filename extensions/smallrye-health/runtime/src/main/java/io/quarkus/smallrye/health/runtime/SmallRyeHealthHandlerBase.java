@@ -6,6 +6,8 @@ import java.io.UncheckedIOException;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.health.SmallRyeHealth;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.vertx.core.Handler;
@@ -34,6 +36,10 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
     }
 
     private void doHandle(RoutingContext ctx) {
+        QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
+        if (user != null) {
+            Arc.container().instance(CurrentIdentityAssociation.class).get().setIdentity(user.getSecurityIdentity());
+        }
         SmallRyeHealthReporter reporter = Arc.container().instance(SmallRyeHealthReporter.class).get();
         SmallRyeHealth health = getHealth(reporter, ctx);
         HttpServerResponse resp = ctx.response();

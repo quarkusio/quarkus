@@ -1,0 +1,151 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Continuous Testing
+
+include::./attributes.adoc[]
+
+:toc: macro
+:toclevels: 4
+:doctype: book
+:icons: font
+:docinfo1:
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+Learn how to use continuous testing in your Quarkus Application.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* The completed greeter application from the link:getting-started[Getting Started Guide]
+
+== Introduction
+
+Quarkus supports continuous testing, where tests run immediately after code changes have been saved. This allows you to
+get instant feedback on your code changes. Quarkus detects which tests cover which code, and uses this information to
+only run the relevant tests when code is changed.
+
+== Solution
+
+Start the link:getting-started[Getting Started] application (or any other application) using `mvn quarkus:dev`. Quarkus
+will start in development mode as normal, but down the bottom of the screen you should see the following:
+
+[source]
+----
+--
+Tests paused, press [r] to resume
+----
+
+Press `r` and the tests will start running. You should see the status change down the bottom of the screen as they
+are running, and it should finish with:
+
+[source]
+----
+--
+Tests all passed, 2 tests were run, 0 were skipped. Tests took 1470ms.
+Press [r] to re-run, [v] to view full results, [p] to pause, [h] for more options>
+----
+
+
+NOTE: If you want continuous testing to start automatically you can set `quarkus.test.continuous-testing=enabled` in
+`application.properties`. If you don't want it at all you can change this to `disabled`.
+
+
+Now you can start making changes to your application. Go into the `GreetingResource` and change the hello endpoint to
+return `"hello world"`, and save the file. Quarkus should immediately re-run the test, and you should get output similar
+to the following:
+
+[source]
+----
+2021-05-11 14:21:34,338 ERROR [io.qua.test] (Test runner thread) Test GreetingResourceTest#testHelloEndpoint() failed
+: java.lang.AssertionError: 1 expectation failed.
+Response body doesn't match expectation.
+Expected: is "hello"
+  Actual: hello world
+
+	at io.restassured.internal.ValidatableResponseImpl.body(ValidatableResponseImpl.groovy)
+	at org.acme.getting.started.GreetingResourceTest.testHelloEndpoint(GreetingResourceTest.java:21)
+
+
+--
+Test run failed, 2 tests were run, 1 failed, 0 were skipped. Tests took 295ms
+Press [r] to re-run, [v] to view full results, [p] to pause, [h] for more options>
+----
+
+Change it back and the tests will run again.
+
+== Controlling Continuous Testing
+
+There are various hotkeys you can use to control continuous testing. Pressing `h` will display the following list
+of commands:
+
+[source]
+----
+The following commands are available:
+[r] - Re-run all tests
+[f] - Re-run failed tests
+[b] - Toggle 'broken only' mode, where only failing tests are run (disabled)
+[v] - Print failures from the last test run
+[o] - Toggle test output (disabled)
+[p] - Pause tests
+[i] - Toggle instrumentation based reload (disabled)
+[l] - Toggle live reload (enabled)
+[s] - Force live reload scan
+[h] - Display this help
+----
+
+These are explained below:
+
+[r] - Re-run all tests::
+This will re-run every test
+
+[f] - Re-run failed tests::
+This will re-run every failing test
+
+[b] - Toggle 'broken only' mode, where only failing tests are run::
+Broken only mode will only run tests that have previously failed, even if other tests would normally be affected by a code
+change. This can be useful if you are modifying code that is used by lots of tests, but you only want to focus on debugging
+the failing one.
+
+[v] - Print failures from the last test run::
+Prints the failures to the console again, this can be useful if there has been lots of console output since the last run.
+
+[o] - Toggle test output::
+By default test output is filtered and not displayed on the console, so that test output and dev mode output is not
+interleaved. Enabling test output will print output to the console when tests are run. Even when output is disabled
+the filtered output is saved and can be viewed in the Dev UI.
+
+[p] - Pause tests::
+Temporarily stops running tests. This can be useful if you are making lots of changes, and don't want feedback until they
+are all done.
+
+[i] - Toggle instrumentation based reload::
+This is not directly related to testing, but allows you to toggle instrumentation based reload. This will allow live reload
+to avoid a restart if a change does not affect the structure of a class, which gives a faster reload and allows you to keep
+state.
+
+[l] - Toggle live reload::
+This is not directly related to testing, but allows you to turn live reload on and off.
+
+[s] - Force live reload scan::
+This will force a scan for changed file, and will perform a live reload if anything has changed. This will still work even
+if live reload is disabled.
+
+
+=== Configuring Continuous Testing
+
+Continuous testing supports multiple configuration options that can be used to limit the tests that are run, and
+to control the output. The configuration properties are shown below:
+
+include::{generated-dir}/config/quarkus-test.adoc[opts=optional, leveloffset=+2]
+

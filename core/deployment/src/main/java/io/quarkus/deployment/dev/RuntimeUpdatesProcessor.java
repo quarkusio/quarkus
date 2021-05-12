@@ -460,7 +460,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
     }
 
-    private Boolean instrumentationEnabled() {
+    public boolean instrumentationEnabled() {
         if (instrumentationEnabled != null) {
             return instrumentationEnabled;
         }
@@ -963,6 +963,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         } else {
             log.info("Live reload disabled");
         }
+        return liveReloadEnabled;
+    }
+
+    public boolean isLiveReloadEnabled() {
         return liveReloadEnabled;
     }
 

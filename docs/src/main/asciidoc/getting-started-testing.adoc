@@ -40,6 +40,8 @@ To complete this guide, you need:
 In this guide, we expand on the initial test that was created as part of the Getting Started Guide.
 We cover injection into tests and also how to test native executables.
 
+NOTE: Quarkus supports Continuous testing, but this is covered by the link:continuous-testing[Continuous Testing Guide].
+
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.

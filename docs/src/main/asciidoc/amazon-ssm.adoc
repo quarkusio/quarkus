@@ -1,0 +1,363 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Amazon SSM Client
+:extension-status: preview
+
+include::./attributes.adoc[]
+
+AWS Systems Manager (formerly Amazon Simple Systems Manager, or SSM) is a service that you can use to view and control your infrastructure on AWS.
+One of the most useful features of SSM for microservices is the https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html[Parameter Store], which provides secure, hierarchical storage for configuration data management and secrets management..
+
+You can find more information about SSM at https://docs.aws.amazon.com/systems-manager/[the AWS Systems Manager website].
+
+NOTE: The SSM extension is based on https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/welcome.html[AWS Java SDK 2.x].
+It's a major rewrite of the 1.x code base that offers two programming models (Blocking & Async).
+
+include::./status-include.adoc[]
+
+The Quarkus extension supports two programming models:
+
+* Blocking access using URL Connection HTTP client (by default) or the Apache HTTP Client
+* https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/basics-async.html[Asynchronous programming] based on JDK's `CompletableFuture` objects and the Netty HTTP client.
+
+In this guide, we see how you can get your REST services to use SSM locally and on AWS.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* an IDE
+* Apache Maven {maven-version}
+* An AWS Account to access the SSM service
+* Docker for your system to run SSM locally for testing purposes
+
+=== Set up SSM locally
+
+The easiest way to start working with SSM is to run a local instance as a container.
+
+[source,bash,subs="verbatim,attributes"]
+----
+docker run --rm --name local-ssm --publish 8014:4583 -e SERVICES=ssm -e START_WEB=0 -d localstack/localstack:0.11.1
+----
+This starts a SSM instance that is accessible on port `8014`.
+
+Create an AWS profile for your local instance using AWS CLI:
+[source,shell,subs="verbatim,attributes"]
+----
+$ aws configure --profile localstack
+AWS Access Key ID [None]: test-key
+AWS Secret Access Key [None]: test-secret
+Default region name [None]: us-east-1
+Default output format [None]:
+----
+
+== Solution
+The application built here allows to store and retrieve parameters using the SSM parameter store.
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `amazon-ssm-quickstart` {quickstarts-tree-url}/amazon-ssm-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=amazon-ssm-quickstart \
+    -DclassName="org.acme.ssm.QuarkusSsmSyncResource" \
+    -Dpath="/sync" \
+    -Dextensions="resteasy,resteasy-jackson,amazon-ssm,resteasy-mutiny"
+cd amazon-ssm-quickstart
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Mutiny and Amazon SSM Client extensions.
+After this, the `amazon-ssm` extension has been added to your `pom.xml` as well as the Mutiny support for RESTEasy.
+
+== Creating JSON REST service
+
+In this example, we will create an application that allows us to store and retrieve parameters to and from SSM parameter store using a RESTful API.
+The example application will demonstrate the two programming models supported by the extension.
+
+Let's start with an abstract `org.acme.ssm.QuarkusSsmResource` class to provide the common functionality we will need for both the synchronous and asynchrounous exposures.
+
+[source,java]
+----
+package org.acme.ssm;
+
+import static java.lang.Boolean.TRUE;
+import static java.util.stream.Collectors.toMap;
+
+import java.util.Map;
+import java.util.stream.Collector;
+
+import javax.annotation.PostConstruct;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
+import software.amazon.awssdk.services.ssm.model.GetParametersByPathRequest;
+import software.amazon.awssdk.services.ssm.model.Parameter;
+import software.amazon.awssdk.services.ssm.model.ParameterType;
+import software.amazon.awssdk.services.ssm.model.PutParameterRequest;
+
+public abstract class QuarkusSsmResource {
+
+    @ConfigProperty(name = "parameters.path") <1>
+    String parametersPath;
+
+    @PostConstruct <2>
+    void normalizePath() {
+        if (!parametersPath.startsWith("/")) {
+            parametersPath = "/" + parametersPath;
+        }
+        if (!parametersPath.endsWith("/")) {
+            parametersPath = parametersPath + "/";
+        }
+    }
+
+    protected Collector<Parameter, ?, Map<String, String>> parametersToMap() { <3>
+        return toMap(p -> p.name().substring(parametersPath.length()), Parameter::value);
+    }
+
+    protected GetParametersByPathRequest generateGetParametersByPathRequest() {
+        return GetParametersByPathRequest.builder() <4>
+                .path(parametersPath)
+                .withDecryption(TRUE)
+                .build();
+    }
+
+    protected PutParameterRequest generatePutParameterRequest(String name, String value, boolean secure) {
+        return PutParameterRequest.builder() <5>
+                .name(parametersPath + name)
+                .value(value)
+                .type(secure ? ParameterType.SECURE_STRING : ParameterType.STRING)
+                .overwrite(TRUE)
+                .build();
+    }
+
+    protected GetParameterRequest generateGetParameterRequest(String name) {
+        return GetParameterRequest.builder() <6>
+                .name(parametersPath + name)
+                .withDecryption(TRUE)
+                .build();
+    }
+}
+----
+
+<1> Inject a configured path under which to store parameters
+<2> Ensure the path starts and ends with `/`
+<3> Collect parameters into a map of simple names and values
+<4> Generate a request for all parameters under the configured path
+<5> Generate a request to set a specific parameter
+<6> Generate a request to get a specific parameter value
+
+Now, we can extend the class and create the synchronous implementation in the `org.acme.ssm.QuarkusSsmSyncResource` class.
+
+[source,java]
+----
+package org.acme.ssm;
+
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+
+import software.amazon.awssdk.services.ssm.SsmClient;
+
+@Path("/sync")
+public class QuarkusSsmSyncResource extends QuarkusSsmResource {
+
+    @Inject <1>
+    SsmClient ssm;
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, String> getParameters() {
+        return ssm.getParametersByPath(generateGetParametersByPathRequest())
+                .parameters().stream().collect(parametersToMap());
+    }
+
+    @PUT
+    @Path("/{name}")
+    @Consumes(MediaType.TEXT_PLAIN)
+    public void setParameter(@PathParam("name") String name,
+            @QueryParam("secure") @DefaultValue("false") boolean secure,
+            String value) {
+
+        ssm.putParameter(generatePutParameterRequest(name, value, secure));
+    }
+
+    @GET
+    @Path("/{name}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getParameter(@PathParam("name") String name) {
+        return ssm.getParameter(generateGetParameterRequest(name))
+                .parameter().value();
+    }
+}
+----
+
+<1> Inject the client provided by the amazon-ssm extension
+
+Using the Amazon SSM SDK, we can easily store and retrieve arbitrary name/value pairs, and we can optionally store the values in a secure manner.
+
+== Configuring SSM clients
+
+Both SSM clients (sync and async) are configurable via the `application.properties` file that can be provided in the `src/main/resources` directory.
+Additionally, you need to add to the classpath a proper implementation of the sync client. By default the extension uses the URL connection HTTP client, so
+you need to add a URL connection client dependency to the `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>url-connection-client</artifactId>
+</dependency>
+----
+
+If you want to use Apache HTTP client instead, configure it as follows:
+
+[source,properties]
+----
+quarkus.ssm.sync-client.type=apache
+----
+
+And add the following dependency to the application `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>apache-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-apache-httpclient</artifactId>
+</dependency>
+----
+
+If you're going to use a local SSM instance, configure it as follows:
+
+[source,properties]
+----
+quarkus.ssm.endpoint-override=http://localhost:8014 <1>
+
+quarkus.ssm.aws.region=us-east-1 <2>
+quarkus.ssm.aws.credentials.type=static <3>
+quarkus.ssm.aws.credentials.static-provider.access-key-id=test-key
+quarkus.ssm.aws.credentials.static-provider.secret-access-key=test-secret
+----
+
+<1> Override the SSM client to use localstack instead of the actual AWS service
+<2> Localstack defaults to `us-east-1`
+<3> The `static` credentials provider lets you set the `access-key-id` and `secret-access-key` directly
+
+If you want to work with an AWS account, you can simply remove or comment out all Amazon SSM related properties. By default, the SSM client extension will use the `default` credentials provider chain that looks for credentials in this order:
+
+include::./amazon-credentials.adoc[]
+
+And the region from your AWS CLI profile will be used.
+
+== Next steps
+
+=== Packaging
+
+Packaging your application is as simple as `./mvnw clean package`.
+It can then be run with `java -Dparameters.path=/quarkus/is/awesome/ -jar target/quarkus-app/quarkus-run.jar`.
+
+With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
+Depending on your system, that will take some time.
+
+=== Going asynchronous
+
+Thanks to the AWS SDK v2.x used by the Quarkus extension, you can use the asynchronous programming model out of the box.
+
+Create a `org.acme.ssm.QuarkusSsmAsyncResource` REST resource that will be similar to our `QuarkusSsmSyncResource` but using an asynchronous programming model.
+
+[source,java]
+----
+package org.acme.ssm;
+
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+
+import io.smallrye.mutiny.Uni;
+import software.amazon.awssdk.services.ssm.SsmAsyncClient;
+
+@Path("/async")
+public class QuarkusSsmAsyncResource extends QuarkusSsmResource {
+
+    @Inject
+    SsmAsyncClient ssm;
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<Map<String, String>> getParameters() {
+        return Uni.createFrom().completionStage(ssm.getParametersByPath(generateGetParametersByPathRequest()))
+                .onItem().transform(r -> r.parameters().stream().collect(parametersToMap()));
+    }
+
+    @PUT
+    @Path("/{name}")
+    @Consumes(MediaType.TEXT_PLAIN)
+    public Uni<Void> setParameter(@PathParam("name") String name,
+            @QueryParam("secure") @DefaultValue("false") boolean secure,
+            String value) {
+
+        return Uni.createFrom().completionStage(ssm.putParameter(generatePutParameterRequest(name, value, secure)))
+                .onItem().transform(r -> null);
+    }
+
+    @GET
+    @Path("/{name}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Uni<String> getParameter(@PathParam("name") String name) {
+        return Uni.createFrom().completionStage(ssm.getParameter(generateGetParameterRequest(name)))
+                .onItem().transform(r -> r.parameter().value());
+    }
+}
+----
+
+Note that the `SsmAsyncClient` behaves just like the `SsmClient`, but returns `CompletionStage` objects which we use to create `Uni` instances, and then transform the emitted item.
+
+To enable the asynchronous client, we also need to add the Netty HTTP client dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>netty-nio-client</artifactId>
+</dependency>
+----
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-amazon-ssm.adoc[opts=optional, leveloffset=+1]

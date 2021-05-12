@@ -306,9 +306,9 @@ jobs:
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 
-  linux-jvm-maven-tests:
+  maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.java.os-name }}
     needs: calculate-test-jobs
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
@@ -321,7 +321,13 @@ jobs:
         java:
           - {
             name: "11",
-            java-version: 11
+            java-version: 11,
+            os-name: "ubuntu-latest"
+          }
+          - {
+            name: "11 Windows",
+            java-version: 11,
+            os-name: "windows-latest"
           }
     steps:
       - uses: actions/checkout@v2
@@ -333,7 +339,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK ${{ matrix.java.name }}
+      - name: Set up JDK ${{ matrix.java.java-version }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
@@ -349,61 +355,13 @@ jobs:
         uses: actions/upload-artifact@v1
         if: failure()
         with:
-          name: test-reports-linux-maven-java${{matrix.java.name}}
+          name: test-reports-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-Maven Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
-          retention-days: 2
-
-  windows-jdk11-jvm-maven-tests:
-    name: Maven Tests - JDK 11 Windows
-    runs-on: windows-latest
-    needs: calculate-test-jobs
-    env:
-      MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
-    # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: 11
-      - name: Build
-        shell: bash
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl 'integration-tests/maven'
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-windows-maven-java11
-          path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "surefire-reports-Maven Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 

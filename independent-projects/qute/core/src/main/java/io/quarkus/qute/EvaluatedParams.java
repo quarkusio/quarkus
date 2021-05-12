@@ -79,15 +79,15 @@ public final class EvaluatedParams {
         return new EvaluatedParams(CompletableFuture.allOf(results), results);
     }
 
-    public final CompletionStage stage;
+    public final CompletionStage<?> stage;
     private final CompletableFuture<?>[] results;
 
-    EvaluatedParams(CompletionStage stage) {
+    EvaluatedParams(CompletionStage<?> stage) {
         this.stage = stage;
         this.results = new CompletableFuture<?>[] { stage.toCompletableFuture() };
     }
 
-    EvaluatedParams(CompletionStage stage, CompletableFuture[] results) {
+    EvaluatedParams(CompletionStage<?> stage, CompletableFuture[] results) {
         this.stage = stage;
         this.results = results;
     }
@@ -132,7 +132,7 @@ public final class EvaluatedParams {
                 return false;
             }
             if (types.length > ++i) {
-                paramType = types[i];
+                paramType = boxType(types[i]);
             }
         }
         return true;

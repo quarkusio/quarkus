@@ -2,12 +2,18 @@ package io.quarkus.bootstrap.classloader;
 
 import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
 import io.quarkus.bootstrap.classloading.JarClassPathElement;
+import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.util.IoUtils;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -113,5 +119,32 @@ public class ClassLoadingResourceUrlTestCase {
         } finally {
             IoUtils.recursiveDelete(path);
         }
+    }
+
+    @Test
+    public void testMemoryUrlConnections() throws Exception {
+        long start = System.currentTimeMillis();
+        Thread.sleep(2);
+
+        ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+                .addElement(
+                        new MemoryClassPathElement(Collections.singletonMap("a.txt", "hello".getBytes(StandardCharsets.UTF_8))))
+                .build();
+        URL res = cl.getResource("a.txt");
+        Assertions.assertNotNull(res);
+        URLConnection urlConnection = res.openConnection();
+        Assertions.assertEquals(5, urlConnection.getContentLength());
+        Assertions.assertTrue(urlConnection.getLastModified() > start);
+        Assertions.assertEquals("hello", new String(readAllBytes(urlConnection.getInputStream()), StandardCharsets.UTF_8));
+
+    }
+
+    public static byte[] readAllBytes(InputStream is) throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        byte[] buffer = new byte[0xFFFF];
+        for (int len = is.read(buffer); len != -1; len = is.read(buffer)) {
+            os.write(buffer, 0, len);
+        }
+        return os.toByteArray();
     }
 }

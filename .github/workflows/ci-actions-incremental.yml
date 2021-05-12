@@ -212,9 +212,9 @@ jobs:
           echo "::set-output name=run_maven::${run_maven}"
           echo "::set-output name=run_tcks::${run_tcks}"
 
-  linux-jvm-tests:
+  jvm-tests:
     name: JVM Tests - JDK ${{matrix.java.name}}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.java.os-name }}
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
@@ -228,18 +228,28 @@ jobs:
           - {
             name: "11",
             java-version: 11,
-            maven_args: "",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g"
+            maven_args: "$JVM_TEST_MAVEN_ARGS",
+            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
+            os-name: "ubuntu-latest"
           }
           - {
             name: "16",
             java-version: 16,
-            maven_args: "-pl '!devtools/gradle' -Dno-descriptor-tests",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g --add-opens java.base/java.util=ALL-UNNAMED"
+            maven_args: "$JVM_TEST_MAVEN_ARGS -pl '!devtools/gradle' -Dno-descriptor-tests",
+            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g --add-opens java.base/java.util=ALL-UNNAMED",
+            os-name: "ubuntu-latest"
+          }
+          - {
+            name: "11 Windows",
+            java-version: 11,
+            maven_args: "-DskipDocs -Dformat.skip",
+            maven_opts: "-Xmx1500m -XX:MaxMetaspaceSize=1g",
+            os-name: "windows-latest"
           }
 
     steps:
       - name: Stop mysql
+        if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
         run: |
           ss -ln
@@ -253,18 +263,19 @@ jobs:
         run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
+        if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
         run: sudo apt-get clean
 
       - name: Reclaim Disk Space
+        if: "!startsWith(matrix.java.os-name, 'windows')"
         run: .github/ci-prerequisites.sh
 
-      - name: Set up JDK ${{ matrix.java.name }}
+      - name: Set up JDK ${{ matrix.java.java-version }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
-          release: ${{ matrix.java.release }}
 
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -276,7 +287,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build
         shell: bash
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -285,66 +296,13 @@ jobs:
         uses: actions/upload-artifact@v1
         if: failure()
         with:
-          name: test-reports-linux-jvm${{matrix.java.name}}
+          name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
       - name: Upload Surefire reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
           name: "surefire-reports-JVM Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
-          retention-days: 2
-
-  windows-jdk11-jvm-tests:
-    name: JVM Tests - JDK 11 Windows
-    runs-on: windows-latest
-    # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    needs: build-jdk11
-    timeout-minutes: 180
-    env:
-      MAVEN_OPTS: -Xmx1500m -XX:MaxMetaspaceSize=1g
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-      - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: 11
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Build
-        shell: bash
-        run: ./mvnw $COMMON_MAVEN_ARGS -DskipDocs -Dformat.skip -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install ${{ needs.build-jdk11.outputs.gib_args }}
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: |
-          # Disambiguate windows find from cygwin find
-          /usr/bin/find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-windows-jdk11-jvm
-          path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "surefire-reports-JVM Tests - JDK 11 Windows"
           path: "**/target/*-reports/TEST-*.xml"
           retention-days: 2
 

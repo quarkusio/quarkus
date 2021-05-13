@@ -176,6 +176,10 @@ public class PackageConfig {
                 type.equalsIgnoreCase(PackageConfig.LEGACY));
     }
 
+    public boolean isUberJar() {
+        return type.equalsIgnoreCase(PackageConfig.UBER_JAR);
+    }
+
     @ConfigGroup
     public static class FernflowerConfig {
 

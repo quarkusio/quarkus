@@ -12,6 +12,9 @@
     <artifactId>quarkus-test-extension-deployment</artifactId>
     <name>Quarkus - Core - Test Extension - Deployment</name>
 
+    <properties>
+        <xml-combiner.version>3.0.0</xml-combiner.version>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -29,6 +32,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-extension</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.atteo</groupId>
+            <artifactId>xml-combiner</artifactId>
+            <version>${xml-combiner.version}</version>
         </dependency>
 
         <!-- test dependencies -->

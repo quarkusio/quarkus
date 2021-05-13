@@ -314,6 +314,15 @@ final class MultipartPopulatorGenerator {
                         // this is a common enough mistake, so let's provide a good error message
                         failIfFileTypeUsedAsGenericType(field, fieldType, fieldDotName);
 
+                        if (fieldType.kind() == Type.Kind.ARRAY) {
+                            if (fieldType.asArrayType().component().name().equals(DotNames.BYTE_NAME)) {
+                                throw new IllegalArgumentException(
+                                        "'byte[]' cannot be used to read multipart file contents. Offending field is '"
+                                                + field.name() + "' of class '"
+                                                + field.declaringClass().name()
+                                                + "'. If you need to read the contents of the uploaded file, use 'Path' or 'File' as the field type and use File IO APIs to read the bytes, while making sure you annotate the endpoint with '@Blocking'");
+                            }
+                        }
                         if (fieldDotName.equals(DotNames.STRING_NAME) && partType.equals(MediaType.TEXT_PLAIN)) {
                             // in this case all we need to do is read the value of the form attribute
 

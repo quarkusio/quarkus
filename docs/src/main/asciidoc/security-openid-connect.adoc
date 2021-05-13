@@ -769,6 +769,22 @@ Note that `@TestSecurity` annotation must always be used and its `user` property
 `@OidcSecurity` annotation is optional and can be used to set the additional token claims, as well as `UserInfo` and `OidcConfigurationMetadata` properties. 
 Additionally, if `quarkus.oidc.token.issuer` property is configured then it will be used as an `OidcConfigurationMetadata` `issuer` property value.
 
+== How to check the errors in the logs ==
+
+Please enable `io.quarkus.oidc.runtime.OidcProvider` `TRACE` level logging to see more details about the token verification errors:
+
+[source, properties]
+----
+quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=TRACE
+quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".min-level=TRACE
+----
+
+== External and Internal Access to OpenId Connect Provider
+
+Note that the OpenId Connect Provider externally accessible token and other endpoints may have different HTTP(S) URLs compared to the URLs auto-discovered or configured relative to `quarkus.oidc.auth-server-url` internal URL. For example, if your SPA acquires a token from an external token endpoint address and sends it to Quarkus as a Bearer token then an issuer verification failure may be reported by the endpoint.
+
+In such cases, if you work with Keycloak then please start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally accessible base URL.
+If you work with other Openid Connect providers then please check your provider's documentation.
 
 == References
 

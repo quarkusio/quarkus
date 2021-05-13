@@ -515,6 +515,16 @@ and finally write the test code. Given the Wiremock-based resource above, the fi
 
 If you work with Keycloak then you can use the same approach as described in the link:security-openid-connect#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section.
 
+== How to check the errors in the logs ==
+
+Please enable `io.quarkus.oidc.client.runtime.OidcClientImpl` `TRACE` level logging to see more details about the token acquisition and refresh errors:
+
+[source, properties]
+----
+quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientImpl".level=TRACE
+quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientImpl".min-level=TRACE
+----
+
 == Token endpoint configuration
 
 By default the token endpoint address is discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc-client.auth-server-url`.

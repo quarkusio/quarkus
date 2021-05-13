@@ -765,7 +765,13 @@ See <<generate-jwt-tokens, Generate JWT tokens with SmallRye JWT>> and learn how
 
 == How to check the errors in the logs ==
 
-Set `quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".level=TRACE` and `quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-level=TRACE` to see more details about the token verification or decryption errors.
+Please enable `io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator` `TRACE` level logging to see more details about the token verification or decryption errors:
+
+[source, properties]
+----
+quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".level=TRACE
+quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-level=TRACE
+----
 
 == Proactive Authentication
 

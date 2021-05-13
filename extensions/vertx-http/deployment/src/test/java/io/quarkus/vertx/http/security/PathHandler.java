@@ -21,7 +21,7 @@ public class PathHandler {
                     ret.append(user.getSecurityIdentity().getPrincipal().getName());
                 }
                 ret.append(":");
-                ret.append(event.normalisedPath());
+                ret.append(event.normalizedPath());
                 event.response().end(ret.toString());
             }
         });

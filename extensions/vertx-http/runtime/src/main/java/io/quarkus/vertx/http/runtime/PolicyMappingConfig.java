@@ -53,4 +53,11 @@ public class PolicyMappingConfig {
      */
     @ConfigItem
     public Optional<List<String>> paths;
+
+    /**
+     * Path specific authentication mechanism which must be used to authenticate a user.
+     * It needs to match {@link HttpCredentialTransport} authentication scheme such as 'basic', 'bearer', 'form', etc.
+     */
+    @ConfigItem
+    public Optional<String> authMechanism;
 }

@@ -17,10 +17,16 @@ public class HttpCredentialTransport {
 
     private final Type transportType;
     private final String typeTarget;
+    private final String authenticationScheme;
 
     public HttpCredentialTransport(Type transportType, String typeTarget) {
+        this(transportType, typeTarget, typeTarget);
+    }
+
+    public HttpCredentialTransport(Type transportType, String typeTarget, String authenticationScheme) {
         this.transportType = Objects.requireNonNull(transportType);
         this.typeTarget = Objects.requireNonNull(typeTarget).toLowerCase();
+        this.authenticationScheme = Objects.requireNonNull(authenticationScheme);
     }
 
     public enum Type {
@@ -57,13 +63,14 @@ public class HttpCredentialTransport {
 
         if (transportType != that.transportType)
             return false;
-        return typeTarget.equals(that.typeTarget);
+        return typeTarget.equals(that.typeTarget) && this.authenticationScheme.equals(that.authenticationScheme);
     }
 
     @Override
     public int hashCode() {
         int result = transportType.hashCode();
         result = 31 * result + typeTarget.hashCode();
+        result = 31 * result + authenticationScheme.hashCode();
         return result;
     }
 
@@ -72,6 +79,7 @@ public class HttpCredentialTransport {
         return "HttpCredentialTransport{" +
                 "transportType=" + transportType +
                 ", typeTarget='" + typeTarget + '\'' +
+                ", authenticationScheme='" + authenticationScheme + '\'' +
                 '}';
     }
 
@@ -81,5 +89,9 @@ public class HttpCredentialTransport {
 
     public String getTypeTarget() {
         return typeTarget;
+    }
+
+    public String getAuthenticationScheme() {
+        return authenticationScheme;
     }
 }

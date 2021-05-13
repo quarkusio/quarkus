@@ -29,6 +29,19 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
 
     private final PathMatcher<List<HttpMatcher>> pathMatcher = new PathMatcher<>();
 
+    public String getAuthMechanismName(RoutingContext routingContext) {
+        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.request().path());
+        if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
+            return null;
+        }
+        for (HttpMatcher i : toCheck.getValue()) {
+            if (i.authMechanism != null) {
+                return i.authMechanism;
+            }
+        }
+        return null;
+    }
+
     @Override
     public Uni<CheckResult> checkPermission(RoutingContext routingContext, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
@@ -87,11 +100,13 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
                 for (String path : entry.getValue().paths.orElse(Collections.emptyList())) {
                     path = path.trim();
                     if (tempMap.containsKey(path)) {
-                        HttpMatcher m = new HttpMatcher(new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
+                        HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
+                                new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
                                 checker);
                         tempMap.get(path).add(m);
                     } else {
-                        HttpMatcher m = new HttpMatcher(new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
+                        HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
+                                new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
                                 checker);
                         List<HttpMatcher> perms = new ArrayList<>();
                         tempMap.put(path, perms);
@@ -137,12 +152,14 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
 
     static class HttpMatcher {
 
+        final String authMechanism;
         final Set<String> methods;
         final HttpSecurityPolicy checker;
 
-        HttpMatcher(Set<String> methods, HttpSecurityPolicy checker) {
+        HttpMatcher(String authMechanism, Set<String> methods, HttpSecurityPolicy checker) {
             this.methods = methods;
             this.checker = checker;
+            this.authMechanism = authMechanism;
         }
     }
 }

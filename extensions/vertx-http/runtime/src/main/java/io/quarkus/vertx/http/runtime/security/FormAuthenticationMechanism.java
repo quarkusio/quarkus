@@ -24,6 +24,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
 public class FormAuthenticationMechanism implements HttpAuthenticationMechanism {
+    private static final String FORM = "form";
 
     private static final Logger log = Logger.getLogger(FormAuthenticationMechanism.class);
 
@@ -194,6 +195,6 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation);
+        return new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM);
     }
 }

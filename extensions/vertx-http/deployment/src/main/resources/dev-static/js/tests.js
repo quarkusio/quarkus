@@ -115,26 +115,28 @@ function addTestsKeyListeners(){
     var p = 80; // Pause tests
     
     $(document).keydown(function (e) {
-        if (e.keyCode === r){
-            if(testsIsRunning){
-                rerunAllTests();
-            }else{
-                startTests();
+        if (e.target.tagName === "BODY") {
+            if (e.keyCode === r){
+                if(testsIsRunning){
+                    rerunAllTests();
+                }else{
+                    startTests();
+                }
+            } else if (e.keyCode === f){
+                rerunFailedTests();
+            } else if (e.keyCode === b){
+                toggleBrokenOnly();
+            } else if (e.keyCode === v){
+                printFailures();
+            } else if (e.keyCode === o){
+                toggleTestOutput();
+            } else if (e.keyCode === i){
+                toggleInstrumentationReload();
+            } else if (e.keyCode === h){
+                displayTestsHelp();
+            } else if (e.keyCode === p){
+                pauseTests();
             }
-        } else if (e.keyCode === f){
-            rerunFailedTests();
-        } else if (e.keyCode === b){
-            toggleBrokenOnly();
-        } else if (e.keyCode === v){
-            printFailures();
-        } else if (e.keyCode === o){
-            toggleTestOutput();
-        } else if (e.keyCode === i){
-            toggleInstrumentationReload();
-        } else if (e.keyCode === h){
-            displayTestsHelp();
-        } else if (e.keyCode === p){
-            pauseTests();
         }
     });
 }

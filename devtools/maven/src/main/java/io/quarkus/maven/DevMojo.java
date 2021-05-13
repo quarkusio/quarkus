@@ -653,6 +653,7 @@ public class DevMojo extends AbstractMojo {
                 .setTestSourcePaths(testSourcePaths)
                 .setTestClassesPath(testClassesPath)
                 .setTestResourcePath(testResourcePath)
+                .setTestResourcesOutputPath(testClassesPath)
                 .build();
 
         if (root) {

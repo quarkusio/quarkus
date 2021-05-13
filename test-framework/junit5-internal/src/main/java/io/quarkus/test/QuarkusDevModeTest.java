@@ -386,7 +386,8 @@ public class QuarkusDevModeTest
                 moduleBuilder
                         .setTestSourcePaths(Collections.singleton(deploymentTestSourcePath.toAbsolutePath().toString()))
                         .setTestClassesPath(testClasses.toAbsolutePath().toString())
-                        .setTestResourcePath(deploymentTestResourcePath.toAbsolutePath().toString());
+                        .setTestResourcePath(deploymentTestResourcePath.toAbsolutePath().toString())
+                        .setTestResourcesOutputPath(testClasses.toAbsolutePath().toString());
             }
 
             context.setApplicationRoot(
@@ -670,8 +671,12 @@ public class QuarkusDevModeTest
      * the deployment resources directory
      */
     public void modifyResourceFile(String path, Function<String, String> mutator) {
+        Path resourcePath = deploymentResourcePath.resolve(path);
+        internalModifyResource(mutator, resourcePath);
+    }
+
+    private void internalModifyResource(Function<String, String> mutator, Path resourcePath) {
         try {
-            Path resourcePath = deploymentResourcePath.resolve(path);
             long old = modTime(resourcePath);
             byte[] data;
             try (InputStream in = Files.newInputStream(resourcePath)) {
@@ -686,6 +691,15 @@ public class QuarkusDevModeTest
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Adds or overwrites a resource file with the given data. The path is an absolute path into to
+     * the deployment resources directory
+     */
+    public void modifyTestResourceFile(String path, Function<String, String> mutator) {
+        Path resourcePath = deploymentTestResourcePath.resolve(path);
+        internalModifyResource(mutator, resourcePath);
     }
 
     /**

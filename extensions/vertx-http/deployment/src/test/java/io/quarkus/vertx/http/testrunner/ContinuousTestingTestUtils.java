@@ -13,7 +13,7 @@ import io.restassured.RestAssured;
 /**
  * Utilities for testing the test runner itself
  */
-public class TestRunnerTestUtils {
+public class ContinuousTestingTestUtils {
 
     public static TestStatus waitForFirstRunToComplete() {
         return waitForRun(1);

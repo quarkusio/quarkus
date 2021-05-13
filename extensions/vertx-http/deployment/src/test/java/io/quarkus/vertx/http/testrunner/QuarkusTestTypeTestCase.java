@@ -20,7 +20,7 @@ public class QuarkusTestTypeTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class)
-                            .add(new StringAsset(TestRunnerTestUtils.appProperties("quarkus.test.type=quarkus-test")),
+                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.type=quarkus-test")),
                                     "application.properties");
                 }
             })
@@ -33,7 +33,7 @@ public class QuarkusTestTypeTestCase {
 
     @Test
     public void testQuarkusTestMode() throws InterruptedException {
-        TestStatus ts = TestRunnerTestUtils.waitForFirstRunToComplete();
+        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
         Assertions.assertEquals(1L, ts.getLastRun());
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());

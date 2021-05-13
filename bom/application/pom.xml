@@ -87,7 +87,7 @@
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
         <graal-sdk.version>21.1.0</graal-sdk.version>
-        <gizmo.version>1.0.7.Final</gizmo.version>
+        <gizmo.version>1.0.8.Final</gizmo.version>
         <jackson.version>2.12.3</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
@@ -162,7 +162,7 @@
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
         <jgit.version>5.11.0.202103091610-r</jgit.version>
-        <flyway.version>7.8.2</flyway.version>
+        <flyway.version>7.9.0</flyway.version>
         <yasson.version>1.0.9</yasson.version>
         <liquibase.version>4.3.5</liquibase.version>
         <snakeyaml.version>1.28</snakeyaml.version>

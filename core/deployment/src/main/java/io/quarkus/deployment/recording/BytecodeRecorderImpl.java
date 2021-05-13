@@ -1103,8 +1103,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         //a list of steps that are performed on the object after it has been created
         //we need to create all these first, to ensure the required objects have already
         //been deserialized
-        List<SerialzationStep> setupSteps = new ArrayList<>();
-        List<SerialzationStep> ctorSetupSteps = new ArrayList<>();
+        List<SerializationStep> setupSteps = new ArrayList<>();
+        List<SerializationStep> ctorSetupSteps = new ArrayList<>();
 
         boolean relaxedOk = false;
         if (param instanceof Collection) {
@@ -1113,7 +1113,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 DeferredParameter val = i != null
                         ? loadObjectInstance(i, existing, i.getClass(), relaxedValidation)
                         : loadObjectInstance(null, existing, Object.class, relaxedValidation);
-                setupSteps.add(new SerialzationStep() {
+                setupSteps.add(new SerializationStep() {
                     @Override
                     public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {
                         //each step can happen in a new method, so it is safe to do this
@@ -1136,7 +1136,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 DeferredParameter val = i.getValue() != null
                         ? loadObjectInstance(i.getValue(), existing, i.getValue().getClass(), relaxedValidation)
                         : loadObjectInstance(null, existing, Object.class, relaxedValidation);
-                setupSteps.add(new SerialzationStep() {
+                setupSteps.add(new SerializationStep() {
                     @Override
                     public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {
                         method.invokeInterfaceMethod(MAP_PUT, context.loadDeferred(out), context.loadDeferred(key),
@@ -1221,7 +1221,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                 params.add(toAdd);
 
                             }
-                            setupSteps.add(new SerialzationStep() {
+                            setupSteps.add(new SerializationStep() {
                                 @Override
                                 public void handle(MethodContext context, MethodCreator method,
                                         DeferredArrayStoreParameter out) {
@@ -1261,7 +1261,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                         relaxedValidation);
                                 def.put(key, val);
                             }
-                            setupSteps.add(new SerialzationStep() {
+                            setupSteps.add(new SerializationStep() {
                                 @Override
                                 public void handle(MethodContext context, MethodCreator method,
                                         DeferredArrayStoreParameter out) {
@@ -1337,7 +1337,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             i.getPropertyType(), relaxedValidation);
                     if (ctorParamIndex != null) {
                         nonDefaultConstructorHandles[ctorParamIndex] = val;
-                        ctorSetupSteps.add(new SerialzationStep() {
+                        ctorSetupSteps.add(new SerializationStep() {
                             @Override
                             public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {
 
@@ -1350,7 +1350,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         });
                     } else {
                         Class finalPropertyType = propertyType;
-                        setupSteps.add(new SerialzationStep() {
+                        setupSteps.add(new SerializationStep() {
                             @Override
                             public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {
                                 method.invokeVirtualMethod(
@@ -1389,7 +1389,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                 relaxedValidation);
                         if (ctorParamIndex != null) {
                             nonDefaultConstructorHandles[ctorParamIndex] = val;
-                            ctorSetupSteps.add(new SerialzationStep() {
+                            ctorSetupSteps.add(new SerializationStep() {
                                 @Override
                                 public void handle(MethodContext context, MethodCreator method,
                                         DeferredArrayStoreParameter out) {
@@ -1402,7 +1402,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                 }
                             });
                         } else {
-                            setupSteps.add(new SerialzationStep() {
+                            setupSteps.add(new SerializationStep() {
                                 @Override
                                 public void handle(MethodContext context, MethodCreator method,
                                         DeferredArrayStoreParameter out) {
@@ -1445,24 +1445,34 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             Arrays.stream(finalCtorHandles).map(m -> context.loadDeferred(m))
                                     .toArray(ResultHandle[]::new));
                 } else {
-                    try {
-                        param.getClass().getDeclaredConstructor();
-                        out = method.newInstance(ofConstructor(param.getClass()));
-                    } catch (NoSuchMethodException e) {
-                        //fallback for collection types, such as unmodifiableMap
-                        if (SortedMap.class.isAssignableFrom(expectedType)) {
-                            out = method.newInstance(ofConstructor(TreeMap.class));
-                        } else if (Map.class.isAssignableFrom(expectedType)) {
-                            out = method.newInstance(ofConstructor(LinkedHashMap.class));
-                        } else if (List.class.isAssignableFrom(expectedType)) {
+                    if (List.class.isAssignableFrom(param.getClass())) {
+                        // list is a common special case, so let's handle it
+                        List listParam = (List) param;
+                        if (listParam.isEmpty()) {
                             out = method.newInstance(ofConstructor(ArrayList.class));
-                        } else if (SortedSet.class.isAssignableFrom(expectedType)) {
-                            out = method.newInstance(ofConstructor(TreeSet.class));
-                        } else if (Set.class.isAssignableFrom(expectedType)) {
-                            out = method.newInstance(ofConstructor(LinkedHashSet.class));
                         } else {
-                            throw new RuntimeException("Unable to serialize objects of type " + param.getClass()
-                                    + " to bytecode as it has no default constructor");
+                            out = method.newInstance(ofConstructor(ArrayList.class, int.class), method.load(listParam.size()));
+                        }
+                    } else {
+                        try {
+                            param.getClass().getDeclaredConstructor();
+                            out = method.newInstance(ofConstructor(param.getClass()));
+                        } catch (NoSuchMethodException e) {
+                            //fallback for collection types, such as unmodifiableMap
+                            if (SortedMap.class.isAssignableFrom(expectedType)) {
+                                out = method.newInstance(ofConstructor(TreeMap.class));
+                            } else if (Map.class.isAssignableFrom(expectedType)) {
+                                out = method.newInstance(ofConstructor(LinkedHashMap.class));
+                            } else if (List.class.isAssignableFrom(expectedType)) {
+                                out = method.newInstance(ofConstructor(ArrayList.class));
+                            } else if (SortedSet.class.isAssignableFrom(expectedType)) {
+                                out = method.newInstance(ofConstructor(TreeSet.class));
+                            } else if (Set.class.isAssignableFrom(expectedType)) {
+                                out = method.newInstance(ofConstructor(LinkedHashSet.class));
+                            } else {
+                                throw new RuntimeException("Unable to serialize objects of type " + param.getClass()
+                                        + " to bytecode as it has no default constructor");
+                            }
                         }
                     }
                 }
@@ -1477,15 +1487,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
             void doPrepare(MethodContext context) {
                 //this is where the object construction happens
                 //first create the actial object
-                for (SerialzationStep i : ctorSetupSteps) {
+                for (SerializationStep i : ctorSetupSteps) {
                     i.prepare(context);
                 }
                 objectValue.prepare(context);
-                for (SerialzationStep i : setupSteps) {
+                for (SerializationStep i : setupSteps) {
                     //then prepare the steps (i.e. creating the values to be placed into this object)
                     i.prepare(context);
                 }
-                for (SerialzationStep i : setupSteps) {
+                for (SerializationStep i : setupSteps) {
                     //now actually run the steps (i.e. actually stick the values into the object)
                     context.writeInstruction(new InstructionGroup() {
                         @Override
@@ -1792,7 +1802,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     /**
      * A step that must be executed to serialize a complex object
      */
-    interface SerialzationStep {
+    interface SerializationStep {
 
         void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out);
 

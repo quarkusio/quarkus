@@ -355,18 +355,25 @@ public class JarResultBuildStep {
                 }
 
                 for (Path resolvedDep : depArtifact.getPaths()) {
-                    Set<String> transformedFromThisArchive = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
+                    Set<String> existingEntries = new HashSet<>();
+                    Set<String> transformedFilesByJar = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
+                    if (transformedFilesByJar != null) {
+                        existingEntries.addAll(transformedFilesByJar);
+                    }
+                    generatedResources.stream()
+                            .map(GeneratedResourceBuildItem::getName)
+                            .forEach(existingEntries::add);
 
                     if (!Files.isDirectory(resolvedDep)) {
                         try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
                             for (final Path root : artifactFs.getRootDirectories()) {
                                 walkFileDependencyForDependency(root, runnerZipFs, seen, duplicateCatcher, concatenatedEntries,
-                                        finalIgnoredEntries, appDep, transformedFromThisArchive, mergeResourcePaths);
+                                        finalIgnoredEntries, appDep, existingEntries, mergeResourcePaths);
                             }
                         }
                     } else {
                         walkFileDependencyForDependency(resolvedDep, runnerZipFs, seen, duplicateCatcher,
-                                concatenatedEntries, finalIgnoredEntries, appDep, transformedFromThisArchive,
+                                concatenatedEntries, finalIgnoredEntries, appDep, existingEntries,
                                 mergeResourcePaths);
                     }
                 }
@@ -394,7 +401,7 @@ public class JarResultBuildStep {
 
     private void walkFileDependencyForDependency(Path root, FileSystem runnerZipFs, Map<String, String> seen,
             Map<String, Set<AppDependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
-            Set<String> finalIgnoredEntries, AppDependency appDep, Set<String> transformedFromThisArchive,
+            Set<String> finalIgnoredEntries, AppDependency appDep, Set<String> existingEntries,
             Set<String> mergeResourcePaths) throws IOException {
         final Path metaInfDir = root.resolve("META-INF");
         Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
@@ -424,9 +431,7 @@ public class JarResultBuildStep {
                             }
                             return FileVisitResult.CONTINUE;
                         }
-                        boolean transformed = transformedFromThisArchive != null
-                                && transformedFromThisArchive.contains(relativePath);
-                        if (!transformed) {
+                        if (!existingEntries.contains(relativePath)) {
                             if (CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
                                     || mergeResourcePaths.contains(relativePath)) {
                                 concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())

@@ -678,9 +678,9 @@ This approach provides a more limited coverage compared to the Wiremock approach
 [[integration-testing-security-annotation]]
 === TestSecurity annotation
 
-Please see link:security-jwt#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` for testing the `service` application endpoint code which depends on the injected `JsonWebToken`.
+You can use `@TestSecurity` and `@OidcSecurity` annotations for testing the `service` application endpoint code which depends on the injected `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
 
-The only difference is that the following dependency should be used when testing the `service` applications:
+Add the following dependency:
 [source,xml]
 ----
 <dependency>
@@ -689,6 +689,86 @@ The only difference is that the following dependency should be used when testing
     <scope>test</scope>
 </dependency>
 ----
+
+and write a test code like this one:
+
+[source, java]
+----
+import static org.hamcrest.Matchers.is;
+import org.junit.jupiter.api.Test;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.oidc.Claim;
+import io.quarkus.test.security.oidc.ConfigMetadata;
+import io.quarkus.test.security.oidc.OidcSecurity;
+import io.quarkus.test.security.oidc.UserInfo;
+import io.restassured.RestAssured;
+
+@QuarkusTest
+@TestHTTPEndpoint(ProtectedResource.class)
+public class TestSecurityAuthTest {
+
+    @Test
+    @TestSecurity(user = "userOidc", roles = "viewer")
+    public void testOidc() {
+        RestAssured.when().get("test-security-oidc").then()
+                .body(is("userOidc:viewer"));
+    }
+
+    @Test
+    @TestSecurity(user = "userOidc", roles = "viewer")
+    @OidcSecurity(claims = {
+            @Claim(key = "email", value = "user@gmail.com")
+    }, userinfo = {
+            @UserInfo(key = "sub", value = "subject")
+    }, config = {
+            @ConfigMetadata(key = "issuer", value = "issuer")
+    })
+    public void testOidcWithClaimsUserInfoAndMetadata() {
+        RestAssured.when().get("test-security-oidc-claims-userinfo-metadata").then()
+                .body(is("userOidc:viewer:user@gmail.com:subject:issuer"));
+    }
+
+}
+----
+
+where `ProtectedResource` class may look like this:
+
+[source, java]
+----
+@Path("/web-app")
+@Authenticated
+public class ProtectedResource {
+
+    @Inject
+    JsonWebToken accessToken;
+    @Inject
+    UserInfo userInfo;
+    @Inject
+    OidcConfigurationMetadata configMetadata;
+
+    @GET
+    @Path("test-security-oidc")
+    public String testSecurityOidc() {
+        return accessToken.getName() + ":" + accessToken.getGroups().iterator().next();
+    }
+
+    @GET
+    @Path("test-security-oidc-claims-userinfo-metadata")
+    public String testSecurityOidcWithClaimsUserInfoMetadata() {
+        return accessToken.getName() + ":" + accessToken.getGroups().iterator().next()
+                + ":" + accessToken.getClaim("email")
+                + ":" + userInfo.getString("sub")
+                + ":" + configMetadata.get("issuer");
+    }
+}
+----
+
+Note that `@TestSecurity` annotation must always be used and its `user` property is returned as `JsonWebToken.getName()` and `roles` property - as `JsonWebToken.getGroups()`.
+`@OidcSecurity` annotation is optional and can be used to set the additional token claims, as well as `UserInfo` and `OidcConfigurationMetadata` properties. 
+Additionally, if `quarkus.oidc.token.issuer` property is configured then it will be used as an `OidcConfigurationMetadata` `issuer` property value.
+
 
 == References
 

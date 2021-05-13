@@ -18,6 +18,7 @@ import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
@@ -48,6 +49,9 @@ public class ProtectedResource {
     @Inject
     RefreshToken refreshToken;
 
+    @Inject
+    UserInfo userInfo;
+
     @Context
     SecurityContext securityContext;
 
@@ -61,7 +65,9 @@ public class ProtectedResource {
     @Path("test-security-oidc")
     public String testSecurityJwt() {
         return idToken.getName() + ":" + idToken.getGroups().iterator().next()
-                + ":" + idToken.getClaim("email");
+                + ":" + idToken.getClaim("email")
+                + ":" + userInfo.getString("sub")
+                + ":" + configMetadata.get("audience");
     }
 
     @GET

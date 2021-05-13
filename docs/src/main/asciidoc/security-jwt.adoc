@@ -879,16 +879,13 @@ and write a test code like this one:
 
 [source, java]
 ----
-package io.quarkus.it.keycloak;
-
 import static org.hamcrest.Matchers.is;
-
 import org.junit.jupiter.api.Test;
-
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.security.SecurityAttribute;
 import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.jwt.Claim;
+import io.quarkus.test.security.jwt.JwtSecurity;
 import io.restassured.RestAssured;
 
 @QuarkusTest
@@ -896,11 +893,19 @@ import io.restassured.RestAssured;
 public class TestSecurityAuthTest {
 
     @Test
-    @TestSecurity(user = "userJwt", roles = "viewer", attributes = {
-            @SecurityAttribute(key = "claim.email", value = "user@gmail.com")
-    })
-    public void testJwtWithDummyUser() {
+    @TestSecurity(user = "userJwt", roles = "viewer")
+    public void testJwt() {
         RestAssured.when().get("test-security-jwt").then()
+                .body(is("userJwt:viewer"));
+    }
+
+    @Test
+    @TestSecurity(user = "userJwt", roles = "viewer")
+    @JwtSecurity(claims = {
+            @Claim(key = "email", value = "user@gmail.com")
+    })
+    public void testJwtWithClaims() {
+        RestAssured.when().get("test-security-jwt-claims").then()
                 .body(is("userJwt:viewer:user@gmail.com"));
     }
 
@@ -911,16 +916,6 @@ where `ProtectedResource` class may look like this:
 
 [source, java]
 ----
-package io.quarkus.it.keycloak;
-
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-
-import org.eclipse.microprofile.jwt.JsonWebToken;
-import io.quarkus.security.Authenticated;
-import io.quarkus.security.identity.SecurityIdentity;
-
 @Path("/web-app")
 @Authenticated
 public class ProtectedResource {
@@ -930,14 +925,21 @@ public class ProtectedResource {
 
     @GET
     @Path("test-security-jwt")
-    public String testSecurityJwt() {
+    public String testSecurityOidc() {
+        return accessToken.getName() + ":" + accessToken.getGroups().iterator().next();
+    }
+
+    @GET
+    @Path("test-security-jwt-claims")
+    public String testSecurityOidcUserInfoMetadata() {
         return accessToken.getName() + ":" + accessToken.getGroups().iterator().next()
                 + ":" + accessToken.getClaim("email");
     }
 }
 ----
 
-Note that `TestSecurity` `user` property is returned as `JsonWebToken.getName()` and `roles` property - as `JsonWebToken.getGroups()`. Additionally, any `SecurityAttribute` with the key starting from `claim.` will be returned as a token claim value, for example, `claim.email` will support `JsonWebToken.getClaim("email")`, etc.
+Note that `@TestSecurity` annotation must always be used and its `user` property is returned as `JsonWebToken.getName()` and `roles` property - as `JsonWebToken.getGroups()`.
+`@JwtSecurity` annotation is optional and can be used to set the additional token claims.
 
 [[generate-jwt-tokens]]
 == Generate JWT tokens with SmallRye JWT
@@ -949,7 +951,7 @@ Finally both the confidentiality and integrity of the claims can be further enfo
 
 SmallRye JWT provides an API for securing the JWT claims using all of these options.
 
-== Maven dependency
+=== Maven dependency
 
 [source,xml]
 ----

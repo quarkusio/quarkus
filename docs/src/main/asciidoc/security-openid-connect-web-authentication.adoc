@@ -739,17 +739,7 @@ Default realm name is `quarkus` and client id - `quarkus-web-app` - set `keycloa
 [[integration-testing-security-annotation]]
 === TestSecurity annotation
 
-Please see link:security-jwt#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken`.
-
-The only difference is that the following dependency should be used when testing the `web-app` applications:
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-test-security-oidc</artifactId>
-    <scope>test</scope>
-</dependency>
-----
+Please see link:security-openid-connect#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` and `@OidcSecurity` annotations for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
 
 == Configuration Reference
 

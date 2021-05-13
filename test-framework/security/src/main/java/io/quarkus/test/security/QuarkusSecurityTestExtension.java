@@ -1,5 +1,6 @@
 package io.quarkus.test.security;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -40,13 +41,22 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                             throw new RuntimeException(e);
                         }
                     }).toArray(Class<?>[]::new));
+            Annotation[] allAnnotations = new Annotation[] {};
             TestSecurity testSecurity = method.getAnnotation(TestSecurity.class);
             if (testSecurity == null) {
                 testSecurity = original.getAnnotation(TestSecurity.class);
+                if (testSecurity != null) {
+                    allAnnotations = original.getAnnotations();
+                }
                 while (testSecurity == null && original != Object.class) {
                     original = original.getSuperclass();
                     testSecurity = original.getAnnotation(TestSecurity.class);
+                    if (testSecurity != null) {
+                        allAnnotations = original.getAnnotations();
+                    }
                 }
+            } else {
+                allAnnotations = method.getAnnotations();
             }
             if (testSecurity == null) {
                 return;
@@ -66,7 +76,7 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                             .collect(Collectors.toMap(s -> s.key(), s -> s.value())));
                 }
 
-                SecurityIdentity userIdentity = augment(user.build());
+                SecurityIdentity userIdentity = augment(user.build(), allAnnotations);
                 CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(userIdentity);
             }
         } catch (Exception e) {
@@ -75,10 +85,10 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
 
     }
 
-    private SecurityIdentity augment(SecurityIdentity identity) {
+    private SecurityIdentity augment(SecurityIdentity identity, Annotation[] annotations) {
         Instance<TestSecurityIdentityAugmentor> producer = CDI.current().select(TestSecurityIdentityAugmentor.class);
         if (producer.isResolvable()) {
-            return producer.get().augment(identity);
+            return producer.get().augment(identity, annotations);
         }
         return identity;
     }

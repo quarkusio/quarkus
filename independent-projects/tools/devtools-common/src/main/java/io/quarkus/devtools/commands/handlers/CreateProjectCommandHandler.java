@@ -1,12 +1,12 @@
 package io.quarkus.devtools.commands.handlers;
 
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.APP_CONFIG;
 import static io.quarkus.devtools.commands.CreateProject.EXAMPLE;
 import static io.quarkus.devtools.commands.CreateProject.EXTRA_CODESTARTS;
 import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_CODE;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
+import static io.quarkus.devtools.project.codegen.ProjectGenerator.APP_CONFIG;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_ARTIFACT_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_VERSION;
@@ -125,7 +125,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))
                     .addData(platformData)
                     .addData(LegacySupport.convertFromLegacy(invocation.getValues()))
-                    .putData(APP_CONFIG.key(), invocation.getValue(APP_CONFIG.key(), Collections.emptyMap()))
+                    .putData(APP_CONFIG, invocation.getValue(APP_CONFIG, Collections.emptyMap()))
                     .messageWriter(invocation.log())
                     .build();
             invocation.log().info("-----------");

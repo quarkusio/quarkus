@@ -131,6 +131,30 @@ public class PolicyEnforcerTest {
     }
 
     @Test
+    public void testPublicResourceWithEnforcingPolicy() {
+        RestAssured.given()
+                .when().get("/api/public-enforcing")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testPublicResourceWithEnforcingPolicyAndToken() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))
+                .when().get("/api/public-enforcing")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    public void testPublicResourceWithDisabledPolicyAndToken() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))
+                .when().get("/api/public-token")
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
     public void testPathConfigurationPrecedenceWhenPathCacheNotDefined() {
         RestAssured.given()
                 .when().get("/api2/resource")

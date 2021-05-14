@@ -109,6 +109,8 @@ public class VertxCoreProducerTest {
         vc.workerPoolSize = 20;
         vc.maxWorkerExecuteTime = Duration.ofSeconds(1);
         vc.internalBlockingPoolSize = 20;
+        vc.queueSize = OptionalInt.empty();
+        vc.keepAliveTime = Duration.ofSeconds(30);
         vc.useAsyncDNS = false;
         vc.preferNativeTransport = false;
         vc.eventbus = new EventBusConfiguration();

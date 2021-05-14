@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
@@ -29,8 +30,8 @@ public class ExecutorRecorder {
     private static volatile Executor current;
 
     public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
-            LaunchMode launchMode) {
-        final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig);
+            LaunchMode launchMode, ThreadFactory threadFactory) {
+        final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig, threadFactory);
         ExecutorService executor;
         Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
         shutdownContext.addLastShutdownTask(shutdownTask);
@@ -123,9 +124,11 @@ public class ExecutorRecorder {
         };
     }
 
-    private static EnhancedQueueExecutor createExecutor(ThreadPoolConfig threadPoolConfig) {
-        final JBossThreadFactory threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
-                "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
+    private static EnhancedQueueExecutor createExecutor(ThreadPoolConfig threadPoolConfig, ThreadFactory threadFactory) {
+        if (threadFactory == null) {
+            threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
+                    "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
+        }
         final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
                 .setRegisterMBean(false)
                 .setHandoffExecutor(JBossExecutors.rejectingExecutor())

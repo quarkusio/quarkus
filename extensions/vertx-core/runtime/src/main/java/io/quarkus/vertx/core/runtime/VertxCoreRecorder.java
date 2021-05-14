@@ -15,7 +15,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -45,7 +48,10 @@ import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.file.impl.FileResolver;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.core.impl.VertxBuilder;
 import io.vertx.core.impl.VertxImpl;
+import io.vertx.core.impl.VertxThread;
+import io.vertx.core.spi.VertxThreadFactory;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
 @Recorder
@@ -191,19 +197,23 @@ public class VertxCoreRecorder {
 
         if (conf != null && conf.cluster != null && conf.cluster.clustered) {
             CompletableFuture<Vertx> latch = new CompletableFuture<>();
-            Vertx.clusteredVertx(options, new Handler<AsyncResult<Vertx>>() {
-                @Override
-                public void handle(AsyncResult<Vertx> ar) {
-                    if (ar.failed()) {
-                        latch.completeExceptionally(ar.cause());
-                    } else {
-                        latch.complete(ar.result());
-                    }
-                }
-            });
+            new VertxBuilder(options)
+                    .executorServiceFactory(new QuarkusExecutorFactory(conf))
+                    .init().clusteredVertx(new Handler<AsyncResult<Vertx>>() {
+                        @Override
+                        public void handle(AsyncResult<Vertx> ar) {
+                            if (ar.failed()) {
+                                latch.completeExceptionally(ar.cause());
+                            } else {
+                                latch.complete(ar.result());
+                            }
+                        }
+                    });
             vertx = latch.join();
         } else {
-            vertx = Vertx.vertx(options);
+            vertx = new VertxBuilder(options)
+                    .executorServiceFactory(new QuarkusExecutorFactory(conf))
+                    .init().vertx();
         }
 
         vertx.exceptionHandler(new Handler<Throwable>() {
@@ -435,6 +445,20 @@ public class VertxCoreRecorder {
                 return threads;
             }
         };
+    }
+
+    public ThreadFactory createThreadFactory() {
+        AtomicInteger threadCount = new AtomicInteger(0);
+        return runnable -> {
+            VertxThread thread = VertxThreadFactory.INSTANCE.newVertxThread(runnable,
+                    "executor-thread-" + threadCount.getAndIncrement(), true, 0, null);
+            thread.setDaemon(true);
+            return thread;
+        };
+    }
+
+    public void setupExecutorFactory(ExecutorService executorProxy) {
+        QuarkusExecutorFactory.sharedExecutor = executorProxy;
     }
 
     public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config) {

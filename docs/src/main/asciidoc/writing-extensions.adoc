@@ -535,6 +535,9 @@ TIP: The `name` parameter of the mojo is optional.
 If you do not specify it on the command line, the plugin will derive it from `extensionId` by replacing dashes with spaces and uppercasing each token.
 So you may consider omitting explicit `name` in some cases.
 
+NOTE: You can also name your file `quarkus-extension.yaml.template` and the plugin will rename it for you. This can avoid problems with running Dev Mode tests in your IDE, as the IDE can overwrite
+the modified file with the original.
+
 // The following link should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
 Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devtools/maven/src/main/java/io/quarkus/maven/CreateExtensionMojo.java[CreateExtensionMojo JavaDoc] for all the available options of the mojo.
 

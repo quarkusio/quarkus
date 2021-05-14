@@ -16,6 +16,7 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.runtime.LaunchMode;
 
 public class H2DevServicesProcessor {
 
@@ -25,7 +26,7 @@ public class H2DevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt port) {
+                    OptionalInt port, LaunchMode launchMode) {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort",
                             port.isPresent() ? String.valueOf(port.getAsInt()) : "0");
@@ -66,6 +67,11 @@ public class H2DevServicesProcessor {
                 } catch (SQLException throwables) {
                     throw new RuntimeException(throwables);
                 }
+            }
+
+            @Override
+            public boolean isDockerRequired() {
+                return false;
             }
         });
     }

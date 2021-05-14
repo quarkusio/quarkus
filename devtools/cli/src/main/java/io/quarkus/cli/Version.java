@@ -1,19 +1,51 @@
-package io.quarkus.cli.core;
+package io.quarkus.cli;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 
+import io.quarkus.cli.common.HelpOption;
+import io.quarkus.cli.common.OutputOptionMixin;
 import io.smallrye.common.classloader.ClassPathUtils;
 import picocli.CommandLine;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Spec;
 
-public class QuarkusCliVersion implements CommandLine.IVersionProvider {
+@CommandLine.Command(name = "version", sortOptions = false, description = "Display version information")
+public class Version implements CommandLine.IVersionProvider, Callable<Integer> {
 
     private static String version;
 
-    public static String version() {
+    @Mixin
+    OutputOptionMixin output;
+
+    @Mixin
+    HelpOption helpOption;
+
+    @Spec
+    CommandSpec spec;
+
+    @CommandLine.Option(order = 3, names = {
+            "--dependencies" }, description = "Show project dependency versions")
+    boolean dependencies = false;
+
+    @Override
+    public Integer call() throws Exception {
+        // Gather/interpolate the usual version information via IVersionProvider handling
+        output.printText(getVersion());
+        return CommandLine.ExitCode.OK;
+    }
+
+    @Override
+    public String[] getVersion() throws Exception {
+        return new String[] { "Client Version " + clientVersion() };
+    }
+
+    public static String clientVersion() {
         if (version != null) {
             return version;
         }
@@ -48,10 +80,4 @@ public class QuarkusCliVersion implements CommandLine.IVersionProvider {
 
         return version;
     }
-
-    @Override
-    public String[] getVersion() throws Exception {
-        return new String[] { version() };
-    }
-
 }

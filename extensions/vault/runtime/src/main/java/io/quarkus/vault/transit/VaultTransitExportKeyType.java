@@ -1,4 +1,4 @@
-package io.quarkus.vault;
+package io.quarkus.vault.transit;
 
 /**
  * key type used in transit key export

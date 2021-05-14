@@ -5,7 +5,7 @@ import javax.persistence.Entity;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 
 @Entity
-public class Address extends PanacheEntity implements Comparable<Address> {
+public class Address extends PanacheEntity<Address> implements Comparable<Address> {
 
     public String street;
 

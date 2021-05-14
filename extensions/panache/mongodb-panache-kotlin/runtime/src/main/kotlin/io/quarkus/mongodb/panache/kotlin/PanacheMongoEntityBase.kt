@@ -10,7 +10,7 @@ import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion
  * @see PanacheMongoEntity
  */
 @Suppress("unused")
-abstract class PanacheMongoEntityBase {
+abstract class PanacheMongoEntityBase<Entity:PanacheMongoEntityBase<Entity>> {
 
     /**
      * Persist this entity in the database.  This will set its ID field if not already set.

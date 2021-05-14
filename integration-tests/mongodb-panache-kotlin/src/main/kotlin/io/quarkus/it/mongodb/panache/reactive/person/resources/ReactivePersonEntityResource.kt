@@ -42,7 +42,7 @@ class ReactivePersonEntityResource {
 
     @POST
     fun addPerson(person: ReactivePersonEntity): Uni<Response> {
-        return person.persist<ReactivePersonEntity>()
+        return person.persist()
                 .map { Response.created(URI.create("/persons/entity${person.id}")).build() }
     }
 
@@ -52,12 +52,12 @@ class ReactivePersonEntityResource {
 
     @PUT
     fun updatePerson(person: ReactivePersonEntity): Uni<Response> =
-            person.update<ReactivePersonEntity>().map { Response.accepted().build() }
+            person.update().map { Response.accepted().build() }
 
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
     fun upsertPerson(person: ReactivePersonEntity): Uni<Response> =
-            person.persistOrUpdate<ReactivePersonEntity>().map { Response.accepted().build() }
+            person.persistOrUpdate().map { Response.accepted().build() }
 
     @DELETE
     @Path("/{id}")

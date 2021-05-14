@@ -29,7 +29,7 @@ import io.smallrye.mutiny.Uni;
  * @author Stéphane Épardaud
  * @see PanacheEntity
  */
-public abstract class PanacheEntityBase {
+public abstract class PanacheEntityBase<Entity extends PanacheEntityBase<Entity>> {
 
     // Operations
 
@@ -43,8 +43,8 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public <T extends PanacheEntityBase> Uni<T> persist() {
-        return INSTANCE.persist(this).map(v -> (T) this);
+    public Uni<Entity> persist() {
+        return INSTANCE.persist(this).map(v -> (Entity) this);
     }
 
     /**
@@ -58,10 +58,10 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public <T extends PanacheEntityBase> Uni<T> persistAndFlush() {
+    public Uni<Entity> persistAndFlush() {
         return INSTANCE.persist(this)
                 .flatMap(v -> INSTANCE.flush())
-                .map(v -> (T) this);
+                .map(v -> (Entity) this);
     }
 
     /**

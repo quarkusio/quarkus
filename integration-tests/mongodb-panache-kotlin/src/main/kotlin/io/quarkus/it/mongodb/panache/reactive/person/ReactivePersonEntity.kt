@@ -4,7 +4,7 @@ import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoCompanionB
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoEntityBase
 import org.bson.codecs.pojo.annotations.BsonId
 
-class ReactivePersonEntity : ReactivePanacheMongoEntityBase() {
+class ReactivePersonEntity : ReactivePanacheMongoEntityBase<ReactivePersonEntity>() {
     companion object: ReactivePanacheMongoCompanionBase<ReactivePersonEntity, Long>
 
     @BsonId

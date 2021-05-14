@@ -13,7 +13,7 @@ import org.bson.types.ObjectId
  *
  * @see ReactivePanacheMongoEntityBase
  */
-abstract class ReactivePanacheMongoEntity : ReactivePanacheMongoEntityBase() {
+abstract class ReactivePanacheMongoEntity<Entity:ReactivePanacheMongoEntity<Entity>>  : ReactivePanacheMongoEntityBase<Entity>() {
     /**
      * The auto-generated ID field.
      * This field is set by Mongo when this entity is persisted.

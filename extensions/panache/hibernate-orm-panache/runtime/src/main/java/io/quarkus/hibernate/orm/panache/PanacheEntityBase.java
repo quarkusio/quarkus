@@ -31,7 +31,7 @@ import io.quarkus.panache.common.impl.GenerateBridge;
  * @author Stéphane Épardaud
  * @see PanacheEntity
  */
-public abstract class PanacheEntityBase {
+public abstract class PanacheEntityBase<Entity extends PanacheEntityBase<Entity>> {
     /**
      * Returns the default {@link EntityManager} for extra operations (eg. CriteriaQueries)
      *

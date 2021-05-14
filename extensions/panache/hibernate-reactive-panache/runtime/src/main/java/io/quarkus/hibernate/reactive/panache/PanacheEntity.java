@@ -22,7 +22,7 @@ import javax.persistence.Transient;
  * @see PanacheEntityBase
  */
 @MappedSuperclass
-public abstract class PanacheEntity extends PanacheEntityBase {
+public abstract class PanacheEntity<Entity extends PanacheEntity<Entity>> extends PanacheEntityBase<Entity> {
 
     /**
      * The auto-generated ID field. This field is set by Hibernate ORM when this entity

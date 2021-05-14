@@ -11,28 +11,28 @@ import io.smallrye.mutiny.Uni
  *
  * @see [ReactivePanacheMongoEntity]
  */
-abstract class ReactivePanacheMongoEntityBase {
+abstract class ReactivePanacheMongoEntityBase<Entity:ReactivePanacheMongoEntityBase<Entity>>  {
     /**
      * Persist this entity in the database.
      * This will set it's ID field if not already set.
      *
      * @see [persist]
      */
-    fun <T : ReactivePanacheMongoEntityBase> persist(): Uni<T> = INSTANCE.persist(this).map { this as T }
+    fun persist(): Uni<Entity> = INSTANCE.persist(this).map { this as Entity}
 
     /**
      * Update this entity in the database.
      *
      * @see [update]
      */
-    fun <T : ReactivePanacheMongoEntityBase> update(): Uni<T> = INSTANCE.update(this).map { this as T }
+    fun update(): Uni<Entity> = INSTANCE.update(this).map { this as Entity }
 
     /**
      * Persist this entity in the database or update it if it already exist.
      *
      * @see [persistOrUpdate]
      */
-    fun <T : ReactivePanacheMongoEntityBase> persistOrUpdate(): Uni<T> = INSTANCE.persistOrUpdate(this).map { this as T }
+    fun persistOrUpdate(): Uni<Entity> = INSTANCE.persistOrUpdate(this).map { this as Entity }
 
     /**
      * Delete this entity from the database, if it is already persisted.

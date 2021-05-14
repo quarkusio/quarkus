@@ -51,19 +51,19 @@ class ReactiveBookEntityResource {
 
     @POST
     fun addBook(book: ReactiveBookEntity): Uni<Response> {
-        return book.persist<ReactiveBookEntity>().map {
+        return book.persist().map {
             //the ID is populated before sending it to the database
             Response.created(URI.create("/books/entity${book.id}")).build()
         }
     }
 
     @PUT
-    fun updateBook(book: ReactiveBookEntity): Uni<Response> = book.update<ReactiveBookEntity>().map { Response.accepted().build() }
+    fun updateBook(book: ReactiveBookEntity): Uni<Response> = book.update().map { Response.accepted().build() }
 
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
     fun upsertBook(book: ReactiveBookEntity): Uni<Response> =
-            book.persistOrUpdate<ReactiveBookEntity>().map { Response.accepted().build() }
+            book.persistOrUpdate().map { Response.accepted().build() }
 
     @DELETE
     @Path("/{id}")

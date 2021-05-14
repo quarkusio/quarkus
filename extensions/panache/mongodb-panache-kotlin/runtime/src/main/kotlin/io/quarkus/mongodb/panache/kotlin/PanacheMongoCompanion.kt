@@ -16,7 +16,7 @@ import java.util.stream.Stream
  *
  * @param Entity the entity type
  */
-interface PanacheMongoCompanion<Entity : PanacheMongoEntityBase>: PanacheMongoCompanionBase<Entity, ObjectId>
+interface PanacheMongoCompanion<Entity : PanacheMongoEntityBase<Entity>>: PanacheMongoCompanionBase<Entity, ObjectId>
 
 /**
  * Define persistence and query methods for an Entity with a type of Id
@@ -24,7 +24,7 @@ interface PanacheMongoCompanion<Entity : PanacheMongoEntityBase>: PanacheMongoCo
  * @param Entity the entity type
  * @param Id the ID type
  */
-interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
+interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase<Entity>, Id: Any> {
     /**
      * Find an entity of this type by ID.
      *

@@ -15,10 +15,10 @@ public class DuplicateEntity extends PanacheEntityBase {
     @GeneratedValue
     public Integer id;
 
-    public static <T extends PanacheEntityBase> Uni<T> findById(Object id) {
+    public static Uni<DuplicateEntity> findById(Object id) {
         DuplicateEntity duplicate = new DuplicateEntity();
         duplicate.id = (Integer) id;
-        return (Uni<T>) Uni.createFrom().item(duplicate);
+        return Uni.createFrom().item(duplicate);
     }
 
     @Override

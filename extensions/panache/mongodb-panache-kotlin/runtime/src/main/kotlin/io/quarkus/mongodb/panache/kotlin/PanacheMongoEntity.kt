@@ -13,7 +13,7 @@ import org.bson.types.ObjectId
  *
  * @see PanacheMongoEntityBase
  */
-abstract class PanacheMongoEntity : PanacheMongoEntityBase() {
+abstract class PanacheMongoEntity<Entity:PanacheMongoEntityBase<Entity>> : PanacheMongoEntityBase<Entity>() {
     /**
      * The auto-generated ID field.
      * This field is set by Mongo when this entity is persisted.

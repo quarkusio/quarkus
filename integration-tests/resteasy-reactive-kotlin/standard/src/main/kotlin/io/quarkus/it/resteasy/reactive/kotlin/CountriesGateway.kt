@@ -6,7 +6,7 @@ import javax.ws.rs.Path
 
 @Path("/v2")
 @RegisterRestClient(configKey = "countries")
-interface CountriesService {
+interface CountriesGateway {
 
     @GET
     @Path("/name/{name}")

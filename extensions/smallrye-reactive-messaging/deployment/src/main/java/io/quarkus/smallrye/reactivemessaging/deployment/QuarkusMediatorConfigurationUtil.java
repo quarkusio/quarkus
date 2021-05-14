@@ -9,6 +9,7 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,6 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
-import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
 import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Blocking;
@@ -33,13 +33,26 @@ public final class QuarkusMediatorConfigurationUtil {
     private QuarkusMediatorConfigurationUtil() {
     }
 
-    public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, BeanInfo bean,
-            String generatedInvokerName, RecorderContext recorderContext, ClassLoader cl) {
+    public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, boolean isSuspendMethod, BeanInfo bean,
+            RecorderContext recorderContext,
+            ClassLoader cl) {
 
-        Class<?> returnTypeClass = load(methodInfo.returnType().name().toString(), cl);
-        Class[] parameterTypeClasses = new Class[methodInfo.parameters().size()];
-        for (int i = 0; i < methodInfo.parameters().size(); i++) {
-            parameterTypeClasses[i] = load(methodInfo.parameters().get(i).name().toString(), cl);
+        Class[] parameterTypeClasses;
+        Class<?> returnTypeClass;
+        if (isSuspendMethod) {
+            parameterTypeClasses = new Class[methodInfo.parameters().size() - 1];
+            for (int i = 0; i < methodInfo.parameters().size() - 1; i++) {
+                parameterTypeClasses[i] = load(methodInfo.parameters().get(i).name().toString(), cl);
+            }
+            // the generated invoker will always return a CompletionStage
+            // TODO: avoid hard coding this and use an SPI to communicate the info with the invoker generation code
+            returnTypeClass = CompletionStage.class;
+        } else {
+            parameterTypeClasses = new Class[methodInfo.parameters().size()];
+            for (int i = 0; i < methodInfo.parameters().size(); i++) {
+                parameterTypeClasses[i] = load(methodInfo.parameters().get(i).name().toString(), cl);
+            }
+            returnTypeClass = load(methodInfo.returnType().name().toString(), cl);
         }
 
         QuarkusMediatorConfiguration configuration = new QuarkusMediatorConfiguration();
@@ -52,8 +65,7 @@ public final class QuarkusMediatorConfigurationUtil {
         configuration.setBeanId(bean.getIdentifier());
         configuration.setMethodName(methodInfo.name());
 
-        configuration.setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
-        String returnTypeName = methodInfo.returnType().name().toString();
+        String returnTypeName = returnTypeClass.getName();
         configuration.setReturnType(recorderContext.classProxy(returnTypeName));
         Class<?>[] parameterTypes = new Class[methodInfo.parameters().size()];
         for (int i = 0; i < methodInfo.parameters().size(); i++) {

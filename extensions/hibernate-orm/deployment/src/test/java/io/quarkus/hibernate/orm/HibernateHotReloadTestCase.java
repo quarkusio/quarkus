@@ -17,6 +17,7 @@ import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
 import io.restassured.RestAssured;
 
 public class HibernateHotReloadTestCase {
+
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)

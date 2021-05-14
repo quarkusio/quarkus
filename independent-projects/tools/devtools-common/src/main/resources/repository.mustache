@@ -1,0 +1,10 @@
+package {{packageValue}}.repository;
+
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import {{packageValue}}.model.{{importModel}};
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class {{className}} implements PanacheRepository<{{importModel}}> {
+
+}

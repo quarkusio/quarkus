@@ -42,6 +42,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-codestarts</artifactId>
         </dependency>
+        <!-- Generator Mustache -->
+        <dependency>
+            <groupId>com.github.spullara.mustache.java</groupId>
+            <artifactId>compiler</artifactId>
+            <version>0.9.7</version>
+        </dependency>
         <!-- user prompt -->
         <dependency>
             <groupId>jline</groupId>

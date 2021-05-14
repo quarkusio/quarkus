@@ -35,7 +35,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 
-public class DevConsoleProcessor {
+public class ArcDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)

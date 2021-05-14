@@ -10,7 +10,7 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.flyway.runtime.FlywayContainersSupplier;
 import io.quarkus.flyway.runtime.devconsole.FlywayDevConsoleRecorder;
 
-public class DevConsoleProcessor {
+public class FlywayDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {

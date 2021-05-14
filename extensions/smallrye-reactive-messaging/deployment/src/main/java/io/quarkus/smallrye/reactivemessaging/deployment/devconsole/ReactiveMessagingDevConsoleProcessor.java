@@ -19,7 +19,7 @@ import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.Connectors;
 import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevConsoleRecorder;
 import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevReactiveMessagingInfosSupplier;
 
-public class DevConsoleProcessor {
+public class ReactiveMessagingDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectInfos() {

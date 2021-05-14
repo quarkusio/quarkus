@@ -1,6 +1,5 @@
 package io.quarkus.it.mongodb;
 
-import static io.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.RestAssured;
 
 @QuarkusTest

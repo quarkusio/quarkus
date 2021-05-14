@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.quarkus.it.mongodb.panache.BookDTO
-import io.quarkus.it.mongodb.panache.MongoTestResource
 import io.quarkus.it.mongodb.panache.book.BookDetail
 import io.quarkus.it.mongodb.panache.person.Person
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
+import io.quarkus.test.mongodb.MongoTestResource
 import io.restassured.RestAssured
 import io.restassured.RestAssured.get
 import io.restassured.common.mapper.TypeRef
@@ -21,12 +21,11 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
 import java.io.IOException
 import java.time.Duration
-import java.util.Calendar
-import java.util.Collections
-import java.util.Date
-import java.util.GregorianCalendar
+import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.ClientBuilder
 import javax.ws.rs.client.WebTarget
@@ -34,6 +33,7 @@ import javax.ws.rs.sse.SseEventSource
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource::class)
+@DisabledOnOs(OS.WINDOWS)
 internal open class ReactiveMongodbPanacheResourceTest {
     companion object {
         private val LIST_OF_BOOK_TYPE_REF: TypeRef<List<BookDTO>> = object : TypeRef<List<BookDTO>>() {}

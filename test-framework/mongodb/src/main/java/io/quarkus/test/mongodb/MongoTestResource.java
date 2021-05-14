@@ -1,4 +1,4 @@
-package io.quarkus.it.mongodb;
+package io.quarkus.test.mongodb;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -35,7 +35,7 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
         }
         try {
             Version.Main version = Version.Main.V4_0;
-            int port = 27018;
+            int port = 27017;
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
             IMongodConfig config = new MongodConfigBuilder()
                     .version(version)

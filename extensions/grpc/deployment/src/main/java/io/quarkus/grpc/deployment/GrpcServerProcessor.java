@@ -48,6 +48,7 @@ import io.quarkus.grpc.runtime.supports.context.GrpcEnableRequestContext;
 import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextCdiInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
@@ -120,7 +121,8 @@ public class GrpcServerProcessor {
         beans.produce(new AdditionalBeanBuildItem(GrpcService.class));
         beans.produce(new AdditionalBeanBuildItem(GrpcRequestContextCdiInterceptor.class));
         beans.produce(new AdditionalBeanBuildItem(GrpcEnableRequestContext.class));
-        if (!bindables.isEmpty()) {
+
+        if (!bindables.isEmpty() || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcContainer.class));
             features.produce(new FeatureBuildItem(GRPC_SERVER));
         } else {

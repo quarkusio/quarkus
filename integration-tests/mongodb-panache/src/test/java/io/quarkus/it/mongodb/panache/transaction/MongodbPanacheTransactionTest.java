@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -23,6 +25,7 @@ import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(MongoReplicaSetTestResource.class)
+@DisabledOnOs(OS.WINDOWS)
 class MongodbPanacheTransactionTest {
     private static final TypeRef<List<PersonDTO>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<PersonDTO>>() {
     };

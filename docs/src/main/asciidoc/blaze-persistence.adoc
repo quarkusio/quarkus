@@ -193,12 +193,12 @@ public class GiftResource {
     @Path("{id}")
     @Transactional
     public GiftView updateGift(@EntityViewId("id") GiftUpdateView view) {
-        evm.save(em, view);
-        return evm.find(em, GiftView.class, view.getId());
+        entityViewManager.save(entityManager, view);
+        return entityViewManager.find(entityManager, GiftView.class, view.getId());
     }
 
-    @Path("{id"})
     @GET
+    @Path("{id"})
     @Produces(MediaType.APPLICATION_JSON)
     public GiftView getGift(@PathParam("id") Long id) {
         return return entityViewManager.find(entityManager, GiftView.class, view.getId());

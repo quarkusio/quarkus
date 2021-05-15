@@ -6,8 +6,8 @@ plugins {
 
 {#insert repositories}
 repositories {
-    mavenLocal()
     mavenCentral()
+    mavenLocal()
 {#if gradle.repositories}
 {#for rep in gradle.repositories}
     maven { url = uri("{rep.url}") }

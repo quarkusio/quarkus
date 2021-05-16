@@ -95,6 +95,7 @@
         <module>oidc-tenancy</module>
         <module>oidc-wiremock</module>
         <module>keycloak-authorization</module>
+        <module>keycloak-authorization-wiremock</module>
         <module>reactive-db2-client</module>
         <module>reactive-pg-client</module>
         <module>reactive-mysql-client</module>

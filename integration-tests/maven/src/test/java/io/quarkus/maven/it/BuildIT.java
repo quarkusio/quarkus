@@ -73,6 +73,14 @@ class BuildIT extends MojoTestBase {
     }
 
     @Test
+    void testClassLoaderLinkageError()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/classloader-linkage-error", "projects/classloader-linkage-error-build");
+        build();
+        launch(TestContext.FAST_NO_PREFIX, "", "hello");
+    }
+
+    @Test
     void testModuleWithBuildProfileInProperty() throws MavenInvocationException, InterruptedException, IOException {
         testDir = initProject("projects/build-mode-quarkus-profile-property");
         build();

@@ -34,6 +34,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private static final Logger log = Logger.getLogger(QuarkusClassLoader.class);
     protected static final String META_INF_SERVICES = "META-INF/services/";
     protected static final String JAVA = "java.";
+    private static final String JAVAX = "javax.";
 
     static {
         registerAsParallelCapable();
@@ -121,7 +122,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      * Returns true if the supplied class is a class that would be loaded parent-first
      */
     public boolean isParentFirst(String name) {
-        if (name.startsWith(JAVA)) {
+        if (name.startsWith(JAVA) || name.startsWith(JAVAX)) {
             return true;
         }
 
@@ -416,10 +417,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     return c;
                 }
                 String resourceName = sanitizeName(name).replace(".", "/") + ".class";
-                boolean parentFirst = parentFirst(resourceName, state);
                 if (state.bannedResources.contains(resourceName)) {
                     throw new ClassNotFoundException(name);
                 }
+                // In case of javax packages the class could be in the system class loader
+                // so to prevent LinkageError, we need to try to get it from the parent
+                // class loader first
+                boolean parentFirst = name.startsWith(JAVAX) || parentFirst(resourceName, state);
                 if (parentFirst) {
                     try {
                         return parent.loadClass(name);

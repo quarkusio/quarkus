@@ -23,6 +23,9 @@ import java.util.Set;
  */
 public final class RunnerClassLoader extends ClassLoader {
 
+    private static final String JAVA = "java.";
+    private static final String JAVAX = "javax.";
+
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
      */
@@ -65,11 +68,14 @@ public final class RunnerClassLoader extends ClassLoader {
         //note that for performance reasons this CL does not do parent first delegation
         //although the intention is not for it to be a true isolated parent first CL
         //'delegation misses' where the parent throws a ClassNotFoundException are very expensive
-        if (name.startsWith("java.")) {
+        if (name.startsWith(JAVA)) {
             return getParent().loadClass(name);
         }
         String packageName = getPackageNameFromClassName(name);
-        if (parentFirstPackages.contains(packageName)) {
+        // In case of javax packages the class could be in the system class loader
+        // so to prevent LinkageError, we need to try to get it from the parent
+        // class loader first
+        if (name.startsWith(JAVAX) || parentFirstPackages.contains(packageName)) {
             try {
                 return getParent().loadClass(name);
             } catch (ClassNotFoundException e) {

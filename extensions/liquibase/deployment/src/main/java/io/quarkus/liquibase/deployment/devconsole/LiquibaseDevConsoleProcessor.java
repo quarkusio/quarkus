@@ -10,7 +10,7 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.liquibase.runtime.devconsole.LiquibaseDevConsoleRecorder;
 import io.quarkus.liquibase.runtime.devconsole.LiquibaseFactoriesSupplier;
 
-public class DevConsoleProcessor {
+public class LiquibaseDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {

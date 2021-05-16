@@ -46,14 +46,18 @@ image::config-sources.png[]
 [[system-properties]]
 === System properties
 
-* for a runner jar: `java -Dquarkus.datasource.password=youshallnotpass -jar target/quarkus-app/quarkus-run.jar`
-* for a native executable: `./target/myapp-runner -Dquarkus.datasource.password=youshallnotpass`
+System properties can be handed to the application through the `-D` flag during startup. The following examples assign
+the value `youshallnotpass` to the attribute `quarkus.datasource.password`.
+
+* For Quarkus dev mode: `./mvnw quarkus:dev -Dquarkus.datasource.password=youshallnotpass`
+* For a runner jar: `java -Dquarkus.datasource.password=youshallnotpass -jar target/quarkus-app/quarkus-run.jar`
+* For a native executable: `./target/myapp-runner -Dquarkus.datasource.password=youshallnotpass`
 
 [[environment-variables]]
 === Environment variables
 
-* for a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/quarkus-app/quarkus-run.jar`
-* for a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
+* For a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/quarkus-app/quarkus-run.jar`
+* For a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
 
 NOTE: Environment variables names follow the conversion rules specified by
 link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[MicroProfile Config].

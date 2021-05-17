@@ -81,6 +81,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -718,6 +719,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 return indexType.asParameterizedType().name().toString();
             case ARRAY:
                 return indexType.asArrayType().name().toString();
+            case WILDCARD_TYPE:
+                WildcardType wildcardType = indexType.asWildcardType();
+                Type extendsBound = wildcardType.extendsBound();
+                if (extendsBound.name().equals(ResteasyReactiveDotNames.OBJECT)) {
+                    // this is a super bound type that we don't support
+                    throw new RuntimeException("Cannot handle wildcard type " + indexType);
+                }
+                // this is an extend bound type, so we just user the bound
+                return wildcardType.name().toString();
             case TYPE_VARIABLE:
                 TypeVariable typeVariable = indexType.asTypeVariable();
                 if (typeVariable.bounds().isEmpty()) {

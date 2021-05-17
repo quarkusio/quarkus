@@ -27,6 +27,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -164,6 +165,9 @@ public class SmallRyeReactiveMessagingProcessor {
                         validationErrors.produce(new ValidationErrorBuildItem(
                                 new DeploymentException("Empty @Outgoing annotation on method " + method)));
                     }
+                    if (isSynthetic(method.flags())) {
+                        continue;
+                    }
                     // TODO: validate method params and return type?
                     mediatorMethods.produce(new MediatorBuildItem(bean, method));
                     LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
@@ -234,6 +238,10 @@ public class SmallRyeReactiveMessagingProcessor {
             }
         }
 
+    }
+
+    private boolean isSynthetic(int mod) {
+        return (mod & Opcodes.ACC_SYNTHETIC) != 0;
     }
 
     private Optional<AnnotationInstance> getAnnotation(TransformedAnnotationsBuildItem transformedAnnotations,

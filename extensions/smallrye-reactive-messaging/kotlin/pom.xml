@@ -112,7 +112,7 @@
             <plugin>
                 <groupId>org.jetbrains.dokka</groupId>
                 <artifactId>dokka-maven-plugin</artifactId>
-                <version>1.4.32</version>
+                <version>${dokka.version}</version>
                 <executions>
                     <execution>
                         <id>javadoc</id>

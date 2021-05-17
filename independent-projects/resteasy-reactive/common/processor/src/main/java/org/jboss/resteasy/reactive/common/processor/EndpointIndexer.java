@@ -92,6 +92,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
+import org.objectweb.asm.Opcodes;
 
 public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD>, PARAM extends IndexedParameter<PARAM>, METHOD extends ResourceMethod> {
 
@@ -364,17 +365,26 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     private boolean hasProperModifiers(MethodInfo info) {
+        if (isSynthetic(info.flags())) {
+            log.debug("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
+                    + "' is a synthetic method and will therefore be ignored");
+            return false;
+        }
         if ((info.flags() & Modifier.PUBLIC) == 0) {
             log.warn("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
-                    + "' it not public and will therefore be ignored");
+                    + "' is not public and will therefore be ignored");
             return false;
         }
         if ((info.flags() & Modifier.STATIC) != 0) {
             log.warn("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
-                    + "' it static and will therefore be ignored");
+                    + "' is static and will therefore be ignored");
             return false;
         }
         return true;
+    }
+
+    private boolean isSynthetic(int mod) {
+        return (mod & Opcodes.ACC_SYNTHETIC) != 0;
     }
 
     private ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,

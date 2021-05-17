@@ -301,7 +301,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                     e);
         }
 
-        // extension.json
         File extensionFileTemplate = null;
 
         if (extensionFile == null) {
@@ -398,6 +397,10 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
+        } finally {
+            if (extensionFileTemplate != null && extensionFileTemplate.exists()) {
+                extensionFileTemplate.delete();
+            }
         }
     }
 

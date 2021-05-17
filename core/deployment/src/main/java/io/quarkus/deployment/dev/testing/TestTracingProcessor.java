@@ -63,6 +63,7 @@ public class TestTracingProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(LogHandlerBuildItem.class)
+    @Produce(TestSetupBuildItem.class)
     ServiceStartBuildItem startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, List<TestListenerBuildItem> testListenerBuildItems) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED

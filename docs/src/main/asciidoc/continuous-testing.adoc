@@ -141,8 +141,15 @@ This is not directly related to testing, but allows you to turn live reload on a
 This will force a scan for changed file, and will perform a live reload if anything has changed. This will still work even
 if live reload is disabled.
 
+== Continuous Testing Without Dev Mode
 
-=== Configuring Continuous Testing
+It is possible to run continous testing without starting dev mode. This can be useful if dev mode will interfere with
+your tests (e.g. running wiremock on the same port), or if you only want to develop using tests. To start continuous testing
+mode run `mvn quarkus:test`.
+
+NOTE: The Dev UI is not available when running in continuous testing mode, as this is provided by dev mode.
+
+== Configuring Continuous Testing
 
 Continuous testing supports multiple configuration options that can be used to limit the tests that are run, and
 to control the output. The configuration properties are shown below:

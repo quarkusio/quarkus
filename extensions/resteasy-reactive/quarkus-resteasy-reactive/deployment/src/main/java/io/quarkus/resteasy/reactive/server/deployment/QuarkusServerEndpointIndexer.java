@@ -3,10 +3,7 @@ package io.quarkus.resteasy.reactive.server.deployment;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,10 +56,10 @@ public class QuarkusServerEndpointIndexer
     private final Map<String, String> multipartGeneratedPopulators = new HashMap<>();
     private final Predicate<String> applicationClassPredicate;
 
-    private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+    private static final Set<DotName> CONTEXT_TYPES = Set.of(
             DotName.createSimple(HttpServerRequest.class.getName()),
             DotName.createSimple(HttpServerResponse.class.getName()),
-            DotName.createSimple(RoutingContext.class.getName()))));
+            DotName.createSimple(RoutingContext.class.getName()));
 
     QuarkusServerEndpointIndexer(Builder builder) {
         super(builder);

@@ -67,7 +67,6 @@
         <module>hibernate-search-orm-elasticsearch</module>
         <module>hibernate-tenancy</module>
         <module>hibernate-orm-envers</module>
-        <module>legacy-redirect</module>
         <module>vertx-http</module>
         <module>vertx-web</module>
         <module>vertx-web-jackson</module>

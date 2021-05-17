@@ -40,16 +40,6 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Adjusts the path in relation to `quarkus.http.root-path`.
-     * Any leading slash will be removed to resolve relatively.
-     *
-     * @deprecated Use {@code resolvePath} instead. Do not use this method. Will be removed in Quarkus 2.0
-     */
-    public String adjustPath(String path) {
-        return resolvePath(path.startsWith("/") ? path.substring(1) : path);
-    }
-
-    /**
      * Resolve path into an absolute path.
      * If path is relative, it will be resolved against `quarkus.http.root-path`.
      * An absolute path will be normalized and returned.
@@ -165,12 +155,6 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
         }
 
         @Override
-        public Builder displayOnNotFoundPage(String notFoundPageTitle, String notFoundPagePath) {
-            super.displayOnNotFoundPage(notFoundPageTitle, notFoundPagePath);
-            return this;
-        }
-
-        @Override
         public Builder routeConfigKey(String attributeName) {
             super.routeConfigKey(attributeName);
             return this;
@@ -178,7 +162,7 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
 
         @Override
         public RouteBuildItem build() {
-            return new RouteBuildItem(this, routeType, false);
+            return new RouteBuildItem(this, routeType);
         }
 
         @Override

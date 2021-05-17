@@ -32,19 +32,17 @@ public class SmallRyeGraphQLRecorder {
 
     public Handler<RoutingContext> executionHandler(RuntimeValue<Boolean> initialized, boolean allowGet) {
         if (initialized.getValue()) {
-            Instance<CurrentIdentityAssociation> identityAssociations = CDI.current()
-                    .select(CurrentIdentityAssociation.class);
-            CurrentIdentityAssociation association;
-            if (identityAssociations.isResolvable()) {
-                association = identityAssociations.get();
-            } else {
-                association = null;
-            }
-            CurrentVertxRequest currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
-            return new SmallRyeGraphQLExecutionHandler(allowGet, association, currentVertxRequest);
+            return new SmallRyeGraphQLExecutionHandler(allowGet, getCurrentIdentityAssociation(),
+                    CDI.current().select(CurrentVertxRequest.class).get());
         } else {
             return new SmallRyeGraphQLNoEndpointHandler();
         }
+    }
+
+    public Handler<RoutingContext> subscriptionHandler(BeanContainer beanContainer, RuntimeValue<Boolean> initialized) {
+        GraphQLConfig config = beanContainer.instance(GraphQLConfig.class);
+        return new SmallRyeGraphQLSubscriptionHandler(config, getCurrentIdentityAssociation(),
+                CDI.current().select(CurrentVertxRequest.class).get());
     }
 
     public Handler<RoutingContext> schemaHandler(RuntimeValue<Boolean> initialized) {
@@ -82,5 +80,14 @@ public class SmallRyeGraphQLRecorder {
                 route.handler(bodyHandler);
             }
         };
+    }
+
+    private CurrentIdentityAssociation getCurrentIdentityAssociation() {
+        Instance<CurrentIdentityAssociation> identityAssociations = CDI.current()
+                .select(CurrentIdentityAssociation.class);
+        if (identityAssociations.isResolvable()) {
+            return identityAssociations.get();
+        }
+        return null;
     }
 }

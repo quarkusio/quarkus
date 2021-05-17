@@ -59,6 +59,7 @@ import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointB
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
+import io.smallrye.graphql.cdi.producer.SmallRyeContextAccessorProxy;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -135,8 +136,7 @@ public class SmallRyeGraphQLProcessor {
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(GraphQLConfig.class)
                 .addBeanClass(GraphQLProducer.class)
-                // TODO - MP4 - Require GraphQL Update
-                //.addBeanClass(SmallRyeContextAccessorProxy.class)
+                .addBeanClass(SmallRyeContextAccessorProxy.class)
                 .setUnremovable().build());
     }
 
@@ -210,7 +210,8 @@ public class SmallRyeGraphQLProcessor {
             ShutdownContextBuildItem shutdownContext,
             LaunchModeBuildItem launchMode,
             BodyHandlerBuildItem bodyHandlerBuildItem,
-            SmallRyeGraphQLConfig graphQLConfig) {
+            SmallRyeGraphQLConfig graphQLConfig,
+            BeanContainerBuildItem beanContainer) {
 
         /*
          * <em>Ugly Hack</em>
@@ -225,8 +226,17 @@ public class SmallRyeGraphQLProcessor {
             recorder.setupClDevMode(shutdownContext);
         }
 
-        Boolean allowGet = ConfigProvider.getConfig().getOptionalValue(ConfigKey.ALLOW_GET, boolean.class).orElse(false);
+        // Subscriptions
+        Handler<RoutingContext> subscriptionHandler = recorder
+                .subscriptionHandler(beanContainer.getValue(), graphQLInitializedBuildItem.getInitialized());
 
+        routeProducer.produce(httpRootPathBuildItem.routeBuilder()
+                .orderedRoute(graphQLConfig.rootPath, Integer.MIN_VALUE)
+                .handler(subscriptionHandler)
+                .build());
+
+        // Queries and Mutations
+        Boolean allowGet = ConfigProvider.getConfig().getOptionalValue(ConfigKey.ALLOW_GET, boolean.class).orElse(false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
                 allowGet);
         routeProducer.produce(httpRootPathBuildItem.routeBuilder()

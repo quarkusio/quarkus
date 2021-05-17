@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -188,15 +189,16 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
                 project.getVersion().toString());
         final SourceSet mainSourceSet = QuarkusGradleUtils.getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
-        final SourceSetImpl modelSourceSet = convert(mainSourceSet);
-        WorkspaceModuleImpl workspaceModule = new WorkspaceModuleImpl(appArtifactCoords,
-                project.getProjectDir().getAbsoluteFile(),
-                project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), modelSourceSet);
+        final SourceSetImpl modelSourceSet;
         if (isMainModule && mode == LaunchMode.TEST) {
             final SourceSet testSourceSet = QuarkusGradleUtils.getSourceSet(project, SourceSet.TEST_SOURCE_SET_NAME);
-            workspaceModule.getSourceSet().getSourceDirectories().addAll(testSourceSet.getOutput().getClassesDirs().getFiles());
+            modelSourceSet = convert(mainSourceSet, testSourceSet.getOutput().getClassesDirs().getFiles());
+        } else {
+            modelSourceSet = convert(mainSourceSet, Collections.emptySet());
         }
-        return workspaceModule;
+        return new WorkspaceModuleImpl(appArtifactCoords,
+                project.getProjectDir().getAbsoluteFile(),
+                project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), modelSourceSet);
     }
 
     private List<org.gradle.api.artifacts.Dependency> getEnforcedPlatforms(Project project) {
@@ -440,13 +442,14 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         }
     }
 
-    private SourceSetImpl convert(SourceSet sourceSet) {
-        Set<File> existingSrcDirs = new HashSet<>();
+    private SourceSetImpl convert(SourceSet sourceSet, Set<File> additionalSourceDirs) {
+        final Set<File> existingSrcDirs = new LinkedHashSet<>();
         for (File srcDir : sourceSet.getOutput().getClassesDirs().getFiles()) {
             if (srcDir.exists()) {
                 existingSrcDirs.add(srcDir);
             }
         }
+        existingSrcDirs.addAll(additionalSourceDirs);
         if (sourceSet.getOutput().getResourcesDir().exists()) {
             return new SourceSetImpl(
                     existingSrcDirs,

@@ -1,10 +1,9 @@
 package io.quarkus.deployment.dev;
 
 import java.io.Closeable;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -15,6 +14,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapGradleException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
@@ -96,27 +96,24 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
         AppArtifactKey key = new AppArtifactKey(module.getArtifactCoords().getGroupId(),
                 module.getArtifactCoords().getArtifactId(), module.getArtifactCoords().getClassifier());
 
-        Set<String> sourceDirectories = new HashSet<>();
-        Set<String> sourceParents = new HashSet<>();
-        for (File srcDir : module.getSourceSourceSet().getSourceDirectories()) {
-            sourceDirectories.add(srcDir.getPath());
+        final Set<Path> sourceParents = new LinkedHashSet<>();
+        for (Path srcDir : module.getSourceSourceSet().getSourceDirectories()) {
             sourceParents.add(srcDir.getParent());
         }
         String resourceDirectory = null;
         if (!module.getSourceSet().getResourceDirectories().isEmpty()) {
             // Peek the first one as we assume that it is the primary
-            resourceDirectory = module.getSourceSet().getResourceDirectories().iterator().next().getPath();
+            resourceDirectory = module.getSourceSet().getResourceDirectories().iterator().next().toString();
         }
         return new DevModeContext.ModuleInfo.Builder()
                 .setAppArtifactKey(key)
                 .setName(module.getArtifactCoords().getArtifactId())
                 .setProjectDirectory(module.getProjectRoot().getPath())
-                .setSourcePaths(sourceDirectories)
+                .setSourcePaths(module.getSourceSourceSet().getSourceDirectories())
                 .setClassesPath(QuarkusModelHelper.getClassPath(module).toAbsolutePath().toString())
-                .setResourcePaths(module.getSourceSourceSet().getResourceDirectories().stream().map(Object::toString)
-                        .collect(Collectors.toSet()))
+                .setResourcePaths(module.getSourceSourceSet().getResourceDirectories())
                 .setResourcesOutputPath(resourceDirectory)
-                .setSourceParents(sourceParents)
+                .setSourceParents(PathsCollection.from(sourceParents))
                 .setPreBuildOutputDir(module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString())
                 .setTargetDir(module.getBuildDir().toString()).build();
     }
@@ -127,14 +124,14 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 .setAppArtifactKey(project.getKey())
                 .setName(project.getArtifactId())
                 .setProjectDirectory(project.getDir().toAbsolutePath().toString())
-                .setSourcePaths(Collections.singleton(project.getSourcesSourcesDir().toAbsolutePath().toString()))
+                .setSourcePaths(PathsCollection.of(project.getSourcesSourcesDir().toAbsolutePath()))
                 .setClassesPath(project.getClassesDir().toAbsolutePath().toString())
                 .setResourcesOutputPath(project.getClassesDir().toAbsolutePath().toString())
                 .setResourcePaths(
-                        project.getResourcesSourcesDirs().stream()
-                                .map(resourcesSourcesDir -> resourcesSourcesDir.toAbsolutePath().toString())
-                                .collect(Collectors.toSet()))
-                .setSourceParents(Collections.singleton(project.getSourcesDir().toString()))
+                        PathsCollection.from(project.getResourcesSourcesDirs().toList().stream()
+                                .map(Path::toAbsolutePath)
+                                .collect(Collectors.toCollection(LinkedHashSet::new))))
+                .setSourceParents(PathsCollection.of(project.getSourcesDir()))
                 .setPreBuildOutputDir(project.getCodeGenOutputDir().toString())
                 .setTargetDir(project.getOutputDir().toString()).build();
     }

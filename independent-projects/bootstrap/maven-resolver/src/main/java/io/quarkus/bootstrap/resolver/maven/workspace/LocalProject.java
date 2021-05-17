@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import java.io.IOException;
@@ -10,8 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Build;
@@ -230,28 +231,28 @@ public class LocalProject {
         return getSourcesSourcesDir().getParent();
     }
 
-    public Set<Path> getResourcesSourcesDirs() {
+    public PathsCollection getResourcesSourcesDirs() {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getResources();
         if (resources.isEmpty()) {
-            return Collections.singleton(resolveRelativeToBaseDir(null, "src/main/resources"));
+            return PathsCollection.of(resolveRelativeToBaseDir(null, "src/main/resources"));
         }
-        return resources.stream()
+        return PathsCollection.from(resources.stream()
                 .map(Resource::getDirectory)
                 .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/main/resources"))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
     }
 
-    public Set<Path> getTestResourcesSourcesDirs() {
+    public PathsCollection getTestResourcesSourcesDirs() {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getTestResources();
         if (resources.isEmpty()) {
-            return Collections.singleton(resolveRelativeToBaseDir(null, "src/test/resources"));
+            return PathsCollection.of(resolveRelativeToBaseDir(null, "src/test/resources"));
         }
-        return resources.stream()
+        return PathsCollection.from(resources.stream()
                 .map(Resource::getDirectory)
                 .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/test/resources"))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
     }
 
     public ModelBuildingResult getModelBuildingResult() {

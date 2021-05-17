@@ -52,10 +52,10 @@ public class IDELauncherImpl implements Closeable {
                 for (WorkspaceModule additionalModule : quarkusModel.getWorkspace().getAllModules()) {
                     if (!additionalModule.getArtifactCoords().equals(launchingModule.getArtifactCoords())) {
                         builder.addAdditionalApplicationArchive(new AdditionalDependency(
-                                QuarkusModelHelper.toPathsCollection(additionalModule.getSourceSet().getSourceDirectories()),
+                                additionalModule.getSourceSet().getSourceDirectories(),
                                 true, false));
                         builder.addAdditionalApplicationArchive(new AdditionalDependency(
-                                QuarkusModelHelper.toPathsCollection(additionalModule.getSourceSet().getResourceDirectories()),
+                                additionalModule.getSourceSet().getResourceDirectories(),
                                 true, false));
                     }
                 }

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.CompilationProvider;
 import scala.collection.JavaConverters;
 import scala.tools.nsc.Global;
@@ -35,7 +36,7 @@ public class ScalaCompilationProvider implements CompilationProvider {
     }
 
     @Override
-    public Path getSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath) {
+    public Path getSourcePath(Path classFilePath, PathsCollection sourcePaths, String classesPath) {
         return classFilePath;
     }
 }

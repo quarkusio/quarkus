@@ -53,6 +53,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.changeagent.ClassChangeAgent;
 import io.quarkus.deployment.dev.filewatch.FileChangeCallback;
@@ -182,7 +183,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public List<Path> getSourcesDir() {
-        return context.getAllModules().stream().flatMap(m -> m.getMain().getSourcePaths().stream()).map(Paths::get)
+        return context.getAllModules().stream().flatMap(m -> m.getMain().getSourcePaths().toList().stream())
                 .collect(toList());
     }
 
@@ -213,18 +214,18 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         }
                     };
                     for (DevModeContext.ModuleInfo module : context.getAllModules()) {
-                        for (String path : module.getMain().getSourcePaths()) {
-                            testClassChangeWatcher.watchPath(new File(path), callback);
+                        for (Path path : module.getMain().getSourcePaths()) {
+                            testClassChangeWatcher.watchPath(path.toFile(), callback);
                         }
-                        for (String path : module.getMain().getResourcePaths()) {
-                            testClassChangeWatcher.watchPath(new File(path), callback);
+                        for (Path path : module.getMain().getResourcePaths()) {
+                            testClassChangeWatcher.watchPath(path.toFile(), callback);
                         }
                     }
-                    for (String path : context.getApplicationRoot().getTest().get().getSourcePaths()) {
-                        testClassChangeWatcher.watchPath(new File(path), callback);
+                    for (Path path : context.getApplicationRoot().getTest().get().getSourcePaths()) {
+                        testClassChangeWatcher.watchPath(path.toFile(), callback);
                     }
-                    for (String path : context.getApplicationRoot().getTest().get().getResourcePaths()) {
-                        testClassChangeWatcher.watchPath(new File(path), callback);
+                    for (Path path : context.getApplicationRoot().getTest().get().getResourcePaths()) {
+                        testClassChangeWatcher.watchPath(path.toFile(), callback);
                     }
                     periodicTestCompile();
                 } else {
@@ -295,8 +296,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         List<Path> ret = new ArrayList<>();
         for (DevModeContext.ModuleInfo i : context.getAllModules()) {
             if (!i.getMain().getResourcePaths().isEmpty()) {
-                for (String path : i.getMain().getResourcePaths()) {
-                    ret.add(Paths.get(path));
+                for (Path path : i.getMain().getResourcePaths()) {
+                    ret.add(path);
                 }
             } else if (i.getMain().getResourcesOutputPath() != null) {
                 ret.add(Paths.get(i.getMain().getResourcesOutputPath()));
@@ -554,9 +555,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         for (DevModeContext.ModuleInfo module : context.getAllModules()) {
             final List<Path> moduleChangedSourceFilePaths = new ArrayList<>();
 
-            for (String sourcePath : cuf.apply(module).getSourcePaths()) {
+            for (Path sourcePath : cuf.apply(module).getSourcePaths()) {
                 final Set<File> changedSourceFiles;
-                Path start = Paths.get(sourcePath);
+                Path start = sourcePath;
                 if (!Files.exists(start)) {
                     continue;
                 }
@@ -580,7 +581,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                 .map(File::toPath)
                                 .collect(Collectors.toSet());
                         moduleChangedSourceFilePaths.addAll(changedPaths);
-                        compiler.compile(sourcePath, changedSourceFiles.stream()
+                        compiler.compile(sourcePath.toString(), changedSourceFiles.stream()
                                 .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
                         compileProblem = null;
                     } catch (Exception e) {
@@ -701,12 +702,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             final Set<Path> moduleResources = correspondingResources.computeIfAbsent(cuf.apply(module),
                     m -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
             boolean doCopy = true;
-            Set<String> rootPaths = cuf.apply(module).getResourcePaths();
+            PathsCollection rootPaths = cuf.apply(module).getResourcePaths();
             String outputPath = cuf.apply(module).getResourcesOutputPath();
             if (rootPaths.isEmpty()) {
                 String rootPath = cuf.apply(module).getClassesPath();
                 if (rootPath != null) {
-                    rootPaths = Collections.singleton(rootPath);
+                    rootPaths = PathsCollection.of(Paths.get(rootPath));
                 }
                 outputPath = rootPath;
                 doCopy = false;
@@ -714,8 +715,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             if (rootPaths.isEmpty() || outputPath == null) {
                 continue;
             }
-            final List<Path> roots = rootPaths.stream()
-                    .map(Paths::get)
+            final List<Path> roots = rootPaths.toList().stream()
                     .filter(Files::exists)
                     .filter(Files::isReadable)
                     .collect(Collectors.toList());
@@ -880,16 +880,15 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         for (DevModeContext.ModuleInfo module : context.getAllModules()) {
             List<DevModeContext.CompilationUnit> compilationUnits = cuf.apply(module);
             for (DevModeContext.CompilationUnit unit : compilationUnits) {
-                Set<String> rootPaths = unit.getResourcePaths();
+                PathsCollection rootPaths = unit.getResourcePaths();
                 if (rootPaths.isEmpty()) {
                     String rootPath = unit.getClassesPath();
                     if (rootPath == null) {
                         continue;
                     }
-                    rootPaths = Collections.singleton(rootPath);
+                    rootPaths = PathsCollection.of(Paths.get(rootPath));
                 }
-                for (String rootPath : rootPaths) {
-                    Path root = Paths.get(rootPath);
+                for (Path root : rootPaths) {
                     for (String path : watchedFilePaths.keySet()) {
                         Path config = root.resolve(path);
                         if (config.toFile().exists()) {

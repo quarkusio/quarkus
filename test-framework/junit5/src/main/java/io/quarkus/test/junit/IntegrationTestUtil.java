@@ -184,11 +184,11 @@ final class IntegrationTestUtil {
         if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
             QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
             if (model != null) {
-                final Set<File> classDirectories = model.getWorkspace().getMainModule().getSourceSet()
+                final PathsCollection classDirectories = model.getWorkspace().getMainModule().getSourceSet()
                         .getSourceDirectories();
-                for (File classes : classDirectories) {
-                    if (classes.exists() && !rootBuilder.contains(classes.toPath())) {
-                        rootBuilder.add(classes.toPath());
+                for (Path classes : classDirectories) {
+                    if (Files.exists(classes) && !rootBuilder.contains(classes)) {
+                        rootBuilder.add(classes);
                     }
                 }
             }

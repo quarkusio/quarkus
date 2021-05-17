@@ -92,6 +92,12 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     }
 
     @Override
+    public MailTemplateInstance setAttribute(String key, Object value) {
+        this.templateInstance.setAttribute(key, value);
+        return this;
+    }
+
+    @Override
     public Uni<Void> send() {
         Object variantsAttr = templateInstance.getAttribute(TemplateInstance.VARIANTS);
         if (variantsAttr != null) {

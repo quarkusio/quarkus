@@ -82,6 +82,7 @@ import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.qute.i18n.MessageBundles;
 import io.quarkus.qute.runtime.MessageBundleRecorder;
+import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.runtime.util.StringUtil;
 
 public class MessageBundleProcessor {
@@ -317,7 +318,9 @@ public class MessageBundleProcessor {
             List<MessageBundleMethodBuildItem> messageBundleMethods,
             List<TemplateExpressionMatchesBuildItem> expressionMatches,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
-            BuildProducer<ImplicitValueResolverBuildItem> implicitClasses) {
+            BuildProducer<ImplicitValueResolverBuildItem> implicitClasses,
+            List<CheckedTemplateBuildItem> checkedTemplates,
+            QuteConfig config) {
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -357,9 +360,26 @@ public class MessageBundleProcessor {
 
                 for (Entry<TemplateAnalysis, Set<Expression>> exprEntry : expressions.entrySet()) {
 
+                    TemplateAnalysis templateAnalysis = exprEntry.getKey();
+
+                    String path = templateAnalysis.path;
+                    for (String suffix : config.suffixes) {
+                        if (path.endsWith(suffix)) {
+                            path = path.substring(0, path.length() - (suffix.length() + 1));
+                            break;
+                        }
+                    }
+                    CheckedTemplateBuildItem checkedTemplate = null;
+                    for (CheckedTemplateBuildItem item : checkedTemplates) {
+                        if (item.templateId.equals(path)) {
+                            checkedTemplate = item;
+                            break;
+                        }
+                    }
+
                     Map<Integer, Match> generatedIdsToMatches = Collections.emptyMap();
                     for (TemplateExpressionMatchesBuildItem templateExpressionMatchesBuildItem : expressionMatches) {
-                        if (templateExpressionMatchesBuildItem.templateGeneratedId.equals(exprEntry.getKey().generatedId)) {
+                        if (templateExpressionMatchesBuildItem.templateGeneratedId.equals(templateAnalysis.generatedId)) {
                             generatedIdsToMatches = templateExpressionMatchesBuildItem.getGeneratedIdsToMatches();
                             break;
                         }
@@ -412,7 +432,7 @@ public class MessageBundleProcessor {
                                     QuteProcessor.validateNestedExpressions(exprEntry.getKey(), defaultBundleInterface,
                                             results, templateExtensionMethods, excludes,
                                             incorrectExpressions, expression, index, implicitClassToMembersUsed,
-                                            templateIdToPathFun, generatedIdsToMatches);
+                                            templateIdToPathFun, generatedIdsToMatches, checkedTemplate);
                                     Match match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),
                                             methodParams.get(idx), index)) {
@@ -423,6 +443,15 @@ public class MessageBundleProcessor {
                                                                 + "] does not match the type: " + match.type(),
                                                         expression.getOrigin()));
                                     }
+                                } else if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions) {
+                                    incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                                            "Only type-safe expressions are allowed in the checked template defined via: "
+                                                    + checkedTemplate.method.declaringClass().name() + "."
+                                                    + checkedTemplate.method.name()
+                                                    + "(); an expression must be based on a checked template parameter "
+                                                    + checkedTemplate.bindings.keySet()
+                                                    + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
+                                            expression.getOrigin()));
                                 }
                                 idx++;
                             }

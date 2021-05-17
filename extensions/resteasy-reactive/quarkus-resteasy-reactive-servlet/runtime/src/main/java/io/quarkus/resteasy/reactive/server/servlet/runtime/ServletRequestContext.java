@@ -43,6 +43,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ResponseCommitListener;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
@@ -573,5 +574,27 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
             this.value = value;
             return old;
         }
+    }
+
+    @Override
+    public ServerHttpResponse sendFile(String path, long offset, long length) {
+        context.response().sendFile(path, offset, length);
+        return this;
+    }
+
+    @Override
+    public boolean isWriteQueueFull() {
+        return context.response().writeQueueFull();
+    }
+
+    @Override
+    public ServerHttpResponse addDrainHandler(Runnable onDrain) {
+        context.response().drainHandler(new Handler<Void>() {
+            @Override
+            public void handle(Void event) {
+                onDrain.run();
+            }
+        });
+        return this;
     }
 }

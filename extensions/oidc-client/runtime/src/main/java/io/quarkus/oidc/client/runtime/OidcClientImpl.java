@@ -57,6 +57,10 @@ public class OidcClientImpl implements OidcClient {
 
     @Override
     public Uni<Tokens> getTokens(Map<String, String> additionalGrantParameters) {
+        if (tokenGrantParams == null) {
+            throw new OidcClientException(
+                    "Only 'refresh_token' grant is supported, please call OidcClient#refreshTokens method instead");
+        }
         return getJsonResponse(tokenGrantParams, additionalGrantParameters, false);
     }
 

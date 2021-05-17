@@ -299,17 +299,38 @@ final class MultipartPopulatorGenerator {
                         // in this case we allow injection of all the uploaded file as long as a name
                         // was not provided in @RestForm (which makes no semantic sense)
                         if (formAttrNameSet) {
-                            throw new IllegalArgumentException(
-                                    "When using a 'List<FileUpload>' field to capture all uploaded files, " +
-                                            "the field must be annotated '@RestForm' without providing a name. " +
-                                            "Offending field is '" + field.name() + "' of class '"
-                                            + field.declaringClass().name() + "'");
+                            Type fieldGenericType = fieldType.asParameterizedType().arguments().get(0);
+                            ResultHandle fileUploadHandle;
+                            if (fieldGenericType.name().equals(DotNames.FIELD_UPLOAD_NAME)) {
+                                fileUploadHandle = populate.invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUploads",
+                                                List.class,
+                                                String.class, ResteasyReactiveRequestContext.class),
+                                        formAttrNameHandle, rrCtxHandle);
+                            } else if (fieldGenericType.name().equals(DotNames.PATH_NAME)) {
+                                fileUploadHandle = populate.invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(MultipartSupport.class, "getJavaPathFileUploads",
+                                                List.class,
+                                                String.class, ResteasyReactiveRequestContext.class),
+                                        formAttrNameHandle, rrCtxHandle);
+                            } else if (fieldGenericType.name().equals(DotNames.FILE_NAME)) {
+                                fileUploadHandle = populate.invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(MultipartSupport.class, "getJavaIOFileUploads",
+                                                List.class,
+                                                String.class, ResteasyReactiveRequestContext.class),
+                                        formAttrNameHandle, rrCtxHandle);
+                            } else {
+                                throw new IllegalArgumentException(
+                                        "Unhandled genetic type '" + fieldGenericType.name().toString() + "'");
+                            }
+                            populate.assign(resultHandle, fileUploadHandle);
+                        } else {
+                            ResultHandle allFileUploadsHandle = populate.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUploads", List.class,
+                                            ResteasyReactiveRequestContext.class),
+                                    rrCtxHandle);
+                            populate.assign(resultHandle, allFileUploadsHandle);
                         }
-                        ResultHandle allFileUploadsHandle = populate.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUploads", List.class,
-                                        ResteasyReactiveRequestContext.class),
-                                rrCtxHandle);
-                        populate.assign(resultHandle, allFileUploadsHandle);
                     } else {
                         // this is a common enough mistake, so let's provide a good error message
                         failIfFileTypeUsedAsGenericType(field, fieldType, fieldDotName);
@@ -427,7 +448,7 @@ final class MultipartPopulatorGenerator {
             ParameterizedType parameterizedType = fieldType.asParameterizedType();
             if (!parameterizedType.arguments().isEmpty()) {
                 DotName argTypeDotName = parameterizedType.arguments().get(0).name();
-                return argTypeDotName.equals(DotNames.FIELD_UPLOAD_NAME);
+                return isFileRelatedType(argTypeDotName);
             }
         }
         return false;

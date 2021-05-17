@@ -42,7 +42,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
                 scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
             } else if (migrationFile.startsWith(Location.FILESYSTEM_PREFIX)) {
                 if (fileSystemScanner == null) {
-                    fileSystemScanner = new FileSystemScanner(StandardCharsets.UTF_8, false);
+                    fileSystemScanner = new FileSystemScanner(StandardCharsets.UTF_8, false, false, false);
                 }
                 LOGGER.debugf("Checking %s for migration files", migrationFile);
                 Collection<LoadableResource> resources = fileSystemScanner.scanForResources(new Location(migrationFile));

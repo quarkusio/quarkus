@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Amazon IAM"
+metadata:
+  keywords:
+    - "iam"
+    - "aws"
+    - "amazon"
+  guide: "https://quarkus.io/guides/amazon-iam"
+  categories:
+    - "data"
+  status: "preview"

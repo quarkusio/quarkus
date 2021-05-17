@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye GraphQL"
+metadata:
+  short-name: "graphql"  
+  keywords:
+  - "graphql"
+  - "microprofile-graphql"
+  - "smallrye-graphql"
+  - "web"
+  categories:
+  - "web"
+  guide: "https://quarkus.io/guides/microprofile-graphql"
+  status: "preview"

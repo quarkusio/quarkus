@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Liquibase"
+metadata:
+  keywords:
+  - "liquibase"
+  - "database"
+  - "data"
+  guide: "https://quarkus.io/guides/liquibase"
+  categories:
+  - "data"
+  status: "preview"

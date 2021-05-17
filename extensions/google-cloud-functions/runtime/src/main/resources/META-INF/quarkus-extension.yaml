@@ -1,0 +1,17 @@
+name: "Google Cloud Functions"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "google cloud"
+  - "gcloud"
+  - "gcp"
+  - "function"
+  categories:
+  - "cloud"
+  guide: "https://quarkus.io/guides/gcp-functions"
+  status: "preview"
+  codestart:
+    name: "google-cloud-functions"
+    kind: "example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

@@ -1,7 +1,0 @@
----
-name: "Netty"
-metadata:
-  categories:
-  - "web"
-  status: "stable"
-  unlisted: true

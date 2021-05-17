@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Flyway"
+metadata:
+  keywords:
+  - "flyway"
+  - "database"
+  - "data"
+  guide: "https://quarkus.io/guides/flyway"
+  categories:
+  - "data"
+  status: "stable"

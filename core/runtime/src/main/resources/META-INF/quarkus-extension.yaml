@@ -1,0 +1,5 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quarkus - Core"
+metadata:
+  unlisted: true

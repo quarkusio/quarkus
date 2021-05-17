@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate Validator"
+metadata:
+  short-name: "bean validation"
+  keywords:
+  - "hibernate-validator"
+  - "bean-validation"
+  - "validation"
+  guide: "https://quarkus.io/guides/validation"
+  categories:
+  - "web"
+  - "data"
+  status: "stable"

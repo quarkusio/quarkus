@@ -1,0 +1,18 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy Qute"
+metadata:
+  keywords:
+  - "templating"
+  - "templates"
+  - "resteasy"
+  guide: "https://quarkus.io/guides/qute"
+  categories:
+  - "web"
+  status: "experimental"
+  codestart:
+    name: "resteasy-qute"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

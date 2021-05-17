@@ -1,0 +1,17 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy JSON-B"
+metadata:
+  keywords:
+  - "resteasy-jsonb"
+  - "jaxrs-json"
+  - "resteasy-json"
+  - "resteasy"
+  - "jaxrs"
+  - "json"
+  - "jsonb"
+  guide: "https://quarkus.io/guides/rest-json"
+  categories:
+  - "web"
+  - "serialization"
+  status: "stable"

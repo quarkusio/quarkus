@@ -1,9 +1,0 @@
----
-name: "Kubernetes Client"
-metadata:
-  keywords:
-  - "kubernetes-client"
-  guide: "https://quarkus.io/guides/kubernetes-client"
-  categories:
-  - "cloud"
-  status: "stable"

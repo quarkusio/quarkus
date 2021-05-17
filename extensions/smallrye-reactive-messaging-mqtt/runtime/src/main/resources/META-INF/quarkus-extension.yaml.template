@@ -1,9 +1,0 @@
----
-name: "SmallRye Reactive Messaging - MQTT Connector"
-metadata:
-  keywords:
-  - "mqtt"
-  - "reactive-mqtt"
-  categories:
-  - "messaging"
-  status: "preview"

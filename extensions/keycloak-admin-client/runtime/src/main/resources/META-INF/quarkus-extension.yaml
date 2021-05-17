@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Keycloak Admin Client"
+metadata:
+  keywords:
+  - "keycloak"
+  - "keycloak-admin-client"
+  - "admin"
+  - "openid-connect"
+  categories:
+    - "security"
+  status: "stable"

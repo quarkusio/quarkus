@@ -1,0 +1,12 @@
+name: "Scala"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "scala"
+  categories:
+  - "alt-languages"
+  status: "preview"
+  codestart:
+    name: "scala"
+    kind: "core"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

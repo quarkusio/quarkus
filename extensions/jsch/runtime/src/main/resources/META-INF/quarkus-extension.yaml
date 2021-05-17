@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "JSch"
+metadata:
+  keywords:
+  - "jsch"
+  - "ssh"
+  - "ssh2"
+  categories:
+  - "miscellaneous"
+  status: "stable"
+  unlisted: "true"

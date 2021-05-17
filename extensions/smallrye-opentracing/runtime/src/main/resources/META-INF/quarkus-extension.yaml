@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye OpenTracing"
+metadata:
+  keywords:
+  - "smallrye-opentracing"
+  - "opentracing"
+  - "tracing"
+  - "distributed-tracing"
+  - "jaeger"
+  guide: "https://quarkus.io/guides/opentracing"
+  categories:
+  - "observability"
+  status: "stable"

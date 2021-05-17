@@ -36,7 +36,7 @@ import io.smallrye.mutiny.Uni;
 @FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
 @Filter(name = "Person.isAlive")
 @Filter(name = "Person.hasName")
-public class Person extends PanacheEntity {
+public class Person extends PanacheEntity<Person> {
 
     public String name;
     @Column(unique = true)

@@ -13,7 +13,8 @@ import org.bson.types.ObjectId;
  *
  * @see ReactivePanacheMongoEntityBase
  */
-public abstract class ReactivePanacheMongoEntity extends ReactivePanacheMongoEntityBase {
+public abstract class ReactivePanacheMongoEntity<Entity extends ReactivePanacheMongoEntity<Entity>>
+        extends ReactivePanacheMongoEntityBase<Entity> {
 
     /**
      * The auto-generated ID field.

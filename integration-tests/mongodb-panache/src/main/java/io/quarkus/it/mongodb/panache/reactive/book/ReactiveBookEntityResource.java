@@ -50,11 +50,7 @@ public class ReactiveBookEntityResource {
 
     @POST
     public Uni<Response> addBook(ReactiveBookEntity book) {
-        return book.persist().map(v -> {
-            //the ID is populated before sending it to the database
-            String id = book.id.toString();
-            return Response.created(URI.create("/books/entity" + id)).build();
-        });
+        return book.<ReactiveBookEntity> persist().map(v -> Response.created(URI.create("/books/entity" + v.id)).build());
     }
 
     @PUT

@@ -11,7 +11,7 @@ import java.util.ArrayList
 import javax.json.bind.annotation.JsonbDateFormat
 
 @MongoEntity(collection = "TheBookEntity", clientName = "cl2")
-class ReactiveBookEntity : ReactivePanacheMongoEntity() {
+class ReactiveBookEntity : ReactivePanacheMongoEntity<ReactiveBookEntity>() {
     companion object: ReactivePanacheMongoCompanion<ReactiveBookEntity>
 
     @BsonProperty("bookTitle")

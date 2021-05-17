@@ -13,7 +13,7 @@ import org.bson.types.ObjectId;
  *
  * @see PanacheMongoEntityBase
  */
-public abstract class PanacheMongoEntity extends PanacheMongoEntityBase {
+public abstract class PanacheMongoEntity<Entity extends PanacheMongoEntity<Entity>> extends PanacheMongoEntityBase<Entity> {
 
     /**
      * The auto-generated ID field.

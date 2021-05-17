@@ -23,7 +23,7 @@ import io.quarkus.panache.common.impl.GenerateBridge;
  *
  * @see PanacheMongoEntity
  */
-public abstract class PanacheMongoEntityBase {
+public abstract class PanacheMongoEntityBase<Entity extends PanacheMongoEntityBase<Entity>> {
     /**
      * Persist this entity in the database.
      * This will set its ID field if not already set.

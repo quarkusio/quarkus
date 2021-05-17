@@ -18,7 +18,7 @@ import java.util.stream.Stream
  *
  * @param Entity the entity type
  */
-interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase>
+interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase<Entity>>
     : ReactivePanacheMongoCompanionBase<Entity, ObjectId>
 
 /**
@@ -27,7 +27,7 @@ interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase>
  * @param Entity the entity type
  * @param Id the ID type
  */
-interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityBase, Id: Any> {
+interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityBase<Entity>, Id: Any> {
     /**
      * Find an entity of this type by ID.
      *

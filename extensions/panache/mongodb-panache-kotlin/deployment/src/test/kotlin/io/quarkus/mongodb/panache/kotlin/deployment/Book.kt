@@ -20,7 +20,7 @@ import java.util.stream.Stream
  * here.
  */
 @Suppress("UNCHECKED_CAST", "unused")
-class Book : PanacheMongoEntity() {
+class Book : PanacheMongoEntity<Book>() {
     companion object : PanacheMongoCompanion<Book> {
         fun target_count(): Long
             = INSTANCE.count(Book::class.java)

@@ -27,7 +27,7 @@ import io.smallrye.mutiny.Uni;
  * @see ReactivePanacheMongoEntity
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public abstract class ReactivePanacheMongoEntityBase {
+public abstract class ReactivePanacheMongoEntityBase<Entity extends ReactivePanacheMongoEntityBase<Entity>> {
     /**
      * Persist this entity in the database.
      * This will set its ID field if not already set.
@@ -36,8 +36,8 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public Uni<Void> persist() {
-        return INSTANCE.persist(this);
+    public Uni<Entity> persist() {
+        return INSTANCE.persist(this).map(v -> (Entity) this);
     }
 
     /**
@@ -47,8 +47,8 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Stream)
      * @see #update(Object, Object...)
      */
-    public Uni<Void> update() {
-        return INSTANCE.update(this);
+    public Uni<Entity> update() {
+        return INSTANCE.update(this).map(v -> (Entity) this);
     }
 
     /**
@@ -58,8 +58,8 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Object, Object...)
      */
-    public Uni<Void> persistOrUpdate() {
-        return INSTANCE.persistOrUpdate(this);
+    public Uni<Entity> persistOrUpdate() {
+        return INSTANCE.persistOrUpdate(this).map(v -> (Entity) this);
     }
 
     /**

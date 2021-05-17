@@ -312,7 +312,7 @@ public Uni<Response> send() { <1>
 <1> The method returns a `Uni`
 <2> Transform the `Uni<Void>` returned by `MailTemplate` into `Unit<Response>`
 
-[[testing]]]
+[[testing]]
 == Testing email sending
 
 Because it is very inconvenient to send emails during development and testing, you can set the `quarkus.mailer.mock` boolean

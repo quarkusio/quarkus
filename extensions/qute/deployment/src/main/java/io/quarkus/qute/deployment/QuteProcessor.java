@@ -534,29 +534,15 @@ public class QuteProcessor {
                     if (expression.getNamespace().equals(EngineProducer.INJECT_NAMESPACE)) {
                         validateInjectExpression(templateAnalysis, expression, index, incorrectExpressions,
                                 templateExtensionMethods, excludes, namedBeans, generatedIdsToMatches,
-                                implicitClassToMembersUsed,
-                                templateIdToPathFun);
+                                implicitClassToMembersUsed, templateIdToPathFun, checkedTemplate);
                     } else {
                         continue;
                     }
                 } else {
-                    if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()) {
-                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                "Only type-safe expressions are allowed in the checked template defined via: "
-                                        + checkedTemplate.method.declaringClass().name() + "."
-                                        + checkedTemplate.method.name()
-                                        + "(); an expression must be based on a checked template parameter "
-                                        + checkedTemplate.bindings.keySet()
-                                        + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
-                                expression.getOrigin()));
-                        continue;
-                    }
-
                     generatedIdsToMatches.put(expression.getGeneratedId(),
                             validateNestedExpressions(templateAnalysis, null, new HashMap<>(), templateExtensionMethods,
-                                    excludes,
-                                    incorrectExpressions, expression, index, implicitClassToMembersUsed, templateIdToPathFun,
-                                    generatedIdsToMatches));
+                                    excludes, incorrectExpressions, expression, index, implicitClassToMembersUsed,
+                                    templateIdToPathFun, generatedIdsToMatches, checkedTemplate));
                 }
             }
 
@@ -587,25 +573,12 @@ public class QuteProcessor {
         return ignorePattern.toString();
     }
 
-    /**
-     * @param templateAnalysis
-     * @param rootClazz
-     * @param results Map of cached results within a single expression
-     * @param templateExtensionMethods
-     * @param excludes
-     * @param incorrectExpressions
-     * @param expression
-     * @param index
-     * @param implicitClassToMembersUsed
-     * @param templateIdToPathFun
-     * @return the last match object
-     */
     static Match validateNestedExpressions(TemplateAnalysis templateAnalysis, ClassInfo rootClazz, Map<String, Match> results,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions, Expression expression, IndexView index,
             Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
-            Map<Integer, Match> generatedIdsToMatches) {
+            Map<Integer, Match> generatedIdsToMatches, CheckedTemplateBuildItem checkedTemplate) {
 
         // First validate nested virtual methods
         for (Expression.Part part : expression.getParts()) {
@@ -614,13 +587,27 @@ public class QuteProcessor {
                     if (!results.containsKey(param.toOriginalString())) {
                         validateNestedExpressions(templateAnalysis, null, results, templateExtensionMethods, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
-                                generatedIdsToMatches);
+                                generatedIdsToMatches, checkedTemplate);
                     }
                 }
             }
         }
         // Then validate the expression itself
         Match match = new Match(index);
+
+        if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()) {
+            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                    "Only type-safe expressions are allowed in the checked template defined via: "
+                            + checkedTemplate.method.declaringClass().name() + "."
+                            + checkedTemplate.method.name()
+                            + "(); an expression must be based on a checked template parameter "
+                            + checkedTemplate.bindings.keySet()
+                            + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
+                    expression.getOrigin()));
+            results.put(expression.toOriginalString(), match);
+            return match;
+        }
+
         if (rootClazz == null && !expression.hasTypeInfo()) {
             // No type info available or a namespace expression
             results.put(expression.toOriginalString(), match);
@@ -875,7 +862,8 @@ public class QuteProcessor {
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods, List<TypeCheckExcludeBuildItem> excludes,
             Map<String, BeanInfo> namedBeans, Map<Integer, Match> generatedIdsToMatches,
-            Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun) {
+            Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
+            CheckedTemplateBuildItem checkedTemplate) {
         Expression.Part firstPart = expression.getParts().get(0);
         if (firstPart.isVirtualMethod()) {
             incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
@@ -902,7 +890,7 @@ public class QuteProcessor {
             generatedIdsToMatches.put(expression.getGeneratedId(),
                     validateNestedExpressions(templateAnalysis, bean.getImplClazz(), new HashMap<>(),
                             templateExtensionMethods, excludes, incorrectExpressions, expression, index,
-                            implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches));
+                            implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches, checkedTemplate));
 
         } else {
             // User is injecting a non-existing bean

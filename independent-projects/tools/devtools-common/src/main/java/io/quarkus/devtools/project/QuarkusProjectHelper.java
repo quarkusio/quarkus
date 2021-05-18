@@ -21,6 +21,19 @@ public class QuarkusProjectHelper {
     private static MavenArtifactResolver artifactResolver;
     private static ExtensionCatalogResolver catalogResolver;
 
+    private static final boolean registryClientEnabled;
+    static {
+        String value = System.getProperty("quarkusRegistryClient");
+        if (value == null) {
+            value = System.getenv("QUARKUS_REGISTRY_CLIENT");
+        }
+        registryClientEnabled = Boolean.parseBoolean(value);
+    }
+
+    public static boolean isRegistryClientEnabled() {
+        return registryClientEnabled;
+    }
+
     public static QuarkusProject getProject(Path projectDir) {
         BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectDir);
         if (buildTool == null) {
@@ -50,9 +63,9 @@ public class QuarkusProjectHelper {
     @Deprecated
     public static ExtensionCatalog getExtensionCatalog(String quarkusVersion) {
         // TODO remove this method once the default registry becomes available
-        final ExtensionCatalogResolver catalogResolver = getCatalogResolver();
         try {
-            return catalogResolver.hasRegistries() ? catalogResolver.resolveExtensionCatalog(quarkusVersion)
+            return registryClientEnabled && getCatalogResolver().hasRegistries()
+                    ? getCatalogResolver().resolveExtensionCatalog(quarkusVersion)
                     : ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, artifactResolver(),
                             messageWriter());
         } catch (Exception e) {

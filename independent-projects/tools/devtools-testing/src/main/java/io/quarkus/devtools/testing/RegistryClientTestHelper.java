@@ -43,6 +43,7 @@ public class RegistryClientTestHelper {
 
         properties.setProperty("io.quarkus.maven.secondary-local-repo", registryRepoPath.toString());
         properties.setProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, toolsConfigPath.toString());
+        properties.setProperty("quarkusRegistryClient", "true");
     }
 
     private static void generatePlatformCatalog(final Path groupIdDir) {
@@ -134,5 +135,6 @@ public class RegistryClientTestHelper {
     public static void disableRegistryClientTestConfig(Properties properties) {
         properties.remove("io.quarkus.maven.secondary-local-repo");
         properties.remove(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY);
+        properties.remove("quarkusRegistryClient");
     }
 }

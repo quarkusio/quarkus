@@ -81,7 +81,9 @@ public class MavenProjectBuildFile extends BuildFile {
         }
 
         final ExtensionCatalog extensionCatalog;
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver(mvnResolver, log);
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                ? QuarkusProjectHelper.getCatalogResolver(mvnResolver, log)
+                : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {
                 extensionCatalog = catalogResolver.resolveExtensionCatalog(quarkusVersion);

@@ -32,18 +32,14 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public abstract class QuarkusPlatformTask extends QuarkusTask {
 
-    private static boolean isEnableRegistryClient() {
-        final String value = System.getProperty("enableRegistryClient");
-        return value == null ? System.getProperties().containsKey("enableRegistryClient") : Boolean.parseBoolean(value);
-    }
-
     QuarkusPlatformTask(String description) {
         super(description);
     }
 
     private ExtensionCatalog extensionsCatalog(boolean limitExtensionsToImportedPlatforms, MessageWriter log) {
         final List<ArtifactCoords> platforms = importedPlatforms();
-        final ExtensionCatalogResolver catalogResolver = isEnableRegistryClient() ? QuarkusProjectHelper.getCatalogResolver(log)
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                ? QuarkusProjectHelper.getCatalogResolver(log)
                 : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {

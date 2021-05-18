@@ -21,7 +21,7 @@ public class ConfigMappingValidatorTest {
     @RegisterExtension
     static final QuarkusUnitTest UNIT_TEST = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("server.host=localhost\n"), "application.properties"));
+                    .addAsResource(new StringAsset("validator.server.host=localhost\n"), "application.properties"));
 
     @Inject
     Config config;
@@ -30,10 +30,10 @@ public class ConfigMappingValidatorTest {
     void validator() {
         assertThrows(ConfigValidationException.class,
                 () -> config.unwrap(SmallRyeConfig.class).getConfigMapping(Server.class),
-                "server.host must be less than or equal to 3");
+                "validator.server.host must be less than or equal to 3");
     }
 
-    @ConfigMapping(prefix = "server")
+    @ConfigMapping(prefix = "validator.server")
     public interface Server {
         @Max(3)
         String host();

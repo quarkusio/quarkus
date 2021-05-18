@@ -15,7 +15,7 @@ public class AdminClientResource {
 
     private static final Logger LOG = Logger.getLogger(AdminClientResource.class);
 
-    @ConfigProperty(name = "admin-url")
+    @ConfigProperty(name = "keycloak.url")
     String url;
 
     @GET
@@ -24,7 +24,7 @@ public class AdminClientResource {
         LOG.info("Hello invoked");
 
         Keycloak keycloak = KeycloakBuilder.builder().serverUrl(url)
-                .realm("master")
+                .realm("quarkus")
                 .clientId("admin-cli")
                 .username("admin")
                 .password("admin").build();

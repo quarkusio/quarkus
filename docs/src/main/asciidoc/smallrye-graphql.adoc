@@ -646,6 +646,7 @@ This can easily be a server side generated field that the client may require.
 
 Let's now try deleting an entry:
 
+[source,graphql]
 ----
 mutation DeleteHero {
   deleteHero(id :3){
@@ -657,6 +658,52 @@ mutation DeleteHero {
 
 Similar to the `createHero` mutation method we also retrieve the `name` and
 `surname` of the hero we have deleted which is defined in `{ }`.
+
+== Subscriptions
+
+Subscriptions allows you to subscribe to a query. It allows you to receive events.
+
+NOTE: Subscription is currently still considered experimental.
+
+Example: We want to know when new Heroes are being created:
+
+[source,java]
+----
+
+    BroadcastProcessor<Hero> processor = BroadcastProcessor.create(); // <1>
+
+    @Mutation
+    public Hero createHero(Hero hero) {
+        service.addHero(hero);
+        processor.onNext(hero); // <2>
+        return hero;
+    }
+
+    @Subscription
+    public Multi<Hero> heroCreated(){
+        return processor; // <3>
+    }
+
+----
+
+<1> The `Multi` processor that will broadcast any new Heros
+<2> When adding a new Hero, also broadcast it
+<3> Make the stream available in the schema and as a WebSocket during runtime
+
+
+Any client that now connect to the `/graphql` WebSocket connection will receive events on new Heroes being created:
+
+[source,graphql]
+----
+
+subscription ListenForNewHeroes {
+  heroCreated {
+    name
+    surname
+  }
+}
+
+----
 
 == Creating Queries by fields
 

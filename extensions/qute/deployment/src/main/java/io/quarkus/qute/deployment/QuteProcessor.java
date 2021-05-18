@@ -1423,13 +1423,8 @@ public class QuteProcessor {
                 // Map<String,Long> => Entry<String,Long>
                 processLoopElementHint(match, index, expression, incorrectExpressions);
             } else if (helperHint.startsWith(LoopSectionHelper.Factory.HINT_PREFIX)) {
-                Expression valueExpr = findExpression(helperHint, LoopSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
-                if (valueExpr != null) {
-                    Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
-                    if (valueExprMatch != null) {
-                        match.setValues(valueExprMatch.clazz, valueExprMatch.type);
-                    }
-                }
+                setMatchValues(match, findExpression(helperHint, LoopSectionHelper.Factory.HINT_PREFIX, templateAnalysis),
+                        generatedIdsToMatches, index);
             } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
                 // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant  
                 // This basically transforms the type info "ON<when:12345>" into something like "|org.acme.Status|.ON"
@@ -1442,16 +1437,48 @@ public class QuteProcessor {
                     }
                 }
             } else if (helperHint.startsWith(SetSectionHelper.Factory.HINT_PREFIX)) {
-                Expression valueExpr = findExpression(helperHint, SetSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
-                if (valueExpr != null) {
-                    Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
-                    if (valueExprMatch != null) {
-                        match.setValues(valueExprMatch.clazz, valueExprMatch.type);
-                    }
-                }
+                setMatchValues(match, findExpression(helperHint, SetSectionHelper.Factory.HINT_PREFIX, templateAnalysis),
+                        generatedIdsToMatches, index);
             }
         }
         return false;
+    }
+
+    private static void setMatchValues(Match match, Expression valueExpr, Map<Integer, Match> generatedIdsToMatches,
+            IndexView index) {
+        if (valueExpr != null) {
+            if (valueExpr.isLiteral()) {
+                Object literalValue;
+                try {
+                    literalValue = valueExpr.getLiteralValue().get();
+                } catch (InterruptedException | ExecutionException e) {
+                    literalValue = null;
+                }
+                if (literalValue == null) {
+                    match.clearValues();
+                } else {
+                    if (literalValue instanceof Boolean) {
+                        match.setValues(index.getClassByName(DotNames.BOOLEAN), Types.box(Primitive.BOOLEAN));
+                    } else if (literalValue instanceof String) {
+                        match.setValues(index.getClassByName(DotNames.STRING),
+                                Type.create(DotNames.STRING, org.jboss.jandex.Type.Kind.CLASS));
+                    } else if (literalValue instanceof Integer) {
+                        match.setValues(index.getClassByName(DotNames.INTEGER), Types.box(Primitive.INT));
+                    } else if (literalValue instanceof Long) {
+                        match.setValues(index.getClassByName(DotNames.LONG), Types.box(Primitive.LONG));
+                    } else if (literalValue instanceof Double) {
+                        match.setValues(index.getClassByName(DotNames.DOUBLE), Types.box(Primitive.DOUBLE));
+                    } else if (literalValue instanceof Float) {
+                        match.setValues(index.getClassByName(DotNames.FLOAT), Types.box(Primitive.FLOAT));
+                    }
+                }
+            } else {
+                Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
+                if (valueExprMatch != null) {
+                    match.setValues(valueExprMatch.clazz, valueExprMatch.type);
+                }
+            }
+        }
     }
 
     private static Expression findExpression(String helperHint, String hintPrefix, TemplateAnalysis templateAnalysis) {
@@ -1461,7 +1488,7 @@ public class QuteProcessor {
 
     static void processLoopElementHint(Match match, IndexView index, Expression expression,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
-        if (match.type().name().equals(DotNames.INTEGER)) {
+        if (match.isEmpty() || match.type().name().equals(DotNames.INTEGER)) {
             return;
         }
         Type matchType = null;

@@ -160,12 +160,15 @@ public class TestConsoleHandler implements TestListener {
                             results.getSkippedCount(),
                             results.getCurrentTotalCount(), results.getTotalTime());
                     log.info(
-                            ">>>>>>>>>>>>>>>>>>>> \u001B[32m TEST #" + results.getId()
-                                    + " PASSED\u001b[0m <<<<<<<<<<<<<<<<<<<");
+                            "====================\u001B[32m TEST REPORT #" + results.getId()
+                                    + "\u001b[0m ====================");
+                    log.info(
+                            ">>>>>>>>>>>>>>>>>>>>\u001B[32m " + results.getCurrentPassedCount()
+                                    + " TESTS PASSED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
                 } else {
                     //TODO: this should not use the logger, it should print a nicer status
                     log.error(
-                            "==================== \u001B[91m TEST REPORT #" + results.getId()
+                            "====================\u001B[91m TEST REPORT #" + results.getId()
                                     + "\u001b[0m ====================");
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
@@ -175,7 +178,7 @@ public class TestConsoleHandler implements TestListener {
                         }
                     }
                     log.error(
-                            ">>>>>>>>>>>>>>>>>>>> \u001B[91m " + results.getCurrentFailedCount()
+                            ">>>>>>>>>>>>>>>>>>>>\u001B[91m " + results.getCurrentFailedCount()
                                     + " TESTS FAILED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
                     lastStatus = String.format(
                             "\u001B[91m%d tests failed (%d passing, %d skipped), %d tests were run in %dms.\u001b[0m",

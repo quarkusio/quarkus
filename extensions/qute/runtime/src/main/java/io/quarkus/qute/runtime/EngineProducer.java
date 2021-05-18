@@ -5,7 +5,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -223,7 +223,7 @@ public class EngineProducer {
         @Override
         public Reader read() {
             try {
-                return new InputStreamReader(resource.openStream(), Charset.forName("utf-8"));
+                return new InputStreamReader(resource.openStream(), StandardCharsets.UTF_8);
             } catch (IOException e) {
                 return null;
             }

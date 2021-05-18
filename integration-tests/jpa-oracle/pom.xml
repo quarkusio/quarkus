@@ -184,7 +184,7 @@
                                         <wait>
                                             <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
                                             <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
-                                            <time>100000</time>
+                                            <time>60000</time>
                                             <log>DATABASE IS READY TO USE!</log>
                                         </wait>
                                     </run>

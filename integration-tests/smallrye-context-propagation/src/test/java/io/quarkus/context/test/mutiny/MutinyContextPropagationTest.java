@@ -10,6 +10,7 @@ import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -150,6 +151,7 @@ public class MutinyContextPropagationTest {
     }
 
     @Test
+    @Disabled("Unstable on CI - per discussion with Sanne and Clément")
     public void testTransactionContextPropagationMulti() {
         RestAssured.when().get("/mutiny-context/transaction-multi").then()
                 .statusCode(Response.Status.OK.getStatusCode())

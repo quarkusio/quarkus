@@ -220,10 +220,11 @@ public class JibProcessor {
         CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                 log::info);
         RegistryImage registryImage = RegistryImage.named(imageReference);
-        registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
-        registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
         if (username.isPresent() && password.isPresent()) {
             registryImage.addCredential(username.get(), password.get());
+        } else {
+            registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
+            registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
         }
         return registryImage;
     }

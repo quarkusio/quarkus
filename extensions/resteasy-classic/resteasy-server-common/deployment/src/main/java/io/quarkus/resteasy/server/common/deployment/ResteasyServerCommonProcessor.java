@@ -5,7 +5,6 @@ import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -90,24 +89,22 @@ public class ResteasyServerCommonProcessor {
 
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
-    private static final DotName[] METHOD_ANNOTATIONS = {
+    private static final List<DotName> METHOD_ANNOTATIONS = List.of(
             ResteasyDotNames.GET,
             ResteasyDotNames.HEAD,
             ResteasyDotNames.DELETE,
             ResteasyDotNames.OPTIONS,
             ResteasyDotNames.PATCH,
             ResteasyDotNames.POST,
-            ResteasyDotNames.PUT,
-    };
+            ResteasyDotNames.PUT);
 
-    private static final DotName[] RESTEASY_PARAM_ANNOTATIONS = {
+    private static final List<DotName> RESTEASY_PARAM_ANNOTATIONS = List.of(
             ResteasyDotNames.RESTEASY_QUERY_PARAM,
             ResteasyDotNames.RESTEASY_FORM_PARAM,
             ResteasyDotNames.RESTEASY_COOKIE_PARAM,
             ResteasyDotNames.RESTEASY_PATH_PARAM,
             ResteasyDotNames.RESTEASY_HEADER_PARAM,
-            ResteasyDotNames.RESTEASY_MATRIX_PARAM,
-    };
+            ResteasyDotNames.RESTEASY_MATRIX_PARAM);
 
     /**
      * JAX-RS configuration.
@@ -709,8 +706,9 @@ public class ResteasyServerCommonProcessor {
     private static void checkParameterNames(IndexView index,
             List<AdditionalJaxRsResourceMethodParamAnnotations> additionalJaxRsResourceMethodParamAnnotations) {
 
-        final List<DotName> methodParameterAnnotations = new ArrayList<>(RESTEASY_PARAM_ANNOTATIONS.length);
-        methodParameterAnnotations.addAll(Arrays.asList(RESTEASY_PARAM_ANNOTATIONS));
+        final List<DotName> methodParameterAnnotations = new ArrayList<>(
+                RESTEASY_PARAM_ANNOTATIONS.size() + additionalJaxRsResourceMethodParamAnnotations.size());
+        methodParameterAnnotations.addAll(RESTEASY_PARAM_ANNOTATIONS);
         for (AdditionalJaxRsResourceMethodParamAnnotations annotations : additionalJaxRsResourceMethodParamAnnotations) {
             methodParameterAnnotations.addAll(annotations.getAnnotationClasses());
         }
@@ -790,8 +788,9 @@ public class ResteasyServerCommonProcessor {
             }
         }
 
-        final List<DotName> annotations = new ArrayList<>(METHOD_ANNOTATIONS.length);
-        annotations.addAll(Arrays.asList(METHOD_ANNOTATIONS));
+        final List<DotName> annotations = new ArrayList<>(
+                METHOD_ANNOTATIONS.size() + additionalJaxRsResourceMethodAnnotations.size());
+        annotations.addAll(METHOD_ANNOTATIONS);
         for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
             annotations.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
         }

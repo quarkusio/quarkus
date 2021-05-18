@@ -122,11 +122,15 @@ public class VertxHttpResponse implements HttpResponse {
         for (Map.Entry<String, List<Object>> entry : vertxResponse.getOutputHeaders().entrySet()) {
             String key = entry.getKey();
             for (Object value : entry.getValue()) {
-                RuntimeDelegate.HeaderDelegate delegate = factory.getHeaderDelegate(value.getClass());
-                if (delegate != null) {
-                    response.headers().add(key, delegate.toString(value));
+                if (value == null) {
+                    response.headers().add(key, "");
                 } else {
-                    response.headers().add(key, value.toString());
+                    RuntimeDelegate.HeaderDelegate delegate = factory.getHeaderDelegate(value.getClass());
+                    if (delegate != null) {
+                        response.headers().add(key, delegate.toString(value));
+                    } else {
+                        response.headers().add(key, value.toString());
+                    }
                 }
             }
         }

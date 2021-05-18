@@ -1,10 +1,10 @@
 package io.quarkus.runtime.configuration;
 
-import static io.smallrye.config.AbstractLocationConfigSourceFactory.SMALLRYE_LOCATIONS;
 import static io.smallrye.config.DotEnvConfigSourceProvider.dotEnvSources;
-import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE;
-import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE_PARENT;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 
 import java.io.IOException;
@@ -116,11 +116,11 @@ public final class ConfigUtils {
 
     public static SmallRyeConfigBuilder emptyConfigBuilder() {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withDefaultValue(SMALLRYE_PROFILE, ProfileManager.getActiveProfile());
+        builder.withDefaultValue(SMALLRYE_CONFIG_PROFILE, ProfileManager.getActiveProfile());
 
         final Map<String, String> relocations = new HashMap<>();
-        relocations.put(SMALLRYE_LOCATIONS, "quarkus.config.locations");
-        relocations.put(SMALLRYE_PROFILE_PARENT, "quarkus.config.profile.parent");
+        relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
+        relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
         // Override the priority, because of the ProfileConfigSourceInterceptor and profile.parent.
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
@@ -137,6 +137,7 @@ public final class ConfigUtils {
         builder.addDefaultInterceptors();
         builder.addDiscoveredInterceptors();
         builder.addDiscoveredConverters();
+        builder.addDiscoveredValidator();
         return builder;
     }
 

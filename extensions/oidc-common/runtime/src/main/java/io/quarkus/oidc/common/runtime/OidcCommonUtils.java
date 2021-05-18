@@ -36,12 +36,18 @@ public class OidcCommonUtils {
 
     }
 
-    public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean isServerConfig) {
+    public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean clientIdOptional,
+            boolean isServerConfig) {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
-        if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
+        if (!oidcConfig.getAuthServerUrl().isPresent()) {
             throw new ConfigurationException(
-                    String.format("Both '%1$sauth-server-url' and '%1$sclient-id' properties must be configured",
+                    String.format("'%sauth-server-url' property must be configured",
                             configPrefix));
+        }
+
+        if (!clientIdOptional && !oidcConfig.getClientId().isPresent()) {
+            throw new ConfigurationException(
+                    String.format("'%sclient-id' property must be configured", configPrefix));
         }
 
         try {

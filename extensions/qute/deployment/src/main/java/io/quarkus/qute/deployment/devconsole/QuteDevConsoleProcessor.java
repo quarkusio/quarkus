@@ -10,7 +10,7 @@ import io.quarkus.qute.deployment.CheckedTemplateBuildItem;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
 import io.quarkus.qute.deployment.TemplateVariantsBuildItem;
 
-public class DevConsoleProcessor {
+public class QuteDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleTemplateInfoBuildItem collectTemplateInfo(

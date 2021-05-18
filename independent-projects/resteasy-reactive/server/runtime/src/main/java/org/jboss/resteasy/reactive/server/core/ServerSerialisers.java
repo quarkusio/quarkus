@@ -396,12 +396,12 @@ public class ServerSerialisers extends Serialisers {
     }
 
     @Override
-    public BuiltinWriter[] getBultinWriters() {
+    public BuiltinWriter[] getBuiltinWriters() {
         return BUILTIN_WRITERS;
     }
 
     @Override
-    public BuiltinReader[] getBultinReaders() {
+    public BuiltinReader[] getBuiltinReaders() {
         return BUILTIN_READERS;
     }
 
@@ -492,7 +492,9 @@ public class ServerSerialisers extends Serialisers {
         for (Map.Entry<String, List<Object>> entry : headers.entrySet()) {
             if (entry.getValue().size() == 1) {
                 Object o = entry.getValue().get(0);
-                if (o instanceof CharSequence) {
+                if (o == null) {
+                    vertxResponse.setResponseHeader(entry.getKey(), "");
+                } else if (o instanceof CharSequence) {
                     vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) o);
                 } else {
                     vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) HeaderUtil.headerToString(o));

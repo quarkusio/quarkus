@@ -10,7 +10,7 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole.HibernateSearchDevConsoleRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole.HibernateSearchSupplier;
 
-public class DevConsoleProcessor {
+public class HibernateSearchElasticsearchDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {

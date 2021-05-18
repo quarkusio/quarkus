@@ -3,7 +3,6 @@ package io.quarkus.smallrye.graphql.runtime;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
@@ -14,17 +13,10 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
-import javax.json.JsonWriter;
-import javax.json.JsonWriterFactory;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
-import io.smallrye.graphql.execution.ExecutionService;
-import io.vertx.core.Handler;
+import io.smallrye.graphql.execution.ExecutionResponse;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -34,51 +26,23 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Handler that does the execution of GraphQL Requests
  */
-public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> {
-    private static boolean allowGet = false;
+public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHandler {
+    private boolean allowGet = false;
     private static final String QUERY = "query";
     private static final String VARIABLES = "variables";
     private static final String OK = "OK";
-    private volatile ExecutionService executionService;
-    private final CurrentIdentityAssociation currentIdentityAssociation;
-    private final CurrentVertxRequest currentVertxRequest;
+
     private static final JsonBuilderFactory jsonObjectFactory = Json.createBuilderFactory(null);
     private static final JsonReaderFactory jsonReaderFactory = Json.createReaderFactory(null);
-    private static final JsonWriterFactory jsonWriterFactory = Json.createWriterFactory(null);
 
     public SmallRyeGraphQLExecutionHandler(boolean allowGet, CurrentIdentityAssociation currentIdentityAssociation,
             CurrentVertxRequest currentVertxRequest) {
-        SmallRyeGraphQLExecutionHandler.allowGet = allowGet;
-        this.currentIdentityAssociation = currentIdentityAssociation;
-        this.currentVertxRequest = currentVertxRequest;
+        super(currentIdentityAssociation, currentVertxRequest);
+        this.allowGet = allowGet;
     }
 
     @Override
-    public void handle(final RoutingContext ctx) {
-        ManagedContext requestContext = Arc.container().requestContext();
-        if (requestContext.isActive()) {
-            doHandle(ctx);
-        } else {
-            try {
-                requestContext.activate();
-                doHandle(ctx);
-            } finally {
-                requestContext.terminate();
-            }
-        }
-    }
-
-    private void doHandle(final RoutingContext ctx) {
-        if (currentIdentityAssociation != null) {
-            QuarkusHttpUser existing = (QuarkusHttpUser) ctx.user();
-            if (existing != null) {
-                SecurityIdentity identity = existing.getSecurityIdentity();
-                currentIdentityAssociation.setIdentity(identity);
-            } else {
-                currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(ctx, null));
-            }
-        }
-        currentVertxRequest.setCurrent(ctx);
+    protected void doHandle(final RoutingContext ctx) {
 
         HttpServerRequest request = ctx.request();
         HttpServerResponse response = ctx.response();
@@ -96,7 +60,7 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
                 handleGet(response, ctx);
                 break;
             default:
-                response.setStatusCode(405).end();
+                ctx.next();
                 break;
         }
     }
@@ -173,16 +137,9 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
     }
 
     private String doRequest(JsonObject jsonInput) {
-        JsonObject outputJson = getExecutionService().execute(jsonInput);
-        if (outputJson != null) {
-            try (StringWriter output = new StringWriter();
-                    final JsonWriter jsonWriter = jsonWriterFactory.createWriter(output)) {
-                jsonWriter.writeObject(outputJson);
-                output.flush();
-                return output.toString();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+        ExecutionResponse executionResponse = getExecutionService().execute(jsonInput);
+        if (executionResponse != null) {
+            return executionResponse.getExecutionResultAsString();
         }
         return null;
     }
@@ -195,12 +152,5 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
         try (JsonReader jsonReader = jsonReaderFactory.createReader(new StringReader(jsonString))) {
             return jsonReader.readObject();
         }
-    }
-
-    private ExecutionService getExecutionService() {
-        if (this.executionService == null) {
-            this.executionService = Arc.container().instance(ExecutionService.class).get();
-        }
-        return this.executionService;
     }
 }

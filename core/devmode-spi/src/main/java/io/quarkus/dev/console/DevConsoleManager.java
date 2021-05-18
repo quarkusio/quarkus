@@ -79,4 +79,12 @@ public class DevConsoleManager {
     public static <T> T getGlobal(String name) {
         return (T) globals.get(name);
     }
+
+    public static void close() {
+        handler = null;
+        templateInfo = null;
+        hotReplacementContext = null;
+        quarkusBootstrap = null;
+        globals.clear();
+    }
 }

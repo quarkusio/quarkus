@@ -1086,6 +1086,7 @@ public class QuarkusTestExtension
                 } catch (Throwable e) {
                     log.error("Failed to shutdown Quarkus", e);
                 } finally {
+                    runningQuarkusApplication = null;
                     try {
                         if (QuarkusTestExtension.this.originalCl != null) {
                             setCCL(QuarkusTestExtension.this.originalCl);

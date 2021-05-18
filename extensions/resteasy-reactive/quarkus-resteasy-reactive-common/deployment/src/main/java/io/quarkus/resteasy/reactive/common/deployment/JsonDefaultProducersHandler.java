@@ -5,9 +5,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,7 +19,7 @@ public class JsonDefaultProducersHandler implements DefaultProducesHandler {
 
     private static final List<MediaType> PRODUCES_APPLICATION_JSON = Collections.singletonList(MediaType.APPLICATION_JSON_TYPE);
 
-    private static final Set<DotName> SUPPORTED_JAVA_TYPES = new HashSet<>(Arrays.asList(COLLECTION, LIST, SET, MAP));
+    private static final Set<DotName> SUPPORTED_JAVA_TYPES = Set.of(COLLECTION, LIST, SET, MAP);
 
     @Override
     public List<MediaType> handle(Context context) {

@@ -147,13 +147,13 @@ public class OidcRecorder {
         }
 
         try {
-            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, true);
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, isServiceApp(oidcConfig), true);
         } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
         }
 
         if (!oidcConfig.discoveryEnabled) {
-            if (oidcConfig.applicationType != ApplicationType.SERVICE) {
+            if (!isServiceApp(oidcConfig)) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
                     throw new OIDCException("'web-app' applications must have 'authorization-path' and 'token-path' properties "
                             + "set when the discovery is disabled.");
@@ -166,7 +166,7 @@ public class OidcRecorder {
             }
         }
 
-        if (ApplicationType.SERVICE.equals(oidcConfig.applicationType)) {
+        if (isServiceApp(oidcConfig)) {
             if (oidcConfig.token.refreshExpired) {
                 throw new ConfigurationException(
                         "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
@@ -201,7 +201,7 @@ public class OidcRecorder {
     }
 
     private static TenantConfigContext createTenantContextFromPublicKey(OidcTenantConfig oidcConfig) {
-        if (oidcConfig.applicationType != ApplicationType.SERVICE) {
+        if (!isServiceApp(oidcConfig)) {
             throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
         }
         LOG.debug("'public-key' property for the local token verification is set,"
@@ -315,6 +315,10 @@ public class OidcRecorder {
                 return null;
             }
         });
+    }
+
+    private static boolean isServiceApp(OidcTenantConfig oidcConfig) {
+        return ApplicationType.SERVICE.equals(oidcConfig.applicationType);
     }
 
 }

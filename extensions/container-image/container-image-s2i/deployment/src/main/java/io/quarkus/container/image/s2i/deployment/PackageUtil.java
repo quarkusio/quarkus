@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,7 +33,7 @@ public class PackageUtil {
     protected static final String DOCKER_PREFIX = "docker-";
     protected static final String BZIP2_SUFFIX = ".tar.bzip2";
 
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
     public static File packageFile(String path) {
         return packageFile(path, null);

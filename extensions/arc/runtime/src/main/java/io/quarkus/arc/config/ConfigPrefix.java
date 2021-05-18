@@ -11,7 +11,11 @@ import javax.inject.Qualifier;
 
 /**
  * Uses in order to set the prefix for a configuration object at the injection point
+ *
+ * @deprecated Please, use {@link io.smallrye.config.ConfigMapping} instead. This will be removed in a future Quarkus
+ *             version.
  */
+@Deprecated
 @Qualifier
 @Target({ FIELD, PARAMETER })
 @Retention(RUNTIME)

@@ -395,3 +395,7 @@ quarkus.container-image.registry=image-registry.openshift-image-registry.svc:500
 ----
 
 The application can then be deployed to OpenShift Serverless by enabling the standard `quarkus.kubernetes.deploy=true` property.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-openshift-openshift-config.adoc[opts=optional, leveloffset=+1]

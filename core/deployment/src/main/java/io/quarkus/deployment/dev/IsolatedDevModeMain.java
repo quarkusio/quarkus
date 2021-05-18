@@ -309,6 +309,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 }
             } finally {
                 try {
+                    DevConsoleManager.close();
                     curatedApplication.close();
                 } finally {
                     if (shutdownThread != null) {

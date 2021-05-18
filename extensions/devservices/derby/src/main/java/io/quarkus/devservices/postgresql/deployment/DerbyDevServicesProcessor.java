@@ -14,6 +14,7 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.runtime.LaunchMode;
 
 public class DerbyDevServicesProcessor {
 
@@ -26,9 +27,10 @@ public class DerbyDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode) {
                 try {
-                    int port = fixedExposedPort.isPresent() ? fixedExposedPort.getAsInt() : 1527;
+                    int port = fixedExposedPort.isPresent() ? fixedExposedPort.getAsInt()
+                            : 1527 + (launchMode == LaunchMode.TEST ? 0 : 1);
                     NetworkServerControl server = new NetworkServerControl(InetAddress.getByName("localhost"), port);
                     server.start(new PrintWriter(System.out));
                     for (int i = 1; i <= NUMBER_OF_PINGS; i++) {
@@ -76,6 +78,11 @@ public class DerbyDevServicesProcessor {
                 } catch (Exception throwable) {
                     throw new RuntimeException(throwable);
                 }
+            }
+
+            @Override
+            public boolean isDockerRequired() {
+                return false;
             }
         });
     }

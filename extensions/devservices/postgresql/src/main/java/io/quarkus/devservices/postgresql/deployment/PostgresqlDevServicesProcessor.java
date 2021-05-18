@@ -13,6 +13,7 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.runtime.LaunchMode;
 
 public class PostgresqlDevServicesProcessor {
 
@@ -24,7 +25,7 @@ public class PostgresqlDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode) {
                 PostgreSQLContainer container = new PostgreSQLContainer(
                         DockerImageName.parse(imageName.orElse(PostgreSQLContainer.IMAGE + ":" + TAG))
                                 .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE))) {

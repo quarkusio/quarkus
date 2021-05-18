@@ -8,6 +8,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
+import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
@@ -92,6 +93,25 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
         public Builder routeFunction(Function<Router, Route> routeFunction) {
             throw new RuntimeException(
                     "This method is not supported using this builder. Use #routeFunction(String, Consumer<Route>)");
+        }
+
+        public Builder orderedRoute(String route, Integer order) {
+            route = super.absolutePath = buildItem.resolvePath(route);
+
+            if (route.startsWith(buildItem.getRootPath())) {
+                // relative to http root (leading slash for vert.x route)
+                this.path = "/" + UriNormalizationUtil.relativize(buildItem.getRootPath(), route);
+                this.routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
+            } else if (route.startsWith("/")) {
+                // absolute path
+                this.path = route;
+                this.routeType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
+            }
+
+            BasicRoute basicRoute = new BasicRoute(this.path, -1);
+
+            super.routeFunction = basicRoute;
+            return this;
         }
 
         public Builder routeFunction(String route, Consumer<Route> routeFunction) {

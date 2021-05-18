@@ -48,6 +48,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.ConfigClassBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
@@ -182,6 +183,7 @@ class HibernateValidatorProcessor {
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             BuildProducer<BeanValidationAnnotationsBuildItem> beanValidationAnnotations,
             ShutdownContextBuildItem shutdownContext,
+            List<ConfigClassBuildItem> configClasses,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             Capabilities capabilities,
             LocalesBuildTimeConfig localesBuildTimeConfig,
@@ -271,6 +273,12 @@ class HibernateValidatorProcessor {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass().name());
                     // no need for reflection in the case of a class level constraint
                 }
+            }
+        }
+
+        for (ConfigClassBuildItem configClass : configClasses) {
+            for (String generatedClass : configClass.getGeneratedClasses()) {
+                classNamesToBeValidated.add(DotName.createSimple(generatedClass));
             }
         }
 

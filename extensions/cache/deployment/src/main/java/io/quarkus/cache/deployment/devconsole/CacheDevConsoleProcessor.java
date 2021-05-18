@@ -10,7 +10,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 
-public class DevConsoleProcessor {
+public class CacheDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {

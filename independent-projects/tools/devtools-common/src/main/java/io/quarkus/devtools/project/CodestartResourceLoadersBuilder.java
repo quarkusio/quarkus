@@ -96,19 +96,11 @@ public final class CodestartResourceLoadersBuilder {
     }
 
     private static List<ResourceLoader> getCodestartResourceLoaders(String baseCodestartsArtifactCoords,
-            Collection<String> extraCodestartsArtifactCoords, ExtensionCatalog catalog,
-            MavenArtifactResolver artifactResolver) {
-        final List<String> coords = new ArrayList<>(extraCodestartsArtifactCoords);
-        if (baseCodestartsArtifactCoords != null) {
-            coords.add(baseCodestartsArtifactCoords);
-        }
-        return getCodestartResourceLoaders(coords, catalog, artifactResolver);
-    }
-
-    private static List<ResourceLoader> getCodestartResourceLoaders(Collection<String> extraCodestartsArtifactCoords,
+            Collection<String> extraCodestartsArtifactCoords,
             ExtensionCatalog catalog,
             MavenArtifactResolver mvn) {
         final Map<String, Artifact> codestartsArtifacts = new LinkedHashMap<>();
+
         if (catalog != null) {
             // Load codestarts from each extensions codestart artifacts
             for (Extension e : catalog.getExtensions()) {
@@ -118,7 +110,14 @@ public final class CodestartResourceLoadersBuilder {
                 }
                 codestartsArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
             }
+        }
 
+        // Load base codestart artifacts
+        if (baseCodestartsArtifactCoords != null) {
+            codestartsArtifacts.put(baseCodestartsArtifactCoords, DependencyNodeUtils.toArtifact(baseCodestartsArtifactCoords));
+        }
+
+        if (catalog != null) {
             // Load codestarts from catalog codestart artifacts
             final List<String> catalogCodestartArtifacts = getCodestartArtifacts(catalog);
             for (String artifactCoords : catalogCodestartArtifacts) {
@@ -128,6 +127,7 @@ public final class CodestartResourceLoadersBuilder {
                 codestartsArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
             }
         }
+
         // Load codestarts from the given artifacts
         for (String codestartArtifactCoords : extraCodestartsArtifactCoords) {
             codestartsArtifacts.put(codestartArtifactCoords, DependencyNodeUtils.toArtifact(codestartArtifactCoords));

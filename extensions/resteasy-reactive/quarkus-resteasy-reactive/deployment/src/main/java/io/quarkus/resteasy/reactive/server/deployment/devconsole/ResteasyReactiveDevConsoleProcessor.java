@@ -21,7 +21,7 @@ import io.quarkus.resteasy.reactive.server.runtime.EndpointScoresSupplier;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
-public class DevConsoleProcessor {
+public class ResteasyReactiveDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectScores() {

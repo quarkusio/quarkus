@@ -1,17 +1,15 @@
-package io.quarkus.deployment.dev.console;
+package io.quarkus.dev.console;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Formatter;
 import java.util.Locale;
 
-import io.quarkus.dev.console.QuarkusConsole;
-
 public class RedirectPrintStream extends PrintStream {
 
     private Formatter formatter;
 
-    RedirectPrintStream() {
+    public RedirectPrintStream() {
         super(new ByteArrayOutputStream(0)); // never used
     }
 

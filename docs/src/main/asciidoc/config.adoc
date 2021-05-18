@@ -127,6 +127,44 @@ hello quarkus!
 TIP: Use `@io.smallrye.config.ConfigMapping` annotation to group multiple configurations in a single interface. Please,
 check the https://smallrye.io/docs/smallrye-config/main/mapping/mapping.html[Config Mappings] documentation.
 
+== defaultValue behavior
+In contrast to a 'required' configuration property, if it is affected by a `defaultValue` attribute the application will
+not fail by throwing a `javax.enterprise.inject.spi.DeploymentException` and the value of `defaultValue` will be
+automatically assigned to targeted variable. The `defaultValue` value expressed as a `String` will be directly assigned
+for a same `Type` variable, unless it is not of this type, this will be converted to the targeted variable type.
+This conversion mechanism several Built-in Converters already exist for primitives and boxed primitives, examples:
+
+* Primitives: boolean, byte, short ...
+* Boxed primitives: java.lang.Boolean, java.lang.Byte, java.lang.short ...
+* Optional containers: java.lang.OptionalInt, java.lang.OptionalLong, java.lang.OptionalDouble ...
+* Quarkus: io.quarkus.runtime.configuration.Duration, io.quarkus.runtime.configuration.INetAddressConverter ...
+
+As you might expect, these converters are `org.eclipse.microprofile.config.spi.Converter` implementations. It means
+complying with the Microprofile or custom implementation providers expression rules, like:
+
+* Boolean values will be `true` in cases "true", "1", "YES", "Y" "ON". Otherwise, value will be interpreted as false
+* For float and double values the fractional digits must be separated by a dot `.`
+
+But a combination of `OptionalInt` and `defaultValue` attribute will work too like an `Optional<Integer>`, the defined
+`defaultValue` will still be affected. However, beware of this application.property extract case:
+
+[source,properties]
+----
+# missing value
+greeting.message =
+----
+
+If the property exists but has no value, this will result to a `java.util.NoSuchElementException: SRCFG02004:
+Required property greeting.message not found` on startup and the default value, will not be assigned
+
+Below a Quarkus' converter example:
+
+[source,java]
+----
+@ConfigProperty(name = "server.address", defaultValue = "192.168.1.1")
+InetAddress serverAddress;
+----
+
 == Update the test
 
 We also need to update the functional test to reflect the changes made to the endpoint.

@@ -12,4 +12,6 @@
 :brand-name: Quarkus
 :brand-name-long: {BrandName}
 :maven-version: 3.6.3
-:jdk-version: 8
+:jdk-distribution: JDK
+ifdef::downstream[:jdk-distribution: OpenJDK]
+:jdk-version: 11

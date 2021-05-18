@@ -94,7 +94,8 @@ endif::[]
 .Prerequisites
 
 * Have a {brand-name} Maven project.
-* Have OpenJDK {jdk-version} installed.
+* Have {jdk-distribution} {jdk-version} installed
+* Have the `JAVA_HOME` environment variable configured set to the directory where {jdk-distribution} is installed on your system.
 * Have Maven {maven-version} installed.
 
 ifdef::downstream[]

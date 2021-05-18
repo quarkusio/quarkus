@@ -105,6 +105,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
         message.setHtml(mail.getHtml());
         message.setHeaders(toMultimap(mail.getHeaders()));
         if (mail.getReplyTo() != null) {
+            // getReplyTo produces the comma-separated list.
             message.addHeader("Reply-To", mail.getReplyTo());
         }
 

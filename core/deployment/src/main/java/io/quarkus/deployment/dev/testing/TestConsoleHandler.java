@@ -152,19 +152,21 @@ public class TestConsoleHandler implements TestListener {
 
             @Override
             public void runComplete(TestRunResults results) {
-                String resultString = String.format(
-                        "%d/%d tests are failing (%d/%d from the last run). %d tests are skipped. Run %d took %dms.",
-                        results.getFailedCount(), results.getTotalCount(), results.getCurrentFailedCount(),
-                        results.getCurrentTotalCount(), results.getSkippedCount(),
-                        results.getId(), results.getTotalTime());
                 firstRun = false;
                 if (results.getCurrentFailing().isEmpty()) {
-                    lastStatus = "\u001B[32m" + resultString + "\u001b[0m";
+                    lastStatus = String.format(
+                            "\u001B[32mAll %d tests are passing (%d skipped), %d tests were run in %dms.\u001b[0m",
+                            results.getPassedCount(),
+                            results.getSkippedCount(),
+                            results.getCurrentTotalCount(), results.getTotalTime());
+                    log.info(
+                            ">>>>>>>>>>>>>>>>>>>> \u001B[32m TEST #" + results.getId()
+                                    + " PASSED\u001b[0m <<<<<<<<<<<<<<<<<<<");
                 } else {
                     //TODO: this should not use the logger, it should print a nicer status
                     log.error(
-                            "==================== \u001B[91m" + results.getCurrentFailedCount()
-                                    + " TESTS FAILED\u001b[0m ====================");
+                            "==================== \u001B[91m TEST REPORT #" + results.getId()
+                                    + "\u001b[0m ====================");
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
                             log.error(
@@ -173,8 +175,12 @@ public class TestConsoleHandler implements TestListener {
                         }
                     }
                     log.error(
-                            "==================== \u001B[91mEND TEST REPORT\u001b[0m ====================");
-                    lastStatus = "\u001B[91m" + resultString + "\u001b[0m";
+                            ">>>>>>>>>>>>>>>>>>>> \u001B[91m " + results.getCurrentFailedCount()
+                                    + " TESTS FAILED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
+                    lastStatus = String.format(
+                            "\u001B[91m%d tests failed (%d passing, %d skipped), %d tests were run in %dms.\u001b[0m",
+                            results.getCurrentFailedCount(), results.getPassedCount(), results.getSkippedCount(),
+                            results.getCurrentTotalCount(), results.getTotalTime());
                 }
                 //this will re-print when using the basic console
                 promptHandler.setPrompt(RUNNING_PROMPT);

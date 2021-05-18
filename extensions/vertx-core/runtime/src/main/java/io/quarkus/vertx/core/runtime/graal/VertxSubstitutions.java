@@ -153,9 +153,6 @@ final class Target_io_vertx_core_net_impl_SSLHelper {
     private boolean openSsl;
 
     @Alias
-    private boolean useAlpn;
-
-    @Alias
     private List<String> applicationProtocols;
 
     @Alias
@@ -164,7 +161,8 @@ final class Target_io_vertx_core_net_impl_SSLHelper {
     }
 
     @Substitute
-    private SslContext createContext(VertxInternal vertx, X509KeyManager mgr, TrustManagerFactory trustMgrFactory) {
+    private SslContext createContext(VertxInternal vertx, boolean useAlpn, X509KeyManager mgr,
+            TrustManagerFactory trustMgrFactory) {
         try {
             SslContextBuilder builder;
             if (client) {

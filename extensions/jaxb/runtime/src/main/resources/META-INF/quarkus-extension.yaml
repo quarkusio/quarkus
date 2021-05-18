@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "JAXB"
+metadata:
+  keywords:
+  - "resteasy-jaxb"
+  - "resteasy"
+  - "jaxb"
+  - "xml"
+  categories:
+  - "serialization"
+  status: "stable"

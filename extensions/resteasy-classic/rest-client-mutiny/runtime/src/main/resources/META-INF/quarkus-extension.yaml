@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Mutiny support for REST Client"
+metadata:
+  keywords:
+  - "rest-client-mutiny"
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "mutiny"
+  categories:
+  - "web"
+  - "reactive"
+  status: "preview"

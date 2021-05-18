@@ -1,0 +1,11 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "JSON-P"
+metadata:
+  keywords:
+  - "jsonp"
+  - "json-p"
+  - "json"
+  categories:
+  - "serialization"
+  status: "stable"

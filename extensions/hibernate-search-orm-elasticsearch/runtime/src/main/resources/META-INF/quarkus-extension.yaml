@@ -1,0 +1,18 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate Search + Elasticsearch"
+metadata:
+  keywords:
+  - "hibernate-search-orm-elasticsearch"
+  - "hibernate-search-elasticsearch"
+  - "search"
+  - "full-text"
+  - "hibernate"
+  - "orm"
+  - "hibernate-orm"
+  - "hibernate-search-orm"
+  - "elasticsearch"
+  guide: "https://quarkus.io/guides/hibernate-search-orm-elasticsearch"
+  categories:
+  - "data"
+  status: "stable"

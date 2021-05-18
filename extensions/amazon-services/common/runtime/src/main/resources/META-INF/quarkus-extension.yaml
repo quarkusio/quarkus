@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Amazon Services Common"
+metadata:
+  keywords:
+    - "amazon services"
+    - "aws"
+    - "amazon"
+  categories:
+    - "data"
+  status: "preview"
+  unlisted: true

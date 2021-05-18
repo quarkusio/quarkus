@@ -1,9 +1,0 @@
----
-name: "Elytron Security Common"
-metadata:
-  keywords:
-  - "security"
-  categories:
-  - "security"
-  stable: "true"
-  unlisted: "true"

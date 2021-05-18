@@ -1,9 +1,0 @@
----
-name: "JDBC Driver - PostgreSQL"
-metadata:
-  keywords:
-  - "jdbc-postgresql"
-  - "jdbc"
-  - "postgresql"
-  categories:
-  - "data"

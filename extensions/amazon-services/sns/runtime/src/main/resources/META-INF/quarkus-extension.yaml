@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Amazon SNS"
+metadata:
+  keywords:
+    - "sns"
+    - "aws"
+    - "amazon"
+  guide: "https://quarkus.io/guides/amazon-sns"
+  categories:
+    - "data"
+  status: "preview"

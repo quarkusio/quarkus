@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "OpenID Connect Client Filter"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  - "oidc"
+  - "oidc-client"
+  - "oidc-client-filter"
+  guide: "https://quarkus.io/guides/security-openid-connect-client"
+  categories:
+  - "security"
+  status: "preview"

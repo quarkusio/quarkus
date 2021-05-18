@@ -1,9 +1,0 @@
----
-name: "Caffeine"
-metadata:
-  keywords:
-  - "cache"
-  categories:
-  - "data"
-  status: "stable"
-  unlisted: "true"

@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye Reactive Messaging - AMQP Connector"
+metadata:
+  short-name: "amqp"
+  keywords:
+  - "amqp"
+  - "reactive-amqp"
+  guide: "https://quarkus.io/guides/amqp"
+  categories:
+  - "messaging"
+  status: "preview"

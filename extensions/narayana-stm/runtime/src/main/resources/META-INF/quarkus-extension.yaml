@@ -1,0 +1,17 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Narayana STM - Software Transactional Memory"
+metadata:
+  keywords:
+  - "narayana-stm"
+  - "narayana"
+  - "stm"
+  - "transactions"
+  - "transaction"
+  - "software-transactional-memory"
+  - "tx"
+  - "txs"
+  guide: "https://quarkus.io/guides/software-transactional-memory"
+  categories:
+  - "data"
+  status: "preview"

@@ -136,7 +136,8 @@ public class JunitTestRunner {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try (QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader()) {
             Thread.currentThread().setContextClassLoader(tcl);
-            ((Consumer) tcl.loadClass(CurrentTestApplication.class.getName()).newInstance()).accept(testApplication);
+            Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName()).newInstance();
+            currentTestAppConsumer.accept(testApplication);
 
             try (DiscoveryResult quarkusTestClasses = discoverTestClasses(devModeContext)) {
 
@@ -333,10 +334,13 @@ public class JunitTestRunner {
                     listener.runComplete(new TestRunResults(runId, classScanResult, classScanResult == null, start,
                             System.currentTimeMillis(), toResultsMap(historicFailures, resultsByClass)));
                 }
+            } finally {
+                currentTestAppConsumer.accept(null);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
+            TracingHandler.setTracingHandler(null);
             QuarkusConsole.INSTANCE.setOutputFilter(null);
             Thread.currentThread().setContextClassLoader(old);
         }

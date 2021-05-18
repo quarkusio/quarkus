@@ -316,9 +316,12 @@
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
                             <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
                         </systemPropertyVariables>
-                        <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
+                        <!-- Limit the amount of memory surefire can use.
+                             Setting to 2g for now instead of the previous 1500m,
+                             because for some reason we have metaspace leaks when starting Quarkus
+                             over and over again in tests. -->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional}</argLine>
+                        <argLine>${jacoco.agent.argLine} -Xmx2g -XX:MaxMetaspaceSize=2g -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional}</argLine>
                         <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
                         <trimStackTrace>false</trimStackTrace>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>

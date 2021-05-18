@@ -396,12 +396,12 @@ public class ServerSerialisers extends Serialisers {
     }
 
     @Override
-    public BuiltinWriter[] getBultinWriters() {
+    public BuiltinWriter[] getBuiltinWriters() {
         return BUILTIN_WRITERS;
     }
 
     @Override
-    public BuiltinReader[] getBultinReaders() {
+    public BuiltinReader[] getBuiltinReaders() {
         return BUILTIN_READERS;
     }
 

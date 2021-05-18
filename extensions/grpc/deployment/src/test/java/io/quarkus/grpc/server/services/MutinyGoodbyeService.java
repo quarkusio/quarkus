@@ -1,13 +1,13 @@
 package io.quarkus.grpc.server.services;
 
+import io.grpc.examples.goodbyeworld.Farewell;
 import io.grpc.examples.goodbyeworld.GoodbyeReply;
 import io.grpc.examples.goodbyeworld.GoodbyeRequest;
-import io.grpc.examples.goodbyeworld.MutinyFarewellGrpc;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
 @GrpcService
-public class MutinyGoodbyeService extends MutinyFarewellGrpc.FarewellImplBase {
+public class MutinyGoodbyeService implements Farewell {
 
     @Override
     public Uni<GoodbyeReply> sayGoodbye(GoodbyeRequest request) {

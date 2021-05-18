@@ -24,7 +24,14 @@ public class CheckedTemplateRequireTypeSafeTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Templates.class, Fool.class)
-                    .addAsResource(new StringAsset("Hello {name}! {any} {inject:fool.getJoke(identifier)}"),
+                    .addAsResource(new StringAsset(
+                            "Hello {name}!"
+                                    + "{any} "
+                                    + "{inject:fool.getJoke(identifier)} "
+                                    + "{#each name.chars.iterator}"
+                                    + "{! {index} is not considered an error because the binding is registered by the loop section !}"
+                                    + "{index}. {it}"
+                                    + "{/each}"),
                             "templates/CheckedTemplateRequireTypeSafeTest/hola.txt"))
             .assertException(t -> {
                 Throwable e = t;

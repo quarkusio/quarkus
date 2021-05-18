@@ -172,6 +172,15 @@ public class LoopSectionHelper implements SectionHelper {
                     alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
                     Scope newScope = new Scope(previousScope);
                     newScope.putBinding(alias, alias + HINT_PREFIX + iterableExpr.getGeneratedId() + ">");
+                    // Put bindings for iteration metadata
+                    newScope.putBinding("count", Expressions.typeInfoFrom(Integer.class.getName()));
+                    newScope.putBinding("index", Expressions.typeInfoFrom(Integer.class.getName()));
+                    newScope.putBinding("indexParity", Expressions.typeInfoFrom(String.class.getName()));
+                    newScope.putBinding("hasNext", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    newScope.putBinding("odd", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    newScope.putBinding("isOdd", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    newScope.putBinding("even", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    newScope.putBinding("isEven", Expressions.typeInfoFrom(Boolean.class.getName()));
                     return newScope;
                 } else {
                     // Make sure we do not try to validate against the parent context

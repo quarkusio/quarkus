@@ -13,6 +13,9 @@ public class CustomTenantResolver implements TenantResolver {
         if (context.request().path().endsWith("tenant")) {
             return "tenant";
         }
+        if (context.request().path().endsWith("webapp")) {
+            return "webapp-tenant";
+        }
 
         return null;
     }

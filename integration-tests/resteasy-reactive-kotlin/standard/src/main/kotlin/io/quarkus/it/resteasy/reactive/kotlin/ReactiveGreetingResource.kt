@@ -4,18 +4,23 @@ import kotlinx.coroutines.delay
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URL
+import javax.inject.Inject
 import javax.ws.rs.GET
 import javax.ws.rs.Path
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
 @Path("/hello-resteasy-reactive")
-class ReactiveGreetingResource {
+class ReactiveGreetingResource @Inject constructor (val req : RequestScopedKotlinClass){
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     suspend fun hello(): String {
+        req.message = "msg"
         delay(50)
         doSomeWork()
+        if (req.message != "msg") {
+            throw Throwable("Request scoped data was lost");
+        }
         return "Hello RestEASY Reactive"
     }
 

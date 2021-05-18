@@ -221,6 +221,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         handleRequestScopeActivation();
     }
 
+    /**
+     * Captures the CDI request scope for use outside of handler chains.
+     */
+    public ThreadSetupAction.ThreadState captureCDIRequestScope() {
+        requireCDIRequestScope();
+        return currentRequestScope;
+    }
+
     protected abstract void handleRequestScopeActivation();
 
     /**

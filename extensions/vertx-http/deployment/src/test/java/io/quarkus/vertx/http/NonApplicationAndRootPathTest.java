@@ -45,7 +45,6 @@ public class NonApplicationAndRootPathTest {
                                 .route("non-app-relative")
                                 .handler(new MyHandler())
                                 .blockingRoute()
-                                .requiresLegacyRedirect()
                                 .build());
                     }
                 }).produces(RouteBuildItem.class)
@@ -62,12 +61,6 @@ public class NonApplicationAndRootPathTest {
                     .setStatusCode(200)
                     .end(routingContext.request().path());
         }
-    }
-
-    @Test
-    public void testNonApplicationEndpointOnRootPathWithRedirect() {
-        // Note RestAssured knows the path prefix is /api
-        RestAssured.given().get("/non-app-relative").then().statusCode(200).body(Matchers.equalTo("/api/q/non-app-relative"));
     }
 
     @Test

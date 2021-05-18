@@ -56,7 +56,6 @@ public class NonApplicationEscapeTest {
                                 .route("/non-app-absolute")
                                 .handler(new MyHandler())
                                 .blockingRoute()
-                                .requiresLegacyRedirect()
                                 .build());
                     }
                 }).produces(RouteBuildItem.class)

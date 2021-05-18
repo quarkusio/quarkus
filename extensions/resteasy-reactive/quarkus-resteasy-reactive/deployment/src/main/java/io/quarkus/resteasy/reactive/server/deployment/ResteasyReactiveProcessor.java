@@ -123,7 +123,6 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -558,8 +557,8 @@ public class ResteasyReactiveProcessor {
                 Handler<RoutingContext> handler = recorder.handler(deployment);
 
                 // Exact match for resources matched to the root path
-                routes.produce(new RouteBuildItem(
-                        new BasicRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+                routes.produce(RouteBuildItem.builder()
+                        .orderedRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1).handler(handler).build());
                 String matchPath = deploymentPath;
                 if (matchPath.endsWith("/")) {
                     matchPath += "*";
@@ -568,7 +567,8 @@ public class ResteasyReactiveProcessor {
                 }
                 // Match paths that begin with the deployment path
                 routes.produce(
-                        new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+                        RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
+                                .handler(handler).build());
             }
         }
     }

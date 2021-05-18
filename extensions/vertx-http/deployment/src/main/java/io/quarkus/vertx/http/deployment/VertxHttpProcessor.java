@@ -156,10 +156,6 @@ class VertxHttpProcessor {
                 }
 
                 recorder.addRoute(frameworkRouter, route.getRouteFunction(), route.getHandler(), route.getType());
-
-                if (httpBuildTimeConfig.redirectToNonApplicationRootPath && route.isRequiresLegacyRedirect()) {
-                    redirectRoutes.add(route);
-                }
             } else if (route.isAbsoluteRoute()) {
                 // Add Route to "/"
                 if (!mainRouterCreated) {

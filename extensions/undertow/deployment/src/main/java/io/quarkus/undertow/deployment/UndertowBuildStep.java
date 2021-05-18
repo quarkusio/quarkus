@@ -194,8 +194,10 @@ public class UndertowBuildStep {
         if (servletContextPathBuildItem.getServletContextPath().equals("/")) {
             undertowProducer.accept(new DefaultRouteBuildItem(ut));
         } else {
-            routeProducer.produce(new RouteBuildItem(servletContextPathBuildItem.getServletContextPath() + "/*", ut, false));
-            routeProducer.produce(new RouteBuildItem(servletContextPathBuildItem.getServletContextPath(), ut, false));
+            routeProducer.produce(RouteBuildItem.builder().route(servletContextPathBuildItem.getServletContextPath() + "/*")
+                    .handler(ut).build());
+            routeProducer.produce(
+                    RouteBuildItem.builder().route(servletContextPathBuildItem.getServletContextPath()).handler(ut).build());
         }
         return new ServiceStartBuildItem("undertow");
     }

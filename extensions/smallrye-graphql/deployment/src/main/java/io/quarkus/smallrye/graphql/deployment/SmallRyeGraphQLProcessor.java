@@ -547,13 +547,11 @@ public class SmallRyeGraphQLProcessor {
                     .displayOnNotFoundPage("GraphQL UI")
                     .routeConfigKey("quarkus.smallrye-graphql.ui.root-path")
                     .handler(handler)
-                    .requiresLegacyRedirect()
                     .build());
 
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(graphQLConfig.ui.rootPath + "*")
                     .handler(handler)
-                    .requiresLegacyRedirect()
                     .build());
 
         }

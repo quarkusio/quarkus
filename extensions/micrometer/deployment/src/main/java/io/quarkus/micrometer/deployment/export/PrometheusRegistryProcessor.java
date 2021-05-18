@@ -64,7 +64,6 @@ public class PrometheusRegistryProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .routeFunction(pConfig.path, recorder.route())
                 .handler(recorder.getHandler())
-                .requiresLegacyRedirect()
                 .displayOnNotFoundPage("Metrics")
                 .build());
 
@@ -72,7 +71,6 @@ public class PrometheusRegistryProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.route())
                 .handler(recorder.getHandler())
-                .requiresLegacyRedirect()
                 .build());
     }
 }

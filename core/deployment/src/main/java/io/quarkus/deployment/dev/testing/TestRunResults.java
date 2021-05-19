@@ -35,13 +35,13 @@ public class TestRunResults {
     private final Map<String, TestClassResult> historicPassing = new HashMap<>();
     private final List<TestClassResult> failing = new ArrayList<>();
     private final List<TestClassResult> passing = new ArrayList<>();
-    private final List<TestClassResult> skipped = new ArrayList<>();
+    private final List<TestClassResult> aborted = new ArrayList<>();
     private final long passedCount;
     private final long failedCount;
-    private final long skippedCount;
+    private final long abortedCount;
     private final long currentPassedCount;
     private final long currentFailedCount;
-    private final long currentSkippedCount;
+    private final long currentAbortedCount;
 
     public TestRunResults(long id, ClassScanResult trigger, boolean full, long started, long completed,
             Map<String, TestClassResult> results) {
@@ -53,17 +53,17 @@ public class TestRunResults {
         this.results = new HashMap<>(results);
         long passedCount = 0;
         long failedCount = 0;
-        long skippedCount = 0;
+        long abortedCount = 0;
         long currentPassedCount = 0;
         long currentFailedCount = 0;
-        long currentSkippedCount = 0;
+        long currentAbortedCount = 0;
         for (Map.Entry<String, TestClassResult> i : results.entrySet()) {
             passedCount += i.getValue().getPassing().stream().filter(TestResult::isTest).count();
             failedCount += i.getValue().getFailing().stream().filter(TestResult::isTest).count();
-            skippedCount += i.getValue().getSkipped().stream().filter(TestResult::isTest).count();
+            abortedCount += i.getValue().getAborted().stream().filter(TestResult::isTest).count();
             currentPassedCount += i.getValue().getPassing().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
             currentFailedCount += i.getValue().getFailing().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
-            currentSkippedCount += i.getValue().getSkipped().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
+            currentAbortedCount += i.getValue().getAborted().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
             boolean current = i.getValue().getLatestRunId() == id;
             if (current) {
                 if (!i.getValue().getFailing().isEmpty()) {
@@ -73,7 +73,7 @@ public class TestRunResults {
                     currentPassing.put(i.getKey(), i.getValue());
                     passing.add(i.getValue());
                 } else {
-                    skipped.add(i.getValue());
+                    aborted.add(i.getValue());
                 }
             } else {
                 if (!i.getValue().getFailing().isEmpty()) {
@@ -83,19 +83,19 @@ public class TestRunResults {
                     historicPassing.put(i.getKey(), i.getValue());
                     passing.add(i.getValue());
                 } else {
-                    skipped.add(i.getValue());
+                    aborted.add(i.getValue());
                 }
             }
         }
         Collections.sort(passing);
         Collections.sort(failing);
-        Collections.sort(skipped);
+        Collections.sort(aborted);
         this.failedCount = failedCount;
         this.passedCount = passedCount;
-        this.skippedCount = skippedCount;
+        this.abortedCount = abortedCount;
         this.currentFailedCount = currentFailedCount;
         this.currentPassedCount = currentPassedCount;
-        this.currentSkippedCount = currentSkippedCount;
+        this.currentAbortedCount = currentAbortedCount;
     }
 
     public long getId() {
@@ -150,8 +150,8 @@ public class TestRunResults {
         return passing;
     }
 
-    public List<TestClassResult> getSkipped() {
-        return skipped;
+    public List<TestClassResult> getAborted() {
+        return aborted;
     }
 
     public long getPassedCount() {
@@ -162,8 +162,8 @@ public class TestRunResults {
         return failedCount;
     }
 
-    public long getSkippedCount() {
-        return skippedCount;
+    public long getAbortedCount() {
+        return abortedCount;
     }
 
     public long getCurrentPassedCount() {
@@ -174,15 +174,15 @@ public class TestRunResults {
         return currentFailedCount;
     }
 
-    public long getCurrentSkippedCount() {
-        return currentSkippedCount;
+    public long getCurrentAbortedCount() {
+        return currentAbortedCount;
     }
 
     public long getTotalCount() {
-        return getPassedCount() + getFailedCount() + getSkippedCount();
+        return getPassedCount() + getFailedCount() + getAbortedCount();
     }
 
     public long getCurrentTotalCount() {
-        return getCurrentPassedCount() + getCurrentFailedCount() + getCurrentSkippedCount();
+        return getCurrentPassedCount() + getCurrentFailedCount() + getCurrentAbortedCount();
     }
 }

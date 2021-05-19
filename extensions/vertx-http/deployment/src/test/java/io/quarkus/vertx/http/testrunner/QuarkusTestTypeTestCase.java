@@ -37,7 +37,7 @@ public class QuarkusTestTypeTestCase {
         Assertions.assertEquals(1L, ts.getLastRun());
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
     }
 }

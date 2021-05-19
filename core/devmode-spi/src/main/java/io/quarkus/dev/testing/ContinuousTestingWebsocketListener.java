@@ -34,7 +34,7 @@ public class ContinuousTestingWebsocketListener {
     public static void setInProgress(boolean inProgress) {
         State state = lastState;
         if (state != null) {
-            setLastState(new State(state.running, inProgress, state.run, state.passed, state.failed, state.skipped,
+            setLastState(new State(state.running, inProgress, state.run, state.passed, state.failed, state.aborted,
                     state.isBrokenOnly, state.isTestOutput, state.isInstrumentationBasedReload));
         }
     }
@@ -42,7 +42,7 @@ public class ContinuousTestingWebsocketListener {
     public static void setRunning(boolean running) {
         State state = lastState;
         if (state != null) {
-            setLastState(new State(running, running && state.inProgress, state.run, state.passed, state.failed, state.skipped,
+            setLastState(new State(running, running && state.inProgress, state.run, state.passed, state.failed, state.aborted,
                     state.isBrokenOnly, state.isTestOutput, state.isInstrumentationBasedReload));
         }
     }
@@ -50,7 +50,7 @@ public class ContinuousTestingWebsocketListener {
     public static void setBrokenOnly(boolean brokenOnly) {
         State state = lastState;
         if (state != null) {
-            setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.skipped,
+            setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.aborted,
                     brokenOnly, state.isTestOutput, state.isInstrumentationBasedReload));
         }
     }
@@ -58,7 +58,7 @@ public class ContinuousTestingWebsocketListener {
     public static void setTestOutput(boolean testOutput) {
         State state = lastState;
         if (state != null) {
-            setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.skipped,
+            setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.aborted,
                     state.isBrokenOnly, testOutput, state.isInstrumentationBasedReload));
         }
     }
@@ -66,7 +66,7 @@ public class ContinuousTestingWebsocketListener {
     public static void setInstrumentationBasedReload(boolean instrumentationBasedReload) {
         State state = lastState;
         if (state != null) {
-            setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.skipped,
+            setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.aborted,
                     state.isBrokenOnly, state.isTestOutput, instrumentationBasedReload));
         }
     }
@@ -77,19 +77,19 @@ public class ContinuousTestingWebsocketListener {
         public final long run;
         public final long passed;
         public final long failed;
-        public final long skipped;
+        public final long aborted;
         public final boolean isBrokenOnly;
         public final boolean isTestOutput;
         public final boolean isInstrumentationBasedReload;
 
-        public State(boolean running, boolean inProgress, long run, long passed, long failed, long skipped,
+        public State(boolean running, boolean inProgress, long run, long passed, long failed, long aborted,
                 boolean isBrokenOnly, boolean isTestOutput, boolean isInstrumentationBasedReload) {
             this.running = running;
             this.inProgress = inProgress;
             this.run = run;
             this.passed = passed;
             this.failed = failed;
-            this.skipped = skipped;
+            this.aborted = aborted;
             this.isBrokenOnly = isBrokenOnly;
             this.isTestOutput = isTestOutput;
             this.isInstrumentationBasedReload = isInstrumentationBasedReload;

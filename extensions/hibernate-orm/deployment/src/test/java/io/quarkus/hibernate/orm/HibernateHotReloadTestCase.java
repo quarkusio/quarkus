@@ -87,7 +87,7 @@ public class HibernateHotReloadTestCase {
         Assertions.assertEquals(1L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         TEST.modifyTestResourceFile("import.sql", new Function<String, String>() {
@@ -100,7 +100,7 @@ public class HibernateHotReloadTestCase {
         Assertions.assertEquals(2L, ts.getLastRun());
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         TEST.modifyTestSourceFile(HibernateET.class, new Function<String, String>() {
@@ -113,7 +113,7 @@ public class HibernateHotReloadTestCase {
         Assertions.assertEquals(3L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
     }
 

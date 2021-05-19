@@ -41,7 +41,7 @@ public class IncludePatternTestCase {
         Assertions.assertEquals(1L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyResourceFile("application.properties", new Function<String, String>() {
@@ -54,7 +54,7 @@ public class IncludePatternTestCase {
         Assertions.assertEquals(2L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyResourceFile("application.properties", new Function<String, String>() {
@@ -67,7 +67,7 @@ public class IncludePatternTestCase {
         Assertions.assertEquals(3L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
     }
 }

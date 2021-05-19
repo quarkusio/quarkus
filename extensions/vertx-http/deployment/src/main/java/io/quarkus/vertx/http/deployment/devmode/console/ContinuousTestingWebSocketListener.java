@@ -50,9 +50,9 @@ public class ContinuousTestingWebSocketListener implements TestListener {
                         new ContinuousTestingWebsocketListener.State(true, false,
                                 testRunResults.getPassedCount() +
                                         testRunResults.getFailedCount() +
-                                        testRunResults.getSkippedCount(),
+                                        testRunResults.getAbortedCount(),
                                 testRunResults.getPassedCount(),
-                                testRunResults.getFailedCount(), testRunResults.getSkippedCount(),
+                                testRunResults.getFailedCount(), testRunResults.getAbortedCount(),
                                 ContinuousTestingWebsocketListener.getLastState().isBrokenOnly,
                                 ContinuousTestingWebsocketListener.getLastState().isTestOutput,
                                 ContinuousTestingWebsocketListener.getLastState().isInstrumentationBasedReload));

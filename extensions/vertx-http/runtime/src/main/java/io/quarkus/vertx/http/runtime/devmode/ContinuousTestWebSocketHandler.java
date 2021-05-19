@@ -30,7 +30,7 @@ public class ContinuousTestWebSocketHandler implements Handler<RoutingContext> {
                 response.put("run", state.run);
                 response.put("passed", state.passed);
                 response.put("failed", state.failed);
-                response.put("skipped", state.skipped);
+                response.put("aborted", state.aborted);
                 response.put("isBrokenOnly", state.isBrokenOnly);
                 response.put("isTestOutput", state.isTestOutput);
                 response.put("isInstrumentationBasedReload", state.isInstrumentationBasedReload);

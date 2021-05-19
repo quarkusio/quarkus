@@ -12,7 +12,7 @@ public class TestStatus {
 
     private long testsFailed = -1;
 
-    private long testsSkipped = -1;
+    private long testsAborted = -1;
 
     public TestStatus() {
     }
@@ -23,7 +23,7 @@ public class TestStatus {
         this.testsRun = testsRun;
         this.testsPassed = testsPassed;
         this.testsFailed = testsFailed;
-        this.testsSkipped = testsSkipped;
+        this.testsAborted = testsSkipped;
     }
 
     public long getLastRun() {
@@ -71,12 +71,12 @@ public class TestStatus {
         return this;
     }
 
-    public long getTestsSkipped() {
-        return testsSkipped;
+    public long getTestsAborted() {
+        return testsAborted;
     }
 
-    public TestStatus setTestsSkipped(long testsSkipped) {
-        this.testsSkipped = testsSkipped;
+    public TestStatus setTestsAborted(long testsAborted) {
+        this.testsAborted = testsAborted;
         return this;
     }
 
@@ -88,7 +88,7 @@ public class TestStatus {
                 ", testsRun=" + testsRun +
                 ", testsPassed=" + testsPassed +
                 ", testsFailed=" + testsFailed +
-                ", testsSkipped=" + testsSkipped +
+                ", testsAborted=" + testsAborted +
                 '}';
     }
 }

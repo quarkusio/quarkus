@@ -1,5 +1,13 @@
 package io.quarkus.deployment.dev.testing;
 
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.DEFAULT_COLOR;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.GREEN;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RED;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.YELLOW;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusFooter;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusHeader;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.toggleStatus;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,8 +26,8 @@ public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final String PAUSED_PROMPT = "\u001b[33mTests paused, press [r] to resume\u001b[0m";
-    public static final String FIRST_RUN_PROMPT = "\u001b[33mRunning Tests for the first time\u001b[0m";
+    public static final String PAUSED_PROMPT = YELLOW + "Tests paused, press [r] to resume" + DEFAULT_COLOR;
+    public static final String FIRST_RUN_PROMPT = YELLOW + "Running Tests for the first time" + DEFAULT_COLOR;
     public static final String RUNNING_PROMPT = "Press [r] to re-run, [v] to view full results, [p] to pause, [h] for more options>";
     public static final String ABORTED_PROMPT = "Test run aborted.";
 
@@ -47,7 +55,7 @@ public class TestConsoleHandler implements TestListener {
             if (disabled) {
                 for (int i : keys) {
                     if (i == 'r') {
-                        promptHandler.setStatus("\u001B[33mStarting tests\u001b[0m");
+                        promptHandler.setStatus(YELLOW + "Starting tests" + DEFAULT_COLOR);
                         TestSupport.instance().get().start();
                     }
                 }
@@ -97,22 +105,21 @@ public class TestConsoleHandler implements TestListener {
 
     public void printUsage() {
         System.out.println("\nThe following commands are available:");
-        System.out.println("[\u001b[32mr\u001b[0m] - Re-run all tests");
-        System.out.println("[\u001b[32mf\u001b[0m] - Re-run failed tests");
-        System.out.println("[\u001b[32mb\u001b[0m] - Toggle 'broken only' mode, where only failing tests are run ("
-                + (testController.isBrokenOnlyMode() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
-        System.out.println("[\u001b[32mv\u001b[0m] - Print failures from the last test run");
-        System.out.println("[\u001b[32mo\u001b[0m] - Toggle test output ("
-                + (testController.isDisplayTestOutput() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
-        System.out.println("[\u001b[32mp\u001b[0m] - Pause tests");
-        System.out.println("[\u001b[32mi\u001b[0m] - Toggle instrumentation based reload ("
-                + (testController.isInstrumentationEnabled() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m")
-                + ")");
-        System.out.println("[\u001b[32ml\u001b[0m] - Toggle live reload ("
-                + (testController.isLiveReloadEnabled() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
-        System.out.println("[\u001b[32ms\u001b[0m] - Force live reload scan");
-        System.out.println("[\u001b[32mh\u001b[0m] - Display this help");
-
+        System.out.println("[" + GREEN + "r" + DEFAULT_COLOR + "] - Re-run all tests");
+        System.out.println("[" + GREEN + "f" + DEFAULT_COLOR + "] - Re-run failed tests");
+        System.out
+                .println("[" + GREEN + "b" + DEFAULT_COLOR + "] - Toggle 'broken only' mode, where only failing tests are run "
+                        + toggleStatus(testController.isBrokenOnlyMode()));
+        System.out.println("[" + GREEN + "v" + DEFAULT_COLOR + "] - Print failures from the last test run");
+        System.out.println("[" + GREEN + "o" + DEFAULT_COLOR + "] - Toggle test output "
+                + toggleStatus(testController.isDisplayTestOutput()));
+        System.out.println("[" + GREEN + "p" + DEFAULT_COLOR + "] - Pause tests");
+        System.out.println("[" + GREEN + "i" + DEFAULT_COLOR + "] - Toggle instrumentation based reload "
+                + toggleStatus(testController.isInstrumentationEnabled()));
+        System.out.println("[" + GREEN + "l" + DEFAULT_COLOR + "] - Toggle live reload "
+                + toggleStatus(testController.isLiveReloadEnabled()));
+        System.out.println("[" + GREEN + "s" + DEFAULT_COLOR + "] - Force live reload scan");
+        System.out.println("[" + GREEN + "h" + DEFAULT_COLOR + "] - Display this help");
     }
 
     @Override
@@ -161,37 +168,58 @@ public class TestConsoleHandler implements TestListener {
             @Override
             public void runComplete(TestRunResults results) {
                 firstRun = false;
-                if (results.getCurrentFailing().isEmpty()) {
-                    lastStatus = String.format(
-                            "\u001B[32mAll %d tests are passing (%d skipped), %d tests were run in %dms.\u001b[0m",
-                            results.getPassedCount(),
-                            results.getSkippedCount(),
-                            results.getCurrentTotalCount(), results.getTotalTime());
-                    log.info(
-                            "====================\u001B[32m TEST REPORT #" + results.getId()
-                                    + "\u001b[0m ====================");
-                    log.info(
-                            ">>>>>>>>>>>>>>>>>>>>\u001B[32m " + results.getCurrentPassedCount()
-                                    + " TESTS PASSED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
-                } else {
-                    //TODO: this should not use the logger, it should print a nicer status
-                    log.error(
-                            "====================\u001B[91m TEST REPORT #" + results.getId()
-                                    + "\u001b[0m ====================");
+                //TODO: this should not use the logger, it should print a nicer status
+                log.info(statusHeader("TEST REPORT #" + results.getId()));
+                if (results.getCurrentTotalCount() == 0) {
+                    // Probably not a common situation, but it already happened (https://github.com/quarkusio/quarkus/issues/17356)
+                    lastStatus = RED + "%d No test was run." + DEFAULT_COLOR;
+                    log.warn(statusFooter(RED + "NO TEST WAS RUN"));
+                } else if (results.getCurrentAbortedCount() > 0 || results.getCurrentFailedCount() > 0) {
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
-                            log.error(
-                                    "Test " + test.getDisplayName() + " failed \n",
-                                    test.getTestExecutionResult().getThrowable().get());
+                            if (test.runId == results.getId()) {
+                                log.error(
+                                        "Test " + test.getDisplayName() + " failed \n",
+                                        test.getTestExecutionResult().getThrowable().get());
+                            }
+
+                        }
+                        for (TestResult test : classEntry.getValue().getAborted()) {
+                            if (test.runId == results.getId()) {
+                                log.error("Test " + test.getDisplayName() + " aborted \n" + RED
+                                        + test.getTestExecutionResult().getThrowable().get().getMessage());
+                            }
                         }
                     }
-                    log.error(
-                            ">>>>>>>>>>>>>>>>>>>>\u001B[91m " + results.getCurrentFailedCount()
-                                    + " TESTS FAILED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
+                    for (TestClassResult classResult : results.getAborted()) {
+                        for (TestResult test : classResult.getAborted()) {
+                            if (test.runId == results.getId()) {
+                                log.error("Test " + test.getDisplayName() + " aborted \n" + RED
+                                        + test.getTestExecutionResult().getThrowable().get().getMessage());
+                            }
+                        }
+                    }
+                    if (results.getCurrentAbortedCount() > 0) {
+                        log.error(statusFooter(RED + results.getCurrentAbortedCount() + " TESTS ABORTED"));
+                    }
+                    if (results.getCurrentFailedCount() == 0) {
+                        lastStatus = String.format(
+                                RED + "%d tests aborted (%d passing), %d tests were run in %dms." + DEFAULT_COLOR,
+                                results.getCurrentAbortedCount(), results.getCurrentFailedCount(), results.getPassedCount(),
+                                results.getCurrentTotalCount(), results.getTotalTime());
+                    } else {
+                        log.error(statusFooter(RED + results.getCurrentFailedCount() + " TESTS FAILED"));
+                        lastStatus = String.format(
+                                RED + "%d tests failed (%d passing, %d aborted), %d tests were run in %dms." + DEFAULT_COLOR,
+                                results.getCurrentFailedCount(), results.getPassedCount(), results.getCurrentAbortedCount(),
+                                results.getCurrentTotalCount(), results.getTotalTime());
+                    }
+                } else {
                     lastStatus = String.format(
-                            "\u001B[91m%d tests failed (%d passing, %d skipped), %d tests were run in %dms.\u001b[0m",
-                            results.getCurrentFailedCount(), results.getPassedCount(), results.getSkippedCount(),
+                            GREEN + "All %d tests are passing, %d tests were run in %dms." + DEFAULT_COLOR,
+                            results.getPassedCount(),
                             results.getCurrentTotalCount(), results.getTotalTime());
+                    log.info(statusFooter(GREEN + results.getCurrentPassedCount() + " TESTS PASSED"));
                 }
                 //this will re-print when using the basic console
                 promptHandler.setPrompt(RUNNING_PROMPT);
@@ -222,6 +250,30 @@ public class TestConsoleHandler implements TestListener {
                         + className + "#" + testIdentifier.getDisplayName());
             }
         });
+
+    }
+
+    static class MessageFormat {
+
+        public static final String RED = "\u001B[91m";
+        public static final String GREEN = "\u001b[32m";
+        public static final String YELLOW = "\u001b[33m";
+        public static final String DEFAULT_COLOR = "\u001b[0m";
+
+        private MessageFormat() {
+        }
+
+        public static String statusHeader(String header) {
+            return "==================== " + header + DEFAULT_COLOR + " ====================";
+        }
+
+        public static String statusFooter(String footer) {
+            return ">>>>>>>>>>>>>>>>>>>> " + footer + DEFAULT_COLOR + " <<<<<<<<<<<<<<<<<<<<";
+        }
+
+        public static String toggleStatus(boolean enabled) {
+            return "(" + (enabled ? GREEN + "enabled" + DEFAULT_COLOR + "" : RED + "disabled") + DEFAULT_COLOR + ")";
+        }
 
     }
 

@@ -10,14 +10,14 @@ public class ClassResult implements Comparable<ClassResult> {
     String className;
     List<Result> passing;
     List<Result> failing;
-    List<Result> skipped;
+    List<Result> aborted;
     long latestRunId;
 
-    public ClassResult(String className, List<Result> passing, List<Result> failing, List<Result> skipped) {
+    public ClassResult(String className, List<Result> passing, List<Result> failing, List<Result> aborted) {
         this.className = className;
         this.passing = passing;
         this.failing = failing;
-        this.skipped = skipped;
+        this.aborted = aborted;
         long runId = 0;
         for (Result i : passing) {
             runId = Math.max(i.getRunId(), runId);
@@ -32,7 +32,7 @@ public class ClassResult implements Comparable<ClassResult> {
         this.className = res.getClassName();
         this.failing = res.getFailing().stream().map(Result::new).collect(Collectors.toList());
         this.passing = res.getPassing().stream().filter(TestResult::isTest).map(Result::new).collect(Collectors.toList());
-        this.skipped = res.getSkipped().stream().filter(TestResult::isTest).map(Result::new).collect(Collectors.toList());
+        this.aborted = res.getAborted().stream().filter(TestResult::isTest).map(Result::new).collect(Collectors.toList());
         this.latestRunId = res.getLatestRunId();
     }
 
@@ -52,8 +52,8 @@ public class ClassResult implements Comparable<ClassResult> {
         return failing;
     }
 
-    public List<Result> getSkipped() {
-        return skipped;
+    public List<Result> getAborted() {
+        return aborted;
     }
 
     public long getLatestRunId() {
@@ -75,8 +75,8 @@ public class ClassResult implements Comparable<ClassResult> {
         return this;
     }
 
-    public ClassResult setSkipped(List<Result> skipped) {
-        this.skipped = skipped;
+    public ClassResult setAborted(List<Result> aborted) {
+        this.aborted = aborted;
         return this;
     }
 

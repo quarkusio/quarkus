@@ -117,16 +117,16 @@
                     {/if}
                 {/for}    
 
-                {#for r in cn.skipped}
+                {#for r in cn.aborted}
                     {#if r.test}
                     <li class="list-group-item">
   
-                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#failedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="failedTests{parentCount}LogSkipped{count}">
+                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#failedTests{parentCount}LogAborted{count}" aria-expanded="false" aria-controls="failedTests{parentCount}LogAborted{count}">
                             <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
                         </a>
                         
                     
-                        <div id="failedTests{parentCount}LogSkipped{count}" class="collapse">
+                        <div id="failedTests{parentCount}LogAborted{count}" class="collapse">
                             <br/>
                             <div class="bg-dark p-2">
                                 <samp class="text-wrap " style="font-size: 0.9em;">
@@ -181,16 +181,16 @@
                     {/if}
                 {/for}    
 
-                {#for r in cn.skipped}
+                {#for r in cn.aborted}
                     {#if r.test}
                     <li class="list-group-item">
   
-                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#passedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="passedTests{parentCount}LogSkipped{count}">
+                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#passedTests{parentCount}LogAborted{count}" aria-expanded="false" aria-controls="passedTests{parentCount}LogAborted{count}">
                             <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
                         </a>
                         
                     
-                        <div id="passedTests{parentCount}LogSkipped{count}" class="collapse">
+                        <div id="passedTests{parentCount}LogAborted{count}" class="collapse">
                             <br/>
                             <div class="bg-dark p-2">
                                 <samp class="text-wrap " style="font-size: 0.9em;">
@@ -212,27 +212,27 @@
     {/for}
     
     
-    {#for cn in info:tests.results.skipped.orEmpty}
+    {#for cn in info:tests.results.aborted.orEmpty}
     {#set parentCount=count}
     
     <div class="row p-1">
         <div class="col-sm">
-            <button class="btn btn-secondary btn-block" type="button" data-toggle="collapse" data-target="#skippedTests{parentCount}" aria-expanded="false" aria-controls="skippedTests{parentCount}">
+            <button class="btn btn-secondary btn-block" type="button" data-toggle="collapse" data-target="#abortedTests{parentCount}" aria-expanded="false" aria-controls="abortedTests{parentCount}">
                 <span class="float-left"><i class="fas fa-minus-circle"></i> {cn.className}</span>
             </button>
-            <div class="collapse" id="skippedTests{parentCount}">
+            <div class="collapse" id="abortedTests{parentCount}">
                 <ul class="list-group">
                 
-                {#for r in cn.skipped}
+                {#for r in cn.aborted}
                     {#if r.test}
                     <li class="list-group-item">
   
-                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#skippedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="skippedTests{parentCount}LogSkipped{count}">
+                        <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#abortedTests{parentCount}LogAborted{count}" aria-expanded="false" aria-controls="abortedTests{parentCount}LogAborted{count}">
                             <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
                         </a>
                         
                     
-                        <div id="skippedTests{parentCount}LogSkipped{count}" class="collapse">
+                        <div id="aborteddTests{parentCount}LogAborted{count}" class="collapse">
                             <br/>
                             <div class="bg-dark p-2">
                                 <samp class="text-wrap " style="font-size: 0.9em;">

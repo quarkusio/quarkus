@@ -40,7 +40,7 @@ public class ExcludeTagsTestCase {
         Assertions.assertEquals(1L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(3L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyResourceFile("application.properties", new Function<String, String>() {
@@ -56,7 +56,7 @@ public class ExcludeTagsTestCase {
         Assertions.assertEquals(2L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(4L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyResourceFile("application.properties", new Function<String, String>() {
@@ -69,7 +69,7 @@ public class ExcludeTagsTestCase {
         Assertions.assertEquals(3L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(5L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
     }
 }

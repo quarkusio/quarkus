@@ -41,7 +41,7 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(1L, ts.getLastRun());
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         SuiteResult suiteResult = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/result")
@@ -70,7 +70,7 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(2L, ts.getLastRun());
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         //fix the unit test
@@ -85,7 +85,7 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(3L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTestsAborted());
         Assertions.assertEquals(-1L, ts.getRunning());
 
     }

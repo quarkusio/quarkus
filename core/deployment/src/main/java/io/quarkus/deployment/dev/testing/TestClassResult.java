@@ -7,14 +7,14 @@ public class TestClassResult implements Comparable<TestClassResult> {
     final String className;
     final List<TestResult> passing;
     final List<TestResult> failing;
-    final List<TestResult> skipped;
+    final List<TestResult> aborted;
     final long latestRunId;
 
-    public TestClassResult(String className, List<TestResult> passing, List<TestResult> failing, List<TestResult> skipped) {
+    public TestClassResult(String className, List<TestResult> passing, List<TestResult> failing, List<TestResult> aborted) {
         this.className = className;
         this.passing = passing;
         this.failing = failing;
-        this.skipped = skipped;
+        this.aborted = aborted;
         long runId = 0;
         for (TestResult i : passing) {
             runId = Math.max(i.runId, runId);
@@ -37,8 +37,8 @@ public class TestClassResult implements Comparable<TestClassResult> {
         return failing;
     }
 
-    public List<TestResult> getSkipped() {
-        return skipped;
+    public List<TestResult> getAborted() {
+        return aborted;
     }
 
     public long getLatestRunId() {
@@ -54,7 +54,7 @@ public class TestClassResult implements Comparable<TestClassResult> {
         List<TestResult> ret = new ArrayList<>();
         ret.addAll(passing);
         ret.addAll(failing);
-        ret.addAll(skipped);
+        ret.addAll(aborted);
         return ret;
     }
 }

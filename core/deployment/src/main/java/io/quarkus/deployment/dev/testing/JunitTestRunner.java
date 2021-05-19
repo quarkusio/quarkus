@@ -374,17 +374,17 @@ public class JunitTestRunner {
         for (String clazz : classes) {
             List<TestResult> passing = new ArrayList<>();
             List<TestResult> failing = new ArrayList<>();
-            List<TestResult> skipped = new ArrayList<>();
+            List<TestResult> aborted = new ArrayList<>();
             for (TestResult i : Optional.ofNullable(resultsByClass.get(clazz)).orElse(Collections.emptyMap()).values()) {
                 if (i.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED) {
                     failing.add(i);
                 } else if (i.getTestExecutionResult().getStatus() == TestExecutionResult.Status.ABORTED) {
-                    skipped.add(i);
+                    aborted.add(i);
                 } else {
                     passing.add(i);
                 }
             }
-            resultMap.put(clazz, new TestClassResult(clazz, passing, failing, skipped));
+            resultMap.put(clazz, new TestClassResult(clazz, passing, failing, aborted));
         }
         return resultMap;
     }

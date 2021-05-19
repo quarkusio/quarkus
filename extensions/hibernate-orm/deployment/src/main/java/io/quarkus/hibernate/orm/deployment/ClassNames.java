@@ -42,6 +42,7 @@ public class ClassNames {
     public static final DotName TYPE = createConstant("org.hibernate.annotations.Type");
     public static final DotName TYPE_DEFINITION = createConstant("org.hibernate.annotations.TypeDef");
     public static final DotName TYPE_DEFINITIONS = createConstant("org.hibernate.annotations.TypeDefs");
+    public static final DotName INJECT_SERVICE = createConstant("org.hibernate.service.spi.InjectService");
 
     public static final DotName ENTITY_MANAGER_FACTORY = createConstant("javax.persistence.EntityManagerFactory");
     public static final DotName SESSION_FACTORY = createConstant("org.hibernate.SessionFactory");

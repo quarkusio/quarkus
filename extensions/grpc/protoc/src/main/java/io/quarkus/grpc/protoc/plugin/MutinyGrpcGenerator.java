@@ -21,7 +21,7 @@ public class MutinyGrpcGenerator extends Generator {
 
     private static final int SERVICE_NUMBER_OF_PATHS = 2;
     private static final int METHOD_NUMBER_OF_PATHS = 4;
-    private static final String CLASS_PREFIX = "Mutiny";
+    public static final String CLASS_PREFIX = "Mutiny";
 
     private String getServiceJavaDocPrefix() {
         return "    ";
@@ -150,26 +150,35 @@ public class MutinyGrpcGenerator extends Generator {
     }
 
     private List<PluginProtos.CodeGeneratorResponse.File> generateFiles(List<ServiceContext> services) {
-        return services.stream()
-                .map(this::buildFile)
-                .collect(Collectors.toList());
+        List<PluginProtos.CodeGeneratorResponse.File> files = new ArrayList<>();
+        for (ServiceContext service : services) {
+            files.add(buildFile(service, "MutinyStub.mustache", absoluteFileName(service, null)));
+            files.add(buildFile(service, "MutinyInterface.mustache",
+                    absoluteFileName(service, service.serviceName + ".java")));
+            files.add(buildFile(service, "MutinyBean.mustache",
+                    absoluteFileName(service, service.serviceName + "Bean.java")));
+        }
+        return files;
     }
 
-    private PluginProtos.CodeGeneratorResponse.File buildFile(ServiceContext context) {
-        String content = applyTemplate("MutinyStub.mustache", context);
+    private PluginProtos.CodeGeneratorResponse.File buildFile(ServiceContext context, String templateName, String fileName) {
+        String content = applyTemplate(templateName, context);
         return PluginProtos.CodeGeneratorResponse.File
                 .newBuilder()
-                .setName(absoluteFileName(context))
+                .setName(fileName)
                 .setContent(content)
                 .build();
     }
 
-    private String absoluteFileName(ServiceContext ctx) {
+    private String absoluteFileName(ServiceContext ctx, String fileName) {
+        if (fileName == null) {
+            fileName = ctx.fileName;
+        }
         String dir = ctx.packageName.replace('.', '/');
         if (Strings.isNullOrEmpty(dir)) {
-            return ctx.fileName;
+            return fileName;
         } else {
-            return dir + "/" + ctx.fileName;
+            return dir + "/" + fileName;
         }
     }
 

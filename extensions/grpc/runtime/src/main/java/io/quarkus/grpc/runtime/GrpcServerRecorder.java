@@ -33,6 +33,7 @@ import io.grpc.ServerInterceptors;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.Subclass;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerNettyConfig;
@@ -255,9 +256,11 @@ public class GrpcServerRecorder {
         }
 
         public String getImplementationClassName() {
-            // all grpc services have a io.quarkus.grpc.runtime.supports.context.GrpcRequestContextCdiInterceptor
-            // this means Arc passes a subclass to grpc internals. That's why we take superclass here
-            return service.getClass().getSuperclass().getName();
+            if (service instanceof Subclass) {
+                // All intercepted services are represented by a generated subclass 
+                return service.getClass().getSuperclass().getName();
+            }
+            return service.getClass().getName();
         }
     }
 

@@ -9,6 +9,7 @@ import io.grpc.stub.AbstractStub;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.runtime.GeneratedGrpcBean;
 import io.quarkus.grpc.runtime.MutinyStub;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
@@ -25,6 +26,8 @@ public class GrpcDotNames {
 
     static final DotName ABSTRACT_BLOCKING_STUB = DotName.createSimple(AbstractBlockingStub.class.getName());
     static final DotName MUTINY_STUB = DotName.createSimple(MutinyStub.class.getName());
+
+    static final DotName GENERATED_GRPC_BEAN = DotName.createSimple(GeneratedGrpcBean.class.getName());
 
     static final MethodDescriptor CREATE_CHANNEL_METHOD = MethodDescriptor.ofMethod(Channels.class, "createChannel",
             Channel.class, String.class);

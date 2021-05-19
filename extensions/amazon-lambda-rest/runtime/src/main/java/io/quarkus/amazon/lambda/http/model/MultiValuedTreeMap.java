@@ -181,21 +181,19 @@ public class MultiValuedTreeMap<Key, Value> implements Map<Key, List<Value>>, Se
 
     public String toString() {
         StringBuilder result = new StringBuilder();
+        result.append("[");
         String delim = ",";
         for (Object name : keySet()) {
             for (Object value : get(name)) {
                 result.append(delim);
-                if (name == null) {
-                    result.append("null"); //$NON-NLS-1$
-                } else {
-                    result.append(name.toString());
-                }
+                result.append(name != null ? name : "null");
                 if (value != null) {
                     result.append('=');
                     result.append(value.toString());
                 }
             }
         }
-        return "[" + result.toString() + "]";
+        result.append("]");
+        return result.toString();
     }
 }

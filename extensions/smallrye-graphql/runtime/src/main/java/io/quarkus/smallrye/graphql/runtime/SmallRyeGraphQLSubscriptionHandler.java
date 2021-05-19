@@ -10,14 +10,11 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import graphql.ExecutionResult;
-import graphql.ExecutionResultImpl;
-import graphql.GraphqlErrorBuilder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.smallrye.graphql.bootstrap.Config;
 import io.smallrye.graphql.execution.ExecutionResponse;
 import io.smallrye.graphql.execution.error.ExecutionErrorsService;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.Subscriptions;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -117,16 +114,7 @@ public class SmallRyeGraphQLSubscriptionHandler extends SmallRyeGraphQLAbstractH
                             .getData();
 
                     if (stream != null) {
-
-                        Multi<ExecutionResult> multiStream = Multi.createFrom().publisher(stream);
-
-                        multiStream.onFailure().recoverWithItem(failure -> {
-                            // TODO: Below must move to SmallRye, and once 1.2.1 is releaes we can remove it here
-                            //       Once in SmallRye, this will also follow the propper error rule (show/hide) and add more details.
-                            return new ExecutionResultImpl(GraphqlErrorBuilder.newError()
-                                    .message(failure.getMessage())
-                                    .build());
-                        }).subscribe(smallRyeGraphQLSubscriptionSubscriber);
+                        stream.subscribe(smallRyeGraphQLSubscriptionSubscriber);
                     }
                 }
             }

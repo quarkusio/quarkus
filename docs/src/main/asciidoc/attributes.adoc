@@ -5,3 +5,13 @@
 :idseparator: -
 :icons: font
 :imagesdir: ./images
+
+//moved doctype to attributes.adoc to automatically enable it for all books when attribute file is included
+:doctype: book
+
+:brand-name: Quarkus
+:brand-name-long: {BrandName}
+:maven-version: 3.6.3
+:jdk-distribution: JDK
+ifdef::downstream[:jdk-distribution: OpenJDK]
+:jdk-version: 11

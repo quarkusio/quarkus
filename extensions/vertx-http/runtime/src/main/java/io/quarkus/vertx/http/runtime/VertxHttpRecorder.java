@@ -348,8 +348,12 @@ public class VertxHttpRecorder {
                 httpRouteRouter.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext event) {
-                        Thread.currentThread().setContextClassLoader(currentCl);
-                        hotReplacementHandler.handle(event);
+                        if (event.request().headers().contains(HttpHeaders.UPGRADE, HttpHeaders.WEBSOCKET, true)) {
+                            event.next();
+                        } else {
+                            Thread.currentThread().setContextClassLoader(currentCl);
+                            hotReplacementHandler.handle(event);
+                        }
                     }
                 });
             }
@@ -363,8 +367,12 @@ public class VertxHttpRecorder {
                 mainRouter.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext event) {
-                        Thread.currentThread().setContextClassLoader(currentCl);
-                        hotReplacementHandler.handle(event);
+                        if (event.request().headers().contains(HttpHeaders.UPGRADE, HttpHeaders.WEBSOCKET, true)) {
+                            event.next();
+                        } else {
+                            Thread.currentThread().setContextClassLoader(currentCl);
+                            hotReplacementHandler.handle(event);
+                        }
                     }
                 });
             }

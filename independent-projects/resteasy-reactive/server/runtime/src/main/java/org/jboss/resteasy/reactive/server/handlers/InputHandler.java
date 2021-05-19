@@ -25,10 +25,14 @@ public class InputHandler implements ServerRestHandler {
     final long maxBufferSize;
     private volatile Executor executor;
     private final Supplier<Executor> supplier;
+    private final ClassLoader originalTCCL;
 
     public InputHandler(long maxBufferSize, Supplier<Executor> supplier) {
         this.maxBufferSize = maxBufferSize;
         this.supplier = supplier;
+        // capture the proper TCCL in order to avoid losing it to Vert.x in dev-mode
+        this.originalTCCL = Thread.currentThread().getContextClassLoader();
+
     }
 
     @Override
@@ -76,6 +80,7 @@ public class InputHandler implements ServerRestHandler {
                 count += remaining;
             }
             context.setInputStream(new ByteArrayInputStream(ar));
+            Thread.currentThread().setContextClassLoader(originalTCCL);
             context.resume();
         }
 

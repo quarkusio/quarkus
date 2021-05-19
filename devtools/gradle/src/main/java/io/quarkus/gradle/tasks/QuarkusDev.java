@@ -378,7 +378,7 @@ public class QuarkusDev extends QuarkusTask {
             return;
         }
 
-        String classesDir = QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir());
+        String classesDir = QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false);
         if (classesDir == null) {
             return;
         } else {
@@ -429,7 +429,7 @@ public class QuarkusDev extends QuarkusTask {
             final File testResourcesOutputDir = testSourceSet.getOutput().getResourcesDir();
 
             if (!testSourcePaths.isEmpty() || (testResourcesOutputDir != null && testResourcesOutputDir.exists())) {
-                String testClassesDir = QuarkusGradleUtils.getClassesDir(testSourceSet, project.getBuildDir());
+                String testClassesDir = QuarkusGradleUtils.getClassesDir(testSourceSet, project.getBuildDir(), true);
                 if (testClassesDir != null) {
                     File testClassesDirFile = new File(testClassesDir);
                     if (testClassesDirFile.exists()) {

@@ -67,9 +67,6 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     @Component
     RemoteRepositoryManager remoteRepositoryManager;
 
-    @Parameter(property = "enableRegistryClient")
-    private boolean enableRegistryClient;
-
     private List<ArtifactCoords> importedPlatforms;
 
     private Artifact projectArtifact;
@@ -114,7 +111,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     }
 
     private ExtensionCatalog resolveExtensionsCatalog() throws MojoExecutionException {
-        final ExtensionCatalogResolver catalogResolver = enableRegistryClient ? getExtensionCatalogResolver()
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                ? getExtensionCatalogResolver()
                 : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {

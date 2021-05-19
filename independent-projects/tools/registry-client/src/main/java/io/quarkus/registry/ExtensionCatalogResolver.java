@@ -17,6 +17,11 @@ import io.quarkus.registry.client.spi.RegistryClientFactoryProvider;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
+import io.quarkus.registry.union.ElementCatalog;
+import io.quarkus.registry.union.ElementCatalogBuilder;
+import io.quarkus.registry.union.ElementCatalogBuilder.MemberBuilder;
+import io.quarkus.registry.union.ElementCatalogBuilder.UnionBuilder;
+import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -250,8 +255,75 @@ public class ExtensionCatalogResolver {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public ExtensionCatalog resolveExtensionCatalog() throws RegistryResolutionException {
-        return resolveExtensionCatalog((String) null);
+
+        final int registriesTotal = registries.size();
+        if (registriesTotal == 0) {
+            throw new RegistryResolutionException("No registries configured");
+        }
+
+        final Set<String> processedUnions = new HashSet<>();
+        final List<ParsedPlatformStack> psList = new ArrayList<>();
+        final Map<String, ExtensionCatalog> platformDescrMap = new HashMap<>();
+        final List<ExtensionCatalog> catalogs = new ArrayList<>();
+        final ElementCatalogBuilder catalogBuilder = ElementCatalogBuilder.newInstance();
+
+        for (RegistryExtensionResolver registry : registries) {
+            final PlatformCatalog pc = registry.resolvePlatformCatalog();
+            if (pc == null) {
+                continue;
+            }
+            for (Platform p : pc.getPlatforms()) {
+                final ExtensionCatalog ec = registry.resolvePlatformExtensions(p.getBom());
+                catalogs.add(ec);
+                platformDescrMap.put(ec.getBom().getGroupId() + ":" + ec.getBom().getArtifactId(), ec);
+
+                final Map<Object, Object> platformRelease = (Map<Object, Object>) ec.getMetadata().get("platform-release");
+                if (platformRelease != null) {
+                    final String versionStr = (String) platformRelease.get("version");
+                    if (!processedUnions.add(versionStr)) {
+                        continue;
+                    }
+                    final UnionBuilder union = catalogBuilder.getOrCreateUnion(Integer.parseInt(versionStr));
+                    psList.add(new ParsedPlatformStack(union, ec.getId(), (List<String>) platformRelease.get("members")));
+                    addMember(union, ec);
+                }
+            }
+        }
+
+        for (ParsedPlatformStack stack : psList) {
+            for (String memberCoordsStr : stack.members) {
+                if (stack.originMemberId.equals(memberCoordsStr)) {
+                    continue;
+                }
+                final ArtifactCoords memberCoords = ArtifactCoords.fromString(memberCoordsStr);
+                ExtensionCatalog memberCatalog = platformDescrMap
+                        .get(memberCoords.getGroupId() + ":"
+                                + PlatformArtifacts.ensureBomArtifactId(memberCoords.getArtifactId()));
+                if (memberCatalog == null || !memberCatalog.getBom().getVersion().equals(memberCoords.getVersion())) {
+                    memberCatalog = registries.get(0).resolvePlatformExtensions(memberCoords);
+                }
+
+                if (memberCatalog != null) {
+                    addMember(stack.unionBuilder, memberCatalog);
+                }
+            }
+        }
+
+        final ExtensionCatalog catalog = JsonCatalogMerger.merge(catalogs);
+        final ElementCatalog elements = catalogBuilder.build();
+        if (!elements.isEmpty()) {
+            catalog.getMetadata().put("element-catalog", elements);
+        }
+        return catalog;
+    }
+
+    private static void addMember(final UnionBuilder union, ExtensionCatalog member) {
+        final MemberBuilder builder = union.getOrCreateMember(
+                member.getBom().getGroupId() + ":" + member.getBom().getArtifactId(), member.getBom().getVersion());
+        member.getExtensions()
+                .forEach(e -> builder.addElement(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId()));
     }
 
     public ExtensionCatalog resolveExtensionCatalog(String quarkusCoreVersion) throws RegistryResolutionException {
@@ -498,5 +570,17 @@ public class ExtensionCatalogResolver {
         }
 
         return exclusiveProvider == null ? filtered == null ? registries : filtered : Arrays.asList(exclusiveProvider);
+    }
+
+    private static class ParsedPlatformStack {
+        final UnionBuilder unionBuilder;
+        final String originMemberId;
+        final List<String> members;
+
+        public ParsedPlatformStack(UnionBuilder ub, String originMemberId, List<String> members) {
+            this.unionBuilder = ub;
+            this.originMemberId = originMemberId;
+            this.members = members;
+        }
     }
 }

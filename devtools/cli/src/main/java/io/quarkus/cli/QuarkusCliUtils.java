@@ -30,7 +30,6 @@ public class QuarkusCliUtils {
     }
 
     private static QuarkusProject getNonMavenProject(Path projectRoot, BuildTool buildTool) {
-        return QuarkusProjectHelper.getProject(projectRoot, buildTool,
-                QuarkusCliVersion.version());
+        return QuarkusProjectHelper.getProject(projectRoot, buildTool, null);
     }
 }

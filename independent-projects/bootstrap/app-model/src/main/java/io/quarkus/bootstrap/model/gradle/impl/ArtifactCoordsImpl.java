@@ -1,6 +1,6 @@
-package io.quarkus.bootstrap.resolver.model.impl;
+package io.quarkus.bootstrap.model.gradle.impl;
 
-import io.quarkus.bootstrap.resolver.model.ArtifactCoords;
+import io.quarkus.bootstrap.model.gradle.ArtifactCoords;
 import java.io.Serializable;
 import java.util.Objects;
 

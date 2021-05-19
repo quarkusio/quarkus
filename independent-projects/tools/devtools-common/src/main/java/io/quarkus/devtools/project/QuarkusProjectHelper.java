@@ -64,10 +64,13 @@ public class QuarkusProjectHelper {
     public static ExtensionCatalog getExtensionCatalog(String quarkusVersion) {
         // TODO remove this method once the default registry becomes available
         try {
-            return registryClientEnabled && getCatalogResolver().hasRegistries()
-                    ? getCatalogResolver().resolveExtensionCatalog(quarkusVersion)
-                    : ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, artifactResolver(),
-                            messageWriter());
+            if (registryClientEnabled && getCatalogResolver().hasRegistries()) {
+                return quarkusVersion == null ? catalogResolver.resolveExtensionCatalog()
+                        : catalogResolver.resolveExtensionCatalog(quarkusVersion);
+            } else {
+                return ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, artifactResolver(),
+                        messageWriter());
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
         }

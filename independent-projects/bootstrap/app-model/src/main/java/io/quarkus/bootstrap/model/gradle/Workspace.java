@@ -1,4 +1,4 @@
-package io.quarkus.bootstrap.resolver.model;
+package io.quarkus.bootstrap.model.gradle;
 
 import java.util.Collection;
 

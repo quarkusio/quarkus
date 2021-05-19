@@ -31,7 +31,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.PathsCollection;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.runtime.configuration.ProfileManager;

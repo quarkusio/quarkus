@@ -30,6 +30,11 @@ public abstract class AbstractGroovyGradleBuildFile extends AbstractGradleBuildF
     }
 
     @Override
+    protected boolean importBom(ArtifactCoords coords) {
+        return importBomInModel(getModel(), coords);
+    }
+
+    @Override
     protected boolean addDependency(ArtifactCoords coords, boolean managed) {
         return addDependencyInModel(getModel(), coords, managed);
     }
@@ -37,6 +42,12 @@ public abstract class AbstractGroovyGradleBuildFile extends AbstractGradleBuildF
     @Override
     public BuildTool getBuildTool() {
         return BuildTool.GRADLE;
+    }
+
+    static boolean importBomInModel(Model model, ArtifactCoords coords) {
+        return addDependencyInModel(model,
+                String.format("    implementation enforcedPlatform(%s)%n",
+                        createDependencyCoordinatesString(coords, false, '\'')));
     }
 
     static boolean addDependencyInModel(Model model, ArtifactCoords coords, boolean managed) {

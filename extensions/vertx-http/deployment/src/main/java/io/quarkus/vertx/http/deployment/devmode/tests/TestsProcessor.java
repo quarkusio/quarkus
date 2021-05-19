@@ -82,10 +82,10 @@ public class TestsProcessor {
                 testStatus.setRunning(status.getRunning());
                 if (status.getLastRun() > 0) {
                     TestRunResults result = ts.get().getResults();
-                    testStatus.setTestsFailed(result.getTestsFailed());
-                    testStatus.setTestsPassed(result.getTestsPassed());
-                    testStatus.setTestsSkipped(result.getTestsSkipped());
-                    testStatus.setTestsRun(result.getTestsFailed() + result.getTestsPassed());
+                    testStatus.setTestsFailed(result.getCurrentFailedCount());
+                    testStatus.setTestsPassed(result.getCurrentPassedCount());
+                    testStatus.setTestsSkipped(result.getCurrentSkippedCount());
+                    testStatus.setTestsRun(result.getFailedCount() + result.getPassedCount());
                 }
                 event.response().end(JsonObject.mapFrom(testStatus).encode());
             }

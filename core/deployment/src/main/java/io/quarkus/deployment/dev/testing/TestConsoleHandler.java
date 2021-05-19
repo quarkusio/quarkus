@@ -56,8 +56,7 @@ public class TestConsoleHandler implements TestListener {
                 for (int k : keys) {
                     if (k == 'r') {
                         testController.runAllTests();
-                    }
-                    if (k == 'f') {
+                    } else if (k == 'f') {
                         testController.runFailedTests();
                     } else if (k == 'v') {
                         testController.printFullResults();
@@ -163,16 +162,22 @@ public class TestConsoleHandler implements TestListener {
             public void runComplete(TestRunResults results) {
                 firstRun = false;
                 if (results.getCurrentFailing().isEmpty()) {
-                    lastStatus = "\u001B[32mTests all passed, " + methodCount.get() + " tests were run, " + skipped.get()
-                            + " were skipped. Tests took " + (results.getTotalTime())
-                            + "ms." + "\u001b[0m";
+                    lastStatus = String.format(
+                            "\u001B[32mAll %d tests are passing (%d skipped), %d tests were run in %dms.\u001b[0m",
+                            results.getPassedCount(),
+                            results.getSkippedCount(),
+                            results.getCurrentTotalCount(), results.getTotalTime());
+                    log.info(
+                            "====================\u001B[32m TEST REPORT #" + results.getId()
+                                    + "\u001b[0m ====================");
+                    log.info(
+                            ">>>>>>>>>>>>>>>>>>>>\u001B[32m " + results.getCurrentPassedCount()
+                                    + " TESTS PASSED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
                 } else {
-                    int failedTestsNum = results.getCurrentFailing().values().stream().mapToInt((s) -> s.getFailing().size())
-                            .sum();
                     //TODO: this should not use the logger, it should print a nicer status
                     log.error(
-                            "==================== \u001B[91m" + failedTestsNum + " TESTS FAILED\u001b[0m ====================");
-                    boolean hasFailingTests = failedTestsNum > 0;
+                            "====================\u001B[91m TEST REPORT #" + results.getId()
+                                    + "\u001b[0m ====================");
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
                             log.error(
@@ -181,13 +186,12 @@ public class TestConsoleHandler implements TestListener {
                         }
                     }
                     log.error(
-                            "==================== \u001B[91mEND TEST REPORT\u001b[0m ====================");
-                    String output = String.format("Test run failed, %d tests were run, ", methodCount.get())
-                            + String.format("%s%d failed%s, ",
-                                    hasFailingTests ? "\u001B[1m" : "", failedTestsNum,
-                                    hasFailingTests ? "\u001B[2m" : "")
-                            + String.format("%d were skipped. Tests took %dms", skipped.get(), results.getTotalTime());
-                    lastStatus = "\u001B[91m" + output + "\u001b[0m";
+                            ">>>>>>>>>>>>>>>>>>>>\u001B[91m " + results.getCurrentFailedCount()
+                                    + " TESTS FAILED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
+                    lastStatus = String.format(
+                            "\u001B[91m%d tests failed (%d passing, %d skipped), %d tests were run in %dms.\u001b[0m",
+                            results.getCurrentFailedCount(), results.getPassedCount(), results.getSkippedCount(),
+                            results.getCurrentTotalCount(), results.getTotalTime());
                 }
                 //this will re-print when using the basic console
                 promptHandler.setPrompt(RUNNING_PROMPT);

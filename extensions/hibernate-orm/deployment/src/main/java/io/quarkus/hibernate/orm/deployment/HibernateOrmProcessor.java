@@ -664,6 +664,30 @@ public final class HibernateOrmProcessor {
         }
     }
 
+    /*
+     * Enable reflection for methods annotated with @InjectService,
+     * such as org.hibernate.engine.jdbc.cursor.internal.StandardRefCursorSupport.injectJdbcServices.
+     */
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    public void registerInjectServiceMethodsForReflection(CombinedIndexBuildItem index,
+            BuildProducer<ReflectiveClassBuildItem> reflective) {
+        Set<String> classes = new HashSet<>();
+
+        // Built-in service classes; can't rely on Jandex as Hibernate ORM is not indexed by default.
+        HibernateOrmAnnotations.ANNOTATED_WITH_INJECT_SERVICE.stream()
+                .map(DotName::toString)
+                .forEach(classes::add);
+
+        // Integrators relying on @InjectService.
+        index.getIndex().getAnnotations(ClassNames.INJECT_SERVICE).stream()
+                .map(a -> a.target().asMethod().declaringClass().name().toString())
+                .forEach(classes::add);
+
+        if (!classes.isEmpty()) {
+            reflective.produce(new ReflectiveClassBuildItem(false, true, false, classes.toArray(new String[0])));
+        }
+    }
+
     private static Optional<String> getSqlLoadScript(Optional<String> sqlLoadScript, LaunchMode launchMode) {
         // Explicit file or default Hibernate ORM file.
         if (sqlLoadScript.isPresent()) {

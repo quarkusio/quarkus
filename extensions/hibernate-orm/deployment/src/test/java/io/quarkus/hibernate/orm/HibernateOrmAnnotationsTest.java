@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.hibernate.orm.deployment.ClassNames;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmAnnotations;
 
 /**
@@ -74,6 +75,15 @@ public class HibernateOrmAnnotationsTest {
                 .containsExactlyInAnyOrderElementsOf(packageLevelHibernateAnnotations);
     }
 
+    @Test
+    public void testNoMissingInjectServiceAnnotatedClass() {
+        Set<DotName> injectServiceAnnotatedClasses = findClassesWithMethodsAnnotatedWith(hibernateIndex,
+                ClassNames.INJECT_SERVICE);
+
+        assertThat(HibernateOrmAnnotations.ANNOTATED_WITH_INJECT_SERVICE)
+                .containsExactlyInAnyOrderElementsOf(injectServiceAnnotatedClasses);
+    }
+
     private Set<DotName> findRuntimeAnnotations(Index index) {
         Set<DotName> annotations = new HashSet<>();
         for (AnnotationInstance retentionAnnotation : index.getAnnotations(RETENTION)) {
@@ -95,6 +105,15 @@ public class HibernateOrmAnnotationsTest {
             }
         }
         return annotations;
+    }
+
+    private Set<DotName> findClassesWithMethodsAnnotatedWith(Index index, DotName annotationName) {
+        Set<DotName> classes = new TreeSet<>();
+        for (AnnotationInstance annotation : index.getAnnotations(annotationName)) {
+            ClassInfo clazz = annotation.target().asMethod().declaringClass();
+            classes.add(clazz.name());
+        }
+        return classes;
     }
 
     private boolean allowsTargetType(ClassInfo annotation, ElementType targetType) {

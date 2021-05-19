@@ -216,4 +216,9 @@ public final class HibernateOrmAnnotations {
             DotName.createSimple("org.hibernate.annotations.ValueGenerationType"),
             DotName.createSimple("org.hibernate.annotations.Where"),
             DotName.createSimple("org.hibernate.annotations.WhereJoinTable")));
+
+    public static final List<DotName> ANNOTATED_WITH_INJECT_SERVICE = Collections.unmodifiableList(Arrays.asList(
+            DotName.createSimple("org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl"),
+            DotName.createSimple("org.hibernate.engine.jdbc.cursor.internal.StandardRefCursorSupport")));
+
 }

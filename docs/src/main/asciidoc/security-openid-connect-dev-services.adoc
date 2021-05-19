@@ -1,0 +1,219 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Dev Services for OpenId Connecta
+
+include::./attributes.adoc[]
+
+This guide covers the Dev Services for OpenId Connect Keycloak provider and explains how to support other OpenId Connect providers.
+
+== Introduction
+
+Quarkus introduces an experimental `DevServices For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is loaded in a dev mode with `mvn quarkus:dev`. It starts a Keycloak container and initializes it by registering the existing Keycloak realm or creating a new realm with the client and users for you to start developing your Quarkus application secured by Keycloak immediately. It will restart a container when the `application.properties` or the realm file changes have been detected.
+
+Additionally, link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] supports this feature with a Keycloak specific page which helps to acquire the tokens from Keycloak and test your Quarkus application.
+
+== DevServices for Keycloak
+
+Start your application without configuring `quarkus.oidc` properties in `application.properties`. You will see in the console something similar to:
+
+[source,shell]
+----
+$ mvn quarkus:dev
+
+2021-06-04 16:22:47,175 INFO  [🐳 .io/keycloak/keycloak:14.0.0]] (build-38) Creating container for image: quay.io/keycloak/keycloak:14.0.0
+2021-06-04 16:22:47,243 INFO  [🐳 .io/keycloak/keycloak:14.0.0]] (build-38) Starting container with ID: 6469f6db9cec2c855fcc6c8db4273944cc9d69e8f6803a0b47eb2d5b8f5b94fd
+2021-06-04 16:22:47,629 INFO  [🐳 .io/keycloak/keycloak:14.0.0]] (build-38) Container quay.io/keycloak/keycloak:14.0.0 is starting: 6469f6db9cec2c855fcc6c8db4273944cc9d69e8f6803a0b47eb2d5b8f5b94fd
+2021-06-04 16:22:47,643 INFO  [org.tes.con.wai.str.HttpWaitStrategy] (build-38) /elastic_lovelace: Waiting for 60 seconds for URL: http://localhost:32812/auth (where port 32812 maps to container port 8080)
+2021-06-04 16:23:07,665 INFO  [🐳 .io/keycloak/keycloak:14.0.0]] (build-38) Container quay.io/keycloak/keycloak:14.0.0 started in PT5.500489S
+...
+2021-06-04 16:23:11,155 INFO  [io.quarkus] (Quarkus Main Thread) security-openid-connect-quickstart 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 25.968s. Listening on: http://localhost:8080
+2021-06-04 16:23:11,157 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
+----
+
+The `quay.io/keycloak/keycloak:14.0.0` Keycloak image is used by default to start a container. `quarkus.keycloak.devservices.image-name` can be used to change a Keycloak image name.
+
+Now open the main Dev UI page and you will see the `OpenId Connect Card` linking to a `Keycloak` page:
+
+image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenId Connect Card,role="center"]
+
+Click on the `Provider: Keycloak` link and you will see a Keycloak page which will be presented slightly differently depending on how `DevServices for Keycloak` feature has been configured.
+
+=== Testing Service Applications
+
+By default the Keycloak page can be used to support the development of a link:security-openid-connect[Quarkus OIDC service application].
+
+==== Implicit Grant
+
+If you set `quarkus.keycloak.devservices.grant.type=implicit` in `applicatin.properties` (this is a default value) then an `implicit` grant will be used to acquite both access and ID tokens.
+Using this grant is recommended to emulate a typical flow where a `Singe Page Application` acquires the tokens and uses them to access Quarkus services.
+
+First you will see an option to `Log into Single Page Application`:
+
+image::dev-ui-keycloak-sign-in-to-spa.png[alt=Dev UI OpenId Connect Keycloak Page - Log into Single Page Application,role="center"].
+
+Next, after you select this option, you will be redirected to Keycloak to authenticate, example, as `alice:alice` and then returned to the page representing the SPA:  
+
+image::dev-ui-keycloak-test-service-from-spa.png[alt=Dev UI OpenId Connect Keycloak Single Page Application,role="center"].
+
+Here you can test the service with either the access token or ID token (note ID token will be sent as a regular bearer token).
+
+Finally you can click a `Logged in` option if you'd like to log out and authenticate to Keycloak as a different user.
+
+==== Password Grant
+
+If you set `quarkus.keycloak.devservices.grant.type=password` in `applicatin.properties` then you will see a screen like this one:
+
+image::dev-ui-keycloak-password-grant.png[alt=Dev UI OpenId Connect Keycloak Page - Password Grant,role="center"]
+
+Enter a registered user name, a relative service endpoint path, click on `Test Service` and you will see a status code such as `200`, `403`, `401` or `404` printed.
+
+You will also see in the Dev UI console something similar to:
+
+[source,shell]
+----
+2021-07-19 17:58:11,407 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Getting token from 'http://localhost:32818/auth/realms/quarkus/protocol/openid-connect/token' for user 'alice' in realm 'quarkus' using client id 'quarkus-app'
+2021-07-19 17:58:11,533 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Test token: eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ6Z2tDazJQZ1JaYnVlVG5kcTFKSW1sVnNoZ2hhbWhtbnBNcXU0QUt5MnJBIn0.ey...
+2021-07-19 17:58:11,536 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Sending token to 'http://localhost:8080/api/admin'
+2021-07-19 17:58:11,674 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Result: 200
+----
+
+A token is acquired from Keycloak using a `password` grant and is sent to the service endpoint.
+
+==== Client Credentials Grant
+
+If you set `quarkus.keycloak.devservices.grant.type=client` then a `client_credentials` grant will be used to acquite a token, with the page showing no `User` field in this case:
+
+image::dev-ui-keycloak-client-credentials-grant.png[alt=Dev UI OpenId Connect Keycloak Page - Client Credentials Grant,role="center"].
+
+You can test the service the same way as with the `Password` grant.
+
+=== Developing OpenId Connect Web App Applications
+
+If you develop a link:security-openid-connect-web-authentication[Quarkus OIDC web-app application] then you should set `quarkus.oidc.application-type=web-app` in `application.properties` before starting an application.
+
+You will see a screen like this one:
+
+image::dev-ui-keycloak-sign-in-to-service.png[alt=Dev UI OpenId Connect Keycloak Sign In,role="center"]
+
+Set a relative service endpoint path, click on `Sign In To Service` and you will be redirected to Keycloak to enter a user name and password in a new browser tab and get a response from a Quarkus application.
+
+=== Keycloak Initialization
+
+You do not need to configure `quarkus-oidc-keycloak` to start developing your Quarkus Keycloak `OIDC` applications with the only exception is that `quarkus.oidc.application-type=web-app` has to be set in `application.properties` to give the `Keycloak` page a hint it needs to show an option to `Sign In To Service`.
+
+By default, the `quarkus`, `quarkus-app` client with a `secret` password, `alice` and `bob` users (with the passwords matching the names), and `user` and `admin` roles are created, with `alice` given both `admin` and `user` roles and `bob` - the `user` role. 
+
+User names, secrets and their roles can be customized with `quarkus.keycloak.devservices.users` (the map which contains user names and secrets) and `quarkus.keycloak.devservices.roles` (the map which contains user names and comma separated role vales).
+
+`quarkus.oidc.client-id` and `quarkus.oidc.credentials.secret` can be used to customize the client id and secret.
+
+However it is likely your Keycloak configuration may be more complex and require setting more properties.
+
+This is why `quarkus.keycloak.devservices.realm-path` is always checked first before trying to initialize Keycloak with the default or configured realm, client, user and roles properties. If the realm file exists on a file system or class path then only this realm will be used to initialize Keycloak.
+
+Also the Keycloak page offers an option to `Sign In To Keycloak To Configure Realms` using a `Keycloak Admin` option in the right top corner:
+
+image::dev-ui-keycloak-admin.png[alt=Dev UI OpenId Connect Keycloak Page - Keycloak Admin,role="center"].
+
+Sign in to Keycloak as `admin:admin` in order to further customize the realm properties or create a new realm, export the realm and have Keycloak initialized with the custom realm after a restart.
+
+Note that even if you initialize Keycloak from a realm file, it is still needed to set `quarkus.keycloak.devservices.realm-name` property for `quarkus.oidc.auth-server-url` be calculated correctly. Setting `quarkus.keycloak.devservices.users` property is needed if a `password` grant is used to acquire the tokens to test the OIDC `service` applications.
+
+== Disable DevServices for Keycloak
+
+`DevServices For Keycloak` will not be activated if either `quarkus.oidc.auth-server-url` is already initialized or the defaut OIDC tenant is disabled with `quarkus.oidc.tenant.enabled=false`, irrespectively of whether you work with Keycloak or not.
+
+If you prefer not to have a `DevServices for Keycloak` container starting or do not work with Keycloak then you can also disable this feature with `quarkus.keycloak.devservices.enabled=false` - it will only be necessary if you expect to start `quarkus:dev` without `quarkus.oidc.auth-server-url`.
+
+The main Dev UI page will include an empty `OpenId Connect Card` when `DevServices for Keycloak` is disabled:
+
+image::dev-ui-oidc-card.png[alt=Dev UI OpenId Connect Card,role="center"]
+
+== Dev Services Support for other OpenId Connect Providers
+
+Your custom extension would need to extend `quarkus-oidc` only and add the dependencies required to support your provider to the extension's `deployment` module only.
+
+The build step dealing with the `DevServices` should additionally register two runtime properties into the "io.quarkus.quarkus-oidc" namespace: `oidcProviderName` (for example, `Google`) and `oidcProviderUrlBase` (for example: `mycompany.devservices-google`) for the `OpenId Connect Card` to link to the Dev UI page representing your provider, for example:
+
+[source,shell]
+----
+package io.quarkus.oidc.okta.runtime;
+
+import java.util.function.Supplier;
+
+import io.quarkus.runtime.annotations.Recorder;
+
+// This simple recorder is the only code which will be located in the extension's `runtime` module
+@Recorder
+public class OktaDevServicesRecorder {
+
+    public Supplier<String> getProviderName() {
+        return new Supplier<String>() {
+
+            @Override
+            public String get() {
+                return "OKTA";
+            }
+        };
+    }
+
+    public Supplier<String> getProviderUrlBase() {
+        return new Supplier<String>() {
+
+            @Override
+            public String get() {
+                return "io.quarkus" + "." + "quarkus-oidc-okta";
+            }
+        };
+    }
+}
+
+
+package io.quarkus.oidc.okta.deployment.devservices;
+
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+
+import java.util.Optional;
+
+import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
+
+public class OktaDevConsoleProcessor {
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(value = RUNTIME_INIT)
+    public void setOidcProviderProperties(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> provider,
+            OktaDevServicesRecorder recorder,
+            Optional<DevServicesConfigBuildItem> configProps) {
+        if (configProps.isPresent()) {
+            provider.produce(new DevConsoleRuntimeTemplateInfoBuildItem("io.quarkus", "quarkus-oidc", "oidcProviderName",
+                    recorder.getProviderName()));
+            provider.produce(new DevConsoleRuntimeTemplateInfoBuildItem("io.quarkus", "quarkus-oidc", "oidcProviderUrlBase",
+                    recorder.getProviderUrlBase()));
+        }
+    }
+}
+
+----
+
+Additionally, the extension should produce `quarkus.oidc.deployment.devservices.OidcProviderBuildItem` to disable the default `DevServices for Keycloak`, instead of the users having to type `quarkus.keycloak.devservices.enabled=false`.
+
+Please follow the link:dev-ui[Dev UI] tutorial as well as check the `quarkus-oidc/deployment` source for more ideas.
+
+== References
+
+* link:dev-ui[Dev UI]
+* https://www.keycloak.org/documentation.html[Keycloak Documentation]
+* https://openid.net/connect/[OpenID Connect]
+* link:security-openid-connect[Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization]
+* link:security-openid-connect-web-authentication[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow]
+* link:security[Quarkus Security]

@@ -299,7 +299,7 @@ public final class HibernateOrmProcessor {
             IndexingUtil.indexClass(jpaModel.getClassName(), indexer, index.getIndex(), additionalIndex,
                     HibernateOrmProcessor.class.getClassLoader());
         }
-        CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
+        CompositeIndex compositeIndex = CompositeIndex.create(index.getComputingIndex(), indexer.complete());
         return new JpaModelIndexBuildItem(compositeIndex);
     }
 

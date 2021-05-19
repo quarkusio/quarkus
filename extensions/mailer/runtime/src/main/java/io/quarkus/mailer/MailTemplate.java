@@ -48,6 +48,8 @@ public interface MailTemplate {
 
         MailTemplateInstance replyTo(String replyTo);
 
+        MailTemplateInstance replyTo(String... replyTo);
+
         MailTemplateInstance bounceAddress(String bounceAddress);
 
         MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId);

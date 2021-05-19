@@ -8,29 +8,29 @@ import io.dekorate.utils.Strings;
 import io.fabric8.knative.serving.v1.RevisionSpecFluent;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 
-public class ApplyServiceAccountToRevisionSpecDecorator extends NamedResourceDecorator<RevisionSpecFluent<?>> {
+public class ApplyServiceAccountNameToRevisionSpecDecorator extends NamedResourceDecorator<RevisionSpecFluent<?>> {
     private static final String NONE = null;
-    private final String serviceAccount;
+    private final String serviceAccountName;
 
-    public ApplyServiceAccountToRevisionSpecDecorator() {
+    public ApplyServiceAccountNameToRevisionSpecDecorator() {
         this(ANY, NONE);
     }
 
-    public ApplyServiceAccountToRevisionSpecDecorator(String serviceAccount) {
+    public ApplyServiceAccountNameToRevisionSpecDecorator(String serviceAccountName) {
         super(ANY);
-        this.serviceAccount = serviceAccount;
+        this.serviceAccountName = serviceAccountName;
     }
 
-    public ApplyServiceAccountToRevisionSpecDecorator(String resourceName, String serviceAccount) {
+    public ApplyServiceAccountNameToRevisionSpecDecorator(String resourceName, String serviceAccountName) {
         super(resourceName);
-        this.serviceAccount = serviceAccount;
+        this.serviceAccountName = serviceAccountName;
     }
 
     public void andThenVisit(RevisionSpecFluent<?> spec, ObjectMeta resourceMeta) {
-        if (Strings.isNotNullOrEmpty(this.serviceAccount)) {
-            spec.withServiceAccount(this.serviceAccount);
+        if (Strings.isNotNullOrEmpty(this.serviceAccountName)) {
+            spec.withServiceAccountName(this.serviceAccountName);
         } else {
-            spec.withServiceAccount(resourceMeta.getName());
+            spec.withServiceAccountName(resourceMeta.getName());
         }
 
     }

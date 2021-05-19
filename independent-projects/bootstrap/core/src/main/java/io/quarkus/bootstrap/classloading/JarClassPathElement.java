@@ -182,8 +182,8 @@ public class JarClassPathElement implements ClassPathElement {
                 }
                 //multi release jars can add additional entries
                 if (JarFiles.isMultiRelease(jarFile)) {
-                    Set<String> copy = new HashSet<>(paths);
-                    for (String i : copy) {
+                    String[] copyToIterate = paths.toArray(new String[0]);
+                    for (String i : copyToIterate) {
                         if (i.startsWith(META_INF_VERSIONS)) {
                             String part = i.substring(META_INF_VERSIONS.length());
                             int slash = part.indexOf("/");

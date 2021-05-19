@@ -249,7 +249,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                             } else {
                                 List<ClassPathElement> list = elementMap.get(i);
                                 if (list == null) {
-                                    elementMap.put(i, list = new ArrayList<>());
+                                    elementMap.put(i, list = new ArrayList<>(2)); //default initial capacity of 10 is way too large
                                 }
                                 list.add(element);
                             }

@@ -9,6 +9,7 @@ import org.aesh.terminal.Connection;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.console.RedirectPrintStream;
 
 public class ConsoleHelper {
 

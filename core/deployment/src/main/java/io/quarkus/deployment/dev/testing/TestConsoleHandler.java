@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestIdentifier;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.dev.console.InputHandler;
 import io.quarkus.dev.console.QuarkusConsole;
@@ -30,6 +31,13 @@ public class TestConsoleHandler implements TestListener {
 
     public void install() {
         QuarkusConsole.INSTANCE.pushInputHandler(inputHandler);
+        QuarkusClassLoader classLoader = (QuarkusClassLoader) getClass().getClassLoader();
+        classLoader.addCloseTask(new Runnable() {
+            @Override
+            public void run() {
+                QuarkusConsole.INSTANCE.popInputHandler();
+            }
+        });
     }
 
     private final InputHandler inputHandler = new InputHandler() {

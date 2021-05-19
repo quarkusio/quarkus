@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
@@ -132,6 +133,13 @@ public class TestSupport implements TestController {
                         .bootstrap();
                 compiler = new QuarkusCompiler(testCuratedApplication, compilationProviders, context);
                 testRunner = new TestRunner(this, context, testCuratedApplication);
+                QuarkusClassLoader cl = (QuarkusClassLoader) getClass().getClassLoader();
+                cl.addCloseTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        testCuratedApplication.close();
+                    }
+                });
 
             } catch (Exception e) {
                 throw new RuntimeException(e);

@@ -64,7 +64,7 @@
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
         <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
-        <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
+        <microprofile-reactive-messaging-api.version>2.0</microprofile-reactive-messaging-api.version>
         <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
         <microprofile-open-api.version>2.0.1-RC1</microprofile-open-api.version>
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>

@@ -31,10 +31,17 @@
                         <dependency>org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck</dependency>
                     </dependenciesToScan>
                     <excludes>
-                        <!-- There tests have been corrected in the next version of the TCK, some signatures are now considered invalid -->
-                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.invalid.InvalidConfigurationTest</exclude>
                         <!-- The new wiring fails at the Quarkus startup because of the incorrect configuration -->
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.invalid.InvalidConfigurationTest</exclude>
                         <exclude>org.eclipse.microprofile.reactive.messaging.tck.connector.MissingConnectorTest</exclude>
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.channel.EmitterInjectionMissingChannelTest</exclude>
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.signatures.invalid.InvalidSubscriberSignatureTest</exclude>
+
+                        <!-- the test need to be challenged - the error emission may happen after -->
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.channel.overflow.DefaultOverflowStrategyOverflowTest</exclude>
+
+                        <!-- No Metrics support in Quarkus (Micrometer) -->
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.metrics.MetricsTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

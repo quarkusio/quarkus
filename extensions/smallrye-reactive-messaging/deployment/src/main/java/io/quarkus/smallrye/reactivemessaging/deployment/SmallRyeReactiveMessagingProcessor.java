@@ -121,7 +121,8 @@ public class SmallRyeReactiveMessagingProcessor {
                         return;
                     }
                     if (annotations.containsKey(ReactiveMessagingDotNames.INCOMING)
-                            || annotations.containsKey(ReactiveMessagingDotNames.OUTGOING)) {
+                            || annotations.containsKey(ReactiveMessagingDotNames.OUTGOING)
+                            || annotations.containsKey(ReactiveMessagingDotNames.CHANNEL)) {
                         LOGGER.debugf(
                                 "Found reactive messaging annotations on a class %s with no scope defined - adding @Dependent",
                                 ctx.getTarget());

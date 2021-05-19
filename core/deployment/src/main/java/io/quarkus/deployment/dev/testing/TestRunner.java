@@ -210,7 +210,7 @@ public class TestRunner {
                     .setInclude(testSupport.include)
                     .setExclude(testSupport.exclude)
                     .setTestType(testSupport.testType)
-                    .setFailingTestsOnly(testSupport.failingTestsOnly);
+                    .setFailingTestsOnly(classScanResult != null && testSupport.brokenOnlyMode); //broken only mode is only when changes are made, not for forced runs
             if (reRunFailures) {
                 Set<UniqueId> ids = new HashSet<>();
                 for (Map.Entry<String, TestClassResult> e : testSupport.testRunResults.getCurrentFailing().entrySet()) {

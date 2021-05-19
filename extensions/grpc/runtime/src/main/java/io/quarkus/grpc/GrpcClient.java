@@ -30,7 +30,7 @@ public @interface GrpcClient {
      */
     String value() default ELEMENT_NAME;
 
-    public final class Literal extends AnnotationLiteral<GrpcClient> implements GrpcClient {
+    final class Literal extends AnnotationLiteral<GrpcClient> implements GrpcClient {
 
         private static final long serialVersionUID = 1L;
 

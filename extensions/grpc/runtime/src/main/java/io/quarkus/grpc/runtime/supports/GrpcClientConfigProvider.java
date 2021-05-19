@@ -9,6 +9,7 @@ import io.grpc.stub.AbstractStub;
 import io.quarkus.arc.Arc;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
+import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 
 /**
  * This bean provides the {@link GrpcClientConfiguration} to {@link Channels}.
@@ -26,6 +27,10 @@ public class GrpcClientConfigProvider {
         } else {
             return clients.get(name);
         }
+    }
+
+    public GrpcServerConfiguration getServerConfiguration() {
+        return config.server;
     }
 
     AbstractStub<?> adjustCallOptions(String serviceName, AbstractStub<?> stub) {

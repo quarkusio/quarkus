@@ -11,7 +11,7 @@ class CountryNameConsumer(@RestClient private val countryGateway: CountriesGatew
 
     val resolvedCounties: MutableSet<Country> = ConcurrentHashMap.newKeySet()
 
-    @Incoming("countries-in")
+    @Incoming("countries-t2-in")
     suspend fun consume(countryName: String) {
         resolvedCounties.addAll(countryGateway.byName("fake$countryName"))
         resolvedCounties.addAll(countryGateway.byName(countryName))

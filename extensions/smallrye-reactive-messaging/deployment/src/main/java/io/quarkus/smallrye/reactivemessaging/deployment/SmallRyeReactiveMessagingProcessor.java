@@ -87,10 +87,6 @@ public class SmallRyeReactiveMessagingProcessor {
 
     static final String INVOKER_SUFFIX = "_SmallRyeMessagingInvoker";
 
-    private static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
-    private static final DotName ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER = DotName
-            .createSimple("io.quarkus.smallrye.reactivemessaging.runtime.kotlin.AbstractSubscribingCoroutineInvoker");
-
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING);
@@ -419,7 +415,8 @@ public class SmallRyeReactiveMessagingProcessor {
 
     private boolean isSuspendMethod(MethodInfo methodInfo) {
         if (!methodInfo.parameters().isEmpty()) {
-            if (methodInfo.parameters().get(methodInfo.parameters().size() - 1).name().equals(CONTINUATION)) {
+            if (methodInfo.parameters().get(methodInfo.parameters().size() - 1).name()
+                    .equals(ReactiveMessagingDotNames.CONTINUATION)) {
                 return true;
             }
         }
@@ -464,10 +461,10 @@ public class SmallRyeReactiveMessagingProcessor {
                 + HashUtil.sha1(sigBuilder.toString());
 
         if (isSuspendMethod
-                && ((mediatorConfiguration.getIncoming().isEmpty()) || (mediatorConfiguration.getOutgoing() != null))) {
+                && ((mediatorConfiguration.getIncoming().isEmpty()) && (mediatorConfiguration.getOutgoing() != null))) {
             // TODO: this restriction needs to be lifted
             throw new IllegalStateException(
-                    "Currently suspend methods for Reactive Messaging are only supported on methods that are annotated with @Incoming and NOT annotated with @Outgoing");
+                    "Currently suspend methods for Reactive Messaging are not supported on methods that are only annotated with @Outgoing");
         }
 
         if (!isSuspendMethod) {
@@ -526,7 +523,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     private void generateSubscribingCoroutineInvoker(MethodInfo method, ClassOutput classOutput, String generatedName) {
         try (ClassCreator invoker = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .superClass(ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString())
+                .superClass(ReactiveMessagingDotNames.ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString())
                 .build()) {
 
             // generate a constructor that takes the bean instance as an argument
@@ -534,7 +531,8 @@ public class SmallRyeReactiveMessagingProcessor {
             try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
                 ctor.setModifiers(Modifier.PUBLIC);
                 ctor.invokeSpecialMethod(
-                        MethodDescriptor.ofConstructor(ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString(),
+                        MethodDescriptor.ofConstructor(
+                                ReactiveMessagingDotNames.ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString(),
                                 Object.class.getName()),
                         ctor.getThis(),
                         ctor.getMethodParam(0));
@@ -542,7 +540,7 @@ public class SmallRyeReactiveMessagingProcessor {
             }
 
             try (MethodCreator invoke = invoker.getMethodCreator("invokeBean", Object.class, Object.class, Object[].class,
-                    CONTINUATION.toString())) {
+                    ReactiveMessagingDotNames.CONTINUATION.toString())) {
                 ResultHandle[] args = new ResultHandle[method.parameters().size()];
                 ResultHandle array = invoke.getMethodParam(1);
                 for (int i = 0; i < method.parameters().size() - 1; ++i) {

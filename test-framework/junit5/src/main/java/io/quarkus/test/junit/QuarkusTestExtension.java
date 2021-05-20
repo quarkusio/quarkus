@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Alternative;
@@ -127,6 +129,7 @@ public class QuarkusTestExtension
     private static Object actualTestInstance;
     private static ClassLoader originalCl;
     private static RunningQuarkusApplication runningQuarkusApplication;
+    private static Pattern clonePattern;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
     private static List<Object> beforeClassCallbacks;
@@ -343,6 +346,9 @@ public class QuarkusTestExtension
             populateCallbacks(startupAction.getClassLoader());
 
             runningQuarkusApplication = startupAction.run();
+            String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
+                    .orElse("java\\..*");
+            clonePattern = Pattern.compile(patternString);
             TracingHandler.quarkusStarted();
 
             //now we have full config reset the hang timer
@@ -951,7 +957,36 @@ public class QuarkusTestExtension
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();
             for (Object arg : originalArguments) {
-                argumentsFromTccl.add(deepClone.clone(arg));
+                boolean cloneRequired = false;
+                if (arg != null) {
+                    Class theclass = arg.getClass();
+                    while (theclass.isArray()) {
+                        theclass = theclass.getComponentType();
+                    }
+                    String className = theclass.getName();
+                    if (theclass.isPrimitive()) {
+                        cloneRequired = false;
+                    } else if (clonePattern.matcher(className).matches()) {
+                        cloneRequired = true;
+                    } else {
+                        try {
+                            cloneRequired = runningQuarkusApplication.getClassLoader()
+                                    .loadClass(theclass.getName()) != theclass;
+                        } catch (ClassNotFoundException e) {
+                            if (arg instanceof Supplier) {
+                                cloneRequired = true;
+                            } else {
+                                throw e;
+                            }
+                        }
+                    }
+                }
+
+                if (cloneRequired) {
+                    argumentsFromTccl.add(deepClone.clone(arg));
+                } else {
+                    argumentsFromTccl.add(arg);
+                }
             }
 
             return newMethod.invoke(actualTestInstance, argumentsFromTccl.toArray(new Object[0]));
@@ -1087,6 +1122,7 @@ public class QuarkusTestExtension
                     log.error("Failed to shutdown Quarkus", e);
                 } finally {
                     runningQuarkusApplication = null;
+                    clonePattern = null;
                     try {
                         if (QuarkusTestExtension.this.originalCl != null) {
                             setCCL(QuarkusTestExtension.this.originalCl);

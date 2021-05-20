@@ -161,18 +161,16 @@ public class TestConsoleHandler implements TestListener {
             @Override
             public void runComplete(TestRunResults results) {
                 firstRun = false;
-                if (results.getCurrentFailing().isEmpty()) {
+                if (results.getCurrentTotalCount() == 0) {
+                    lastStatus = "\u001B[33mNo tests found\u001b[0m";
+                } else if (results.getFailedCount() == 0 && results.getPassedCount() == 0) {
+                    lastStatus = String.format("\u001B[33mAll %d tests were skipped\u001b[0m", results.getSkippedCount());
+                } else if (results.getCurrentFailing().isEmpty()) {
                     lastStatus = String.format(
                             "\u001B[32mAll %d tests are passing (%d skipped), %d tests were run in %dms.\u001b[0m",
                             results.getPassedCount(),
                             results.getSkippedCount(),
                             results.getCurrentTotalCount(), results.getTotalTime());
-                    log.info(
-                            "====================\u001B[32m TEST REPORT #" + results.getId()
-                                    + "\u001b[0m ====================");
-                    log.info(
-                            ">>>>>>>>>>>>>>>>>>>>\u001B[32m " + results.getCurrentPassedCount()
-                                    + " TESTS PASSED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
                 } else {
                     //TODO: this should not use the logger, it should print a nicer status
                     log.error(
@@ -199,7 +197,7 @@ public class TestConsoleHandler implements TestListener {
             }
 
             @Override
-            public void noTests() {
+            public void noTests(TestRunResults results) {
                 firstRun = false;
                 lastStatus = "No tests to run";
                 promptHandler.setStatus(lastStatus);

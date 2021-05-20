@@ -131,4 +131,12 @@ public class TestState {
     public boolean isFailed(TestDescriptor testDescriptor) {
         return failing.contains(testDescriptor.getUniqueId());
     }
+
+    public void pruneDeletedTests(Set<UniqueId> allDiscoveredIds) {
+        failing.removeIf(i -> !allDiscoveredIds.contains(i));
+        for (Map.Entry<String, Map<UniqueId, TestResult>> cr : resultsByClass.entrySet()) {
+            cr.getValue().entrySet().removeIf(s -> !allDiscoveredIds.contains(s.getKey()));
+        }
+        resultsByClass.entrySet().removeIf(s -> s.getValue().isEmpty());
+    }
 }

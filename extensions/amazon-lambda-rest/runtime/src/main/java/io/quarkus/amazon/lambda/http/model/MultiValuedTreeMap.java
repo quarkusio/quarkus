@@ -181,7 +181,6 @@ public class MultiValuedTreeMap<Key, Value> implements Map<Key, List<Value>>, Se
 
     public String toString() {
         StringBuilder result = new StringBuilder();
-        result.append("[");
         String delim = ",";
         for (Object name : keySet()) {
             for (Object value : get(name)) {
@@ -193,7 +192,6 @@ public class MultiValuedTreeMap<Key, Value> implements Map<Key, List<Value>>, Se
                 }
             }
         }
-        result.append("]");
-        return result.toString();
+        return "[" + result.toString() + "]";
     }
 }

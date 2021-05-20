@@ -1,6 +1,7 @@
 package io.quarkus.grpc.runtime.supports;
 
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -45,6 +46,10 @@ public class GrpcClientConfigProvider {
 
     public static AbstractStub<?> configureStub(String serviceName, AbstractStub<?> stub) {
         return Arc.container().instance(GrpcClientConfigProvider.class).get().adjustCallOptions(serviceName, stub);
+    }
+
+    public static BiFunction<String, AbstractStub<?>, AbstractStub<?>> getStubConfigurator() {
+        return GrpcClientConfigProvider::configureStub;
     }
 
 }

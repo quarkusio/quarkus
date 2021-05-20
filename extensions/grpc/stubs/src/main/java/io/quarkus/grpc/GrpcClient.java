@@ -11,7 +11,7 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
 
 /**
- * Qualifies an injected gRPC service.
+ * Qualifies an injected gRPC client.
  */
 @Qualifier
 @Target({ FIELD, PARAMETER })

@@ -82,6 +82,14 @@ public class VertxConfiguration {
     public Duration keepAliveTime;
 
     /**
+     * Prefill thread pool when creating a new Executor.
+     * When {@see io.vertx.core.spi.ExecutorServiceFactory.createExecutor} is called,
+     * initialise with the number of defined threads at startup
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean prefill;
+
+    /**
      * Enables the async DNS resolver.
      */
     @ConfigItem

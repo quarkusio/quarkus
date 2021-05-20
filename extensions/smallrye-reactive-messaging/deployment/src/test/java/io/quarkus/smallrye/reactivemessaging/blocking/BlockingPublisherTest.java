@@ -39,7 +39,7 @@ public class BlockingPublisherTest {
         List<String> threadNames = beanReturningPayloads.threads().stream().distinct().collect(Collectors.toList());
         assertThat(threadNames.contains(Thread.currentThread().getName())).isFalse();
         for (String name : threadNames) {
-            assertThat(name.startsWith("vert.x-worker-thread-")).isTrue();
+            assertThat(name.startsWith("executor-thread-")).isTrue();
         }
     }
 
@@ -49,7 +49,7 @@ public class BlockingPublisherTest {
         List<String> threadNames = beanReturningMessages.threads().stream().distinct().collect(Collectors.toList());
         assertThat(threadNames.contains(Thread.currentThread().getName())).isFalse();
         for (String name : threadNames) {
-            assertThat(name.startsWith("vert.x-worker-thread-")).isTrue();
+            assertThat(name.startsWith("executor-thread-")).isTrue();
         }
     }
 }

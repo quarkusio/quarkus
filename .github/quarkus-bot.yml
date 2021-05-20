@@ -124,8 +124,11 @@ triage:
       notify: [phillip-kruger, jmartisk]
       directories:
         - extensions/smallrye-graphql/
+        - extensions/smallrye-graphql-client/
         - extensions/vertx-graphql/
         - integration-tests/vertx-graphql/
+        - integration-tests/smallrye-graphql/
+        - integration-tests/smallrye-graphql-client/
     - labels: [area/tracing, area/smallrye]
       title: "(trace|tracing)"
       notify: [kenfinnigan, Ladicek]

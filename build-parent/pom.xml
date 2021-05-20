@@ -638,7 +638,7 @@
                     <executions>
                         <execution>
                             <id>javadoc</id>
-                            <phase>deploy</phase>
+                            <phase>package</phase>
                             <goals>
                                 <goal>javadocJar</goal>
                             </goals>

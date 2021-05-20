@@ -68,7 +68,7 @@ public class GrpcServerRecorder {
     private Map<String, List<String>> blockingMethodsPerService = Collections.emptyMap();
 
     private static volatile DevModeWrapper devModeWrapper;
-    private static volatile List<GrpcServiceDefinition> services;
+    private static volatile List<GrpcServiceDefinition> services = Collections.emptyList();
 
     public static List<GrpcServiceDefinition> getServices() {
         return services;

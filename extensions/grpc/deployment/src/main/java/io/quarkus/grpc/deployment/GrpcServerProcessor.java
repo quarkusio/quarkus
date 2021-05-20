@@ -268,24 +268,23 @@ public class GrpcServerProcessor {
     }
 
     @BuildStep
-    HealthBuildItem addHealthChecks(GrpcServerBuildTimeConfig config,
+    void addHealthChecks(GrpcServerBuildTimeConfig config,
             List<BindableServiceBuildItem> bindables,
+            BuildProducer<HealthBuildItem> healthBuildItems,
             BuildProducer<AdditionalBeanBuildItem> beans) {
+        boolean healthEnabled = false;
         if (!bindables.isEmpty()) {
-            boolean healthEnabled = config.mpHealthEnabled;
+            healthEnabled = config.mpHealthEnabled;
 
             if (config.grpcHealthEnabled) {
                 beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcHealthEndpoint.class));
                 healthEnabled = true;
             }
-
-            if (healthEnabled) {
-                beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcHealthStorage.class));
-            }
-            return new HealthBuildItem("io.quarkus.grpc.runtime.health.GrpcHealthCheck",
-                    config.mpHealthEnabled);
-        } else {
-            return null;
+            healthBuildItems.produce(new HealthBuildItem("io.quarkus.grpc.runtime.health.GrpcHealthCheck",
+                    config.mpHealthEnabled));
+        }
+        if (healthEnabled || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcHealthStorage.class));
         }
     }
 

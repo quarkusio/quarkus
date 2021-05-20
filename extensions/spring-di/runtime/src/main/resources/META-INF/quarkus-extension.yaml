@@ -8,4 +8,4 @@ metadata:
   guide: "https://quarkus.io/guides/spring-di"
   categories:
   - "compatibility"
-  status: "preview"
+  status: "stable"

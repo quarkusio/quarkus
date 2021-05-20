@@ -10,4 +10,4 @@ metadata:
   guide: "https://quarkus.io/guides/spring-cloud-config-client"
   categories:
   - "compatibility"
-  status: "preview"
+  status: "stable"

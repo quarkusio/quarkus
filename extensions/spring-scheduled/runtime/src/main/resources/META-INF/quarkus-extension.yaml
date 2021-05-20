@@ -7,4 +7,4 @@ metadata:
   guide: "https://quarkus.io/guides/spring-scheduled"
   categories:
   - "compatibility"
-  status: "preview"
+  status: "stable"

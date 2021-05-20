@@ -9,4 +9,4 @@ metadata:
   guide: "https://quarkus.io/guides/spring-cache"
   categories:
   - "compatibility"
-  status: "preview"
+  status: "stable"

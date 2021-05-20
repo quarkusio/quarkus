@@ -11,4 +11,4 @@ metadata:
   guide: "https://quarkus.io/guides/spring-data-rest"
   categories:
     - "compatibility"
-  status: "experimental"
+  status: "preview"

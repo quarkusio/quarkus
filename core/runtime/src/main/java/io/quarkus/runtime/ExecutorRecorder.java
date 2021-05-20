@@ -32,15 +32,28 @@ public class ExecutorRecorder {
     public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode, ThreadFactory threadFactory) {
         final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig, threadFactory);
-        ExecutorService executor;
-        Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
-        shutdownContext.addLastShutdownTask(shutdownTask);
-        executor = underlying;
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            shutdownContext.addLastShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    for (Runnable i : underlying.shutdownNow()) {
+                        Thread thread = new Thread(i, "Shutdown task thread");
+                        thread.setDaemon(true);
+                        thread.start();
+                    }
+                    current = null;
+
+                }
+            });
+        } else {
+            Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
+            shutdownContext.addLastShutdownTask(shutdownTask);
+        }
         if (threadPoolConfig.prefill) {
             underlying.prestartAllCoreThreads();
         }
-        current = executor;
-        return executor;
+        current = underlying;
+        return underlying;
     }
 
     private static Runnable createShutdownTask(ThreadPoolConfig threadPoolConfig, EnhancedQueueExecutor executor) {

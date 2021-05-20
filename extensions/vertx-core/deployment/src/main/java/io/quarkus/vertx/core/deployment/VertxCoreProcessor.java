@@ -15,6 +15,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
@@ -64,13 +65,14 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
+    @Produce(ServiceStartBuildItem.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
     CoreVertxBuildItem build(VertxCoreRecorder recorder,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItem) {
+            ExecutorBuildItem executorBuildItem) {
 
         Collections.sort(vertxOptionsConsumers);
         List<Consumer<VertxOptions>> consumers = new ArrayList<>(vertxOptionsConsumers.size());
@@ -79,7 +81,7 @@ class VertxCoreProcessor {
         }
 
         Supplier<Vertx> vertx = recorder.configureVertx(config,
-                launchMode.getLaunchMode(), shutdown, consumers);
+                launchMode.getLaunchMode(), shutdown, consumers, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)
@@ -112,11 +114,5 @@ class VertxCoreProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     ThreadFactoryBuildItem createVertxThreadFactory(VertxCoreRecorder recorder) {
         return new ThreadFactoryBuildItem(recorder.createThreadFactory());
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void setSharedExecutorInFactory(VertxCoreRecorder recorder, ExecutorBuildItem executorBuildItem) {
-        recorder.setupExecutorFactory(executorBuildItem.getExecutorProxy());
     }
 }

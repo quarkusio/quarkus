@@ -190,6 +190,11 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     private Integer extractTransactionConfigurationTimeoutFromAnnotation(InvocationContext ic) {
         TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
+
+        if (configAnnotation == null) {
+            return null;
+        }
+
         if (!configAnnotation.timeoutFromConfigProperty().equals(TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY)) {
             Optional<Integer> configTimeout = ConfigProvider.getConfig()
                     .getOptionalValue(configAnnotation.timeoutFromConfigProperty(), Integer.class);

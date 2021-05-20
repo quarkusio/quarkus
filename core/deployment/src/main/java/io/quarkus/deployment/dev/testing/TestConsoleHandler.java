@@ -1,5 +1,14 @@
 package io.quarkus.deployment.dev.testing;
 
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.GREEN;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RED;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RESET;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.YELLOW;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.helpOption;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusFooter;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusHeader;
+import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.toggleStatus;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,8 +27,8 @@ public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final String PAUSED_PROMPT = "\u001b[33mTests paused, press [r] to resume\u001b[0m";
-    public static final String FIRST_RUN_PROMPT = "\u001b[33mRunning Tests for the first time\u001b[0m";
+    public static final String PAUSED_PROMPT = YELLOW + "Tests paused, press [r] to resume" + RESET;
+    public static final String FIRST_RUN_PROMPT = YELLOW + "Running Tests for the first time" + RESET;
     public static final String RUNNING_PROMPT = "Press [r] to re-run, [v] to view full results, [p] to pause, [h] for more options>";
     public static final String ABORTED_PROMPT = "Test run aborted.";
 
@@ -47,7 +56,7 @@ public class TestConsoleHandler implements TestListener {
             if (disabled) {
                 for (int i : keys) {
                     if (i == 'r') {
-                        promptHandler.setStatus("\u001B[33mStarting tests\u001b[0m");
+                        promptHandler.setStatus(YELLOW + "Starting tests" + RESET);
                         TestSupport.instance().get().start();
                     }
                 }
@@ -96,23 +105,18 @@ public class TestConsoleHandler implements TestListener {
     }
 
     public void printUsage() {
-        System.out.println("\nThe following commands are available:");
-        System.out.println("[\u001b[32mr\u001b[0m] - Re-run all tests");
-        System.out.println("[\u001b[32mf\u001b[0m] - Re-run failed tests");
-        System.out.println("[\u001b[32mb\u001b[0m] - Toggle 'broken only' mode, where only failing tests are run ("
-                + (testController.isBrokenOnlyMode() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
-        System.out.println("[\u001b[32mv\u001b[0m] - Print failures from the last test run");
-        System.out.println("[\u001b[32mo\u001b[0m] - Toggle test output ("
-                + (testController.isDisplayTestOutput() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
-        System.out.println("[\u001b[32mp\u001b[0m] - Pause tests");
-        System.out.println("[\u001b[32mi\u001b[0m] - Toggle instrumentation based reload ("
-                + (testController.isInstrumentationEnabled() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m")
-                + ")");
-        System.out.println("[\u001b[32ml\u001b[0m] - Toggle live reload ("
-                + (testController.isLiveReloadEnabled() ? "\u001b[32menabled\u001b[0m" : "\u001B[91mdisabled\u001b[0m") + ")");
-        System.out.println("[\u001b[32ms\u001b[0m] - Force live reload scan");
-        System.out.println("[\u001b[32mh\u001b[0m] - Display this help");
-
+        System.out.println(RESET + "\nThe following commands are available:");
+        System.out.println(helpOption("r", "Re-run all tests"));
+        System.out.println(helpOption("f", "Re-run failed tests"));
+        System.out.println(helpOption("b", "Toggle 'broken only' mode, where only failing tests are run",
+                testController.isBrokenOnlyMode()));
+        System.out.println(helpOption("v", "Print failures from the last test run"));
+        System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
+        System.out.println(helpOption("p", "Pause tests"));
+        System.out.println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
+        System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
+        System.out.println(helpOption("s", "Force live reload scan"));
+        System.out.println(helpOption("h", "Display this help"));
     }
 
     @Override
@@ -162,32 +166,30 @@ public class TestConsoleHandler implements TestListener {
             public void runComplete(TestRunResults results) {
                 firstRun = false;
                 if (results.getCurrentTotalCount() == 0) {
-                    lastStatus = "\u001B[33mNo tests found\u001b[0m";
+                    lastStatus = YELLOW + "No tests found" + RESET;
                 } else if (results.getFailedCount() == 0 && results.getPassedCount() == 0) {
-                    lastStatus = String.format("\u001B[33mAll %d tests were skipped\u001b[0m", results.getSkippedCount());
+                    lastStatus = String.format(YELLOW + "All %d tests were skipped" + RESET, results.getSkippedCount());
                 } else if (results.getCurrentFailing().isEmpty()) {
                     lastStatus = String.format(
-                            "\u001B[32mAll %d tests are passing (%d skipped), %d tests were run in %dms.\u001b[0m",
+                            GREEN + "All %d tests are passing (%d skipped), %d tests were run in %dms." + RESET,
                             results.getPassedCount(),
                             results.getSkippedCount(),
                             results.getCurrentTotalCount(), results.getTotalTime());
                 } else {
                     //TODO: this should not use the logger, it should print a nicer status
-                    log.error(
-                            "====================\u001B[91m TEST REPORT #" + results.getId()
-                                    + "\u001b[0m ====================");
+                    log.error(statusHeader("TEST REPORT #" + results.getId()));
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
                             log.error(
-                                    "Test " + test.getDisplayName() + " failed \n",
+                                    RED + "Test " + test.getDisplayName() + " failed \n" + RESET,
                                     test.getTestExecutionResult().getThrowable().get());
                         }
                     }
                     log.error(
-                            ">>>>>>>>>>>>>>>>>>>>\u001B[91m " + results.getCurrentFailedCount()
-                                    + " TESTS FAILED\u001b[0m <<<<<<<<<<<<<<<<<<<<");
+                            statusFooter(RED + results.getCurrentFailedCount() + " TESTS FAILED"));
                     lastStatus = String.format(
-                            "\u001B[91m%d tests failed (%d passing, %d skipped), %d tests were run in %dms.\u001b[0m",
+                            RED + "%d tests failed" + RESET + " (" + GREEN + "%d passing" + RESET + ", " + YELLOW + "%d skipped"
+                                    + RESET + "), %d tests were run in %dms." + RESET,
                             results.getCurrentFailedCount(), results.getPassedCount(), results.getSkippedCount(),
                             results.getCurrentTotalCount(), results.getTotalTime());
                 }
@@ -220,6 +222,38 @@ public class TestConsoleHandler implements TestListener {
                         + className + "#" + testIdentifier.getDisplayName());
             }
         });
+
+    }
+
+    static class MessageFormat {
+
+        public static final String RED = "\u001B[91m";
+        public static final String GREEN = "\u001b[32m";
+        public static final String YELLOW = "\u001b[33m";
+        public static final String RESET = "\u001b[0m";
+
+        private MessageFormat() {
+        }
+
+        public static String statusHeader(String header) {
+            return RESET + "==================== " + header + RESET + " ====================";
+        }
+
+        public static String statusFooter(String footer) {
+            return RESET + ">>>>>>>>>>>>>>>>>>>> " + footer + RESET + " <<<<<<<<<<<<<<<<<<<<";
+        }
+
+        public static String toggleStatus(boolean enabled) {
+            return " (" + (enabled ? GREEN + "enabled" + RESET + "" : RED + "disabled") + RESET + ")";
+        }
+
+        public static String helpOption(String key, String description) {
+            return "[" + GREEN + key + RESET + "] - " + description;
+        }
+
+        public static String helpOption(String key, String description, boolean enabled) {
+            return helpOption(key, description) + toggleStatus(enabled);
+        }
 
     }
 

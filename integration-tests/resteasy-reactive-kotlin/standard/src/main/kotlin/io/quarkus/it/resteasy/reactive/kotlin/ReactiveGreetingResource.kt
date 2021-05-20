@@ -17,20 +17,10 @@ class ReactiveGreetingResource @Inject constructor (val req : RequestScopedKotli
     suspend fun hello(): String {
         req.message = "msg"
         delay(50)
-        doSomeWork()
         if (req.message != "msg") {
             throw Throwable("Request scoped data was lost");
         }
         return "Hello RestEASY Reactive"
-    }
-
-    private suspend fun doSomeWork() {
-        BufferedReader(
-            InputStreamReader(
-                URL("http://www.github.com")
-                    .openConnection()
-                    .getInputStream()))
-            .lines()
     }
 
     @GET
@@ -45,7 +35,6 @@ class ReactiveGreetingResource @Inject constructor (val req : RequestScopedKotli
     @Path("/{name}")
     suspend fun hello(name: String): String {
         delay(50)
-        doSomeWork()
         return "Hello ${name}"
     }
 }

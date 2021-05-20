@@ -35,7 +35,7 @@ final class PropertyUtils {
                         getters.put(name, i);
                     }
                 } else if (i.getName().startsWith("is") && i.getName().length() > 3 && i.getParameterCount() == 0
-                        && i.getReturnType() == boolean.class) {
+                        && (i.getReturnType() == boolean.class || i.getReturnType() == Boolean.class)) {
                     String name = Character.toLowerCase(i.getName().charAt(2)) + i.getName().substring(3);
                     getters.put(name, i);
                 } else if (i.getName().startsWith("set") && i.getName().length() > 3 && i.getParameterCount() == 1) {

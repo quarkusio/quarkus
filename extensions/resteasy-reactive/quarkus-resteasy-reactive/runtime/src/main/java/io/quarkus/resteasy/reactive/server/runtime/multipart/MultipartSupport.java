@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.runtime.multipart;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -86,14 +88,41 @@ public final class MultipartSupport {
     }
 
     public static QuarkusFileUpload getFileUpload(String formName, ResteasyReactiveRequestContext context) {
+        List<QuarkusFileUpload> uploads = getFileUploads(formName, context);
+        if (!uploads.isEmpty()) {
+            return uploads.get(0);
+        }
+        return null;
+    }
+
+    public static List<QuarkusFileUpload> getFileUploads(String formName, ResteasyReactiveRequestContext context) {
+        List<QuarkusFileUpload> result = new ArrayList<>();
         RoutingContext routingContext = context.unwrap(RoutingContext.class);
         Set<FileUpload> fileUploads = routingContext.fileUploads();
         for (FileUpload fileUpload : fileUploads) {
             if (fileUpload.name().equals(formName)) {
-                return new QuarkusFileUpload(fileUpload);
+                result.add(new QuarkusFileUpload(fileUpload));
             }
         }
-        return null;
+        return result;
+    }
+
+    public static List<File> getJavaIOFileUploads(String formName, ResteasyReactiveRequestContext context) {
+        List<File> result = new ArrayList<>();
+        List<QuarkusFileUpload> uploads = getFileUploads(formName, context);
+        for (QuarkusFileUpload upload : uploads) {
+            result.add(upload.uploadedFile().toFile());
+        }
+        return result;
+    }
+
+    public static List<Path> getJavaPathFileUploads(String formName, ResteasyReactiveRequestContext context) {
+        List<Path> result = new ArrayList<>();
+        List<QuarkusFileUpload> uploads = getFileUploads(formName, context);
+        for (QuarkusFileUpload upload : uploads) {
+            result.add(upload.uploadedFile());
+        }
+        return result;
     }
 
     public static List<QuarkusFileUpload> getFileUploads(ResteasyReactiveRequestContext context) {

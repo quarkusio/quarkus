@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler;
 import org.jetbrains.kotlin.config.Services;
 
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.CompilationProvider;
 
 public class KotlinCompilationProvider implements CompilationProvider {
@@ -87,7 +88,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
     }
 
     @Override
-    public Path getSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath) {
+    public Path getSourcePath(Path classFilePath, PathsCollection sourcePaths, String classesPath) {
         // return same class so it is not removed
         return classFilePath;
     }

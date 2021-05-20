@@ -49,7 +49,6 @@ public class ConfigPropertiesBuildStep {
         Map<DotName, Boolean> failOnMismatchingMembers = new HashMap<>();
 
         // handle @ConfigProperties
-        final Set<String> excludedDeclaringClasses = exclusionsBuildItem.getExcludedDeclaringClasses();
         for (AnnotationInstance instance : index.getAnnotations(DotNames.CONFIG_PROPERTIES)) {
             final AnnotationTarget target = instance.target();
             if (exclusionsBuildItem.isExcluded(target)) {

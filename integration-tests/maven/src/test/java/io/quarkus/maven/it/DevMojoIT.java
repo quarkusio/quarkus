@@ -849,6 +849,51 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testThatMultipleResourceDirectoriesAreSupported() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-multiple-resource-dirs");
+        testMultipleResourceDirectories();
+    }
+
+    @Test
+    public void testThatMultipleResourceDirectoriesAreSupportedWithProfile() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-multiple-resource-dirs-with-profile");
+        testMultipleResourceDirectories();
+    }
+
+    private void testMultipleResourceDirectories() throws MavenInvocationException, IOException {
+        runAndCheck();
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Bonjour/Other"));
+
+        // Update the application.properties
+        File source = new File(testDir, "src/main/resources-primary/application.properties");
+        FileUtils.write(source, "greeting=Salut", "UTF-8");
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Salut/Other"));
+
+        // Add the application.yaml
+        source = new File(testDir, "src/main/resources-secondary/application.yaml");
+        FileUtils.write(source, "other:\n" +
+                "  greeting: Buenos dias", "UTF-8");
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Salut/Buenos dias"));
+
+        // Update the application.yaml
+        FileUtils.write(source, "other:\n" +
+                "  greeting: Hola", "UTF-8");
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Salut/Hola"));
+    }
+
+    @Test
     public void testThatApplicationRecoversCompilationIssue() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-compilation-issue");
         runAndCheck();

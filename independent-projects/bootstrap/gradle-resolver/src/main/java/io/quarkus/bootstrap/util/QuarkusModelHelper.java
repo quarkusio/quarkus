@@ -88,8 +88,9 @@ public class QuarkusModelHelper {
 
     public static Path getClassPath(WorkspaceModule model) throws BootstrapGradleException {
         // TODO handle multiple class directory
-        final Optional<Path> classDir = model.getSourceSet().getSourceDirectories().stream().filter(File::exists)
-                .map(File::toPath).findFirst();
+        final Optional<Path> classDir = model.getSourceSet().getSourceDirectories().toList().stream()
+                .filter(Files::exists)
+                .findFirst();
         if (!classDir.isPresent()) {
             throw new BootstrapGradleException("Failed to locate class directory");
         }
@@ -143,12 +144,12 @@ public class QuarkusModelHelper {
         if (!appArtifact.isResolved()) {
             PathsCollection.Builder paths = PathsCollection.builder();
             WorkspaceModule module = model.getWorkspace().getMainModule();
-            module.getSourceSet().getSourceDirectories().stream().filter(File::exists).map(File::toPath)
+            module.getSourceSet().getSourceDirectories().toList().stream()
+                    .filter(Files::exists)
                     .forEach(paths::add);
-            File resourceDirectory = module.getSourceSet().getResourceDirectory();
-            if (resourceDirectory != null && resourceDirectory.exists()) {
-                paths.add(resourceDirectory.toPath());
-            }
+            module.getSourceSet().getResourceDirectories().toList().stream()
+                    .filter(Files::exists)
+                    .forEach(paths::add);
             appArtifact.setPaths(paths.build());
         }
 

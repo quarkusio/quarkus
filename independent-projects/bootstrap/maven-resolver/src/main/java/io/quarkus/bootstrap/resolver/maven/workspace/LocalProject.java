@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import java.io.IOException;
@@ -10,8 +11,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -228,20 +231,28 @@ public class LocalProject {
         return getSourcesSourcesDir().getParent();
     }
 
-    public Path getResourcesSourcesDir() {
+    public PathsCollection getResourcesSourcesDirs() {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getResources();
-        //todo: support multiple resources dirs for config hot deployment
-        final String resourcesDir = resources.isEmpty() ? null : resources.get(0).getDirectory();
-        return resolveRelativeToBaseDir(resourcesDir, "src/main/resources");
+        if (resources.isEmpty()) {
+            return PathsCollection.of(resolveRelativeToBaseDir(null, "src/main/resources"));
+        }
+        return PathsCollection.from(resources.stream()
+                .map(Resource::getDirectory)
+                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/main/resources"))
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
     }
 
-    public Path getTestResourcesSourcesDir() {
+    public PathsCollection getTestResourcesSourcesDirs() {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getTestResources();
-        //todo: support multiple resources dirs for config hot deployment
-        final String resourcesDir = resources.isEmpty() ? null : resources.get(0).getDirectory();
-        return resolveRelativeToBaseDir(resourcesDir, "src/test/resources");
+        if (resources.isEmpty()) {
+            return PathsCollection.of(resolveRelativeToBaseDir(null, "src/test/resources"));
+        }
+        return PathsCollection.from(resources.stream()
+                .map(Resource::getDirectory)
+                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/test/resources"))
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
     }
 
     public ModelBuildingResult getModelBuildingResult() {
@@ -267,6 +278,10 @@ public class LocalProject {
 
     public AppArtifact getAppArtifact(String extension) {
         return new AppArtifact(groupId, artifactId, "", extension, getVersion());
+    }
+
+    public Path resolveRelativeToBaseDir(String path) {
+        return resolveRelativeToBaseDir(path, null);
     }
 
     private Path resolveRelativeToBaseDir(String path, String defaultPath) {

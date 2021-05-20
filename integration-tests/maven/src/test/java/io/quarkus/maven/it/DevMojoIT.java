@@ -12,7 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -582,7 +582,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 "        return \"bar\";\n" +
                 "    }\n" +
                 "}\n";
-        FileUtils.write(source, myNewResource, Charset.forName("UTF-8"));
+        FileUtils.write(source, myNewResource, StandardCharsets.UTF_8);
 
         // Wait until we get "bar"
         await()
@@ -616,7 +616,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 "        return \"to be deleted\";\n" +
                 "    }\n" +
                 "}";
-        FileUtils.write(source, classDeletionResource, Charset.forName("UTF-8"));
+        FileUtils.write(source, classDeletionResource, StandardCharsets.UTF_8);
 
         runAndCheck();
         // Wait until source file is compiled

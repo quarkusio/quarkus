@@ -39,5 +39,7 @@ public final class OracleReflections {
                 "oracle.jdbc.driver.BlockSource$ThreadedCachingBlockSource$BlockReleaser"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.net.nt.TimeoutInterruptHandler"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.net.nt.Clock"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.NoSupportHAManager"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.LogicalConnection"));
     }
 }

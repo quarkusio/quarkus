@@ -19,6 +19,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
@@ -41,6 +42,13 @@ public class AmazonServicesClientsProcessor {
     void awsAppArchiveMarkers(BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> archiveMarker) {
         archiveMarker.produce(new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_APPLICATION_ARCHIVE_MARKERS));
         archiveMarker.produce(new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_XRAY_ARCHIVE_MARKER));
+    }
+
+    @BuildStep
+    void runtimeInitialize(BuildProducer<RuntimeInitializedClassBuildItem> producer) {
+        // FullJitterBackoffStrategy uses j.u.Ramdom, so needs to be runtime-initialized
+        producer.produce(
+                new RuntimeInitializedClassBuildItem("software.amazon.awssdk.core.retry.backoff.FullJitterBackoffStrategy"));
     }
 
     @BuildStep

@@ -7,6 +7,7 @@ import io.quarkus.builder.BuildResult;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.mongodb.deployment.devservices.DevServicesMongoResultBuildItem;
 import io.quarkus.redis.client.deployment.devservices.DevServicesRedisResultBuildItem;
+import io.quarkus.vault.deployment.devservices.DevServicesVaultResultBuildItem;
 
 public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult> {
     @Override
@@ -54,6 +55,14 @@ public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult>
                 for (Map.Entry<String, String> entry : redisNamedConfiguration.getValue().getProperties().entrySet()) {
                     propertyConsumer.accept(entry.getKey(), entry.getValue());
                 }
+            }
+        }
+
+        DevServicesVaultResultBuildItem vaultDevServices = buildResult.consumeOptional(DevServicesVaultResultBuildItem.class);
+        if (vaultDevServices != null) {
+            Map<String, String> properties = vaultDevServices.getProperties();
+            for (Map.Entry<String, String> entry : properties.entrySet()) {
+                propertyConsumer.accept(entry.getKey(), entry.getValue());
             }
         }
     }

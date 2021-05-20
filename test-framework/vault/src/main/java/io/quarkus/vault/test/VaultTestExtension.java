@@ -48,6 +48,7 @@ import org.testcontainers.containers.output.OutputFrame;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.runtime.VaultConfigHolder;
+import io.quarkus.vault.runtime.VaultVersions;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
@@ -244,7 +245,7 @@ public class VaultTestExtension {
     }
 
     private String getVaultImage() {
-        return "vault:1.6.3";
+        return "vault:" + VaultVersions.VAULT_TEST_VERSION;
     }
 
     private void initVault() throws InterruptedException, IOException {

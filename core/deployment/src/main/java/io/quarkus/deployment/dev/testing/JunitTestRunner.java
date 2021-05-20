@@ -139,12 +139,20 @@ public class JunitTestRunner {
             Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName()).newInstance();
             currentTestAppConsumer.accept(testApplication);
 
+            Set<UniqueId> allDiscoveredIds = new HashSet<>();
             try (DiscoveryResult quarkusTestClasses = discoverTestClasses(devModeContext)) {
 
                 Launcher launcher = LauncherFactory.create(LauncherConfig.builder().build());
                 LauncherDiscoveryRequestBuilder launchBuilder = new LauncherDiscoveryRequestBuilder()
                         .selectors(quarkusTestClasses.testClasses.stream().map(DiscoverySelectors::selectClass)
                                 .collect(Collectors.toList()));
+                launchBuilder.filters(new PostDiscoveryFilter() {
+                    @Override
+                    public FilterResult apply(TestDescriptor testDescriptor) {
+                        allDiscoveredIds.add(testDescriptor.getUniqueId());
+                        return FilterResult.included(null);
+                    }
+                });
                 if (classScanResult != null) {
                     launchBuilder.filters(testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
                 }
@@ -164,13 +172,16 @@ public class JunitTestRunner {
                 if (failingTestsOnly) {
                     launchBuilder.filters(new CurrentlyFailingFilter());
                 }
+
                 LauncherDiscoveryRequest request = launchBuilder
                         .build();
                 TestPlan testPlan = launcher.discover(request);
                 if (!testPlan.containsTests()) {
+                    testState.pruneDeletedTests(allDiscoveredIds);
                     //nothing to see here
                     for (TestRunListener i : listeners) {
-                        i.noTests();
+                        i.noTests(new TestRunResults(runId, classScanResult, classScanResult == null, start,
+                                System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
                     }
                     return;
                 }
@@ -230,6 +241,33 @@ public class JunitTestRunner {
                     @Override
                     public void executionSkipped(TestIdentifier testIdentifier, String reason) {
                         waitTillResumed();
+                        if (aborted) {
+                            return;
+                        }
+                        Class<?> testClass = null;
+                        String displayName = testIdentifier.getDisplayName();
+                        TestSource testSource = testIdentifier.getSource().orElse(null);
+                        touchedClasses.pop();
+                        UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
+                        if (testSource instanceof ClassSource) {
+                            testClass = ((ClassSource) testSource).getJavaClass();
+                        } else if (testSource instanceof MethodSource) {
+                            testClass = ((MethodSource) testSource).getJavaClass();
+                            displayName = testClass.getSimpleName() + "#" + displayName;
+                        }
+                        if (testClass != null) {
+                            Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
+                                    s -> new HashMap<>());
+                            TestResult result = new TestResult(displayName, testClass.getName(), id,
+                                    TestExecutionResult.aborted(null),
+                                    logHandler.captureOutput(), testIdentifier.isTest(), runId);
+                            results.put(id, result);
+                            if (result.isTest()) {
+                                for (TestRunListener listener : listeners) {
+                                    listener.testComplete(result);
+                                }
+                            }
+                        }
                     }
 
                     @Override
@@ -323,6 +361,7 @@ public class JunitTestRunner {
                     return;
                 }
                 testState.updateResults(resultsByClass);
+                testState.pruneDeletedTests(allDiscoveredIds);
                 if (classScanResult != null) {
                     testState.classesRemoved(classScanResult.getDeletedClassNames());
                 }

@@ -232,7 +232,11 @@ public class TestRunner {
                 @Override
                 public void runComplete(TestRunResults results) {
                     testSupport.testRunResults = results;
+                }
 
+                @Override
+                public void noTests(TestRunResults results) {
+                    testSupport.testRunResults = results;
                 }
             });
             runner = builder

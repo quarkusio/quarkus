@@ -86,6 +86,9 @@ public class TestsProcessor {
                     testStatus.setTestsPassed(result.getCurrentPassedCount());
                     testStatus.setTestsSkipped(result.getCurrentSkippedCount());
                     testStatus.setTestsRun(result.getFailedCount() + result.getPassedCount());
+                    testStatus.setTotalTestsFailed(result.getFailedCount());
+                    testStatus.setTotalTestsPassed(result.getPassedCount());
+                    testStatus.setTotalTestsSkipped(result.getSkippedCount());
                 }
                 event.response().end(JsonObject.mapFrom(testStatus).encode());
             }

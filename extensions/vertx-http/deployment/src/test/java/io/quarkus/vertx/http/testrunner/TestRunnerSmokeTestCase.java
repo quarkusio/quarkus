@@ -42,6 +42,9 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(2L, ts.getTotalTestsFailed());
+        Assertions.assertEquals(1L, ts.getTotalTestsPassed());
+        Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         SuiteResult suiteResult = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/result")
@@ -71,6 +74,9 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(1L, ts.getTotalTestsFailed());
+        Assertions.assertEquals(2L, ts.getTotalTestsPassed());
+        Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         //fix the unit test
@@ -86,6 +92,43 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTotalTestsFailed());
+        Assertions.assertEquals(3L, ts.getTotalTestsPassed());
+        Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
+        Assertions.assertEquals(-1L, ts.getRunning());
+
+        //disable the unit test
+        test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
+            @Override
+            public String apply(String s) {
+                return s.replace("@Test", "@Test @org.junit.jupiter.api.Disabled");
+            }
+        });
+        ts = ContinuousTestingTestUtils.waitForRun(4);
+        Assertions.assertEquals(4L, ts.getLastRun());
+        Assertions.assertEquals(0L, ts.getTestsFailed());
+        Assertions.assertEquals(0L, ts.getTestsPassed());
+        Assertions.assertEquals(1L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTotalTestsFailed());
+        Assertions.assertEquals(2L, ts.getTotalTestsPassed());
+        Assertions.assertEquals(1L, ts.getTotalTestsSkipped());
+        Assertions.assertEquals(-1L, ts.getRunning());
+
+        //delete the unit test
+        test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
+            @Override
+            public String apply(String s) {
+                return s.replace("@Test", "//@Test");
+            }
+        });
+        ts = ContinuousTestingTestUtils.waitForRun(5);
+        Assertions.assertEquals(5L, ts.getLastRun());
+        Assertions.assertEquals(0L, ts.getTestsFailed());
+        Assertions.assertEquals(0L, ts.getTestsPassed());
+        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(0L, ts.getTotalTestsFailed());
+        Assertions.assertEquals(2L, ts.getTotalTestsPassed());
+        Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 
     }

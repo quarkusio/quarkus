@@ -68,6 +68,11 @@ public class GrpcServerRecorder {
     private Map<String, List<String>> blockingMethodsPerService = Collections.emptyMap();
 
     private static volatile DevModeWrapper devModeWrapper;
+    private static volatile List<GrpcServiceDefinition> services;
+
+    public static List<GrpcServiceDefinition> getServices() {
+        return services;
+    }
 
     public void initializeGrpcServer(RuntimeValue<Vertx> vertxSupplier,
             GrpcConfiguration cfg,
@@ -243,10 +248,15 @@ public class GrpcServerRecorder {
             ServerServiceDefinition definition = service.bindService();
             definitions.add(new GrpcServiceDefinition(service, definition));
         }
+
+        // Set the last service definitions in use, referenced in the Dev UI
+        GrpcServerRecorder.services = definitions;
+
         return definitions;
     }
 
-    private static class GrpcServiceDefinition {
+    public static final class GrpcServiceDefinition {
+
         public final BindableService service;
         public final ServerServiceDefinition definition;
 

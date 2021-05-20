@@ -59,7 +59,6 @@ import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -106,8 +105,10 @@ import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.impl.VertxHandler;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 
 public class DevConsoleProcessor {
 
@@ -317,10 +318,13 @@ public class DevConsoleProcessor {
         for (DevConsoleRouteBuildItem i : routes) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // deployment side handling
-            if (!(i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy)) {
-                router.route(HttpMethod.valueOf(i.getMethod()),
-                        "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath())
-                        .handler(i.getHandler());
+            if (i.isDeploymentSide()) {
+                Route route = router.route(HttpMethod.valueOf(i.getMethod()),
+                        "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath());
+                if (i.isBodyHandlerRequired()) {
+                    route.handler(BodyHandler.create());
+                }
+                route.handler(i.getHandler());
             }
         }
 
@@ -369,7 +373,7 @@ public class DevConsoleProcessor {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             // otherwise this is handled in the setupDeploymentSideHandling method
-            if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
+            if (!i.isDeploymentSide()) {
                 routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
                                 "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),

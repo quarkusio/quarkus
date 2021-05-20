@@ -302,4 +302,5 @@ public class GrpcServerProcessor {
     ExtensionSslNativeSupportBuildItem extensionSslNativeSupport() {
         return new ExtensionSslNativeSupportBuildItem(GRPC_SERVER);
     }
+
 }

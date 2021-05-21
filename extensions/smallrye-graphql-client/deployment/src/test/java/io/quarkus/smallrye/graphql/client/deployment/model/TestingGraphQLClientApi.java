@@ -6,7 +6,7 @@ import org.eclipse.microprofile.graphql.Query;
 
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
-@GraphQLClientApi
+@GraphQLClientApi(configKey = "typesafeclient")
 public interface TestingGraphQLClientApi {
 
     @Query

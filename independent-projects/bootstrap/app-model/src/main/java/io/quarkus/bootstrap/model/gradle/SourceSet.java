@@ -1,10 +1,11 @@
 package io.quarkus.bootstrap.model.gradle;
 
-import io.quarkus.bootstrap.model.PathsCollection;
+import java.io.File;
+import java.util.Set;
 
 public interface SourceSet {
 
-    PathsCollection getSourceDirectories();
+    Set<File> getSourceDirectories();
 
-    PathsCollection getResourceDirectories();
+    Set<File> getResourceDirectories();
 }

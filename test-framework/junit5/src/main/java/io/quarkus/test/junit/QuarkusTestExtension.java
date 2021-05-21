@@ -79,6 +79,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
@@ -278,8 +279,9 @@ public class QuarkusTestExtension
             if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
                 QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
                 if (model != null) {
-                    final PathsCollection classDirectories = model.getWorkspace().getMainModule().getSourceSet()
-                            .getSourceDirectories();
+                    final PathsCollection classDirectories = PathsUtils
+                            .toPathsCollection(model.getWorkspace().getMainModule().getSourceSet()
+                                    .getSourceDirectories());
                     for (Path classes : classDirectories) {
                         if (Files.exists(classes) && !rootBuilder.contains(classes)) {
                             rootBuilder.add(classes);

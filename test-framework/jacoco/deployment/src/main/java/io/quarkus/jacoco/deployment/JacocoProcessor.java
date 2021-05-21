@@ -3,7 +3,6 @@ package io.quarkus.jacoco.deployment;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
@@ -131,12 +130,12 @@ public class JacocoProcessor {
                 QuarkusModel model = BuildToolHelper.enableGradleAppModelForDevMode(targetdir.toPath());
                 for (WorkspaceModule i : model.getWorkspace().getAllModules()) {
                     info.savedData.add(new File(i.getBuildDir(), config.dataFile).getAbsolutePath());
-                    for (Path src : i.getSourceSourceSet().getSourceDirectories()) {
-                        sources.add(src.toAbsolutePath().toString());
+                    for (File src : i.getSourceSourceSet().getSourceDirectories()) {
+                        sources.add(src.getAbsolutePath());
                     }
-                    for (Path classesDir : i.getSourceSet().getSourceDirectories()) {
-                        if (Files.isDirectory(classesDir)) {
-                            for (final File file : FileUtils.getFiles(classesDir.toFile(), includes, excludes,
+                    for (File classesDir : i.getSourceSet().getSourceDirectories()) {
+                        if (classesDir.isDirectory()) {
+                            for (final File file : FileUtils.getFiles(classesDir, includes, excludes,
                                     true)) {
                                 if (file.getName().endsWith(".class")) {
                                     classes.add(file.getAbsolutePath());

@@ -252,7 +252,7 @@ Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
 
 === Profile aware files
 
-In this case, properties for a specific profile may reside in an `application-{profile}.yaml` named file. The previous
+In this case, properties for a specific profile may reside in an `application-{profile}.properties` named file. The previous
 example may be expressed as:
 
 .application.properties
@@ -479,6 +479,10 @@ However, some extensions do define properties _overridable at runtime_. A simple
 and password which is only known specifically in your target environment, so they can be set and influence the
 application behaviour at runtime.
 
+== Change build time properties after your application has been published
+
+If you are in the rare situation that you need to change the build time configuration after your application is built, then check out how link:reaugmentation[re-augmentation] can be used to rebuild the augmentation output for a different build time configuration.
+
 [[additional-information]]
 == Additional Information
 
@@ -504,6 +508,6 @@ Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Con
 For more information, please check the
 link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].
 
-== Change build time properties after your application has been published
+== Configuration Reference
 
-If you are in the rare situation that you need to change the build time configuration after your application is built, then check out how link:reaugmentation[re-augmentation] can be used to rebuild the augmentation output for a different build time configuration.
+include::{generated-dir}/config/quarkus-config-config.adoc[opts=optional, leveloffset=+1]

@@ -14,6 +14,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
 
 /**
  * Subclass of {@link WebApplicationException} for use by clients, which forbids setting a response that
@@ -24,35 +25,36 @@ import javax.ws.rs.core.Response;
 @SuppressWarnings("serial")
 public class WebClientApplicationException extends WebApplicationException {
 
-    public WebClientApplicationException() {
-        super();
+    public WebClientApplicationException(int responseStatus) {
+        this(responseStatus, null);
     }
 
-    public WebClientApplicationException(String reason) {
-        super(reason, null, DummyResponse.INSTANCE);
+    public WebClientApplicationException(int responseStatus, String responseReasonPhrase) {
+        super("Server response is: " + responseStatus, null, new DummyResponse(responseStatus, responseReasonPhrase));
     }
 
-    @Override
-    public final Response getResponse() {
-        return null;
-    }
-
-    // used in order to avoid depending on the server parts just for generating the exception
+    /**
+     * Used in order to avoid depending on the server parts just for generating the exception.
+     * The only meaningful information it has is the response code.
+     */
     private static class DummyResponse extends Response {
 
-        private static final DummyResponse INSTANCE = new DummyResponse();
+        private final int responseStatus;
+        private final StatusType statusType;
 
-        private DummyResponse() {
+        private DummyResponse(int responseStatus, String responseReasonPhrase) {
+            this.responseStatus = responseStatus;
+            this.statusType = new StatusTypeImpl(responseStatus, responseReasonPhrase);
         }
 
         @Override
         public int getStatus() {
-            return 0;
+            return responseStatus;
         }
 
         @Override
         public StatusType getStatusInfo() {
-            return null;
+            return statusType;
         }
 
         @Override

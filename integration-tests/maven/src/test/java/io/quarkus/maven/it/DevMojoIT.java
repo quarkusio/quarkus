@@ -66,6 +66,14 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    void testClassLoaderLinkageError()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/classloader-linkage-error", "projects/classloader-linkage-error-dev");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello");
+    }
+
+    @Test
     public void testCapabilitiesConflict() throws MavenInvocationException, IOException {
         testDir = getTargetDir("projects/capabilities-conflict");
         final File runnerPom = new File(testDir, "runner/pom.xml");

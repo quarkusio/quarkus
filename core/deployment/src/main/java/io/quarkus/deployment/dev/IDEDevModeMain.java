@@ -1,6 +1,7 @@
 package io.quarkus.deployment.dev;
 
 import java.io.Closeable;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -20,6 +21,7 @@ import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 
@@ -97,8 +99,8 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 module.getArtifactCoords().getArtifactId(), module.getArtifactCoords().getClassifier());
 
         final Set<Path> sourceParents = new LinkedHashSet<>();
-        for (Path srcDir : module.getSourceSourceSet().getSourceDirectories()) {
-            sourceParents.add(srcDir.getParent());
+        for (File srcDir : module.getSourceSourceSet().getSourceDirectories()) {
+            sourceParents.add(srcDir.getParentFile().toPath());
         }
         String resourceDirectory = null;
         if (!module.getSourceSet().getResourceDirectories().isEmpty()) {
@@ -109,9 +111,9 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 .setAppArtifactKey(key)
                 .setName(module.getArtifactCoords().getArtifactId())
                 .setProjectDirectory(module.getProjectRoot().getPath())
-                .setSourcePaths(module.getSourceSourceSet().getSourceDirectories())
+                .setSourcePaths(PathsUtils.toPathsCollection(module.getSourceSourceSet().getSourceDirectories()))
                 .setClassesPath(QuarkusModelHelper.getClassPath(module).toAbsolutePath().toString())
-                .setResourcePaths(module.getSourceSourceSet().getResourceDirectories())
+                .setResourcePaths(PathsUtils.toPathsCollection(module.getSourceSourceSet().getResourceDirectories()))
                 .setResourcesOutputPath(resourceDirectory)
                 .setSourceParents(PathsCollection.from(sourceParents))
                 .setPreBuildOutputDir(module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString())

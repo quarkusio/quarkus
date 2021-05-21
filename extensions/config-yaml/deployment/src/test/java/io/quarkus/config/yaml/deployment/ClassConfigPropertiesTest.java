@@ -2,8 +2,6 @@ package io.quarkus.config.yaml.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.List;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -36,38 +34,6 @@ public class ClassConfigPropertiesTest {
         assertEquals(100, sqlConfiguration.maxPoolSize);
         assertEquals(200, sqlConfiguration.getMaxIdleTimeSeconds());
         assertEquals(Type.DEFAULT_TYPE, sqlConfiguration.type);
-
-        assertEquals(2, sqlConfiguration.inputs.size());
-        Nested firstInput = sqlConfiguration.inputs.get(0);
-        assertEquals("my_connection_1", firstInput.name);
-        assertEquals("systemuser", firstInput.user);
-        assertEquals("secret", firstInput.password);
-        assertEquals(Type.MSSQL, firstInput.getType());
-        assertEquals(100, firstInput.getMaxPoolSize());
-        assertEquals(150, firstInput.maxIdleTimeSeconds);
-        Nested secondInput = sqlConfiguration.inputs.get(1);
-        assertEquals("my_connection_2", secondInput.name);
-        assertEquals("otheruser", secondInput.user);
-        assertEquals("secret", secondInput.password);
-        assertEquals(Type.POSTGRES, secondInput.getType());
-        assertEquals(10, secondInput.getMaxPoolSize());
-        assertEquals(20, secondInput.maxIdleTimeSeconds);
-
-        assertEquals(2, sqlConfiguration.getOutputs().size());
-        Nested firstOutput = sqlConfiguration.getOutputs().get(0);
-        assertEquals("out_connection_1", firstOutput.name);
-        assertEquals("someuser", firstOutput.user);
-        assertEquals("asecret", firstOutput.password);
-        assertEquals(Type.MSSQL, firstOutput.getType());
-        assertEquals(100, firstOutput.getMaxPoolSize());
-        assertEquals(200, firstOutput.maxIdleTimeSeconds);
-        Nested secondOutput = sqlConfiguration.getOutputs().get(1);
-        assertEquals("out_connection_2", secondOutput.name);
-        assertEquals("someuser", secondOutput.user);
-        assertEquals("asecret", secondOutput.password);
-        assertEquals(Type.POSTGRES, secondOutput.getType());
-        assertEquals(200, secondOutput.getMaxPoolSize());
-        assertEquals(300, secondOutput.maxIdleTimeSeconds);
     }
 
     @Singleton
@@ -86,8 +52,6 @@ public class ClassConfigPropertiesTest {
         public String user;
         private String password;
         public Type type;
-        public List<Nested> inputs;
-        private List<Nested> outputs;
 
         public int getMaxIdleTimeSeconds() {
             return maxIdleTimeSeconds;
@@ -103,14 +67,6 @@ public class ClassConfigPropertiesTest {
 
         public void setPassword(String password) {
             this.password = password;
-        }
-
-        public List<Nested> getOutputs() {
-            return outputs;
-        }
-
-        public void setOutputs(List<Nested> outputs) {
-            this.outputs = outputs;
         }
     }
 

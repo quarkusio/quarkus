@@ -19,13 +19,13 @@ import io.restassured.RestAssured;
  */
 @QuarkusTestResource(value = CustomKubernetesTestServerTestResource.class, restrictToAnnotatedClass = true)
 @QuarkusTest
-public class KubernetesNewClientTest {
+class KubernetesNewClientTest {
 
     @KubernetesTestServer
     private KubernetesServer mockServer;
 
     @Test
-    public void testInteractionWithAPIServer() throws InterruptedException {
+    void testInteractionWithAPIServer() {
         setupMockServerForTest();
 
         RestAssured.when().get("/pod/test").then()

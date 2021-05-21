@@ -15,17 +15,20 @@ import io.smallrye.safer.annotations.DefinitionOverride;
 import io.smallrye.safer.annotations.OverrideTarget;
 import io.smallrye.safer.annotations.TargetMethod;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * Adds the following allowed parameters to the Safer-Annotations type checking
  * - RoutingContext
  * - HttpServerRequest
+ * - HttpServerResponse
  */
 @OverrideTarget(ServerExceptionMapper.class)
 @TargetMethod(returnTypes = { Response.class, UniResponse.class }, parameterTypes = {
         ContainerRequestContext.class, UriInfo.class, HttpHeaders.class, Request.class,
-        ResourceInfo.class, SimpleResourceInfo.class, RoutingContext.class, ThrowableSubtype.class, HttpServerRequest.class })
+        ResourceInfo.class, SimpleResourceInfo.class, RoutingContext.class, ThrowableSubtype.class, HttpServerRequest.class,
+        HttpServerResponse.class })
 public class ServerExceptionMapperOverride implements DefinitionOverride {
 
 }

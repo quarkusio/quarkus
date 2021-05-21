@@ -15,6 +15,7 @@ import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 @Path("first")
 public class FirstResource {
@@ -63,7 +64,7 @@ public class FirstResource {
     @ServerExceptionMapper
     public Response handleMyException(SimpleResourceInfo simplifiedResourceInfo, MyException myException,
             ContainerRequestContext containerRequestContext, UriInfo uriInfo, HttpHeaders httpHeaders, Request request,
-            HttpServerRequest httpServerRequest) {
+            HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
         return Response.status(410).entity(uriInfo.getPath() + "->" + simplifiedResourceInfo.getMethodName()).build();
     }
 

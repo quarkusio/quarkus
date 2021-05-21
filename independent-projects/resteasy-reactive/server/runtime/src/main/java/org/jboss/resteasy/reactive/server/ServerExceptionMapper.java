@@ -38,6 +38,7 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@link SimpleResourceInfo}
  * <li><tt>io.vertx.ext.web.RoutingContext</tt>
  * <li><tt>io.vertx.core.http.HttpServerRequest</tt>
+ * <li><tt>io.vertx.core.http.HttpServerResponse</tt>
  * </ul>
  *
  * When {@code value} is not set, then the handled Exception type is deduced by the Exception type used in the method parameters

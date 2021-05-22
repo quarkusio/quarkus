@@ -55,7 +55,7 @@ jobs:
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build
         run: |
-          mvn -T1C -e -B --settings .github/mvn-settings.xml -Dquickly-ci -Dtcks clean install
+          ./mvnw -T1C -e -B --settings .github/mvn-settings.xml -Dquickly-ci -Dtcks clean install
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus

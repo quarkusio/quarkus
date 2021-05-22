@@ -54,7 +54,7 @@
         <smallrye-common.version>1.6.0</smallrye-common.version>
         <smallrye-safer-annotations.version>1.0.3</smallrye-safer-annotations.version>
         <vertx.version>4.0.3</vertx.version>
-        <rest-assured.version>4.3.3</rest-assured.version>
+        <rest-assured.version>4.4.0</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <jackson.version>2.12.3</jackson.version>

@@ -207,9 +207,7 @@ include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-client-con
 
 The `service-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 
-== Example of configuration
-
-The 2 following examples uses _hello_ as service name.
+The following examples uses _hello_ as service name.
 Don't forget to replace it with the name you used in in the `@GrpcClient` annotation.
 
 === Enabling TLS
@@ -242,6 +240,19 @@ quarkus.grpc.clients.hello.ssl.certificate=tls/client.pem
 quarkus.grpc.clients.hello.ssl.key=tls/client.key
 quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 ----
+
+=== Client Deadlines
+
+It's always reasonable to set a deadline (timeout) for a gRPC client, i.e. to specify a duration of time after which the RPC times out and the client receives the status error `DEADLINE_EXCEEDED`.
+You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.: 
+
+[source,properties]
+----
+quarkus.grpc.clients.hello.host=localhost
+quarkus.grpc.clients.hello.deadline=2s <1>
+----
+<1> Set the  deadline for all injected clients.
+
 
 == Client Interceptors
 
@@ -284,4 +295,3 @@ public class MyInterceptor implements ClientInterceptor, Prioritized {
 
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
-

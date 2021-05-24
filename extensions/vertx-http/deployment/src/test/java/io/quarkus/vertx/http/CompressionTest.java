@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
@@ -45,7 +48,7 @@ public class CompressionTest {
                 .body(Matchers.equalTo(longString));
 
         RestAssured.given().get("/nocompress").then().statusCode(200)
-                .header("content-encoding", "identity")
+                .header("content-encoding", is(nullValue()))
                 .header("content-length", Matchers.equalTo(Integer.toString(longString.length())))
                 .body(Matchers.equalTo(longString));
     }

@@ -405,6 +405,25 @@ public interface Defaults {
 No configuration properties required. The `Defaults.foo()` will return the value `foo` and `Defaults.bar()` will return
 thevalue `bar`.
 
+=== Validation
+
+A config mapping may combine annotations from https://beanvalidation.org[Bean Validation] to validate configuration
+values:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+interface Server {
+    @Size(min = 2, max = 20)
+    String host();
+
+    @Max(10000)
+    int port();
+}
+----
+
+WARNING: For validation to work, the `quarkus-hibernate-validator` extension is required.
+
 [[config-properties]]
 == [.line-through]#`@ConfigProperties`# (Deprecated)
 

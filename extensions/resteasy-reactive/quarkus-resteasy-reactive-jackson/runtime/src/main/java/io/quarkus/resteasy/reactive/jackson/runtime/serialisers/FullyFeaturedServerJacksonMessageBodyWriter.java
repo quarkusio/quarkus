@@ -28,14 +28,14 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 
-public class ServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
+public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private final ObjectMapper originalMapper;
     private final ObjectWriter defaultWriter;
     private final ConcurrentMap<Method, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
 
     @Inject
-    public ServerJacksonMessageBodyWriter(ObjectMapper mapper) {
+    public FullyFeaturedServerJacksonMessageBodyWriter(ObjectMapper mapper) {
         this.originalMapper = mapper;
         this.defaultWriter = createDefaultWriter(mapper);
     }

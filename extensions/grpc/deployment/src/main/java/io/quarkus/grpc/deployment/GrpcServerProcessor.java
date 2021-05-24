@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.Config;
@@ -47,6 +48,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
@@ -61,6 +63,7 @@ import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextCdiInterceptor
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
@@ -343,6 +346,22 @@ public class GrpcServerProcessor {
     @BuildStep
     ExtensionSslNativeSupportBuildItem extensionSslNativeSupport() {
         return new ExtensionSslNativeSupportBuildItem(GRPC_SERVER);
+    }
+
+    @BuildStep
+    void configureMetrics(GrpcBuildTimeConfig configuration, Optional<MetricsCapabilityBuildItem> metricsCapability,
+            BuildProducer<AdditionalBeanBuildItem> beans) {
+
+        // Note that this build steps confgures both the server side and the client side
+        if (configuration.metricsEnabled && metricsCapability.isPresent()) {
+            if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+                // Strings are used intentionally - micrometer-core is an optional dependency of the runtime module
+                beans.produce(new AdditionalBeanBuildItem("io.quarkus.grpc.runtime.metrics.GrpcMetricsServerInterceptor",
+                        "io.quarkus.grpc.runtime.metrics.GrpcMetricsClientInterceptor"));
+            } else {
+                logger.warn("Only Micrometer-based metrics system is supported by quarkus-grpc");
+            }
+        }
     }
 
 }

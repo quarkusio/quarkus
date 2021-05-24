@@ -205,7 +205,6 @@ Some methods of `RoutingExchange` do it for you, others not and you must call th
 A route method can accept arguments of the following types: 
 
 * `io.vertx.ext.web.RoutingContext`
-* `io.vertx.mutiny.ext.web.RoutingContext`
 * `io.quarkus.vertx.web.RoutingExchange`
 * `io.vertx.core.http.HttpServerRequest`
 * `io.vertx.core.http.HttpServerResponse`

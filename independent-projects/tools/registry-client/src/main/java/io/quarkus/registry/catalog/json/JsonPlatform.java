@@ -1,52 +1,49 @@
 package io.quarkus.registry.catalog.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.quarkus.maven.ArtifactCoords;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.quarkus.registry.catalog.Platform;
-import java.util.Objects;
+import io.quarkus.registry.catalog.PlatformStream;
+import java.util.Collections;
+import java.util.List;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class JsonPlatform implements Platform {
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+public class JsonPlatform extends JsonEntityWithAnySupport implements Platform {
 
-    public static JsonPlatform of(ArtifactCoords bom) {
-        JsonPlatform p = new JsonPlatform();
-        p.setBom(Objects.requireNonNull(bom, "bom can't be null"));
-        return p;
-    }
-
-    private ArtifactCoords bom;
-    private String quarkusCore;
-    private String upstreamQuarkusCore;
+    private String platformKey;
+    private String name;
+    private List<PlatformStream> streams;
 
     @Override
-    public ArtifactCoords getBom() {
-        return bom;
+    public String getPlatformKey() {
+        return platformKey;
     }
 
-    public void setBom(ArtifactCoords bom) {
-        this.bom = bom;
+    public void setPlatformKey(String platformKey) {
+        this.platformKey = platformKey;
     }
 
     @Override
-    public String getQuarkusCoreVersion() {
-        return quarkusCore;
+    public String getName() {
+        return name;
     }
 
-    public void setQuarkusCoreVersion(String quarkusCore) {
-        this.quarkusCore = quarkusCore;
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override
-    public String getUpstreamQuarkusCoreVersion() {
-        return upstreamQuarkusCore;
+    @JsonDeserialize(contentAs = JsonPlatformStream.class)
+    public List<PlatformStream> getStreams() {
+        return streams == null ? Collections.emptyList() : streams;
     }
 
-    public void setUpstreamQuarkusCoreVersion(String upstreamQuarkusCore) {
-        this.upstreamQuarkusCore = upstreamQuarkusCore;
+    public void setStreams(List<PlatformStream> streams) {
+        this.streams = streams;
     }
 
     @Override
     public String toString() {
-        return "[platform " + bom + ", quarkus-core=" + quarkusCore + ", upstream-quarkus-core=" + upstreamQuarkusCore + "]";
+        return platformKey + streams;
     }
 }

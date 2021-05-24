@@ -12,15 +12,19 @@ import javax.inject.Inject;
 
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
+import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 
 @ApplicationScoped
 public class GrpcContainer {
 
     @Inject
+    @GrpcService
     Instance<BindableService> services;
+
     @Inject
     Instance<ServerInterceptor> interceptors;
+
     @Inject
     Instance<GrpcHealthStorage> healthStorage;
 

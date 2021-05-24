@@ -157,6 +157,8 @@ public class MutinyGrpcGenerator extends Generator {
                     absoluteFileName(service, service.serviceName + ".java")));
             files.add(buildFile(service, "MutinyBean.mustache",
                     absoluteFileName(service, service.serviceName + "Bean.java")));
+            files.add(buildFile(service, "MutinyClient.mustache",
+                    absoluteFileName(service, service.serviceName + "Client.java")));
         }
         return files;
     }

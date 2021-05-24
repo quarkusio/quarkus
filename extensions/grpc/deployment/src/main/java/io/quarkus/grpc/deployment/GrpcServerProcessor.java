@@ -14,6 +14,7 @@ import java.util.Set;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -26,11 +27,12 @@ import io.grpc.BindableService;
 import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.arc.processor.StereotypeInfo;
+import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -81,19 +83,20 @@ public class GrpcServerProcessor {
     void processGeneratedBeans(CombinedIndexBuildItem index, BuildProducer<AnnotationsTransformerBuildItem> transformers,
             BuildProducer<BindableServiceBuildItem> bindables) {
 
-        Map<DotName, Set<MethodInfo>> nameToBlockingMethods = new HashMap<>();
+        // generated bean class -> blocking methods
+        Map<DotName, Set<MethodInfo>> generatedBeans = new HashMap<>();
         String[] excludedPackages = { "grpc.health.v1", "io.grpc.reflection" };
 
         // We need to transform the generated bean and register a bindable service if:
         // 1. there is a user-defined bean that implements the generated interface (injected delegate)
         // 2. there is no user-defined bean that extends the relevant impl bases (both mutiny and regular)
-        for (ClassInfo generatedBean : index.getIndex().getAllKnownImplementors(GrpcDotNames.GENERATED_GRPC_BEAN)) {
+        for (ClassInfo generatedBean : index.getIndex().getKnownDirectImplementors(GrpcDotNames.MUTINY_BEAN)) {
             FieldInfo delegateField = generatedBean.field("delegate");
             if (delegateField == null) {
                 throw new IllegalStateException("A generated bean does not declare the delegate field: " + generatedBean);
             }
-            DotName generatedInterface = delegateField.type().name();
-            Collection<ClassInfo> serviceCandidates = index.getIndex().getAllKnownImplementors(generatedInterface);
+            DotName serviceInterface = delegateField.type().name();
+            Collection<ClassInfo> serviceCandidates = index.getIndex().getAllKnownImplementors(serviceInterface);
             if (serviceCandidates.isEmpty()) {
                 // No user-defined bean that implements the generated interface
                 continue;
@@ -138,15 +141,15 @@ public class GrpcServerProcessor {
                         blockingMethods.add(method);
                     }
                 }
-                nameToBlockingMethods.put(generatedBean.name(), blockingMethods);
+                generatedBeans.put(generatedBean.name(), blockingMethods);
             }
         }
 
-        if (!nameToBlockingMethods.isEmpty()) {
+        if (!generatedBeans.isEmpty()) {
             // For every suitable bean we must:
-            // (a) add a scope: @Singleton; otherwise it's just ignored
+            // (a) add @Singleton and @GrpcService
             // (b) register a BindableServiceBuildItem, incl. all blocking methods (derived from the user-defined impl)
-            for (Entry<DotName, Set<MethodInfo>> entry : nameToBlockingMethods.entrySet()) {
+            for (Entry<DotName, Set<MethodInfo>> entry : generatedBeans.entrySet()) {
                 BindableServiceBuildItem bindableService = new BindableServiceBuildItem(entry.getKey());
                 for (MethodInfo blockingMethod : entry.getValue()) {
                     bindableService.registerBlockingMethod(blockingMethod.name());
@@ -161,8 +164,11 @@ public class GrpcServerProcessor {
 
                 @Override
                 public void transform(TransformationContext context) {
-                    if (nameToBlockingMethods.containsKey(context.getTarget().asClass().name())) {
-                        context.transform().add(BuiltinScope.SINGLETON.getName()).done();
+                    if (generatedBeans.containsKey(context.getTarget().asClass().name())) {
+                        context.transform()
+                                .add(BuiltinScope.SINGLETON.getName())
+                                .add(GrpcDotNames.GRPC_SERVICE)
+                                .done();
                     }
                 }
             }));
@@ -176,8 +182,8 @@ public class GrpcServerProcessor {
                 .getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
 
         for (ClassInfo service : bindableServices) {
-            if (service.interfaceNames().contains(GrpcDotNames.GENERATED_GRPC_BEAN)) {
-                // Ignore generated beans
+            if (service.interfaceNames().contains(GrpcDotNames.MUTINY_BEAN)) {
+                // Ignore the generated beans
                 continue;
             }
             if (Modifier.isAbstract(service.flags())) {
@@ -194,15 +200,52 @@ public class GrpcServerProcessor {
     }
 
     @BuildStep
+    AnnotationsTransformerBuildItem transformUserDefinedServices(CombinedIndexBuildItem combinedIndexBuildItem,
+            CustomScopeAnnotationsBuildItem customScopes) {
+        // User-defined services usually only declare the @GrpcService qualifier
+        // We need to add @GrpcEnableRequestContext and @Singleton if needed 
+        Set<DotName> userDefinedServices = new HashSet<>();
+        for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(GrpcDotNames.GRPC_SERVICE)) {
+            if (annotation.target().kind() == Kind.CLASS) {
+                userDefinedServices.add(annotation.target().asClass().name());
+            }
+        }
+        if (userDefinedServices.isEmpty()) {
+            return null;
+        }
+        return new AnnotationsTransformerBuildItem(
+                new AnnotationsTransformer() {
+                    @Override
+                    public boolean appliesTo(Kind kind) {
+                        return kind == Kind.CLASS;
+                    }
+
+                    @Override
+                    public void transform(TransformationContext context) {
+                        ClassInfo clazz = context.getTarget().asClass();
+                        if (userDefinedServices.contains(clazz.name())) {
+                            // Add @GrpcEnableRequestContext to activate the request context during each call
+                            Transformation transform = context.transform().add(GrpcDotNames.GRPC_ENABLE_REQUEST_CONTEXT);
+                            if (!customScopes.isScopeDeclaredOn(clazz)) {
+                                // Add @Singleton to make it a bean
+                                transform.add(BuiltinScope.SINGLETON.getName());
+                            }
+                            transform.done();
+                        }
+                    }
+                });
+    }
+
+    @BuildStep
     void validateBindableServices(ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
-        Type generatedBeanType = Type.create(GrpcDotNames.GENERATED_GRPC_BEAN, org.jboss.jandex.Type.Kind.CLASS);
+        Type generatedBeanType = Type.create(GrpcDotNames.MUTINY_BEAN, org.jboss.jandex.Type.Kind.CLASS);
         for (BeanInfo bean : validationPhase.getContext().beans().classBeans().withBeanType(BindableService.class)) {
-            if (!bean.getTypes().contains(generatedBeanType) && bean.getStereotypes().stream().map(StereotypeInfo::getName)
+            if (!bean.getTypes().contains(generatedBeanType) && bean.getQualifiers().stream().map(AnnotationInstance::name)
                     .noneMatch(GrpcDotNames.GRPC_SERVICE::equals)) {
                 errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
                         new IllegalStateException(
-                                "A gRPC service bean must be annotated with io.quarkus.GrpcService: " + bean)));
+                                "A gRPC service bean must be annotated with @io.quarkus.grpc.GrpcService: " + bean)));
             }
             if (!bean.getScope().getDotName().equals(BuiltinScope.SINGLETON.getName())) {
                 errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
@@ -224,7 +267,7 @@ public class GrpcServerProcessor {
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
             List<BindableServiceBuildItem> bindables, BuildProducer<FeatureBuildItem> features) {
-        // @GrpcService is a CDI stereotype
+        // @GrpcService is a CDI qualifier
         beans.produce(new AdditionalBeanBuildItem(GrpcService.class));
         beans.produce(new AdditionalBeanBuildItem(GrpcRequestContextCdiInterceptor.class));
         beans.produce(new AdditionalBeanBuildItem(GrpcEnableRequestContext.class));
@@ -239,7 +282,7 @@ public class GrpcServerProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem build(GrpcServerRecorder recorder, GrpcConfiguration config,
+    ServiceStartBuildItem initializeServer(GrpcServerRecorder recorder, GrpcConfiguration config,
             ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
             LaunchModeBuildItem launchModeBuildItem,
             VertxBuildItem vertx) {

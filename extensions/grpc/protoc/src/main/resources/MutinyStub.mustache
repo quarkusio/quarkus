@@ -56,15 +56,15 @@ public final class {{className}} implements io.quarkus.grpc.runtime.MutinyGrpc {
         {{/unaryManyMethods}}
         {{#manyUnaryMethods}}
         {{{methodHeader}}}
-        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> hdlr) {
-            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(request, delegateStub::{{methodName}});
         }
 
         {{/manyUnaryMethods}}
         {{#manyManyMethods}}
         {{{methodHeader}}}
-        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> hdlr) {
-            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(request, delegateStub::{{methodName}});
         }
         {{/manyManyMethods}}
     }

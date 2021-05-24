@@ -61,7 +61,7 @@ public class HelloService implements Greeter { <2>
     }
 }
 ----
-<1> A gRPC service implementation bean must be annotated with the `@GrpcService` annotation. This annotation is a CDI stereotype that declares the `javax.inject.Singleton` scope. Additionally, it makes sure the CDI request context is always activate during a service call.
+<1> A gRPC service implementation bean must be annotated with the `@GrpcService` annotation and should not declare any other CDI qualifier. All gRPC services have the `javax.inject.Singleton` scope. Additionally, the request context is always active during a service call.
 <2> `hello.Greeter` is the generated service interface.
 
 NOTE: The service implementation bean can also extend the Mutiny implementation base, where the class name is structured as follows: `Mutiny${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
@@ -282,4 +282,3 @@ public class MyInterceptor implements ServerInterceptor, Prioritized {
 
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
-

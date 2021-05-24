@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.graphql.runtime;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.json.JsonObject;
@@ -29,7 +30,7 @@ public class SmallRyeGraphQLSubscriptionHandler extends SmallRyeGraphQLAbstractH
     private static final Logger log = Logger.getLogger(SmallRyeGraphQLSubscriptionHandler.class);
     private final ExecutionErrorsService executionErrorsService;
     private final Config config;
-    private final AtomicReference<Subscription> subscriptionRef = new AtomicReference<>();
+    private final ConcurrentHashMap<String, AtomicReference<Subscription>> subscriptionRefs = new ConcurrentHashMap<>();
 
     public SmallRyeGraphQLSubscriptionHandler(Config config, CurrentIdentityAssociation currentIdentityAssociation,
             CurrentVertxRequest currentVertxRequest) {
@@ -53,40 +54,61 @@ public class SmallRyeGraphQLSubscriptionHandler extends SmallRyeGraphQLAbstractH
         public void handle(AsyncResult<ServerWebSocket> event) {
             if (event.succeeded()) {
                 ServerWebSocket serverWebSocket = event.result();
-                serverWebSocket.closeHandler(new CloseHandler());
-                serverWebSocket.endHandler(new EndHandler());
-                serverWebSocket.exceptionHandler(new ExceptionHandler());
+                serverWebSocket.closeHandler(new CloseHandler(event.result().textHandlerID()));
+                serverWebSocket.endHandler(new EndHandler(event.result().textHandlerID()));
+                serverWebSocket.exceptionHandler(new ExceptionHandler(event.result().textHandlerID()));
                 serverWebSocket.textMessageHandler(new TextMessageHandler(serverWebSocket));
             }
         }
     }
 
     private class CloseHandler implements Handler<Void> {
+        String socketId;
+
+        public CloseHandler(String socketId) {
+            this.socketId = socketId;
+        }
+
         @Override
         public void handle(Void e) {
-            unsubscribe();
+            unsubscribe(socketId);
         }
     }
 
     private class EndHandler implements Handler<Void> {
+        String socketId;
+
+        public EndHandler(String socketId) {
+            this.socketId = socketId;
+        }
+
         @Override
         public void handle(Void e) {
-            unsubscribe();
+            unsubscribe(socketId);
         }
     }
 
     private class ExceptionHandler implements Handler<Throwable> {
+        String socketId;
+
+        public ExceptionHandler(String socketId) {
+            this.socketId = socketId;
+        }
+
         @Override
         public void handle(Throwable e) {
             log.error(e.getMessage());
-            unsubscribe();
+            unsubscribe(socketId);
         }
     }
 
-    public void unsubscribe() {
-        if (subscriptionRef.get() != null) {
-            Subscriptions.cancel(subscriptionRef);
-            subscriptionRef.set(null);
+    public void unsubscribe(String textHandlerId) {
+        AtomicReference<Subscription> subscription = subscriptionRefs.get(textHandlerId);
+        subscriptionRefs.remove(textHandlerId);
+
+        if (subscription != null && subscription.get() != null) {
+            Subscriptions.cancel(subscription);
+            subscription.set(null);
         }
     }
 
@@ -104,6 +126,7 @@ public class SmallRyeGraphQLSubscriptionHandler extends SmallRyeGraphQLAbstractH
                     .execute(jsonInput);
 
             ExecutionResult executionResult = executionResponse.getExecutionResult();
+
             if (executionResult != null) {
                 // If there is error on the query, we can not start a subscription
                 if (executionResult.getErrors() != null && !executionResult.getErrors().isEmpty()) {
@@ -123,14 +146,23 @@ public class SmallRyeGraphQLSubscriptionHandler extends SmallRyeGraphQLAbstractH
 
     private class SmallRyeGraphQLSubscriptionSubscriber implements Subscriber<ExecutionResult> {
         private final ServerWebSocket serverWebSocket;
+        private final String textHandlerId;
 
         public SmallRyeGraphQLSubscriptionSubscriber(ServerWebSocket serverWebSocket) {
             this.serverWebSocket = serverWebSocket;
+            this.textHandlerId = serverWebSocket.textHandlerID();
         }
 
         @Override
         public void onSubscribe(Subscription s) {
-            if (subscriptionRef.compareAndSet(null, s)) {
+            AtomicReference<Subscription> subRef = subscriptionRefs.get(serverWebSocket.textHandlerID());
+            if (subRef == null) {
+                subRef = new AtomicReference<>(s);
+                subscriptionRefs.put(textHandlerId, subRef);
+                s.request(1);
+                return;
+            }
+            if (subRef.compareAndSet(null, s)) {
                 s.request(1);
             } else {
                 s.cancel();
@@ -142,24 +174,24 @@ public class SmallRyeGraphQLSubscriptionHandler extends SmallRyeGraphQLAbstractH
             if (serverWebSocket != null && !serverWebSocket.isClosed()) {
                 ExecutionResponse executionResponse = new ExecutionResponse(executionResult, config);
                 serverWebSocket.writeTextMessage(executionResponse.getExecutionResultAsString());
-                Subscription s = subscriptionRef.get();
+                Subscription s = subscriptionRefs.get(textHandlerId).get();
                 s.request(1);
             } else {
-                // Connection to client is closed, but we still receive mesages
-                unsubscribe();
+                // Connection to client is closed, but we still receive messages
+                unsubscribe(textHandlerId);
             }
         }
 
         @Override
         public void onError(Throwable thrwbl) {
             log.error("Error in GraphQL Subscription Websocket", thrwbl);
-            unsubscribe();
+            unsubscribe(serverWebSocket.textHandlerID());
             closeWebSocket();
         }
 
         @Override
         public void onComplete() {
-            unsubscribe();
+            unsubscribe(serverWebSocket.textHandlerID());
             closeWebSocket();
         }
 

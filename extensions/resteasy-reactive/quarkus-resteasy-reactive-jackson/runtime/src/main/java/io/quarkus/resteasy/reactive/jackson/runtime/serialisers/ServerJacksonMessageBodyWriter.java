@@ -8,7 +8,6 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
@@ -30,9 +29,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 
 public class ServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
-
-    private static final String JSON_VIEW_NAME = JsonView.class.getName();
-    private static final String CUSTOM_SERIALIZATION = CustomSerialization.class.getName();
 
     private final ObjectMapper originalMapper;
     private final ObjectWriter defaultWriter;
@@ -56,13 +52,12 @@ public class ServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllW
             // where JsonView is not used
             ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
             if (resourceInfo != null) {
-                Set<String> methodAnnotationNames = resourceInfo.getMethodAnnotationNames();
-                if (methodAnnotationNames.contains(CUSTOM_SERIALIZATION)) {
+                if (resourceInfo.requiresCustomSerialization()) {
                     Method method = resourceInfo.getMethod();
                     if (handleCustomSerialization(method, o, genericType, stream)) {
                         return;
                     }
-                } else if (methodAnnotationNames.contains(JSON_VIEW_NAME)) {
+                } else if (resourceInfo.requiresJsonViewName()) {
                     Method method = resourceInfo.getMethod();
                     if (handleJsonView(method.getAnnotation(JsonView.class), o, stream)) {
                         return;

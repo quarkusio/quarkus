@@ -39,7 +39,7 @@ public final class QuarkusMediatorConfigurationUtil {
 
     public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, boolean isSuspendMethod, BeanInfo bean,
             RecorderContext recorderContext,
-            ClassLoader cl) {
+            ClassLoader cl, boolean strict) {
 
         Class[] parameterTypeClasses;
         Class<?> returnTypeClass;
@@ -68,6 +68,10 @@ public final class QuarkusMediatorConfigurationUtil {
                 genericReturnTypeAssignable,
                 methodInfo.parameters().isEmpty() ? new AlwaysInvalidIndexGenericTypeAssignable()
                         : new MethodParamGenericTypeAssignable(methodInfo, 0, cl));
+
+        if (strict) {
+            mediatorConfigurationSupport.strict();
+        }
 
         configuration.setBeanId(bean.getIdentifier());
         configuration.setMethodName(methodInfo.name());

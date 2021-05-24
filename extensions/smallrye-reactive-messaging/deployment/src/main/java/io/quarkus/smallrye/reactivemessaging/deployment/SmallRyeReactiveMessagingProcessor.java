@@ -383,7 +383,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
                         .create(methodInfo, isSuspendMethod, bean, recorderContext,
-                                Thread.currentThread().getContextClassLoader());
+                                Thread.currentThread().getContextClassLoader(), conf.strict);
                 mediatorConfigurations.add(mediatorConfiguration);
 
                 String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,

@@ -23,6 +23,7 @@
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <smallrye-messaging-strict-binding>true</smallrye-messaging-strict-binding>
+                        <quarkus.reactive-messaging.strict>true</quarkus.reactive-messaging.strict>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -33,9 +34,6 @@
                     <excludes>
                         <!-- The new wiring fails at the Quarkus startup because of the incorrect configuration -->
                         <exclude>org.eclipse.microprofile.reactive.messaging.tck.invalid.InvalidConfigurationTest</exclude>
-                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.connector.MissingConnectorTest</exclude>
-                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.channel.EmitterInjectionMissingChannelTest</exclude>
-                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.signatures.invalid.InvalidSubscriberSignatureTest</exclude>
 
                         <!-- the test need to be challenged - the error emission may happen after -->
                         <exclude>org.eclipse.microprofile.reactive.messaging.tck.channel.overflow.DefaultOverflowStrategyOverflowTest</exclude>

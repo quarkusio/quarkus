@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.kotlin
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
-import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.INSTANCE
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import javax.json.bind.annotation.JsonbTransient
 import javax.persistence.EntityManager
 

@@ -2,10 +2,11 @@ package io.quarkus.hibernate.orm.panache.kotlin.runtime
 
 
 import io.quarkus.gizmo.Gizmo
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepository
+import io.quarkus.panache.common.deployment.ByteCodeType
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.objectweb.asm.ClassReader
@@ -18,8 +19,9 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase as JavaPanacheEntityBa
 import io.quarkus.hibernate.orm.panache.PanacheQuery as JavaPanacheQuery
 import io.quarkus.hibernate.orm.panache.PanacheRepository as JavaPanacheRepository
 
-class TestAnalogs {
+val OBJECT = ByteCodeType(Object::class.java)
 
+class TestAnalogs {
     @Test
     fun testPanacheQuery() {
         compare(map(JavaPanacheQuery::class), map(PanacheQuery::class))
@@ -39,7 +41,8 @@ class TestAnalogs {
     fun testPanacheEntityBase() {
         val javaMethods = map(JavaPanacheEntityBase::class).methods
         val kotlinMethods = map(PanacheEntityBase::class).methods
-        val companionMethods = map(PanacheCompanion::class).methods
+        val companionMethods = map(PanacheCompanionBase::class,
+            ByteCodeType(PanacheEntityBase::class.java)).methods
         val implemented = mutableListOf<Method>()
 
         javaMethods
@@ -57,21 +60,20 @@ class TestAnalogs {
                     }
                 }
         javaMethods.removeIf {
-            it.name == "findByIdOptional" ||
-                    it in implemented
+            it.name.endsWith("Optional") || it in implemented
         }
 
 //        methods("javaMethods", javaMethods)
 //        methods("kotlinMethods", kotlinMethods)
 //        methods("companionMethods", companionMethods)
 
-        assertTrue(javaMethods.isEmpty(), "New methods not implemented: ${javaMethods}")
-        assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: ${kotlinMethods}")
-        assertTrue(companionMethods.isEmpty(), "Old methods not removed: ${companionMethods}")
+        assertTrue(javaMethods.isEmpty(), "New methods not implemented: \n${javaMethods.byLine()}")
+        assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: \n${kotlinMethods.byLine()}")
+        assertTrue(companionMethods.isEmpty(), "Old methods not removed: \n${companionMethods.byLine()}")
     }
 
-    private fun map(type: KClass<*>): AnalogVisitor {
-        return AnalogVisitor().also { node ->
+    private fun map(type: KClass<*>, erasedType: ByteCodeType? = null): AnalogVisitor {
+        return AnalogVisitor(erasedType).also { node ->
             ClassReader(type.bytes()).accept(node, SKIP_CODE)
         }
     }
@@ -94,35 +96,49 @@ class TestAnalogs {
                 }
 
         javaMethods.removeIf {
-            it.name in whiteList ||
-                    it in implemented
+            it.name.endsWith("Optional") ||
+                it.name in whiteList ||
+                it in implemented
         }
 
 //        methods("javaMethods", javaMethods)
 //        methods("kotlinMethods", kotlinMethods)
 
-        assertTrue(javaMethods.isEmpty(), "New methods not implemented: ${javaMethods}")
-        assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: ${kotlinMethods}")
+        assertTrue(javaMethods.isEmpty(), "New methods not implemented: \n${javaMethods.byLine()}")
+        assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: ${kotlinMethods.byLine()}")
     }
 
     @Suppress("unused")
     private fun methods(label: String, methods: List<Method>) {
         println("$label: ")
-        methods
+        methods.toSortedSet(compareBy { it.toString() })
                 .forEach {
                     println(it)
                 }
     }
 }
 
-class AnalogVisitor : ClassVisitor(Gizmo.ASM_API_VERSION) {
+private fun <E> List<E>.byLine(): String {
+    val map = map { it.toString() }
+    return map
+        .joinToString("\n" )
+}
+
+class AnalogVisitor(val erasedType: ByteCodeType? = null) : ClassVisitor(Gizmo.ASM_API_VERSION) {
     val methods = mutableListOf<Method>()
     override fun visitMethod(access: Int, name: String, descriptor: String, signature: String?,
                              exceptions: Array<out String>?): MethodVisitor? {
         if (name != "<init>") {
-            methods += Method(access, name,
-                    descriptor.substringAfterLast(")").trim(), descriptor.substring(descriptor.indexOf("("),
-                    descriptor.lastIndexOf(")") + 1)/*, signature*/)
+            val type = descriptor.substringAfterLast(")").trim()
+            var parameters = descriptor.substring(
+                descriptor.indexOf("("),
+                descriptor.lastIndexOf(")") + 1
+            )
+            erasedType?.let { type->
+                parameters = parameters.replace(type.descriptor(), OBJECT.descriptor())
+            }
+
+            methods += Method(access, name, type, parameters)
         }
         return super.visitMethod(access, name, descriptor, signature, exceptions)
     }

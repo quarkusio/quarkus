@@ -21,7 +21,7 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
-@ConfigMapping(prefix = "server")
+@ConfigMapping(prefix = "http.server")
 public interface Server {
     @JsonProperty
     String host();

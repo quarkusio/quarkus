@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
@@ -55,7 +56,7 @@ public class VertxCoreProducerTest {
         configuration.cluster = cc;
 
         try {
-            VertxCoreRecorder.initialize(configuration, null, null);
+            VertxCoreRecorder.initialize(configuration, null, null, LaunchMode.TEST);
             Assertions.fail("It should not have a cluster manager on the classpath, and so fail the creation");
         } catch (IllegalStateException e) {
             Assertions.assertTrue(e.getMessage().contains("No ClusterManagerFactory"),
@@ -82,7 +83,7 @@ public class VertxCoreProducerTest {
                     }
                 }));
 
-        VertxCoreRecorder.initialize(configuration, customizers, null);
+        VertxCoreRecorder.initialize(configuration, customizers, null, LaunchMode.TEST);
     }
 
     @Test
@@ -95,7 +96,7 @@ public class VertxCoreProducerTest {
                         called.set(true);
                     }
                 }));
-        Vertx v = VertxCoreRecorder.initialize(createDefaultConfiguration(), customizers, null);
+        Vertx v = VertxCoreRecorder.initialize(createDefaultConfiguration(), customizers, null, LaunchMode.TEST);
         Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
     }
 
@@ -109,6 +110,8 @@ public class VertxCoreProducerTest {
         vc.workerPoolSize = 20;
         vc.maxWorkerExecuteTime = Duration.ofSeconds(1);
         vc.internalBlockingPoolSize = 20;
+        vc.queueSize = OptionalInt.empty();
+        vc.keepAliveTime = Duration.ofSeconds(30);
         vc.useAsyncDNS = false;
         vc.preferNativeTransport = false;
         vc.eventbus = new EventBusConfiguration();

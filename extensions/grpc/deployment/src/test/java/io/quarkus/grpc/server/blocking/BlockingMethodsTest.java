@@ -111,7 +111,7 @@ public class BlockingMethodsTest {
         });
         assertThat(list).hasSize(10)
                 .allSatisfy(s -> {
-                    assertThat(s).contains("worker");
+                    assertThat(s).contains("executor");
                 });
     }
 
@@ -165,7 +165,7 @@ public class BlockingMethodsTest {
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .allSatisfy(s -> {
-                    assertThat(s).contains("worker");
+                    assertThat(s).contains("executor");
                 });
     }
 
@@ -195,7 +195,7 @@ public class BlockingMethodsTest {
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull().hasSize(4)
                 .allSatisfy(s -> {
-                    assertThat(s).contains("worker");
+                    assertThat(s).contains("executor");
                 });
     }
 

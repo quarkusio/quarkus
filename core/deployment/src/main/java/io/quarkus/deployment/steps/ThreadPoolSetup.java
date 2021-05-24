@@ -1,11 +1,14 @@
 package io.quarkus.deployment.steps;
 
+import java.util.Optional;
+
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.ThreadPoolConfig;
@@ -19,9 +22,11 @@ public class ThreadPoolSetup {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     public ExecutorBuildItem createExecutor(ExecutorRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
-            ThreadPoolConfig threadPoolConfig) {
+            ThreadPoolConfig threadPoolConfig,
+            Optional<ThreadFactoryBuildItem> threadFactoryBuildItem) {
         return new ExecutorBuildItem(
-                recorder.setupRunTime(shutdownContextBuildItem, threadPoolConfig, launchModeBuildItem.getLaunchMode()));
+                recorder.setupRunTime(shutdownContextBuildItem, threadPoolConfig, launchModeBuildItem.getLaunchMode(),
+                        threadFactoryBuildItem.map(ThreadFactoryBuildItem::getThreadFactory).orElse(null)));
     }
 
     @BuildStep

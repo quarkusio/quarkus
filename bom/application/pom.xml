@@ -48,7 +48,7 @@
         <smallrye-open-api.version>2.1.4</smallrye-open-api.version>
         <smallrye-graphql.version>1.2.1</smallrye-graphql.version>
         <smallrye-opentracing.version>2.0.0</smallrye-opentracing.version>
-        <smallrye-fault-tolerance.version>5.0.0</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>5.1.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.1.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -3359,6 +3359,11 @@
             <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-fault-tolerance-tracing-propagation</artifactId>
+                <version>${smallrye-fault-tolerance.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-fault-tolerance-vertx</artifactId>
                 <version>${smallrye-fault-tolerance.version}</version>
             </dependency>
             <dependency>

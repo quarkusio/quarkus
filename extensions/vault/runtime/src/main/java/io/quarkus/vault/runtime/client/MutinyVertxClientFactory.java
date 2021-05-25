@@ -22,6 +22,10 @@ public class MutinyVertxClientFactory {
                 .setConnectTimeout((int) vaultBootstrapConfig.connectTimeout.toMillis())
                 .setIdleTimeout((int) vaultBootstrapConfig.readTimeout.getSeconds());
 
+        if (vaultBootstrapConfig.nonProxyHosts.isPresent()) {
+            options.setNonProxyHosts(vaultBootstrapConfig.nonProxyHosts.get());
+        }
+
         boolean trustAll = vaultBootstrapConfig.tls.skipVerify.orElseGet(() -> tlsConfig.trustAll);
         if (trustAll) {
             skipVerify(options);

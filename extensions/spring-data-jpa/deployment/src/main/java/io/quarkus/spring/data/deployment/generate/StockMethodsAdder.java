@@ -234,8 +234,9 @@ public class StockMethodsAdder {
     }
 
     private void generateMergeAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator) {
-        ResultHandle entityManager = bytecodeCreator.invokeStaticMethod(
-                ofMethod(AbstractJpaOperations.class, "getEntityManager", EntityManager.class));
+        ResultHandle entityManager = bytecodeCreator.invokeVirtualMethod(
+                ofMethod(AbstractJpaOperations.class, "getEntityManager", EntityManager.class),
+                bytecodeCreator.readStaticField(operationsField));
         entity = bytecodeCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(EntityManager.class, "merge", Object.class, Object.class),
                 entityManager, entity);

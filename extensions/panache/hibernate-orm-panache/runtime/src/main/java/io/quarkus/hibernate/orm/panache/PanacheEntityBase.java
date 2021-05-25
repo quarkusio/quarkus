@@ -14,7 +14,6 @@ import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -33,15 +32,13 @@ import io.quarkus.panache.common.impl.GenerateBridge;
  */
 public abstract class PanacheEntityBase {
     /**
-     * Returns the default {@link EntityManager} for extra operations (eg. CriteriaQueries)
+     * Returns the {@link EntityManager} for this entity class for extra operations (eg. CriteriaQueries)
      *
-     * @return the default {@link EntityManager}
+     * @return the {@link EntityManager} for this entity class
      */
-    @JsonbTransient
-    // @JsonIgnore is here to avoid serialization of this property with jackson
-    @JsonIgnore
-    public EntityManager getEntityManager() {
-        return AbstractJpaOperations.getEntityManager(this.getClass());
+    @GenerateBridge
+    public static EntityManager getEntityManager() {
+        throw implementationInjectionMissing();
     }
 
     /**
@@ -100,8 +97,9 @@ public abstract class PanacheEntityBase {
     /**
      * Flushes all pending changes to the database.
      */
-    public void flush() {
-        JpaOperations.INSTANCE.flush(this);
+    @GenerateBridge
+    public static void flush() {
+        throw implementationInjectionMissing();
     }
 
     // Queries

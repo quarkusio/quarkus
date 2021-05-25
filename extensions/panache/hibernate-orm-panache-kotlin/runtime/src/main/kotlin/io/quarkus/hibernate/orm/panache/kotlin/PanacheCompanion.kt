@@ -6,6 +6,7 @@ import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge
 import java.util.stream.Stream
+import javax.persistence.EntityManager
 import javax.persistence.LockModeType
 
 /**
@@ -21,6 +22,15 @@ interface PanacheCompanion<Entity : PanacheEntityBase>: PanacheCompanionBase<Ent
  * @param Entity the entity type
  */
 interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
+
+    /**
+     * Returns the [EntityManager] for the <Entity> for extra operations (eg. CriteriaQueries)
+     *
+     * @return the [EntityManager] for the <Entity>
+     */
+    @GenerateBridge
+    fun getEntityManager(): EntityManager = throw implementationInjectionMissing()
+
     /**
      * Find an entity of this type by ID.
      *
@@ -554,4 +564,13 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      */
     @GenerateBridge
     fun update(query: String, params: Parameters): Int = throw implementationInjectionMissing()
+
+
+    /**
+     * Flushes all pending changes to the database.
+     */
+    @GenerateBridge(targetReturnTypeErased = true)
+    fun flush() {
+        throw implementationInjectionMissing()
+    }
 }

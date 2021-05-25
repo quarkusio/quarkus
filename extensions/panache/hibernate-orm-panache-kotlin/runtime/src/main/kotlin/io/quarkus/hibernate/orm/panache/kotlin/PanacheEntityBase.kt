@@ -18,15 +18,6 @@ interface PanacheEntityBase {
     // Operations
 
     /**
-     * Returns the default [EntityManager] for extra operations (eg. CriteriaQueries)
-     *
-     * @return the default [EntityManager]
-     */
-    @JsonbTransient
-    @JsonIgnore
-    fun getEntityManager(): EntityManager = AbstractJpaOperations.getEntityManager(this.javaClass)
-
-    /**
      * Returns true if this entity is persistent in the database. If yes, all modifications to
      * its persistent fields will be automatically committed to the database at transaction
      * commit time.
@@ -69,12 +60,5 @@ interface PanacheEntityBase {
      */
     fun delete() {
         INSTANCE.delete(this)
-    }
-
-    /**
-     * Flushes all pending changes to the database.
-     */
-    fun flush() {
-        getEntityManager().flush()
     }
 }

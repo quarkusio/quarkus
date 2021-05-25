@@ -144,7 +144,7 @@ jobs:
           # Common GIB_ARGS for all CI cases (hint: see also root pom.xml):
           # - disableSelectedProjectsHandling: required to detect changes in jobs that use -pl
           # - untracked: to ignore files created by jobs (and uncommitted to be consistent)
-          GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
+          GIB_ARGS="-Dgib.disable -Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
           if [ -n "$PULL_REQUEST_BASE" ]
           then
               # The PR defines a clear merge target so just use that branch for reference, *unless*:

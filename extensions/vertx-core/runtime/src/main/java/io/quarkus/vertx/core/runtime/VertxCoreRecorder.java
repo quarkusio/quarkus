@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
+import org.jboss.threads.ContextHandler;
 import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
@@ -48,6 +49,7 @@ import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.file.impl.FileResolver;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxBuilder;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.impl.VertxThread;
@@ -459,6 +461,31 @@ public class VertxCoreRecorder {
                     "executor-thread-" + threadCount.getAndIncrement(), true, 0, null);
             thread.setDaemon(true);
             return thread;
+        };
+    }
+
+    public ContextHandler<Object> executionContextHandler() {
+        return new ContextHandler<Object>() {
+            @Override
+            public Object captureContext() {
+                return Vertx.currentContext();
+            }
+
+            @Override
+            public void runWith(Runnable task, Object context) {
+                if (context != null) {
+                    // Only do context handling if it's non null
+                    final ContextInternal vertxContext = (ContextInternal) context;
+                    try {
+                        vertxContext.beginDispatch();
+                        task.run();
+                    } finally {
+                        vertxContext.endDispatch(null);
+                    }
+                } else {
+                    task.run();
+                }
+            }
         };
     }
 

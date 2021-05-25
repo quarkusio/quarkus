@@ -90,6 +90,7 @@ public class BootstrapMavenContext {
     private static final String MAVEN_DOT_HOME = "maven.home";
     private static final String MAVEN_HOME = "MAVEN_HOME";
     private static final String MAVEN_SETTINGS = "maven.settings";
+    private static final String MAVEN_TOP_LEVEL_PROJECT_BASEDIR = "maven.top-level-basedir";
     private static final String SETTINGS_XML = "settings.xml";
 
     private static final String userHome = PropertyUtils.getUserHome();
@@ -145,7 +146,19 @@ public class BootstrapMavenContext {
         this.remotePluginRepos = config.remotePluginRepos;
         this.remoteRepoManager = config.remoteRepoManager;
         this.cliOptions = config.cliOptions;
-        this.rootProjectDir = config.rootProjectDir;
+        if (config.rootProjectDir == null) {
+            final String topLevelBaseDirStr = PropertyUtils.getProperty(MAVEN_TOP_LEVEL_PROJECT_BASEDIR);
+            if (topLevelBaseDirStr != null) {
+                final Path tmp = Paths.get(topLevelBaseDirStr);
+                if (!Files.exists(tmp)) {
+                    throw new BootstrapMavenException("Top-level project base directory " + topLevelBaseDirStr
+                            + " specified with system property " + MAVEN_TOP_LEVEL_PROJECT_BASEDIR + " does not exist");
+                }
+                this.rootProjectDir = tmp;
+            }
+        } else {
+            this.rootProjectDir = config.rootProjectDir;
+        }
         this.preferPomsFromWorkspace = config.preferPomsFromWorkspace;
         this.effectiveModelBuilder = config.effectiveModelBuilder;
         this.userSettings = config.userSettings;

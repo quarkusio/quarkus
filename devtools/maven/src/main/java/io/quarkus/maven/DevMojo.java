@@ -359,7 +359,7 @@ public class DevMojo extends AbstractMojo {
                     nextCheck = System.currentTimeMillis() + 100;
                     if (!runner.alive()) {
                         restoreTerminalState();
-                        if (runner.exitValue() != 0) {
+                        if (!runner.isExpectedExitValue()) {
                             throw new MojoExecutionException("Dev mode process did not complete successfully");
                         }
                         return;
@@ -702,6 +702,11 @@ public class DevMojo extends AbstractMojo {
 
         int exitValue() {
             return process == null ? -1 : process.exitValue();
+        }
+
+        boolean isExpectedExitValue() {
+            // '130' is what the process exits with in remote-dev mode under bash
+            return exitValue() == 0 || exitValue() == 130;
         }
 
         void run() throws Exception {

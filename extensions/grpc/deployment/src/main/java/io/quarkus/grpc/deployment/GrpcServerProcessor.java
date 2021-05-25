@@ -298,7 +298,7 @@ public class GrpcServerProcessor {
             }
         }
 
-        if (!bindables.isEmpty()) {
+        if (!bindables.isEmpty() || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown, blocking, launchModeBuildItem.getLaunchMode());
             return new ServiceStartBuildItem(GRPC_SERVER);
         }

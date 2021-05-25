@@ -146,10 +146,8 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
         }
 
         public boolean isTestable() {
-            if (configuration.server.ssl.certificate.isPresent() || configuration.server.ssl.keyStore.isPresent()) {
-                return false;
-            }
-            return MethodType.UNARY == getType();
+            return !configuration.server.ssl.certificate.isPresent()
+                    && !configuration.server.ssl.keyStore.isPresent();
         }
 
         public String getPrototype() {

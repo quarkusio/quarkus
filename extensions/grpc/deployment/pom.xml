@@ -53,7 +53,12 @@
             <artifactId>quarkus-grpc-codegen</artifactId>
         </dependency>
 
-       <!-- Test dependencies -->
+        <!-- for dev mode -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+        </dependency>
+
        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>

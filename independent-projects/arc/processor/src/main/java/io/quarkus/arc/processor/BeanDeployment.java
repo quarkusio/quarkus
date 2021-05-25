@@ -760,7 +760,7 @@ public class BeanDeployment {
                 int numberOfConstructorsWithInject = 0;
                 for (MethodInfo m : beanClass.methods()) {
                     if (m.name().equals(Methods.INIT)) {
-                        if (m.hasAnnotation(DotNames.INJECT)) {
+                        if (annotationStore.hasAnnotation(m, DotNames.INJECT)) {
                             numberOfConstructorsWithInject++;
                         } else {
                             numberOfConstructorsWithoutInject++;

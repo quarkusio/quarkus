@@ -29,8 +29,7 @@ public class ThreadPoolSetup {
         return new ExecutorBuildItem(
                 recorder.setupRunTime(shutdownContextBuildItem, threadPoolConfig, launchModeBuildItem.getLaunchMode(),
                         threadFactoryBuildItem.map(ThreadFactoryBuildItem::getThreadFactory).orElse(null),
-                        contextBuildItem.map(ContextHandlerBuildItem::contextHandler)
-                                .orElse(recorder.getDefaultContextHandler())));
+                        contextBuildItem.map(ContextHandlerBuildItem::contextHandler).orElse(null)));
     }
 
     @BuildStep

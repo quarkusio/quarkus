@@ -476,8 +476,8 @@ public class VertxCoreRecorder {
                 if (context != null) {
                     // Only do context handling if it's non null
                     final ContextInternal vertxContext = (ContextInternal) context;
+                    vertxContext.beginDispatch();
                     try {
-                        vertxContext.beginDispatch();
                         task.run();
                     } finally {
                         vertxContext.endDispatch(null);

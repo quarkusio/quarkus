@@ -169,20 +169,6 @@ public class ExecutorRecorder {
         return builder.build();
     }
 
-    public ContextHandler<Object> getDefaultContextHandler() {
-        return new ContextHandler<Object>() {
-            @Override
-            public Object captureContext() {
-                return null;
-            }
-
-            @Override
-            public void runWith(Runnable task, Object context) {
-                task.run();
-            }
-        };
-    }
-
     public static Executor getCurrent() {
         return current;
     }

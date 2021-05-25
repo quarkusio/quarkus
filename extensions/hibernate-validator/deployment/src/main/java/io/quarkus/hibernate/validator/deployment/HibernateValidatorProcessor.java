@@ -276,6 +276,28 @@ class HibernateValidatorProcessor {
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass().name());
                     // no need for reflection in the case of a class level constraint
+                } else if (annotation.target().kind() == AnnotationTarget.Kind.TYPE) {
+                    // container element constraints
+                    AnnotationTarget enclosingTarget = annotation.target().asType().enclosingTarget();
+                    if (enclosingTarget.kind() == AnnotationTarget.Kind.FIELD) {
+                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asField().declaringClass().name());
+                        reflectiveFields.produce(new ReflectiveFieldBuildItem(enclosingTarget.asField()));
+                        if (annotation.target().asType().target() != null) {
+                            contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
+                                    consideredAnnotation,
+                                    annotation.target().asType().target());
+                        }
+                    } else if (enclosingTarget.kind() == AnnotationTarget.Kind.METHOD) {
+                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asMethod().declaringClass().name());
+                        reflectiveMethods.produce(new ReflectiveMethodBuildItem(enclosingTarget.asMethod()));
+                        if (annotation.target().asType().target() != null) {
+                            contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
+                                    consideredAnnotation,
+                                    annotation.target().asType().target());
+                        }
+                        contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
+                                enclosingTarget.asMethod());
+                    }
                 }
             }
         }

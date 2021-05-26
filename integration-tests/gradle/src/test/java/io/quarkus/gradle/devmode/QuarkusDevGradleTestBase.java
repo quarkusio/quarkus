@@ -77,8 +77,8 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
                 executor.shutdownNow();
             }
 
-            // Kill all process using the live reload and the live reload process.
-            DevModeTestUtils.killProcesses("quarkusDev", projectDir.toString());
+            // Kill all processes that were (indirectly) spawned by the current process.
+            DevModeTestUtils.killDescendingProcesses();
 
             DevModeTestUtils.awaitUntilServerDown();
 

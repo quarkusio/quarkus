@@ -36,8 +36,10 @@ import io.quarkus.arc.runtime.BeanLookupSupplier;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
@@ -89,8 +91,9 @@ public class GrpcDevConsoleProcessor {
 
     }
 
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Record(value = RUNTIME_INIT)
-    @BuildStep
+    @BuildStep(onlyIf = IsDevelopment.class)
     DevConsoleRouteBuildItem registerTestEndpoint(GrpcDevConsoleRecorder recorder, CombinedIndexBuildItem index)
             throws ClassNotFoundException, NoSuchMethodException,
             SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {

@@ -42,6 +42,18 @@ public class SmallRyeGraphQLConfig {
     boolean eventsEnabled;
 
     /**
+     * Enable GET Requests. Allow queries via HTTP GET.
+     */
+    @ConfigItem(name = "http.get.enabled")
+    Optional<Boolean> httpGetEnabled;
+
+    /**
+     * Enable Query parameter on POST Requests. Allow POST request to override or supply values in a query parameter.
+     */
+    @ConfigItem(name = "http.post.queryparameters.enabled")
+    Optional<Boolean> httpPostQueryParametersEnabled;
+
+    /**
      * Change the type naming strategy.
      */
     @ConfigItem(defaultValue = "Default")

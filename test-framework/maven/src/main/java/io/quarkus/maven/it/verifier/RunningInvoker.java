@@ -29,6 +29,7 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
  */
 public class RunningInvoker extends MavenProcessInvoker {
 
+    private final boolean parallel;
     private final boolean debug;
     private MavenProcessInvocationResult result;
     private final File log;
@@ -36,6 +37,11 @@ public class RunningInvoker extends MavenProcessInvoker {
     private final PrintStreamHandler errStreamHandler;
 
     public RunningInvoker(File basedir, boolean debug) {
+        this(basedir, debug, false);
+    }
+
+    public RunningInvoker(File basedir, boolean debug, boolean parallel) {
+        this.parallel = parallel;
         this.debug = debug;
         setWorkingDirectory(basedir);
         String repo = System.getProperty("maven.repo.local");
@@ -107,6 +113,9 @@ public class RunningInvoker extends MavenProcessInvoker {
         DefaultInvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(goals);
         request.setDebug(debug);
+        if (parallel) {
+            request.setThreads("1C");
+        }
         request.setLocalRepositoryDirectory(getLocalRepositoryDirectory());
         request.setBaseDirectory(getWorkingDirectory());
         request.setPomFile(new File(getWorkingDirectory(), "pom.xml"));

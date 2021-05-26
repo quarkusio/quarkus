@@ -348,10 +348,13 @@ public class AugmentActionImpl implements AugmentAction {
             Class<? extends BuildItem>... finalOutputs) {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
-            Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
-            ProfileManager.setLaunchMode(launchMode);
-
             QuarkusClassLoader classLoader = curatedApplication.getAugmentClassLoader();
+            Thread.currentThread().setContextClassLoader(classLoader);
+            ProfileManager.setLaunchMode(launchMode);
+            ProfileManager.setRuntimeDefaultProfile(
+                    Optional.ofNullable(quarkusBootstrap.getBuildSystemProperties())
+                            .map(properties -> properties.getProperty(ProfileManager.QUARKUS_PROFILE_PROP))
+                            .orElse(null));
 
             QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder()
                     .setRoot(quarkusBootstrap.getApplicationRoot())
@@ -398,6 +401,7 @@ public class AugmentActionImpl implements AugmentAction {
                 throw new RuntimeException(e);
             }
         } finally {
+            ProfileManager.setRuntimeDefaultProfile(null);
             Thread.currentThread().setContextClassLoader(old);
         }
     }

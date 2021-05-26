@@ -17,6 +17,7 @@ repositories {
 
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-resteasy'
 
     // Library-2 has to be dependency as implementation and test fixture
     implementation(project(':library-2'))

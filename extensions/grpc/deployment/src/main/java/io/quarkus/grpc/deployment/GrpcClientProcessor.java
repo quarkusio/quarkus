@@ -165,12 +165,14 @@ public class GrpcClientProcessor {
             } else if (rawTypes.contains(GrpcDotNames.MUTINY_STUB)) {
                 item.addClient(new ClientInfo(injectionType.name(), ClientType.MUTINY_STUB));
             } else if (rawTypes.contains(GrpcDotNames.MUTINY_SERVICE)) {
+                DotName generatedClient = generatedClients.get(injectionType.name());
+                if (generatedClient == null) {
+                    throw invalidInjectionPoint(injectionPoint);
+                }
                 item.addClient(new ClientInfo(injectionType.name(), ClientType.MUTINY_CLIENT,
-                        generatedClients.get(injectionType.name())));
+                        generatedClient));
             } else {
-                throw new DeploymentException(
-                        injectionType + " cannot be injected into " + injectionPoint.getTargetInfo()
-                                + " - only blocking stubs, reactive stubs based on Mutiny and io.grpc.Channel can be injected via @GrpcClient");
+                throw invalidInjectionPoint(injectionPoint);
             }
         }
 
@@ -278,6 +280,12 @@ public class GrpcClientProcessor {
                 }
             }
         }
+    }
+
+    private DeploymentException invalidInjectionPoint(InjectionPointInfo injectionPoint) {
+        return new DeploymentException(
+                injectionPoint.getRequiredType() + " cannot be injected into " + injectionPoint.getTargetInfo()
+                        + " - only Mutiny service interfaces, blocking stubs, reactive stubs based on Mutiny and io.grpc.Channel can be injected via @GrpcClient");
     }
 
     private void generateChannelProducer(MethodCreator mc, GrpcClientBuildItem svc) {

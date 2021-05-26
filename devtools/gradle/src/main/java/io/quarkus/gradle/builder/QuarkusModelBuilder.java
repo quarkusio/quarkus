@@ -64,6 +64,8 @@ import io.quarkus.runtime.util.HashUtil;
 
 public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<ModelParameter> {
 
+    private static final String QUARKUS_DEPLOYMENT_ONLY_CLASSPATH = "quarkusDeploymentOnlyClasspath";
+
     private static Configuration classpathConfig(Project project, LaunchMode mode) {
         if (LaunchMode.TEST.equals(mode)) {
             return project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
@@ -301,8 +303,13 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
             Collection<org.gradle.api.artifacts.Dependency> extensions) {
         final List<Dependency> platformDependencies = new LinkedList<>();
 
-        final Configuration deploymentConfig = project.getConfigurations()
-                .detachedConfiguration(extensions.toArray(new org.gradle.api.artifacts.Dependency[0]));
+        Configuration deploymentConfig = project.getConfigurations().findByName(QUARKUS_DEPLOYMENT_ONLY_CLASSPATH);
+        if (deploymentConfig == null) {
+            deploymentConfig = project.getConfigurations().create(QUARKUS_DEPLOYMENT_ONLY_CLASSPATH)
+                    .defaultDependencies(a -> {
+                        a.addAll(extensions);
+                    });
+        }
         final ResolvedConfiguration rc = deploymentConfig.getResolvedConfiguration();
         for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
             if (!isDependency(a)) {

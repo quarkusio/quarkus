@@ -744,6 +744,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem(defaultValue = "true")
         public boolean allowJwtIntrospection = true;
 
+        /**
+         * Allow the remote introspection of the opaque tokens.
+         *
+         * Set this property to 'false' if only JWT tokens are expected.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean allowOpaqueTokenIntrospection = true;
+
         public Optional<String> getIssuer() {
             return issuer;
         }
@@ -822,6 +830,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setAllowJwtIntrospection(boolean allowJwtIntrospection) {
             this.allowJwtIntrospection = allowJwtIntrospection;
+        }
+
+        public boolean isAllowOpaqueTokenIntrospection() {
+            return allowOpaqueTokenIntrospection;
+        }
+
+        public void setAllowOpaqueTokenIntrospection(boolean allowOpaqueTokenIntrospection) {
+            this.allowOpaqueTokenIntrospection = allowOpaqueTokenIntrospection;
         }
     }
 

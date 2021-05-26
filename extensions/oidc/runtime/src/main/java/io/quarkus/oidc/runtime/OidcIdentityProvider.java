@@ -252,9 +252,16 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<TokenVerificationResult> verifyTokenUni(TenantConfigContext resolvedContext, String token) {
-        if (OidcUtils.isOpaqueToken(token) || resolvedContext.provider.getMetadata().getJsonWebKeySetUri() == null) {
+        if (OidcUtils.isOpaqueToken(token)) {
+            if (!resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection) {
+                throw new AuthenticationFailedException();
+            }
+            return introspectTokenUni(resolvedContext, token);
+        } else if (resolvedContext.provider.getMetadata().getJsonWebKeySetUri() == null) {
+            // Verify JWT token with the remote introspection
             return introspectTokenUni(resolvedContext, token);
         } else {
+            // Verify JWT token with the local JWK keys with a possible remote introspection fallback
             try {
                 return Uni.createFrom().item(resolvedContext.provider.verifyJwtToken(token));
             } catch (Throwable t) {

@@ -104,6 +104,10 @@ public class MavenRunner implements BuildSystemRunner {
             args.add("-B");
         }
 
+        if (buildOptions.offline) {
+            args.add("--offline");
+        }
+
         if (buildOptions.clean) {
             args.add("clean");
         }
@@ -114,10 +118,6 @@ public class MavenRunner implements BuildSystemRunner {
         }
         if (buildOptions.skipTests()) {
             setSkipTests(args);
-        }
-        args.add("install");
-        if (buildOptions.offline) {
-            args.add("--offline");
         }
 
         // add any other discovered properties

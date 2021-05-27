@@ -121,6 +121,9 @@ public class CliProjectGradleTest {
 
         System.setProperty("user.dir", project.toFile().getAbsolutePath());
         startGradleDaemon(true);
+
+        result = CliDriver.invokeValidateDryRunBuild(project);
+
         CliDriver.invokeValidateBuild(project);
     }
 

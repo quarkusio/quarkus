@@ -58,6 +58,8 @@ public class CliProjectMavenTest {
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
         System.setProperty("user.dir", project.toFile().getAbsolutePath());
+        result = CliDriver.invokeValidateDryRunBuild(project);
+
         CliDriver.invokeValidateBuild(project);
     }
 
@@ -89,6 +91,10 @@ public class CliProjectMavenTest {
         CliDriver.validateApplicationProperties(project, configs);
 
         System.setProperty("user.dir", project.toFile().getAbsolutePath());
+        result = CliDriver.invokeValidateDryRunBuild(project);
+        Assertions.assertTrue(result.stdout.contains(" -e -B clean install -Dproperty=value1 -Dproperty2=value2"),
+                "result should contain ' -e -B clean install -Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
+
         CliDriver.invokeValidateBuild(project);
     }
 

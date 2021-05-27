@@ -18,6 +18,10 @@ public class CliHelpTest {
     public void testCommandHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute("--help");
         result.echoSystemOut();
+
+        CliDriver.Result result2 = CliDriver.execute();
+        Assertions.assertEquals(result.stdout, result2.stdout, "Invoking the base command should show usage help");
+        CliDriver.println("-- same as above\n\n");
     }
 
     @Test

@@ -297,16 +297,20 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeValidateBuild(Path project) throws Exception {
-        Result result = execute("build", "-e", "-B", "--dryrun"); // "build" is the default, skip ansi output
+    public static Result invokeValidateDryRunBuild(Path project) throws Exception {
+        Result result = execute("build", "-e", "-B", "--clean", "--dryrun",
+                "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         System.out.println(result.stdout);
+        return result;
+    }
 
-        result = execute("build", "-e", "-B", "--clean"); // "build" is the default, skip ansi output
+    public static Result invokeValidateBuild(Path project) throws Exception {
+        Result result = execute("build", "-e", "-B", "--clean",
+                "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
-
         return result;
     }
 

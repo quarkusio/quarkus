@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,6 +36,7 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
@@ -267,8 +267,8 @@ public class CreateProjectMojo extends AbstractMojo {
         boolean success;
         final Path projectDirPath = projectRoot.toPath();
         try {
-            sanitizeExtensions();
-            final SourceType sourceType = CreateProject.determineSourceType(extensions);
+            extensions = CreateProjectHelper.sanitizeExtensions(extensions);
+            final SourceType sourceType = CreateProjectHelper.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 
             final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder()
@@ -427,10 +427,6 @@ public class CreateProjectMojo extends AbstractMojo {
             }
         }
         // if package name is empty, the groupId will be used as part of the CreateProject logic
-    }
-
-    private void sanitizeExtensions() {
-        extensions = extensions.stream().filter(Objects::nonNull).map(String::trim).collect(Collectors.toSet());
     }
 
     private void printUserInstructions(File root) {

@@ -1,5 +1,6 @@
 package io.quarkus.deployment.util;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -20,18 +22,21 @@ public class FSWatchUtil {
 
     private static final Logger log = Logger.getLogger(FSWatchUtil.class);
 
+    private static final String THREAD_NAME_CONVENTION = "FSWatchUtil-thread-%d";
+
     private final List<ExecutorService> executors = new ArrayList<>();
 
     private volatile boolean closed = false;
 
     /**
      * in a loop, checks for modifications in the files
-     * 
+     *
      * @param watchers list of {@link Watcher}s
      */
     public void observe(Collection<Watcher> watchers,
             long intervalMs) {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(THREAD_NAME_CONVENTION).build();
+        ExecutorService executorService = Executors.newSingleThreadExecutor(threadFactory);
         executorService.execute(
                 () -> doObserve(watchers, intervalMs));
         executors.add(executorService);

@@ -17,9 +17,12 @@ import io.grpc.examples.streaming.MutinyStreamingGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import org.jboss.logging.Logger;
 
 @Path("/streaming")
 public class StreamingEndpoint {
+
+    private static final Logger log = Logger.getLogger(StreamingEndpoint.class);
 
     @GrpcClient
     MutinyStreamingGrpc.MutinyStreamingStub streaming;
@@ -41,21 +44,25 @@ public class StreamingEndpoint {
 
     @GET
     @Path("/{max}")
-    public List<String> invokePipe(@PathParam("max") int max) {
+    public Multi<String> invokePipe(@PathParam("max") int max) {
+//    public List<String> invokePipe(@PathParam("max") int max) {
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
                 .map(i -> Item.newBuilder().setValue(i).build());
-        List<String> collector = new CopyOnWriteArrayList<>();
-        CompletableFuture<Void> finish = new CompletableFuture<>();
-        streaming.pipe(inputs).onItem().transform(Item::getValue).subscribe().with(
-                collector::add, () -> finish.complete(null));
-        try {
+//        List<String> collector = new CopyOnWriteArrayList<>();
+//        CompletableFuture<Void> finish = new CompletableFuture<>();
+        return streaming.pipe(inputs)
+                .onFailure().invoke(error -> log.error("gRPC failure", error))
+                .onItem().transform(Item::getValue);
+//                .subscribe().with(
+//                collector::add, () -> finish.complete(null));
+        /*try {
             finish.get(10, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException e) {
             throw new IllegalStateException("Failed waiting for responses", e);
         } catch (TimeoutException e) {
             throw new IllegalStateException("Timed out waiting for responses", e);
         }
-        return collector;
+        return collector;*/
     }
 }

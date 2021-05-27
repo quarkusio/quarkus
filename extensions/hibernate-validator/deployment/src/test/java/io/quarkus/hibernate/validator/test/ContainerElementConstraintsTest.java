@@ -55,6 +55,14 @@ public class ContainerElementConstraintsTest {
                 MethodReturnValueTestBean.class.getMethod("test"), invalidMap)).hasSize(1);
     }
 
+    @Test
+    public void testConstructorParameterContainerElementConstraint() throws NoSuchMethodException, SecurityException {
+        List<String> invalidList = Collections.singletonList("");
+
+        assertThat(validatorFactory.getValidator().forExecutables().validateConstructorParameters(
+                ConstructorParameterTestBean.class.getConstructor(List.class), new Object[] { invalidList })).hasSize(1);
+    }
+
     static class TestBean {
 
         public Map<String, @NotBlank String> constrainedMap;
@@ -90,6 +98,13 @@ public class ContainerElementConstraintsTest {
 
         public Map<String, List<@NotBlank String>> test() {
             return null;
+        }
+    }
+
+    static class ConstructorParameterTestBean {
+
+        public ConstructorParameterTestBean(List<@NotBlank String> constrainedList) {
+            // do nothing
         }
     }
 }

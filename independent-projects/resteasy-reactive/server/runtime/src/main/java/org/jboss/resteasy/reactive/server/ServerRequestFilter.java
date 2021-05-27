@@ -54,7 +54,6 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestCo
  * <li>{@link ResteasyReactiveContainerRequestContext}
  * <li><tt>io.vertx.ext.web.RoutingContext</tt>
  * <li><tt>io.vertx.core.http.HttpServerRequest</tt>
- * <li><tt>io.vertx.core.http.HttpServerResponse</tt>
  * </ul>
  *
  * The return type of the method must be either be of type {@code void}, {@code Response}, {@code Optional<Response>},

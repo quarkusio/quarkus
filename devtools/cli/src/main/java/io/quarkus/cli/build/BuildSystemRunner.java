@@ -69,9 +69,9 @@ public interface BuildSystemRunner {
         List<String> result = new ArrayList<>();
         props.entrySet().forEach(x -> {
             if (x.getValue().length() > 0) {
-                result.add(x.getKey() + "=" + x.getValue());
+                result.add("-D" + x.getKey() + "=" + x.getValue());
             } else {
-                result.add(x.getKey());
+                result.add("-D" + x.getKey());
             }
         });
         return result;

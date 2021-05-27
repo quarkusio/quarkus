@@ -8,8 +8,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>quarkus-integration-test-resteasy-reactive-rest-client-standalone</artifactId>
-    <name>Quarkus - Integration Tests - REST client without server</name>
+    <artifactId>quarkus-integration-test-resteasy-reactive-rest-client-multipart</artifactId>
+    <name>Quarkus - Integration Tests - REST client Reactive multipart messages</name>
 
     <dependencies>
         <!-- Client dependencies -->
@@ -20,7 +20,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http</artifactId>
+            <artifactId>quarkus-resteasy-reactive</artifactId>
         </dependency>
 
         <!-- Test dependencies -->
@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -84,35 +84,6 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>uk.co.automatictester</groupId>
-                <artifactId>wiremock-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>wiremock-start</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>stop</goal>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <dir>target/classes</dir>
-                            <params>--port=8765 --verbose --disable-banner</params>
-                            <skip>${skipTests}</skip>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>wiremock-stop</id>
-                        <phase>post-integration-test</phase>
-                        <goals>
-                            <goal>stop</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skipTests}</skip>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

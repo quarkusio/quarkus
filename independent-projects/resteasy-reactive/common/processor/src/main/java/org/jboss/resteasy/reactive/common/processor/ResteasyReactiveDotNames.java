@@ -75,6 +75,7 @@ import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.DummyElementType;
 import org.jboss.resteasy.reactive.MultipartForm;
+import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.RestHeader;
@@ -116,6 +117,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName REST_HEADER_PARAM = DotName.createSimple(RestHeader.class.getName());
     public static final DotName REST_FORM_PARAM = DotName.createSimple(RestForm.class.getName());
     public static final DotName MULTI_PART_FORM_PARAM = DotName.createSimple(MultipartForm.class.getName());
+    public static final DotName PART_TYPE_NAME = DotName.createSimple(PartType.class.getName());
     public static final DotName REST_MATRIX_PARAM = DotName.createSimple(RestMatrix.class.getName());
     public static final DotName REST_COOKIE_PARAM = DotName.createSimple(RestCookie.class.getName());
     public static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());

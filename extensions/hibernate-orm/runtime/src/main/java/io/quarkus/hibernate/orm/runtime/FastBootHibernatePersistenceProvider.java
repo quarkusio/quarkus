@@ -188,8 +188,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 }
             }
 
-            // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-            runtimeSettingsBuilder.put("hibernate.temp.use_jdbc_metadata_defaults", "true");
+            setJdbcMetadataDefaults(runtimeSettingsBuilder, persistenceUnit);
 
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
 
@@ -366,6 +365,15 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             runtimeSettingsBuilder.put(AvailableSettings.LOG_JDBC_WARNINGS,
                     persistenceUnitConfig.log.jdbcWarnings.get().toString());
         }
+    }
+
+    /**
+     * Allow/Not Allow detection of driver/database capabilities on runtime init (was disabled during static init).
+     * In some specific cases the detection is slow and not necessary for the application to work correctly.
+     */
+    private static void setJdbcMetadataDefaults(Builder runtimeSettingsBuilder, PersistenceUnitDescriptor persistenceUnit) {
+        runtimeSettingsBuilder.put("hibernate.temp.use_jdbc_metadata_defaults",
+                persistenceUnit.getProperties().getOrDefault("hibernate.temp.use_jdbc_metadata_defaults", "true"));
     }
 
 }

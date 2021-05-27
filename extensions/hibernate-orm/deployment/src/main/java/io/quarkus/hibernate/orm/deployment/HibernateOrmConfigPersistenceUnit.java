@@ -199,6 +199,13 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigItem
     public Optional<String> multitenantSchemaDatasource;
 
+    /**
+     * This setting is used to control whether we should consult the JDBC metadata to determine certain Settings default values.
+     * In some specific cases the detection is not necessary and speeds up the application startup.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useJdbcMetadataDefaults;
+
     public boolean isAnyPropertySet() {
         return datasource.isPresent() ||
                 packages.isPresent() ||
@@ -216,7 +223,8 @@ public class HibernateOrmConfigPersistenceUnit {
                 !secondLevelCachingEnabled ||
                 multitenant.isPresent() ||
                 multitenantSchemaDatasource.isPresent() ||
-                fetch.isAnyPropertySet();
+                fetch.isAnyPropertySet() ||
+                !useJdbcMetadataDefaults;
     }
 
     @ConfigGroup

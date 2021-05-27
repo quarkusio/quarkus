@@ -2,6 +2,8 @@ package io.quarkus.grpc.example.streaming;
 
 import java.time.Duration;
 
+import org.jboss.logging.Logger;
+
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.MutinyStreamingGrpc;
@@ -11,6 +13,8 @@ import io.smallrye.mutiny.Uni;
 
 @GrpcService
 public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
+
+    private static final Logger log = Logger.getLogger(StreamingService.class);
 
     @Override
     public Multi<Item> source(Empty request) {
@@ -34,6 +38,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
                 .map(Item::getValue)
                 .map(Long::parseLong)
                 .onItem().scan(() -> 0L, Long::sum)
+                .onItem().invoke(value -> log.infof("the service will emit %s", value))
                 .onItem().transform(l -> Item.newBuilder().setValue(Long.toString(l)).build());
     }
 }

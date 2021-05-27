@@ -42,6 +42,7 @@ public class StreamingEndpoint {
         //    public List<String> invokePipe(@PathParam("max") int max) {
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
+                .invoke(value -> log.infof("the client is emitting %s", value))
                 .map(i -> Item.newBuilder().setValue(i).build());
         //        List<String> collector = new CopyOnWriteArrayList<>();
         //        CompletableFuture<Void> finish = new CompletableFuture<>();

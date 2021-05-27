@@ -1,5 +1,12 @@
 package io.quarkus.grpc.example.streaming;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -34,10 +41,21 @@ public class StreamingEndpoint {
 
     @GET
     @Path("/{max}")
-    public Multi<String> invokePipe(@PathParam("max") int max) {
+    public List<String> invokePipe(@PathParam("max") int max) {
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
                 .map(i -> Item.newBuilder().setValue(i).build());
-        return streaming.pipe(inputs).onItem().transform(Item::getValue);
+        List<String> collector = new CopyOnWriteArrayList<>();
+        CompletableFuture<Void> finish = new CompletableFuture<>();
+        streaming.pipe(inputs).onItem().transform(Item::getValue).subscribe().with(
+                collector::add, () -> finish.complete(null));
+        try {
+            finish.get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IllegalStateException("Failed waiting for responses", e);
+        } catch (TimeoutException e) {
+            throw new IllegalStateException("Timed out waiting for responses", e);
+        }
+        return collector;
     }
 }

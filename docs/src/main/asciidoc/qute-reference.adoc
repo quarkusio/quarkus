@@ -1105,6 +1105,8 @@ For the expression `inject:foo.price` the implementation class of the injected b
 
 NOTE: A `ValueResolver` is also generated for all beans annotated with `@Named` so that it's possible to access its properties without reflection.
 
+TIP: If your application serves link:http-reference[HTTP requests] you can also inject the current `io.vertx.core.http.HttpServerRequest` via the `inject` namespace, e.g. `{inject:vertxRequest.getParam('foo')}`. 
+
 [[typesafe_expressions]]
 === Type-safe Expressions
 

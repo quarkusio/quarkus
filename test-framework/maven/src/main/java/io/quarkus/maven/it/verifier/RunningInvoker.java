@@ -88,11 +88,12 @@ public class RunningInvoker extends MavenProcessInvoker {
         if (result == null) {
             return;
         }
+        // Kill all processes that were (indirectly) spawned by the current process.
+        // It's important to do it this way (instead of calling result.destroy() first)
+        // because otherwise children of that process can become orphaned zombies.
+        DevModeTestUtils.killDescendingProcesses();
+        // This is now more or less "symbolic" since the previous call should have also killed that result's process.
         result.destroy();
-
-        // Kill all process using the live reload and the live reload process.
-        // This might be too much
-        DevModeTestUtils.killProcesses("quarkus:dev", "quarkus:remote-dev", getWorkingDirectory().getAbsolutePath());
     }
 
     public MavenProcessInvocationResult execute(List<String> goals, Map<String, String> envVars)

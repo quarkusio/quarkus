@@ -60,7 +60,7 @@ final class QuarkusCommandHandlers {
                                 .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
                                         .append(extension.managementKey()));
                         sb.append(System.lineSeparator())
-                                .append("     Be more specific e.g using the exact name or the full GAV.");
+                                .append("     try using the exact name or the full GAV (group id, artifact id, and version).");
                         invocation.log().info(sb.toString());
                         return null;
                     }

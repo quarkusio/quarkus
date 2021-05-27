@@ -236,9 +236,11 @@ public class SmallRyeGraphQLProcessor {
                 .build());
 
         // Queries and Mutations
-        Boolean allowGet = ConfigProvider.getConfig().getOptionalValue(ConfigKey.ALLOW_GET, boolean.class).orElse(false);
+        boolean allowGet = getBooleanConfigValue(graphQLConfig.httpGetEnabled, ConfigKey.ALLOW_GET, false);
+        boolean allowQueryParametersOnPost = getBooleanConfigValue(graphQLConfig.httpPostQueryParametersEnabled,
+                ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
-                allowGet);
+                allowGet, allowQueryParametersOnPost);
         routeProducer.produce(httpRootPathBuildItem.routeBuilder()
                 .routeFunction(graphQLConfig.rootPath, recorder.routeFunction(bodyHandlerBuildItem.getHandler()))
                 .handler(executionHandler)
@@ -247,6 +249,11 @@ public class SmallRyeGraphQLProcessor {
                 .blockingRoute()
                 .build());
 
+    }
+
+    private boolean getBooleanConfigValue(Optional<Boolean> quarkusConfig, String smallryeKey, boolean defaultValue) {
+        return quarkusConfig
+                .orElse(ConfigProvider.getConfig().getOptionalValue(smallryeKey, boolean.class).orElse(defaultValue));
     }
 
     private String[] getSchemaJavaClasses(Schema schema) {

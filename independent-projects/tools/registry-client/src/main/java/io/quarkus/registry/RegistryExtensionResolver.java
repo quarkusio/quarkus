@@ -8,7 +8,6 @@ import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.client.RegistryClient;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.util.GlobUtil;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -64,22 +63,8 @@ class RegistryExtensionResolver {
         return extensionResolver.resolvePlatforms(quarkusCoreVersion);
     }
 
-    Platform resolveDefaultPlatform() throws RegistryResolutionException {
-        final PlatformCatalog platformsCatalog = resolvePlatformCatalog();
-        final ArtifactCoords defaultCoords = platformsCatalog.getDefaultPlatform();
-        for (Platform p : platformsCatalog.getPlatforms()) {
-            if (defaultCoords.equals(p.getBom())) {
-                return p;
-            }
-        }
-        final StringBuilder buf = new StringBuilder();
-        buf.append("Failed to locate the default platform ").append(defaultCoords).append(" in the catalog of ");
-        final Iterator<Platform> i = platformsCatalog.getPlatforms().iterator();
-        buf.append(i.next().getBom());
-        while (i.hasNext()) {
-            buf.append(", ").append(i.next().getBom());
-        }
-        throw new RegistryResolutionException(buf.toString());
+    Platform resolveRecommendedPlatform() throws RegistryResolutionException {
+        return resolvePlatformCatalog().getRecommendedPlatform();
     }
 
     ExtensionCatalog resolveNonPlatformExtensions(String quarkusCoreVersion) throws RegistryResolutionException {

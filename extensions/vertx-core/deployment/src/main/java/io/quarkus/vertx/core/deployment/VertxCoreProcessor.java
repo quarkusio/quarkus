@@ -18,6 +18,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ContextHandlerBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -114,5 +115,11 @@ class VertxCoreProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     ThreadFactoryBuildItem createVertxThreadFactory(VertxCoreRecorder recorder) {
         return new ThreadFactoryBuildItem(recorder.createThreadFactory());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder) {
+        return new ContextHandlerBuildItem(recorder.executionContextHandler());
     }
 }

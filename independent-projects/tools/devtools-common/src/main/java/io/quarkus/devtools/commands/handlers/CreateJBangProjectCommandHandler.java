@@ -58,7 +58,7 @@ public class CreateJBangProjectCommandHandler implements QuarkusCommandHandler {
             }
             getCatalog(invocation.getQuarkusProject()).createProject(input).generate(projectDir);
             invocation.log()
-                    .info("\n-----------\n" + MessageIcons.NOOP_ICON
+                    .info("\n-----------\n" + MessageIcons.OK_ICON + " "
                             + " jbang project has been successfully generated in:\n--> "
                             + invocation.getQuarkusProject().getProjectDirPath().toString() + "\n-----------");
         } catch (IOException e) {

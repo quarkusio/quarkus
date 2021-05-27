@@ -154,7 +154,7 @@
         <module>rest-client</module>
         <module>resteasy-reactive-kotlin</module>
         <module>resteasy-reactive-rest-client</module>
-        <module>resteasy-reactive-rest-client-standalone</module>
+        <module>resteasy-reactive-rest-client-multipart</module>
         <module>packaging</module>
         <module>simple with space</module>
         <module>consul-config</module>

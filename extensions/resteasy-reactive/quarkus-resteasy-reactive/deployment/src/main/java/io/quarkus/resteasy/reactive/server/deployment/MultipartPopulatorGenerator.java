@@ -244,7 +244,7 @@ final class MultipartPopulatorGenerator {
                             || fieldDotName.equals(DotNames.INPUT_STREAM_READER_NAME)) {
                         // don't support InputStream as it's too easy to get into trouble
                         throw new IllegalArgumentException(
-                                "InputStream and InputStreamReader are not support as a field type of a Multipart POJO class. Offending field is '"
+                                "InputStream and InputStreamReader are not supported as a field type of a Multipart POJO class. Offending field is '"
                                         + field.name() + "' of class '" + multipartClassName + "'");
                     }
 
@@ -258,7 +258,7 @@ final class MultipartPopulatorGenerator {
 
                     // TODO: not sure this is correct, but it seems to be what RESTEasy does and it also makes most sense in the context of a POJO
                     String partType = MediaType.TEXT_PLAIN;
-                    AnnotationInstance partTypeInstance = field.annotation(DotNames.PART_TYPE_NAME);
+                    AnnotationInstance partTypeInstance = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
                     if (partTypeInstance != null) {
                         AnnotationValue partTypeValue = partTypeInstance.value();
                         if (partTypeValue != null) {

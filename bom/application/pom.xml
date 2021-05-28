@@ -114,7 +114,7 @@
         <wildfly-elytron.version>1.15.4.Final</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.4.0.Final</jboss-threads.version>
-        <vertx.version>4.1.0.CR1</vertx.version>
+        <vertx.version>4.1.0.CR2</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>

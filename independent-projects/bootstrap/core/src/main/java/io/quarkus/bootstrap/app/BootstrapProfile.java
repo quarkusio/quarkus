@@ -56,8 +56,6 @@ public class BootstrapProfile {
             case REMOTE_DEV_CLIENT:
             case PROD:
                 return PROD;
-            case TEST:
-                return TEST;
             default:
                 throw new RuntimeException("unknown mode:" + mode);
         }

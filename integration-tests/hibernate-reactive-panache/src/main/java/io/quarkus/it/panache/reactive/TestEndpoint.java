@@ -652,8 +652,7 @@ public class TestEndpoint {
         person.status = Status.LIVING;
         person.address = new Address("stef street");
         return person.address.persist()
-                .flatMap(v -> person.persist())
-                .map(v -> person);
+                .flatMap(v -> person.persist());
     }
 
     private Uni<Person> makeSavedPersonDao(String suffix) {
@@ -662,8 +661,7 @@ public class TestEndpoint {
         person.status = Status.LIVING;
         person.address = new Address("stef street");
         return addressDao.persist(person.address)
-                .flatMap(v -> personDao.persist(person))
-                .map(v -> person);
+                .flatMap(v -> personDao.persist(person));
     }
 
     private Uni<Person> makeSavedPerson() {
@@ -673,7 +671,7 @@ public class TestEndpoint {
             Dog dog = new Dog("octave", "dalmatian");
             dog.owner = person;
             person.dogs.add(dog);
-            return dog.persist().map(v -> person);
+            return dog.persist().map(d -> person);
         });
     }
 
@@ -684,7 +682,7 @@ public class TestEndpoint {
             Dog dog = new Dog("octave", "dalmatian");
             dog.owner = person;
             person.dogs.add(dog);
-            return dog.persist().map(v -> person);
+            return dog.persist().map(d -> person);
         });
     }
 

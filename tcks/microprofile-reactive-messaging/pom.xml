@@ -37,6 +37,7 @@
 
                         <!-- the test need to be challenged - the error emission may happen after -->
                         <exclude>org.eclipse.microprofile.reactive.messaging.tck.channel.overflow.DefaultOverflowStrategyOverflowTest</exclude>
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.channel.overflow.FailOverflowStrategyOverflowTest</exclude>
 
                         <!-- No Metrics support in Quarkus (Micrometer) -->
                         <exclude>org.eclipse.microprofile.reactive.messaging.tck.metrics.MetricsTest</exclude>

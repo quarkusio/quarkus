@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
+import io.quarkus.micrometer.deployment.VetoDefaultMeterRegistryBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.PrometheusConfigGroup;
@@ -39,12 +40,20 @@ public class PrometheusRegistryProcessor {
 
     @BuildStep(onlyIf = PrometheusEnabled.class)
     MicrometerRegistryProviderBuildItem createPrometheusRegistry(
+            MicrometerConfig mConfig,
+            BuildProducer<VetoDefaultMeterRegistryBuildItem> vetoedRegistries,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the Prometheus Registry Producer
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(PrometheusMeterRegistryProvider.class)
                 .setUnremovable().build());
+
+        PrometheusConfigGroup pConfig = mConfig.export.prometheus;
+        if (!pConfig.defaultRegistry) {
+            log.info("Default Prometheus MeterRegistry is disabled.");
+            vetoedRegistries.produce(new VetoDefaultMeterRegistryBuildItem(PrometheusMeterRegistryProvider.class));
+        }
 
         // Include the PrometheusMeterRegistry in a possible CompositeMeterRegistry
         return new MicrometerRegistryProviderBuildItem(REGISTRY_CLASS);

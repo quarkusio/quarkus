@@ -1,5 +1,6 @@
 package io.quarkus.micrometer.deployment;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -96,6 +97,8 @@ public class MicrometerProcessor {
     @BuildStep(onlyIf = MicrometerEnabled.class)
     UnremovableBeanBuildItem registerAdditionalBeans(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<MicrometerRegistryProviderBuildItem> providerClasses,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
+            List<VetoDefaultMeterRegistryBuildItem> vetoedRegistries,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
@@ -121,7 +124,7 @@ public class MicrometerProcessor {
         IndexView index = indexBuildItem.getIndex();
 
         // Find classes that define MeterRegistries, MeterBinders, and MeterFilters
-        Collection<String> knownRegistries = new HashSet<>();
+        final Collection<String> knownRegistries = new HashSet<>();
         collectNames(index.getAllKnownSubclasses(METER_REGISTRY), knownRegistries);
 
         Collection<String> knownClasses = new HashSet<>();
@@ -162,6 +165,34 @@ public class MicrometerProcessor {
                 default:
                     break;
             }
+        }
+
+        if (vetoedRegistries.size() > 0) {
+            List<DotName> vetoedClassNames = new ArrayList<>();
+            for (VetoDefaultMeterRegistryBuildItem x : vetoedRegistries) {
+                vetoedClassNames.add(x.meterRegistryProducerClassName);
+            }
+
+            annotationsTransformers.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+                @Override
+                public boolean appliesTo(AnnotationTarget.Kind kind) {
+                    return kind == org.jboss.jandex.AnnotationTarget.Kind.METHOD;
+                }
+
+                @Override
+                public void transform(TransformationContext ctx) {
+                    MethodInfo method = ctx.getTarget().asMethod();
+
+                    // if this targets a class in the vetoedRegistries list
+                    // and the method produces a known MeterRegistry type
+                    // and it is a @Produces method .. "veto it" -- remove Produces annotation
+                    if (vetoedClassNames.contains(method.declaringClass().name())
+                            && knownRegistries.contains(method.returnType().name().toString())
+                            && method.hasAnnotation(DotNames.PRODUCES)) {
+                        ctx.transform().removeAll().done();
+                    }
+                }
+            }));
         }
 
         reflectiveClasses.produce(createReflectiveBuildItem(COUNTED_ANNOTATION, index));

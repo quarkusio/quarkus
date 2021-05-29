@@ -95,7 +95,7 @@ public class MicrometerRecorder {
                     .getReference(i, MeterRegistry.class, beanManager.createCreationalContext(i));
 
             // Add & configure non-root registries
-            if (registry != Metrics.globalRegistry) {
+            if (registry != Metrics.globalRegistry && registry != null) {
                 applyMeterFilters(registry, globalFilters);
                 applyMeterFilters(registry, classMeterFilters.get(registry.getClass()));
                 log.debugf("Adding configured registry %s", registry.getClass(), registry);

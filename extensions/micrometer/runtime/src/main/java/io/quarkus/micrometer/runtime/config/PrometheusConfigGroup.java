@@ -25,6 +25,14 @@ public class PrometheusConfigGroup implements MicrometerConfig.CapabilityEnabled
     @ConfigItem(defaultValue = "metrics")
     public String path;
 
+    /**
+     * By default, this extension will create a Prometheus MeterRegistry instance.
+     * <p>
+     * Use this attribute to veto the creation of the default Prometheus MeterRegistry.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean defaultRegistry;
+
     @Override
     public Optional<Boolean> getEnabled() {
         return enabled;
@@ -35,6 +43,7 @@ public class PrometheusConfigGroup implements MicrometerConfig.CapabilityEnabled
         return this.getClass().getSimpleName()
                 + "{path='" + path
                 + ",enabled=" + enabled
+                + ",defaultRegistry=" + defaultRegistry
                 + '}';
     }
 }

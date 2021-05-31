@@ -47,6 +47,9 @@ import java.util.stream.Collectors;
  */
 public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
+    private static final String QUARKUS_PLATFORM_GROUP_ID_EXPR = "${quarkus.platform.group-id}";
+    private static final String QUARKUS_PLATFORM_VERSION_EXPR = "${quarkus.platform.version}";
+
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
         final Set<String> extensionsQuery = invocation.getValue(ProjectGenerator.EXTENSIONS, Collections.emptySet());
@@ -72,20 +75,17 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
         ExtensionCatalog mainPlatform = invocation.getExtensionsCatalog(); // legacy platform initialization
         final List<ExtensionCatalog> platformsToImport = getPlatformsToImport(mainPlatform, extensionsToAdd);
-        List<ArtifactCoords> extraBoms = Collections.emptyList();
-        if (platformsToImport.size() == 1) {
+        final List<ArtifactCoords> platformBoms = new ArrayList<>(Math.max(platformsToImport.size(), 1));
+        if (platformsToImport.size() > 0) {
             mainPlatform = platformsToImport.get(0);
-        } else if (platformsToImport.size() > 1) {
-            extraBoms = new ArrayList<>(platformsToImport.size() - 1);
             for (ExtensionCatalog platform : platformsToImport) {
-                // TODO once we adjust the templates to use a single version property for all the members
-                // this shouldn't be necessary
                 if (platform.getBom().getArtifactId().equals("quarkus-bom")) {
                     mainPlatform = platform;
-                } else {
-                    extraBoms.add(platform.getBom());
                 }
+                platformBoms.add(platform.getBom());
             }
+        } else {
+            platformBoms.add(mainPlatform.getBom());
         }
 
         invocation.setValue(BOM_GROUP_ID, mainPlatform.getBom().getGroupId());
@@ -94,9 +94,9 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         invocation.setValue(QUARKUS_VERSION, mainPlatform.getQuarkusCoreVersion());
         final Properties quarkusProps = ToolsUtils.readQuarkusProperties(mainPlatform);
         quarkusProps.forEach((k, v) -> {
-            String name = k.toString().replace("-", "_");
+            final String name = k.toString().replace("-", "_");
             if (!invocation.hasValue(name)) {
-                invocation.setValue(k.toString().replace("-", "_"), v.toString());
+                invocation.setValue(name, v.toString());
             }
         });
 
@@ -109,7 +109,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 platformData.put("gradle", mainPlatform.getMetadata().get("gradle"));
             }
             final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                    .addPlatforms(extraBoms)
+                    .addPlatforms(platformBoms)
                     .addExtensions(extensionsToAdd)
                     .buildTool(invocation.getQuarkusProject().getBuildTool())
                     .example(invocation.getValue(EXAMPLE))

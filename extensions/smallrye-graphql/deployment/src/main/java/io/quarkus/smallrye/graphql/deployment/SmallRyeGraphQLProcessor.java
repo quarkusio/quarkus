@@ -66,7 +66,6 @@ import io.smallrye.graphql.schema.model.Argument;
 import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.Group;
 import io.smallrye.graphql.schema.model.InputType;
-import io.smallrye.graphql.schema.model.InterfaceType;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Reference;
 import io.smallrye.graphql.schema.model.Schema;
@@ -333,9 +332,9 @@ public class SmallRyeGraphQLProcessor {
         return classes;
     }
 
-    private Set<String> getInterfaceClassNames(Collection<InterfaceType> complexGraphQLTypes) {
+    private Set<String> getInterfaceClassNames(Collection<Type> complexGraphQLTypes) {
         Set<String> classes = new HashSet<>();
-        for (InterfaceType complexGraphQLType : complexGraphQLTypes) {
+        for (Type complexGraphQLType : complexGraphQLTypes) {
             classes.add(complexGraphQLType.getClassName());
             classes.addAll(getFieldClassNames(complexGraphQLType.getFields()));
         }
@@ -361,6 +360,34 @@ public class SmallRyeGraphQLProcessor {
             }
         }
         return classes;
+    }
+
+    // Other Config Mappings
+
+    @BuildStep
+    void configMapping(SmallRyeGraphQLConfig graphQLConfig,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+
+        if (graphQLConfig.errorExtensionFields.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ERROR_EXTENSION_FIELDS,
+                    graphQLConfig.errorExtensionFields.get().stream().collect(Collectors.joining(", "))));
+        }
+
+        if (graphQLConfig.showRuntimeExceptionMessage.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem("mp.graphql.showErrorMessage",
+                    graphQLConfig.showRuntimeExceptionMessage.get().stream().collect(Collectors.joining(", "))));
+        }
+
+        if (graphQLConfig.hideCheckedExceptionMessage.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem("mp.graphql.hideErrorMessage",
+                    graphQLConfig.hideCheckedExceptionMessage.get().stream().collect(Collectors.joining(", "))));
+        }
+
+        if (graphQLConfig.defaultErrorMessage.isPresent()) {
+            systemProperties.produce(
+                    new SystemPropertyBuildItem(ConfigKey.DEFAULT_ERROR_MESSAGE, graphQLConfig.defaultErrorMessage.get()));
+        }
+
     }
 
     // Services Integrations

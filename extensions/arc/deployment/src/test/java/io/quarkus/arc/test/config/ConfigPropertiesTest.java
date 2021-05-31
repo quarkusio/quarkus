@@ -3,6 +3,8 @@ package io.quarkus.arc.test.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.Map;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
@@ -26,10 +28,16 @@ public class ConfigPropertiesTest {
                             "smallrye.config.mapping.validate-unknown=false\n" +
                                     "server.host=localhost\n" +
                                     "server.port=8080\n" +
+                                    "server.reasons.200=OK Server\n" +
+                                    "server.reasons.201=Created Server\n" +
                                     "cloud.host=cloud\n" +
                                     "cloud.port=9090\n" +
+                                    "cloud.reasons.200=OK Cloud\n" +
+                                    "cloud.reasons.201=Created Cloud\n" +
                                     "host=empty\n" +
-                                    "port=0\n"),
+                                    "port=0\n" +
+                                    "reasons.200=OK\n" +
+                                    "reasons.201=Created\n"),
                             "application.properties"));
 
     @Inject
@@ -78,14 +86,23 @@ public class ConfigPropertiesTest {
         assertNotNull(configProperties);
         assertEquals("localhost", configProperties.host);
         assertEquals(8080, configProperties.port);
+        assertEquals(2, configProperties.reasons.size());
+        assertEquals("OK Server", configProperties.reasons.get(200));
+        assertEquals("Created Server", configProperties.reasons.get(201));
 
         assertNotNull(configPropertiesCloud);
         assertEquals("cloud", configPropertiesCloud.host);
         assertEquals(9090, configPropertiesCloud.port);
+        assertEquals(2, configPropertiesCloud.reasons.size());
+        assertEquals("OK Cloud", configPropertiesCloud.reasons.get(200));
+        assertEquals("Created Cloud", configPropertiesCloud.reasons.get(201));
 
         assertNotNull(configPropertiesEmpty);
         assertEquals("empty", configPropertiesEmpty.host);
         assertEquals(0, configPropertiesEmpty.port);
+        assertEquals(2, configPropertiesEmpty.reasons.size());
+        assertEquals("OK", configPropertiesEmpty.reasons.get(200));
+        assertEquals("Created", configPropertiesEmpty.reasons.get(201));
     }
 
     @Test
@@ -142,6 +159,7 @@ public class ConfigPropertiesTest {
     public static class ServerConfigProperties {
         public String host;
         public int port;
+        public Map<Integer, String> reasons;
     }
 
     @Dependent

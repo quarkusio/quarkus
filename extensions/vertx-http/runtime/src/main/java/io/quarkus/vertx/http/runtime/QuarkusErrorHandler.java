@@ -110,7 +110,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                     .append("\",\"stack\":\"")
                     .append(escapedStack)
                     .append("\"}");
-            event.response().end(jsonPayload.toString());
+            writeResponse(event, jsonPayload.toString());
         } else {
             //We default to HTML representation
             event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
@@ -118,7 +118,13 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             if (showStack && exception != null) {
                 htmlBuilder.stack(exception);
             }
-            event.response().end(htmlBuilder.toString());
+            writeResponse(event, htmlBuilder.toString());
+        }
+    }
+
+    private void writeResponse(RoutingContext event, String output) {
+        if (!event.response().ended()) {
+            event.response().end(output);
         }
     }
 

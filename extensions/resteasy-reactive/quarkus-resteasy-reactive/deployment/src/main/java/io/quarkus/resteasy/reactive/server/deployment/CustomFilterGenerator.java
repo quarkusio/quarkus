@@ -210,10 +210,6 @@ final class CustomFilterGenerator {
                 ResultHandle routingContextHandle = GeneratorUtils.routingContextHandler(filterMethod, rrReqCtxHandle);
                 targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
                         ofMethod(RoutingContext.class, "request", HttpServerRequest.class), routingContextHandle);
-            } else if (HTTP_SERVER_RESPONSE.equals(paramDotName)) {
-                ResultHandle routingContextHandle = GeneratorUtils.routingContextHandler(filterMethod, rrReqCtxHandle);
-                targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
-                        ofMethod(RoutingContext.class, "response", HttpServerResponse.class), routingContextHandle);
             } else if (RESOURCE_INFO.equals(paramDotName)) {
                 targetMethodParamHandles[i] = getResourceInfoHandle(filterMethod, rrReqCtxHandle);
             } else if (SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {

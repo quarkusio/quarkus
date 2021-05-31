@@ -915,47 +915,6 @@ It is important to note that this customization is only performed for the serial
 Here are some more advanced topics that you may not need to know about initially, but
 could prove useful for more complex use cases.
 
-=== Better error messages in your source files
-
-In order to get better type safety and error messages directly in your IDE, RESTEasy Reactive uses the
-https://github.com/smallrye/smallrye-safer-annotations[SmallRye Safer Annotations] compiler plugin, which
-you will get automatically as soon as you import the `quarkus-resteasy-reactive` extension.
-
-If you are using the Eclipse IDE, you may want to install the https://marketplace.eclipse.org/content/m2e-apt[M2E APT]
-plugin and enable it by adding this property to your `pom.xml`:
-
-[source,xml]
-----
-<properties>
-    <m2e.apt.activation>jdt_apt</m2e.apt.activation>
-</properties>
-----
-
-Note that if you configure any compiler plugin manually via `annotationProcessorPaths` you
-will need to list `smallrye-safer-annotations` explicitely as it will not be picked up
-from the transitive classpath anymore:
-
-[source,xml]
-----
-<build>
-    <plugins>
-        <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>${compiler-plugin.version}</version>
-            <configuration>
-                <annotationProcessorPaths>
-                    <annotationProcessorPath>
-                        <groupId>io.smallrye</groupId>
-                        <artifactId>smallrye-safer-annotations</artifactId>
-                        <version>1.0.2</version>
-                    </annotationProcessorPath>
-                </annotationProcessorPaths>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
-----
-
 === Execution model, blocking, non-blocking
 
 [[execution-model]]

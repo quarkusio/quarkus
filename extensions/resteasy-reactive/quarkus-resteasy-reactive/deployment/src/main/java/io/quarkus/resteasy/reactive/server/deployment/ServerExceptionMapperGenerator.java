@@ -57,7 +57,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AsyncExceptionMappingUtil;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 final class ServerExceptionMapperGenerator {
@@ -480,10 +479,6 @@ final class ServerExceptionMapperGenerator {
                 ResultHandle routingContextHandle = routingContextHandler(mc, contextHandle);
                 targetMethodParamHandles[i] = mc.invokeInterfaceMethod(
                         ofMethod(RoutingContext.class, "request", HttpServerRequest.class), routingContextHandle);
-            } else if (HTTP_SERVER_RESPONSE.equals(paramDotName)) {
-                ResultHandle routingContextHandle = routingContextHandler(mc, contextHandle);
-                targetMethodParamHandles[i] = mc.invokeInterfaceMethod(
-                        ofMethod(RoutingContext.class, "response", HttpServerResponse.class), routingContextHandle);
             } else if (RESOURCE_INFO.equals(paramDotName)) {
                 ResultHandle runtimeResourceHandle = runtimeResourceHandle(mc, contextHandle);
                 AssignableResultHandle resourceInfo = mc.createVariable(ResourceInfo.class);

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -24,7 +25,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
-import io.grpc.BindableService;
 import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -242,18 +242,35 @@ public class GrpcServerProcessor {
     @BuildStep
     void validateBindableServices(ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
-        Type generatedBeanType = Type.create(GrpcDotNames.MUTINY_BEAN, org.jboss.jandex.Type.Kind.CLASS);
-        for (BeanInfo bean : validationPhase.getContext().beans().classBeans().withBeanType(BindableService.class)) {
-            if (!bean.getTypes().contains(generatedBeanType) && bean.getQualifiers().stream().map(AnnotationInstance::name)
-                    .noneMatch(GrpcDotNames.GRPC_SERVICE::equals)) {
-                errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                        new IllegalStateException(
-                                "A gRPC service bean must be annotated with @io.quarkus.grpc.GrpcService: " + bean)));
+        Type mutinyBeanType = Type.create(GrpcDotNames.MUTINY_BEAN, org.jboss.jandex.Type.Kind.CLASS);
+        Type mutinyServiceType = Type.create(GrpcDotNames.MUTINY_SERVICE, org.jboss.jandex.Type.Kind.CLASS);
+        Type bindableServiceType = Type.create(GrpcDotNames.BINDABLE_SERVICE, org.jboss.jandex.Type.Kind.CLASS);
+        Predicate<Set<Type>> predicate = new Predicate<Set<Type>>() {
+            @Override
+            public boolean test(Set<Type> types) {
+                return types.contains(bindableServiceType) || types.contains(mutinyServiceType);
             }
-            if (!bean.getScope().getDotName().equals(BuiltinScope.SINGLETON.getName())) {
-                errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                        new IllegalStateException("A gRPC service bean must have the javax.inject.Singleton scope: " + bean)));
-            }
+        };
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans().matchBeanTypes(predicate)) {
+            validateBindableService(bean, mutinyBeanType, errors);
+        }
+        // Validate the removed beans as well - detect beans not annotated with @GrpcService
+        for (BeanInfo bean : validationPhase.getContext().removedBeans().classBeans().matchBeanTypes(predicate)) {
+            validateBindableService(bean, mutinyBeanType, errors);
+        }
+    }
+
+    private void validateBindableService(BeanInfo bean, Type generatedBeanType,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
+        if (!bean.getTypes().contains(generatedBeanType) && bean.getQualifiers().stream().map(AnnotationInstance::name)
+                .noneMatch(GrpcDotNames.GRPC_SERVICE::equals)) {
+            errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                    new IllegalStateException(
+                            "A gRPC service bean must be annotated with @io.quarkus.grpc.GrpcService: " + bean)));
+        }
+        if (!bean.getScope().getDotName().equals(BuiltinScope.SINGLETON.getName())) {
+            errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                    new IllegalStateException("A gRPC service bean must have the javax.inject.Singleton scope: " + bean)));
         }
     }
 

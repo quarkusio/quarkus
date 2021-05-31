@@ -214,7 +214,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // redirect_uri
         String redirectPath = getRedirectPath(configContext, context);
-        String redirectUriParam = buildUri(context, isForceHttps(configContext), redirectPath);
+        String redirectUriParam = redirectPath.startsWith("http")
+                ? redirectPath
+                : buildUri(context, isForceHttps(configContext), redirectPath);
         LOG.debugf("Authentication request redirect_uri parameter: %s", redirectUriParam);
 
         codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_REDIRECT_URI).append(EQ)

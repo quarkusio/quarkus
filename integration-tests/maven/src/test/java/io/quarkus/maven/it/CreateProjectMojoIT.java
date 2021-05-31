@@ -87,8 +87,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         final DependencyManagement dependencyManagement = model.getDependencyManagement();
         final List<Dependency> dependencies = dependencyManagement.getDependencies();
         assertThat(dependencies.stream()
-                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
-                        && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
+                .anyMatch(d -> d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
                         && d.getType().equals("pom"))).isTrue();
 
@@ -274,8 +273,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Model model = loadPom(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
-                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
-                        && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
+                .anyMatch(d -> d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
                         && d.getType().equals("pom"))).isTrue();
 
@@ -348,8 +346,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Model model = loadPom(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
-                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
-                        && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
+                .anyMatch(d -> d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
                         && d.getType().equals("pom"))).isTrue();
 

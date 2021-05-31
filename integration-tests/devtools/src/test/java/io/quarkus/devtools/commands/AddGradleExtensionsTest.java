@@ -84,10 +84,10 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
                 builder.add(createDependency(matcher.group(1), matcher.group(2), matcher.group(3), "jar"));
             }
             if (getBuildContent().contains(
-                    "implementation enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}\")")) {
+                    "implementation enforcedPlatform(\"${quarkusPlatformGroupId}:quarkus-bom:${quarkusPlatformVersion}\")")) {
                 builder.add(createDependency(
                         getProperty("quarkusPlatformGroupId"),
-                        getProperty("quarkusPlatformArtifactId"),
+                        "quarkus-bom",
                         getProperty("quarkusPlatformVersion"),
                         "pom"));
             }

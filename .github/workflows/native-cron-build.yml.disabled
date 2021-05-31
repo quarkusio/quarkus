@@ -59,18 +59,14 @@ jobs:
 
       - name: Report
         if: always()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
-          STATUS: ${{ job.status }}
-          JAVA_VERSION: ${{ matrix.java }}
+        shell: bash
         run: |
-          echo "The report step got status: ${STATUS}"
-          sudo apt-get update -o Dir::Etc::sourcelist="sources.list" \
-            -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
-          sudo apt-get install -y gnupg2 gnupg-agent
-          echo Installing SDKMAN
-          curl -s "https://get.sdkman.io" | bash
-          source ~/.sdkman/bin/sdkman-init.sh && \
-          sdk install jbang 0.21.0
           [[ ${JAVA_VERSION} = 8 ]] && ISSUE_NUMBER="6717" || ISSUE_NUMBER="6723"
-          jbang .github/NativeBuildReport.java token="${GITHUB_TOKEN}" status="${STATUS}" issueRepo="${GITHUB_REPOSITORY}" issueNumber="${ISSUE_NUMBER}" thisRepo="${GITHUB_REPOSITORY}" runId="${GITHUB_RUN_ID}"
+          curl -Ls https://sh.jbang.dev | bash -s - app setup
+          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
+            issueNumber=${ISSUE_NUMBER} \
+            runId=${{ github.run_id }} \
+            status=${{ job.status }} \
+            token=${{ secrets.GITHUB_API_TOKEN }} \
+            issueRepo=${{ github.repository }} \
+            thisRepo=${{ github.repository }}

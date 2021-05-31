@@ -155,7 +155,7 @@ triage:
         - extensions/smallrye-metrics
     - labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient, phillip-kruger]
+      notify: [ebullient, kenfinnigan]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer

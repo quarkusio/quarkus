@@ -98,7 +98,7 @@ public class GrpcServerRecorder {
             if (GrpcServerReloader.getServer() == null) {
                 devModeStart(grpcContainer, vertx, configuration, shutdown, launchMode);
             } else {
-                devModeReload(grpcContainer, vertx, configuration);
+                devModeReload(grpcContainer, vertx, configuration, shutdown);
             }
         } else {
             prodStart(grpcContainer, vertx, configuration, launchMode);
@@ -269,7 +269,8 @@ public class GrpcServerRecorder {
         }
     }
 
-    private void devModeReload(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration) {
+    private void devModeReload(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
+            ShutdownContext shutdown) {
         List<GrpcServiceDefinition> services = collectServiceDefinitions(grpcContainer.getServices());
 
         List<ServerServiceDefinition> definitions = new ArrayList<>();
@@ -299,6 +300,14 @@ public class GrpcServerRecorder {
         initHealthStorage();
 
         GrpcServerReloader.reinitialize(servicesWithInterceptors, methods, grpcContainer.getSortedInterceptors());
+
+        shutdown.addShutdownTask(
+                new Runnable() { // NOSONAR
+                    @Override
+                    public void run() {
+                        GrpcServerReloader.reset();
+                    }
+                });
     }
 
     public static int getVerticleCount() {

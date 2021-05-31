@@ -319,8 +319,11 @@ public class DevConsoleProcessor {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // deployment side handling
             if (i.isDeploymentSide()) {
-                Route route = router.route(HttpMethod.valueOf(i.getMethod()),
-                        "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath());
+                Route route = router
+                        .route("/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath());
+                if (i.getMethod() != null) {
+                    route = route.method(HttpMethod.valueOf(i.getMethod()));
+                }
                 if (i.isBodyHandlerRequired()) {
                     route.handler(BodyHandler.create());
                 }

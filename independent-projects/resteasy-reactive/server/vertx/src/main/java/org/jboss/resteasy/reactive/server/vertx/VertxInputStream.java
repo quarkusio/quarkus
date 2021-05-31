@@ -130,7 +130,7 @@ public class VertxInputStream extends InputStream {
             throw new IOException("Stream is closed");
         }
         if (finished) {
-            return -1;
+            return 0;
         }
 
         return exchange.readBytesAvailable();

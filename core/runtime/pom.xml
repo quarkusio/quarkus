@@ -170,7 +170,7 @@
                         <parentFirstArtifact>org.opentest4j:opentest4j</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
 
-                        <!-- Pact support. It would be great if there was somewhere better to put this-->
+                        <!-- Pact[<4.1.0] support. It would be great if there was somewhere better to put this-->
                         <parentFirstArtifact>au.com.dius:pact-jvm-provider-junit5</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius:pact-jvm-provider</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius:pact-jvm-core-support</parentFirstArtifact>
@@ -180,6 +180,15 @@
                         <parentFirstArtifact>au.com.dius:pact-jvm-junit5</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius:pact-jvm-consumer-java8</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius:pact-jvm-consumer</parentFirstArtifact>
+                        <!-- Pact[>=4.1.0] support.-->
+                        <parentFirstArtifact>au.com.dius.pact.provider:junit5</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact:provider</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:support</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:pactbroker</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:model</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:matcher</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.consumer:junit5</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact:consumer</parentFirstArtifact>
 
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>

@@ -150,12 +150,22 @@ But a combination of `OptionalInt` and `defaultValue` attribute will work too li
 
 [source,properties]
 ----
-# missing value
-greeting.message =
+# missing value, optional property
+greeting.name =
 ----
 
-If the property exists but has no value, this will result to a `java.util.NoSuchElementException: SRCFG02004:
-Required property greeting.message not found` on startup and the default value, will not be assigned
+In this case, since `greeting.name` was configured to be `Optional*` up above, the corresponding property value will be an empty `Optional` and execution will continue normally.  This would be the case even if there was a default value configured: the default value is *not* used if the property is explicitly cleared in the configuration.
+
+On the other hand, this example:
+
+[source,properties]
+----
+# missing value, non-optional
+greeting.suffix =
+----
+
+...will result to a `java.util.NoSuchElementException: SRCFG02004:
+Required property greeting.message not found` on startup and the default value will not be assigned.
 
 Below a Quarkus' converter example:
 

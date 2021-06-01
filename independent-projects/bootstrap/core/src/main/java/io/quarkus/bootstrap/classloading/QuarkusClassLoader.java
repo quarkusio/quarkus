@@ -30,7 +30,6 @@ import org.jboss.logging.Logger;
  * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode).
  */
 public class QuarkusClassLoader extends ClassLoader implements Closeable {
-
     private static final Logger log = Logger.getLogger(QuarkusClassLoader.class);
     protected static final String META_INF_SERVICES = "META-INF/services/";
     protected static final String JAVA = "java.";
@@ -101,6 +100,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.aggregateParentResources = builder.aggregateParentResources;
         this.classLoaderEventListeners = builder.classLoaderEventListeners.isEmpty() ? Collections.emptyList()
                 : builder.classLoaderEventListeners;
+        setDefaultAssertionStatus(builder.assertionsEnabled);
     }
 
     public static Builder builder(String name, ClassLoader parent, boolean parentFirst) {
@@ -601,6 +601,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         MemoryClassPathElement resettableElement;
         private Map<String, byte[]> transformedClasses = Collections.emptyMap();
         boolean aggregateParentResources;
+        boolean assertionsEnabled;
         private final ArrayList<ClassLoaderEventListener> classLoaderEventListeners = new ArrayList<>(5);
 
         public Builder(String name, ClassLoader parent, boolean parentFirst) {
@@ -704,6 +705,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
          */
         public Builder setAggregateParentResources(boolean aggregateParentResources) {
             this.aggregateParentResources = aggregateParentResources;
+            return this;
+        }
+
+        public Builder setAssertionsEnabled(boolean assertionsEnabled) {
+            this.assertionsEnabled = assertionsEnabled;
             return this;
         }
 

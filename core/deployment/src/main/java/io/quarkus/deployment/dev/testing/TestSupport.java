@@ -126,6 +126,7 @@ public class TestSupport implements TestController {
                 paths.addAll(curatedApplication.getQuarkusBootstrap().getApplicationRoot().toList());
                 testCuratedApplication = curatedApplication.getQuarkusBootstrap().clonedBuilder()
                         .setMode(QuarkusBootstrap.Mode.TEST)
+                        .setAssertionsEnabled(true)
                         .setDisableClasspathCache(false)
                         .setIsolateDeployment(true)
                         .setBaseClassLoader(getClass().getClassLoader())

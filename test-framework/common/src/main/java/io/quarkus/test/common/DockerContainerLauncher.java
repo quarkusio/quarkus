@@ -92,6 +92,7 @@ public class DockerContainerLauncher implements ArtifactLauncher {
 
         Path logFile = PropertyTestUtil.getLogFilePath();
         Files.deleteIfExists(logFile);
+        Files.createDirectories(logFile.getParent());
 
         System.out.println("Executing " + args);
 

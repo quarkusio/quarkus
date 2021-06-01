@@ -127,26 +127,24 @@ hello quarkus!
 TIP: Use `@io.smallrye.config.ConfigMapping` annotation to group multiple configurations in a single interface. Please,
 check the https://smallrye.io/docs/smallrye-config/main/mapping/mapping.html[Config Mappings] documentation.
 
-== defaultValue behavior
-In contrast to a 'required' configuration property, if it is affected by a `defaultValue` attribute the application will
-not fail by throwing a `javax.enterprise.inject.spi.DeploymentException` and the value of `defaultValue` will be
-automatically assigned to targeted variable. The `defaultValue` value expressed as a `String` will be directly assigned
-for a same `Type` variable, unless it is not of this type, this will be converted to the targeted variable type.
-This conversion mechanism several Built-in Converters already exist for primitives and boxed primitives, examples:
+== Default values
+If a property is associated with a default value (by way of the `defaultValue` attribute), and no configuration value is supplied for the property, then rather than throwing a `javax.enterprise.inject.spi.DeploymentException`, the default value will be used.
+The `defaultValue` value is expressed as a `String`, and uses the same conversion mechanism used to process configuration values.
+Several Built-in Converters already exist for primitives, boxed primitives, and other classes; for example:
 
-* Primitives: boolean, byte, short ...
-* Boxed primitives: java.lang.Boolean, java.lang.Byte, java.lang.short ...
-* Optional containers: java.lang.OptionalInt, java.lang.OptionalLong, java.lang.OptionalDouble ...
-* Quarkus: io.quarkus.runtime.configuration.Duration, io.quarkus.runtime.configuration.INetAddressConverter ...
+* Primitives: `boolean`, `byte`, `short`, etc.
+* Boxed primitives: `java.lang.Boolean`, `java.lang.Byte`, `java.lang.Short`, etc.
+* Optional containers: `java.util.Optional`, `java.util.OptionalInt`, `java.util.OptionalLong`, and `java.util.OptionalDouble`
+* Java `enum` types
+* JSR 310 `java.time.Duration`
+* JDK networking `java.net.SocketAddress`, `java.net.InetAddress`, etc.
 
-As you might expect, these converters are `org.eclipse.microprofile.config.spi.Converter` implementations. It means
-complying with the Microprofile or custom implementation providers expression rules, like:
+As you might expect, these converters are `org.eclipse.microprofile.config.spi.Converter` implementations. Therefore these converters comply with the Microprofile or custom implementation providers expression rules, like:
 
 * Boolean values will be `true` in cases "true", "1", "YES", "Y" "ON". Otherwise, value will be interpreted as false
 * For float and double values the fractional digits must be separated by a dot `.`
 
-But a combination of `OptionalInt` and `defaultValue` attribute will work too like an `Optional<Integer>`, the defined
-`defaultValue` will still be affected. However, beware of this application.property extract case:
+Note that when a combination of `Optional*` types and the `defaultValue` attribute are used, the defined `defaultValue` will still be used and if no value is given for the property, the `Optional*` will be present and populated with the converted default value. However, when the property is explicitly empty, the default value is not used and the `Optional` will be empty. Consider this example:
 
 [source,properties]
 ----

@@ -34,7 +34,7 @@ import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.PathTestHelper;
@@ -222,7 +222,7 @@ final class IntegrationTestUtil {
                     public void accept(String s, String s2) {
                         propertyMap.put(s, s2);
                     }
-                }, DevServicesDatasourceResultBuildItem.class.getName());
+                }, DevServicesNativeConfigResultBuildItem.class.getName());
         return propertyMap;
     }
 

@@ -4,7 +4,6 @@ import static io.quarkus.mongodb.runtime.MongoClientBeanUtil.isDefault;
 
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +20,10 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.mongodb.deployment.devservices.DevServicesMongoResultBuildItem;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -40,11 +39,12 @@ public class DevServicesMongoProcessor {
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class)
-    public DevServicesMongoResultBuildItem startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
+    public void startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             LaunchModeBuildItem launchMode,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer) {
+            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer,
+            BuildProducer<DevServicesNativeConfigResultBuildItem> devServices) {
 
         List<String> connectionNames = new ArrayList<>(mongoConnections.size());
         for (MongoConnectionNameBuildItem mongoConnection : mongoConnections) {
@@ -53,10 +53,10 @@ public class DevServicesMongoProcessor {
 
         // TODO: handle named connections as well
         if (connectionNames.size() != 1) {
-            return null;
+            return;
         }
         if (!isDefault(connectionNames.get(0))) {
-            return null;
+            return;
         }
 
         Map<String, CapturedProperties> currentCapturedProperties = captureProperties(connectionNames,
@@ -70,7 +70,7 @@ public class DevServicesMongoProcessor {
                 restartRequired = !currentCapturedProperties.equals(capturedProperties);
             }
             if (!restartRequired) {
-                return null;
+                return;
             }
             for (Closeable i : closeables) {
                 try {
@@ -88,21 +88,14 @@ public class DevServicesMongoProcessor {
         // TODO: we need to go through each connection
         String connectionName = connectionNames.get(0);
         StartResult startResult = startMongo(connectionName, currentCapturedProperties.get(connectionName));
-        DevServicesMongoResultBuildItem.Result defaultConnectionResult = null;
-        Map<String, DevServicesMongoResultBuildItem.Result> namedConnectionResults = new HashMap<>();
         if (startResult != null) {
             currentCloseables.add(startResult.getCloseable());
             String connectionStringPropertyName = getConfigPrefix(connectionName) + "connection-string";
             String connectionStringPropertyValue = startResult.getUrl();
             runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(
                     connectionStringPropertyName, connectionStringPropertyValue));
-            DevServicesMongoResultBuildItem.Result result = new DevServicesMongoResultBuildItem.Result(
-                    Collections.singletonMap(connectionStringPropertyName, connectionStringPropertyValue));
-            if (isDefault(connectionName)) {
-                defaultConnectionResult = result;
-            } else {
-                namedConnectionResults.put(connectionName, result);
-            }
+            devServices.produce(
+                    new DevServicesNativeConfigResultBuildItem(connectionStringPropertyName, connectionStringPropertyValue));
         }
 
         if (first) {
@@ -138,7 +131,6 @@ public class DevServicesMongoProcessor {
         closeables = currentCloseables;
         capturedProperties = currentCapturedProperties;
 
-        return new DevServicesMongoResultBuildItem(defaultConnectionResult, namedConnectionResults);
     }
 
     private StartResult startMongo(String connectionName, CapturedProperties capturedProperties) {

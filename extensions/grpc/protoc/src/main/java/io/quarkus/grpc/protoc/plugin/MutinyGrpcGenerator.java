@@ -3,6 +3,8 @@ package io.quarkus.grpc.protoc.plugin;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Strings;
@@ -18,6 +20,8 @@ import com.salesforce.jprotoc.ProtocPlugin;
  * @author Paulo Lopes
  */
 public class MutinyGrpcGenerator extends Generator {
+
+    private static final Logger log = Logger.getLogger(MutinyGrpcGenerator.class.getName());
 
     private static final int SERVICE_NUMBER_OF_PATHS = 2;
     private static final int METHOD_NUMBER_OF_PATHS = 4;
@@ -41,7 +45,23 @@ public class MutinyGrpcGenerator extends Generator {
                 .collect(Collectors.toList());
 
         List<ServiceContext> services = findServices(protosToGenerate, typeMap);
+        validateServices(services);
         return generateFiles(services);
+    }
+
+    private void validateServices(List<ServiceContext> services) {
+        boolean failed = false;
+        for (ServiceContext service : services) {
+            if (service.packageName == null || service.packageName.isBlank()) {
+                log.log(Level.SEVERE, "Using the default java package is not supported for "
+                        + "Quarkus gRPC code generation. Please specify `option java_package = \"your.package\"` in "
+                        + service.protoName);
+                failed = true;
+            }
+        }
+        if (failed) {
+            throw new IllegalArgumentException("Code generation failed. Please check the log above for details.");
+        }
     }
 
     private List<ServiceContext> findServices(List<DescriptorProtos.FileDescriptorProto> protos, ProtoTypeMap typeMap) {

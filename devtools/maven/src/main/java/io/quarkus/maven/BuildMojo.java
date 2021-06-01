@@ -29,12 +29,11 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.runtime.configuration.ProfileManager;
 
 /**
  * Builds the Quarkus application.
  */
-@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class BuildMojo extends QuarkusBootstrapMojo {
 
     private static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
@@ -118,15 +117,14 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                 System.setProperty(PACKAGE_TYPE_PROP, packageType);
                 propertiesToClear.add(PACKAGE_TYPE_PROP);
             }
-            // Set the build profile based on the value of the project property ProfileManager.QUARKUS_PROFILE_PROP
-            // if and only if it has not already been set using the corresponding system property
-            // or environment variable.
-            final Object profile = mavenProject().getProperties().get(ProfileManager.QUARKUS_PROFILE_PROP);
-
-            if (profile != null && System.getProperty(ProfileManager.QUARKUS_PROFILE_PROP) == null
-                    && System.getenv(ProfileManager.QUARKUS_PROFILE_ENV) == null) {
-                System.setProperty(ProfileManager.QUARKUS_PROFILE_PROP, profile.toString());
-                propertiesToClear.add(ProfileManager.QUARKUS_PROFILE_PROP);
+            if (!propertiesToClear.isEmpty() && mavenSession().getRequest().getDegreeOfConcurrency() > 1) {
+                getLog().warn("*****************************************************************");
+                getLog().warn("* Your build is requesting parallel execution, but the project  *");
+                getLog().warn("* relies on System properties at build time which could cause   *");
+                getLog().warn("* race condition issues thus unpredictable build results.       *");
+                getLog().warn("* Please avoid using System properties or avoid enabling        *");
+                getLog().warn("* parallel execution                                            *");
+                getLog().warn("*****************************************************************");
             }
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
 

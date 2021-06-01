@@ -10,11 +10,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-opentelemetry-parent</artifactId>
-    <name>Quarkus - OpenTelemetry</name>
+    <artifactId>quarkus-opentelemetry-parent-aggregator</artifactId>
+    <name>Quarkus - OpenTelemetry - Parent - Aggregator</name>
     <packaging>pom</packaging>
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
+        <module>opentelemetry</module>
+        <module>opentelemetry-exporter-jaeger</module>
     </modules>
 </project>

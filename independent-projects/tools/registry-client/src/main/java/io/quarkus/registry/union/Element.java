@@ -2,7 +2,7 @@ package io.quarkus.registry.union;
 
 import java.util.Collection;
 
-public interface Element {
+public interface Element<M> {
 
     /**
      * Element key.
@@ -16,5 +16,5 @@ public interface Element {
      *
      * @return members that provide the element
      */
-    Collection<Member> members();
+    Collection<Member<M>> members();
 }

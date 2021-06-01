@@ -32,12 +32,13 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
     GrpcHealthStorage healthStorage;
 
     public List<ServiceDefinitionAndStatus> getInfos() {
-        List<ServiceDefinitionAndStatus> services = new ArrayList<>(GrpcServerRecorder.getServices().size());
-        for (GrpcServiceDefinition definition : GrpcServerRecorder.getServices()) {
-            services.add(new ServiceDefinitionAndStatus(definition, healthStorage.getStatuses()
-                    .getOrDefault(definition.definition.getServiceDescriptor().getName(), ServingStatus.UNKNOWN)));
+        List<GrpcServiceDefinition> services = GrpcServerRecorder.getServices();
+        List<ServiceDefinitionAndStatus> infos = new ArrayList<>(services.size());
+        for (GrpcServiceDefinition service : services) {
+            infos.add(new ServiceDefinitionAndStatus(service, healthStorage.getStatuses()
+                    .getOrDefault(service.definition.getServiceDescriptor().getName(), ServingStatus.UNKNOWN)));
         }
-        return services;
+        return infos;
     }
 
     @Override
@@ -145,10 +146,8 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
         }
 
         public boolean isTestable() {
-            if (configuration.server.ssl.certificate.isPresent() || configuration.server.ssl.keyStore.isPresent()) {
-                return false;
-            }
-            return MethodType.UNARY == getType();
+            return !configuration.server.ssl.certificate.isPresent()
+                    && !configuration.server.ssl.keyStore.isPresent();
         }
 
         public String getPrototype() {

@@ -22,7 +22,6 @@ import io.quarkus.registry.union.ElementCatalog;
 import io.quarkus.registry.union.ElementCatalogBuilder;
 import io.quarkus.registry.union.ElementCatalogBuilder.MemberBuilder;
 import io.quarkus.registry.union.ElementCatalogBuilder.UnionBuilder;
-import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -253,7 +252,6 @@ public class ExtensionCatalogResolver {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public ExtensionCatalog resolveExtensionCatalog() throws RegistryResolutionException {
 
         final int registriesTotal = registries.size();
@@ -261,76 +259,45 @@ public class ExtensionCatalogResolver {
             throw new RegistryResolutionException("No registries configured");
         }
 
-        final Set<String> processedUnions = new HashSet<>();
-        final List<ParsedPlatformStack> psList = new ArrayList<>();
-        final Map<String, ExtensionCatalog> platformDescrMap = new HashMap<>();
         final List<ExtensionCatalog> catalogs = new ArrayList<>();
-        final ElementCatalogBuilder catalogBuilder = ElementCatalogBuilder.newInstance();
+        final ElementCatalogBuilder<ExtensionCatalog> catalogBuilder = ElementCatalogBuilder.newInstance();
 
+        int platformIndex = 0;
         for (RegistryExtensionResolver registry : registries) {
             final PlatformCatalog pc = registry.resolvePlatformCatalog();
             if (pc == null) {
                 continue;
             }
-            final Platform platform = pc.getRecommendedPlatform();
-            if (platform == null) {
-                continue;
-            }
-            final PlatformStream stream = platform.getRecommendedStream();
-            if (stream == null) {
-                continue;
-            }
-            final PlatformRelease release = stream.getRecommendedRelease();
-            for (ArtifactCoords bom : release.getMemberBoms()) {
-                final ExtensionCatalog ec = registry.resolvePlatformExtensions(bom);
-                catalogs.add(ec);
-                platformDescrMap.put(ec.getBom().getGroupId() + ":" + ec.getBom().getArtifactId(), ec);
-
-                final Map<Object, Object> platformRelease = (Map<Object, Object>) ec.getMetadata().get("platform-release");
-                if (platformRelease != null) {
-                    final String versionStr = (String) platformRelease.get("version");
-                    if (!processedUnions.add(versionStr)) {
-                        continue;
+            for (Platform platform : pc.getPlatforms()) {
+                platformIndex++;
+                int streamIndex = 0;
+                for (PlatformStream stream : platform.getStreams()) {
+                    streamIndex++;
+                    int releaseIndex = 0;
+                    for (PlatformRelease release : stream.getReleases()) {
+                        releaseIndex++;
+                        final UnionBuilder<ExtensionCatalog> union = catalogBuilder
+                                .getOrCreateUnion(new PlatformStackIndex(platformIndex, streamIndex, releaseIndex));
+                        for (ArtifactCoords bom : release.getMemberBoms()) {
+                            final ExtensionCatalog ec = registry.resolvePlatformExtensions(bom);
+                            catalogs.add(ec);
+                            final MemberBuilder<ExtensionCatalog> builder = union.getOrCreateMember(
+                                    ec.getBom().getGroupId() + ":" + ec.getBom().getArtifactId(), ec.getBom().getVersion(), ec);
+                            ec.getExtensions()
+                                    .forEach(e -> builder
+                                            .addElement(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId()));
+                        }
                     }
-                    final UnionBuilder union = catalogBuilder.getOrCreateUnion(Integer.parseInt(versionStr));
-                    psList.add(new ParsedPlatformStack(union, ec.getId(), (List<String>) platformRelease.get("members")));
-                    addMember(union, ec);
-                }
-            }
-        }
-
-        for (ParsedPlatformStack stack : psList) {
-            for (String memberCoordsStr : stack.members) {
-                if (stack.originMemberId.equals(memberCoordsStr)) {
-                    continue;
-                }
-                final ArtifactCoords memberCoords = ArtifactCoords.fromString(memberCoordsStr);
-                ExtensionCatalog memberCatalog = platformDescrMap
-                        .get(memberCoords.getGroupId() + ":"
-                                + PlatformArtifacts.ensureBomArtifactId(memberCoords.getArtifactId()));
-                if (memberCatalog == null || !memberCatalog.getBom().getVersion().equals(memberCoords.getVersion())) {
-                    memberCatalog = registries.get(0).resolvePlatformExtensions(memberCoords);
-                }
-
-                if (memberCatalog != null) {
-                    addMember(stack.unionBuilder, memberCatalog);
                 }
             }
         }
 
         final ExtensionCatalog catalog = JsonCatalogMerger.merge(catalogs);
-        final ElementCatalog elements = catalogBuilder.build();
+        final ElementCatalog<ExtensionCatalog> elements = catalogBuilder.build();
         if (!elements.isEmpty()) {
             catalog.getMetadata().put("element-catalog", elements);
         }
         return catalog;
-    }
-
-    private static void addMember(final UnionBuilder union, ExtensionCatalog member) {
-        final MemberBuilder builder = union.getOrCreateMember(
-                member.getBom().getGroupId() + ":" + member.getBom().getArtifactId(), member.getBom().getVersion());
-        member.getExtensions()
-                .forEach(e -> builder.addElement(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId()));
     }
 
     public ExtensionCatalog resolveExtensionCatalog(String quarkusCoreVersion) throws RegistryResolutionException {
@@ -591,17 +558,5 @@ public class ExtensionCatalogResolver {
         }
 
         return exclusiveProvider == null ? filtered == null ? registries : filtered : Arrays.asList(exclusiveProvider);
-    }
-
-    private static class ParsedPlatformStack {
-        final UnionBuilder unionBuilder;
-        final String originMemberId;
-        final List<String> members;
-
-        public ParsedPlatformStack(UnionBuilder ub, String originMemberId, List<String> members) {
-            this.unionBuilder = ub;
-            this.originMemberId = originMemberId;
-            this.members = members;
-        }
     }
 }

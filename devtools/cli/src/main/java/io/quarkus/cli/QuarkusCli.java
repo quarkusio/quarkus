@@ -5,6 +5,7 @@ import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIS
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import javax.inject.Inject;
 
@@ -24,7 +25,7 @@ import picocli.CommandLine.UnmatchedArgumentException;
 @QuarkusMain
 @CommandLine.Command(name = "quarkus", versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = true, subcommands = {
         Create.class, Build.class, Dev.class, ProjectExtensions.class, Completion.class, Version.class })
-public class QuarkusCli implements QuarkusApplication {
+public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
@@ -36,12 +37,21 @@ public class QuarkusCli implements QuarkusApplication {
     @Mixin
     OutputOptionMixin output;
 
+    @CommandLine.Spec
+    protected CommandLine.Model.CommandSpec spec;
+
     @Override
     public int run(String... args) throws Exception {
         CommandLine cmd = factory == null ? new CommandLine(this) : new CommandLine(this, factory);
         cmd.getHelpSectionMap().put(SECTION_KEY_COMMAND_LIST, new SubCommandListRenderer());
         cmd.setParameterExceptionHandler(new ShortErrorMessageHandler());
         return cmd.execute(args);
+    }
+
+    @Override
+    public Integer call() throws Exception {
+        spec.commandLine().usage(output.out());
+        return spec.exitCodeOnUsageHelp();
     }
 
     class ShortErrorMessageHandler implements IParameterExceptionHandler {

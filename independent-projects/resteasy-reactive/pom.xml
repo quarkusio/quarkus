@@ -52,7 +52,6 @@
         <jakarta.json.version>1.1.6</jakarta.json.version>
         <mutiny.version>0.17.0</mutiny.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
-        <smallrye-safer-annotations.version>1.0.3</smallrye-safer-annotations.version>
         <vertx.version>4.0.3</vertx.version>
         <rest-assured.version>4.4.0</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
@@ -150,6 +149,11 @@
                 <artifactId>vertx-core</artifactId>
                 <version>${vertx.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-web-client</artifactId>
+                <version>${vertx.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
@@ -163,12 +167,6 @@
                 <version>${smallrye-common.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-safer-annotations</artifactId>
-                <version>${smallrye-safer-annotations.version}</version>
             </dependency>
 
             <!-- JUnit 5 dependencies, imported as a BOM -->

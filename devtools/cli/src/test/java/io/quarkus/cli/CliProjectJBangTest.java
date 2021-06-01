@@ -56,6 +56,8 @@ public class CliProjectJBangTest {
                 "Generated source should reference resteasy. Found:\n" + source);
 
         System.setProperty("user.dir", project.toFile().getAbsolutePath());
+        result = CliDriver.invokeValidateDryRunBuild(project);
+
         CliDriver.invokeValidateBuild(project);
     }
 
@@ -84,6 +86,8 @@ public class CliProjectJBangTest {
                 "Generated source should reference vertx-web. Found:\n" + source);
 
         System.setProperty("user.dir", project.toFile().getAbsolutePath());
+        result = CliDriver.invokeValidateDryRunBuild(project);
+
         CliDriver.invokeValidateBuild(project);
     }
 

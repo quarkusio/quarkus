@@ -5,7 +5,7 @@ language:
   base:
     data:
       command:
-        class-name: GreetingCommand
+        class-name: main
         name: Greeting
     dependencies:
       - io.quarkus:quarkus-picocli

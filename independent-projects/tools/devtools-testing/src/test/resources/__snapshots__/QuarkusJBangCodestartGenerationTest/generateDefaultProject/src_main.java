@@ -11,7 +11,7 @@ import javax.ws.rs.Path;
 
 @Path("/hello-resteasy")
 @ApplicationScoped
-public class GreetingResource {
+public class main {
 
     @GET
     public String sayHello() {

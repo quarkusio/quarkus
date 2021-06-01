@@ -3,19 +3,19 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-opentelemetry-parent</artifactId>
+        <artifactId>quarkus-opentelemetry-rest-client-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-opentelemetry-deployment</artifactId>
-    <name>Quarkus - OpenTelemetry - Deployment</name>
+    <artifactId>quarkus-opentelemetry-rest-client-deployment</artifactId>
+    <name>Quarkus - OpenTelemetry - Rest Client - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-opentelemetry</artifactId>
+            <artifactId>quarkus-opentelemetry-rest-client</artifactId>
         </dependency>
 
         <dependency>
@@ -26,16 +26,9 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-core-deployment</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-opentelemetry-rest-client-deployment</artifactId>
-            <optional>true</optional>
+            <artifactId>quarkus-rest-client-deployment</artifactId>
         </dependency>
 
         <dependency>
@@ -57,26 +50,6 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-deployment</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 

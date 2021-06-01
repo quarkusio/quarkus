@@ -994,6 +994,10 @@ public final class HibernateOrmProcessor {
             storageEngineCollector.add(persistenceUnitConfig.dialect.storageEngine.get());
         }
 
+        // Discriminator Column
+        descriptor.getProperties().setProperty(AvailableSettings.IGNORE_EXPLICIT_DISCRIMINATOR_COLUMNS_FOR_JOINED_SUBCLASS,
+                String.valueOf(persistenceUnitConfig.discriminator.ignoreExplicitForJoined));
+
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor, dataSource,
                         getMultiTenancyStrategy(persistenceUnitConfig.multitenant),

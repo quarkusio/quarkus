@@ -73,7 +73,8 @@ public class MavenProjectBuildFile extends BuildFile {
         if (projectPom == null) {
             managedDeps = Collections.emptyList();
             deps = () -> Collections.emptyList();
-            quarkusVersion = defaultQuarkusVersion.get();
+            // TODO allow multiple streams in the same catalog for now
+            quarkusVersion = null;// defaultQuarkusVersion.get();
         } else {
             final ArtifactDescriptorResult descriptor = describe(mvnResolver, projectPom);
             managedDeps = toArtifactCoords(descriptor.getManagedDependencies());
@@ -87,8 +88,8 @@ public class MavenProjectBuildFile extends BuildFile {
                 : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {
-                //extensionCatalog = catalogResolver.resolveExtensionCatalog(quarkusVersion);
-                extensionCatalog = catalogResolver.resolveExtensionCatalog();
+                extensionCatalog = quarkusVersion == null ? catalogResolver.resolveExtensionCatalog()
+                        : catalogResolver.resolveExtensionCatalog(quarkusVersion);
             } catch (RegistryResolutionException e) {
                 throw new RuntimeException("Failed to resolve extension catalog", e);
             }

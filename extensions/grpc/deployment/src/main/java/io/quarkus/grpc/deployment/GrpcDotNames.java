@@ -20,6 +20,7 @@ import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.quarkus.grpc.runtime.supports.context.GrpcEnableRequestContext;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 public class GrpcDotNames {
 
@@ -30,6 +31,7 @@ public class GrpcDotNames {
     public static final DotName GRPC_ENABLE_REQUEST_CONTEXT = DotName.createSimple(GrpcEnableRequestContext.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
+    public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());
 
     public static final DotName ABSTRACT_BLOCKING_STUB = DotName.createSimple(AbstractBlockingStub.class.getName());
     public static final DotName MUTINY_STUB = DotName.createSimple(MutinyStub.class.getName());

@@ -5,7 +5,7 @@ language:
   base:
     data:
       resource:
-        class-name: GreetingResource
+        class-name: main
         path: "/hello-resteasy"
         response: "Hello RESTEasy"
     dependencies:

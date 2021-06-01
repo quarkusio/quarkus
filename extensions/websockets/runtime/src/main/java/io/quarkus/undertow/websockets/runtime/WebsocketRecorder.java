@@ -159,13 +159,18 @@ public class WebsocketRecorder {
                             }
                         };
                     }
-                }), false,
+                }),
+                false,
+                null,
+                null,
                 new Supplier<Executor>() {
                     @Override
                     public Executor get() {
                         return ExecutorRecorder.getCurrent();
                     }
-                });
+                },
+                Collections.emptyList(),
+                info.getMaxFrameSize());
         for (Class<?> i : info.getAnnotatedEndpoints()) {
             container.addEndpoint(i);
         }

@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    api("org.hibernate:hibernate-core:5.4.9") {
+        exclude module: "byte-buddy"
+    }
+}
+
+publishing {
+    publications {
+        mavenJave(MavenPublication) {
+            groupId = 'org.acme'
+            artifactId = 'ext-a'
+            version = '1.0-SNAPSHOT'
+            from components.java
+        }
+    }
+}

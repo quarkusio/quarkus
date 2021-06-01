@@ -484,16 +484,17 @@ public class ExtensionCatalogResolver {
             }
             for (Platform p : platforms) {
                 for (PlatformStream s : p.getStreams()) {
-                    final PlatformRelease r = s.getRecommendedRelease();
-                    final String upstreamQuarkusCoreVersion = r.getUpstreamQuarkusCoreVersion();
-                    if (upstreamQuarkusCoreVersion != null
-                            && !registriesByQuarkusCore.containsKey(upstreamQuarkusCoreVersion)) {
-                        upstreamQuarkusVersions.add(upstreamQuarkusCoreVersion);
-                    }
-                    for (ArtifactCoords bom : r.getMemberBoms()) {
-                        final ExtensionCatalog catalog = registry.resolvePlatformExtensions(bom);
-                        if (catalog != null) {
-                            extensionCatalogs.add(catalog);
+                    for (PlatformRelease r : s.getReleases()) {
+                        final String upstreamQuarkusCoreVersion = r.getUpstreamQuarkusCoreVersion();
+                        if (upstreamQuarkusCoreVersion != null
+                                && !registriesByQuarkusCore.containsKey(upstreamQuarkusCoreVersion)) {
+                            upstreamQuarkusVersions.add(upstreamQuarkusCoreVersion);
+                        }
+                        for (ArtifactCoords bom : r.getMemberBoms()) {
+                            final ExtensionCatalog catalog = registry.resolvePlatformExtensions(bom);
+                            if (catalog != null) {
+                                extensionCatalogs.add(catalog);
+                            }
                         }
                     }
                 }

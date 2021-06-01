@@ -19,7 +19,7 @@ public class UnitTestTypeTestCase {
             .setArchiveProducer(new Supplier<JavaArchive>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class)
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class)
                             .add(new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.type=unit")),
                                     "application.properties");
                 }
@@ -35,7 +35,7 @@ public class UnitTestTypeTestCase {
     public void testUnitMode() throws InterruptedException {
         TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
         Assertions.assertEquals(1L, ts.getLastRun());
-        Assertions.assertEquals(1L, ts.getTestsFailed());
+        Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());

@@ -9,11 +9,13 @@ import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -423,6 +425,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
 
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_ORM));
+        validateHibernatePropertiesNotUsed();
 
         final boolean enableORM = hasEntities(jpaModel);
         final boolean hibernateReactivePresent = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
@@ -470,6 +473,22 @@ public final class HibernateOrmProcessor {
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses,
                                 proxyDefinitions.getProxies())));
+    }
+
+    private void validateHibernatePropertiesNotUsed() {
+        try {
+            final Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(
+                    "hibernate.properties");
+            if (resources.hasMoreElements()) {
+                final URL url = resources.nextElement();
+                throw new IllegalStateException(
+                        "The Hibernate ORM configuration in Quarkus does not support sourcing configuration properties from resources named `hibernate.properties`,"
+                                + " and this is now expressly prohibited as such a file could lead to unpredictable semantics. Please remove it from `"
+                                + url.toExternalForm() + '`');
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @BuildStep

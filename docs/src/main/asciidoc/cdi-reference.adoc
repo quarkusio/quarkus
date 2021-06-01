@@ -53,7 +53,7 @@ To generate the index just add the following to your `pom.xml`:
     <plugin>
       <groupId>org.jboss.jandex</groupId>
       <artifactId>jandex-maven-plugin</artifactId>
-      <version>1.0.7</version>
+      <version>1.1.0</version>
       <executions>
         <execution>
           <id>make-index</id>

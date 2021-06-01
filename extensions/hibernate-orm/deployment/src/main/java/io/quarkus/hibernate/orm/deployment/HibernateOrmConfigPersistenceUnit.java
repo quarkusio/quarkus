@@ -172,6 +172,13 @@ public class HibernateOrmConfigPersistenceUnit {
     public Map<String, HibernateOrmConfigPersistenceUnitCache> cache;
 
     /**
+     * Discriminator related configuration.
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public HibernateOrmConfigPersistenceUnitDiscriminator discriminator;
+
+    /**
      * The default in Quarkus is for 2nd level caching to be enabled,
      * and a good implementation is already integrated for you.
      * <p>
@@ -216,7 +223,8 @@ public class HibernateOrmConfigPersistenceUnit {
                 !secondLevelCachingEnabled ||
                 multitenant.isPresent() ||
                 multitenantSchemaDatasource.isPresent() ||
-                fetch.isAnyPropertySet();
+                fetch.isAnyPropertySet() ||
+                discriminator.isAnyPropertySet();
     }
 
     @ConfigGroup
@@ -442,5 +450,25 @@ public class HibernateOrmConfigPersistenceUnit {
             return batchSize.isPresent() || maxDepth.isPresent();
         }
 
+    }
+
+    /**
+     * Discriminator configuration.
+     *
+     * Separated in a group configuration, in case it is necessary to add the another existing hibernate discriminator property.
+     */
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitDiscriminator {
+        /**
+         * Existing applications rely (implicitly or explicitly) on Hibernate ignoring any DiscriminatorColumn declarations on
+         * joined inheritance hierarchies. This setting allows these applications to maintain the legacy behavior of
+         * DiscriminatorColumn annotations being ignored when paired with joined inheritance.
+         */
+        @ConfigItem
+        public boolean ignoreExplicitForJoined;
+
+        public boolean isAnyPropertySet() {
+            return ignoreExplicitForJoined;
+        }
     }
 }

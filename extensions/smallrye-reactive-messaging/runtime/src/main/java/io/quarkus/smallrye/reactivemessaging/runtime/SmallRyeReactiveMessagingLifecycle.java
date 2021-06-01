@@ -5,6 +5,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 import javax.interceptor.Interceptor;
@@ -39,7 +40,7 @@ public class SmallRyeReactiveMessagingLifecycle {
         try {
             mediatorManager.start();
         } catch (Exception e) {
-            if (e instanceof DeploymentException) {
+            if (e instanceof DeploymentException || e instanceof DefinitionException) {
                 throw e;
             }
             throw new DeploymentException(e);

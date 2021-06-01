@@ -62,7 +62,7 @@ By default Quarkus will automatically generate a main method, that will bootstra
 shutdown to be initiated. Let's provide our own main method:
 [source,java]
 ----
-package om.acme;
+package com.acme;
 
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.Quarkus;
@@ -133,6 +133,11 @@ It is possible to inject the arguments that were passed in on the command line:
 String[] args;
 ----
 
+Command line arguments can be passed to the application through the `-D` flag with the property `quarkus.args`:
+
+* For Quarkus dev mode: `./mvnw quarkus:dev -Dquarkus.args=<cmd-args>`
+* For a runner jar: `java -Dquarkus.args=<cmd-args> -jar target/quarkus-app/quarkus-run.jar`
+* For a native executable: `./target/lifecycle-quickstart-1.0-SNAPSHOT-runner -Dquarkus.args=<cmd-args>`
 
 == Listening for startup and shutdown events
 

@@ -12,6 +12,7 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 public class FakeMailerTestResource implements QuarkusTestResourceLifecycleManager {
 
     public GenericContainer<?> server = new FixedHostPortGenericContainer<>("reachfive/fake-smtp-server:latest")
+            .withCommand("node", "index.js", "--headers")
             .withFixedExposedPort(9155, 1080)
             .withFixedExposedPort(9156, 1025)
             .waitingFor(Wait.forHttp("/api/emails"));

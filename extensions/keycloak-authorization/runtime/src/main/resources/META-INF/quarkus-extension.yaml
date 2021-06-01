@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Keycloak Authorization"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  - "keycloak"
+  - "authorization-services"
+  - "policy-enforcer"
+  - "fine-grained-permission"
+  - "resource-based-authorization"
+  guide: "https://quarkus.io/guides/security-keycloak-authorization"
+  categories:
+    - "security"
+  status: "stable"

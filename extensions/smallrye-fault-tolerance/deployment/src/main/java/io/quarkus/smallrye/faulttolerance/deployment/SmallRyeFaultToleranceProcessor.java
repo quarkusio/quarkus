@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Queue;
 import java.util.Set;
 
 import javax.annotation.Priority;
@@ -23,6 +25,7 @@ import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -51,6 +54,7 @@ import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusAsyncExecutorProvider;
@@ -64,12 +68,12 @@ import io.smallrye.faulttolerance.FaultToleranceBinding;
 import io.smallrye.faulttolerance.FaultToleranceInterceptor;
 import io.smallrye.faulttolerance.RequestContextIntegration;
 import io.smallrye.faulttolerance.api.CircuitBreakerName;
-import io.smallrye.faulttolerance.core.timer.TimerRunnableWrapper;
+import io.smallrye.faulttolerance.core.util.RunnableWrapper;
 import io.smallrye.faulttolerance.internal.RequestContextControllerProvider;
 import io.smallrye.faulttolerance.internal.StrategyCache;
 import io.smallrye.faulttolerance.metrics.MetricsProvider;
 import io.smallrye.faulttolerance.propagation.ContextPropagationRequestContextControllerProvider;
-import io.smallrye.faulttolerance.propagation.ContextPropagationTimerRunnableWrapper;
+import io.smallrye.faulttolerance.propagation.ContextPropagationRunnableWrapper;
 
 public class SmallRyeFaultToleranceProcessor {
 
@@ -93,14 +97,15 @@ public class SmallRyeFaultToleranceProcessor {
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod) {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_FAULT_TOLERANCE));
 
         serviceProvider.produce(new ServiceProviderBuildItem(RequestContextControllerProvider.class.getName(),
                 ContextPropagationRequestContextControllerProvider.class.getName()));
-        serviceProvider.produce(new ServiceProviderBuildItem(TimerRunnableWrapper.class.getName(),
-                ContextPropagationTimerRunnableWrapper.class.getName()));
+        serviceProvider.produce(new ServiceProviderBuildItem(RunnableWrapper.class.getName(),
+                ContextPropagationRunnableWrapper.class.getName()));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -118,6 +123,43 @@ public class SmallRyeFaultToleranceProcessor {
                 fallbackHandlersBeans.addBeanClass(fallbackHandler);
             }
             additionalBean.produce(fallbackHandlersBeans.build());
+        }
+        // Add reflective access to fallback methods
+        for (AnnotationInstance annotation : index.getAnnotations(DotName.createSimple(Fallback.class.getName()))) {
+            AnnotationValue fallbackMethodValue = annotation.value("fallbackMethod");
+            if (fallbackMethodValue == null) {
+                continue;
+            }
+            String fallbackMethod = fallbackMethodValue.asString();
+
+            Queue<DotName> classesToScan = new ArrayDeque<>(); // work queue
+
+            // @Fallback can only be present on methods, so this is just future-proofing
+            AnnotationTarget target = annotation.target();
+            if (target.kind() == Kind.METHOD) {
+                classesToScan.add(target.asMethod().declaringClass().name());
+            }
+
+            while (!classesToScan.isEmpty()) {
+                DotName name = classesToScan.poll();
+                ClassInfo clazz = index.getClassByName(name);
+                if (clazz == null) {
+                    continue;
+                }
+
+                // we could further restrict the set of registered methods based on matching parameter types,
+                // but that's relatively complex and SmallRye Fault Tolerance has to do it anyway
+                clazz.methods()
+                        .stream()
+                        .filter(it -> fallbackMethod.equals(it.name()))
+                        .forEach(it -> reflectiveMethod.produce(new ReflectiveMethodBuildItem(it)));
+
+                DotName superClass = clazz.superName();
+                if (superClass != null && !DotNames.OBJECT.equals(superClass)) {
+                    classesToScan.add(superClass);
+                }
+                classesToScan.addAll(clazz.interfaceNames());
+            }
         }
 
         for (DotName annotation : FT_ANNOTATIONS) {

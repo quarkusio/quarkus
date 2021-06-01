@@ -1,0 +1,19 @@
+name: "Funqy Google Cloud Functions"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+    - "google cloud"
+    - "gcloud"
+    - "gcp"
+    - "function"
+    - "funqy"
+    - "cloud event"
+  categories:
+    - "cloud"
+  guide: "https://quarkus.io/guides/funqy-gcp-functions"
+  status: "experimental"
+  codestart:
+    name: "funqy-google-cloud-functions-example"
+    kind: "example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

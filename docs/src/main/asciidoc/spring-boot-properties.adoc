@@ -6,12 +6,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus - Accessing application properties with Spring Boot properties API
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 If you prefer to use Spring Boot `@ConfigurationProperties` annotated class to access application properties instead of a
 Quarkus native `@ConfigProperties` or a MicroProfile `@ConfigProperty` approach, you can do that with this extension.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

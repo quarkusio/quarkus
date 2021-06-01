@@ -423,7 +423,7 @@ class TestResource {
 
         // regex
         val entityWithUpperCase = TestReactiveEntity("title11", "upperCaseCategory", "desc")
-        entityWithUpperCase.persist().await().indefinitely()
+        entityWithUpperCase.persist<TestReactiveEntity>().await().indefinitely()
         Assertions.assertEquals(1, TestReactiveEntity.list("category like ?1", "upperCase.*")
                 .await().indefinitely().size)
         Assertions.assertEquals(1, TestReactiveEntity.list("category like ?1", "/uppercase.*/i")
@@ -432,9 +432,9 @@ class TestResource {
 
         // sort
         val entityA = TestReactiveEntity("aaa", "aaa", "aaa")
-        entityA.persist().await().indefinitely()
+        entityA.persist<TestReactiveEntity>().await().indefinitely()
         val entityZ = TestReactiveEntity("zzz", "zzz", "zzz")
-        entityZ.persistOrUpdate().await().indefinitely()
+        entityZ.persistOrUpdate<TestReactiveEntity>().await().indefinitely()
         var result: TestReactiveEntity = TestReactiveEntity.listAll(Sort.ascending("title")).await()
                 .indefinitely()[0]
         Assertions.assertEquals("aaa", result.title)
@@ -445,11 +445,11 @@ class TestResource {
 
         // collation
         val entityALower = TestReactiveEntity("aaa", "aaa", "aaa")
-        entityALower.persist().await().indefinitely()
+        entityALower.persist<TestReactiveEntity>().await().indefinitely()
         val entityAUpper = TestReactiveEntity("AAA", "AAA", "AAA")
-        entityAUpper.persist().await().indefinitely()
+        entityAUpper.persist<TestReactiveEntity>().await().indefinitely()
         val entityB = TestReactiveEntity("BBB", "BBB", "BBB")
-        entityB.persistOrUpdate().await().indefinitely()
+        entityB.persistOrUpdate<TestReactiveEntity>().await().indefinitely()
         var results: List<TestReactiveEntity> = TestReactiveEntity.listAll(Sort.ascending("title")).await()
                 .indefinitely()
         Assertions.assertEquals("AAA", results[0].title)

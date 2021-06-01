@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Scheduler - tasks"
+metadata:
+  keywords:
+  - "scheduler"
+  - "tasks"
+  - "periodic-tasks"
+  guide: "https://quarkus.io/guides/scheduler"
+  categories:
+  - "miscellaneous"
+  status: "stable"

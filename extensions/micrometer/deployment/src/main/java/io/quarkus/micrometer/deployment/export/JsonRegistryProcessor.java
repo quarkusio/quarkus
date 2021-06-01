@@ -45,7 +45,6 @@ public class JsonRegistryProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .routeFunction(config.export.json.path, recorder.route())
                 .handler(recorder.getHandler())
-                .requiresLegacyRedirect()
                 .build());
 
         log.debug("Initialized a JSON meter registry on path="

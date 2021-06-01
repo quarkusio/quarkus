@@ -6,13 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus - Quarkus Extension for Spring DI API
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 While users are encouraged to use CDI annotations for injection, Quarkus provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.
 
 This guide explains how a Quarkus application can leverage the well known Dependency Injection annotations included in the Spring Framework.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

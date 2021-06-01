@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "MongoDB with Panache for Kotlin"
+metadata:
+  keywords:
+  - "mongodb-panache-kotlin"
+  - "panache"
+  - "mongodb"
+  - "kotlin"
+  categories:
+  - "data"
+  status: "stable"

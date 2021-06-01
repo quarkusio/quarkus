@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Infinispan Client"
+metadata:
+  keywords:
+  - "infinispan-client"
+  - "data-grid-client"
+  - "infinispan"
+  guide: "https://quarkus.io/guides/infinispan-client"
+  categories:
+  - "data"
+  status: "stable"

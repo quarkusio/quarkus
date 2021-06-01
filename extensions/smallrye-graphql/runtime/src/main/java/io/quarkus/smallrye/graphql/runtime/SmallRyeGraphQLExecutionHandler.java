@@ -1,6 +1,5 @@
 package io.quarkus.smallrye.graphql.runtime;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
@@ -28,17 +27,23 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHandler {
     private boolean allowGet = false;
+    private boolean allowPostWithQueryParameters = false;
     private static final String QUERY = "query";
+    private static final String OPERATION_NAME = "operationName";
     private static final String VARIABLES = "variables";
+    private static final String EXTENSIONS = "extensions";
+    private static final String APPLICATION_GRAPHQL = "application/graphql";
     private static final String OK = "OK";
 
     private static final JsonBuilderFactory jsonObjectFactory = Json.createBuilderFactory(null);
     private static final JsonReaderFactory jsonReaderFactory = Json.createReaderFactory(null);
 
-    public SmallRyeGraphQLExecutionHandler(boolean allowGet, CurrentIdentityAssociation currentIdentityAssociation,
+    public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters,
+            CurrentIdentityAssociation currentIdentityAssociation,
             CurrentVertxRequest currentVertxRequest) {
         super(currentIdentityAssociation, currentVertxRequest);
         this.allowGet = allowGet;
+        this.allowPostWithQueryParameters = allowPostWithQueryParameters;
     }
 
     @Override
@@ -71,46 +76,111 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private void handlePost(HttpServerResponse response, RoutingContext ctx) {
-        if (ctx.getBody() != null) {
-            byte[] bytes = ctx.getBody().getBytes();
-            String postResponse = doRequest(bytes);
+        try {
+            JsonObject jsonObjectFromBody = getJsonObjectFromBody(ctx);
+            String postResponse;
+            if (hasQueryParameters(ctx) && allowPostWithQueryParameters) {
+                JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
+                JsonObject mergedJsonObject = Json.createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
+                        .asJsonObject();
+                postResponse = doRequest(mergedJsonObject);
+            } else {
+                postResponse = doRequest(jsonObjectFromBody);
+            }
             response.setStatusCode(200).setStatusMessage(OK).end(Buffer.buffer(postResponse));
-        } else {
-            response.setStatusCode(204).end();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
     private void handleGet(HttpServerResponse response, RoutingContext ctx) {
         if (allowGet) {
-            String query = getQueryParameter(ctx, QUERY);
-            if (query != null && !query.isEmpty()) {
-                try {
-                    String variables = getQueryParameter(ctx, VARIABLES);
+            try {
+                JsonObject input = getJsonObjectFromQueryParameters(ctx);
 
-                    JsonObjectBuilder input = jsonObjectFactory.createObjectBuilder();
-                    input.add(QUERY, URLDecoder.decode(query, "UTF8"));
-                    if (variables != null && !variables.isEmpty()) {
-                        JsonObject jsonObject = toJsonObject(URLDecoder.decode(variables, "UTF8"));
-                        input.add(VARIABLES, jsonObject);
-                    }
-
-                    String getResponse = doRequest(input.build());
-
+                if (input.containsKey(QUERY)) {
+                    String getResponse = doRequest(input);
                     response.setStatusCode(200)
                             .setStatusMessage(OK)
                             .end(Buffer.buffer(getResponse));
-                } catch (UnsupportedEncodingException ex) {
-                    throw new RuntimeException(ex);
+
+                } else {
+                    response.setStatusCode(204).end();
                 }
-            } else {
-                response.setStatusCode(204).end();
+            } catch (UnsupportedEncodingException uee) {
+                throw new RuntimeException(uee);
             }
         } else {
             response.setStatusCode(405).end();
         }
     }
 
-    private String getQueryParameter(RoutingContext ctx, String parameterName) {
+    private JsonObject getJsonObjectFromQueryParameters(RoutingContext ctx) throws UnsupportedEncodingException {
+        JsonObjectBuilder input = Json.createObjectBuilder();
+        // Query
+        String query = readQueryParameter(ctx, QUERY);
+        if (query != null && !query.isEmpty()) {
+            input.add(QUERY, URLDecoder.decode(query, "UTF8"));
+        }
+        // OperationName
+        String operationName = readQueryParameter(ctx, OPERATION_NAME);
+        if (operationName != null && !operationName.isEmpty()) {
+            input.add(OPERATION_NAME, URLDecoder.decode(query, "UTF8"));
+        }
+
+        // Variables
+        String variables = readQueryParameter(ctx, VARIABLES);
+        if (variables != null && !variables.isEmpty()) {
+            JsonObject jsonObject = toJsonObject(URLDecoder.decode(variables, "UTF8"));
+            input.add(VARIABLES, jsonObject);
+        }
+
+        // Extensions
+        String extensions = readQueryParameter(ctx, EXTENSIONS);
+        if (extensions != null && !extensions.isEmpty()) {
+            JsonObject jsonObject = toJsonObject(URLDecoder.decode(extensions, "UTF8"));
+            input.add(EXTENSIONS, jsonObject);
+        }
+
+        return input.build();
+    }
+
+    private JsonObject getJsonObjectFromBody(RoutingContext ctx) throws IOException {
+
+        String contentType = readContentType(ctx);
+        String body = readBody(ctx);
+        // If the content type is application/graphql, the query is in the body
+        if (contentType != null && contentType.startsWith(APPLICATION_GRAPHQL)) {
+            JsonObjectBuilder input = Json.createObjectBuilder();
+            input.add(QUERY, body);
+            return input.build();
+            // Else we expect a Json in the content    
+        } else {
+            try (StringReader bodyReader = new StringReader(body);
+                    JsonReader jsonReader = jsonReaderFactory.createReader(bodyReader)) {
+                return jsonReader.readObject();
+            }
+        }
+
+    }
+
+    private String readBody(RoutingContext ctx) {
+        if (ctx.getBody() != null) {
+            byte[] bytes = ctx.getBody().getBytes();
+            return new String(bytes);
+        }
+        return null;
+    }
+
+    private String readContentType(RoutingContext ctx) {
+        String contentType = ctx.request().getHeader("Content-Type");
+        if (contentType != null && !contentType.isEmpty()) {
+            return contentType;
+        }
+        return null;
+    }
+
+    private String readQueryParameter(RoutingContext ctx, String parameterName) {
         List<String> all = ctx.queryParam(parameterName);
         if (all != null && !all.isEmpty()) {
             return all.get(0);
@@ -118,21 +188,24 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         return null;
     }
 
+    private boolean hasQueryParameters(RoutingContext ctx) {
+        return hasQueryParameter(ctx, QUERY) || hasQueryParameter(ctx, OPERATION_NAME) || hasQueryParameter(ctx, VARIABLES)
+                || hasQueryParameter(ctx, EXTENSIONS);
+    }
+
+    private boolean hasQueryParameter(RoutingContext ctx, String parameterName) {
+        List<String> all = ctx.queryParam(parameterName);
+        if (all != null && !all.isEmpty()) {
+            return true;
+        }
+        return false;
+    }
+
     private String getAllowedMethods() {
         if (allowGet) {
             return "GET, POST, OPTIONS";
         } else {
             return "POST, OPTIONS";
-        }
-    }
-
-    private String doRequest(final byte[] body) {
-        try (ByteArrayInputStream input = new ByteArrayInputStream(body);
-                final JsonReader jsonReader = jsonReaderFactory.createReader(input)) {
-            JsonObject jsonInput = jsonReader.readObject();
-            return doRequest(jsonInput);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
         }
     }
 

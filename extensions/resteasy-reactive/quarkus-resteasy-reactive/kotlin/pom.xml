@@ -36,7 +36,6 @@
 
     <build>
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
-        <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -56,9 +55,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <jvmTarget>${maven.compiler.target}</jvmTarget>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -102,33 +98,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <failOnError>false</failOnError>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.jetbrains.dokka</groupId>
-                <artifactId>dokka-maven-plugin</artifactId>
-                <version>1.4.32</version>
                 <executions>
                     <execution>
                         <id>javadoc</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>javadocJar</goal>
-                        </goals>
+                        <phase>none</phase>
                     </execution>
                 </executions>
-                <configuration>
-                    <jdkVersion>11</jdkVersion>
-                    <outputFormat>html</outputFormat>
-                    <externalDocumentationLinks>
-                        <link>
-                            <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
-                            <url>https://docs.oracle.com/en/java/javase/11/docs/api/</url>
-                        </link>
-                    </externalDocumentationLinks>
-                </configuration>
             </plugin>
         </plugins>
     </build>

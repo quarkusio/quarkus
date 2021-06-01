@@ -141,12 +141,17 @@ class EventImpl<T> implements Event<T> {
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container) {
+        return createNotifier(runtimeType, eventType, qualifiers, container, true);
+    }
+
+    static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
+            ArcContainerImpl container, boolean activateRequestContext) {
         EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
         for (ObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
             notifierObserverMethods.add(observerMethod);
         }
-        return new Notifier<>(runtimeType, notifierObserverMethods, metadata);
+        return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
     }
 
     private Type initEventType(Type type) {
@@ -206,12 +211,19 @@ class EventImpl<T> implements Event<T> {
         private final List<ObserverMethod<? super T>> observerMethods;
         private final EventMetadata eventMetadata;
         private final boolean hasTxObservers;
+        private final boolean activateRequestContext;
 
         Notifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata) {
+            this(runtimeType, observerMethods, eventMetadata, true);
+        }
+
+        Notifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata,
+                boolean activateRequestContext) {
             this.runtimeType = runtimeType;
             this.observerMethods = observerMethods;
             this.eventMetadata = eventMetadata;
             this.hasTxObservers = observerMethods.stream().anyMatch(this::isTxObserver);
+            this.activateRequestContext = activateRequestContext;
         }
 
         void notify(T event) {
@@ -222,7 +234,8 @@ class EventImpl<T> implements Event<T> {
         void notify(T event, ObserverExceptionHandler exceptionHandler, boolean async) {
             if (!isEmpty()) {
 
-                Predicate<ObserverMethod<? super T>> predicate = async ? ObserverMethod::isAsync : this::isSyncObserver;
+                Predicate<ObserverMethod<? super T>> predicate = async ? ObserverMethod::isAsync
+                        : Predicate.not(ObserverMethod::isAsync);
 
                 if (!async && hasTxObservers) {
                     // Note that tx observers are never async
@@ -258,17 +271,21 @@ class EventImpl<T> implements Event<T> {
                     }
                 }
 
-                // Sync notifications
-                ManagedContext requestContext = Arc.container().requestContext();
-                if (requestContext.isActive()) {
-                    notifyObservers(event, exceptionHandler, predicate);
-                } else {
-                    try {
-                        requestContext.activate();
+                // Non-tx observers notifications
+                if (activateRequestContext) {
+                    ManagedContext requestContext = Arc.container().requestContext();
+                    if (requestContext.isActive()) {
                         notifyObservers(event, exceptionHandler, predicate);
-                    } finally {
-                        requestContext.terminate();
+                    } else {
+                        try {
+                            requestContext.activate();
+                            notifyObservers(event, exceptionHandler, predicate);
+                        } finally {
+                            requestContext.terminate();
+                        }
                     }
+                } else {
+                    notifyObservers(event, exceptionHandler, predicate);
                 }
             }
         }
@@ -302,10 +319,6 @@ class EventImpl<T> implements Event<T> {
 
         private boolean isNotTxObserver(ObserverMethod<?> observer) {
             return !isTxObserver(observer);
-        }
-
-        private boolean isSyncObserver(ObserverMethod<?> observer) {
-            return !observer.isAsync();
         }
 
     }

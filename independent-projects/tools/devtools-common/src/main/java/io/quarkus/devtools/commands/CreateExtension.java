@@ -189,6 +189,11 @@ public class CreateExtension {
         return this;
     }
 
+    public CreateExtension messageWriter(MessageWriter log) {
+        this.log = log;
+        return this;
+    }
+
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {
         final Path workingDir = resolveWorkingDir(baseDir);
         final Model baseModel = resolveModel(baseDir);

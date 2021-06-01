@@ -29,6 +29,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.deployment.CodeGenerator;
 
@@ -131,7 +132,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
                     throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
                 }
                 initAndRun.get().invoke(null, deploymentClassLoader,
-                        sourcesDirectories,
+                        PathsCollection.from(sourcesDirectories),
                         paths.iterator().next(),
                         buildDir,
                         sourceRegistrar,

@@ -15,6 +15,7 @@ public final class QuarkusProject {
     private ExtensionCatalog catalog;
     private List<ResourceLoader> codestartResourceLoaders;
     private final ExtensionManager extensionManager;
+    private final MessageWriter log;
 
     private QuarkusProject(Path projectDirPath, ExtensionCatalog catalog, List<ResourceLoader> codestartResourceLoaders,
             MessageWriter log,
@@ -23,6 +24,7 @@ public final class QuarkusProject {
         this.catalog = requireNonNull(catalog, "catalog is required");
         this.codestartResourceLoaders = requireNonNull(codestartResourceLoaders, "codestartResourceLoaders is required");
         this.extensionManager = requireNonNull(extensionManager, "extensionManager is required");
+        this.log = (log == null ? MessageWriter.info() : log);
     }
 
     public static QuarkusProject of(final Path projectDirPath, final ExtensionCatalog catalog,
@@ -58,15 +60,12 @@ public final class QuarkusProject {
         return codestartResourceLoaders;
     }
 
+    public MessageWriter log() {
+        return log;
+    }
+
     public static BuildTool resolveExistingProjectBuildTool(Path projectDirPath) {
-        if (projectDirPath.resolve("pom.xml").toFile().exists()) {
-            return BuildTool.MAVEN;
-        } else if (projectDirPath.resolve("build.gradle").toFile().exists()) {
-            return BuildTool.GRADLE;
-        } else if (projectDirPath.resolve("build.gradle.kts").toFile().exists()) {
-            return BuildTool.GRADLE_KOTLIN_DSL;
-        }
-        return null;
+        return QuarkusProjectHelper.detectExistingBuildTool(projectDirPath);
     }
 
 }

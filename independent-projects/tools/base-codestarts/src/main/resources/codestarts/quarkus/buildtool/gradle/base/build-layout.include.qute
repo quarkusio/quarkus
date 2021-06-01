@@ -19,6 +19,9 @@ repositories {
 {#insert dependencies}
 dependencies {
     implementation enforcedPlatform("$\{quarkusPlatformGroupId}:$\{quarkusPlatformArtifactId}:$\{quarkusPlatformVersion}")
+{#for bom in boms}
+    implementation enforcedPlatform('{bom}')
+{/for}
 {#for dep in dependencies}
     implementation '{dep}'
 {/for}

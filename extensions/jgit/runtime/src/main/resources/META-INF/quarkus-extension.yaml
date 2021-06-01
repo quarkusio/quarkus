@@ -1,0 +1,10 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "JGit"
+metadata:
+  keywords:
+  - "git"
+  categories:
+  - "miscellaneous"
+  guide: "https://quarkus.io/guides/jgit"
+  status: "stable"

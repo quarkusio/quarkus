@@ -1,0 +1,17 @@
+name: "YAML Configuration"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "config"
+  - "configuration"
+  - "yaml"
+  categories:
+  - "core"
+  status: "stable"
+  guide: "https://quarkus.io/guides/config#yaml"
+  codestart:
+    name: "config-yaml"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

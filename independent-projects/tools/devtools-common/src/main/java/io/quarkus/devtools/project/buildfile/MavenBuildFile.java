@@ -50,6 +50,32 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
+    protected boolean importBom(ArtifactCoords coords) {
+        if (!"pom".equalsIgnoreCase(coords.getType())) {
+            throw new IllegalArgumentException(coords + " is not a POM");
+        }
+        Model model = getModel();
+        final Dependency d = new Dependency();
+        d.setGroupId(coords.getGroupId());
+        d.setArtifactId(coords.getArtifactId());
+        d.setType(coords.getType());
+        d.setScope("import");
+        DependencyManagement dependencyManagement = model.getDependencyManagement();
+        if (dependencyManagement == null) {
+            dependencyManagement = new DependencyManagement();
+            model.setDependencyManagement(dependencyManagement);
+        }
+        if (dependencyManagement.getDependencies()
+                .stream()
+                .map(this::toResolvedDependency)
+                .noneMatch(thisDep -> d.getManagementKey().equals(thisDep.getManagementKey()))) {
+            dependencyManagement.addDependency(d);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     protected boolean addDependency(ArtifactCoords coords, boolean managed) {
         Model model = getModel();
         final Dependency d = new Dependency();

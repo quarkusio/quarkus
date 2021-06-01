@@ -1,0 +1,32 @@
+{{#packageName}}
+package {{packageName}};
+{{/packageName}}
+
+import io.quarkus.grpc.runtime.MutinyService;
+
+@javax.annotation.Generated(
+value = "by {{classPrefix}} Grpc generator",
+comments = "Source: {{protoName}}")
+public interface {{serviceName}} extends MutinyService {
+
+    {{#unaryUnaryMethods}}
+    {{{methodHeader}}}
+    io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}({{inputType}} request);
+    {{/unaryUnaryMethods}}
+    
+    {{#unaryManyMethods}}
+    {{{methodHeader}}}
+    io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}({{inputType}} request);
+    {{/unaryManyMethods}}
+    
+    {{#manyUnaryMethods}}
+    {{{methodHeader}}}
+    io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request);
+    {{/manyUnaryMethods}}
+    
+    {{#manyManyMethods}}
+    {{{methodHeader}}}
+    io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request);
+    {{/manyManyMethods}}
+
+}

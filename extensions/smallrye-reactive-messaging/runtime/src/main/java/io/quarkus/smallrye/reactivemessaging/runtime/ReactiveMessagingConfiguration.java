@@ -13,4 +13,10 @@ public class ReactiveMessagingConfiguration {
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
+
+    /**
+     * Enables or disables the strict validation mode.
+     */
+    @ConfigItem(name = "strict", defaultValue = "false")
+    public boolean strict;
 }

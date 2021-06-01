@@ -73,14 +73,12 @@ class VertxGraphqlProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(path)
                 .handler(handler)
-                .requiresLegacyRedirect()
-                .displayOnNotFoundPage("GraphQL UI", path + "/")
+                .displayOnNotFoundPage("GraphQL UI")
                 .build());
         routes.produce(
                 nonApplicationRootPathBuildItem.routeBuilder()
                         .route(path + "/*")
                         .handler(handler)
-                        .requiresLegacyRedirect()
                         .build());
         // Body handler required in Vert.x 4, to avoid DDOS attack.
         body.produce(new RequireBodyHandlerBuildItem());

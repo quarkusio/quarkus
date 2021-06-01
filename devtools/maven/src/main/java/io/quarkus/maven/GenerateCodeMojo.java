@@ -3,9 +3,7 @@ package io.quarkus.maven;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -18,6 +16,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 
 @Mojo(name = "generate-code", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class GenerateCodeMojo extends QuarkusBootstrapMojo {
@@ -61,11 +60,12 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
             final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
-            final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, Set.class, Path.class,
+            final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, PathsCollection.class,
+                    Path.class,
                     Path.class,
                     Consumer.class, AppModel.class, Map.class);
             initAndRun.invoke(null, deploymentClassLoader,
-                    Collections.singleton(sourcesDir),
+                    PathsCollection.of(sourcesDir),
                     generatedSourcesDir(test),
                     buildDir().toPath(),
                     sourceRegistrar,

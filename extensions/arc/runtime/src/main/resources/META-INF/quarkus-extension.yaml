@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "ArC"
+metadata:
+  short-name: "CDI"
+  keywords:
+  - "arc"
+  - "cdi"
+  - "dependency-injection"
+  - "di"
+  guide: "https://quarkus.io/guides/cdi-reference"
+  categories:
+  - "core"
+  status: "stable"
+  unlisted: true

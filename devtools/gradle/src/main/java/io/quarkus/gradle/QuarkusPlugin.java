@@ -31,6 +31,9 @@ import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.gradle.builder.QuarkusModelBuilder;
+import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
+import io.quarkus.gradle.dependency.ConditionalDependenciesEnabler;
+import io.quarkus.gradle.dependency.ExtensionDependency;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
@@ -77,6 +80,11 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     public static final String NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME = "nativeTestImplementation";
     public static final String NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME = "nativeTestRuntimeOnly";
+
+    private static final String[] CONDITIONAL_DEPENDENCY_LOOKUP = new String[] {
+            JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME,
+            DEV_MODE_CONFIGURATION_NAME
+    };
 
     private final ToolingModelBuilderRegistry registry;
 
@@ -259,6 +267,21 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void afterEvaluate(Project project) {
+
+        ConditionalDependenciesEnabler conditionalDependenciesEnabler = new ConditionalDependenciesEnabler(project);
+        ApplicationDeploymentClasspathBuilder deploymentClasspathBuilder = new ApplicationDeploymentClasspathBuilder(project);
+
+        Set<ExtensionDependency> commonExtensions = conditionalDependenciesEnabler
+                .declareConditionalDependencies(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+        deploymentClasspathBuilder.createBuildClasspath(commonExtensions, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+        deploymentClasspathBuilder.addCommonExtension(commonExtensions);
+
+        for (String baseConfiguration : CONDITIONAL_DEPENDENCY_LOOKUP) {
+            Set<ExtensionDependency> extensionDependencies = conditionalDependenciesEnabler
+                    .declareConditionalDependencies(baseConfiguration);
+            deploymentClasspathBuilder.createBuildClasspath(extensionDependencies, baseConfiguration);
+        }
+
         final HashSet<String> visited = new HashSet<>();
         ConfigurationContainer configurations = project.getConfigurations();
         configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)

@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Narayana JTA - Transaction manager"
+metadata:
+  keywords:
+  - "narayana-jta"
+  - "narayana"
+  - "jta"
+  - "transactions"
+  - "transaction"
+  - "tx"
+  - "txs"
+  guide: "https://quarkus.io/guides/transaction"
+  categories:
+  - "data"
+  status: "stable"

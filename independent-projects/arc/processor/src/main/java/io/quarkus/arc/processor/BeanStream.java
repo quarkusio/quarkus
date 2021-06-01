@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -91,6 +93,16 @@ public final class BeanStream implements Iterable<BeanInfo> {
      */
     public BeanStream withBeanClass(Class<?> beanClass) {
         return withBeanClass(DotName.createSimple(beanClass.getName()));
+    }
+
+    /**
+     * 
+     * @param predicate
+     * @return the new stream of beans
+     */
+    public BeanStream matchBeanTypes(Predicate<Set<Type>> predicate) {
+        stream = stream.filter(bean -> predicate.test(bean.getTypes()));
+        return this;
     }
 
     /**

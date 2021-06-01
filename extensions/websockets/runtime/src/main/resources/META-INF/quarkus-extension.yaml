@@ -1,0 +1,19 @@
+name: "WebSockets"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  short-name: "websockets"
+  keywords:
+  - "websocket"
+  - "websockets"
+  - "web-socket"
+  - "web-sockets"
+  - "http"
+  guide: "https://quarkus.io/guides/websockets"
+  categories:
+  - "web"
+  status: "stable"
+  codestart:
+    name: "undertow-websockets"
+    kind: "example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

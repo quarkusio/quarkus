@@ -171,4 +171,32 @@ class MailTest {
         assertThat(mail.getHeaders()).isEmpty();
     }
 
+    @Test
+    void testMultipleReplyTo() {
+        Mail mail = new Mail().addTo(TO_ADDRESS).setSubject("test").setText(BEGINNING)
+                .setFrom("from@quarkus.io")
+                .setReplyTo("reply-to@quarkus.io", "another@quarkus.io")
+                .setBounceAddress("bounce@quarkus.io");
+        assertThat(mail.getTo()).containsExactly(TO_ADDRESS);
+        assertThat(mail.getSubject()).isEqualTo("test");
+        assertThat(mail.getText()).isEqualTo(BEGINNING);
+        assertThat(mail.getHtml()).isNull();
+        assertThat(mail.getFrom()).isEqualTo("from@quarkus.io");
+        assertThat(mail.getReplyTo()).isEqualTo("reply-to@quarkus.io,another@quarkus.io");
+        assertThat(mail.getBounceAddress()).isEqualTo("bounce@quarkus.io");
+
+        mail = new Mail().addTo(TO_ADDRESS).setSubject("test").setText(BEGINNING)
+                .setFrom("from@quarkus.io")
+                .addReplyTo("another@quarkus.io")
+                .addReplyTo("reply-to@quarkus.io")
+                .setBounceAddress("bounce@quarkus.io");
+        assertThat(mail.getTo()).containsExactly(TO_ADDRESS);
+        assertThat(mail.getSubject()).isEqualTo("test");
+        assertThat(mail.getText()).isEqualTo(BEGINNING);
+        assertThat(mail.getHtml()).isNull();
+        assertThat(mail.getFrom()).isEqualTo("from@quarkus.io");
+        assertThat(mail.getReplyTo()).isEqualTo("another@quarkus.io,reply-to@quarkus.io");
+        assertThat(mail.getBounceAddress()).isEqualTo("bounce@quarkus.io");
+    }
+
 }

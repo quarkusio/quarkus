@@ -72,7 +72,7 @@ If you are are using gradle, you can apply the following plugin to your `build.g
 [source,groovy]
 ----
 plugins {
-    id 'org.kordamp.gradle.jandex' version '0.6.0'
+    id 'org.kordamp.gradle.jandex' version '0.10.0'
 }
 ----
 

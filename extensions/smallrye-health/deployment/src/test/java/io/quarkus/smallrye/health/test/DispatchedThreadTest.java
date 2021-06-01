@@ -35,7 +35,7 @@ public class DispatchedThreadTest {
                 .body("status", is("UP"),
                         "checks.status", contains("UP"),
                         "checks.name", contains("my-liveness-check"),
-                        "checks.data.thread[0]", stringContainsInOrder("worker"),
+                        "checks.data.thread[0]", stringContainsInOrder("executor-thread"),
                         "checks.data.thread[0]", not(stringContainsInOrder("loop")),
                         "checks.data.request[0]", is(true));
 
@@ -43,7 +43,7 @@ public class DispatchedThreadTest {
                 .body("status", is("UP"),
                         "checks.status", contains("UP"),
                         "checks.name", contains("my-readiness-check"),
-                        "checks.data.thread[0]", stringContainsInOrder("worker"),
+                        "checks.data.thread[0]", stringContainsInOrder("executor-thread"),
                         "checks.data.thread[0]", not(stringContainsInOrder("loop")),
                         "checks.data.request[0]", is(true));
     }

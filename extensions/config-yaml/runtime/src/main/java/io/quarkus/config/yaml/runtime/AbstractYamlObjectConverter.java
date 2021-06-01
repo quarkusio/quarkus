@@ -4,8 +4,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.microprofile.config.spi.Converter;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.introspector.Property;
 import org.yaml.snakeyaml.introspector.PropertyUtils;
 
@@ -27,11 +25,8 @@ public abstract class AbstractYamlObjectConverter<T> implements Converter<T> {
 
     @Override
     public T convert(String value) {
-        org.yaml.snakeyaml.constructor.Constructor constructor = new Constructor();
-        CustomPropertyUtils propertyUtils = new CustomPropertyUtils(getFieldNameMap());
-        propertyUtils.setSkipMissingProperties(true);
-        constructor.setPropertyUtils(propertyUtils);
-        return new Yaml(constructor).loadAs(value, getClazz());
+        throw new UnsupportedOperationException(
+                "Mapping of YAML Configuration has been removed from io.quarkus.arc.config.ConfigProperties. Please use io.smallrye.config.ConfigMapping instead, which is a safer alternative.");
     }
 
     private static class CustomPropertyUtils extends PropertyUtils {

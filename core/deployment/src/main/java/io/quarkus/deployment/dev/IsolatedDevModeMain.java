@@ -23,7 +23,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
@@ -395,7 +394,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     codeGens.addAll(
                             CodeGenerator.init(
                                     deploymentClassLoader,
-                                    module.getSourceParents().stream().map(Paths::get).collect(Collectors.toSet()),
+                                    module.getSourceParents(),
                                     Paths.get(module.getPreBuildOutputDir()),
                                     Paths.get(module.getTargetDir()),
                                     sourcePath -> module.addSourcePaths(singleton(sourcePath.toAbsolutePath().toString()))));

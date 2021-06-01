@@ -24,7 +24,7 @@ public interface TestRunListener {
 
     }
 
-    default void noTests() {
+    default void noTests(TestRunResults results) {
 
     }
 }

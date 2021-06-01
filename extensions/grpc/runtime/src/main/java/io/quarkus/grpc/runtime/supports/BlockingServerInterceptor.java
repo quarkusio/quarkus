@@ -23,7 +23,7 @@ import io.vertx.core.Vertx;
  *
  * For non-annotated methods, the interceptor acts as a pass-through.
  */
-public class BlockingServerInterceptor implements ServerInterceptor {
+public class BlockingServerInterceptor implements ServerInterceptor, Function<String, Boolean> {
 
     private final Vertx vertx;
     private final List<String> blockingMethods;
@@ -40,6 +40,12 @@ public class BlockingServerInterceptor implements ServerInterceptor {
     }
 
     @Override
+    public Boolean apply(String name) {
+        String methodName = name.substring(name.lastIndexOf("/") + 1);
+        return blockingMethods.contains(methodName.toLowerCase());
+    }
+
+    @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
             Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
@@ -53,13 +59,7 @@ public class BlockingServerInterceptor implements ServerInterceptor {
 
         // For performance purpose, we execute the lookup only once
         String fullMethodName = call.getMethodDescriptor().getFullMethodName();
-        boolean isBlocking = cache.computeIfAbsent(fullMethodName, new Function<String, Boolean>() {
-            @Override
-            public Boolean apply(String name) {
-                String methodName = name.substring(name.lastIndexOf("/") + 1);
-                return blockingMethods.contains(methodName.toLowerCase());
-            }
-        });
+        boolean isBlocking = cache.computeIfAbsent(fullMethodName, this);
 
         if (isBlocking) {
             ReplayListener<ReqT> replay = new ReplayListener<>();

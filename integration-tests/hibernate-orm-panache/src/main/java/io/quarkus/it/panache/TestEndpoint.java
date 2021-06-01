@@ -51,6 +51,9 @@ public class TestEndpoint {
     @Path("model")
     @Transactional
     public String testModel() {
+        Person.flush();
+        Assertions.assertNotNull(Person.getEntityManager());
+
         List<Person> persons = Person.findAll().list();
         Assertions.assertEquals(0, persons.size());
 
@@ -528,6 +531,9 @@ public class TestEndpoint {
     @Path("model-dao")
     @Transactional
     public String testModelDao() {
+        personDao.flush();
+        Assertions.assertNotNull(personDao.getEntityManager());
+
         List<Person> persons = personDao.findAll().list();
         Assertions.assertEquals(0, persons.size());
 

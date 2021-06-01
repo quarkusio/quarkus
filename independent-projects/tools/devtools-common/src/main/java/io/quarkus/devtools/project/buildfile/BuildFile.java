@@ -53,7 +53,7 @@ public abstract class BuildFile implements ExtensionManager {
         List<ArtifactCoords> installedPlatforms = new ArrayList<>();
         final Set<ArtifactKey> alreadyInstalled = alreadyInstalled(plan.toCollection());
         for (ArtifactCoords platform : withoutAlreadyInstalled(alreadyInstalled, plan.getPlatforms())) {
-            if (addDependency(platform, false)) {
+            if (importBom(platform)) {
                 installedPlatforms.add(platform);
             }
         }
@@ -115,6 +115,8 @@ public abstract class BuildFile implements ExtensionManager {
                 .filter(a -> !existingKeys.contains(a.getKey()))
                 .collect(toList());
     }
+
+    protected abstract boolean importBom(ArtifactCoords coords);
 
     protected abstract boolean addDependency(ArtifactCoords coords, boolean managed);
 

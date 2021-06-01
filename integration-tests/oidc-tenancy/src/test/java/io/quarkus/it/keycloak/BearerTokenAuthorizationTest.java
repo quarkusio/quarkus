@@ -357,6 +357,20 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testOpaqueTokenIntrospectionDisallowed() {
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+
+        // Verify the the opaque token is rejected with 401 
+        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
+                .when().get("/tenant-opaque/tenant-oidc-no-opaque-token/api/user")
+                .then()
+                .statusCode(401);
+
+        // Confirm no introspection request has been made
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+    }
+
+    @Test
     public void testResolveTenantIdentifierWebAppDynamic() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/webapp");

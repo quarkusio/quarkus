@@ -33,7 +33,7 @@ import io.quarkus.panache.common.deployment.PanacheMovingAnnotationVisitor;
  * A visitor that replaces public fields in an entity with a protected field + accessors,
  * so that the accessors can be called in {@link io.quarkus.panache.common.deployment.PanacheEntityEnhancer}.
  */
-public abstract class PanacheEntityClassAccessorGenerationVisitor extends ClassVisitor {
+public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisitor {
 
     protected final Type thisClass;
     private final Map<String, ? extends EntityField> fields;
@@ -61,7 +61,7 @@ public abstract class PanacheEntityClassAccessorGenerationVisitor extends ClassV
         //so any errors are visible immediately, rather than data just being lost
 
         FieldVisitor superVisitor;
-        if (entityField == null || name.equals("id")) {
+        if (name.equals("id")) {
             superVisitor = super.visitField(access, name, descriptor, signature, value);
         } else {
             superVisitor = super.visitField((access | Modifier.PROTECTED) & ~(Modifier.PRIVATE | Modifier.PUBLIC),
@@ -111,7 +111,7 @@ public abstract class PanacheEntityClassAccessorGenerationVisitor extends ClassV
         super.visitEnd();
     }
 
-    protected void generateAccessors() {
+    private void generateAccessors() {
         if (fields == null)
             return;
         for (EntityField field : fields.values()) {
@@ -123,7 +123,7 @@ public abstract class PanacheEntityClassAccessorGenerationVisitor extends ClassV
                         getterName, getterDescriptor, field.signature == null ? null : "()" + field.signature, null);
                 mv.visitCode();
                 mv.visitIntInsn(Opcodes.ALOAD, 0);
-                generateAccessorGetField(mv, field);
+                mv.visitFieldInsn(Opcodes.GETFIELD, thisClass.getInternalName(), field.name, field.descriptor);
                 int returnCode = AsmUtil.getReturnInstruction(field.descriptor);
                 mv.visitInsn(returnCode);
                 mv.visitMaxs(0, 0);
@@ -182,7 +182,7 @@ public abstract class PanacheEntityClassAccessorGenerationVisitor extends ClassV
                         break;
                 }
                 mv.visitIntInsn(loadCode, 1);
-                generateAccessorSetField(mv, field);
+                mv.visitFieldInsn(Opcodes.PUTFIELD, thisClass.getInternalName(), field.name, field.descriptor);
                 mv.visitInsn(Opcodes.RETURN);
                 mv.visitMaxs(0, 0);
                 mv.visitEnd();
@@ -206,7 +206,4 @@ public abstract class PanacheEntityClassAccessorGenerationVisitor extends ClassV
         return false;
     }
 
-    protected abstract void generateAccessorSetField(MethodVisitor mv, EntityField field);
-
-    protected abstract void generateAccessorGetField(MethodVisitor mv, EntityField field);
 }

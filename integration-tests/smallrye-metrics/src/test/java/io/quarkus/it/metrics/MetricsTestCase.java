@@ -102,13 +102,6 @@ public class MetricsTestCase {
     }
 
     @Test
-    public void testScopesRedirect() {
-        RestAssured.when().get("/metrics/base").then().statusCode(200);
-        RestAssured.when().get("/metrics/vendor").then().statusCode(200);
-        RestAssured.when().get("/metrics/application").then().statusCode(200);
-    }
-
-    @Test
     public void testMetricWithAbsoluteName() {
         invokeCounterWithAbsoluteName();
         assertMetricExactValue("application_counter_absolute_total", "1.0");

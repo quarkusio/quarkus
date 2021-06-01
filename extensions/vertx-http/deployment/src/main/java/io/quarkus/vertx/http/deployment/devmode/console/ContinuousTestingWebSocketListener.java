@@ -48,11 +48,11 @@ public class ContinuousTestingWebSocketListener implements TestListener {
             public void runComplete(TestRunResults testRunResults) {
                 ContinuousTestingWebsocketListener.setLastState(
                         new ContinuousTestingWebsocketListener.State(true, false,
-                                testRunResults.getTestsPassed() +
-                                        testRunResults.getTestsFailed() +
-                                        testRunResults.getTestsSkipped(),
-                                testRunResults.getTestsPassed(),
-                                testRunResults.getTestsFailed(), testRunResults.getTestsSkipped(),
+                                testRunResults.getPassedCount() +
+                                        testRunResults.getFailedCount() +
+                                        testRunResults.getSkippedCount(),
+                                testRunResults.getPassedCount(),
+                                testRunResults.getFailedCount(), testRunResults.getSkippedCount(),
                                 ContinuousTestingWebsocketListener.getLastState().isBrokenOnly,
                                 ContinuousTestingWebsocketListener.getLastState().isTestOutput,
                                 ContinuousTestingWebsocketListener.getLastState().isInstrumentationBasedReload));

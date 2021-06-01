@@ -1,9 +1,0 @@
----
-name: "Kubernetes Client Internal"
-metadata:
-  keywords:
-  - "kubernetes-client-internal"
-  categories:
-  - "cloud"
-  status: "stable"
-  unlisted: true

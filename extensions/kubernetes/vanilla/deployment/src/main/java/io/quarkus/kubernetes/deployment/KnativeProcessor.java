@@ -231,7 +231,7 @@ public class KnativeProcessor {
         });
 
         if (!roleBindings.isEmpty()) {
-            result.add(new DecoratorBuildItem(new ApplyServiceAccountToRevisionSpecDecorator()));
+            result.add(new DecoratorBuildItem(new ApplyServiceAccountNameToRevisionSpecDecorator()));
         }
 
         return result;

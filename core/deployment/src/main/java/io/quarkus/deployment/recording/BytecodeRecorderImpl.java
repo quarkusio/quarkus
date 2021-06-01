@@ -1311,26 +1311,33 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         continue;
                     }
                     Class propertyType = i.getPropertyType();
-                    if (ctorParamIndex == null
-                            && i.getReadMethod().getReturnType() != i.getWriteMethod().getParameterTypes()[0]) {
-                        if (relaxedValidation) {
-                            //this is a weird situation where the reader and writer are different types
-                            //we iterate and try and find a valid setter method for the type we have
-                            //OpenAPI does some weird stuff like this
+                    if (ctorParamIndex == null) {
+                        Class<?> getterReturnType = i.getReadMethod().getReturnType();
+                        Class<?> setterParameterType = i.getWriteMethod().getParameterTypes()[0];
+                        if (getterReturnType != setterParameterType) {
+                            if (relaxedValidation) {
+                                //this is a weird situation where the reader and writer are different types
+                                //we iterate and try and find a valid setter method for the type we have
+                                //OpenAPI does some weird stuff like this
 
-                            for (Method m : param.getClass().getMethods()) {
-                                if (m.getName().equals(i.getWriteMethod().getName())) {
-                                    if (m.getParameterTypes().length > 0
-                                            && m.getParameterTypes()[0].isAssignableFrom(param.getClass())) {
-                                        propertyType = m.getParameterTypes()[0];
-                                        break;
+                                for (Method m : param.getClass().getMethods()) {
+                                    if (m.getName().equals(i.getWriteMethod().getName())) {
+                                        if (m.getParameterTypes().length > 0
+                                                && m.getParameterTypes()[0].isAssignableFrom(param.getClass())) {
+                                            propertyType = m.getParameterTypes()[0];
+                                            break;
+                                        }
                                     }
-                                }
 
+                                }
+                            } else {
+                                throw new RuntimeException("Cannot serialise field '" + i.getName() + "' on object '" + param
+                                        + "' of type '" + param.getClass().getName()
+                                        + "' as getter and setter are of different types. Getter type is '"
+                                        + getterReturnType.getName() + "' while setter type is '"
+                                        + setterParameterType.getName()
+                                        + "'.");
                             }
-                        } else {
-                            throw new RuntimeException("Cannot serialise field " + i.getName() + " on object " + param
-                                    + " as setter and getters were different types");
                         }
                     }
                     DeferredParameter val = loadObjectInstance(propertyValue, existing,

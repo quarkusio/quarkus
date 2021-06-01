@@ -22,6 +22,7 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     private static final List<AppContent> FULL_CONTENT = Arrays.asList(AppContent.values());
 
     Collection<ArtifactCoords> extensions = new ArrayList<>();
+    Collection<ArtifactCoords> platforms = new ArrayList<>();
     Set<AppContent> appContent = new HashSet<>(FULL_CONTENT);
     String example;
     BuildTool buildTool = BuildTool.MAVEN;
@@ -42,6 +43,12 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
 
     public QuarkusCodestartProjectInputBuilder addExtension(ArtifactKey extension) {
         return this.addExtension(Extensions.toCoords(extension, null));
+    }
+
+    public QuarkusCodestartProjectInputBuilder addPlatforms(Collection<ArtifactCoords> boms) {
+        this.platforms.addAll(boms);
+        super.addBoms(boms.stream().map(Extensions::toGAV).collect(Collectors.toList()));
+        return this;
     }
 
     public QuarkusCodestartProjectInputBuilder example(String example) {

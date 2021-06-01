@@ -17,14 +17,6 @@ public final class VertxWebRouterBuildItem extends SimpleBuildItem {
         this.frameworkRouter = frameworkRouter;
     }
 
-    /**
-     * @deprected Use {@link #getHttpRouter()}
-     */
-    @Deprecated
-    public RuntimeValue<Router> getRouter() {
-        return getHttpRouter();
-    }
-
     public RuntimeValue<Router> getHttpRouter() {
         return httpRouter;
     }

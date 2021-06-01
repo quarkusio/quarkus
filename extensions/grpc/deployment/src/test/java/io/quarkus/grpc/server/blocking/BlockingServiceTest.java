@@ -69,7 +69,7 @@ public class BlockingServiceTest {
     public void testInvokingABlockingService() {
         HelloReply reply = GreeterGrpc.newBlockingStub(channel)
                 .sayHello(HelloRequest.newBuilder().setName("neo").build());
-        assertThat(reply.getMessage()).contains("worker-thread", "neo");
+        assertThat(reply.getMessage()).contains("executor-thread", "neo");
     }
 
     @Test

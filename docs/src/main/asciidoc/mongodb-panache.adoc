@@ -825,12 +825,12 @@ person.status = Status.Alive;
 
 // persist it: if you keep the default ObjectId ID field, it will be populated by the MongoDB driver,
 // and accessible when uni1 will be resolved
-Uni<Void> uni1 = person.persist();
+Uni<ReactivePerson> uni1 = person.persist();
 
 person.status = Status.Dead;
 
 // Your must call update() in order to send your entity modifications to MongoDB
-Uni<Void> uni2 = person.update();
+Uni<ReactivePerson> uni2 = person.update();
 
 // delete it
 Uni<Void> uni3 = person.delete();

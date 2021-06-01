@@ -8,6 +8,7 @@ import io.grpc.ServerInterceptor;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.internal.ServerImpl;
+import io.quarkus.dev.testing.GrpcWebSocketProxy;
 import io.quarkus.grpc.runtime.ServerCalls;
 import io.quarkus.grpc.runtime.StreamCollector;
 import io.quarkus.runtime.LaunchMode;
@@ -52,6 +53,7 @@ public class GrpcServerReloader {
                 throw new IllegalStateException("Non-dev mode streams collector used in development mode");
             }
             ((DevModeStreamsCollector) streamCollector).shutdown();
+            GrpcWebSocketProxy.closeAll();
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IllegalStateException("Unable to reinitialize gRPC server", e);
         }

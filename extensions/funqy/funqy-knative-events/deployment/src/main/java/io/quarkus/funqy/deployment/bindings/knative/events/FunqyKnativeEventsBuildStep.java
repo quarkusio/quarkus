@@ -85,12 +85,12 @@ public class FunqyKnativeEventsBuildStep {
                 beanContainer.getValue(),
                 executorBuildItem.getExecutorProxy());
 
-        routes.produce(new RouteBuildItem("/", handler, false));
+        routes.produce(RouteBuildItem.builder().route("/").handler(handler).build());
 
         for (FunctionBuildItem function : functions) {
             String name = function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName();
             String path = "/" + name;
-            routes.produce(new RouteBuildItem(path, handler, false));
+            routes.produce(RouteBuildItem.builder().route(path).handler(handler).build());
         }
     }
 }

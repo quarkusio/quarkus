@@ -8,4 +8,5 @@ public class TextEmail {
     public String text;
     public Recipient to;
     public List<Attachment> attachments;
+    public List<Header> headerLines;
 }

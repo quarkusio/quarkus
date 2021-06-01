@@ -46,6 +46,7 @@
         <module>kafka-avro-apicurio2</module>
         <module>kafka-streams</module>
         <module>jpa</module>
+        <module>jpa-mapping-xml</module>
         <module>jpa-db2</module>
         <module>jpa-derby</module>
         <module>jpa-postgresql</module>
@@ -67,7 +68,6 @@
         <module>hibernate-search-orm-elasticsearch</module>
         <module>hibernate-tenancy</module>
         <module>hibernate-orm-envers</module>
-        <module>legacy-redirect</module>
         <module>vertx-http</module>
         <module>vertx-web</module>
         <module>vertx-web-jackson</module>
@@ -139,6 +139,7 @@
         <module>smallrye-context-propagation</module>
         <module>smallrye-metrics</module>
         <module>smallrye-graphql</module>
+        <module>smallrye-graphql-client</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>
         <module>redis-client</module>
@@ -153,7 +154,7 @@
         <module>rest-client</module>
         <module>resteasy-reactive-kotlin</module>
         <module>resteasy-reactive-rest-client</module>
-        <module>resteasy-reactive-rest-client-standalone</module>
+        <module>resteasy-reactive-rest-client-multipart</module>
         <module>packaging</module>
         <module>simple with space</module>
         <module>consul-config</module>

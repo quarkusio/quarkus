@@ -1,0 +1,53 @@
+{{#packageName}}
+package {{packageName}};
+{{/packageName}}
+
+import java.util.function.BiFunction;
+
+import io.quarkus.grpc.runtime.MutinyClient;
+
+@javax.annotation.Generated(
+value = "by {{classPrefix}} Grpc generator",
+comments = "Source: {{protoName}}")
+public class {{serviceName}}Client implements {{serviceName}}, MutinyClient<{{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub> {
+
+    private final {{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub stub;
+
+    public {{serviceName}}Client(String name, io.grpc.Channel channel, BiFunction<String, {{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub, {{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub> stubConfigurator) {
+       this.stub = stubConfigurator.apply(name,{{classPrefix}}{{serviceName}}Grpc.new{{classPrefix}}Stub(channel));
+    }
+
+    @Override
+    public {{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub getStub() {
+       return stub;
+    }
+
+    {{#unaryUnaryMethods}}
+    @Override
+    public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}({{inputType}} request) {
+       return stub.{{methodName}}(request);
+    }
+    {{/unaryUnaryMethods}}
+    {{#unaryManyMethods}}
+
+    @Override
+    public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}({{inputType}} request) {
+       return stub.{{methodName}}(request);
+    }
+    {{/unaryManyMethods}}
+    {{#manyUnaryMethods}}
+
+    @Override
+    public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+       return stub.{{methodName}}(request);
+    }
+    {{/manyUnaryMethods}}
+    {{#manyManyMethods}}
+
+    @Override
+    public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+       return stub.{{methodName}}(request);
+    }
+    {{/manyManyMethods}}
+
+}

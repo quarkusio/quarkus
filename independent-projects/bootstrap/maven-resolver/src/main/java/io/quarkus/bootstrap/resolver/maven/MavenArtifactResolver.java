@@ -274,6 +274,15 @@ public class MavenArtifactResolver {
         }
     }
 
+    public DependencyResult resolvePluginDependencies(Artifact pluginArtifact) throws BootstrapMavenException {
+        try {
+            return repoSystem.resolveDependencies(repoSession, new DependencyRequest().setCollectRequest(new CollectRequest()
+                    .setRoot(new Dependency(pluginArtifact, null)).setRepositories(context.getRemotePluginRepositories())));
+        } catch (DependencyResolutionException e) {
+            throw new BootstrapMavenException("Failed to resolve dependencies for Maven plugin " + pluginArtifact, e);
+        }
+    }
+
     /**
      * Turns the list of dependencies into a simple dependency tree
      */

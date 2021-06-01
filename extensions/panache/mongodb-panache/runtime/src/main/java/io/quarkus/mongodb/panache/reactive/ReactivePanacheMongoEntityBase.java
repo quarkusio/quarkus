@@ -36,8 +36,8 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public Uni<Void> persist() {
-        return INSTANCE.persist(this);
+    public <T extends ReactivePanacheMongoEntityBase> Uni<T> persist() {
+        return INSTANCE.persist(this).map(v -> (T) this);
     }
 
     /**
@@ -47,8 +47,8 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Stream)
      * @see #update(Object, Object...)
      */
-    public Uni<Void> update() {
-        return INSTANCE.update(this);
+    public <T extends ReactivePanacheMongoEntityBase> Uni<T> update() {
+        return INSTANCE.update(this).map(v -> (T) this);
     }
 
     /**
@@ -58,8 +58,8 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Object, Object...)
      */
-    public Uni<Void> persistOrUpdate() {
-        return INSTANCE.persistOrUpdate(this);
+    public <T extends ReactivePanacheMongoEntityBase> Uni<T> persistOrUpdate() {
+        return INSTANCE.persistOrUpdate(this).map(v -> (T) this);
     }
 
     /**

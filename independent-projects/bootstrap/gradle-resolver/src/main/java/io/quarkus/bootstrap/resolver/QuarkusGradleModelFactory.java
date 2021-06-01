@@ -1,6 +1,6 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;

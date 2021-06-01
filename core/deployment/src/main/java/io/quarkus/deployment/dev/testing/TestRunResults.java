@@ -36,9 +36,12 @@ public class TestRunResults {
     private final List<TestClassResult> failing = new ArrayList<>();
     private final List<TestClassResult> passing = new ArrayList<>();
     private final List<TestClassResult> skipped = new ArrayList<>();
-    private final long testsPassed;
-    private final long testsFailed;
-    private final long testsSkipped;
+    private final long passedCount;
+    private final long failedCount;
+    private final long skippedCount;
+    private final long currentPassedCount;
+    private final long currentFailedCount;
+    private final long currentSkippedCount;
 
     public TestRunResults(long id, ClassScanResult trigger, boolean full, long started, long completed,
             Map<String, TestClassResult> results) {
@@ -51,10 +54,16 @@ public class TestRunResults {
         long passedCount = 0;
         long failedCount = 0;
         long skippedCount = 0;
+        long currentPassedCount = 0;
+        long currentFailedCount = 0;
+        long currentSkippedCount = 0;
         for (Map.Entry<String, TestClassResult> i : results.entrySet()) {
             passedCount += i.getValue().getPassing().stream().filter(TestResult::isTest).count();
             failedCount += i.getValue().getFailing().stream().filter(TestResult::isTest).count();
             skippedCount += i.getValue().getSkipped().stream().filter(TestResult::isTest).count();
+            currentPassedCount += i.getValue().getPassing().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
+            currentFailedCount += i.getValue().getFailing().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
+            currentSkippedCount += i.getValue().getSkipped().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
             boolean current = i.getValue().getLatestRunId() == id;
             if (current) {
                 if (!i.getValue().getFailing().isEmpty()) {
@@ -81,9 +90,12 @@ public class TestRunResults {
         Collections.sort(passing);
         Collections.sort(failing);
         Collections.sort(skipped);
-        this.testsFailed = failedCount;
-        this.testsPassed = passedCount;
-        this.testsSkipped = skippedCount;
+        this.failedCount = failedCount;
+        this.passedCount = passedCount;
+        this.skippedCount = skippedCount;
+        this.currentFailedCount = currentFailedCount;
+        this.currentPassedCount = currentPassedCount;
+        this.currentSkippedCount = currentSkippedCount;
     }
 
     public long getId() {
@@ -142,15 +154,35 @@ public class TestRunResults {
         return skipped;
     }
 
-    public long getTestsPassed() {
-        return testsPassed;
+    public long getPassedCount() {
+        return passedCount;
     }
 
-    public long getTestsFailed() {
-        return testsFailed;
+    public long getFailedCount() {
+        return failedCount;
     }
 
-    public long getTestsSkipped() {
-        return testsSkipped;
+    public long getSkippedCount() {
+        return skippedCount;
+    }
+
+    public long getCurrentPassedCount() {
+        return currentPassedCount;
+    }
+
+    public long getCurrentFailedCount() {
+        return currentFailedCount;
+    }
+
+    public long getCurrentSkippedCount() {
+        return currentSkippedCount;
+    }
+
+    public long getTotalCount() {
+        return getPassedCount() + getFailedCount() + getSkippedCount();
+    }
+
+    public long getCurrentTotalCount() {
+        return getCurrentPassedCount() + getCurrentFailedCount() + getCurrentSkippedCount();
     }
 }

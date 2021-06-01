@@ -129,6 +129,15 @@ public class HibernateOrmConfigPersistenceUnit {
     public Optional<String> metadataBuilderContributor;
 
     /**
+     * XML files to configure the entity mapping, e.g. {@code META-INF/my-orm.xml}.
+     * <p>
+     * Defaults to `META-INF/orm.xml` if it exists.
+     * Pass `no-file` to force Hibernate ORM to ignore `META-INF/orm.xml`.
+     */
+    @ConfigItem(defaultValueDocumentation = "META-INF/orm.xml if it exists; no-file otherwise")
+    public Optional<Set<String>> mappingFiles;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem

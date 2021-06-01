@@ -7,6 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Vertx;
 
@@ -28,7 +29,7 @@ public class VertxProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        verifyProducer(VertxCoreRecorder.initialize(null, null, null));
+        verifyProducer(VertxCoreRecorder.initialize(null, null, null, LaunchMode.TEST));
     }
 
     private void verifyProducer(Vertx v) {

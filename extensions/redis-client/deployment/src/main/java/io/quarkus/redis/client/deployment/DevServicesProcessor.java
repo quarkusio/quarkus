@@ -4,7 +4,6 @@ import static io.quarkus.redis.client.runtime.RedisClientUtil.isDefault;
 
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +19,12 @@ import io.quarkus.deployment.IsDockerWorking.IsDockerRunningSilent;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
-import io.quarkus.redis.client.deployment.devservices.DevServicesRedisResultBuildItem;
-import io.quarkus.redis.client.deployment.devservices.DevServicesRedisResultBuildItem.Result;
 import io.quarkus.redis.client.runtime.RedisClientUtil;
 import io.quarkus.redis.client.runtime.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -42,10 +41,12 @@ public class DevServicesProcessor {
     private static volatile Map<String, DevServiceConfiguration> capturedDevServicesConfiguration;
     private static volatile boolean first = true;
 
+    @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsDockerRunningSilent.class)
-    public DevServicesRedisResultBuildItem startRedisContainers(LaunchModeBuildItem launchMode,
+    public void startRedisContainers(LaunchModeBuildItem launchMode,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer, RedisBuildTimeConfig config) {
+
+            BuildProducer<DevServicesNativeConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices);
         currentDevServicesConfiguration.put(RedisClientUtil.DEFAULT_CLIENT, config.defaultDevService);
@@ -58,7 +59,7 @@ public class DevServicesProcessor {
                 restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
             }
             if (!restartRequired) {
-                return null;
+                return;
             }
             for (Closeable closeable : closeables) {
                 try {
@@ -72,9 +73,7 @@ public class DevServicesProcessor {
         }
 
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
-        Result defaultConnectionResult = null;
         List<Closeable> currentCloseables = new ArrayList<>();
-        Map<String, Result> namedConnectionResults = new HashMap<>();
         for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
             String connectionName = entry.getKey();
             StartResult startResult = startContainer(connectionName, entry.getValue().devservices);
@@ -84,12 +83,7 @@ public class DevServicesProcessor {
             currentCloseables.add(startResult.closeable);
             String configKey = getConfigPrefix(connectionName) + RedisConfig.HOSTS_CONFIG_NAME;
             runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(configKey, startResult.url));
-            Result result = new Result(Collections.singletonMap(configKey, startResult.url));
-            if (isDefault(connectionName)) {
-                defaultConnectionResult = result;
-            } else {
-                namedConnectionResults.put(connectionName, result);
-            }
+            devConfigProducer.produce(new DevServicesNativeConfigResultBuildItem(configKey, startResult.url));
         }
 
         closeables = currentCloseables;
@@ -124,7 +118,6 @@ public class DevServicesProcessor {
                 }
             });
         }
-        return new DevServicesRedisResultBuildItem(defaultConnectionResult, namedConnectionResults);
     }
 
     private StartResult startContainer(String connectionName, DevServicesConfig devServicesConfig) {

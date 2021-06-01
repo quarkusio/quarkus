@@ -24,7 +24,7 @@ public class GradleMessageWriter implements MessageWriter {
 
     @Override
     public void info(String msg) {
-        logger.info(msg);
+        logger.lifecycle(msg);
     }
 
     @Override

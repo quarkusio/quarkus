@@ -486,15 +486,8 @@ Start by adding the following dependencies to your test project:
 [source,xml]
 ----
 <dependency>
-    <groupId>net.sourceforge.htmlunit</groupId>
-    <artifactId>htmlunit</artifactId>
-    <exclusions>
-        <exclusion>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>*</artifactId>
-       </exclusion>
-
-    </exclusions>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>

@@ -42,7 +42,7 @@ public class SmallRyeBlockingSubscriberTest {
                 .collect(Collectors.toList());
         assertThat(threadNames.contains(Thread.currentThread().getName())).isFalse();
         for (String name : threadNames) {
-            assertThat(name.startsWith("vert.x-worker-thread-")).isTrue();
+            assertThat(name.startsWith("executor-thread")).isTrue();
         }
     }
 

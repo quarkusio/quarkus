@@ -271,9 +271,9 @@ public class BuildTimeEnabledProcessor {
             } else {
                 // Add @Alternative to the producer
                 transform.add(DotNames.ALTERNATIVE);
+                transform.remove(s -> s.name().equals(DotNames.ALTERNATIVE_PRIORITY));
             }
             transform.done();
         }
     }
-
 }

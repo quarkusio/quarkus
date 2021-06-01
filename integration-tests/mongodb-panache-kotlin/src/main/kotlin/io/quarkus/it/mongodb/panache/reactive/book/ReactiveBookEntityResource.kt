@@ -10,7 +10,6 @@ import org.reactivestreams.Publisher
 import java.net.URI
 import java.time.LocalDate.parse
 import javax.annotation.PostConstruct
-import javax.ws.rs.Consumes
 import javax.ws.rs.DELETE
 import javax.ws.rs.GET
 import javax.ws.rs.NotFoundException
@@ -52,19 +51,19 @@ class ReactiveBookEntityResource {
 
     @POST
     fun addBook(book: ReactiveBookEntity): Uni<Response> {
-        return book.persist().map {
+        return book.persist<ReactiveBookEntity>().map {
             //the ID is populated before sending it to the database
             Response.created(URI.create("/books/entity${book.id}")).build()
         }
     }
 
     @PUT
-    fun updateBook(book: ReactiveBookEntity): Uni<Response> = book.update().map { _ -> Response.accepted().build() }
+    fun updateBook(book: ReactiveBookEntity): Uni<Response> = book.update<ReactiveBookEntity>().map { Response.accepted().build() }
 
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
     fun upsertBook(book: ReactiveBookEntity): Uni<Response> =
-            book.persistOrUpdate().map { v -> Response.accepted().build() }
+            book.persistOrUpdate<ReactiveBookEntity>().map { Response.accepted().build() }
 
     @DELETE
     @Path("/{id}")

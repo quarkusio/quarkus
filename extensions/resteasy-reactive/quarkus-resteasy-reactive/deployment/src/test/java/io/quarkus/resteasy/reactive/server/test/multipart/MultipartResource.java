@@ -53,4 +53,16 @@ public class MultipartResource {
                 .build();
     }
 
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("/same-name")
+    public String sameName(@MultipartForm FormDataSameFileName formData) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return formData.status + " - " + formData.getHtmlFiles().size() + " - " + formData.txtFiles.size() + " - "
+                + formData.xmlFiles.size();
+    }
+
 }

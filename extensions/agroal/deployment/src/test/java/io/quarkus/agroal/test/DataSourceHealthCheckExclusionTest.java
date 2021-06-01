@@ -18,7 +18,7 @@ public class DataSourceHealthCheckExclusionTest {
 
     @Test
     public void testDataSourceHealthCheckExclusion() {
-        RestAssured.when().get("/health/ready")
+        RestAssured.when().get("/q/health/ready")
                 .then()
                 .body("status", CoreMatchers.equalTo("UP"));
     }

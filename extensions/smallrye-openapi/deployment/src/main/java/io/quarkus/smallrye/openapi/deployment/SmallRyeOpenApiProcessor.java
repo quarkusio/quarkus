@@ -223,7 +223,6 @@ public class SmallRyeOpenApiProcessor {
                 .routeConfigKey("quarkus.smallrye-openapi.path")
                 .handler(handler)
                 .displayOnNotFoundPage("Open API Schema document")
-                .requiresLegacyRedirect()
                 .blockingRoute()
                 .build();
     }

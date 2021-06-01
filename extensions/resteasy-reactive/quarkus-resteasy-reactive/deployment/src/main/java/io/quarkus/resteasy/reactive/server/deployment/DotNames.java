@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 final class DotNames {
@@ -20,7 +19,6 @@ final class DotNames {
     static final DotName FIELD_UPLOAD_NAME = DotName.createSimple(FileUpload.class.getName());
     static final DotName PATH_NAME = DotName.createSimple(Path.class.getName());
     static final DotName FILE_NAME = DotName.createSimple(File.class.getName());
-    static final DotName PART_TYPE_NAME = DotName.createSimple(PartType.class.getName());
 
     private DotNames() {
     }

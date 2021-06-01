@@ -66,7 +66,7 @@ public class PgPoolRecorder {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return new ThreadLocalPgPool(vertx, pgConnectOptions, poolOptions);
+        return PgPool.pool(vertx, pgConnectOptions, poolOptions);
     }
 
     private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,

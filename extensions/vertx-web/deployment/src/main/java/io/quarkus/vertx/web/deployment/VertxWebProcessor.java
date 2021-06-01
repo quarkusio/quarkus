@@ -390,6 +390,7 @@ class VertxWebProcessor {
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
                         bodyHandler.getHandler());
 
+                //TODO This needs to be refactored to use routeFunction() taking a Consumer<Route> instead
                 RouteBuildItem.Builder builder = RouteBuildItem.builder()
                         .routeFunction(routeFunction)
                         .handlerType(handlerType)

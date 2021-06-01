@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Amazon KMS"
+metadata:
+  keywords:
+    - "kms"
+    - "aws"
+    - "amazon"
+  guide: "https://quarkus.io/guides/amazon-kms"
+  categories:
+    - "data"
+  status: "preview"

@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye Metrics"
+metadata:
+  short-name: "metrics"
+  keywords:
+  - "smallrye-metrics"
+  - "metrics"
+  - "metric"
+  - "prometheus"
+  - "monitoring"
+  guide: "https://quarkus.io/guides/microprofile-metrics"
+  categories:
+  - "observability"
+  status: "stable"

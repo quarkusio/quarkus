@@ -124,8 +124,11 @@ triage:
       notify: [phillip-kruger, jmartisk]
       directories:
         - extensions/smallrye-graphql/
+        - extensions/smallrye-graphql-client/
         - extensions/vertx-graphql/
         - integration-tests/vertx-graphql/
+        - integration-tests/smallrye-graphql/
+        - integration-tests/smallrye-graphql-client/
     - labels: [area/tracing, area/smallrye]
       title: "(trace|tracing)"
       notify: [kenfinnigan, Ladicek]
@@ -152,7 +155,7 @@ triage:
         - extensions/smallrye-metrics
     - labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient, phillip-kruger]
+      notify: [ebullient, kenfinnigan]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer

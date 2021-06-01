@@ -38,7 +38,7 @@
                     {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
                     <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
                     {#else}
-                    <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {currentExtensionName} <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
+                    <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {currentExtensionName}{#insert breadcrumbs/}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
                     {/if}
                 </span>
             </span>   

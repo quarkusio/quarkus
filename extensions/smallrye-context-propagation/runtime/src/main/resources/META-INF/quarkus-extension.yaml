@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye Context Propagation"
+metadata:
+  short-name: "context propagation"
+  keywords:
+  - "smallrye-context-propagation"
+  - "microprofile-context-propagation"
+  - "context-propagation"
+  - "context"
+  - "reactive"
+  guide: "https://quarkus.io/guides/context-propagation"
+  categories:
+  - "reactive"
+  status: "stable"

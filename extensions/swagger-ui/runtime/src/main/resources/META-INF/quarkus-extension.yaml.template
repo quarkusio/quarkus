@@ -1,9 +1,0 @@
----
-name: "Swagger UI"
-metadata:
-  keywords:
-  - "swagger-ui"
-  - "openapi"
-  guide: "https://quarkus.io/guides/openapi-swaggerui"
-  status: stable
-  unlisted: true

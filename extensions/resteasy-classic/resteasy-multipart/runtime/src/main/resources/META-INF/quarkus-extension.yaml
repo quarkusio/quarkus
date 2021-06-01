@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy Multipart"
+metadata:
+  keywords:
+  - "resteasy-multipart"
+  - "multipart"
+  - "upload"
+  - "resteasy"
+  - "jaxrs"
+  guide: "https://quarkus.io/guides/rest-json#multipart-support"
+  categories:
+  - "web"
+  status: "stable"

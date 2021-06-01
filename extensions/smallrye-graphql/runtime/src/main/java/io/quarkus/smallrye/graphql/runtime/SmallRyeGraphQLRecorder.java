@@ -30,9 +30,10 @@ public class SmallRyeGraphQLRecorder {
         return new RuntimeValue<>(graphQLSchema != null);
     }
 
-    public Handler<RoutingContext> executionHandler(RuntimeValue<Boolean> initialized, boolean allowGet) {
+    public Handler<RoutingContext> executionHandler(RuntimeValue<Boolean> initialized, boolean allowGet,
+            boolean allowPostWithQueryParameters) {
         if (initialized.getValue()) {
-            return new SmallRyeGraphQLExecutionHandler(allowGet, getCurrentIdentityAssociation(),
+            return new SmallRyeGraphQLExecutionHandler(allowGet, allowPostWithQueryParameters, getCurrentIdentityAssociation(),
                     CDI.current().select(CurrentVertxRequest.class).get());
         } else {
             return new SmallRyeGraphQLNoEndpointHandler();

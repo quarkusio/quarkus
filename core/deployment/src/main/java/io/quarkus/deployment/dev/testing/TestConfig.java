@@ -152,6 +152,16 @@ public class TestConfig {
     @ConfigItem(defaultValue = "all")
     TestType type;
 
+    /**
+     * If a class matches this pattern then it will be cloned into the Quarkus ClassLoader even if it
+     * is in a parent first artifact.
+     *
+     * This is important for collections which can contain objects from the Quarkus ClassLoader, but for
+     * most parent first classes it will just cause problems.
+     */
+    @ConfigItem(defaultValue = "java\\..*")
+    String classClonePattern;
+
     @ConfigGroup
     public static class Profile {
 

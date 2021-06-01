@@ -225,18 +225,20 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                                     parameters);
 
                             // call JpaOperations.executeUpdate
-                            updateCount = methodCreator.invokeStaticMethod(
+                            updateCount = methodCreator.invokeVirtualMethod(
                                     MethodDescriptor.ofMethod(AbstractJpaOperations.class, "executeUpdate", int.class,
                                             String.class, Map.class),
+                                    methodCreator.readStaticField(operationsField),
                                     methodCreator.load(queryString),
                                     parametersMap);
                         } else {
                             ResultHandle paramsArray = generateParamsArray(queryParameterIndexes, methodCreator);
 
                             // call JpaOperations.executeUpdate
-                            updateCount = methodCreator.invokeStaticMethod(
+                            updateCount = methodCreator.invokeVirtualMethod(
                                     MethodDescriptor.ofMethod(AbstractJpaOperations.class, "executeUpdate",
                                             int.class, String.class, Object[].class),
+                                    methodCreator.readStaticField(operationsField),
                                     methodCreator.load(queryString),
                                     paramsArray);
                         }

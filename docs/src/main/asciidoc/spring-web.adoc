@@ -6,13 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus - Quarkus Extension for Spring Web API
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 While users are encouraged to use JAX-RS annotation for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the `spring-web` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Web annotations to define RESTful services.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

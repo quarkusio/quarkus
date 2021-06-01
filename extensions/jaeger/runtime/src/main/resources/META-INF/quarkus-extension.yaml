@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Jaeger"
+metadata:
+  keywords:
+    - "tracing"
+    - "distributed-tracing"
+    - "jaeger"
+  categories:
+    - "observability"
+  unlisted: true
+  status: "stable"

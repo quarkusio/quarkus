@@ -22,21 +22,20 @@ fi
 
 # Step 1: build an expression for grep that will only extract the given modules from each "test-modules" list,
 #         including a trailing comma (if exists). Note: mvn doesn't mind something like -pl 'foo,'.
-EXPR='('
+EXPR='((?:(?<=^)|(?<=,)|(?<=, ))('
 while read -r impacted
 do
-  EXPR+="((?<=^)|(?<=,)|(?<=, ))${impacted}(,|$)|"
+  EXPR+="${impacted}|"
 done < <(echo -n "$1" | grep -Po '(?<=integration-tests/).+')
-EXPR+=')'
+EXPR+=')(,|$))+'
 
 # Step 2: apply the filter expression via grep to each "test-modules" list and replace each original list with the filtered one
 while read -r modules
 do
-  # Note: switch off pipefail briefly to avoid failing when nothing matches
-  set +o pipefail
-  # Note: paste joins all matches to get a single line
-  FILTERED=$(echo -n "${modules}" | grep -Po "${EXPR}" | paste -sd " " -)
-  set -o pipefail
+  # Notes:
+  # - trailing "|" (after EXPR) avoids grep return code > 0 if nothing matches (which is a valid case)
+  # - "paste" joins all matches to get a single line
+  FILTERED=$(echo -n "${modules}" | grep -Po "${EXPR}|" | paste -sd " " -)
   JSON=$(echo -n "${JSON}" | sed "s|${modules}|${FILTERED}|")
 done < <(echo -n "${JSON}" | jq -r '.include[] | ."test-modules"')
 

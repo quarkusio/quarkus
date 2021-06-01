@@ -22,11 +22,11 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.SourceSet;
+import io.quarkus.bootstrap.model.gradle.Workspace;
+import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.SourceSet;
-import io.quarkus.bootstrap.resolver.model.Workspace;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 
 class QuarkusModelBuilderTest {
 
@@ -72,11 +72,13 @@ class QuarkusModelBuilderTest {
         assertEquals(new File(projectDir, "build"), workspaceModule.getBuildDir());
         final SourceSet sourceSet = workspaceModule.getSourceSet();
         assertNotNull(sourceSet);
-        assertNull(sourceSet.getResourceDirectory());
-        assertThat(sourceSet.getSourceDirectories()).containsAnyOf(new File(projectDir, "build/classes/java/main"),
+        assertTrue(sourceSet.getResourceDirectories().isEmpty());
+        assertThat(sourceSet.getSourceDirectories()).containsAnyOf(
+                new File(projectDir, "build/classes/java/main"),
                 new File(projectDir, "build/classes/java/test"));
         final SourceSet sourceSourceSet = workspaceModule.getSourceSourceSet();
-        assertEquals(new File(projectDir, "src/main/resources"), sourceSourceSet.getResourceDirectory());
+        assertThat(sourceSourceSet.getResourceDirectories())
+                .containsAnyOf(new File(projectDir, "src/main/resources"));
         assertEquals(5, sourceSourceSet.getSourceDirectories().size());
         assertThat(sourceSourceSet.getSourceDirectories()).contains(new File(projectDir, "src/main/java"));
     }

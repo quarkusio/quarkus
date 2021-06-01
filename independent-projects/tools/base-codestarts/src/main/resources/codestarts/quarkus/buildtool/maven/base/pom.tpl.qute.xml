@@ -32,6 +32,15 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            {#each boms}
+            <dependency>
+                <groupId>{it.groupId}</groupId>
+                <artifactId>{it.artifactId}</artifactId>
+                <version>{it.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            {/each}
         </dependencies>
     </dependencyManagement>
     {#if maven.repositories}

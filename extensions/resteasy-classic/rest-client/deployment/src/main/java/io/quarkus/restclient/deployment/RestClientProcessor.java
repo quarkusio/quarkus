@@ -139,7 +139,7 @@ class RestClientProcessor {
                     "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, true,
-                            "io.quarkus.opentelemetry.tracing.client.QuarkusRestClientListener"));
+                            "io.quarkus.opentelemetry.runtime.tracing.client.QuarkusRestClientListener"));
         }
     }
 

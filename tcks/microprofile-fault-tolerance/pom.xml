@@ -29,7 +29,7 @@
                         <dependency>org.eclipse.microprofile.fault-tolerance:microprofile-fault-tolerance-tck</dependency>
                     </dependenciesToScan>
                     <reuseForks>false</reuseForks>
-                    <excludes combine.children="append">
+                    <excludes>
                         <!-- We do not support enablement via beans.xml -->
                         <exclude>org.eclipse.microprofile.fault.tolerance.tck.interceptor.xmlInterceptorEnabling.FaultToleranceInterceptorEnableByXmlTest</exclude>
                     </excludes>
@@ -85,26 +85,4 @@
         </dependency>
     </dependencies>
 
-    <profiles>
-        <profile>
-            <id>jdk16-workarounds</id>
-            <activation>
-                <jdk>[16,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <excludes>
-                                <!-- fails with " module java.base does not "opens java.lang.invoke" to unnamed module" -->
-                                <exclude>org.eclipse.microprofile.fault.tolerance.tck.fallbackmethod.FallbackMethodDefaultMethodTest</exclude>
-                            </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

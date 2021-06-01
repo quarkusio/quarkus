@@ -21,6 +21,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected RepositorySystem repoSystem;
     protected RepositorySystemSession repoSession;
     protected List<RemoteRepository> remoteRepos;
+    protected List<RemoteRepository> remotePluginRepos;
     protected RemoteRepositoryManager remoteRepoManager;
     protected String alternatePomName;
     protected File userSettings;
@@ -99,7 +100,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     /**
      * RepositorySystemSession that should be used by the resolver
      *
-     * @param repoSystem
+     * @param repoSession repository session
      * @return
      */
     @SuppressWarnings("unchecked")
@@ -111,12 +112,24 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     /**
      * Remote repositories that should be used by the resolver
      *
-     * @param repoSystem
+     * @param remoteRepos remote repositories
      * @return
      */
     @SuppressWarnings("unchecked")
     public T setRemoteRepositories(List<RemoteRepository> remoteRepos) {
         this.remoteRepos = remoteRepos;
+        return (T) this;
+    }
+
+    /**
+     * Remote plugin repositories that should be used by the resolver
+     *
+     * @param repoPluginRepos remote plugin repositories
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public T setRemotePluginRepositories(List<RemoteRepository> remotePluginRepos) {
+        this.remotePluginRepos = remotePluginRepos;
         return (T) this;
     }
 

@@ -1,10 +1,12 @@
 package io.quarkus.it.rest.client.main;
 
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -75,6 +77,25 @@ public class ClientCallingResource {
                         }
                     }, t -> fail(rc, t.getMessage()));
         });
+
+        router.post("/hello").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
+                .end("Hello, " + (rc.getBodyAsString()).repeat(getCount(rc))));
+
+        router.route("/call-hello-client").blockingHandler(rc -> {
+            String url = rc.getBody().toString();
+            HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(HelloClient.class);
+            String greeting = client.greeting("John", 2);
+            rc.response().end(greeting);
+        });
+    }
+
+    private int getCount(io.vertx.ext.web.RoutingContext rc) {
+        List<String> countQueryParam = rc.queryParam("count");
+        if (countQueryParam.isEmpty()) {
+            return 1;
+        }
+        return Integer.parseInt(countQueryParam.get(0));
     }
 
     private void callGet(RoutingContext rc, ClientWithExceptionMapper client) {

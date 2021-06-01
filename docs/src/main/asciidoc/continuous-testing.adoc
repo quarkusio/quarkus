@@ -154,5 +154,5 @@ NOTE: The Dev UI is not available when running in continuous testing mode, as th
 Continuous testing supports multiple configuration options that can be used to limit the tests that are run, and
 to control the output. The configuration properties are shown below:
 
-include::{generated-dir}/config/quarkus-test.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/config/quarkus-test-dev-testing-test-config.adoc[opts=optional, leveloffset=+2]
 

@@ -8,19 +8,14 @@
 
         <description>Hibernate test case template Persistence Unit</description>
 
-        <class>io.quarkus.examples.common.Clown</class>
+        <class>io.quarkus.hibernate.orm.xml.persistence.MyEntity</class>
 
         <properties>
             <!-- intentionally using worse case so that we can optimise for this -->
             <property name="hibernate.archive.autodetection" value="class, hbm"/>
 
             <!-- Connection specific -->
-            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
-
-            <!-- Tuning and debugging -->
-            <property name="hibernate.connection.pool_size" value="2"/>
-            <property name="hibernate.show_sql" value="false"/>
-            <property name="hibernate.format_sql" value="false"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
 
             <!--
                 Optimistically create the tables;

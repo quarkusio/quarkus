@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+
+include 'runner', 'runner-with-exclude', 'runner-with-explicit-import', 'scenario-two'

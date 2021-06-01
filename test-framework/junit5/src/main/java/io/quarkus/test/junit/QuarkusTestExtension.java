@@ -4,7 +4,6 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLo
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
@@ -39,6 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Alternative;
@@ -76,8 +77,9 @@ import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.PathsCollection;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
@@ -127,6 +129,7 @@ public class QuarkusTestExtension
     private static Object actualTestInstance;
     private static ClassLoader originalCl;
     private static RunningQuarkusApplication runningQuarkusApplication;
+    private static Pattern clonePattern;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
     private static List<Object> beforeClassCallbacks;
@@ -276,11 +279,12 @@ public class QuarkusTestExtension
             if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
                 QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
                 if (model != null) {
-                    final Set<File> classDirectories = model.getWorkspace().getMainModule().getSourceSet()
-                            .getSourceDirectories();
-                    for (File classes : classDirectories) {
-                        if (classes.exists() && !rootBuilder.contains(classes.toPath())) {
-                            rootBuilder.add(classes.toPath());
+                    final PathsCollection classDirectories = PathsUtils
+                            .toPathsCollection(model.getWorkspace().getMainModule().getSourceSet()
+                                    .getSourceDirectories());
+                    for (Path classes : classDirectories) {
+                        if (Files.exists(classes) && !rootBuilder.contains(classes)) {
+                            rootBuilder.add(classes);
                         }
                     }
                 }
@@ -343,6 +347,9 @@ public class QuarkusTestExtension
             populateCallbacks(startupAction.getClassLoader());
 
             runningQuarkusApplication = startupAction.run();
+            String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
+                    .orElse("java\\..*");
+            clonePattern = Pattern.compile(patternString);
             TracingHandler.quarkusStarted();
 
             //now we have full config reset the hang timer
@@ -951,7 +958,36 @@ public class QuarkusTestExtension
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();
             for (Object arg : originalArguments) {
-                argumentsFromTccl.add(deepClone.clone(arg));
+                boolean cloneRequired = false;
+                if (arg != null) {
+                    Class theclass = arg.getClass();
+                    while (theclass.isArray()) {
+                        theclass = theclass.getComponentType();
+                    }
+                    String className = theclass.getName();
+                    if (theclass.isPrimitive()) {
+                        cloneRequired = false;
+                    } else if (clonePattern.matcher(className).matches()) {
+                        cloneRequired = true;
+                    } else {
+                        try {
+                            cloneRequired = runningQuarkusApplication.getClassLoader()
+                                    .loadClass(theclass.getName()) != theclass;
+                        } catch (ClassNotFoundException e) {
+                            if (arg instanceof Supplier) {
+                                cloneRequired = true;
+                            } else {
+                                throw e;
+                            }
+                        }
+                    }
+                }
+
+                if (cloneRequired) {
+                    argumentsFromTccl.add(deepClone.clone(arg));
+                } else {
+                    argumentsFromTccl.add(arg);
+                }
             }
 
             return newMethod.invoke(actualTestInstance, argumentsFromTccl.toArray(new Object[0]));
@@ -1087,6 +1123,7 @@ public class QuarkusTestExtension
                     log.error("Failed to shutdown Quarkus", e);
                 } finally {
                     runningQuarkusApplication = null;
+                    clonePattern = null;
                     try {
                         if (QuarkusTestExtension.this.originalCl != null) {
                             setCCL(QuarkusTestExtension.this.originalCl);

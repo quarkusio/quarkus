@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
@@ -40,7 +41,7 @@ public class TestSupport implements TestController {
     volatile Pattern exclude = null;
     volatile boolean displayTestOutput;
     volatile Boolean explicitDisplayTestOutput;
-    volatile boolean failingTestsOnly;
+    volatile boolean brokenOnlyMode;
     volatile TestType testType = TestType.ALL;
 
     public TestSupport(CuratedApplication curatedApplication, List<CompilationProvider> compilationProviders,
@@ -132,6 +133,13 @@ public class TestSupport implements TestController {
                         .bootstrap();
                 compiler = new QuarkusCompiler(testCuratedApplication, compilationProviders, context);
                 testRunner = new TestRunner(this, context, testCuratedApplication);
+                QuarkusClassLoader cl = (QuarkusClassLoader) getClass().getClassLoader();
+                cl.addCloseTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        testCuratedApplication.close();
+                    }
+                });
 
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -249,19 +257,19 @@ public class TestSupport implements TestController {
     @Override
     public boolean toggleBrokenOnlyMode() {
 
-        failingTestsOnly = !failingTestsOnly;
+        brokenOnlyMode = !brokenOnlyMode;
 
-        if (failingTestsOnly) {
+        if (brokenOnlyMode) {
             log.info("Broken only mode enabled");
         } else {
             log.info("Broken only mode disabled");
         }
 
         for (TestListener i : testListeners) {
-            i.setBrokenOnly(failingTestsOnly);
+            i.setBrokenOnly(brokenOnlyMode);
         }
 
-        return failingTestsOnly;
+        return brokenOnlyMode;
     }
 
     @Override
@@ -311,7 +319,7 @@ public class TestSupport implements TestController {
 
     @Override
     public boolean isBrokenOnlyMode() {
-        return failingTestsOnly;
+        return brokenOnlyMode;
     }
 
     @Override

@@ -20,6 +20,7 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <dokka.version>1.4.32</dokka.version>
         <kotlin.version>1.4.32</kotlin.version>
         <scala.version>2.12.13</scala.version>
         <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
@@ -64,7 +65,7 @@
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
         <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
-        <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
+        <microprofile-reactive-messaging-api.version>2.0</microprofile-reactive-messaging-api.version>
         <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
         <microprofile-open-api.version>2.0.1-RC1</microprofile-open-api.version>
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
@@ -87,7 +88,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:13.0.0</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:12.0.3</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 
@@ -571,7 +572,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <version>1.6.2</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache</cachedir>
@@ -624,6 +625,7 @@
                     <artifactId>kotlin-maven-plugin</artifactId>
                     <version>${kotlin.version}</version>
                     <configuration>
+                        <javaParameters>true</javaParameters>
                         <jvmTarget>${maven.compiler.release}</jvmTarget>
                     </configuration>
                 </plugin>
@@ -782,6 +784,46 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>dokka</id>
+            <activation>
+                <property>
+                    <name>dokka</name>
+                </property>
+                <jdk>[,16)</jdk>
+                <file>
+                    <exists>src/main/kotlin</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jetbrains.dokka</groupId>
+                        <artifactId>dokka-maven-plugin</artifactId>
+                        <version>${dokka.version}</version>
+                        <executions>
+                            <execution>
+                                <id>dokka</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>javadocJar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <jdkVersion>11</jdkVersion>
+                            <outputFormat>html</outputFormat>
+                            <externalDocumentationLinks>
+                                <link>
+                                    <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
+                                    <url>https://docs.oracle.com/en/java/javase/11/docs/api/</url>
+                                </link>
+                            </externalDocumentationLinks>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

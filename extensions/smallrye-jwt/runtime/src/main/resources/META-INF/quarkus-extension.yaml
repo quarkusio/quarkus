@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye JWT"
+metadata:
+  keywords:
+  - "smallrye-jwt"
+  - "jwt"
+  - "json-web-token"
+  - "rbac"
+  guide: "https://quarkus.io/guides/security-jwt"
+  categories:
+  - "web"
+  - "security"
+  status: "stable"

@@ -73,6 +73,19 @@ class BuildIT extends MojoTestBase {
     }
 
     @Test
+    void testClassLoaderLinkageError()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/classloader-linkage-error", "projects/classloader-linkage-error-build");
+        build();
+        for (TestContext context : TestContext.values()) {
+            if (context == TestContext.FAST_NO_PREFIX) {
+                continue;
+            }
+            launch(context, "", "hello");
+        }
+    }
+
+    @Test
     void testModuleWithBuildProfileInProperty() throws MavenInvocationException, InterruptedException, IOException {
         testDir = initProject("projects/build-mode-quarkus-profile-property");
         build();
@@ -103,10 +116,21 @@ class BuildIT extends MojoTestBase {
     }
 
     @Test
-    public void testModulesInProfiles()
+    void testModulesInProfiles()
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/modules-in-profiles");
         build("-Dquarkus.bootstrap.effective-model-builder");
+    }
+
+    @Test
+    void testMultiBuildModeLaunchedInParallel() throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/multi-build-mode-parallel");
+        build(true);
+
+        launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-1"), "foo-1-", "Hello foo 1");
+        launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-1"), "bar-1-", "Hello bar 1");
+        launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-2"), "foo-2-", "Hello foo 2");
+        launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-2"), "bar-2-", "Hello bar 2");
     }
 
     private void launch() throws IOException {
@@ -114,6 +138,10 @@ class BuildIT extends MojoTestBase {
     }
 
     private void launch(TestContext context, String outputPrefix, String expectedMessage) throws IOException {
+        launch(context, testDir, outputPrefix, expectedMessage);
+    }
+
+    private void launch(TestContext context, File testDir, String outputPrefix, String expectedMessage) throws IOException {
         File output = new File(testDir, String.format("target/%s%soutput.log", context.prefix, outputPrefix));
         output.createNewFile();
         Process process = JarRunnerIT
@@ -129,8 +157,12 @@ class BuildIT extends MojoTestBase {
     }
 
     private void build(String... arg) throws MavenInvocationException, InterruptedException, IOException {
+        build(false, arg);
+    }
+
+    private void build(boolean parallel, String... arg) throws MavenInvocationException, InterruptedException, IOException {
         assertThat(testDir).isDirectory();
-        running = new RunningInvoker(testDir, false);
+        running = new RunningInvoker(testDir, false, parallel);
 
         final List<String> args = new ArrayList<>(2);
         args.add("package");

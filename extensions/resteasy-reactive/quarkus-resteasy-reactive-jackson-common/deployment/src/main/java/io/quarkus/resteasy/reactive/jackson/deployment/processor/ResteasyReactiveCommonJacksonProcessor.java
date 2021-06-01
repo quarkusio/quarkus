@@ -28,19 +28,23 @@ public class ResteasyReactiveCommonJacksonProcessor {
     @BuildStep
     void handleJsonAnnotations(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             CombinedIndexBuildItem index,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
+            BuildProducer<JacksonFeatureBuildItem> jacksonFeaturesProducer) {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
         Collection<ClassInfo> resourceClasses = resourceScanningResultBuildItem.get().getResult().getScannedResources()
                 .values();
         Set<String> classesNeedingReflectionOnMethods = new HashSet<>();
+        Set<JacksonFeatureBuildItem.Feature> jacksonFeatures = new HashSet<>();
         for (ClassInfo resourceClass : resourceClasses) {
             DotName resourceClassDotName = resourceClass.name();
             if (resourceClass.annotations().containsKey(JSON_VIEW)) {
                 classesNeedingReflectionOnMethods.add(resourceClassDotName.toString());
+                jacksonFeatures.add(JacksonFeatureBuildItem.Feature.JSON_VIEW);
             } else if (resourceClass.annotations().containsKey(CUSTOM_SERIALIZATION)) {
                 classesNeedingReflectionOnMethods.add(resourceClassDotName.toString());
+                jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
                 for (AnnotationInstance instance : resourceClass.annotations().get(CUSTOM_SERIALIZATION)) {
                     AnnotationValue annotationValue = instance.value();
                     if (annotationValue != null) {
@@ -54,15 +58,20 @@ public class ResteasyReactiveCommonJacksonProcessor {
                                         "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
                             }
                         }
-                        reflectiveClass.produce(
+                        reflectiveClassProducer.produce(
                                 new ReflectiveClassBuildItem(true, false, false, biFunctionType.name().toString()));
                     }
                 }
             }
         }
         if (!classesNeedingReflectionOnMethods.isEmpty()) {
-            reflectiveClass.produce(
+            reflectiveClassProducer.produce(
                     new ReflectiveClassBuildItem(true, false, classesNeedingReflectionOnMethods.toArray(new String[0])));
+        }
+        if (!jacksonFeatures.isEmpty()) {
+            for (JacksonFeatureBuildItem.Feature jacksonFeature : jacksonFeatures) {
+                jacksonFeaturesProducer.produce(new JacksonFeatureBuildItem(jacksonFeature));
+            }
         }
     }
 }

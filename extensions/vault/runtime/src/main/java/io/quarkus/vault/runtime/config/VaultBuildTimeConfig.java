@@ -15,10 +15,17 @@ public class VaultBuildTimeConfig {
     @ConfigDocSection
     public HealthConfig health;
 
+    /**
+     * Dev services configuration.
+     */
+    @ConfigItem
+    public DevServicesConfig devservices;
+
     @Override
     public String toString() {
         return "VaultBuildTimeConfig{" +
                 "health=" + health +
+                ", devservices=" + devservices +
                 '}';
     }
 }

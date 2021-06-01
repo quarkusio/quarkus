@@ -1,0 +1,10 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Apache Avro"
+metadata:
+  keywords:
+  - "avro"
+  guide: "https://quarkus.io/guides/kafka"
+  categories:
+  - "serialization"
+  status: "experimental"

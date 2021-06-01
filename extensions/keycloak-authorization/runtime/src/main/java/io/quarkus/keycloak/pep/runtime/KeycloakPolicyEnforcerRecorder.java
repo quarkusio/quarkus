@@ -15,6 +15,7 @@ import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.Keyclo
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.TlsConfig;
@@ -27,9 +28,6 @@ public class KeycloakPolicyEnforcerRecorder {
 
     public Supplier<PolicyEnforcerResolver> setup(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
             TlsConfig tlsConfig, HttpConfiguration httpConfiguration) {
-        if (oidcConfig.defaultTenant.applicationType == OidcTenantConfig.ApplicationType.WEB_APP) {
-            throw new OIDCException("Application type [" + oidcConfig.defaultTenant.applicationType + "] is not supported");
-        }
         PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant, tlsConfig,
                 httpConfiguration);
         Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<String, PolicyEnforcer>();
@@ -53,6 +51,12 @@ public class KeycloakPolicyEnforcerRecorder {
     private static PolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
             KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
             TlsConfig tlsConfig, HttpConfiguration httpConfiguration) {
+
+        if (oidcConfig.applicationType == OidcTenantConfig.ApplicationType.WEB_APP
+                && oidcConfig.roles.source.orElse(null) != Source.accesstoken) {
+            throw new OIDCException("Application 'web-app' type is only supported if access token is the source of roles");
+        }
+
         AdapterConfig adapterConfig = new AdapterConfig();
         String authServerUrl = oidcConfig.getAuthServerUrl().get();
 

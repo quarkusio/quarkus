@@ -59,6 +59,37 @@ public class VertxConfiguration {
     public int internalBlockingPoolSize;
 
     /**
+     * The queue size. For most applications this should be unbounded
+     */
+    @ConfigItem
+    public OptionalInt queueSize;
+
+    /**
+     * The executor growth resistance.
+     *
+     * A resistance factor applied after the core pool is full; values applied here will cause that fraction
+     * of submissions to create new threads when no idle thread is available. A value of {@code 0.0f} implies that
+     * threads beyond the core size should be created as aggressively as threads within it; a value of {@code 1.0f}
+     * implies that threads beyond the core size should never be created.
+     */
+    @ConfigItem
+    public float growthResistance;
+
+    /**
+     * The amount of time a thread will stay alive with no work.
+     */
+    @ConfigItem(defaultValue = "30")
+    public Duration keepAliveTime;
+
+    /**
+     * Prefill thread pool when creating a new Executor.
+     * When {@see io.vertx.core.spi.ExecutorServiceFactory.createExecutor} is called,
+     * initialise with the number of defined threads at startup
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean prefill;
+
+    /**
      * Enables the async DNS resolver.
      */
     @ConfigItem

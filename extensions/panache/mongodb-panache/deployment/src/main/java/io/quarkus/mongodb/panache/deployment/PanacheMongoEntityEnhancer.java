@@ -7,12 +7,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
-import io.quarkus.mongodb.panache.deployment.visitors.PanacheMongoEntityClassAccessorGenerationVisitor;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
+import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassAccessorGenerationVisitor;
 import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassOperationGenerationVisitor;
 
 public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer {
@@ -31,7 +31,7 @@ public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer {
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         ClassInfo entityInfo = indexView.getClassByName(DotName.createSimple(className));
         EntityModel entityModel = modelInfo.getEntityModel(className);
-        outputClassVisitor = new PanacheMongoEntityClassAccessorGenerationVisitor(outputClassVisitor, entityInfo, entityModel);
+        outputClassVisitor = new PanacheEntityClassAccessorGenerationVisitor(outputClassVisitor, entityInfo, entityModel);
         return new PanacheEntityClassOperationGenerationVisitor(outputClassVisitor, typeBundle,
                 entityInfo, methodCustomizers, indexView);
     }

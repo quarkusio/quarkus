@@ -5,11 +5,12 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
+import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import java.io.Closeable;
@@ -52,10 +53,11 @@ public class IDELauncherImpl implements Closeable {
                 for (WorkspaceModule additionalModule : quarkusModel.getWorkspace().getAllModules()) {
                     if (!additionalModule.getArtifactCoords().equals(launchingModule.getArtifactCoords())) {
                         builder.addAdditionalApplicationArchive(new AdditionalDependency(
-                                QuarkusModelHelper.toPathsCollection(additionalModule.getSourceSet().getSourceDirectories()),
+                                PathsUtils.toPathsCollection(additionalModule.getSourceSet().getSourceDirectories()),
                                 true, false));
                         builder.addAdditionalApplicationArchive(new AdditionalDependency(
-                                additionalModule.getSourceSet().getResourceDirectory().toPath(), true, false));
+                                PathsUtils.toPathsCollection(additionalModule.getSourceSet().getResourceDirectories()),
+                                true, false));
                     }
                 }
             } else {

@@ -6,7 +6,6 @@ import java.util.function.Supplier;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations;
-import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
@@ -23,7 +22,7 @@ public class Panache {
      * @return the current {@link Mutiny.Session}
      */
     public static Mutiny.Session getSession() {
-        return JpaOperations.getSession();
+        return AbstractJpaOperations.getSession();
     }
 
     /**
@@ -70,5 +69,14 @@ public class Panache {
      */
     public static Uni<Integer> executeUpdate(String query, Parameters params) {
         return AbstractJpaOperations.executeUpdate(query, params.map());
+    }
+
+    /**
+     * Flush all pending changes to the database.
+     *
+     * @return void
+     */
+    public static Uni<Void> flush() {
+        return getSession().flush();
     }
 }

@@ -161,7 +161,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         // so the Maven resolver will succeed resolving it from the repo.
         // If the artifact does not exist in the local repo, we are creating an empty classes directory in the target directory.
         if (!Files.exists(lp.getSourcesSourcesDir())
-                && !Files.exists(lp.getResourcesSourcesDir())
+                && lp.getResourcesSourcesDirs().toList().stream().noneMatch(Files::exists)
                 && !isFoundInLocalRepo(artifact)) {
             try {
                 final Path classesDir = lp.getClassesDir();

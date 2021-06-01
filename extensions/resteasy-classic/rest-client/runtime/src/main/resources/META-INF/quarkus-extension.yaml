@@ -1,0 +1,11 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "REST Client"
+metadata:
+  keywords:
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  guide: "https://quarkus.io/guides/rest-client"
+  categories:
+  - "web"

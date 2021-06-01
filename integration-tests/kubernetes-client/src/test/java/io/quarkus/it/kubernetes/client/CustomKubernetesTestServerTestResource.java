@@ -40,7 +40,7 @@ public class CustomKubernetesTestServerTestResource extends KubernetesServerTest
                 .addToData("application.properties", encodeValue("secret.prop3=val3"))
                 .addToData("application.yaml", encodeValue("secret:\n  prop4: val4")).build());
 
-        server.getClient().inNamespace("test").secrets().create(secretBuilder("s1")
+        server.getClient().inNamespace("test").secrets().createOrReplace(secretBuilder("s1")
                 .addToData("dummysecret", encodeValue("dummysecretFromDemo"))
                 .addToData("overridden.secret", encodeValue("secretFromDemo"))
                 .addToData("secret.prop1", encodeValue("val1FromDemo"))

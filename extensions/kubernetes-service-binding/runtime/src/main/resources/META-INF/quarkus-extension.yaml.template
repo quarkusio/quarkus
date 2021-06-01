@@ -1,8 +1,0 @@
----
-name: "Kubernetes Service Binding"
-metadata:
-  keywords:
-  - "kubernetes-service-binding"
-  categories:
-  - "cloud"
-  status: "preview"

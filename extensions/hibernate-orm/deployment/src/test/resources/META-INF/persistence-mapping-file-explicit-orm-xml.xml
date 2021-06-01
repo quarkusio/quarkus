@@ -1,0 +1,28 @@
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1">
+
+    <persistence-unit name="templatePU" transaction-type="JTA">
+
+        <description>Hibernate test case template Persistence Unit</description>
+
+        <mapping-file>META-INF/my-orm.xml</mapping-file>
+
+        <class>io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity</class>
+
+        <properties>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+
+            <!--
+                Optimistically create the tables;
+                will cause background errors being logged if they already exist,
+                but is practical to retain existing data across runs (or create as needed) -->
+            <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+
+            <property name="javax.persistence.validation.mode" value="NONE"/>
+        </properties>
+
+    </persistence-unit>
+</persistence>

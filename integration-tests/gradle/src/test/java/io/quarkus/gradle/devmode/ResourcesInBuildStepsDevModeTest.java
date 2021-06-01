@@ -19,6 +19,11 @@ public class ResourcesInBuildStepsDevModeTest extends QuarkusDevGradleTestBase {
         return new String[] { "clean", ":application:quarkusDev", "-s" };
     }
 
+    @Override
+    protected void beforeQuarkusDev() throws Exception {
+        runGradleWrapper(projectDir, ":application:publishAcmeExt");
+    }
+
     protected void testDevMode() throws Exception {
 
         assertThat(getHttpResponse()).contains("homepage");

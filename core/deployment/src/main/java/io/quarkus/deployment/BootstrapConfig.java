@@ -17,4 +17,15 @@ public class BootstrapConfig {
     @ConfigItem(defaultValue = "false")
     boolean effectiveModelBuilder;
 
+    /**
+     * Whether to throw an error, warn or silently ignore misaligned platform BOM imports
+     */
+    @ConfigItem(defaultValue = "error")
+    public MisalignedPlatformImports misalignedPlatformImports;
+
+    public enum MisalignedPlatformImports {
+        ERROR,
+        WARN,
+        IGNORE;
+    }
 }

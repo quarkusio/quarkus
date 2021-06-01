@@ -1,9 +1,0 @@
----
-name: "Elytron Security Properties File"
-metadata:
-  keywords:
-  - "security"
-  categories:
-    - "security"
-  status: "stable"
-  guide: "https://quarkus.io/guides/security-properties"

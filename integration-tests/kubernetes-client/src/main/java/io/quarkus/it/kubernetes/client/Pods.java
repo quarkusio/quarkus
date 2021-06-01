@@ -53,7 +53,8 @@ public class Pods {
         final Pod pod = pods.get(0);
         final String podName = pod.getMetadata().getName();
         // would normally do some kind of meaningful update here
-        Pod updatedPod = new PodBuilder().withNewMetadata().withName(podName).withNewResourceVersion("12345")
+        Pod updatedPod = new PodBuilder().withNewMetadata().withName(podName)
+                .addToAnnotations("test-reference", "12345")
                 .addToLabels("key1", "value1").endMetadata()
                 .build();
 
@@ -67,7 +68,8 @@ public class Pods {
         return Response
                 .ok(kubernetesClient.pods().inNamespace(namespace)
                         .create(new PodBuilder().withNewMetadata()
-                                .withName(UUID.randomUUID().toString()).withResourceVersion("12345")
+                                .withName(UUID.randomUUID().toString())
+                                .addToAnnotations("test-reference", "12345")
                                 .endMetadata().build()))
                 .build();
     }

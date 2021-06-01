@@ -1,0 +1,9 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Kubernetes Service Binding"
+metadata:
+  keywords:
+  - "kubernetes-service-binding"
+  categories:
+  - "cloud"
+  status: "preview"

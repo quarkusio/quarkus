@@ -23,9 +23,7 @@ public class VertxInjectionTest {
                 .statusCode(200)
                 .body(containsString("hello"));
 
-        System.out.println("Modification");
         TEST.modifySourceFile("VertxEventBusConsumer.java", s -> s.replace("hello", "bonjour"));
-        System.out.println("After");
         RestAssured.get("/").then()
                 .statusCode(200)
                 .body(containsString("bonjour"));

@@ -102,17 +102,17 @@ public class ReactiveHttpProcessor {
                     .map(HttpStreamConfig::path)
                     .distinct()
                     .forEach(path -> {
-                        routeProducer.produce(new RouteBuildItem(path, bodyHandler.getHandler()));
-                        routeProducer.produce(new RouteBuildItem(path, handler));
+                        routeProducer.produce(RouteBuildItem.builder().route(path).handler(bodyHandler.getHandler()).build());
+                        routeProducer.produce(RouteBuildItem.builder().route(path).handler(handler).build());
                     });
         }
         if (!wsConfigs.isEmpty()) {
-            Handler<RoutingContext> handler = recorder.createWebSocketeHandler();
+            Handler<RoutingContext> handler = recorder.createWebSocketHandler();
 
             wsConfigs.stream()
                     .map(WebSocketStreamConfig::path)
                     .distinct()
-                    .forEach(path -> routeProducer.produce(new RouteBuildItem(path, handler)));
+                    .forEach(path -> routeProducer.produce(RouteBuildItem.builder().route(path).handler(handler).build()));
         }
 
         initSerializers(ReactiveHttpConfig.readSerializers(), generatedBeanProducer);

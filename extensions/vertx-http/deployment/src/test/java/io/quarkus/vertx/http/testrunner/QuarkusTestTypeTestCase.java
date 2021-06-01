@@ -19,7 +19,7 @@ public class QuarkusTestTypeTestCase {
             .setArchiveProducer(new Supplier<JavaArchive>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class)
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class)
                             .add(new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.type=quarkus-test")),
                                     "application.properties");
                 }

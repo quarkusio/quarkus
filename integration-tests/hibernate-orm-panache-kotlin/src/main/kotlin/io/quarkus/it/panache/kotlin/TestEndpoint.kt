@@ -38,6 +38,9 @@ class TestEndpoint {
     @Path("model")
     @Transactional
     fun testModel(): String {
+        Person.flush()
+        Assertions.assertNotNull(Person.getEntityManager());
+
         Assertions.assertDoesNotThrow {
             Person.findById(Long.MIN_VALUE)
         }
@@ -473,6 +476,9 @@ class TestEndpoint {
     @Path("model-dao")
     @Transactional
     fun testModelDao(): String {
+        personRepository.flush()
+        Assertions.assertNotNull(personRepository.getEntityManager());
+
         var persons = personRepository.findAll().list()
         Assertions.assertEquals(0, persons.size)
 

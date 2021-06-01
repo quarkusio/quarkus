@@ -129,7 +129,7 @@ public class PrimeNumberChecker {
             return "1 is not prime.";
         }
         if (number == 2) {
-                    return "2 is prime.";
+            return "2 is prime.";
         }
         if (number % 2 == 0) {
             return number + " is not prime, it is divisible by 2.";

@@ -1,9 +1,0 @@
----
-name: "JGit"
-metadata:
-  keywords:
-  - "git"
-  categories:
-  - "miscellaneous"
-  guide: "https://quarkus.io/guides/jgit"
-  status: "stable"

@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Logging Sentry"
+metadata:
+  keywords:
+  - "logging"
+  - "sentry"
+  - "cloud"
+  categories:
+  - "core"
+  status: "preview"
+  guide: "https://quarkus.io/guides/logging-sentry"

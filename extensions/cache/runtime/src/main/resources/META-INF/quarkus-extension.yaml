@@ -1,0 +1,11 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Cache"
+metadata:
+  keywords:
+  - "cache"
+  - "caching"
+  guide: "https://quarkus.io/guides/cache"
+  categories:
+  - "data"
+  status: "preview"

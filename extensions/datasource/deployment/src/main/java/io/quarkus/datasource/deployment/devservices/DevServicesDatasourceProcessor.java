@@ -25,6 +25,7 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -53,6 +54,7 @@ public class DevServicesDatasourceProcessor {
             LaunchModeBuildItem launchMode,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefaultBuildItemBuildProducer,
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configurationHandlerBuildItems,
+            BuildProducer<DevServicesNativeConfigResultBuildItem> devServicesResultBuildItemBuildProducer,
             BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer) {
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
@@ -170,6 +172,19 @@ public class DevServicesDatasourceProcessor {
         }
         databases = closeableList;
         cachedProperties = propertiesMap;
+
+        if (defaultResult != null) {
+            for (Map.Entry<String, String> entry : defaultResult.getConfigProperties().entrySet()) {
+                devServicesResultBuildItemBuildProducer
+                        .produce(new DevServicesNativeConfigResultBuildItem(entry.getKey(), entry.getValue()));
+            }
+        }
+        for (DevServicesDatasourceResultBuildItem.DbResult i : namedResults.values()) {
+            for (Map.Entry<String, String> entry : i.getConfigProperties().entrySet()) {
+                devServicesResultBuildItemBuildProducer
+                        .produce(new DevServicesNativeConfigResultBuildItem(entry.getKey(), entry.getValue()));
+            }
+        }
         return new DevServicesDatasourceResultBuildItem(defaultResult, namedResults);
     }
 

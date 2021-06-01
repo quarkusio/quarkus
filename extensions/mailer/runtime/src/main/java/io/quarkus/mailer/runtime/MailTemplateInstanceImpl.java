@@ -74,6 +74,12 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     }
 
     @Override
+    public MailTemplateInstance replyTo(String... replyTo) {
+        this.mail.setReplyTo(replyTo);
+        return this;
+    }
+
+    @Override
     public MailTemplateInstance bounceAddress(String bounceAddress) {
         this.mail.setBounceAddress(bounceAddress);
         return this;

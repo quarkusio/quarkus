@@ -1,0 +1,16 @@
+name: "Picocli"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "picocli"
+  - "command-line"
+  guide: "https://quarkus.io/guides/picocli"
+  categories:
+  - "miscellaneous"
+  status: "experimental"
+  codestart:
+    name: "picocli"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

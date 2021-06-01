@@ -179,7 +179,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                         if (basePath.endsWith("/")) {
                             fullPath += subPath;
                         } else {
-                            fullPath = basePath + "/" + subPath;
+                            fullPath = basePath + (subPath.startsWith("/") ? "" : "/") + subPath;
                         }
                     }
                     description.addMethod(fullPath, method);

@@ -60,7 +60,7 @@ public class KnativeWithSecretConfigTest {
                     assertThat(((Service) s).getSpec()).satisfies(serviceSpec -> {
                         assertThat(serviceSpec.getTemplate()).satisfies(revisionTemplateSpec -> {
                             assertThat(revisionTemplateSpec.getSpec()).satisfies(revisionSpec -> {
-                                assertThat(revisionSpec.getServiceAccount()).isEqualTo("knative-with-secret-config");
+                                assertThat(revisionSpec.getServiceAccountName()).isEqualTo("knative-with-secret-config");
                             });
                         });
                     });

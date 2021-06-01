@@ -15,6 +15,8 @@ import io.quarkus.scheduler.Scheduled.Schedules;
 /**
  * Marks a business method to be automatically scheduled and invoked by the container.
  * <p>
+ * The target business method must be non-private and non-static.
+ * <p>
  * The schedule is defined either by {@link #cron()} or by {@link #every()} attribute. If both are specified, the cron
  * expression takes precedence.
  *

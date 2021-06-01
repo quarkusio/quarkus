@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "AWS Lambda HTTP"
+metadata:
+  keywords:
+  - "lambda"
+  - "aws"
+  - "amazon"
+  - "http"
+  - "rest"
+  categories:
+  - "cloud"
+  guide: "https://quarkus.io/guides/amazon-lambda-http"
+  status: "preview"

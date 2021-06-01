@@ -197,19 +197,19 @@ class RequestContext implements ManagedContext {
     private static Notifier<Object> createInitializedNotifier() {
         return EventImpl.createNotifier(Object.class, Object.class,
                 new HashSet<>(Arrays.asList(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance());
+                ArcContainerImpl.instance(), false);
     }
 
     private static Notifier<Object> createBeforeDestroyedNotifier() {
         return EventImpl.createNotifier(Object.class, Object.class,
                 new HashSet<>(Arrays.asList(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance());
+                ArcContainerImpl.instance(), false);
     }
 
     private static Notifier<Object> createDestroyedNotifier() {
         return EventImpl.createNotifier(Object.class, Object.class,
                 new HashSet<>(Arrays.asList(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance());
+                ArcContainerImpl.instance(), false);
     }
 
     static class RequestContextState implements ContextState {

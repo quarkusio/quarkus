@@ -54,8 +54,11 @@ public final class CodestartData {
     }
 
     public static Map<String, Object> buildDependenciesData(Stream<Codestart> codestartsStream, String languageName,
-            Collection<String> extensions) {
+            Collection<String> extensions, Collection<String> platforms) {
         final Map<String, Set<CodestartDep>> depsData = new HashMap<>();
+        final Set<CodestartDep> boms = platforms.stream()
+                .map(CodestartDep::new)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         final Set<CodestartDep> dependencies = extensions.stream()
                 .map(CodestartDep::new)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -67,6 +70,7 @@ public final class CodestartData {
                     testDependencies.addAll(d.getTestDependencies());
                 });
         depsData.put("dependencies", dependencies);
+        depsData.put("boms", boms);
         depsData.put("test-dependencies", testDependencies);
         return Collections.unmodifiableMap(depsData);
     }

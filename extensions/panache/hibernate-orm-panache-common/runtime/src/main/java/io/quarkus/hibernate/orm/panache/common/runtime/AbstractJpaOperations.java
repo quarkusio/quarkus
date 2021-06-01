@@ -45,13 +45,13 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
      *
      * @return {@link EntityManager}
      */
-    public static EntityManager getEntityManager(Class<?> clazz) {
+    public EntityManager getEntityManager(Class<?> clazz) {
         String clazzName = clazz.getName();
         String persistentUnitName = entityToPersistenceUnit.get(clazzName);
         return getEntityManager(persistentUnitName);
     }
 
-    public static EntityManager getEntityManager(String persistentUnitName) {
+    public EntityManager getEntityManager(String persistentUnitName) {
         ArcContainer arcContainer = Arc.container();
         if (persistentUnitName == null || PersistenceUnitUtil.isDefaultPersistenceUnit(persistentUnitName)) {
             InstanceHandle<EntityManager> emHandle = arcContainer.instance(EntityManager.class);
@@ -83,7 +83,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                         + persistentUnitName + "\".packages' property?");
     }
 
-    public static EntityManager getEntityManager() {
+    public EntityManager getEntityManager() {
         return getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME);
     }
     //
@@ -130,8 +130,12 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         getEntityManager().flush();
     }
 
-    public void flush(Object entityClass) {
-        getEntityManager(entityClass.getClass()).flush();
+    public void flush(Object entity) {
+        getEntityManager(entity.getClass()).flush();
+    }
+
+    public void flush(Class<?> clazz) {
+        getEntityManager(clazz).flush();
     }
     //
     // Private stuff
@@ -385,7 +389,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     /**
      * Execute update on default persistence unit
      */
-    public static int executeUpdate(String query, Object... params) {
+    public int executeUpdate(String query, Object... params) {
         Query jpaQuery = getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME).createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
@@ -394,7 +398,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     /**
      * Execute update on default persistence unit
      */
-    public static int executeUpdate(String query, Map<String, Object> params) {
+    public int executeUpdate(String query, Map<String, Object> params) {
         Query jpaQuery = getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME).createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();

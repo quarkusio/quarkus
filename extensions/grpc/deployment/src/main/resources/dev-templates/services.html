@@ -1,0 +1,75 @@
+{#include main}
+  {#style}
+   span.app-class {
+     cursor:pointer;
+     color:blue;
+     text-decoration:underline;
+   }
+   span.larger-badge {
+     font-size: 1em;
+   }
+  {/style}
+  {#script}
+        $(document).ready(function(){
+          if (!ideKnown()) {
+            return;
+          }
+          $(".class-candidate").each(function() {
+            var className = $(this).text();
+            if (appClassLang(className)) {
+              $(this).addClass("app-class");
+            }
+          });
+    
+          $(".app-class").on("click", function() {
+            openInIDE($(this).text());
+          });
+        });
+  {/script}
+  {#title}Services{/title}
+  {#body}
+  <table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Name and Status</th>
+      <th scope="col">Implementation Class</th>
+      <th scope="col">Methods</th>
+      <th scope="col"></th>
+    </tr>
+   </thead>
+   <tbody>
+   {#for service in info:grpcServices.infos}
+    <tr>
+      <td>{count}.</td>
+      <td>
+      {#when service.status}
+        {#is SERVING}
+        <span class="badge badge-success larger-badge" title="{service.status}"><i class="fas fa-check-circle badge-success"></i></span>
+        {#is NOT_SERVING}
+        <span class="badge badge-danger larger-badge" title="{service.status}"><i class="fas fa-exclamation-circle"></i></span>
+        {#is in UNKNOWN UNRECOGNIZED}
+        <span class="badge badge-secondary larger-badge" title="{service.status}"><i class="fas fa-question-circle"></i></span>
+      {/when}
+      {service.name}
+      </td>
+      <td>
+        <span class="class-candidate">{service.serviceClass}</span>
+      </td>
+      <td>
+          <ul>
+          {#each service.methodsWithPrototypes}
+            <li><span class="badge badge-dark">{it.type}</span> {it.bareMethodName}</li>
+          {/each}
+          <ul>
+      </td>
+      <td>
+        {#if service.hasTestableMethod} 
+        <a href="/q/dev/io.quarkus.quarkus-grpc/service?name={service.name}"><i class="fas fa-tools"></i> Test</a>
+        {/if}
+      </td>
+    {/for}
+   </tbody>
+  </table>
+  {/body}
+{/include}

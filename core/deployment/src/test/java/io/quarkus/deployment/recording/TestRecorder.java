@@ -59,6 +59,10 @@ public class TestRecorder {
         RESULT.add(bean);
     }
 
+    public void bean(TestJavaBeanWithBoolean bean) {
+        RESULT.add(bean);
+    }
+
     public void bean(NonSerializable bean) {
         RESULT.add(bean);
     }

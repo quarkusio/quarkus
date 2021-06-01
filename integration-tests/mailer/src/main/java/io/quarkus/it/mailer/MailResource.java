@@ -9,7 +9,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.mailer.Mail;
+import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.Mailer;
+import io.quarkus.qute.CheckedTemplate;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 
@@ -22,6 +24,11 @@ public class MailResource {
 
     @Inject
     Vertx vertx;
+
+    @CheckedTemplate
+    static class Templates {
+        public static native MailTemplate.MailTemplateInstance hello(String name);
+    }
 
     /**
      * Send a simple text email.
@@ -73,4 +80,32 @@ public class MailResource {
                 .addTo("nobody@example.com"));
         return "ok";
     }
+
+    /**
+     * Send a text email from template.
+     */
+    @GET
+    @Path("/text-from-template")
+    public String sendEmailFromTemplate() {
+        Templates.hello("John")
+                .subject("template mail")
+                .to("nobody@quarkus.io")
+                .send()
+                .await().indefinitely();
+        return "ok";
+    }
+
+    /**
+     * Send a simple text email with custom header.
+     */
+    @GET
+    @Path("/text-with-headers")
+    public String sendSimpleTextEmailWithCustomHeader() {
+        mailer.send(Mail.withText("nobody@quarkus.io",
+                "simple test email",
+                "This is a simple test email.\nRegards,\nRoger the robot")
+                .addHeader("Accept", "http"));
+        return "ok";
+    }
+
 }

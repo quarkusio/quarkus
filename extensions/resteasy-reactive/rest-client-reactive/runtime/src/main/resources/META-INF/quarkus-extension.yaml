@@ -1,0 +1,18 @@
+name: "REST Client Reactive"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "resteasy-reactive"
+  categories:
+  - "web"
+  status: "experimental"
+  codestart:
+    name: "resteasy-reactive"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

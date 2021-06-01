@@ -141,25 +141,29 @@ public class OidcClientRecorder {
                             throw new ConfigurationException(
                                     "OpenId Connect Provider token endpoint URL is not configured and can not be discovered");
                         }
-                        MultiMap tokenGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
-
                         String grantType = oidcConfig.grant.getType().getGrantType();
-                        setGrantClientParams(oidcConfig, tokenGrantParams, grantType);
 
-                        if (oidcConfig.getGrantOptions() != null) {
-                            Map<String, String> grantOptions = oidcConfig.getGrantOptions()
-                                    .get(oidcConfig.grant.getType().name().toLowerCase());
-                            if (grantOptions != null) {
-                                if (oidcConfig.grant.getType() == Grant.Type.PASSWORD) {
-                                    // Without this block `password` will be listed first, before `username`
-                                    // which is not a technical problem but might affect Wiremock tests or the endpoints
-                                    // which expect a specific order.
-                                    tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
-                                            grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
-                                    tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
-                                            grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
-                                } else {
-                                    tokenGrantParams.addAll(grantOptions);
+                        MultiMap tokenGrantParams = null;
+
+                        if (oidcConfig.grant.getType() != Grant.Type.REFRESH) {
+                            tokenGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+                            setGrantClientParams(oidcConfig, tokenGrantParams, grantType);
+
+                            if (oidcConfig.getGrantOptions() != null) {
+                                Map<String, String> grantOptions = oidcConfig.getGrantOptions()
+                                        .get(oidcConfig.grant.getType().name().toLowerCase());
+                                if (grantOptions != null) {
+                                    if (oidcConfig.grant.getType() == Grant.Type.PASSWORD) {
+                                        // Without this block `password` will be listed first, before `username`
+                                        // which is not a technical problem but might affect Wiremock tests or the endpoints
+                                        // which expect a specific order.
+                                        tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
+                                                grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
+                                        tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
+                                                grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
+                                    } else {
+                                        tokenGrantParams.addAll(grantOptions);
+                                    }
                                 }
                             }
                         }

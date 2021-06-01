@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings
+        xmlns="http://java.sun.com/xml/ns/persistence/orm"
+        version="2.0">
+
+    <description>Override Annotations...</description>
+
+    <entity class="io.quarkus.hibernate.orm.xml.orm.AnnotatedEntity" access="FIELD" metadata-complete="false">
+        <attributes>
+            <basic name="name">
+                <column name="thename" />
+            </basic>
+        </attributes>
+    </entity>
+</entity-mappings>

@@ -340,6 +340,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 
+        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_DELIMITER,
+                persistenceUnitConfig.scripts.generation.delimiter);
         runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_ACTION,
                 persistenceUnitConfig.scripts.generation.generation);
 

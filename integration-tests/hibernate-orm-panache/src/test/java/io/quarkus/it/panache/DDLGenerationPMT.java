@@ -3,6 +3,10 @@ package io.quarkus.it.panache;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -33,11 +37,16 @@ public class DDLGenerationPMT {
     private ProdModeTestResults prodModeTestResults;
 
     @Test
-    public void test() {
+    public void test() throws IOException {
         RestAssured.when().get("/no-paging-test").then().body(is("OK"));
 
-        assertThat(prodModeTestResults.getBuildDir().resolve("quarkus-app/create.sql").toFile()).exists();
-        assertThat(prodModeTestResults.getBuildDir().resolve("quarkus-app/drop.sql").toFile()).exists();
+        Path createSqlPath = prodModeTestResults.getBuildDir().resolve("quarkus-app/create.sql");
+        assertThat(createSqlPath.toFile()).exists();
+        assertThat(new String(Files.readAllBytes(createSqlPath))).contains("\n/");
+
+        Path dropSqlPath = prodModeTestResults.getBuildDir().resolve("quarkus-app/drop.sql");
+        assertThat(dropSqlPath.toFile()).exists();
+        assertThat(new String(Files.readAllBytes(dropSqlPath))).contains("\n/");
     }
 
 }

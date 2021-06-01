@@ -108,6 +108,12 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
         public String generation = "none";
 
         /**
+         * Specifies the statement delimiter to be used for the generated DDL scripts.
+         */
+        @ConfigItem(defaultValue = ";")
+        public String delimiter;
+
+        /**
          * Filename or URL where the database create DDL file should be generated.
          */
         @ConfigItem
@@ -121,6 +127,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
 
         public boolean isAnyPropertySet() {
             return !"none".equals(generation)
+                    || !";".equals(delimiter)
                     || createTarget.isPresent()
                     || dropTarget.isPresent();
         }

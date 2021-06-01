@@ -1548,11 +1548,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-mongodb-client-deployment-spi</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-mongodb-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2348,11 +2343,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vault-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vault-deployment-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -5170,12 +5160,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-redis-client-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-redis-client-deployment-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

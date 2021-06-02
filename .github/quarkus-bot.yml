@@ -461,6 +461,9 @@ triage:
     - labels: [area/continuous-testing]
       title: "continuous.testing"
       notify: [stuartwdouglas]
+    - labels: [area/testing]
+      title: "quarkusintegrationtest"
+      notify: [geoand]
     - labels: [area/devservices]
       title: "dev.?services"
       notify: [stuartwdouglas]

@@ -416,8 +416,8 @@ Previous versions of the Kubernetes extension supported a different syntax to ad
 |                               |`quarkus.kubernetes.env-vars.foo.value=field`          | `quarkus.kubernetes.env.mapping.foo.with-key=field` |
 |====
 
-NOTE: If you redefine the same variable using the new syntax while keeping the old syntax, **ONLY** the new version will be kept
-and a warning will be issued to alert you of the problem.For example, if you define both
+NOTE: If you redefine the same variable using the new syntax while keeping the old syntax, **ONLY** the new version will be kept.
+Additionally, a warning will be issued to alert you of the problem. For example, if you define both
 `quarkus.kubernetes.env-vars.my-env-var.value=foobar` and `quarkus.kubernetes.env.vars.my-env-var=newValue`, the extension will
 only generate an environment variable `MY_ENV_VAR=newValue` and issue a warning.
 
@@ -450,7 +450,7 @@ quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-secret
 
 ==== Passing application configuration
 
-Quarkus supports passing configuration from external locations (via Smallrye Config). This usually requires setting an additional environment variable or system propertiy.
+Quarkus supports passing configuration from external locations (via Smallrye Config). This usually requires setting an additional environment variable or system property.
 When you need to use a secret or a config map for the purpose of application configuration, you need to:
 
 - define a volume
@@ -622,51 +622,7 @@ Here are some examples:
 
 === Configuration options
 
-The table below describe all the available configuration options.
-
-.Kubernetes
-|====
-| Property                                           | Type                                      | Description | Default Value
-| quarkus.kubernetes.name                            | String                                    |             | ${quarkus.container-image.name}
-| quarkus.kubernetes.version                         | String                                    |             | ${quarkus.container-image.tag}
-| quarkus.kubernetes.part-of                         | String                                    |             |
-| quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             |
-| quarkus.kubernetes.namespace                       | String                                    |             |
-| quarkus.kubernetes.labels                          | Map                                       |             |
-| quarkus.kubernetes.annotations                     | Map                                       |             |
-| quarkus.kubernetes.app-secret                      | String                                    |             |
-| quarkus.kubernetes.app-config-map                  | String                                    |             |
-| quarkus.kubernetes.env-vars                        | Map<String, Env>                          |             |
-| quarkus.kubernetes.working-dir                     | String                                    |             |
-| quarkus.kubernetes.command                         | String[]                                  |             |
-| quarkus.kubernetes.arguments                       | String[]                                  |             |
-| quarkus.kubernetes.replicas                        | int                                       |             | 1
-| quarkus.kubernetes.service-account                 | String                                    |             |
-| quarkus.kubernetes.ports                           | Map<String, Port>                         |             |
-| quarkus.kubernetes.service-type                    | ServiceType                               |             | ClusterIP
-| quarkus.kubernetes.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
-| quarkus.kubernetes.secret-volumes                  | Map<String, SecretVolume>                 |             |
-| quarkus.kubernetes.config-map-volumes              | Map<String, ConfigMapVolume>              |             |
-| quarkus.kubernetes.git-repo-volumes                | Map<String, GitRepoVolume>                |             |
-| quarkus.kubernetes.aws-elastic-block-store-volumes | Map<String, AwsElasticBlockStoreVolume>   |             |
-| quarkus.kubernetes.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
-| quarkus.kubernetes.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
-| quarkus.kubernetes.mounts                          | Map<String, Mount>                        |             |
-| quarkus.kubernetes.image-pull-policy               | ImagePullPolicy                           |             | Always
-| quarkus.kubernetes.image-pull-secrets              | String[]                                  |             |
-| quarkus.kubernetes.liveness-probe                  | Probe                                     |             | ( see Probe )
-| quarkus.kubernetes.readiness-probe                 | Probe                                     |             | ( see Probe )
-| quarkus.kubernetes.sidecars                        | Map<String, Container>                    |             |
-| quarkus.kubernetes.ingress.expose                  | boolean                                   |             | false
-| quarkus.kubernetes.ingress.host                    | String                                    |             |
-| quarkus.kubernetes.ingress.annotations             | Map<String, String>                       |             |
-| quarkus.kubernetes.headless                        | boolean                                   |             | false
-| quarkus.kubernetes.hostaliases                     | Map<String, HostAlias>                    |             |
-| quarkus.kubernetes.resources.requests.cpu          | String                                    |             |
-| quarkus.kubernetes.resources.requests.memory       | String                                    |             |
-| quarkus.kubernetes.resources.limits.cpu            | String                                    |             |
-| quarkus.kubernetes.resources.limits.memory         | String                                    |             |
-|====
+The full list of the Kubernetes configuration options can be found in <<#configuration-reference>>.
 
 Properties that use non-standard types, can be referenced by expanding the property.
 For example to define a `kubernetes-readiness-probe` which is of type `Probe`:
@@ -678,7 +634,6 @@ quarkus.kubernetes.readiness-probe.period=45s
 ----
 
 In this example `initial-delay` and `period` are fields of the type `Probe`.
-Below you will find tables describing all available types.
 
 ==== Client Connection Configuration
 You may need to configure the connection to your Kubernetes cluster.
@@ -691,134 +646,9 @@ For instance, if your cluster API endpoint uses a self-signed SSL Certificate yo
 quarkus.kubernetes-client.trust-certs=true
 ----
 
-The full list of the Kuberneters client configuration properties is provided below.
+The full list of the Kubernetes client configuration properties is provided below.
 
 include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
-
-==== Basic Types
-
-.ServiceType
-Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
-
-.Env
-|====
-| Property  | Type   | Description | Default Value
-| value     | String |             |
-| secret    | String |             |
-| configmap | String |             |
-| field     | String |             |
-|====
-
-.Probe
-|====
-| Property              | Type     | Description | Default Value
-| http-action-path      | String   |             |
-| exec-action           | String   |             |
-| tcp-socket-action     | String   |             |
-| initial-delay         | Duration |             |             0
-| period                | Duration |             |           30s
-| timeout               | Duration |             |           10s
-|====
-
-.Port
-|====
-| Property        | Type     | Description | Default Value
-| container-port  | int      |             |
-| host-port       | int      |             | 0
-| path            | String   |             | /
-| protocol        | Protocol |             | TCP
-|====
-
-.Container
-|====
-| Property          | Type                                    | Description | Default Value
-| image             | String                                  |             |
-| env-vars          | Env[]                                   |             |
-| working-dir       | String                                  |             |
-| command           | String[]                                |             |
-| arguments         | String[]                                |             |
-| ports             | Port[]                                  |             |
-| mounts            | Mount[]                                 |             |
-| image-pull-policy | ImagePullPolicy                         |             | Always
-| liveness-probe    | Probe                                   |             |
-| readiness-probe   | Probe                                   |             |
-|====
-
-.HostAlias
-|====
-| Property    | Type     | Description       | Default Value
-| hostnames   | String[] | list of hostnames |
-|====
-
-==== Mounts and Volumes
-
-.Mount
-|====
-| Property  | Type    | Description | Default Value
-| path      | String  |             |
-| sub-path  | String  |             |
-| read-only | boolean |             | false
-|====
-
-.ConfigMapVolume
-|====
-| Property        | Type    | Description | Default Value
-| config-map-name | String  |             |
-| default-mode    | int     |             | 0600
-| optional        | boolean |             | false
-|====
-
-.SecretVolume
-|====
-| Property     | Type    | Description | Default Value
-| secret-name  | String  |             |
-| default-mode | int     |             | 0600
-| optional     | boolean |             | false
-|====
-
-
-.AzureDiskVolume
-|====
-| Property     | Type    | Description | Default Value
-| disk-name    | String  |             |
-| disk-uri     | String  |             |
-| kind         | String  |             | Managed
-| caching-mode | String  |             | ReadWrite
-| fs-type      | String  |             | ext4
-| read-only    | boolean |             | false
-|====
-
-.AwsElasticBlockStoreVolume
-|====
-| Property    | Type    | Description | Default Value
-| volume-id   | String  |             |
-| partition   | int     |             |
-| fs-type     | String  |             | ext4
-| read-only   | boolean |             | false
-|====
-
-.GitRepoVolume
-|====
-| Property    | Type   | Description | Default Value
-| repository  | String |             |
-| directory   | String |             |
-| revision    | String |             |
-|====
-
-.PersistentVolumeClaimVolume
-|====
-| Property    | Type    | Description | Default Value
-| claim-name  | String  |             |
-| read-only   | boolean |             | false
-|====
-
-.AzureFileVolume
-|====
-| Property    | Type    | Description | Default Value
-| share-name  | String  |             |
-| secret-name | String  |             |
-| read-only   | boolean |             | false
-|====
 
 [#openshift]
 === OpenShift
@@ -841,7 +671,7 @@ curl <route>/greeting
 
 See further information in link:deploying-to-openshift[Deploying to OpenShift].
 
-A description of OpenShift resources and customisable properties is given below alongside Kubernetes resources to show similarities where applicable.   This includes an alternative to  `oc new-app ...` above, i.e. `oc apply -f target/kubernetes/openshift.json` .
+A description of OpenShift resources and customisable properties is given below alongside Kubernetes resources to show similarities where applicable. This includes an alternative to  `oc new-app ...` above, i.e. `oc apply -f target/kubernetes/openshift.json` .
 
 To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
 
@@ -879,44 +709,6 @@ NOTE: Quarkus also provides the link:deploying-to-openshift[OpenShift] extension
 relieves OpenShift users of the necessity of setting the `deployment-target` property to `openshift`
 
 The OpenShift resources can be customized in a similar approach with Kubernetes.
-
-.OpenShift
-|====
-| Property                                          | Type                                      | Description | Default Value
-| quarkus.openshift.name                            | String                                    |             | ${quarkus.container-image.name}
-| quarkus.openshift.version                         | String                                    |             | ${quarkus.container-image.tag}
-| quarkus.openshift.part-of                         | String                                    |             |
-| quarkus.openshift.init-containers                 | Map<String, Container>                    |             |
-| quarkus.openshift.labels                          | Map                                       |             |
-| quarkus.openshift.annotations                     | Map                                       |             |
-| quarkus.openshift.app-secret                      | String                                    |             |
-| quarkus.openshift.app-config-map                  | String                                    |             |
-| quarkus.openshift.env-vars                        | Map<String, Env>                          |             |
-| quarkus.openshift.working-dir                     | String                                    |             |
-| quarkus.openshift.command                         | String[]                                  |             |
-| quarkus.openshift.arguments                       | String[]                                  |             |
-| quarkus.openshift.replicas                        | int                                       |             | 1
-| quarkus.openshift.service-account                 | String                                    |             |
-| quarkus.openshift.ports                           | Map<String, Port>                         |             |
-| quarkus.openshift.service-type                    | ServiceType                               |             | ClusterIP
-| quarkus.openshift.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
-| quarkus.openshift.secret-volumes                  | Map<String, SecretVolume>                 |             |
-| quarkus.openshift.config-map-volumes              | Map<String, ConfigMapVolume>              |             |
-| quarkus.openshift.git-repo-volumes                | Map<String, GitRepoVolume>                |             |
-| quarkus.openshift.aws-elastic-block-store-volumes | Map<String, AwsElasticBlockStoreVolume>   |             |
-| quarkus.openshift.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
-| quarkus.openshift.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
-| quarkus.openshift.mounts                          | Map<String, Mount>                        |             |
-| quarkus.openshift.image-pull-policy               | ImagePullPolicy                           |             | Always
-| quarkus.openshift.image-pull-secrets              | String[]                                  |             |
-| quarkus.openshift.liveness-probe                  | Probe                                     |             | ( see Probe )
-| quarkus.openshift.readiness-probe                 | Probe                                     |             | ( see Probe )
-| quarkus.openshift.sidecars                        | Map<String, Container>                    |             |
-| quarkus.openshift.route.expose                    | boolean                                   |             | false
-| quarkus.openshift.route.host                      | String                                    |             |
-| quarkus.openshift.route.annotations               | Map<String, String>                       |             |
-| quarkus.openshift.headless                        | boolean                                   |             | false
-|====
 
 [#knative]
 === Knative
@@ -977,55 +769,6 @@ The generated manifest can be deployed as is to a running cluster, using `kubect
 kubectl apply -f target/kubernetes/knative.json
 ----
 
-The generated service can be customized using the following properties:
-
-.Knative
-|====
-| Property                                        | Type                                      | Description | Default Value
-| quarkus.knative.name                            | String                                    |             | ${quarkus.container-image.name}
-| quarkus.knative.version                         | String                                    |             | ${quarkus.container-image.tag}
-| quarkus.knative.part-of                         | String                                    |             |
-| quarkus.knative.init-containers                 | Map<String, Container>                    |             |
-| quarkus.knative.labels                          | Map                                       |             |
-| quarkus.knative.annotations                     | Map                                       |             |
-| quarkus.knative.app-secret                      | String                                    |             |
-| quarkus.knative.app-config-map                  | String                                    |             |
-| quarkus.knative.env-vars                        | Map<String, Env>                          |             |
-| quarkus.knative.working-dir                     | String                                    |             |
-| quarkus.knative.command                         | String[]                                  |             |
-| quarkus.knative.arguments                       | String[]                                  |             |
-| quarkus.knative.replicas                        | int                                       |             | 1
-| quarkus.knative.service-account                 | String                                    |             |
-| quarkus.knative.host                            | String                                    |             |
-| quarkus.knative.ports                           | Map<String, Port>                         |             |
-| quarkus.knative.service-type                    | ServiceType                               |             | ClusterIP
-| quarkus.knative.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
-| quarkus.knative.secret-volumes                  | Map<String, SecretVolume>                 |             |
-| quarkus.knative.config-map-volumes              | Map<String, ConfigMapVolume>              |             |
-| quarkus.knative.git-repo-volumes                | Map<String, GitRepoVolume>                |             |
-| quarkus.knative.aws-elastic-block-store-volumes | Map<String, AwsElasticBlockStoreVolume>   |             |
-| quarkus.knative.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
-| quarkus.knative.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
-| quarkus.knative.mounts                          | Map<String, Mount>                        |             |
-| quarkus.knative.image-pull-policy               | ImagePullPolicy                           |             | Always
-| quarkus.knative.image-pull-secrets              | String[]                                  |             |
-| quarkus.knative.liveness-probe                  | Probe                                     |             | ( see Probe )
-| quarkus.knative.readiness-probe                 | Probe                                     |             | ( see Probe )
-| quarkus.knative.sidecars                        | Map<String, Container>                    |             |
-| quarkus.knative.revision-name                   | String                                    |             | 
-| quarkus.knative.traffic                         | Traffic[]                                 |             | ( see Traffic)
-|====
-
-.Traffic
-|====
-| Property        | Type    | Description | Default Value
-| revision-name   | String  | A specific revision to which to send this portion of traffic                                    |
-| tag             | String  | Expose a dedicated url for referncing this target                                               |
-| latest-revision | Boolean | Optionally provided to indicate that the latest revision should be used for this traffic target | false 
-| percent         | Logn    | Indicates the percent of traffic that is be routed to this revision                             | 100
-|====
-
-
 === Deployment targets
 
 Mentioned in the previous sections was the concept of `deployment-target`. This concept allows users to control which Kubernetes manifests will be generated
@@ -1076,7 +819,7 @@ The code below demonstrates the change in `env-vars` config:
 kubernetes.env-vars[0].name=foo
 kubernetes.env-vars[0].configmap=my-configmap
 
-# New env-vars
+# Deprecated env-vars, use env.vars instead
 quarkus.kubernetes.env-vars.foo.configmap=myconfigmap
 ----
 
@@ -1263,3 +1006,8 @@ while the other files provide the necessary connection information.
 ====
 For more details on how the discovery of the available properties works, please read the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the Service Binding specification.
 ====
+
+[#configuration-reference]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-kubernetes.adoc[opts=optional,leveloffset=+1]

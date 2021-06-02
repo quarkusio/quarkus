@@ -8,6 +8,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -280,18 +282,28 @@ final class IntegrationTestUtil {
         }
         if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
             //we have the maven test classes dir
-            File testClasses = new File(url.getPath());
-            return testClasses.getParentFile();
+            return toPath(url).getParent().toFile();
         } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
             //we have the gradle test classes dir, build/classes/java/test
-            File testClasses = new File(url.getPath());
-            return testClasses.getParentFile().getParentFile().getParentFile();
+            return toPath(url).getParent().getParent().getParent().toFile();
         } else if (url.getProtocol().equals("file") && url.getPath().contains("/target/surefire/")) {
             //this will make mvn failsafe:integration-test work
             String path = url.getPath();
             int index = path.lastIndexOf("/target/");
-            return new File(path.substring(0, index) + "/target/");
+            try {
+                return Paths.get(new URI("file:" + (path.substring(0, index) + "/target/"))).toFile();
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
         }
         return null;
+    }
+
+    private static Path toPath(URL url) {
+        try {
+            return Paths.get(url.toURI());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

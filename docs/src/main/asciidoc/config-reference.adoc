@@ -43,6 +43,11 @@ provided using the `application.properties` file.
 
 image::config-sources.png[]
 
+TIP: Remember that it's possible to quote property names when they contain `.`. Indeed, without quoting, Quarkus wouldn't
+be able to tell where your property ends when parsing the property's "path". So if you need to reference a
+`greeting.message` property in one of the configuration files, you can use the following syntax:
+`quarkus.whatever."greeting.message".something=Hello`.
+
 [[system-properties]]
 === System properties
 

@@ -1010,4 +1010,10 @@ For more details on how the discovery of the available properties works, please 
 [#configuration-reference]
 == Configuration reference
 
+TIP: Remember that it's possible to quote property names when they contain `.`.
+Indeed, without quoting, Quarkus wouldn't be able to tell where your property ends when parsing the property's "path".
+So if you need to reference a
+`greeting.message` property in one of the configuration files, you can use the following syntax:
+`quarkus.whatever."greeting.message".something=Hello`.
+
 include::{generated-dir}/config/quarkus-kubernetes.adoc[opts=optional,leveloffset=+1]

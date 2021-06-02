@@ -548,7 +548,7 @@
                 <plugin>
                     <groupId>org.jboss.jandex</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
-                    <version>1.0.8</version>
+                    <version>1.1.0</version>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>

@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.exporter.jaeger.runtime;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -22,11 +23,9 @@ public class JaegerExporterConfig {
     public static class JaegerExporterRuntimeConfig {
         /**
          * The Jaeger endpoint to connect to. The endpoint must start with either http:// or https://.
-         * <p>
-         * Defaults to `http://localhost:14250` if unset.
          */
-        @ConfigItem(defaultValue = "http://localhost:14250")
-        public String endpoint;
+        @ConfigItem
+        public Optional<String> endpoint;
 
         /**
          * The maximum amount of time to wait for the collector to process exported spans before an exception is thrown.

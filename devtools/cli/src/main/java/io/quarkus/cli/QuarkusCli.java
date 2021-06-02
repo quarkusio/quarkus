@@ -29,6 +29,8 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
+        // Change default short option to display version from "-V" to "-v":
+        System.setProperty("picocli.version.name.0", "-v");
     }
 
     @Inject

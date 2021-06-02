@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_package = "com.dam";
+
+service Blocking1 {
+  rpc returnThread1(Empty) returns (ThreadName);
+  rpc returnThread2(Empty) returns (ThreadName);
+}
+service Blocking2 {
+  rpc returnThread1(Empty) returns (ThreadName);
+  rpc returnThread2(Empty) returns (ThreadName);
+}
+
+message Empty {
+
+}
+
+message ThreadName {
+  string name = 1;
+}

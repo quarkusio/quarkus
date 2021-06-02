@@ -69,6 +69,8 @@ import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class GrpcServerProcessor {
 
+    private static final Set<String> BLOCKING_SKIPPED_METHODS = Set.of("bindService", "<init>", "withCompression");
+
     private static final Logger logger = Logger.getLogger(GrpcServerProcessor.class);
 
     private static final String SSL_PREFIX = "quarkus.grpc.server.ssl.";
@@ -138,12 +140,8 @@ public class GrpcServerProcessor {
             }
             if (!excluded) {
                 logger.debugf("Registering generated gRPC bean %s that will delegate to %s", generatedBean, userDefinedBean);
-                Set<MethodInfo> blockingMethods = new HashSet<>();
-                for (MethodInfo method : userDefinedBean.methods()) {
-                    if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
-                        blockingMethods.add(method);
-                    }
-                }
+                Set<MethodInfo> blockingMethods = gatherBlockingMethods(userDefinedBean);
+
                 generatedBeans.put(generatedBean.name(), blockingMethods);
             }
         }
@@ -193,13 +191,27 @@ public class GrpcServerProcessor {
                 continue;
             }
             BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
-            for (MethodInfo method : service.methods()) {
-                if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
-                    item.registerBlockingMethod(method.name());
-                }
+            Set<MethodInfo> blockingMethods = gatherBlockingMethods(service);
+            for (MethodInfo method : blockingMethods) {
+                item.registerBlockingMethod(method.name());
             }
             bindables.produce(item);
         }
+    }
+
+    private Set<MethodInfo> gatherBlockingMethods(ClassInfo service) {
+        Set<MethodInfo> result = new HashSet<>();
+        boolean classHasBlocking = service.classAnnotation(GrpcDotNames.BLOCKING) != null;
+        for (MethodInfo method : service.methods()) {
+            if (BLOCKING_SKIPPED_METHODS.contains(method.name())) {
+                continue;
+            }
+            if (method.hasAnnotation(GrpcDotNames.BLOCKING)
+                    || (classHasBlocking && !method.hasAnnotation(GrpcDotNames.NON_BLOCKING))) {
+                result.add(method);
+            }
+        }
+        return result;
     }
 
     @BuildStep

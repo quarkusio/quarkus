@@ -273,37 +273,26 @@ class HibernateValidatorProcessor {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass().name());
                     // no need for reflection in the case of a class level constraint
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.TYPE) {
-                    // there is a bug in Jandex regarding enclosingTarget() when annotations are on constructors located in a separate indexed library
-                    // (enclosing target is a ClassInfo instead of a MethodInfo and enclosingTarget() tries to catch it to a MethodInfo
-                    // leading to a ClassCastException)
-                    // for now we swallow the exception, pending a bugfix in Jandex
-                    // see https://github.com/quarkusio/quarkus/issues/17491
-                    try {
-                        // container element constraints
-                        AnnotationTarget enclosingTarget = annotation.target().asType().enclosingTarget();
-                        if (enclosingTarget.kind() == AnnotationTarget.Kind.FIELD) {
-                            contributeClass(classNamesToBeValidated, indexView,
-                                    enclosingTarget.asField().declaringClass().name());
-                            reflectiveFields.produce(new ReflectiveFieldBuildItem(enclosingTarget.asField()));
-                            if (annotation.target().asType().target() != null) {
-                                contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
-                                        consideredAnnotation,
-                                        annotation.target().asType().target());
-                            }
-                        } else if (enclosingTarget.kind() == AnnotationTarget.Kind.METHOD) {
-                            contributeClass(classNamesToBeValidated, indexView,
-                                    enclosingTarget.asMethod().declaringClass().name());
-                            reflectiveMethods.produce(new ReflectiveMethodBuildItem(enclosingTarget.asMethod()));
-                            if (annotation.target().asType().target() != null) {
-                                contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
-                                        consideredAnnotation,
-                                        annotation.target().asType().target());
-                            }
-                            contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
-                                    enclosingTarget.asMethod());
+                    // container element constraints
+                    AnnotationTarget enclosingTarget = annotation.target().asType().enclosingTarget();
+                    if (enclosingTarget.kind() == AnnotationTarget.Kind.FIELD) {
+                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asField().declaringClass().name());
+                        reflectiveFields.produce(new ReflectiveFieldBuildItem(enclosingTarget.asField()));
+                        if (annotation.target().asType().target() != null) {
+                            contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
+                                    consideredAnnotation,
+                                    annotation.target().asType().target());
                         }
-                    } catch (Exception e) {
-                        // ignore
+                    } else if (enclosingTarget.kind() == AnnotationTarget.Kind.METHOD) {
+                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asMethod().declaringClass().name());
+                        reflectiveMethods.produce(new ReflectiveMethodBuildItem(enclosingTarget.asMethod()));
+                        if (annotation.target().asType().target() != null) {
+                            contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
+                                    consideredAnnotation,
+                                    annotation.target().asType().target());
+                        }
+                        contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
+                                enclosingTarget.asMethod());
                     }
                 }
             }

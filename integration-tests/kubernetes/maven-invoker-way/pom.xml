@@ -137,6 +137,7 @@
             </plugin>
         </plugins>
     </build>
+
     <profiles>
         <profile>
             <id>basic-test-suite</id>
@@ -159,6 +160,51 @@
             <properties>
                 <maven.test.skip>true</maven.test.skip>
             </properties>
+        </profile>
+        <profile>
+            <id>kubernetes-e2e-tests</id>
+            <build>
+                <plugins>
+                  <plugin>
+                    <artifactId>maven-invoker-plugin</artifactId>
+                    <configuration>
+                      <pomIncludes>
+                        <pomInclude>kubernetes-*/pom.xml</pomInclude>
+                      </pomIncludes>
+                    </configuration>
+                  </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>openshift-e2e-tests</id>
+            <build>
+                <plugins>
+                  <plugin>
+                    <artifactId>maven-invoker-plugin</artifactId>
+                    <configuration>
+                      <pomIncludes>
+                        <pomInclude>openshift-*/pom.xml</pomInclude>
+                      </pomIncludes>
+                    </configuration>
+                  </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>knative-e2e-tests</id>
+            <build>
+                <plugins>
+                  <plugin>
+                    <artifactId>maven-invoker-plugin</artifactId>
+                    <configuration>
+                      <pomIncludes>
+                        <pomInclude>knative-*/pom.xml</pomInclude>
+                      </pomIncludes>
+                    </configuration>
+                  </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <activation>

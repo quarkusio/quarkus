@@ -62,6 +62,10 @@ public interface HandlerChainCustomizer {
          * handlers are invoked just after the resource method is invoked
          */
         AFTER_METHOD_INVOKE,
+        /**
+         * handlers are invoked just after the resource method result has been turned into a {@link javax.ws.rs.core.Response}
+         */
+        AFTER_RESPONSE_CREATED,
 
     }
 }

@@ -35,6 +35,7 @@ import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.processor.scanning.AsyncReturnTypeScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.CacheControlScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveContextResolverScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExceptionMappingScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
@@ -70,6 +71,11 @@ public class ResteasyReactiveScanningProcessor {
     @BuildStep
     public MethodScannerBuildItem asyncSupport() {
         return new MethodScannerBuildItem(new AsyncReturnTypeScanner());
+    }
+
+    @BuildStep
+    public MethodScannerBuildItem cacheControlSupport() {
+        return new MethodScannerBuildItem(new CacheControlScanner());
     }
 
     @BuildStep

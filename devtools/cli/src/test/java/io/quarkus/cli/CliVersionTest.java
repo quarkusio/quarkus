@@ -9,7 +9,7 @@ public class CliVersionTest {
         CliDriver.Result result = CliDriver.execute("version");
         result.echoSystemOut();
 
-        CliDriver.Result result2 = CliDriver.execute("-V");
+        CliDriver.Result result2 = CliDriver.execute("-v");
         Assertions.assertEquals(result.stdout, result2.stdout, "Version output for command aliases should be the same.");
         CliDriver.println("-- same as above\n\n");
 

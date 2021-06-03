@@ -21,7 +21,7 @@ public class Panache {
      * 
      * @return the current {@link Mutiny.Session}
      */
-    public static Mutiny.Session getSession() {
+    public static Uni<Mutiny.Session> getSession() {
         return AbstractJpaOperations.getSession();
     }
 
@@ -35,7 +35,7 @@ public class Panache {
      * @return the result of executing the function
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
-        return getSession().withTransaction(t -> work.get());
+        return getSession().flatMap(session -> session.withTransaction(t -> work.get()));
     }
 
     /**
@@ -77,6 +77,6 @@ public class Panache {
      * @return void
      */
     public static Uni<Void> flush() {
-        return getSession().flush();
+        return getSession().flatMap(session -> session.flush());
     }
 }

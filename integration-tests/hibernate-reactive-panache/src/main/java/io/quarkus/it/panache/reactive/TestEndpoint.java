@@ -694,7 +694,6 @@ public class TestEndpoint {
 
         assertFalse(person1.isPersistent());
         assertFalse(person2.isPersistent());
-
         Uni<Void> persist;
         switch (persistTest) {
             case Iterable:
@@ -724,7 +723,6 @@ public class TestEndpoint {
 
         assertFalse(personDao.isPersistent(person1));
         assertFalse(personDao.isPersistent(person2));
-
         Uni<Void> persist;
         switch (persistTest) {
             case Iterable:

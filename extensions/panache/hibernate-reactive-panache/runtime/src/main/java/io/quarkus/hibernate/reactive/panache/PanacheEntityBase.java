@@ -38,7 +38,7 @@ public abstract class PanacheEntityBase {
      *
      * @return the current {@link Mutiny.Session}
      */
-    public static Mutiny.Session getSession() {
+    public static Uni<Mutiny.Session> getSession() {
         return INSTANCE.getSession();
     }
 

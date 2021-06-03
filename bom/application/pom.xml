@@ -161,7 +161,7 @@
         <awaitility.version>4.1.0</awaitility.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
         <jgit.version>5.11.1.202105131744-r</jgit.version>
-        <flyway.version>7.9.1</flyway.version>
+        <flyway.version>7.9.2</flyway.version>
         <yasson.version>1.0.9</yasson.version>
         <liquibase.version>4.3.5</liquibase.version>
         <snakeyaml.version>1.28</snakeyaml.version>

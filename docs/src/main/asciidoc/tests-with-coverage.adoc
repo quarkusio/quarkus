@@ -1,3 +1,4 @@
+
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
@@ -234,6 +235,87 @@ In addition to including the `quarkus-jacoco` extension in your pom you will nee
 WARNING: This config will only work if at least one `@QuarkusTest` is being run. If you are not using `@QuarkusTest` then
 you can simply use the Jacoco plugin in the standard manner with no additional config.
 
+=== Coverage for Integration Tests
+
+To get code coverage data from integration tests, Jacoco needs to be configured, and your `@QuarkusIntegrationTest` classes must be run using a jar package,
+
+In the `pom.xml`, you can add the following plugin configuration for Jacoco. This will append integration test data into the same destination file as unit tests,
+re-build the jacoco report after the integration tests are complete, and thus produce a comprehensive code-coverage report.
+[source, xml]
+----
+<build>
+    ...
+    <plugins>
+        ...
+        <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <id>default-prepare-agent-integration</id>
+                    <goals>
+                        <goal>prepare-agent-integration</goal>
+                    </goals>
+                    <configuration>
+                        <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
+                        <append>true</append>
+                        <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
+                    </configuration>
+                </execution>
+                <execution>
+                    <id>report-it</id>
+                    <phase>post-integration-test</phase>
+                    <goals>
+                        <goal>report</goal>
+                    </goals>
+                    <configuration>
+                        <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
+                        <outputDirectory>${project.build.directory}/jacoco-report</outputDirectory>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        ...
+    </plugins>
+    ...
+</build>
+----
+
+In order to run the integration tests as a jar with the Jacoco agent, add the following to your `pom.xml`.
+[source, xml]
+----
+<build>
+    ...
+    <plugins>
+        ...
+        <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>${surefire-plugin.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>integration-test</goal>
+                        <goal>verify</goal>
+                    </goals>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                            <maven.home>${maven.home}</maven.home>
+                            <quarkus.test.argLine>${argLine}</quarkus.test.argLine>
+                            <!-- If your integration tests require a different profile, you can set that here as well.
+                            <quarkus.test.native-image-profile>it</quarkus.test.native-image-profile>
+                            -->
+                        </systemPropertyVariables>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        ...
+    </plugins>
+    ...
+</build>
+
+----
 
 == Conclusion
 

@@ -106,6 +106,6 @@ public class CliProjectJBangTest {
         Assertions.assertTrue(packagePath.toFile().isDirectory(),
                 "Package directory should be a directory: " + packagePath.toAbsolutePath().toString());
 
-        return packagePath.resolve("GreetingResource.java");
+        return packagePath.resolve("main.java");
     }
 }

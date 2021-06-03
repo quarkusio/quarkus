@@ -15,13 +15,13 @@ public class PortConfig {
      * The port number. Refers to the container port.
      */
     @ConfigItem
-    OptionalInt containerPort;
+    public OptionalInt containerPort;
 
     /**
      * The host port.
      */
     @ConfigItem
-    OptionalInt hostPort;
+    public OptionalInt hostPort;
 
     /**
      * The application path (refers to web application path).
@@ -29,12 +29,18 @@ public class PortConfig {
      * @return The path, defaults to /.
      */
     @ConfigItem(defaultValue = "/")
-    Optional<String> path;
+    public Optional<String> path;
 
     /**
      * The protocol.
      */
     @ConfigItem(defaultValue = "TCP")
-    Protocol protocol;
+    public Protocol protocol;
+
+    /**
+     * The nodePort to which this port should be mapped to.
+     * This only takes affect when the serviceType is set to node-port.
+     */
+    public OptionalInt nodePort;
 
 }

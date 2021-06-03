@@ -16,6 +16,24 @@
     padding: 2px 20px;
     border-radius: 3px;
 }
+.fa.connected-icon {
+    color: #207020;
+    padding: 0 1em 0 1em;
+}
+
+.form-control.grpc-output {
+    color: #f0f0e0;
+    background-color: #303030;
+}
+
+.fa.connected-icon {
+    color: #107010;
+}
+
+span.connected-status {
+    font-size: 0.5em;
+    margin-left: 1em;
+}
   {/style}
   {#script}
         var grpcWS;
@@ -37,8 +55,8 @@
             const idBase = connection.queryIdentifier.replace('#', '/');
             const connectedElement = document.getElementById(`$\{idBase}_connected`);
             if (connectedElement) {
-              connectedElement.style.display = 'block';
-              document.getElementById(`$\{idBase}_disconnect`).style.display = 'block';
+              connectedElement.style.display = 'inline';
+              document.getElementById(`$\{idBase}_disconnect`).style.display = 'inline';
             }
         }
 
@@ -60,14 +78,14 @@
           grpcWS.onerror = function (error) {
             console.log("error on gRPC websocket", error);
           }
-        
+
           grpcWS.onclose = function () {
             info("Web Socket bridge to gRPC disconnected, reconnecting");
             connections.forEach(connection => hideConnected(connection));
             connections.clear();
             setTimeout(connect, 2000);
           }
-        
+
           grpcWS.onmessage = function (event) {
             const data = JSON.parse(event.data);
             if (data.status == 'RESET') {
@@ -81,6 +99,7 @@
 
               connection.responseText = data.body + connection.responseText;
               responseElement.value = connection.responseText;
+              responseElement.style.height = Math.min(responseElement.scrollHeight + 5, 500) + "px"
             } else if (data.status == 'COMPLETED') {
               const connection = connections.get(data.id);
               hideConnected(connection);
@@ -98,7 +117,7 @@
             }
           }
         }
-        
+
         function info(message) {
           clearTimeout(clearMessageTimeout);
           const statusText = document.getElementById('status-text')
@@ -122,6 +141,9 @@
           $(".app-class").on("click", function() {
             openInIDE($(this).text());
           });
+
+          document.querySelectorAll('.grpc-input')
+                .forEach(textArea => textArea.style.height = (textArea.scrollHeight + 5) + "px");
           connect();
         });
 
@@ -192,39 +214,44 @@
   </div>
 
   {#for method in service.methodsWithPrototypes}
-    <hr>
+<hr>
 <div class="container">
-    <div class="row">
-        <div class="col-md-7">
-            <h2><span class="badge badge-dark">{method.type}</span> {method.bareMethodName} </h2>
-        </div>
-        <div class="col-md-5 connection-status">
-            {#when method.type}
-            {#is in BIDI_STREAMING CLIENT_STREAMING}
-            <p id="{service.name}/{method.bareMethodName}_connected" style="display:none">Connected.
-                All the calls are made with the existing connection</p>
-            {#is SERVER_STREAMING}
-            <p id="{service.name}/{method.bareMethodName}_connected" style="display:none">Connected.</p>
-            {/when}
-        </div>
-    </div>
+    <h2><span class="badge badge-dark">{method.type}</span> {method.bareMethodName}
+        {#when method.type}
+        {#is in BIDI_STREAMING CLIENT_STREAMING}
+        <span class="connected-status" id="{service.name}/{method.bareMethodName}_connected" style="display:none">
+                    <i class="fas fa-link fa connected-icon"></i>Connected. All the calls are made with the existing connection</span>
+        {#is SERVER_STREAMING}
+        <span class="connected-status" id="{service.name}/{method.bareMethodName}_connected" style="display:none">
+                    <i class="fas fa-link fa connected-icon"></i>Connected.
+        </span>
+        {/when}
+    </h2>
 </div>
     {#if method.isTestable}
       <form>
           <div class="row">
               <div class="col">
-                  <textarea class="form-control" name="test-request" id="{service.name}/{method.bareMethodName}_request">{method.prototype}</textarea>
+                  <textarea class="form-control grpc-input" name="test-request"
+                            id="{service.name}/{method.bareMethodName}_request">{method.prototype}</textarea>
                   <br>
-                  <button type="button" class="btn btn-primary"
-                          onclick="sendTestRequest('{service.name}','{method.bareMethodName}', '{method.type}')">
-                      Send</button>
-                  <button type="button" class="btn btn-secondary" id="{service.name}/{method.bareMethodName}_disconnect"
-                          style="display: none"
-                          onclick="disconnect('{service.name}','{method.bareMethodName}')">
-                      Disconnect</button>
               </div>
               <div class="col">
-                  <textarea class="form-control" name="test-response" id="{service.name}/{method.bareMethodName}_response" readonly></textarea>
+                  <textarea class="form-control grpc-output" name="test-response" id="{service.name}/{method.bareMethodName}_response" readonly></textarea>
+              </div>
+          </div>
+          <div class="row">
+              <div class="col">
+                  <button type="button" class="btn btn-primary"
+                          onclick="sendTestRequest('{service.name}','{method.bareMethodName}', '{method.type}')">
+                      Send
+                  </button>
+
+                  <button type="button" class="btn btn-secondary"
+                          id="{service.name}/{method.bareMethodName}_disconnect" style="display: none"
+                          onclick="disconnect('{service.name}','{method.bareMethodName}')">
+                      Disconnect
+                  </button>
               </div>
           </div>
       </form>

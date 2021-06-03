@@ -402,6 +402,7 @@ public class RuntimeResourceDeployment {
             responseFilterHandlers = Collections.emptyList();
         } else {
             handlers.add(new ResponseHandler());
+            addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED);
             responseFilterHandlers = new ArrayList<>(interceptorDeployment.setupResponseFilterHandler());
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));

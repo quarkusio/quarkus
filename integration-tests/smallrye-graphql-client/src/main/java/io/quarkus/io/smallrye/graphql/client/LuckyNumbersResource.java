@@ -6,6 +6,9 @@ import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
 import org.eclipse.microprofile.graphql.Query;
 
+import io.smallrye.graphql.api.Subscription;
+import io.smallrye.mutiny.Multi;
+
 @GraphQLApi
 @ApplicationScoped
 public class LuckyNumbersResource {
@@ -21,6 +24,11 @@ public class LuckyNumbersResource {
     public Integer setLuckyNumber(Integer newLuckyNumber) {
         luckyNumber = newLuckyNumber;
         return luckyNumber;
+    }
+
+    @Subscription
+    public Multi<Integer> primeNumbers() {
+        return Multi.createFrom().items(2, 3, 5, 7, 11, 13);
     }
 
 }

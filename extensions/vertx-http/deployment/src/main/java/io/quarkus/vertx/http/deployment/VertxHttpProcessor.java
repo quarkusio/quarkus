@@ -299,8 +299,10 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    RuntimeInitializedClassBuildItem configureNativeCompilation() {
-        return new RuntimeInitializedClassBuildItem("io.vertx.ext.web.handler.sockjs.impl.XhrTransport");
+    void configureNativeCompilation(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.vertx.ext.web.handler.sockjs.impl.XhrTransport"));
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("io.vertx.ext.auth.impl.jose.JWT"));
     }
 
     /**

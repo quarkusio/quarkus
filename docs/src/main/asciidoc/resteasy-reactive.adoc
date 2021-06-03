@@ -964,7 +964,7 @@ public class Endpoint {
 
 Most of the time, there are ways to achieve the same blocking operations in an asynchronous/reactive
 way, using https://smallrye.io/smallrye-mutiny/[Mutiny], http://hibernate.org/reactive/[Hibernate Reactive] 
-or any of the link:getting-started-reactive[Quarkus Reactive extensions] for example:
+or any of the xref:quarkus-reactive-architecture.adoc#quarkus-extensions-enabling-reactive[Quarkus Reactive extensions] for example:
 
 [source,java]
 ----

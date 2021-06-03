@@ -404,7 +404,8 @@ public class SmallRyeGraphQLProcessor {
                 metricsCapability.isPresent(),
                 "quarkus-smallrye-metrics",
                 "metrics",
-                "quarkus.smallrye-graphql.metrics.enabled");
+                "quarkus.smallrye-graphql.metrics.enabled",
+                false);
         if (activate) {
             if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
                 unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames("io.smallrye.metrics.MetricRegistries"));
@@ -424,7 +425,8 @@ public class SmallRyeGraphQLProcessor {
                 graphQLConfig.tracingEnabled,
                 "quarkus-smallrye-opentracing",
                 Capability.OPENTRACING,
-                "quarkus.smallrye-graphql.tracing.enabled");
+                "quarkus.smallrye-graphql.tracing.enabled",
+                true);
         if (activate) {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_TRACING, TRUE));
         } else {
@@ -441,7 +443,8 @@ public class SmallRyeGraphQLProcessor {
                 graphQLConfig.validationEnabled,
                 "quarkus-hibernate-validator",
                 Capability.HIBERNATE_VALIDATOR,
-                "quarkus.smallrye-graphql.validation.enabled");
+                "quarkus.smallrye-graphql.validation.enabled",
+                true);
         if (activate) {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_VALIDATION, TRUE));
         } else {
@@ -462,10 +465,11 @@ public class SmallRyeGraphQLProcessor {
             Optional<Boolean> serviceEnabled,
             String linkedExtensionName,
             String linkedCapability,
-            String configKey) {
+            String configKey,
+            boolean activateByDefaultIfCapabilityIsPresent) {
 
         return shouldActivateService(capabilities, serviceEnabled, capabilities.isPresent(linkedCapability),
-                linkedExtensionName, linkedCapability, configKey);
+                linkedExtensionName, linkedCapability, configKey, activateByDefaultIfCapabilityIsPresent);
     }
 
     private boolean shouldActivateService(Capabilities capabilities,
@@ -473,7 +477,8 @@ public class SmallRyeGraphQLProcessor {
             boolean linkedCapabilityIsPresent,
             String linkedExtensionName,
             String linkedCapabilityName,
-            String configKey) {
+            String configKey,
+            boolean activateByDefaultIfCapabilityIsPresent) {
 
         if (serviceEnabled.isPresent()) {
             // The user explicitly asked from something
@@ -485,7 +490,7 @@ public class SmallRyeGraphQLProcessor {
             return (isEnabled && linkedCapabilityIsPresent);
         } else {
             // Auto dis/enable
-            return linkedCapabilityIsPresent;
+            return linkedCapabilityIsPresent && activateByDefaultIfCapabilityIsPresent;
         }
     }
 

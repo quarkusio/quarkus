@@ -19,7 +19,7 @@ public class SmallRyeGraphQLConfig {
     String rootPath;
 
     /**
-     * Enable metrics. By default this will be enabled if the metrics extension is added.
+     * Enable metrics. By default this is false. If set to true, a metrics extension is required.
      */
     @ConfigItem(name = "metrics.enabled")
     Optional<Boolean> metricsEnabled;

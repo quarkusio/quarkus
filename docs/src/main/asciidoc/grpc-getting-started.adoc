@@ -148,7 +148,7 @@ To override it, set the `quarkus.generate-code.grpc.scan-for-imports` property i
 Now that we have the generated classes let's implement our _hello_ service.
 
 With Quarkus, implementing a service requires to implement the generated service interface based on Mutiny, a Reactive Programming API integrated in Quarkus, and expose it as a CDI bean. 
-Learn more about Mutiny on the link:getting-started-reactive#mutiny[Getting Started with Reactive guide].
+Learn more about Mutiny on the xref:mutiny-primer.adoc[Mutiny guide].
 The service class must be annotated with the `@io.quarkus.grpc.GrpcService` annotation.
 
 === Implementing a service

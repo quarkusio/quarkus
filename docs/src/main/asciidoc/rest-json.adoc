@@ -512,8 +512,7 @@ Use `Multi` when you have multiple items that may be emitted asynchronously.
 
 You can use `Uni` and `Response` to return asynchronous HTTP responses: `Uni<Response>`.
 
-More details about Mutiny can be found in the link:getting-started-reactive#mutiny[Getting Started with Reactive guide].
-
+More details about Mutiny can be found in xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 
 == HTTP filters and interceptors
 

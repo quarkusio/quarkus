@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-opentelemetry-exporter-otlp-deployment</artifactId>
-    <name>Quarkus - OpenTelemetry Exporter - Otlp - Deployment</name>
+    <name>Quarkus - OpenTelemetry Exporter - OTLP - Deployment</name>
 
     <dependencies>
         <dependency>

@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-opentelemetry-exporter-otlp-parent</artifactId>
-    <name>Quarkus - OpenTelemetry Exporter - Otlp</name>
+    <name>Quarkus - OpenTelemetry Exporter - OTLP</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

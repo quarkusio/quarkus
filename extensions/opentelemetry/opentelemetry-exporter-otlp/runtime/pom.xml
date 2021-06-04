@@ -11,8 +11,8 @@
     </parent>
 
     <artifactId>quarkus-opentelemetry-exporter-otlp</artifactId>
-    <name>Quarkus - OpenTelemetry Exporter - Otlp - Runtime</name>
-    <description>Enable Otlp Exporter for OpenTelemetry</description>
+    <name>Quarkus - OpenTelemetry Exporter - OTLP - Runtime</name>
+    <description>Enable OTLP Exporter for OpenTelemetry</description>
 
     <dependencies>
         <dependency>

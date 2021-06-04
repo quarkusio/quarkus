@@ -27,12 +27,12 @@ public class OtlpRecorder {
                         .setTimeout(runtimeConfig.exportTimeout)
                         .build();
 
-                // Create BatchSpanProcessor for Otlp and install into LateBoundBatchSpanProcessor
+                // Create BatchSpanProcessor for OTLP and install into LateBoundBatchSpanProcessor
                 LateBoundBatchSpanProcessor delayedProcessor = CDI.current()
                         .select(LateBoundBatchSpanProcessor.class, Any.Literal.INSTANCE).get();
                 delayedProcessor.setBatchSpanProcessorDelegate(BatchSpanProcessor.builder(otlpSpanExporter).build());
             } catch (IllegalArgumentException iae) {
-                throw new IllegalStateException("Unable to install Otlp Exporter", iae);
+                throw new IllegalStateException("Unable to install OTLP Exporter", iae);
             }
         }
     }

@@ -11,9 +11,9 @@ public class OtlpExporterConfig {
     @ConfigRoot(name = "opentelemetry.tracer.exporter.otlp", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
     public static class OtlpExporterBuildConfig {
         /**
-         * Otlp SpanExporter support.
+         * OTLP SpanExporter support.
          * <p>
-         * Otlp SpanExporter support is enabled by default.
+         * OTLP SpanExporter support is enabled by default.
          */
         @ConfigItem(defaultValue = "true")
         public Boolean enabled;
@@ -22,7 +22,7 @@ public class OtlpExporterConfig {
     @ConfigRoot(name = "opentelemetry.tracer.exporter.otlp", phase = ConfigPhase.RUN_TIME)
     public static class OtlpExporterRuntimeConfig {
         /**
-         * The Otlp endpoint to connect to. The endpoint must start with either http:// or https://.
+         * The OTLP endpoint to connect to. The endpoint must start with either http:// or https://.
          */
         @ConfigItem()
         public Optional<String> endpoint;

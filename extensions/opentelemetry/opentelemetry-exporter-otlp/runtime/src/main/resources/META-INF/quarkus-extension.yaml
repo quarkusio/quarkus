@@ -1,4 +1,4 @@
-name: "OpenTelemetry exporter: Otlp"
+name: "OpenTelemetry exporter: OTLP"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:

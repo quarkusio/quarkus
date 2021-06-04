@@ -26,7 +26,7 @@ class SpringCloudConfigClientGatewayTest {
 
     private static final SpringCloudConfigClientConfig springCloudConfigClientConfig = configForTesting();
     private final SpringCloudConfigClientGateway sut = new VertxSpringCloudConfigGateway(
-            springCloudConfigClientConfig, new TlsConfig());
+            springCloudConfigClientConfig, new TlsConfig(), new SpringCloudClientBasicAuthProvider());
 
     @BeforeAll
     static void start() {

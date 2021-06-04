@@ -25,12 +25,12 @@ public class SpringCloudConfigServerClientConfigSourceProvider implements Config
 
     public SpringCloudConfigServerClientConfigSourceProvider(SpringCloudConfigClientConfig springCloudConfigClientConfig,
             String applicationName,
-            String activeProfile, TlsConfig tlsConfig) {
+            String activeProfile, TlsConfig tlsConfig, SpringCloudClientCredentialsProvider authProvider) {
         this.springCloudConfigClientConfig = springCloudConfigClientConfig;
         this.applicationName = applicationName;
         this.activeProfile = activeProfile;
 
-        springCloudConfigClientGateway = new VertxSpringCloudConfigGateway(springCloudConfigClientConfig, tlsConfig);
+        springCloudConfigClientGateway = new VertxSpringCloudConfigGateway(springCloudConfigClientConfig, tlsConfig, authProvider);
     }
 
     @Override

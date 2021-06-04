@@ -111,6 +111,7 @@
         <module>spring-security</module>
         <module>spring-boot-properties</module>
         <module>spring-cloud-config-client</module>
+        <module>spring-cloud-config-client-oidc</module>
         <module>spring-cache</module>
         <module>spring-scheduled</module>
         <module>spring-data-rest</module>

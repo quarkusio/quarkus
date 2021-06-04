@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quarkus Extension for Spring Cloud Config Client with OIDC provider"
+metadata:
+  keywords:
+  - "spring-cloud-config-client"
+  - "spring"
+  - "config"
+  - "configuration"
+  - "oidc"
+  guide: "https://quarkus.io/guides/spring-cloud-config-client"
+  categories:
+  - "compatibility"
+  status: "preview"

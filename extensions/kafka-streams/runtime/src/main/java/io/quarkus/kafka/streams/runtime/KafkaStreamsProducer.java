@@ -26,7 +26,6 @@ import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -48,6 +47,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
+import io.smallrye.common.annotation.Identifier;
 
 /**
  * Manages the lifecycle of a Kafka Streams pipeline. If there's a producer
@@ -72,7 +72,7 @@ public class KafkaStreamsProducer {
     @Inject
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
             Instance<Topology> topology, Instance<KafkaClientSupplier> kafkaClientSupplier,
-            @Named("default-kafka-broker") Instance<Map<String, Object>> defaultConfiguration,
+            @Identifier("default-kafka-broker") Instance<Map<String, Object>> defaultConfiguration,
             Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener) {
         shutdown = false;
         // No producer for Topology -> nothing to do

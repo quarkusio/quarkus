@@ -11,6 +11,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.spring.cloud.config.client.runtime.credentials.SpringCloudClientBasicAuthCredentialsProvider;
 
 @Recorder
 public class SpringCloudConfigClientRecorder {
@@ -33,6 +34,11 @@ public class SpringCloudConfigClientRecorder {
 
         return new RuntimeValue<>(new SpringCloudConfigServerClientConfigSourceProvider(
                 springCloudConfigClientConfig, applicationConfig.name.get(), ProfileManager.getActiveProfile(), tlsConfig));
+    }
+
+    public RuntimeValue<SpringCloudClientBasicAuthCredentialsProvider> createBasicAuthProvider(
+            SpringCloudConfigClientConfig springCloudConfigClientConfig) {
+        return new RuntimeValue<>(new SpringCloudClientBasicAuthCredentialsProvider(springCloudConfigClientConfig));
     }
 
     private RuntimeValue<ConfigSourceProvider> emptyRuntimeValue() {

@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -12,7 +13,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BOOTSTRAP, name = SpringCloudConfigClientConfig.NAME)
 public class SpringCloudConfigClientConfig {
 
-    protected static final String NAME = "spring-cloud-config";
+    public static final String NAME = "spring-cloud-config";
 
     /**
      * If enabled, will try to read the configuration from a Spring Cloud Config Server
@@ -112,6 +113,12 @@ public class SpringCloudConfigClientConfig {
      */
     @ConfigItem
     public Map<String, String> headers;
+
+    /**
+     * The OIDC client to be used if the Config Server has OIDC enabled
+     */
+    @ConfigItem
+    public OidcClientConfig oidc;
 
     public boolean usernameAndPasswordSet() {
         return username.isPresent() && password.isPresent();

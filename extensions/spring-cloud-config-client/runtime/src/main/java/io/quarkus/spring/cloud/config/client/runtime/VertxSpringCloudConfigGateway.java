@@ -19,6 +19,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.runtime.TlsConfig;
+import io.quarkus.spring.cloud.config.client.runtime.credentials.SpringCloudClientBasicAuthCredentialsProvider;
+import io.quarkus.spring.cloud.config.client.runtime.credentials.SpringCloudConfigClientOidcCredentialsProvider;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.KeyStoreOptionsBase;
@@ -43,6 +45,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private final Vertx vertx;
     private final WebClient webClient;
     private final URI baseURI;
+    private final SpringCloudClientCredentialsProvider authProvider;
 
     public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig springCloudConfigClientConfig, TlsConfig tlsConfig) {
         this.springCloudConfigClientConfig = springCloudConfigClientConfig;
@@ -54,9 +57,10 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         }
         this.vertx = Vertx.vertx();
         this.webClient = createHttpClient(vertx, springCloudConfigClientConfig, tlsConfig);
+        this.authProvider = createAuthProvider(webClient, springCloudConfigClientConfig);
     }
 
-    public static WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig springCloudConfig,
+    public WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig springCloudConfig,
             TlsConfig tlsConfig) {
 
         WebClientOptions webClientOptions = new WebClientOptions()
@@ -78,9 +82,9 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
             } else if (trustAll) {
                 skipVerify(webClientOptions);
             } else if (springCloudConfig.keyStore.isPresent()) {
-                Path trustStorePath = springCloudConfig.keyStore.get();
-                String type = determineStoreType(trustStorePath);
-                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, springCloudConfig.keyStorePassword,
+                Path keyStorePath = springCloudConfig.keyStore.get();
+                String type = determineStoreType(keyStorePath);
+                KeyStoreOptionsBase storeOptions = storeOptions(keyStorePath, springCloudConfig.keyStorePassword,
                         createStoreOptions(type));
                 if (isPfx(type)) {
                     webClientOptions.setPfxTrustOptions((PfxOptions) storeOptions);
@@ -93,6 +97,14 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         }
 
         return WebClient.create(vertx, webClientOptions);
+    }
+
+    private SpringCloudClientCredentialsProvider createAuthProvider(WebClient webClient,
+            SpringCloudConfigClientConfig cloudConfigClientConfig) {
+        if (!cloudConfigClientConfig.usernameAndPasswordSet() && cloudConfigClientConfig.oidc != null) {
+            return new SpringCloudConfigClientOidcCredentialsProvider(cloudConfigClientConfig, webClient);
+        }
+        return new SpringCloudClientBasicAuthCredentialsProvider(cloudConfigClientConfig);
     }
 
     private static void skipVerify(WebClientOptions options) {
@@ -184,10 +196,8 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 .get(getPort(baseURI), baseURI.getHost(), requestURI)
                 .ssl(isHttps(baseURI))
                 .putHeader("Accept", "application/json");
-        if (springCloudConfigClientConfig.usernameAndPasswordSet()) {
-            request.basicAuthentication(springCloudConfigClientConfig.username.get(),
-                    springCloudConfigClientConfig.password.get());
-        }
+
+        authProvider.addAuthenticationInfo(request);
         for (Map.Entry<String, String> entry : springCloudConfigClientConfig.headers.entrySet()) {
             request.putHeader(entry.getKey(), entry.getValue());
         }

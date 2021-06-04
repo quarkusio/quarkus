@@ -1,0 +1,26 @@
+{
+  "name": "a-bootiful-client",
+  "profiles": [
+    "test"
+  ],
+  "label": "master",
+  "version": "bb51f4173258ae3481c61b95b503c13862ccfba7",
+  "state": null,
+  "propertySources": [
+    {
+      "name": "https://github.com/spring-cloud-samples/config-repo/testapp-prod.yml",
+      "source": {
+        "bar": "spam",
+        "foo": "from foo development",
+        "greeting.message": "hello from spring cloud config server"
+      }
+    },
+    {
+      "name": "https://github.com/spring-cloud-samples/config-repo/application.yml",
+      "source": {
+        "info.description": "Sample",
+        "foo": "baz"
+      }
+    }
+  ]
+}

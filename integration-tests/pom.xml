@@ -172,6 +172,7 @@
                 <module>spring-data-jpa</module>
                 <module>spring-boot-properties</module>
                 <module>spring-cloud-config-client</module>
+                <module>spring-cloud-config-client-oidc</module>
                 <module>spring-data-rest</module>
                 <module>infinispan-cache-jpa</module>
                 <module>elytron-security</module>

@@ -129,6 +129,21 @@ quarkus.spring-cloud-config.enabled=true
 quarkus.spring-cloud-config.url=http://localhost:8888
 ----
 
+=== Configuring OIDC connection
+
+Quarkus allows you to connect to the config server using OIDC. This configuration can be done as follows:
+
+[source,properties]
+----
+quarkus.spring-cloud-config.oidc.auth-server-url=http://localhost:9000
+quarkus.spring-cloud-config.oidc.token-path=/tokens
+quarkus.spring-cloud-config.oidc.client-id=quarkus-app
+quarkus.spring-cloud-config.oidc.credentials.client-secret.value=alice
+----
+
+WARNING: The only supported grant type is `client_credentials` which uses `quarkus.spring-cloud-config.oidc.client-id`
+and `quarkus.spring-cloud-config.oidc.credentials.client-secret.value` properties for token retrieval.
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`.

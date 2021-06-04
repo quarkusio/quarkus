@@ -1,0 +1,21 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPattern": "/base/a-bootiful-client/test",
+    "headers" : {
+      "Accept" : {
+        "contains" : "application/json"
+      },
+      "Authorization": {
+        "equalTo": "Bearer access_token_1"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "bodyFileName": "a-bootiful-client-prod.json"
+  }
+}

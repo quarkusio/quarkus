@@ -219,18 +219,9 @@ public class RuntimeResourceDeployment {
             }
         }
         // form params can be everywhere (field, beanparam, param)
-        if (method.isFormParamRequired() && !defaultBlocking) {
+        if (method.isFormParamRequired() || method.isMultipart()) {
             // read the body as multipart in one go
-            handlers.add(new FormBodyHandler(bodyParameter != null));
-        } else if (method.isMultipart()) {
-            Supplier<ServerRestHandler> multipartHandlerSupplier = customServerRestHandlers.getMultipartHandlerSupplier();
-            if (multipartHandlerSupplier != null) {
-                // multipart needs special body handling
-                handlers.add(multipartHandlerSupplier.get());
-            } else {
-                throw new RuntimeException(
-                        "The current execution environment does not implement a ServerRestHandler for multipart form support");
-            }
+            handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
         } else if (bodyParameter != null) {
             if (!defaultBlocking) {
                 if (method.isBlocking()) {

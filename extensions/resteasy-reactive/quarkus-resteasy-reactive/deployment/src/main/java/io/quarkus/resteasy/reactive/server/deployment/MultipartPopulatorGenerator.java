@@ -25,6 +25,7 @@ import org.jboss.resteasy.reactive.common.processor.TypeArgMapper;
 import org.jboss.resteasy.reactive.common.util.DeploymentUtils;
 import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.multipart.DefaultFileUpload;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
@@ -39,7 +40,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.server.runtime.multipart.MultipartSupport;
-import io.quarkus.resteasy.reactive.server.runtime.multipart.QuarkusFileUpload;
 
 final class MultipartPopulatorGenerator {
 
@@ -273,7 +273,7 @@ final class MultipartPopulatorGenerator {
                         // uploaded file are present in the RoutingContext and are extracted using MultipartSupport#getFileUpload
 
                         ResultHandle fileUploadHandle = populate.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUpload", QuarkusFileUpload.class,
+                                MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUpload", DefaultFileUpload.class,
                                         String.class, ResteasyReactiveRequestContext.class),
                                 formAttrNameHandle, rrCtxHandle);
                         if (fieldDotName.equals(DotNames.FIELD_UPLOAD_NAME)) {
@@ -285,7 +285,7 @@ final class MultipartPopulatorGenerator {
                             fileUploadNullTrue.breakScope();
                             BytecodeCreator fileUploadFalse = fileUploadNullBranch.falseBranch();
                             ResultHandle pathHandle = fileUploadFalse.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(QuarkusFileUpload.class, "uploadedFile", Path.class),
+                                    MethodDescriptor.ofMethod(DefaultFileUpload.class, "uploadedFile", Path.class),
                                     fileUploadHandle);
                             if (fieldDotName.equals(DotNames.PATH_NAME)) {
                                 fileUploadFalse.assign(resultHandle, pathHandle);
@@ -348,9 +348,10 @@ final class MultipartPopulatorGenerator {
                             // in this case all we need to do is read the value of the form attribute
 
                             populate.assign(resultHandle,
-                                    populate.invokeInterfaceMethod(MethodDescriptor.ofMethod(ServerHttpRequest.class,
-                                            "getFormAttribute", String.class, String.class), serverReqHandle,
-                                            formAttrNameHandle));
+                                    populate.invokeVirtualMethod(MethodDescriptor.ofMethod(ResteasyReactiveRequestContext.class,
+                                            "getFormParameter", Object.class, String.class, boolean.class, boolean.class),
+                                            rrCtxHandle,
+                                            formAttrNameHandle, populate.load(true), populate.load(false)));
                         } else {
                             // we need to use the field type and the media type to locate a MessageBodyReader
 
@@ -382,11 +383,11 @@ final class MultipartPopulatorGenerator {
                                     MethodDescriptor.ofMethod(MediaType.class, "valueOf", MediaType.class, String.class),
                                     clinit.load(partType)));
 
-                            ResultHandle formStrValueHandle = populate.invokeInterfaceMethod(
-                                    MethodDescriptor.ofMethod(ServerHttpRequest.class,
-                                            "getFormAttribute", String.class, String.class),
-                                    serverReqHandle,
-                                    formAttrNameHandle);
+                            ResultHandle formStrValueHandle = populate.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(ResteasyReactiveRequestContext.class,
+                                            "getFormParameter", Object.class, String.class, boolean.class, boolean.class),
+                                    rrCtxHandle,
+                                    formAttrNameHandle, populate.load(true), populate.load(false));
 
                             populate.assign(resultHandle, populate.invokeStaticMethod(
                                     MethodDescriptor.ofMethod(MultipartSupport.class, "convertFormAttribute", Object.class,

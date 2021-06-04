@@ -34,7 +34,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-opentelemetry-rest-client-deployment</artifactId>
             <optional>true</optional>
         </dependency>
 

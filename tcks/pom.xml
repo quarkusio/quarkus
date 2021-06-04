@@ -19,9 +19,7 @@
         <module>microprofile-fault-tolerance</module>
         <module>microprofile-health</module>
         <module>microprofile-jwt</module>
-        <!-- TODO - MP4 - Require SR GraphQL update
         <module>microprofile-graphql</module>
-        -->
         <module>microprofile-metrics</module>
         <module>microprofile-reactive-messaging</module>
         <module>microprofile-rest-client</module>

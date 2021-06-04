@@ -64,7 +64,7 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateAppGAVNoWrapper() throws Exception {
+    public void testCreateAppOverrides() throws Exception {
         project = workspaceRoot.resolve("nested/my-project");
 
         List<String> configs = Arrays.asList("custom.app.config1=val1",
@@ -92,8 +92,8 @@ public class CliProjectMavenTest {
 
         System.setProperty("user.dir", project.toFile().getAbsolutePath());
         result = CliDriver.invokeValidateDryRunBuild(project);
-        Assertions.assertTrue(result.stdout.contains(" -e -B clean install -Dproperty=value1 -Dproperty2=value2"),
-                "result should contain ' -e -B clean install -Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("-Dproperty=value1 -Dproperty2=value2"),
+                "result should contain '-Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
 
         CliDriver.invokeValidateBuild(project);
     }

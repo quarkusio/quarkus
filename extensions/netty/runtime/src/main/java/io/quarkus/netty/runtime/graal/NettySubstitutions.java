@@ -22,7 +22,6 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
@@ -536,11 +535,15 @@ final class Target_io_netty_buffer_EmptyByteBuf {
 
 }
 
-@TargetClass(className = "io.netty.handler.codec.compression.BrotliDecoder")
-@Delete
-final class Target_BrotliDecoder {
-
-}
+// We need to delete this class but we let GraalVM dead code elimination do it for us.
+// Otherwise it causes a problem when --report-unsupported-elements-at-runtime is enabled:
+// when trying to delete the class, GraalVM throws a java.lang.NoClassDefFoundError: Lcom/aayushatharva/brotli4j/decoder/DecoderJNI$Wrapper;
+// While we recommend not using this option, some extensions out there are using it.
+//@TargetClass(className = "io.netty.handler.codec.compression.BrotliDecoder")
+//@Delete
+//final class Target_BrotliDecoder {
+//
+//}
 
 @TargetClass(className = "io.netty.handler.codec.http.HttpContentDecompressor")
 final class Target_io_netty_handler_codec_http_HttpContentDecompressor {

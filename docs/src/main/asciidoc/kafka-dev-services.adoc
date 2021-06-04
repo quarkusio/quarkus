@@ -1,0 +1,40 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Kafka
+
+include::./attributes.adoc[]
+
+Dev Services for Kafka automatically starts a Kafka broker in dev mode and when running tests.
+So, you don't have to start a broker manually.
+The application is configured automatically.
+
+IMPORTANT: Because starting a Kafka broker can be long, Dev Services for Kafka uses https://vectorized.io/redpanda[Red Panda], a Kafka compatible broker which starts in ~1 second.
+
+== Enabling / Disabling Dev Services for Kafka
+
+Dev Services for Kafka is automatically enabled unless:
+
+- `quarkus.kafka.devservices.enabled` is set to `false`
+- the `kafka.bootstrap.servers` is configured
+- all the Reactive Messaging Kafka channels have the `bootstrap.servers` attribute set
+
+Dev Services for Kafka relies on Docker to start the broker.
+If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
+You can configure the broker address using `kafka.bootstrap.servers`.
+
+== Setting the port
+
+By default, Dev Services for Kafka picks a random port and configure the application.
+You can set the port by configuring the `quarkus.kafka.devservices.port` property.
+
+Note that the Kafka advertised address is automatically configured with the chosen port.
+
+== Configuring the image
+
+By default, Dev Services for Kafka uses: `vectorized/redpanda:latest`.
+You can select any version from https://hub.docker.com/r/vectorized/redpanda.
+
+IMPORTANT: Dev Services for Kafka only support Red Panda.

@@ -656,6 +656,17 @@ public class Endpoint {
 }
 ----
 
+=== Controlling HTTP Caching features
+
+RESTEasy Reactive provides the `@org.jboss.resteasy.reactive.Cache` and `@org.jboss.resteasy.reactive.NoCache` annotations to facilitate handling HTTP caching semantics, i.e. setting the 'Cache-Control' HTTP header.
+
+These annotations can be placed either on a Resource Method or a Resource Class (in which case it applies to all Resource Methods of the class that do *not* contain the same annotation) and allow users
+to return domain objects and not have to deal with building up the `Cache-Control` HTTP header explicitly.
+
+While `@Cache` builds a complex `Cache-Control` header, `@NoCache` is a simplified notation to say that you don't want anything cached; i.e. `Cache-Control: nocache`.
+
+NOTE: More information on the `Cache-Control` header and be found in link:https://datatracker.ietf.org/doc/html/rfc7234[RFC 7234]
+
 === Accessing context objects
 
 [[context-objects]]
@@ -1861,4 +1872,3 @@ In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile 
 Please note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
 
 See link:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive client.
-

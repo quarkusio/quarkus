@@ -36,7 +36,7 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
 
                     @Override
                     public void onMessage(RespT message) {
-                        if (isOnEventLoop) {
+                        if (isOnEventLoop && context != null) {
                             context.runOnContext(unused -> super.onMessage(message));
                         } else {
                             super.onMessage(message);
@@ -45,7 +45,7 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
 
                     @Override
                     public void onClose(Status status, Metadata trailers) {
-                        if (isOnEventLoop) {
+                        if (isOnEventLoop && context != null) {
                             context.runOnContext(unused -> super.onClose(status, trailers));
                         } else {
                             super.onClose(status, trailers);

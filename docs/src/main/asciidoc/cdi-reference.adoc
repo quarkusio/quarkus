@@ -53,7 +53,7 @@ To generate the index just add the following to your `pom.xml`:
     <plugin>
       <groupId>org.jboss.jandex</groupId>
       <artifactId>jandex-maven-plugin</artifactId>
-      <version>1.0.7</version>
+      <version>1.1.0</version>
       <executions>
         <execution>
           <id>make-index</id>
@@ -72,7 +72,7 @@ If you are are using gradle, you can apply the following plugin to your `build.g
 [source,groovy]
 ----
 plugins {
-    id 'org.kordamp.gradle.jandex' version '0.6.0'
+    id 'org.kordamp.gradle.jandex' version '0.11.0'
 }
 ----
 

@@ -131,7 +131,7 @@ public class VertxInputStream extends InputStream {
             throw new IOException("Stream is closed");
         }
         if (finished) {
-            return -1;
+            return 0;
         }
 
         return exchange.readBytesAvailable();
@@ -294,7 +294,12 @@ public class VertxInputStream extends InputStream {
                 return 0;
             }
 
-            return Integer.parseInt(length);
+            try {
+                return Integer.parseInt(length);
+            } catch (NumberFormatException e) {
+                Long.parseLong(length); // ignore the value as can only return an int anyway
+                return Integer.MAX_VALUE;
+            }
         }
     }
 

@@ -29,6 +29,7 @@ import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
@@ -38,6 +39,7 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -68,6 +70,8 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class GrpcServerProcessor {
+
+    private static final Set<String> BLOCKING_SKIPPED_METHODS = Set.of("bindService", "<init>", "withCompression");
 
     private static final Logger logger = Logger.getLogger(GrpcServerProcessor.class);
 
@@ -138,12 +142,8 @@ public class GrpcServerProcessor {
             }
             if (!excluded) {
                 logger.debugf("Registering generated gRPC bean %s that will delegate to %s", generatedBean, userDefinedBean);
-                Set<MethodInfo> blockingMethods = new HashSet<>();
-                for (MethodInfo method : userDefinedBean.methods()) {
-                    if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
-                        blockingMethods.add(method);
-                    }
-                }
+                Set<MethodInfo> blockingMethods = gatherBlockingMethods(userDefinedBean);
+
                 generatedBeans.put(generatedBean.name(), blockingMethods);
             }
         }
@@ -193,13 +193,27 @@ public class GrpcServerProcessor {
                 continue;
             }
             BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
-            for (MethodInfo method : service.methods()) {
-                if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
-                    item.registerBlockingMethod(method.name());
-                }
+            Set<MethodInfo> blockingMethods = gatherBlockingMethods(service);
+            for (MethodInfo method : blockingMethods) {
+                item.registerBlockingMethod(method.name());
             }
             bindables.produce(item);
         }
+    }
+
+    private Set<MethodInfo> gatherBlockingMethods(ClassInfo service) {
+        Set<MethodInfo> result = new HashSet<>();
+        boolean classHasBlocking = service.classAnnotation(GrpcDotNames.BLOCKING) != null;
+        for (MethodInfo method : service.methods()) {
+            if (BLOCKING_SKIPPED_METHODS.contains(method.name())) {
+                continue;
+            }
+            if (method.hasAnnotation(GrpcDotNames.BLOCKING)
+                    || (classHasBlocking && !method.hasAnnotation(GrpcDotNames.NON_BLOCKING))) {
+                result.add(method);
+            }
+        }
+        return result;
     }
 
     @BuildStep
@@ -302,6 +316,7 @@ public class GrpcServerProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     ServiceStartBuildItem initializeServer(GrpcServerRecorder recorder, GrpcConfiguration config,
             ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
             LaunchModeBuildItem launchModeBuildItem,

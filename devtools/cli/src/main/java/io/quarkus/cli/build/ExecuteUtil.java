@@ -105,7 +105,7 @@ public class ExecuteUtil {
     static void propagatePropertyIfSet(String name, ArrayDeque<String> newArgs) {
         final String value = System.getProperty(name);
         if (value != null) {
-            newArgs.addFirst("-D" + name + "=" + value);
+            newArgs.add("-D" + name + "=" + value);
         }
     }
 

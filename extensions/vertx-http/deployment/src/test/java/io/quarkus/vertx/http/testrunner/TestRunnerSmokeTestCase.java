@@ -23,7 +23,7 @@ public class TestRunnerSmokeTestCase {
             .setArchiveProducer(new Supplier<JavaArchive>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class)
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class)
                             .add(new StringAsset(ContinuousTestingTestUtils.appProperties()),
                                     "application.properties");
                 }
@@ -39,10 +39,10 @@ public class TestRunnerSmokeTestCase {
     public void checkTestsAreRun() throws InterruptedException {
         TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
         Assertions.assertEquals(1L, ts.getLastRun());
-        Assertions.assertEquals(2L, ts.getTestsFailed());
+        Assertions.assertEquals(3L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(2L, ts.getTotalTestsFailed());
+        Assertions.assertEquals(3L, ts.getTotalTestsFailed());
         Assertions.assertEquals(1L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
@@ -55,7 +55,7 @@ public class TestRunnerSmokeTestCase {
                 Assertions.assertEquals(1, cr.getFailing().size());
                 Assertions.assertEquals(1, cr.getPassing().size());
             } else if (cr.getClassName().equals(UnitET.class.getName())) {
-                Assertions.assertEquals(1, cr.getFailing().size());
+                Assertions.assertEquals(2, cr.getFailing().size());
                 Assertions.assertEquals(0, cr.getPassing().size());
             } else {
                 Assertions.fail("Unexpected test " + cr.getClassName());
@@ -71,15 +71,31 @@ public class TestRunnerSmokeTestCase {
         });
         ts = ContinuousTestingTestUtils.waitForRun(2);
         Assertions.assertEquals(2L, ts.getLastRun());
-        Assertions.assertEquals(1L, ts.getTestsFailed());
+        Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(1L, ts.getTotalTestsFailed());
+        Assertions.assertEquals(2L, ts.getTotalTestsFailed());
         Assertions.assertEquals(2L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         //fix the unit test
+
+        test.modifySourceFile(UnitService.class, new Function<String, String>() {
+            @Override
+            public String apply(String s) {
+                return s.replace("unit", "UNIT");
+            }
+        });
+        ts = ContinuousTestingTestUtils.waitForRun(3);
+        Assertions.assertEquals(3L, ts.getLastRun());
+        Assertions.assertEquals(1L, ts.getTestsFailed());
+        Assertions.assertEquals(1L, ts.getTestsPassed());
+        Assertions.assertEquals(0L, ts.getTestsSkipped());
+        Assertions.assertEquals(1L, ts.getTotalTestsFailed());
+        Assertions.assertEquals(3L, ts.getTotalTestsPassed());
+        Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
+        Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
             @Override
@@ -87,13 +103,13 @@ public class TestRunnerSmokeTestCase {
                 return s.replace("Hi", "hello");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(3);
-        Assertions.assertEquals(3L, ts.getLastRun());
+        ts = ContinuousTestingTestUtils.waitForRun(4);
+        Assertions.assertEquals(4L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
-        Assertions.assertEquals(1L, ts.getTestsPassed());
+        Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
         Assertions.assertEquals(0L, ts.getTotalTestsFailed());
-        Assertions.assertEquals(3L, ts.getTotalTestsPassed());
+        Assertions.assertEquals(4L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 
@@ -101,28 +117,28 @@ public class TestRunnerSmokeTestCase {
         test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return s.replace("@Test", "@Test @org.junit.jupiter.api.Disabled");
+                return s.replaceAll("@Test", "@Test @org.junit.jupiter.api.Disabled");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(4);
-        Assertions.assertEquals(4L, ts.getLastRun());
+        ts = ContinuousTestingTestUtils.waitForRun(5);
+        Assertions.assertEquals(5L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
-        Assertions.assertEquals(1L, ts.getTestsSkipped());
+        Assertions.assertEquals(2L, ts.getTestsSkipped());
         Assertions.assertEquals(0L, ts.getTotalTestsFailed());
         Assertions.assertEquals(2L, ts.getTotalTestsPassed());
-        Assertions.assertEquals(1L, ts.getTotalTestsSkipped());
+        Assertions.assertEquals(2L, ts.getTotalTestsSkipped());
         Assertions.assertEquals(-1L, ts.getRunning());
 
         //delete the unit test
         test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return s.replace("@Test", "//@Test");
+                return s.replaceAll("@Test", "//@Test");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(5);
-        Assertions.assertEquals(5L, ts.getLastRun());
+        ts = ContinuousTestingTestUtils.waitForRun(6);
+        Assertions.assertEquals(6L, ts.getLastRun());
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());

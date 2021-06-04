@@ -123,6 +123,8 @@ public class CliProjectGradleTest {
         startGradleDaemon(true);
 
         result = CliDriver.invokeValidateDryRunBuild(project);
+        Assertions.assertTrue(result.stdout.contains("-Dproperty=value1 -Dproperty2=value2"),
+                "result should contain '-Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
 
         CliDriver.invokeValidateBuild(project);
     }

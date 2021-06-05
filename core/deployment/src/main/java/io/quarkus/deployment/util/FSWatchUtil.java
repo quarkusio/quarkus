@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.configuration.concurrent.FSWatchThreadFactory;
+
 public class FSWatchUtil {
 
     private static final Logger log = Logger.getLogger(FSWatchUtil.class);

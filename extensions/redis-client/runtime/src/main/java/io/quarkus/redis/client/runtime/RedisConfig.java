@@ -78,7 +78,7 @@ public class RedisConfig {
          * Used when `quarkus.redis.hosts` is not set.
          */
         @ConfigItem
-        public Optional<String> hostsProviderName = Optional.empty();
+        public Optional<String> hostsProviderName;
 
         /**
          * The maximum delay to wait before a blocking command to redis server times out

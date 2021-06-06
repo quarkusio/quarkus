@@ -217,11 +217,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.withType(Test.class).whenTaskAdded(configureTestTask::accept);
 
                     SourceSet generatedSourceSet = sourceSets.create(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
-                    generatedSourceSet.getOutput()
-                            .dir(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
                     SourceSet generatedTestSourceSet = sourceSets.create(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
-                    generatedTestSourceSet.getOutput()
-                            .dir(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
 
                     // Register the quarkus-generated-code
                     for (String provider : QuarkusGenerateCode.CODE_GENERATION_PROVIDER) {

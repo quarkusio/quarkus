@@ -44,6 +44,7 @@ public class TestTracingProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
+    @Produce(TestSetupBuildItem.class)
     void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {

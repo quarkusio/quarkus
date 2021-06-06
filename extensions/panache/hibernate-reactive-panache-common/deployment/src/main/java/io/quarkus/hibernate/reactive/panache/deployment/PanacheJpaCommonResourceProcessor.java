@@ -15,6 +15,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -23,11 +24,19 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.reactive.panache.common.runtime.PanacheHibernateRecorder;
+import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactionalInterceptor;
 
 public final class PanacheJpaCommonResourceProcessor {
 
     private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
     private static final DotName DOTNAME_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
+
+    @BuildStep
+    void registerInterceptor(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
+        builder.addBeanClass(ReactiveTransactionalInterceptor.class);
+        additionalBeans.produce(builder.build());
+    }
 
     @BuildStep
     void lookupNamedQueries(CombinedIndexBuildItem index,

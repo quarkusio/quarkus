@@ -5,14 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
-import javax.transaction.Transactional;
 
+import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.hibernate.reactive.panache.Panache;
+import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -141,7 +143,22 @@ public class PanacheFunctionalityTest {
     }
 
     @DisabledOnNativeImage
-    @Transactional
+    @ReactiveTransactional
+    @Test
+    void testTransaction() {
+        Transaction transaction = Panache.currentTransaction().await().indefinitely();
+        Assertions.assertNotNull(transaction);
+    }
+
+    @DisabledOnNativeImage
+    @Test
+    void testNoTransaction() {
+        Transaction transaction = Panache.currentTransaction().await().indefinitely();
+        Assertions.assertNull(transaction);
+    }
+
+    @DisabledOnNativeImage
+    @ReactiveTransactional
     @Test
     void testBug7102InOneTransaction() {
         testBug7102();
@@ -166,14 +183,14 @@ public class PanacheFunctionalityTest {
                 .await().indefinitely();
     }
 
-    @Transactional
+    @ReactiveTransactional
     Uni<Person> createBug7102() {
         Person personPanache = new Person();
         personPanache.name = "pero";
         return personPanache.persistAndFlush().map(v -> personPanache);
     }
 
-    @Transactional
+    @ReactiveTransactional
     Uni<Void> updateBug7102(Long id) {
         return Person.<Person> findById(id)
                 .map(person -> {
@@ -182,7 +199,7 @@ public class PanacheFunctionalityTest {
                 });
     }
 
-    @Transactional
+    @ReactiveTransactional
     Uni<Person> getBug7102(Long id) {
         return Person.findById(id);
     }

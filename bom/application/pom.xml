@@ -210,6 +210,7 @@
         <log4j2-jboss-logmanager.version>1.0.0.Final</log4j2-jboss-logmanager.version>
         <log4j-jboss-logmanager.version>1.2.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.10.2</avro.version>
+        <apicurio-registry.version>2.0.0.Final</apicurio-registry.version>
         <jacoco.version>0.8.7</jacoco.version>
         <testcontainers.version>1.15.3</testcontainers.version>
         <docker-java.version>3.2.8</docker-java.version> <!-- must be the version Testcontainers use -->
@@ -1105,6 +1106,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-avro-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-apicurio-registry-avro</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-apicurio-registry-avro-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2834,6 +2845,11 @@
                 <groupId>io.agroal</groupId>
                 <artifactId>agroal-pool</artifactId>
                 <version>${agroal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+                <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

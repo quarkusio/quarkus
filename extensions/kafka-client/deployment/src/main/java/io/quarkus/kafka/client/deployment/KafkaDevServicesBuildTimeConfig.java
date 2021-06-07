@@ -27,7 +27,7 @@ public class KafkaDevServicesBuildTimeConfig {
 
     /**
      * The Kafka image to use.
-     * Note that only Red Panda images are supported.
+     * Note that only Redpanda images are supported.
      * See https://vectorized.io/docs/quick-start-docker/ and https://hub.docker.com/r/vectorized/redpanda
      */
     @ConfigItem(defaultValue = "vectorized/redpanda:v21.5.5")

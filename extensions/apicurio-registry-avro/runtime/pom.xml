@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-apicurio-registry-avro-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>quarkus-apicurio-registry-avro</artifactId>
+    <name>Quarkus - Apicurio Registry - Avro - Runtime</name>
+    <description>Provide support for the Apicurio Registry Avro library</description>
+    <dependencies>
+        <dependency>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-avro</artifactId>
+        </dependency>
+        <!-- Apicurio Registry libraries use Keycloak client, which requires Apache HTTP Client -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-apache-httpclient</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <!-- Mark this as a runtime dependency, so to make sure it's included on the final classpath during native-image -->
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.apicurio.registry.avro</provides>
+                    </capabilities>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
+                            <version>${project.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -190,7 +190,8 @@ import org.jboss.resteasy.annotations.SseElementType;
 public class PriceResource {
 
     @Inject
-    @Channel("my-data-stream") Publisher<Double> prices; // <1>
+    @Channel("my-data-stream")
+    Publisher<Double> prices; // <1>
 
     @GET
     @Path("/stream")

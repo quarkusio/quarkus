@@ -35,7 +35,7 @@
 
         <dependency>
             <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp</artifactId>
+            <artifactId>opentelemetry-exporter-otlp-trace</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.codehaus.mojo</groupId>

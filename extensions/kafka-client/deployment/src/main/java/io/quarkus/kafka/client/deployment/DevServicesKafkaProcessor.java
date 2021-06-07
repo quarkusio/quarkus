@@ -171,8 +171,10 @@ public class DevServicesKafkaProcessor {
             boolean isIncoming = name.startsWith("mp.messaging.incoming.");
             boolean isOutgoing = name.startsWith("mp.messaging.outgoing.");
             boolean isConnector = name.endsWith(".connector");
+            boolean isKafka = isConnector
+                    && "smallrye-kafka".equals(config.getOptionalValue(name, String.class).orElse("ignored"));
             boolean isConfigured = false;
-            if ((isIncoming || isOutgoing) && isConnector) {
+            if ((isIncoming || isOutgoing) && isKafka) {
                 isConfigured = ConfigUtils.isPropertyPresent(name.replace(".connector", ".bootstrap.servers"));
             }
             if (!isConfigured) {
@@ -239,7 +241,7 @@ public class DevServicesKafkaProcessor {
     }
 
     /**
-     * Container configuring and starting the Red Panda broker.
+     * Container configuring and starting the Redpanda broker.
      * See https://vectorized.io/docs/quick-start-docker/
      */
     private static final class RedPandaKafkaContainer extends GenericContainer<RedPandaKafkaContainer> {
@@ -253,7 +255,7 @@ public class DevServicesKafkaProcessor {
             this.port = fixedExposedPort;
             withNetwork(Network.SHARED);
             withExposedPorts(KAFKA_PORT);
-            // For red panda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/
+            // For Redpanda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/
             if (dockerImageName.getRepository().equals("vectorized/redpanda")) {
                 withCreateContainerCmdModifier(cmd -> {
                     cmd.withEntrypoint("sh");

@@ -3540,6 +3540,11 @@
                 <version>${artemis.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-mqtt-protocol</artifactId>
+                <version>${artemis.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.qpid</groupId>
                 <artifactId>proton-j</artifactId>
                 <version>${proton-j.version}</version>

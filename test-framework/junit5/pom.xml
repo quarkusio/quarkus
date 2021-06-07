@@ -50,11 +50,14 @@
             <!-- Avoid adding this to the BOM -->
             <version>1.4.17</version>
         </dependency>
-        <!-- TODO: This needs to be made a soft dependency -->
-        <!-- Preferably the feature that it enables will be moved to a separate test module -->
+        <!-- TODO: The vertx testing stuff likely needs to be a separate module -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>mutiny</artifactId>
         </dependency>
     </dependencies>
 

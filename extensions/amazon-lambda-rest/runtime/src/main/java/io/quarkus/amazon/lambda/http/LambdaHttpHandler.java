@@ -1,22 +1,8 @@
 package io.quarkus.amazon.lambda.http;
 
-import java.io.ByteArrayOutputStream;
-import java.net.InetSocketAddress;
-import java.net.URLEncoder;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
-import org.jboss.logging.Logger;
-
 import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.FileRegion;
@@ -37,12 +23,21 @@ import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import java.io.ByteArrayOutputStream;
+import java.net.InetSocketAddress;
+import java.net.URLEncoder;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import org.jboss.logging.Logger;
 
 @SuppressWarnings("unused")
 public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsProxyResponse> {
     private static final Logger log = Logger.getLogger("quarkus.amazon.lambda.http");
-
-    private static final int BUFFER_SIZE = 8096;
 
     private static final Headers errorHeaders = new Headers();
     static {
@@ -69,7 +64,9 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         return null;
     }
 
-    private class NettyResponseHandler implements VirtualResponseHandler {
+    private static class NettyResponseHandler implements VirtualResponseHandler {
+        private static final int BUFFER_SIZE = 8096;
+
         AwsProxyResponse responseBuilder = new AwsProxyResponse();
         ByteArrayOutputStream baos;
         WritableByteChannel byteChannel;
@@ -141,6 +138,25 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                     ReferenceCountUtil.release(msg);
                 }
             }
+        }
+
+        private ByteArrayOutputStream createByteStream() {
+            ByteArrayOutputStream baos;
+            baos = new ByteArrayOutputStream(BUFFER_SIZE);
+            return baos;
+        }
+
+        private boolean isBinary(String contentType) {
+            if (contentType != null) {
+                int index = contentType.indexOf(';');
+                if (index >= 0) {
+                    return LambdaContainerHandler.getContainerConfig()
+                            .isBinaryContentType(contentType.substring(0, index));
+                } else {
+                    return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType);
+                }
+            }
+            return false;
         }
 
         @Override
@@ -215,23 +231,4 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
             connection.close();
         }
     }
-
-    private ByteArrayOutputStream createByteStream() {
-        ByteArrayOutputStream baos;
-        baos = new ByteArrayOutputStream(BUFFER_SIZE);
-        return baos;
-    }
-
-    private boolean isBinary(String contentType) {
-        if (contentType != null) {
-            int index = contentType.indexOf(';');
-            if (index >= 0) {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType.substring(0, index));
-            } else {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType);
-            }
-        }
-        return false;
-    }
-
 }

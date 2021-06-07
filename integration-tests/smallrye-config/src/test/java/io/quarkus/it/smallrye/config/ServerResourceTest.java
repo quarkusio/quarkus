@@ -34,6 +34,8 @@ class ServerResourceTest {
                 .get("/server")
                 .then()
                 .statusCode(OK.getStatusCode())
+                .body("name", equalTo("server"))
+                .body("alias", equalTo("server"))
                 .body("host", equalTo("localhost"))
                 .body("port", equalTo(8080))
                 .body("threads", equalTo(200))

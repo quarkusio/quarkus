@@ -56,7 +56,7 @@ Indeed, to handle multiple concurrent requests, you need multiple threads; and s
 In addition, these threads are blocked as soon as your code interacts with remote services.
 So, it leads to inefficient usage of the resources, as you may need more threads, and each thread, as they are mapped to OS threads, has a cost in terms of memory and CPU.
 
-image::blocking-threads.png[alt=Imperative Execution Model and Worker Threads]
+image::blocking-threads.png[alt=Imperative Execution Model and Worker Threads,width=80%]
 
 On the other side, the reactive model relies on non-blocking I/Os and a different execution model.
 Non-blocking I/O provides an efficient way to deal with concurrent I/O.
@@ -65,7 +65,7 @@ With such a model, request processing is not delegated to a worker thread but us
 It also improves the concurrency as it removes the constraint on the number of threads.
 Finally, it also improves response time as it reduces the number of thread switches.
 
-image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads]
+image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads,width=80%]
 
 
 == From sequential to continuation style

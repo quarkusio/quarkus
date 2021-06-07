@@ -44,18 +44,13 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
     private static final int BUFFER_SIZE = 8096;
 
-    private static Headers errorHeaders = new Headers();
+    private static final Headers errorHeaders = new Headers();
     static {
         errorHeaders.putSingle("Content-Type", "application/json");
     }
 
     public AwsProxyResponse handleRequest(AwsProxyRequest request, Context context) {
-        InetSocketAddress clientAddress = null;
-        if (request.getRequestContext() != null && request.getRequestContext().getIdentity() != null) {
-            if (request.getRequestContext().getIdentity().getSourceIp() != null) {
-                clientAddress = new InetSocketAddress(request.getRequestContext().getIdentity().getSourceIp(), 443);
-            }
-        }
+        InetSocketAddress clientAddress = getClientAddressFromRequest(request);
 
         try {
             return nettyDispatch(clientAddress, request, context);
@@ -63,7 +58,15 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
             log.error("Request Failure", e);
             return new AwsProxyResponse(500, errorHeaders, "{ \"message\": \"Internal Server Error\" }");
         }
+    }
 
+    private InetSocketAddress getClientAddressFromRequest(AwsProxyRequest request) {
+        if (request.getRequestContext() != null && request.getRequestContext().getIdentity() != null) {
+            if (request.getRequestContext().getIdentity().getSourceIp() != null) {
+                return new InetSocketAddress(request.getRequestContext().getIdentity().getSourceIp(), 443);
+            }
+        }
+        return null;
     }
 
     private class NettyResponseHandler implements VirtualResponseHandler {

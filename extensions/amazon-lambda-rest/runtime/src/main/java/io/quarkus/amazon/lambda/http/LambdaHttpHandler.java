@@ -33,9 +33,8 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
     }
 
     public AwsProxyResponse handleRequest(AwsProxyRequest request, Context context) {
-        InetSocketAddress clientAddress = getClientAddressFromRequest(request);
-
         try {
+            InetSocketAddress clientAddress = getClientAddressFromRequest(request);
             return nettyDispatch(clientAddress, request, context);
         } catch (Exception e) {
             log.error("Request Failure", e);
@@ -54,7 +53,6 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
     private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request, Context context)
             throws Exception {
-        String path = getPathFromRequest(request);
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(AwsProxyRequestContext.class, request.getRequestContext());
@@ -64,7 +62,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         VirtualClientConnection connection = VirtualClientConnection
                 .connect(handler, VertxHttpRecorder.VIRTUAL_HTTP, clientAddress);
 
-        connection.sendMessage(createNettyRequest(request, path, quarkusHeaders));
+        connection.sendMessage(createNettyRequest(request, quarkusHeaders));
         connection.sendMessage(createRequestContent(request));
         try {
             return handler.getFuture().get();
@@ -73,16 +71,20 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
     }
 
-    private DefaultHttpRequest createNettyRequest(AwsProxyRequest request, String path, QuarkusHttpHeaders quarkusHeaders) {
+    private DefaultHttpRequest createNettyRequest(AwsProxyRequest request, QuarkusHttpHeaders quarkusHeaders)
+            throws UnsupportedEncodingException {
+        String path = getPathFromRequest(request);
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.valueOf(request.getHttpMethod()), path, quarkusHeaders);
+
+        HttpHeaders nettyRequestHeaders = nettyRequest.headers();
         if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent
             for (Map.Entry<String, List<String>> header : request.getMultiValueHeaders().entrySet()) {
-                nettyRequest.headers().add(header.getKey(), header.getValue());
+                nettyRequestHeaders.add(header.getKey(), header.getValue());
             }
         }
-        if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
-            nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
+        if (!nettyRequestHeaders.contains(HttpHeaderNames.HOST)) {
+            nettyRequestHeaders.add(HttpHeaderNames.HOST, "localhost");
         }
         return nettyRequest;
     }

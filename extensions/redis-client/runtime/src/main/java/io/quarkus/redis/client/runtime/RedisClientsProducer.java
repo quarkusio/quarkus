@@ -15,13 +15,14 @@ import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
 import io.vertx.redis.client.RedisOptions;
 
-class RedisAPIProducer {
+public class RedisClientsProducer {
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
     private static Map<String, RedisAPIContainer> REDIS_APIS = new ConcurrentHashMap<>();
 
     private final Vertx vertx;
     private final RedisConfig redisConfig;
 
-    public RedisAPIProducer(RedisConfig redisConfig, Vertx vertx) {
+    public RedisClientsProducer(RedisConfig redisConfig, Vertx vertx) {
         this.redisConfig = redisConfig;
         this.vertx = vertx;
     }
@@ -30,12 +31,9 @@ class RedisAPIProducer {
         return REDIS_APIS.computeIfAbsent(name, new Function<String, RedisAPIContainer>() {
             @Override
             public RedisAPIContainer apply(String s) {
-                Duration timeout = Duration.ofSeconds(10);
-                RedisConfiguration redisConfiguration = RedisClientUtil.getConfiguration(RedisAPIProducer.this.redisConfig,
+                RedisConfiguration redisConfiguration = RedisClientUtil.getConfiguration(RedisClientsProducer.this.redisConfig,
                         name);
-                if (redisConfiguration.timeout.isPresent()) {
-                    timeout = redisConfiguration.timeout.get();
-                }
+                Duration timeout = redisConfiguration.timeout.orElse(DEFAULT_TIMEOUT);
                 RedisOptions options = RedisClientUtil.buildOptions(redisConfiguration);
                 Redis redis = Redis.createClient(vertx, options);
                 RedisAPI redisAPI = RedisAPI.api(redis);
@@ -46,6 +44,27 @@ class RedisAPIProducer {
                 return new RedisAPIContainer(redis, redisAPI, redisClient, reactiveClient, mutinyRedis, mutinyRedisAPI);
             }
         });
+    }
+
+    public RedisClient getRedisClient(String name) {
+        RedisConfiguration redisConfiguration = RedisClientUtil.getConfiguration(RedisClientsProducer.this.redisConfig,
+                name);
+        Duration timeout = redisConfiguration.timeout.orElse(DEFAULT_TIMEOUT);
+        RedisOptions options = RedisClientUtil.buildOptions(redisConfiguration);
+        Redis redis = Redis.createClient(vertx, options);
+        RedisAPI redisAPI = RedisAPI.api(redis);
+        MutinyRedisAPI mutinyRedisAPI = new MutinyRedisAPI(redisAPI);
+        return new RedisClientImpl(mutinyRedisAPI, timeout);
+    }
+
+    public ReactiveRedisClient getReactiveRedisClient(String name) {
+        RedisConfiguration redisConfiguration = RedisClientUtil.getConfiguration(RedisClientsProducer.this.redisConfig,
+                name);
+        RedisOptions options = RedisClientUtil.buildOptions(redisConfiguration);
+        Redis redis = Redis.createClient(vertx, options);
+        RedisAPI redisAPI = RedisAPI.api(redis);
+        MutinyRedisAPI mutinyRedisAPI = new MutinyRedisAPI(redisAPI);
+        return new ReactiveRedisClientImpl(mutinyRedisAPI);
     }
 
     @PreDestroy

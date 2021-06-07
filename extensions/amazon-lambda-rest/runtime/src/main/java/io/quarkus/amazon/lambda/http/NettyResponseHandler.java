@@ -1,6 +1,7 @@
 package io.quarkus.amazon.lambda.http;
 
 import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
+import com.amazonaws.serverless.proxy.model.ContainerConfig;
 import io.netty.channel.FileRegion;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpResponse;
@@ -20,11 +21,11 @@ import java.util.concurrent.CompletableFuture;
 class NettyResponseHandler implements VirtualResponseHandler {
     private static final int BUFFER_SIZE = 8096;
 
-    AwsProxyResponse responseBuilder = new AwsProxyResponse();
-    ByteArrayOutputStream baos;
-    WritableByteChannel byteChannel;
-    final AwsProxyRequest request;
-    CompletableFuture<AwsProxyResponse> future = new CompletableFuture<>();
+    private final AwsProxyResponse responseBuilder = new AwsProxyResponse();
+    private final CompletableFuture<AwsProxyResponse> future = new CompletableFuture<>();
+    private final AwsProxyRequest request;
+    private ByteArrayOutputStream baos;
+    private WritableByteChannel byteChannel;
 
     public NettyResponseHandler(AwsProxyRequest request) {
         this.request = request;
@@ -96,21 +97,22 @@ class NettyResponseHandler implements VirtualResponseHandler {
     }
 
     private ByteArrayOutputStream createByteStream() {
-        ByteArrayOutputStream baos;
-        baos = new ByteArrayOutputStream(BUFFER_SIZE);
-        return baos;
+        return new ByteArrayOutputStream(BUFFER_SIZE);
     }
 
     private boolean isBinary(String contentType) {
         if (contentType != null) {
+            ContainerConfig containerConfig = LambdaContainerHandler.getContainerConfig();
+
             int index = contentType.indexOf(';');
             if (index >= 0) {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType.substring(0, index));
+                return containerConfig.isBinaryContentType(contentType.substring(0, index));
             } else {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType);
+                return containerConfig.isBinaryContentType(contentType);
             }
+        } else {
+            return false;
         }
-        return false;
     }
 
     @Override

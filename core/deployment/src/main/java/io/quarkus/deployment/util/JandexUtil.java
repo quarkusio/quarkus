@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,14 +66,27 @@ public final class JandexUtil {
      * then the result will contain a single element of class ClassType whose name() would return a DotName for String
      */
     public static List<Type> resolveTypeParameters(DotName input, DotName target, IndexView index) {
-        final ClassInfo inputClassInfo = fetchFromIndex(input, index);
+        final ClassInfo inputClassInfo;
+        try {
+            inputClassInfo = fetchFromIndex(input, index);
+        } catch (Exception e) {
+            // keep compatibility with what clients already expect
+            throw new IllegalArgumentException(e);
+        }
 
         Type startingType = getType(inputClassInfo, index);
+        Set<DotName> unindexedClasses = new LinkedHashSet<>();
         final List<Type> result = findParametersRecursively(startingType, target,
-                new HashSet<>(), index);
+                new HashSet<>(), index, unindexedClasses);
         // null means not found
         if (result == null) {
-            return Collections.emptyList();
+            if (unindexedClasses.isEmpty()) {
+                // no un-indexed classes means that there were no problems traversing the class and interface hierarchies
+                return Collections.emptyList();
+            }
+            throw new IllegalArgumentException(
+                    "The following classes were not part of the index and could be the reason that the captured generic type of '"
+                            + target + "' could not be determined: " + unindexedClasses);
         }
 
         return result;
@@ -98,7 +112,7 @@ public final class JandexUtil {
      * generics when found, on the way down. Returns null if not found.
      */
     private static List<Type> findParametersRecursively(Type type, DotName target,
-            Set<DotName> visitedTypes, IndexView index) {
+            Set<DotName> visitedTypes, IndexView index, Set<DotName> unindexedClasses) {
         DotName name = type.name();
         // cache results first
         if (!visitedTypes.add(name)) {
@@ -123,18 +137,26 @@ public final class JandexUtil {
 
         // superclasses first
         Type superClassType = inputClassInfo.superClassType();
-        List<Type> superResult = findParametersRecursively(superClassType, target, visitedTypes, index);
-        if (superResult != null) {
-            // map any returned type parameters to our type arguments on the way down
-            return mapTypeArguments(superClassType, superResult, index);
+        try {
+            List<Type> superResult = findParametersRecursively(superClassType, target, visitedTypes, index, unindexedClasses);
+            if (superResult != null) {
+                // map any returned type parameters to our type arguments on the way down
+                return mapTypeArguments(superClassType, superResult, index);
+            }
+        } catch (ClassNotIndexedException e) {
+            unindexedClasses.add(e.dotName);
         }
 
         // interfaces second
         for (Type interfaceType : inputClassInfo.interfaceTypes()) {
-            List<Type> ret = findParametersRecursively(interfaceType, target, visitedTypes, index);
-            if (ret != null) {
-                // map any returned type parameters to our type arguments on the way down
-                return mapTypeArguments(interfaceType, ret, index);
+            try {
+                List<Type> ret = findParametersRecursively(interfaceType, target, visitedTypes, index, unindexedClasses);
+                if (ret != null) {
+                    // map any returned type parameters to our type arguments on the way down
+                    return mapTypeArguments(interfaceType, ret, index);
+                }
+            } catch (ClassNotIndexedException e) {
+                unindexedClasses.add(e.dotName);
             }
         }
 
@@ -260,7 +282,7 @@ public final class JandexUtil {
     private static ClassInfo fetchFromIndex(DotName dotName, IndexView index) {
         final ClassInfo classInfo = index.getClassByName(dotName);
         if (classInfo == null) {
-            throw new IllegalArgumentException("Class " + dotName + " was not found in the index");
+            throw new ClassNotIndexedException(dotName);
         }
         return classInfo;
     }
@@ -343,5 +365,14 @@ public final class JandexUtil {
                 }
         }
         return type.toString();
+    }
+
+    private static class ClassNotIndexedException extends RuntimeException {
+
+        private final DotName dotName;
+
+        public ClassNotIndexedException(DotName dotName) {
+            this.dotName = dotName;
+        }
     }
 }

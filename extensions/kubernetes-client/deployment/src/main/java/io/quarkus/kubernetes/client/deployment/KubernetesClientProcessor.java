@@ -158,7 +158,7 @@ public class KubernetesClientProcessor {
                         if (watcherGenericTypes.size() == 1) {
                             watchedClasses.add(watcherGenericTypes.get(0).name());
                         }
-                    } catch (IllegalStateException ignored) {
+                    } catch (IllegalArgumentException ignored) {
                         // when the class has no subclasses and we were not able to determine the generic types, it's likely that
                         // the watcher will fail due to not being able to deserialize the class
                         if (applicationIndex.getIndex().getAllKnownSubclasses(c.name()).isEmpty()) {

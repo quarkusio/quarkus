@@ -81,6 +81,8 @@ public class JarLauncher implements ArtifactLauncher {
         System.out.println("Executing " + args);
 
         Files.deleteIfExists(logFile);
+        Files.createDirectories(logFile.getParent());
+
         quarkusProcess = LauncherUtil.launchProcess(args);
         ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, jarWaitTime);
         updateConfigForPort(result.getPort());

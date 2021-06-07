@@ -46,20 +46,20 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=opentelemetry-quickstart \
     -DclassName="org.acme.opentelemetry.TracedResource" \
     -Dpath="/hello" \
-    -Dextensions="resteasy,quarkus-opentelemetry-exporter-jaeger"
+    -Dextensions="resteasy,quarkus-opentelemetry-exporter-otlp"
 cd opentelemetry-quickstart
 ----
 
-This command generates the Maven project with a REST endpoint and imports the `quarkus-opentelemetry-exporter-jaeger` extension,
+This command generates the Maven project with a REST endpoint and imports the `quarkus-opentelemetry-exporter-otlp` extension,
 which includes the OpenTelemetry support,
-and a gRPC span exporter for https://www.jaegertracing.io/[Jaeger].
+and a gRPC span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
 
-If you already have your Quarkus project configured, you can add the `quarkus-opentelemetry-exporter-jaeger` extension
+If you already have your Quarkus project configured, you can add the `quarkus-opentelemetry-exporter-otlp` extension
 to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="opentelemetry-jaeger-exporter"
+./mvnw quarkus:add-extension -Dextensions="opentelemetry-otlp-exporter"
 ----
 
 This will add the following to your `pom.xml`:
@@ -68,7 +68,7 @@ This will add the following to your `pom.xml`:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-opentelemetry-exporter-jaeger</artifactId>
+    <artifactId>quarkus-opentelemetry-exporter-otlp</artifactId>
 </dependency>
 ----
 
@@ -105,7 +105,7 @@ endpoint will be traced without any required code changes.
 
 === Create the configuration
 
-There are two ways to configure the Jaeger gRPC Exporter within the application.
+There are two ways to configure the OTLP gRPC Exporter within the application.
 
 The first approach is by providing the properties within the `src/main/resources/application.properties` file:
 
@@ -113,7 +113,7 @@ The first approach is by providing the properties within the `src/main/resources
 ----
 quarkus.application.name=myservice // <1>
 quarkus.opentelemetry.enabled=true // <2>
-quarkus.opentelemetry.tracer.exporter.jaeger.endpoint=http://localhost:14250 // <3>
+quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:55680 // <3>
 ----
 
 <1> All spans created from the application will include an OpenTelemetry `Resource` indicating the span was created by the `myservice` application. If not set, it will default to the artifact id.
@@ -122,11 +122,66 @@ quarkus.opentelemetry.tracer.exporter.jaeger.endpoint=http://localhost:14250 // 
 
 == Run the application
 
-The first step is to start the https://www.jaegertracing.io/[Jaeger] "all in one" to collect and display the captured traces:
+The first step is to configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
 
-[source,bash]
+Configure the OpenTelemetry Collector by creating an `otel-collector-config.yaml` file:
+
+[source,yaml,subs="attributes"]
 ----
-docker run -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14250:14250 jaegertracing/all-in-one:latest
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  logging:
+
+  jaeger:
+    endpoint: jaeger-all-in-one:14250
+    insecure: true
+
+processors:
+  batch:
+
+extensions:
+  health_check:
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [jaeger]
+
+----
+
+Start the OpenTelemetry Collector and Jaeger system via the following docker-compose file that you can launch via `docker-compose run -d`:
+
+[source,yaml,subs="attributes"]
+----
+version: "2"
+services:
+
+  # Jaeger
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268"
+      - "14250"
+  # Collector
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "13133:13133" # Health_check extension
+      - "4317"        # OTLP gRPC receiver
+      - "55680:55680" # OTLP gRPC receiver alternative port
+    depends_on:
+      - jaeger-all-in-one
 ----
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
@@ -136,14 +191,14 @@ Now we are ready to run our application. If using `application.properties` to co
 ./mvnw compile quarkus:dev
 ----
 
-or if configuring the Jaeger gRPC endpoint via environment variables:
+or if configuring the OTLP gRPC endpoint via JVM arguments:
 
 [source,bash]
 ----
-./mvnw compile quarkus:dev -Djvm.args="-DQUARKUS_OPENTELEMETRY_TRACER_EXPORTER_JAEGER_ENDPOINT=http://localhost:14250"
+./mvnw compile quarkus:dev -Djvm.args="-Dquarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:55680"
 ----
 
-With the Jaeger system and application running, you can make a request to the provided endpoint:
+With the OpenTelemetry Collector, Jaeger system and application running, you can make a request to the provided endpoint:
 
 [source,shell]
 ----
@@ -179,4 +234,4 @@ which retrieves the OpenTelemetry `Context` to extract the current span for prop
 == OpenTelemetry Configuration Reference
 
 include::{generated-dir}/config/quarkus-opentelemetry.adoc[leveloffset=+1, opts=optional]
-include::{generated-dir}/config/quarkus-opentelemetry-exporter-jaeger.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-opentelemetry-exporter-otlp.adoc[leveloffset=+1, opts=optional]

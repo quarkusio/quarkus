@@ -72,6 +72,7 @@ public class JBangRunner implements BuildSystemRunner {
             args.add("--native");
         }
         args.add("build");
+        setJbangProperties(args, false);
         args.addAll(params);
         args.add(getMainPath());
         return prependExecutable(args);

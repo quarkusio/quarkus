@@ -59,6 +59,21 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(AwsProxyRequestContext.class, request.getRequestContext());
         quarkusHeaders.setContextObject(AwsProxyRequest.class, request);
+
+        NettyResponseHandler handler = new NettyResponseHandler(request);
+        VirtualClientConnection connection = VirtualClientConnection
+                .connect(handler, VertxHttpRecorder.VIRTUAL_HTTP, clientAddress);
+
+        connection.sendMessage(createNettyRequest(request, path, quarkusHeaders));
+        connection.sendMessage(createRequestContent(request));
+        try {
+            return handler.getFuture().get();
+        } finally {
+            connection.close();
+        }
+    }
+
+    private DefaultHttpRequest createNettyRequest(AwsProxyRequest request, String path, QuarkusHttpHeaders quarkusHeaders) {
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.valueOf(request.getHttpMethod()), path, quarkusHeaders);
         if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent
@@ -69,19 +84,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
             nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
         }
-
-        HttpContent requestContent = createRequestContent(request);
-        NettyResponseHandler handler = new NettyResponseHandler(request);
-        VirtualClientConnection connection = VirtualClientConnection
-                .connect(handler, VertxHttpRecorder.VIRTUAL_HTTP, clientAddress);
-
-        connection.sendMessage(nettyRequest);
-        connection.sendMessage(requestContent);
-        try {
-            return handler.getFuture().get();
-        } finally {
-            connection.close();
-        }
+        return nettyRequest;
     }
 
     private HttpContent createRequestContent(AwsProxyRequest request) {

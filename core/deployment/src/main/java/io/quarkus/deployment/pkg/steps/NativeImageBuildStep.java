@@ -662,6 +662,11 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:+DashboardAll");
                 }
 
+                // Disable single parsing of compiler graphs till https://github.com/oracle/graal/issues/3435 gets fixed
+                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_21_1)) {
+                    nativeImageArgs.add("-H:-ParseOnce");
+                }
+
                 nativeImageArgs.add(nativeImageName);
 
                 return new NativeImageInvokerInfo(nativeImageArgs);

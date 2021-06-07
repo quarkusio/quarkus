@@ -70,19 +70,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
             nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
         }
 
-        HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
-        if (request.getBody() != null) {
-            if (request.isBase64Encoded()) {
-                ByteBuf body = Unpooled.wrappedBuffer(Base64.getMimeDecoder().decode(request.getBody()));
-                requestContent = new DefaultLastHttpContent(body);
-            } else {
-                ByteBuf body = Unpooled.copiedBuffer(
-                        request.getBody(),
-                        StandardCharsets.UTF_8
-                ); //TODO: do we need to look at the request encoding?
-                requestContent = new DefaultLastHttpContent(body);
-            }
-        }
+        HttpContent requestContent = createRequestContent(request);
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection
                 .connect(handler, VertxHttpRecorder.VIRTUAL_HTTP, clientAddress);
@@ -94,6 +82,20 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         } finally {
             connection.close();
         }
+    }
+
+    private HttpContent createRequestContent(AwsProxyRequest request) {
+        if (request.getBody() != null) {
+            ByteBuf body;
+            if (request.isBase64Encoded()) {
+                body = Unpooled.wrappedBuffer(Base64.getMimeDecoder().decode(request.getBody()));
+            } else {
+                //TODO: do we need to look at the request encoding?
+                body = Unpooled.copiedBuffer(request.getBody(), StandardCharsets.UTF_8);
+            }
+            return new DefaultLastHttpContent(body);
+        }
+        return LastHttpContent.EMPTY_LAST_CONTENT;
     }
 
     private String getPathFromRequest(AwsProxyRequest request) throws UnsupportedEncodingException {

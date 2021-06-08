@@ -5,14 +5,14 @@ language:
     data:
       dockerfile:
         jvm:
-          from: registry.access.redhat.com/ubi8/ubi-minimal:8.3
+          from: registry.access.redhat.com/ubi8/ubi-minimal:8.4
           java-package: java-11-openjdk-headless
           run-java-version: 1.3.8
         legacy-jar:
-          from: registry.access.redhat.com/ubi8/ubi-minimal:8.3
+          from: registry.access.redhat.com/ubi8/ubi-minimal:8.4
           java-package: java-11-openjdk-headless
           run-java-version: 1.3.8
         native:
-          from: registry.access.redhat.com/ubi8/ubi-minimal:8.3
+          from: registry.access.redhat.com/ubi8/ubi-minimal:8.4
         native-distroless:
           from: quay.io/quarkus/quarkus-distroless-image:1.0

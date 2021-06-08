@@ -50,15 +50,6 @@
             <!-- Avoid adding this to the BOM -->
             <version>1.4.17</version>
         </dependency>
-        <!-- TODO: The vertx testing stuff likely needs to be a separate module -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>mutiny</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

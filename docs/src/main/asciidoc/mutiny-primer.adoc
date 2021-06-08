@@ -70,7 +70,7 @@ Remember, you must never block these threads, and the model would collapse if yo
 So, you can't use blocking I/O.
 Instead, you need to schedule the I/O operation and pass a continuation.
 
-image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads,width=80%]
+image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads,width=50%, align=center]
 
 The Mutiny event-driven paradigm is tailored for this.
 When the I/O operation completes successfully, the Uni that represents it emits an item event.

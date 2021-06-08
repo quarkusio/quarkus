@@ -21,7 +21,7 @@ link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/as
 With a Custom `ConfigSource` it is possible to read additional configuration values and add them to the `Config`
 instance in a defined ordinal. This allows overriding values from other sources or falling back to other values.
 
-image::config-sources.png[]
+image::config-sources.png[align=center,width=90%]
 
 A custom `ConfigSource` requires an implementation of `org.eclipse.microprofile.config.spi.ConfigSource` or
 `org.eclipse.microprofile.config.spi.ConfigSourceProvider`. Each implementation requires registration via

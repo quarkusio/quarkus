@@ -31,7 +31,7 @@ A second component reads from the `prices` queue and apply some magic conversion
 The result is sent to an in-memory stream consumed by a JAX-RS resource.
 The data is sent to a browser using server-sent events.
 
-image::amqp-guide-architecture.png[alt=Architecture]
+image::amqp-guide-architecture.png[alt=Architecture,align=center,width=80%]
 
 == Solution
 

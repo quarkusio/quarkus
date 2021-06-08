@@ -70,11 +70,34 @@ final class LauncherUtil {
             if (result != null) {
                 return result;
             }
-            quarkusProcess.destroyForcibly();
+            destroyProcess(quarkusProcess);
             throw new IllegalStateException(
                     "Unable to determine the status of the running process. See the above logs for details");
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while waiting to capture listening process port and protocol");
+        }
+    }
+
+    /**
+     * Try to destroy the process normally a few times
+     * and resort to forceful destruction if necessary
+     */
+    private static void destroyProcess(Process quarkusProcess) {
+        quarkusProcess.destroy();
+        int i = 0;
+        while (i++ < 10) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+
+            }
+            if (!quarkusProcess.isAlive()) {
+                break;
+            }
+        }
+
+        if (quarkusProcess.isAlive()) {
+            quarkusProcess.destroyForcibly();
         }
     }
 

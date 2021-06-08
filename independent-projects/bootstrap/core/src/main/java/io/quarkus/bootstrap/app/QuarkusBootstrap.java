@@ -426,7 +426,7 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
-        public Builder setLocalProjectDiscovery(boolean localProjectDiscovery) {
+        public Builder setLocalProjectDiscovery(Boolean localProjectDiscovery) {
             this.localProjectDiscovery = localProjectDiscovery;
             return this;
         }

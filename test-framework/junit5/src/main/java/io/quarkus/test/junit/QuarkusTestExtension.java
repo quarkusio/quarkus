@@ -143,7 +143,7 @@ public class QuarkusTestExtension
     private static Class<?> currentJUnitTestClass;
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
 
-    private static List<TestMethodInvoker> testMethodInvokers;
+    private static List<Object> testMethodInvokers;
 
     private static DeepClone deepClone;
     //needed for @Nested
@@ -467,10 +467,14 @@ public class QuarkusTestExtension
 
     private void populateTestMethodInvokers(ClassLoader quarkusClassLoader) {
         testMethodInvokers = new ArrayList<>();
-        ServiceLoader<TestMethodInvoker> loader = ServiceLoader.load(TestMethodInvoker.class, this.getClass().getClassLoader());
-        for (TestMethodInvoker testMethodInvoker : loader) {
-            testMethodInvoker.init(quarkusClassLoader);
-            testMethodInvokers.add(testMethodInvoker);
+        try {
+            ServiceLoader<?> loader = ServiceLoader.load(quarkusClassLoader.loadClass(TestMethodInvoker.class.getName()),
+                    quarkusClassLoader);
+            for (Object testMethodInvoker : loader) {
+                testMethodInvokers.add(testMethodInvoker);
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -924,12 +928,15 @@ public class QuarkusTestExtension
             }
             newMethod.setAccessible(true);
 
-            TestMethodInvoker testMethodInvokerToUse = null;
+            Object testMethodInvokerToUse = null;
             if (testMethodInvokersAllowed) {
-                for (TestMethodInvoker testMethodInvoker : testMethodInvokers) {
-                    if (testMethodInvoker.supportsMethod(extensionContext.getRequiredTestClass(),
-                            invocationContext.getExecutable())) {
+                for (Object testMethodInvoker : testMethodInvokers) {
+                    boolean supportsMethod = (boolean) testMethodInvoker.getClass()
+                            .getMethod("supportsMethod", Class.class, Method.class).invoke(testMethodInvoker,
+                                    extensionContext.getRequiredTestClass(), invocationContext.getExecutable());
+                    if (supportsMethod) {
                         testMethodInvokerToUse = testMethodInvoker;
+                        break;
                     }
                 }
             }
@@ -969,8 +976,8 @@ public class QuarkusTestExtension
                 if (cloneRequired) {
                     argumentsFromTccl.add(deepClone.clone(arg));
                 } else if (testMethodInvokerToUse != null) {
-                    argumentsFromTccl.add(testMethodInvokerToUse.customMethodTypesHandler().instance(argClass,
-                            Thread.currentThread().getContextClassLoader()));
+                    argumentsFromTccl.add(testMethodInvokerToUse.getClass().getMethod("methodParamInstance", String.class)
+                            .invoke(testMethodInvokerToUse, argClass.getName()));
                 } else {
                     argumentsFromTccl.add(arg);
                 }
@@ -983,8 +990,10 @@ public class QuarkusTestExtension
                 effectiveTestInstance = testClassFromTCCL.getConstructor().newInstance();
             }
             if (testMethodInvokerToUse != null) {
-                return testMethodInvokerToUse.invoke(effectiveTestInstance, newMethod, argumentsFromTccl,
-                        extensionContext.getRequiredTestClass().getName());
+                return testMethodInvokerToUse.getClass()
+                        .getMethod("invoke", Object.class, Method.class, List.class, String.class)
+                        .invoke(testMethodInvokerToUse, effectiveTestInstance, newMethod, argumentsFromTccl,
+                                extensionContext.getRequiredTestClass().getName());
             } else {
                 return newMethod.invoke(effectiveTestInstance, argumentsFromTccl.toArray(new Object[0]));
             }
@@ -1055,9 +1064,9 @@ public class QuarkusTestExtension
         if (testMethodInvokers == null) {
             return false;
         }
-        for (TestMethodInvoker testMethodInvoker : testMethodInvokers) {
-            if (testMethodInvoker.customMethodTypesHandler().handledTypes()
-                    .contains(parameterContext.getParameter().getType())) {
+        for (Object testMethodInvoker : testMethodInvokers) {
+            boolean handlesMethodParamType = testMethodInvokerHandlesParamType(testMethodInvoker, parameterContext);
+            if (handlesMethodParamType) {
                 return true;
             }
         }
@@ -1074,9 +1083,8 @@ public class QuarkusTestExtension
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
         if ((parameterContext.getDeclaringExecutable() instanceof Method) && (testMethodInvokers != null)) {
-            Method method = (Method) parameterContext.getDeclaringExecutable();
-            for (TestMethodInvoker testMethodInvoker : testMethodInvokers) {
-                if (testMethodInvoker.supportsMethod(parameterContext.getParameter().getType(), method)) {
+            for (Object testMethodInvoker : testMethodInvokers) {
+                if (testMethodInvokerHandlesParamType(testMethodInvoker, parameterContext)) {
                     return null; // return null as this will actually be populated when we invoke the actual test instance
                 }
             }
@@ -1099,6 +1107,16 @@ public class QuarkusTestExtension
                 return '\u0000';
             default:
                 return null;
+        }
+    }
+
+    // we need to use reflection because the instances of TestMethodInvoker are load from the QuarkusClassLoader
+    private boolean testMethodInvokerHandlesParamType(Object testMethodInvoker, ParameterContext parameterContext) {
+        try {
+            return (boolean) testMethodInvoker.getClass().getMethod("handlesMethodParamType", String.class)
+                    .invoke(testMethodInvoker, parameterContext.getParameter().getType().getName());
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new IllegalStateException("Unable to determine if TestMethodInvoker supports parameter");
         }
     }
 

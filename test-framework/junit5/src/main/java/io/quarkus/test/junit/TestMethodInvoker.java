@@ -1,33 +1,34 @@
 package io.quarkus.test.junit;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * An SPI that allows modules that integrate with QuarkusTestExtension to alter the invocation of the actual test method.
+ * An SPI that allows modules that integrate with {@link QuarkusTestExtension} to alter the invocation of the actual test
+ * method.
  *
- * Implementations are loaded from the ClassLoader that loads the QuarkusTest extension, but they need to take care
- * that the actual test method is invoked on a specific QuarkusClassLoader (which is provided in the {@code init} method).
+ * Implementations are loaded from the same ClassLoader that loads the actual test method
+ * (so NOT the ClassLoader that loads the QuarkusTestExtension) which results in {@link QuarkusTestExtension}
+ * having to invoke the method with reflection, but otherwise allows the implementation to (mostly) avoid
+ * dealing with class-loading.
  */
 public interface TestMethodInvoker {
 
     /**
-     * Invoked by QuarkusTestExtension with ClassLoader that is used to load the actual test instance
+     * Determine whether this method invoker handles a test method parameter on its own
      */
-    void init(ClassLoader actualTestCL);
+    default boolean handlesMethodParamType(String paramClassName) {
+        return false;
+    }
 
-    /**
-     * Allows this SPI to handle method parameters not directly handled by QuarkusTestExtension
-     */
-    default CustomMethodTypesHandler customMethodTypesHandler() {
-        return CustomMethodTypesHandler.Default.INSTANCE;
+    default Object methodParamInstance(String paramClassName) {
+        throw new IllegalStateException("Should never be called");
     }
 
     /**
      * Determines whether this SPI should handle the test method.
      * The class and method are those supplied by JUnit which means they have been loaded from the original ClassLoader
-     * that loaded the QuarkusTestExtension.
+     * that loaded the QuarkusTestExtension and NOT the ClassLoader that loaded this class.
      */
     boolean supportsMethod(Class<?> originalTestClass, Method originalTestMethod);
 
@@ -37,33 +38,4 @@ public interface TestMethodInvoker {
      */
     Object invoke(Object actualTestInstance, Method actualTestMethod, List<Object> actualTestMethodArgs, String testClassName)
             throws Throwable;
-
-    interface CustomMethodTypesHandler {
-
-        /**
-         * Returns the classes (loaded from the original test ClassLoader) that are handled by this type
-         */
-        List<Class<?>> handledTypes();
-
-        /**
-         * Creates instances of the handled types. The instance of the class MUST be loaded from the supplied ClassLoader
-         * (which is the actual test ClassLoader)
-         */
-        <T> T instance(Class<?> clazz, ClassLoader actualTestClassLoader);
-
-        final class Default implements CustomMethodTypesHandler {
-
-            private static final Default INSTANCE = new Default();
-
-            @Override
-            public List<Class<?>> handledTypes() {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public <T> T instance(Class<?> clazz, ClassLoader actualTestClassLoader) {
-                throw new IllegalStateException("Should not have been called");
-            }
-        }
-    }
 }

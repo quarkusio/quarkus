@@ -9,8 +9,6 @@ import io.quarkus.devtools.commands.handlers.RemoveExtensionsCommandHandler;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.platform.tools.ToolsUtils;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -19,10 +17,9 @@ import java.util.Set;
  */
 public class RemoveExtensions {
 
-    public static final String NAME = "remove-extensions";
-    public static final String EXTENSIONS = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "extensions");
-    public static final String OUTCOME_UPDATED = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "outcome", "updated");
-    public static final String EXTENSION_MANAGER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "extension-manager");
+    public static final String EXTENSIONS = "quarkus.remove-extensions.extensions";
+    public static final String OUTCOME_UPDATED = "quarkus.remove-extensions.outcome-updated";
+    public static final String EXTENSION_MANAGER = "quarkus.remove-extensions.extension-manager";
 
     private final QuarkusCommandInvocation invocation;
 

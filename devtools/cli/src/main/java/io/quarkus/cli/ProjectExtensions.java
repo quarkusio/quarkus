@@ -11,7 +11,8 @@ import picocli.CommandLine.Unmatched;
 
 @CommandLine.Command(name = "extension", aliases = {
         "ext" }, sortOptions = false, mixinStandardHelpOptions = false, description = "List, add, and remove extensions of an existing project.", subcommands = {
-                ProjectExtensionsAdd.class, ProjectExtensionsList.class, ProjectExtensionsRemove.class })
+                ProjectExtensionsList.class, ProjectExtensionsCategories.class,
+                ProjectExtensionsAdd.class, ProjectExtensionsRemove.class })
 public class ProjectExtensions extends BaseBuildCommand implements Callable<Integer> {
 
     @Unmatched // avoids throwing errors for unmatched arguments

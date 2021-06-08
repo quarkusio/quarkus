@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
@@ -44,7 +45,13 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern)
+    public Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format) throws Exception {
+        throw new UnsupportedOperationException("Not there yet. ;)");
+    }
+
+    @Override
+    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
+            String category)
             throws Exception {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }

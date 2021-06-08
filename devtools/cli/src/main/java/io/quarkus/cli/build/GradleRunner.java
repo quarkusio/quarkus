@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
@@ -64,13 +65,28 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern) {
+    public Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format) {
+        ArrayDeque<String> args = new ArrayDeque<>();
+        setGradleProperties(args, runMode.isBatchMode());
+
+        args.add("listCategories");
+        args.add("--fromCli");
+        args.add("--format=" + format.getFormatString());
+        return run(prependExecutable(args));
+    }
+
+    @Override
+    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
+            String category) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, runMode.isBatchMode());
 
         args.add("listExtensions");
         args.add("--fromCli");
         args.add("--format=" + format.getFormatString());
+        if (category != null && !category.isBlank()) {
+            args.add("--category=" + category);
+        }
         if (!installable) {
             args.add("--installed");
         }

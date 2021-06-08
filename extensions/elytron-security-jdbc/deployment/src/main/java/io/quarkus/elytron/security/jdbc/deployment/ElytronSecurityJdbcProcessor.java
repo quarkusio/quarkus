@@ -12,6 +12,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.jdbc.JdbcRecorder;
@@ -21,9 +22,16 @@ import io.quarkus.runtime.RuntimeValue;
 
 class ElytronSecurityJdbcProcessor {
 
+    private static final String PASSWORD_PROVIDER = "org.wildfly.security.password.WildFlyElytronPasswordProvider";
+
     @BuildStep()
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.SECURITY_JDBC);
+    }
+
+    @BuildStep
+    void addPasswordProviderToNativeImage(BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) {
+        additionalProviders.produce(new NativeImageSecurityProviderBuildItem(PASSWORD_PROVIDER));
     }
 
     /**

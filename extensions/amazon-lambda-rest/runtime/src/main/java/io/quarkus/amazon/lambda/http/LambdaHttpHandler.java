@@ -32,6 +32,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         errorHeaders.putSingle("Content-Type", "application/json");
     }
 
+    @Override
     public AwsProxyResponse handleRequest(AwsProxyRequest request, Context context) {
         try {
             InetSocketAddress clientAddress = getClientAddressFromRequest(request);
@@ -62,8 +63,8 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         VirtualClientConnection connection = VirtualClientConnection
                 .connect(handler, VertxHttpRecorder.VIRTUAL_HTTP, clientAddress);
 
-        connection.sendMessage(createNettyRequest(request, quarkusHeaders));
-        connection.sendMessage(createRequestContent(request));
+        connection.sendMessage(createHttpRequestHead(request, quarkusHeaders));
+        connection.sendMessage(createHttpRequestBody(request));
         try {
             return handler.getFuture().get();
         } finally {
@@ -71,7 +72,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
     }
 
-    private DefaultHttpRequest createNettyRequest(AwsProxyRequest request, QuarkusHttpHeaders quarkusHeaders)
+    private HttpRequest createHttpRequestHead(AwsProxyRequest request, QuarkusHttpHeaders quarkusHeaders)
             throws UnsupportedEncodingException {
         String path = getPathFromRequest(request);
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
@@ -89,7 +90,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         return nettyRequest;
     }
 
-    private HttpContent createRequestContent(AwsProxyRequest request) {
+    private HttpContent createHttpRequestBody(AwsProxyRequest request) {
         if (request.getBody() != null) {
             ByteBuf body;
             if (request.isBase64Encoded()) {

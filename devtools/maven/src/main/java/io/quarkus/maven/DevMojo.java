@@ -86,6 +86,7 @@ import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.utilities.OS;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
@@ -401,6 +402,12 @@ public class DevMojo extends AbstractMojo {
      * messes everything up. This attempts to fix that by saving the state so it can be restored
      */
     private void saveTerminalState() {
+        if (OS.determineOS() == OS.WINDOWS) {
+            //this does not work on windows
+            //jansi creates an input pump thread, that will steal
+            //input from the dev mode process
+            return;
+        }
         try {
             new TerminalConnection(new Consumer<Connection>() {
                 @Override

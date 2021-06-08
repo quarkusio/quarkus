@@ -53,7 +53,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.ReaderInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
-import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
+import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 
 public class ResteasyReactiveCommonProcessor {
@@ -65,7 +65,7 @@ public class ResteasyReactiveCommonProcessor {
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resteasyDeployment,
-            BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
+            BuildProducer<AdditionalSecuredClassesBuildItem> additionalSecuredClasses) {
         if (config.denyJaxRs && resteasyDeployment.isPresent()) {
             final List<ClassInfo> classes = new ArrayList<>();
 
@@ -77,7 +77,7 @@ public class ResteasyReactiveCommonProcessor {
                 }
             }
 
-            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildIem(classes));
+            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildItem(classes));
         }
     }
 

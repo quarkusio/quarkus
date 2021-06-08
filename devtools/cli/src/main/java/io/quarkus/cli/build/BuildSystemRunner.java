@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
@@ -82,7 +83,11 @@ public interface BuildSystemRunner {
         return getProjectRoot().relativize(absolutePath).toString();
     }
 
-    Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern)
+    Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format)
+            throws Exception;
+
+    Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
+            String category)
             throws Exception;
 
     Integer addExtension(RunModeOption runMode, Set<String> extensions) throws Exception;

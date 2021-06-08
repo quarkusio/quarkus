@@ -29,6 +29,7 @@ public class PersistentAppModel implements Serializable {
     private Set<AppArtifactKey> lesserPriorityArtifacts;
     private Set<AppArtifactKey> localProjectArtifacts;
     private Map<String, String> platformProperties;
+    private Map<String, CapabilityContract> capabilitiesContracts;
     private String userProvidersDirectory;
 
     public PersistentAppModel(String baseName, Map<AppArtifactKey, List<String>> paths, AppModel appModel,
@@ -54,6 +55,7 @@ public class PersistentAppModel implements Serializable {
         parentFirstArtifacts = new HashSet<>(appModel.getParentFirstArtifacts());
         runnerParentFirstArtifacts = new HashSet<>(appModel.getRunnerParentFirstArtifacts());
         lesserPriorityArtifacts = new HashSet<>(appModel.getLesserPriorityArtifacts());
+        capabilitiesContracts = new HashMap<>(appModel.getCapabilityContracts());
     }
 
     public String getUserProvidersDirectory() {
@@ -85,6 +87,7 @@ public class PersistentAppModel implements Serializable {
         for (AppArtifactKey i : localProjectArtifacts) {
             model.addLocalProjectArtifact(i);
         }
+        model.setCapabilitiesContracts(capabilitiesContracts);
         final PlatformImportsImpl pi = new PlatformImportsImpl();
         pi.setPlatformProperties(platformProperties);
         model.setPlatformImports(pi);

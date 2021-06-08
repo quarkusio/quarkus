@@ -147,10 +147,10 @@
         <tika.version>1.26</tika.version>
         <ooxml-schemas.version>1.4</ooxml-schemas.version>
         <aws-lambda-java.version>1.2.1</aws-lambda-java.version>
-        <aws-lambda-java-events.version>3.8.0</aws-lambda-java-events.version>
+        <aws-lambda-java-events.version>3.9.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
-        <aws-xray.version>2.9.0</aws-xray.version>
-        <awssdk.version>2.16.70</awssdk.version>
+        <aws-xray.version>2.9.1</aws-xray.version>
+        <awssdk.version>2.16.78</awssdk.version>
         <aws-alexa-sdk.version>2.38.1</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
         <kotlin.version>1.4.32</kotlin.version>
@@ -162,7 +162,7 @@
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
         <jgit.version>5.11.1.202105131744-r</jgit.version>
-        <flyway.version>7.9.1</flyway.version>
+        <flyway.version>7.9.2</flyway.version>
         <yasson.version>1.0.9</yasson.version>
         <liquibase.version>4.3.5</liquibase.version>
         <snakeyaml.version>1.28</snakeyaml.version>
@@ -3538,6 +3538,11 @@
             <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>artemis-amqp-protocol</artifactId>
+                <version>${artemis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-mqtt-protocol</artifactId>
                 <version>${artemis.version}</version>
             </dependency>
             <dependency>

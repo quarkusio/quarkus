@@ -108,8 +108,9 @@ public class JibProcessor {
             Optional<AppCDSResultBuildItem> appCDSResult,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        Boolean buildContainerImage = containerImageConfig.build || buildRequest.isPresent();
+        Boolean pushContainerImage = containerImageConfig.push || pushRequest.isPresent();
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -132,7 +133,8 @@ public class JibProcessor {
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
-                Collections.singletonMap("container-image", container.getTargetImage().toString())));
+                Map.of("container-image", container.getTargetImage().toString(), "pull-required",
+                        pushContainerImage.toString())));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, JibBuild.class, NativeBuild.class })
@@ -145,8 +147,9 @@ public class JibProcessor {
             List<ContainerImageLabelBuildItem> containerImageLabels,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        Boolean buildContainerImage = containerImageConfig.build || buildRequest.isPresent();
+        Boolean pushContainerImage = containerImageConfig.push || pushRequest.isPresent();
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -164,7 +167,8 @@ public class JibProcessor {
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
-                Collections.singletonMap("container-image", container.getTargetImage().toString())));
+                Map.of("container-image", container.getTargetImage().toString(), "pull-required",
+                        pushContainerImage.toString())));
     }
 
     private JibContainer containerize(ContainerImageConfig containerImageConfig,

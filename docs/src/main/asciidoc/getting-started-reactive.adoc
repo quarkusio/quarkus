@@ -56,7 +56,7 @@ Indeed, to handle multiple concurrent requests, you need multiple threads; and s
 In addition, these threads are blocked as soon as your code interacts with remote services.
 So, it leads to inefficient usage of the resources, as you may need more threads, and each thread, as they are mapped to OS threads, has a cost in terms of memory and CPU.
 
-image::blocking-threads.png[alt=Imperative Execution Model and Worker Threads,width=80%]
+image::blocking-threads.png[alt=Imperative Execution Model and Worker Threads, width=50%, align=center]
 
 On the other side, the reactive model relies on non-blocking I/Os and a different execution model.
 Non-blocking I/O provides an efficient way to deal with concurrent I/O.
@@ -65,7 +65,7 @@ With such a model, request processing is not delegated to a worker thread but us
 It also improves the concurrency as it removes the constraint on the number of threads.
 Finally, it also improves response time as it reduces the number of thread switches.
 
-image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads,width=80%]
+image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads, width=50%, align=center]
 
 
 == From sequential to continuation style
@@ -110,7 +110,7 @@ First, go to https://code.quarkus.io[code.quarkus.io] and select the following e
 2. Hibernate Reactive with Panache
 3. Reactive PostgreSQL client
 
-image::reactive-guide-code.png[alt=Extensions to select in https://code.quarkus.io]
+image::reactive-guide-code.png[alt=Extensions to select in https://code.quarkus.io,width=90%,align=center]
 
 The last extension is the reactive database driver for PostgreSQL.
 Hibernate Reactive uses that driver to interact with the database without blocking the caller thread.

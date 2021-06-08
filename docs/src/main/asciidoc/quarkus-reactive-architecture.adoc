@@ -29,7 +29,7 @@ The https://www.reactivemanifesto.org/[Reactive Manifesto] characterizes _Reacti
 3. Resilient - they handle failures gracefully
 4. Asynchronous message passing - the component of a reactive system interact using messages
 
-image::reactive-systems.png[alt=Reactive Systems Pillars,width=80%]
+image::reactive-systems.png[alt=Reactive Systems Pillars, width=50%, align=center]
 
 In addition to this, the https://principles.reactive.foundation/[Reactive Principles white paper] lists a set of rules and patterns to help the construction of reactive systems.
 
@@ -69,7 +69,7 @@ As a result, Quarkus applications allow for higher concurrency, use less memory,
 Under the hood, Quarkus has a reactive engine.
 This engine, powered by Eclipse Vert.x and Netty, handles the non-blocking I/O interactions.
 
-image::quarkus-reactive-core.png[Quarkus Reactive Core,width=80%]
+image::quarkus-reactive-core.png[Quarkus Reactive Core,width=50%, align=center]
 
 Quarkus extensions and the application code can use this engine to orchestrate I/O interactions, interact with databases, send and receive messages, and so on.
 
@@ -89,7 +89,7 @@ The size of this pool constrains the concurrency of the application.
 In addition, each thread has a cost in terms of memory and CPU.
 Large thread pools result in greedy applications.
 
-image::blocking-threads.png[alt=Imperative Execution Model and Worker Threads,width=80%]
+image::blocking-threads.png[alt=Imperative Execution Model and Worker Threads,width=50%, align=center]
 
 As we have seen above, non-blocking I/O avoids that problem.
 A few threads can handle many concurrent I/O.
@@ -98,7 +98,7 @@ Because there are only a few of them, you need to use them wisely.
 When the request processing needs to call a remote service, you can't block the thread anymore.
 You schedule the I/O and pass a continuation, i.e., the code to execute once the I/O completes.
 
-image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads,width=80%]
+image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads,width=50%, align=center]
 
 This model is much more efficient, but we need a way to write code to express these continuations.
 
@@ -139,7 +139,7 @@ It means that you can write traditional blocking applications on Quarkus.
 But how do you avoid blocking the I/O threads?
 Quarkus implements a https://en.wikipedia.org/wiki/Proactor_pattern[proactor pattern] that switches to worker thread when needed.
 
-image::proactor-pattern.png[The proactor pattern in Quarkus,width=80%]
+image::proactor-pattern.png[The proactor pattern in Quarkus,width=50%, align=center]
 
 Thanks to hints in your code (such as the `@Blocking` and `@NonBlocking` annotations), Quarkus extensions can decide when the application logic is blocking or non-blocking.
 If we go back to the HTTP endpoint example from above, the HTTP request is always received on an I/O thread.

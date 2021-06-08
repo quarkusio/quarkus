@@ -41,7 +41,7 @@ match is found. This means that any configuration property may override a value 
 higher ordinal config source. For example, a property configured using an environment property overrides the value
 provided using the `application.properties` file.
 
-image::config-sources.png[]
+image::config-sources.png[align=center,align=center,width=90%]
 
 [[system-properties]]
 === System properties

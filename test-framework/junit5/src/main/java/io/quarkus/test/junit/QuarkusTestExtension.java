@@ -29,8 +29,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
@@ -70,7 +68,6 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -115,8 +112,6 @@ import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.SerializationWithXStreamFallbackDeepClone;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
-import io.vertx.core.Handler;
 
 public class QuarkusTestExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
@@ -147,6 +142,8 @@ public class QuarkusTestExtension
     private static boolean hasPerTestResources;
     private static Class<?> currentJUnitTestClass;
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
+
+    private static List<TestMethodInvoker> testMethodInvokers;
 
     private static DeepClone deepClone;
     //needed for @Nested
@@ -350,6 +347,7 @@ public class QuarkusTestExtension
                     .invoke(testResourceManager);
 
             populateCallbacks(startupAction.getClassLoader());
+            populateTestMethodInvokers(startupAction.getClassLoader());
 
             runningQuarkusApplication = startupAction.run();
             String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
@@ -464,6 +462,15 @@ public class QuarkusTestExtension
                 .load(Class.forName(QuarkusTestAfterEachCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestAfterEach : quarkusTestAfterEachLoader) {
             afterEachCallbacks.add(quarkusTestAfterEach);
+        }
+    }
+
+    private void populateTestMethodInvokers(ClassLoader quarkusClassLoader) {
+        testMethodInvokers = new ArrayList<>();
+        ServiceLoader<TestMethodInvoker> loader = ServiceLoader.load(TestMethodInvoker.class, this.getClass().getClassLoader());
+        for (TestMethodInvoker testMethodInvoker : loader) {
+            testMethodInvoker.init(quarkusClassLoader);
+            testMethodInvokers.add(testMethodInvoker);
         }
     }
 
@@ -895,7 +902,7 @@ public class QuarkusTestExtension
     }
 
     private Object runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
-            boolean vertxContextAllowed)
+            boolean testMethodInvokersAllowed)
             throws Throwable {
         resetHangTimeout();
 
@@ -917,17 +924,26 @@ public class QuarkusTestExtension
             }
             newMethod.setAccessible(true);
 
+            TestMethodInvoker testMethodInvokerToUse = null;
+            if (testMethodInvokersAllowed) {
+                for (TestMethodInvoker testMethodInvoker : testMethodInvokers) {
+                    if (testMethodInvoker.supportsMethod(extensionContext.getRequiredTestClass(),
+                            invocationContext.getExecutable())) {
+                        testMethodInvokerToUse = testMethodInvoker;
+                    }
+                }
+            }
+
             // the arguments were not loaded from TCCL so we need to deep clone them into the TCCL
             // because the test method runs from a class loaded from the TCCL
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();
-            Object uniResult = null;
             for (int i = 0; i < originalArguments.size(); i++) {
                 Object arg = originalArguments.get(i);
                 boolean cloneRequired = false;
-                boolean isUniAsserter = false;
+                Class<?> argClass = invocationContext.getExecutable().getParameters()[i].getType();
                 if (arg != null) {
-                    Class theclass = arg.getClass();
+                    Class<?> theclass = argClass;
                     while (theclass.isArray()) {
                         theclass = theclass.getComponentType();
                     }
@@ -948,16 +964,13 @@ public class QuarkusTestExtension
                             }
                         }
                     }
-                } else if (invocationContext.getExecutable().getParameterTypes()[i].equals(UniResult.class)) {
-                    isUniAsserter = true;
                 }
 
                 if (cloneRequired) {
                     argumentsFromTccl.add(deepClone.clone(arg));
-                } else if (isUniAsserter) {
-                    uniResult = runningQuarkusApplication.getClassLoader().loadClass(UniResult.class.getName())
-                            .getConstructor().newInstance();
-                    argumentsFromTccl.add(uniResult);
+                } else if (testMethodInvokerToUse != null) {
+                    argumentsFromTccl.add(testMethodInvokerToUse.customMethodTypesHandler().instance(argClass,
+                            Thread.currentThread().getContextClassLoader()));
                 } else {
                     argumentsFromTccl.add(arg);
                 }
@@ -969,26 +982,9 @@ public class QuarkusTestExtension
                 // but it's unlikely(?) we will run into this combo
                 effectiveTestInstance = testClassFromTCCL.getConstructor().newInstance();
             }
-            if (vertxContextAllowed) {
-                Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
-                boolean vertxClassAnn = requiredTestClass.isAnnotationPresent(RunOnVertxContext.class);
-                boolean vertxMethodAnn = invocationContext.getExecutable().getAnnotation(RunOnVertxContext.class) != null;
-
-                if (vertxClassAnn || vertxMethodAnn) {
-                    CompletableFuture<Object> cf = new CompletableFuture<>();
-                    try {
-                        invokeOnVertxContext(newMethod, requiredTestClass, argumentsFromTccl, uniResult, cf);
-                        return cf.get();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return null;
-                    } catch (ExecutionException e) {
-                        // the test itself threw an exception
-                        throw e.getCause();
-                    }
-                } else {
-                    return newMethod.invoke(effectiveTestInstance, argumentsFromTccl.toArray(new Object[0]));
-                }
+            if (testMethodInvokerToUse != null) {
+                return testMethodInvokerToUse.invoke(effectiveTestInstance, newMethod, argumentsFromTccl,
+                        extensionContext.getRequiredTestClass().getName());
             } else {
                 return newMethod.invoke(effectiveTestInstance, argumentsFromTccl.toArray(new Object[0]));
             }
@@ -1031,62 +1027,6 @@ public class QuarkusTestExtension
         return newMethod;
     }
 
-    /**
-     * Runs the test method on a Vert.x Event Loop thread and wait for the result.
-     *
-     * This is horribly ugly because we have to load Vertx classes from the TCCL and then also invoke the test method
-     * via reflection as well.
-     */
-    @SuppressWarnings("unchecked")
-    private void invokeOnVertxContext(Method testMethod, Class<?> testClass, List<Object> testMethodArgs, Object uniResult,
-            CompletableFuture<?> cf)
-            throws InterruptedException, ExecutionException {
-
-        Object vertxContext;
-        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        try {
-            // essentially does: VertxCoreRecorder.getVertx().get().getOrCreateContext()
-            Class<?> vertxCoreRecorder = Class.forName(VertxCoreRecorder.class.getName(), false, tccl);
-            Supplier<Object> vertxSupplier = (Supplier<Object>) vertxCoreRecorder.getMethod("getVertx")
-                    .invoke(null);
-            Object vertx = vertxSupplier.get();
-            if (vertx == null) {
-                throw new IllegalStateException("Vert.x instance has not been created before attempting to run test method '"
-                        + testMethod.getName() + "' of test class '" + testClass.getName() + "'");
-            }
-            vertxContext = vertx.getClass()
-                    .getMethod("getOrCreateContext")
-                    .invoke(vertx);
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException("Unable to determine running Vert.x instance to run test method '"
-                    + testMethod.getName() + "' of test class '" + testClass.getName() + "'", e);
-        }
-
-        Class<?> handlerClass;
-        Object handler;
-        try {
-            // essentially does: new RunTestMethodOnContextHandler(actualTestInstance, testMethod, testMethodArgs, uniAsserter, cf)
-            handlerClass = Class.forName(Handler.class.getName(), false, tccl);
-            handler = Class.forName(RunTestMethodOnContextHandler.class.getName(), true, tccl)
-                    .getDeclaredConstructor(Object.class, Method.class, List.class, Object.class, CompletableFuture.class)
-                    .newInstance(actualTestInstance, testMethod, testMethodArgs, uniResult, cf);
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException
-                | InstantiationException e) {
-            throw new IllegalStateException("Unable to create a Vert.x Handler needed for running test method '"
-                    + testMethod.getName() + "' of test class '" + testClass.getName() + "'", e);
-        }
-
-        try {
-            // essentially does: content.runOnContext(handler)
-            Class.forName(io.vertx.core.Context.class.getName(), false, tccl)
-                    .getMethod("runOnContext", handlerClass)
-                    .invoke(vertxContext, handler);
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException("Unable to invoke Vert.x Handler needed for running test method '"
-                    + testMethod.getName() + "' of test class '" + testClass.getName() + "'", e);
-        }
-    }
-
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
         resetHangTimeout();
@@ -1102,14 +1042,26 @@ public class QuarkusTestExtension
         }
     }
 
-    /**
-     * Return true if we need a parameter for constructor injection
-     */
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        return (parameterContext.getDeclaringExecutable() instanceof Constructor)
-                || parameterContext.getParameter().getType().equals(UniResult.class);
+        boolean isConstructor = parameterContext.getDeclaringExecutable() instanceof Constructor;
+        if (isConstructor) {
+            return true;
+        }
+        if (!(parameterContext.getDeclaringExecutable() instanceof Method)) {
+            return false;
+        }
+        if (testMethodInvokers == null) {
+            return false;
+        }
+        for (TestMethodInvoker testMethodInvoker : testMethodInvokers) {
+            if (testMethodInvoker.customMethodTypesHandler().handledTypes()
+                    .contains(parameterContext.getParameter().getType())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1121,8 +1073,13 @@ public class QuarkusTestExtension
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        if (parameterContext.getParameter().getType().equals(UniResult.class)) {
-            return null; // return null as this will actually be populated when we invoke the actual test instance
+        if ((parameterContext.getDeclaringExecutable() instanceof Method) && (testMethodInvokers != null)) {
+            Method method = (Method) parameterContext.getDeclaringExecutable();
+            for (TestMethodInvoker testMethodInvoker : testMethodInvokers) {
+                if (testMethodInvoker.supportsMethod(parameterContext.getParameter().getType(), method)) {
+                    return null; // return null as this will actually be populated when we invoke the actual test instance
+                }
+            }
         }
         String className = parameterContext.getParameter().getType().getName();
         switch (className) {
@@ -1179,121 +1136,6 @@ public class QuarkusTestExtension
         }
         return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
                 + "' disabled because 'quarkus.profile.test.tags' don't match the tags of '" + testProfile + "'");
-    }
-
-    public static class RunTestMethodOnContextHandler implements Handler<Void> {
-        private final Object testInstance;
-        private final Method targetMethod;
-        private final List<Object> methodArgs;
-        private final Consumer<Object> asserter;
-        private final CompletableFuture<Object> future;
-
-        public RunTestMethodOnContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
-                Object uniResult, CompletableFuture<Object> future) {
-            this.testInstance = testInstance;
-            this.future = future;
-            this.targetMethod = targetMethod;
-            this.methodArgs = methodArgs;
-            this.asserter = uniResult != null ? new UniResultAsserter(targetMethod, testInstance.getClass(), uniResult, future)
-                    : null;
-        }
-
-        @Override
-        public void handle(Void event) {
-            //            ManagedContext requestContext = Arc.container().requestContext();
-            //            if (requestContext.isActive()) {
-            //                doRun();
-            //            } else {
-            //                try {
-            //                    requestContext.activate();
-            //                    doRun();
-            //                } finally {
-            //                    requestContext.terminate();
-            //                }
-            //            }
-            doRun();
-        }
-
-        private void doRun() {
-            try {
-                Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
-                if (asserter != null) {
-                    // we expect the asserter to complete the future
-                    asserter.accept(testMethodResult);
-                } else {
-                    future.complete(testMethodResult);
-                }
-            } catch (Throwable t) {
-                future.completeExceptionally(t);
-            }
-        }
-    }
-
-    /**
-     * Returns a Runnable that asserts that the Uni created from the test matches the users expectations (by utilizing
-     * the UniAsserter)
-     *
-     * This is horribly ugly because the UniAsserter is loaded from the TCCL so we need to use reflection
-     * to perform all assertions.
-     * Furthermore we need to make the result a runnable because it needs to run on the vert.x context write after the
-     * test method has been invoked
-     */
-    static class UniResultAsserter implements Consumer<Object> {
-        private final Method testMethod;
-        private final Class<?> testClass;
-        private final Object uniResult;
-        private final CompletableFuture<Object> future;
-
-        public UniResultAsserter(Method testMethod, Class<?> testClass, Object uniResult, CompletableFuture<Object> future) {
-            this.testMethod = testMethod;
-            this.testClass = testClass;
-            this.uniResult = uniResult;
-            this.future = future;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public void accept(Object testMethodResult) {
-            try {
-                /*
-                 * This whole piece of code essentially does:
-                 *
-                 * uniAsserter.getUni().subscribe().with(uniAsserter.getItemAssertion(), (t) -> throw new
-                 * RuntimeException("bla bla", t)).await().indefinitely();
-                 */
-
-                Class<?> uniAsserterClass = Class.forName(UniResult.class.getName(), false,
-                        Thread.currentThread().getContextClassLoader());
-                Object uni = uniAsserterClass
-                        .getMethod("getUni")
-                        .invoke(uniResult);
-                Consumer<Object> itemAssertion = (Consumer<Object>) uniAsserterClass
-                        .getMethod("getItemAssertion")
-                        .invoke(uniResult);
-                Object uniSubscribe = uni.getClass().getMethod("subscribe").invoke(uni);
-                uniSubscribe.getClass().getMethod("with", Consumer.class, Consumer.class).invoke(uniSubscribe,
-                        new Consumer<Object>() {
-                            @Override
-                            public void accept(Object o) {
-                                try {
-                                    itemAssertion.accept(o);
-                                    future.complete(testMethodResult);
-                                } catch (Throwable t) {
-                                    future.completeExceptionally(t);
-                                }
-                            }
-                        },
-                        new Consumer<Throwable>() {
-                            @Override
-                            public void accept(Throwable t) {
-                                future.completeExceptionally(t);
-                            }
-                        });
-            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                throw new IllegalStateException("Unable to subscribe to the result of test method '"
-                        + testMethod.getName() + "' of test class '" + testClass.getName() + "'", e);
-            }
-        }
     }
 
     class ExtensionState implements ExtensionContext.Store.CloseableResource {

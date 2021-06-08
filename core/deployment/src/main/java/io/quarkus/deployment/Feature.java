@@ -143,6 +143,7 @@ public enum Feature {
     SWAGGER_UI,
     TIKA,
     WEBSOCKETS,
+    WEBSOCKETS_CLIENT,
     VAULT,
     VERTX,
     VERTX_WEB,

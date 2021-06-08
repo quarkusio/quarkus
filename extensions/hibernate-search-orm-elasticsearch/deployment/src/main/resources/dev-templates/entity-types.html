@@ -6,7 +6,8 @@
     <table id="table" class="table table-striped">
         <colgroup>
             <col span="1" style="width: 5%;">
-            <col span="1" style="width: 95%;">
+            <col span="1" style="width: 30%;">
+            <col span="1" style="width: 65%;">
         </colgroup>
         <thead class="thead-dark">
         <tr>
@@ -15,18 +16,20 @@
                     <input type="checkbox" class="form-check-input" id="check-all">
                 </div>
             </th>
+            <th scope="col">Entity name</th>
             <th scope="col">Entity type</th>
         </tr>
         </thead>
         <tbody>
-        {#for entityType in info:entityTypes}
+        {#for indexedEntityType in info:indexedEntityTypes}
         <tr>
             <td>
                 <div class="custom-control">
-                    <input type="checkbox" class="form-check-input checkbox" name="{entityType}" id="{entityType}">
+                    <input type="checkbox" class="form-check-input checkbox" name="{indexedEntityType.jpaName}" id="{indexedEntityType.jpaName}">
                 </div>
             </td>
-            <td>{entityType}</td>
+            <td>{indexedEntityType.jpaName}</td>
+            <td>{indexedEntityType.javaClass}</td>
         </tr>
         {/for}
         </tbody>

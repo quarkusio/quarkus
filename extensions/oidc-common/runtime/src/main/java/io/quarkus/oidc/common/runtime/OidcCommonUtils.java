@@ -10,6 +10,7 @@ import java.security.PrivateKey;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import javax.crypto.SecretKey;
 
@@ -108,6 +109,12 @@ public class OidcCommonUtils {
         if (proxyOpt.isPresent()) {
             options.setProxyOptions(proxyOpt.get());
         }
+
+        OptionalInt maxPoolSize = oidcConfig.maxPoolSize;
+        if (maxPoolSize.isPresent()) {
+            options.setMaxPoolSize(maxPoolSize.getAsInt());
+        }
+
         options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
     }
 

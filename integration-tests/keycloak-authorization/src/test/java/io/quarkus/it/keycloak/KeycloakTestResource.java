@@ -129,6 +129,15 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
 
         createPermission(settings, createResource(settings, "Permission Resource WebApp", "/api-permission-webapp"),
                 policyUser);
+
+        PolicyRepresentation policyDynamic = createJSPolicy("Dynamic Policy", "var identity = $evaluation.context.identity;\n" +
+                "\n" +
+                "if (identity.hasRealmRole(\"admin\")) {\n" +
+                "$evaluation.grant();\n" +
+                "}", settings);
+
+        createPermission(settings, createResource(settings, "Permission Resource Dynamic Tenant", "/api-permission-dynamic"),
+                policyDynamic);
     }
 
     private static void configureScopePermission(ResourceServerRepresentation settings) {

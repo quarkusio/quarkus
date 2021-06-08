@@ -13,13 +13,8 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.keycloak.pep.runtime.KeycloakPoilcyEnforcerBuildTimeConfig;
-import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
-import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
-import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
-import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig;
+import io.quarkus.keycloak.pep.runtime.*;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathConfig;
-import io.quarkus.keycloak.pep.runtime.PolicyEnforcerResolver;
 import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.TlsConfig;
@@ -78,7 +73,9 @@ public class KeycloakPolicyEnforcerBuildStep {
     public AdditionalBeanBuildItem beans(OidcBuildTimeConfig oidcBuildTimeConfig, KeycloakPolicyEnforcerConfig config) {
         if (oidcBuildTimeConfig.enabled) {
             return AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClass(KeycloakPolicyEnforcerAuthorizer.class).build();
+                    .addBeanClass(KeycloakPolicyEnforcerAuthorizer.class)
+                    .addBeanClass(DefaultPolicyEnforcerConfigResolver.class)
+                    .build();
         }
         return null;
     }
@@ -95,8 +92,8 @@ public class KeycloakPolicyEnforcerBuildStep {
             KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder,
             HttpConfiguration httpConfiguration) {
         if (oidcBuildTimeConfig.enabled) {
-            return SyntheticBeanBuildItem.configure(PolicyEnforcerResolver.class).unremovable()
-                    .types(PolicyEnforcerResolver.class)
+            return SyntheticBeanBuildItem.configure(KeycloakPolicyEnforcerConfigBean.class).unremovable()
+                    .types(KeycloakPolicyEnforcerConfigBean.class)
                     .supplier(recorder.setup(oidcRunTimeConfig, keycloakConfig, tlsConfig, httpConfiguration))
                     .scope(Singleton.class)
                     .setRuntimeInit()

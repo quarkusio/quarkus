@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -228,26 +227,6 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     @Override
-    public String getFormAttribute(String name) {
-        if (context.queryParams().contains(name)) {
-            return null;
-        }
-        return request.getParameter(name);
-    }
-
-    @Override
-    public List<String> getAllFormAttributes(String name) {
-        if (context.queryParams().contains(name)) {
-            return Collections.emptyList();
-        }
-        String[] values = request.getParameterValues(name);
-        if (values == null) {
-            return Collections.emptyList();
-        }
-        return Arrays.asList(values);
-    }
-
-    @Override
     public String getQueryParam(String name) {
         if (!context.queryParams().contains(name)) {
             return null;
@@ -273,12 +252,6 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     @Override
     public boolean isRequestEnded() {
         return context.request().isEnded();
-    }
-
-    @Override
-    public void setExpectMultipart(boolean expectMultipart) {
-        //read the form data
-        request.getParameterMap();
     }
 
     @Override

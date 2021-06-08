@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -27,6 +28,7 @@ import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
@@ -138,6 +140,7 @@ public abstract class ResteasyReactiveRequestContext
     private SecurityContext securityContext;
     private OutputStream outputStream;
     private OutputStream underlyingOutputStream;
+    private FormData formData;
 
     public ResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
@@ -841,20 +844,29 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     public Object getFormParameter(String name, boolean single, boolean encoded) {
-        if (single) {
-            String val = serverRequest().getFormAttribute(name);
-            if (encoded && val != null) {
-                val = Encode.encodeQueryParam(val);
-            }
-            return val;
+        if (formData == null) {
+            return null;
         }
-        List<String> strings = serverRequest().getAllFormAttributes(name);
-        if (encoded) {
-            List<String> newStrings = new ArrayList<>();
-            for (String i : strings) {
-                newStrings.add(Encode.encodeQueryParam(i));
+        if (single) {
+            FormData.FormValue val = formData.getFirst(name);
+            if (val == null || val.isFileItem()) {
+                return null;
             }
-            return newStrings;
+            if (encoded) {
+                return Encode.encodeQueryParam(val.getValue());
+            }
+            return val.getValue();
+        }
+        Deque<FormData.FormValue> val = formData.get(name);
+        List<String> strings = new ArrayList<>();
+        if (val != null) {
+            for (FormData.FormValue i : val) {
+                if (encoded) {
+                    strings.add(Encode.encodeQueryParam(i.getValue()));
+                } else {
+                    strings.add(i.getValue());
+                }
+            }
         }
         return strings;
 
@@ -930,6 +942,15 @@ public abstract class ResteasyReactiveRequestContext
 
     public String getResourceLocatorPathParam(String name) {
         return getResourceLocatorPathParam(name, previousResource);
+    }
+
+    public FormData getFormData() {
+        return formData;
+    }
+
+    public ResteasyReactiveRequestContext setFormData(FormData formData) {
+        this.formData = formData;
+        return this;
     }
 
     private String getResourceLocatorPathParam(String name, PreviousResource previousResource) {

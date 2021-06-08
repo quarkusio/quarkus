@@ -82,6 +82,7 @@ import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -274,7 +275,8 @@ public class ResteasyReactiveProcessor {
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             ContextResolversBuildItem contextResolversBuildItem,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
-            List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig)
+            List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig,
+            LaunchModeBuildItem launchModeBuildItem)
             throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -549,7 +551,7 @@ public class ResteasyReactiveProcessor {
             RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                     beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                     requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                    initClassFactory);
+                    initClassFactory, launchModeBuildItem.getLaunchMode());
 
             quarkusRestDeploymentBuildItemBuildProducer
                     .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));

@@ -16,18 +16,25 @@
     <description>Dependency management for integration tests. Importable by third party extension developers.</description>
 
     <properties>
-        <testcontainers.version>1.15.3</testcontainers.version>
+        <rxjava1.version>1.3.8</rxjava1.version>
         <strimzi-test-container.version>0.22.1</strimzi-test-container.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+
             <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${project.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.reactivex</groupId>
+                <artifactId>rxjava</artifactId>
+                <version>${rxjava1.version}</version>
             </dependency>
 
             <dependency>
@@ -46,7 +53,21 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bom</artifactId>
+            <type>pom</type>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
 </project>

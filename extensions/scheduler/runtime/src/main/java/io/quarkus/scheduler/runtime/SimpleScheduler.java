@@ -43,7 +43,7 @@ import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 @Singleton
 public class SimpleScheduler implements Scheduler {
 
-    private static final Logger LOGGER = Logger.getLogger(SimpleScheduler.class);
+    private static final Logger LOG = Logger.getLogger(SimpleScheduler.class);
 
     // milliseconds
     private static final long CHECK_PERIOD = 1000L;
@@ -63,10 +63,10 @@ public class SimpleScheduler implements Scheduler {
 
         if (!schedulerRuntimeConfig.enabled) {
             this.scheduledExecutor = null;
-            LOGGER.info("Simple scheduler is disabled by config property and will not be started");
+            LOG.info("Simple scheduler is disabled by config property and will not be started");
         } else if (context.getScheduledMethods().isEmpty()) {
             this.scheduledExecutor = null;
-            LOGGER.info("No scheduled business methods found - Simple scheduler will not be started");
+            LOG.info("No scheduled business methods found - Simple scheduler will not be started");
         } else {
             this.scheduledExecutor = new JBossScheduledThreadPoolExecutor(1, new Runnable() {
                 @Override
@@ -113,16 +113,17 @@ public class SimpleScheduler implements Scheduler {
                 scheduledExecutor.shutdownNow();
             }
         } catch (Exception e) {
-            LOGGER.warn("Unable to shutdown the scheduler executor", e);
+            LOG.warn("Unable to shutdown the scheduler executor", e);
         }
     }
 
     void checkTriggers() {
         if (!running) {
-            LOGGER.trace("Skip all triggers - scheduler paused");
+            LOG.trace("Skip all triggers - scheduler paused");
             return;
         }
         ZonedDateTime now = ZonedDateTime.now();
+        LOG.tracef("Check triggers at %s", now);
         for (ScheduledTask task : scheduledTasks) {
             task.execute(now, executor);
         }
@@ -131,7 +132,7 @@ public class SimpleScheduler implements Scheduler {
     @Override
     public void pause() {
         if (!enabled) {
-            LOGGER.warn("Scheduler is disabled and cannot be paused");
+            LOG.warn("Scheduler is disabled and cannot be paused");
         } else {
             running = false;
         }
@@ -140,7 +141,7 @@ public class SimpleScheduler implements Scheduler {
     @Override
     public void resume() {
         if (!enabled) {
-            LOGGER.warn("Scheduler is disabled and cannot be resumed");
+            LOG.warn("Scheduler is disabled and cannot be resumed");
         } else {
             running = true;
         }
@@ -203,13 +204,12 @@ public class SimpleScheduler implements Scheduler {
                             try {
                                 invoker.invoke(new SimpleScheduledExecution(now, scheduledFireTime, trigger));
                             } catch (Throwable t) {
-                                LOGGER.errorf(t, "Error occured while executing task for trigger %s", trigger);
+                                LOG.errorf(t, "Error occured while executing task for trigger %s", trigger);
                             }
                         }
                     });
-                    LOGGER.debugf("Executing scheduled task for trigger %s", trigger);
                 } catch (RejectedExecutionException e) {
-                    LOGGER.warnf("Rejected execution of a scheduled task for trigger %s", trigger);
+                    LOG.warnf("Rejected execution of a scheduled task for trigger %s", trigger);
                 }
             }
         }
@@ -220,6 +220,7 @@ public class SimpleScheduler implements Scheduler {
 
         private final String id;
         protected final ZonedDateTime start;
+        protected volatile ZonedDateTime lastFireTime;
 
         public SimpleTrigger(String id, ZonedDateTime start) {
             this.id = id;
@@ -227,7 +228,7 @@ public class SimpleScheduler implements Scheduler {
         }
 
         /**
-         * 
+         *
          * @param now
          * @return the scheduled time if fired, {@code null} otherwise
          */
@@ -241,8 +242,8 @@ public class SimpleScheduler implements Scheduler {
 
     static class IntervalTrigger extends SimpleTrigger {
 
+        // milliseconds
         private final long interval;
-        private volatile ZonedDateTime lastFireTime;
 
         public IntervalTrigger(String id, ZonedDateTime start, long interval) {
             super(id, start);
@@ -259,9 +260,11 @@ public class SimpleScheduler implements Scheduler {
                 lastFireTime = now.truncatedTo(ChronoUnit.SECONDS);
                 return now;
             }
-            if (ChronoUnit.MILLIS.between(lastFireTime, now) >= interval) {
+            long diff = ChronoUnit.MILLIS.between(lastFireTime, now);
+            if (diff >= interval) {
                 ZonedDateTime scheduledFireTime = lastFireTime.plus(Duration.ofMillis(interval));
                 lastFireTime = now.truncatedTo(ChronoUnit.SECONDS);
+                LOG.tracef("%s fired, diff=%s ms", this, diff);
                 return scheduledFireTime;
             }
             return null;
@@ -288,9 +291,6 @@ public class SimpleScheduler implements Scheduler {
 
     static class CronTrigger extends SimpleTrigger {
 
-        // microseconds
-        private static final long DIFF_THRESHOLD = CHECK_PERIOD * 1000;
-
         private final Cron cron;
         private final ExecutionTime executionTime;
 
@@ -298,6 +298,7 @@ public class SimpleScheduler implements Scheduler {
             super(id, start);
             this.cron = cron;
             this.executionTime = ExecutionTime.forCron(cron);
+            this.lastFireTime = ZonedDateTime.now();
         }
 
         @Override
@@ -316,17 +317,13 @@ public class SimpleScheduler implements Scheduler {
             if (now.isBefore(start)) {
                 return null;
             }
-            Optional<ZonedDateTime> lastFireTime = executionTime.lastExecution(now);
-            if (lastFireTime.isPresent()) {
-                ZonedDateTime trunc = lastFireTime.get().truncatedTo(ChronoUnit.SECONDS);
-                if (now.isBefore(trunc)) {
-                    return null;
-                }
-                // Use microseconds precision to workaround incompatibility between jdk8 and jdk9+
-                long diff = ChronoUnit.MICROS.between(trunc, now);
-                if (diff <= DIFF_THRESHOLD) {
-                    LOGGER.debugf("%s fired, diff=%s μs", this, diff);
-                    return trunc;
+            Optional<ZonedDateTime> lastExecution = executionTime.lastExecution(now);
+            if (lastExecution.isPresent()) {
+                ZonedDateTime lastTruncated = lastExecution.get().truncatedTo(ChronoUnit.SECONDS);
+                if (now.isAfter(lastTruncated) && lastFireTime.isBefore(lastTruncated)) {
+                    LOG.tracef("%s fired, last=", this, lastTruncated);
+                    lastFireTime = now;
+                    return lastTruncated;
                 }
             }
             return null;

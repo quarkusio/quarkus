@@ -1,7 +1,12 @@
 package io.quarkus.redis.client.reactive;
 
+import static io.quarkus.redis.client.runtime.RedisClientUtil.DEFAULT_CLIENT;
+
 import java.util.List;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.redis.client.RedisClient;
+import io.quarkus.redis.client.runtime.RedisClientsProducer;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -12,6 +17,25 @@ import io.vertx.mutiny.redis.client.Response;
  * the <a href="https://redis.io/commands">Redis Commands Page</a>
  */
 public interface ReactiveRedisClient {
+    /**
+     * Creates the {@link RedisClient} using the default redis client configuration
+     * 
+     * @return {@link ReactiveRedisClient} - the default reactive redis client
+     */
+    static ReactiveRedisClient createClient() {
+        return createClient(DEFAULT_CLIENT);
+    }
+
+    /**
+     * Creates the {@link RedisClient} using the named redis client configuration
+     * 
+     * @return {@link ReactiveRedisClient} - the named reactive redis client
+     */
+    static ReactiveRedisClient createClient(String name) {
+        RedisClientsProducer redisClientsProducer = Arc.container().instance(RedisClientsProducer.class).get();
+        return redisClientsProducer.getReactiveRedisClient(name);
+    }
+
     void close();
 
     Uni<Response> append(String arg0, String arg1);

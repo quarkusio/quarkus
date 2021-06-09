@@ -1,7 +1,11 @@
 package io.quarkus.redis.client;
 
+import static io.quarkus.redis.client.runtime.RedisClientUtil.DEFAULT_CLIENT;
+
 import java.util.List;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.redis.client.runtime.RedisClientsProducer;
 import io.vertx.redis.client.Response;
 
 /**
@@ -13,6 +17,25 @@ import io.vertx.redis.client.Response;
  * the <a href="https://redis.io/commands">Redis Commands Page</a>
  */
 public interface RedisClient {
+    /**
+     * Creates the {@link RedisClient} using the default redis client configuration
+     * 
+     * @return {@link RedisClient} - the default redis client
+     */
+    static RedisClient createClient() {
+        return createClient(DEFAULT_CLIENT);
+    }
+
+    /**
+     * Creates the {@link RedisClient} using the named redis client configuration
+     * 
+     * @return {@link RedisClient} - the named client
+     */
+    static RedisClient createClient(String name) {
+        RedisClientsProducer redisClientsProducer = Arc.container().instance(RedisClientsProducer.class).get();
+        return redisClientsProducer.getRedisClient(name);
+    }
+
     void close();
 
     Response append(String arg0, String arg1);

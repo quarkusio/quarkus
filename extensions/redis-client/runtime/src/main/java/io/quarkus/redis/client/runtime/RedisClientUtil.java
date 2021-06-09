@@ -115,7 +115,16 @@ public class RedisClientUtil {
     }
 
     public static RedisConfiguration getConfiguration(RedisConfig config, String name) {
-        return isDefault(name) ? config.defaultClient : config.additionalRedisClients.get(name);
+        if (isDefault(name)) {
+            return config.defaultClient;
+        }
+
+        RedisConfiguration redisConfiguration = config.additionalRedisClients.get(name);
+        if (redisConfiguration != null) {
+            return redisConfiguration;
+        }
+
+        throw new IllegalArgumentException(String.format("Configuration for %s redis client does not exists", name));
     }
 
     public static RedisHostsProvider findProvider(String name) {

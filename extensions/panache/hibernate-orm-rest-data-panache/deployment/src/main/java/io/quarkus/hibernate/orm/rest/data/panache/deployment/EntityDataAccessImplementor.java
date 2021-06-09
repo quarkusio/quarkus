@@ -50,7 +50,7 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle persist(BytecodeCreator creator, ResultHandle entity) {
-        creator.invokeVirtualMethod(ofMethod(entityClassName, "persist", void.class), entity);
+        creator.invokeVirtualMethod(ofMethod(entityClassName, "persistAndFlush", void.class), entity);
         return entity;
     }
 

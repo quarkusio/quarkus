@@ -55,7 +55,7 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle persist(BytecodeCreator creator, ResultHandle entity) {
-        creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "persist", void.class, Object.class),
+        creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "persistAndFlush", void.class, Object.class),
                 getRepositoryInstance(creator), entity);
         return entity;
     }

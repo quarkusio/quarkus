@@ -69,6 +69,9 @@ public class SmallRyeOpenTracingProcessor {
             customResponseFilters.produce(new CustomContainerResponseFilterBuildItem(
                     QuarkusSmallRyeTracingStandaloneContainerResponseFilter.class.getName()));
             dynamicFeatures.produce(new DynamicFeatureBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));
+            providers.produce(
+                    new ResteasyJaxrsProviderBuildItem(
+                            QuarkusSmallRyeTracingStandaloneContainerResponseFilter.class.getName()));
         }
     }
 }

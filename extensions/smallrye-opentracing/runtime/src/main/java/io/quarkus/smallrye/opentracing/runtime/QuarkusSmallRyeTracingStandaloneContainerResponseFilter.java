@@ -12,8 +12,6 @@ import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 import io.opentracing.tag.Tags;

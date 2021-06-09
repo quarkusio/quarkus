@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.opentracing.runtime;
 
 import java.io.IOException;
-
 import javax.annotation.Priority;
 import javax.interceptor.Interceptor;
 import javax.ws.rs.Priorities;
@@ -10,11 +9,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
-
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 import io.opentracing.tag.Tags;
 

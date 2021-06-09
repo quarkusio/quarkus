@@ -42,13 +42,29 @@ public class OidcCommonConfig {
      * The number of times the connection request will be repeated is calculated by dividing the value of this property by 2.
      * For example, setting it to `20S` will allow for requesting the connection up to 10 times with a 2 seconds delay between
      * the retries.
-     * Note the `connection-timeout` property does not affect this amount of time.
+     * Note this property is only effective when the initial OIDC connection is created,
+     * for example, when requesting a well-known OIDC configuration.
+     * Use the 'connection-retry-count' property to support trying to re-establish an already available connection which may
+     * have been
+     * dropped.
      */
     @ConfigItem
     public Optional<Duration> connectionDelay = Optional.empty();
 
     /**
-     * The amount of time after which the connection request to the currently unavailable OIDC server will time out.
+     * The number of times an attempt to re-establish an already available connection will be repeated for.
+     * Note this property is different to the `connection-delay` property which is only effective during the initial OIDC
+     * connection creation.
+     * This property is used to try to recover the existing connection which may have been temporarily lost.
+     * For example, if a request to the OIDC token endpoint fails due to a connection exception then the request will be retried
+     * for
+     * a number of times configured by this property.
+     */
+    @ConfigItem(defaultValue = "3")
+    public int connectionRetryCount = 3;
+
+    /**
+     * The amount of time after which the current OIDC connection request will time out.
      */
     @ConfigItem(defaultValue = "10s")
     public Duration connectionTimeout = Duration.ofSeconds(10);

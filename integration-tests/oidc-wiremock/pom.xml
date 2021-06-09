@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - OpenID Connect Adapter WireMock</name>
     <description>Module that contains OpenID Connect related tests using WireMock</description>
 
-    <properties>
-        <keycloak.url>http://localhost:8180/auth</keycloak.url>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -93,19 +89,9 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <keycloak.url>${keycloak.url}</keycloak.url>
-                    </systemPropertyVariables>
-                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <keycloak.url>${keycloak.url}</keycloak.url>
-                    </systemPropertyVariables>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>

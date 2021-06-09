@@ -1,7 +1,6 @@
 package io.quarkus.oidc.runtime;
 
 import java.net.ConnectException;
-import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +23,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -104,8 +104,22 @@ public class OidcRecorder {
                 .recoverWithItem(new Function<Throwable, TenantConfigContext>() {
                     @Override
                     public TenantConfigContext apply(Throwable t) {
+                        if (t instanceof OIDCException) {
+                            // OIDC server is not available yet - try to create the connection when the first request arrives
+                            LOG.debugf("Tenant '%s': '%s'."
+                                    + " Access to resources protected by this tenant may fail"
+                                    + " if OIDC server will not become available",
+                                    tenantId, t.getMessage());
+                            return new TenantConfigContext(null, oidcConfig, false);
+                        }
                         logTenantConfigContextFailure(t, tenantId);
-                        return new TenantConfigContext(null, oidcConfig, false);
+                        if (t instanceof ConfigurationException
+                                && !oidcConfig.authServerUrl.isPresent() && LaunchMode.DEVELOPMENT == LaunchMode.current()) {
+                            // Let it start if it is a DEV mode and auth-server-url has not been configured yet
+                            return new TenantConfigContext(null, oidcConfig, false);
+                        }
+                        // fail in all other cases
+                        throw new OIDCException(t);
                     }
                 })
                 .await().indefinitely();
@@ -113,7 +127,7 @@ public class OidcRecorder {
 
     private static Throwable logTenantConfigContextFailure(Throwable t, String tenantId) {
         LOG.debugf(
-                "'%s' tenant initialization has failed: '%s'. Access to resources protected by this tenant will fail with HTTP 401.",
+                "'%s' tenant is not initialized: '%s'. Access to resources protected by this tenant will fail.",
                 tenantId, t.getMessage());
         return t;
     }
@@ -134,7 +148,7 @@ public class OidcRecorder {
 
         try {
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, true);
-        } catch (Throwable t) {
+        } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
         }
 
@@ -239,21 +253,20 @@ public class OidcRecorder {
 
         WebClientOptions options = new WebClientOptions();
 
-        URI authServerUri = URI.create(authServerUriString); // create uri for parse exception
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled) {
-            String tokenUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.tokenPath);
-            String introspectionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(),
+            String tokenUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath);
+            String introspectionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
                     oidcConfig.introspectionPath);
-            String authorizationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(),
+            String authorizationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
                     oidcConfig.authorizationPath);
-            String jwksUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.jwksPath);
-            String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.userInfoPath);
-            String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.endSessionPath);
+            String jwksUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.jwksPath);
+            String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.userInfoPath);
+            String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.endSessionPath);
             metadataUni = Uni.createFrom().item(new OidcConfigurationMetadata(tokenUri,
                     introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
                     oidcConfig.token.issuer.orElse(null)));
@@ -263,10 +276,11 @@ public class OidcRecorder {
             if (connectionRetryCount > 1) {
                 LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
             }
-            metadataUni = discoverMetadata(client, authServerUri.toString(), oidcConfig).onFailure(ConnectException.class)
+            metadataUni = discoverMetadata(client, authServerUriString, oidcConfig).onFailure(ConnectException.class)
                     .retry()
                     .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
-                    .expireIn(expireInDelay);
+                    .expireIn(expireInDelay)
+                    .onFailure().transform(e -> e.getCause());
         }
         return metadataUni.onItemOrFailure()
                 .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClient>>() {
@@ -274,7 +288,7 @@ public class OidcRecorder {
                     @Override
                     public Uni<OidcProviderClient> apply(OidcConfigurationMetadata metadata, Throwable t) {
                         if (t != null) {
-                            return Uni.createFrom().failure(toOidcException(t, authServerUri.toString()));
+                            return Uni.createFrom().failure(toOidcException(t, authServerUriString));
                         }
                         if (metadata == null) {
                             return Uni.createFrom().failure(new ConfigurationException(

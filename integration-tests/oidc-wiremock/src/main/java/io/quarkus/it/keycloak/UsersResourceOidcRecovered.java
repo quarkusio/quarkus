@@ -15,22 +15,14 @@ import io.quarkus.security.identity.SecurityIdentity;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@Path("/api/users")
-public class UsersResource {
+@Path("/recovered/api/users")
+public class UsersResourceOidcRecovered {
 
     @Inject
     SecurityIdentity identity;
 
     @GET
-    @Path("/me/bearer")
-    @RolesAllowed("user")
-    @Produces(MediaType.APPLICATION_JSON)
-    public User principalName() {
-        return new User(identity.getPrincipal().getName());
-    }
-
-    @GET
-    @Path("/preferredUserName/bearer")
+    @Path("/preferredUserName")
     @RolesAllowed("user")
     @Produces(MediaType.APPLICATION_JSON)
     public User preferredUserName() {

@@ -1,6 +1,7 @@
 package io.quarkus.oidc.common.runtime;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -43,6 +44,13 @@ public class OidcCommonUtils {
                             configPrefix));
         }
 
+        try {
+            // Verify that auth-server-url is a valid URL
+            URI.create(oidcConfig.getAuthServerUrl().get()).toURL();
+        } catch (Throwable ex) {
+            throw new ConfigurationException(
+                    String.format("'%sauth-server-url' is invalid", configPrefix), ex);
+        }
         Credentials creds = oidcConfig.getCredentials();
         if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
             throw new ConfigurationException(

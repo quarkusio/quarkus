@@ -93,7 +93,8 @@ public class OidcClientImpl implements OidcClient {
                 Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(body))
                         .onFailure(ConnectException.class)
                         .retry()
-                        .atMost(3);
+                        .atMost(oidcConfig.connectionRetryCount)
+                        .onFailure().transform(t -> t.getCause());
                 return response.onItem()
                         .transform(resp -> emitGrantTokens(resp, refresh));
             }

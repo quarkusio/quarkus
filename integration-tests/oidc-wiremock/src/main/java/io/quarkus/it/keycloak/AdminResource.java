@@ -12,7 +12,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@Path("/api/admin")
+@Path("/api/admin/bearer")
 public class AdminResource {
 
     @Inject

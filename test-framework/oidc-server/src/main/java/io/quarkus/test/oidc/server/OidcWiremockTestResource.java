@@ -123,9 +123,7 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
 
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
         Map<String, String> conf = new HashMap<>();
-        conf.put("quarkus.oidc.auth-server-url", server.baseUrl() + "/auth/realms/quarkus");
-        conf.put("quarkus.oidc.code-flow.auth-server-url", server.baseUrl() + "/auth/realms/quarkus");
-        conf.put("keycloak-url", server.baseUrl());
+        conf.put("keycloak.url", server.baseUrl() + "/auth");
 
         return conf;
     }

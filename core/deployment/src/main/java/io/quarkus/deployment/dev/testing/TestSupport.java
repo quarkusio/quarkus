@@ -194,15 +194,17 @@ public class TestSupport implements TestController {
         return testRunResults;
     }
 
-    public synchronized void pause() {
-        if (started) {
-            testRunner.pause();
+    public void pause() {
+        TestRunner tr = this.testRunner;
+        if (tr != null) {
+            tr.pause();
         }
     }
 
-    public synchronized void resume() {
-        if (started) {
-            testRunner.resume();
+    public void resume() {
+        TestRunner tr = this.testRunner;
+        if (tr != null) {
+            tr.resume();
         }
     }
 

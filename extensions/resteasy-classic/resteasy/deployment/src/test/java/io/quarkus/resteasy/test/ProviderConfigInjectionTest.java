@@ -1,6 +1,8 @@
 package io.quarkus.resteasy.test;
 
 import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.spi.BeanManager;
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -14,6 +16,7 @@ import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -47,11 +50,19 @@ public class ProviderConfigInjectionTest {
     @Provider
     public static class FooProvider implements ContextResolver<String> {
 
+        private final BeanManager beanManager;
+
         @ConfigProperty(name = "foo")
         Instance<String> foo;
 
+        @Inject
+        public FooProvider(BeanManager beanManager) {
+            this.beanManager = beanManager;
+        }
+
         @Override
         public String getContext(Class<?> type) {
+            Assertions.assertNotNull(beanManager);
             return foo.get();
         }
     }

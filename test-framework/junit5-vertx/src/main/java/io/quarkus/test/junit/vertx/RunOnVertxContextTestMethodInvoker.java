@@ -14,11 +14,11 @@ import io.vertx.core.Vertx;
 
 public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
 
-    private UniResult uniResult;
+    private DefaultUniAsserter uniAsserter;
 
     @Override
     public boolean handlesMethodParamType(String paramClassName) {
-        return UniResult.class.getName().equals(paramClassName);
+        return UniAsserter.class.getName().equals(paramClassName);
     }
 
     @Override
@@ -27,8 +27,8 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             throw new IllegalStateException(
                     "RunOnVertxContextTestMethodInvoker does not handle '" + paramClassName + "' method param types");
         }
-        uniResult = new UniResult<>();
-        return uniResult;
+        uniAsserter = new DefaultUniAsserter();
+        return uniAsserter;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         }
         CompletableFuture<Object> cf = new CompletableFuture<>();
         RunTestMethodOnContextHandler handler = new RunTestMethodOnContextHandler(actualTestInstance, actualTestMethod,
-                actualTestMethodArgs, uniResult, cf);
+                actualTestMethodArgs, uniAsserter, cf);
         vertx.getOrCreateContext().runOnContext(handler);
         try {
             return cf.get();
@@ -77,17 +77,16 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private final Object testInstance;
         private final Method targetMethod;
         private final List<Object> methodArgs;
-        private final Consumer<Object> asserter;
+        private final DefaultUniAsserter uniAsserter;
         private final CompletableFuture<Object> future;
 
         public RunTestMethodOnContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
-                UniResult uniResult, CompletableFuture<Object> future) {
+                DefaultUniAsserter uniAsserter, CompletableFuture<Object> future) {
             this.testInstance = testInstance;
             this.future = future;
             this.targetMethod = targetMethod;
             this.methodArgs = methodArgs;
-            this.asserter = uniResult != null ? new UniResultAsserter(uniResult, future)
-                    : null;
+            this.uniAsserter = uniAsserter;
         }
 
         @Override
@@ -98,9 +97,13 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private void doRun() {
             try {
                 Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
-                if (asserter != null) {
-                    // we expect the asserter to complete the future
-                    asserter.accept(testMethodResult);
+                if (uniAsserter != null) {
+                    uniAsserter.execution.subscribe().with(new Consumer<Object>() {
+                        @Override
+                        public void accept(Object o) {
+                            future.complete(testMethodResult);
+                        }
+                    }, future::completeExceptionally);
                 } else {
                     future.complete(testMethodResult);
                 }
@@ -110,40 +113,4 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         }
     }
 
-    /**
-     * Returns a Consumer that asserts that the Uni created from the test matches the users expectations (by utilizing
-     * the UniAsserter)
-     */
-    static class UniResultAsserter implements Consumer<Object> {
-        private final UniResult uniResult;
-        private final CompletableFuture<Object> future;
-
-        public UniResultAsserter(UniResult uniResult, CompletableFuture<Object> future) {
-            this.uniResult = uniResult;
-            this.future = future;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public void accept(Object testMethodResult) {
-            uniResult.getUni().subscribe().with(
-                    new Consumer<Object>() {
-                        @Override
-                        public void accept(Object o) {
-                            try {
-                                uniResult.getItemAssertion().accept(o);
-                                future.complete(testMethodResult);
-                            } catch (Throwable t) {
-                                future.completeExceptionally(t);
-                            }
-                        }
-                    },
-                    new Consumer<Throwable>() {
-                        @Override
-                        public void accept(Throwable t) {
-                            future.completeExceptionally(t);
-                        }
-                    });
-        }
-    }
 }

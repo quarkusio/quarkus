@@ -980,7 +980,82 @@ If you are using the `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache
 
 == Testing Security
 
-If you are using Quarkus Security, check out the link:security-testing[Testing Security] section for information on how to easily test security features of the application.
+Quarkus provides explicit support for testing with different users, and with the security subsystem disabled. To use
+this you must include the `quarkus-test-security` artifact:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-security</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+This artifact provides the `io.quarkus.test.security.TestSecurity` annotation, that can be applied to test methods and
+test classes to control the security context that the test is run with. This allows you to do two things, you can disable
+authorization so tests can access secured endpoints without needing to be authenticated, and you can specify the identity
+that you want the tests to run under.
+
+A test that runs with authorization disabled can just set the enabled property to false:
+
+[source,java]
+----
+@Test
+@TestSecurity(authorizationEnabled = false)
+void someTestMethod() {
+...
+}
+----
+
+This will disable all access checks, which allows the test to access secured endpoints without needing to authenticate.
+
+You can also use this to configure the current user that the test will run as:
+
+[source,java]
+----
+@Test
+@TestSecurity(user = "testUser", roles = {"admin", "user"})
+void someTestMethod() {
+...
+}
+----
+
+This will run the test with an identity with the given username and roles. Note that these can be combined, so you can
+disable authorization while also providing an identity to run the test under, which can be useful if the endpoint expects an
+identity to be present.
+
+[WARNING]
+====
+The feature is only available for `@QuarkusTest` and will **not** work on a `@NativeImageTest`.
+====
+
+=== OpenId Connect Bearer Token Integration Testing
+
+This is covered in the link:security-openid-connect#integration-testing-security-annotation[OpenId Connect Bearer Token Guide].
+
+=== OpenId Connect Authorization Code Flow Integration Testing
+
+This is covered in the link:security-openid-connect-web-authentication#integration-testing-security-annotation[OpenId Connect Authorization Code Flow Guide].
+
+=== SmallRye JWT Integration Testing
+
+This is covered by the link:security-jwt#integration-testing-security-annotation[SmallRye JWT Guide].
+
+=== Mixing security tests
+
+If it becomes necessary to test security features using both `@TestSecurity` and Basic Auth (which is the fallback auth
+mechanism when none is defined), then Basic Auth needs to be enabled explicitly,
+for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.auth.basic=true`.
+
+=== Use Wiremock for Integration Testing
+
+You can also use Wiremock to mock the authorization OAuth2 and OIDC services:
+See link:security-oauth2#integration-testing[OAuth2 Integration testing], link:security-openid-connect#integration-testing-wiremock[OpenId Connect Bearer Token Integration testing], link:security-openid-connect-web-authentication#integration-testing-wiremock[OpenId Connect Authorization Code Flow Integration testing] and link:security-jwt#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
+
+== References
+
+* link:security[Quarkus Security]
 
 [#quarkus-test-resource]
 == Starting services before the Quarkus application starts

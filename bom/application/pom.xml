@@ -1614,6 +1614,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-websockets-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-websockets-client-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-undertow-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3146,6 +3156,17 @@
             <dependency>
                 <groupId>io.quarkus.http</groupId>
                 <artifactId>quarkus-http-websocket-vertx</artifactId>
+                <version>${quarkus-http.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.spec.javax.annotation</groupId>
+                        <artifactId>jboss-annotations-api_1.2_spec</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.http</groupId>
+                <artifactId>quarkus-http-websocket-core</artifactId>
                 <version>${quarkus-http.version}</version>
                 <exclusions>
                     <exclusion>

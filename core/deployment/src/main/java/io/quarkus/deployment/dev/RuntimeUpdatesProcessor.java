@@ -375,6 +375,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             boolean configFileRestartNeeded = filesChanged.stream().map(main.watchedFilePaths::get)
                     .anyMatch(Boolean.TRUE::equals);
             boolean instrumentationChange = false;
+
+            List<Path> changedFilesForRestart = new ArrayList<>();
+            if (configFileRestartNeeded) {
+                changedFilesForRestart
+                        .addAll(filesChanged.stream().filter(fn -> Boolean.TRUE.equals(main.watchedFilePaths.get(fn)))
+                                .map(Paths::get).collect(Collectors.toList()));
+            }
+            changedFilesForRestart.addAll(changedClassResults.getChangedClasses());
+            changedFilesForRestart.addAll(changedClassResults.getAddedClasses());
+            changedFilesForRestart.addAll(changedClassResults.getDeletedClasses());
+
             if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !configFileRestartNeeded
                     && devModeType != DevModeType.REMOTE_LOCAL_SIDE) {
                 //attempt to do an instrumentation based reload
@@ -428,6 +439,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             boolean restartNeeded = !instrumentationChange && (changedClassResults.isChanged()
                     || (IsolatedDevModeMain.deploymentProblem != null && userInitiated) || configFileRestartNeeded);
             if (restartNeeded) {
+                String changeString = changedFilesForRestart.stream().map(Path::getFileName).map(Object::toString)
+                        .collect(Collectors.joining(", ")) + ".";
+                log.infof("Restarting quarkus due to changes in " + changeString);
                 restartCallback.accept(filesChanged, changedClassResults);
                 long timeNanoSeconds = System.nanoTime() - startNanoseconds;
                 log.infof("Live reload total time: %ss ", Timing.convertToBigDecimalSeconds(timeNanoSeconds));
@@ -574,8 +588,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
                 if (!changedSourceFiles.isEmpty()) {
                     classScanResult.compilationHappened = true;
-                    log.info("Changed source files detected, recompiling "
-                            + changedSourceFiles.stream().map(File::getName).collect(Collectors.joining(", ")));
                     //so this is pretty yuck, but on a lot of systems a write is actually a truncate + write
                     //its possible we see the truncated file timestamp, then the write updates the timestamp
                     //which will then re-trigger continuous testing/live reload

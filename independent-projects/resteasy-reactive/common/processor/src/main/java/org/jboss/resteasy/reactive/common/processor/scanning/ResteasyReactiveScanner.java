@@ -59,11 +59,17 @@ public class ResteasyReactiveScanner {
         ClassInfo selectedAppClass = null;
         boolean blocking = false;
         for (ClassInfo applicationClassInfo : applications) {
+            if (Modifier.isAbstract(applicationClassInfo.flags())) {
+                continue;
+            }
             if (selectedAppClass != null) {
                 throw new RuntimeException("More than one Application class: " + applications);
             }
             selectedAppClass = applicationClassInfo;
-            // FIXME: yell if there's more than one
+            if (appClassHasInject(selectedAppClass)) {
+                throw new RuntimeException("'@Inject' cannot be used with a '" + ResteasyReactiveDotNames.APPLICATION
+                        + "' class. Offending class is: '" + selectedAppClass.name() + "'");
+            }
             String applicationClass = applicationClassInfo.name().toString();
             try {
                 Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);
@@ -99,6 +105,14 @@ public class ResteasyReactiveScanner {
         return new ApplicationScanningResult(allowedClasses, singletonClasses, excludedClasses, globalNameBindings,
                 filterClasses, application,
                 selectedAppClass, blocking);
+    }
+
+    private static boolean appClassHasInject(ClassInfo appClass) {
+        if (appClass.annotations() == null) {
+            return false;
+        }
+        List<AnnotationInstance> injectInstances = appClass.annotations().get(ResteasyReactiveDotNames.CDI_INJECT);
+        return (injectInstances != null) && !injectInstances.isEmpty();
     }
 
     public static ResourceScanningResult scanResources(

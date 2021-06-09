@@ -91,6 +91,8 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
         /**
          * Parse and register an expression for the specified parameter.
+         * <p>
+         * A registered expression contributes to the {@link Template#getExpressions()}, i.e. can be validated at build time.
          * 
          * @param param
          * @param value
@@ -123,6 +125,8 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         }
 
         /**
+         * Note that the expression must be registered in the {@link SectionHelperFactory#initializeBlock(Scope, BlockInfo)}
+         * first.
          * 
          * @param parameterName
          * @return an expression registered for the specified param name, or {@code null}

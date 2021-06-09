@@ -90,10 +90,13 @@ public class BootstrapMavenContext {
     private static final String MAVEN_DOT_HOME = "maven.home";
     private static final String MAVEN_HOME = "MAVEN_HOME";
     private static final String MAVEN_SETTINGS = "maven.settings";
+    private static final String MAVEN_TOP_LEVEL_PROJECT_BASEDIR = "maven.top-level-basedir";
     private static final String SETTINGS_XML = "settings.xml";
 
     private static final String userHome = PropertyUtils.getUserHome();
     private static final File userMavenConfigurationHome = new File(userHome, ".m2");
+
+    private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
 
     private boolean artifactTransferLogging;
     private BootstrapMavenOptions cliOptions;
@@ -107,6 +110,7 @@ public class BootstrapMavenContext {
     private RepositorySystem repoSystem;
     private RepositorySystemSession repoSession;
     private List<RemoteRepository> remoteRepos;
+    private List<RemoteRepository> remotePluginRepos;
     private RemoteRepositoryManager remoteRepoManager;
     private String localRepo;
     private Path currentPom;
@@ -114,6 +118,8 @@ public class BootstrapMavenContext {
     private DefaultServiceLocator serviceLocator;
     private String alternatePomName;
     private Path rootProjectDir;
+    private boolean preferPomsFromWorkspace;
+    private Boolean effectiveModelBuilder;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -126,7 +132,7 @@ public class BootstrapMavenContext {
     public BootstrapMavenContext(BootstrapMavenContextConfig<?> config)
             throws BootstrapMavenException {
         /*
-         * WARNING: this constructor calls instance method as part of the initialization.
+         * WARNING: this constructor calls instance methods as part of the initialization.
          * This means the values that are available in the config should be set before
          * the instance method invocations.
          */
@@ -137,9 +143,25 @@ public class BootstrapMavenContext {
         this.repoSystem = config.repoSystem;
         this.repoSession = config.repoSession;
         this.remoteRepos = config.remoteRepos;
+        this.remotePluginRepos = config.remotePluginRepos;
         this.remoteRepoManager = config.remoteRepoManager;
         this.cliOptions = config.cliOptions;
-        this.rootProjectDir = config.rootProjectDir;
+        if (config.rootProjectDir == null) {
+            final String topLevelBaseDirStr = PropertyUtils.getProperty(MAVEN_TOP_LEVEL_PROJECT_BASEDIR);
+            if (topLevelBaseDirStr != null) {
+                final Path tmp = Paths.get(topLevelBaseDirStr);
+                if (!Files.exists(tmp)) {
+                    throw new BootstrapMavenException("Top-level project base directory " + topLevelBaseDirStr
+                            + " specified with system property " + MAVEN_TOP_LEVEL_PROJECT_BASEDIR + " does not exist");
+                }
+                this.rootProjectDir = tmp;
+            }
+        } else {
+            this.rootProjectDir = config.rootProjectDir;
+        }
+        this.preferPomsFromWorkspace = config.preferPomsFromWorkspace;
+        this.effectiveModelBuilder = config.effectiveModelBuilder;
+        this.userSettings = config.userSettings;
         if (config.currentProject != null) {
             this.currentProject = config.currentProject;
             this.currentPom = currentProject.getRawModel().getPomFile().toPath();
@@ -147,8 +169,15 @@ public class BootstrapMavenContext {
         } else if (config.workspaceDiscovery) {
             currentProject = resolveCurrentProject();
             this.workspace = currentProject == null ? null : currentProject.getWorkspace();
+            if (workspace != null) {
+                if (config.repoSession == null && repoSession != null && repoSession.getWorkspaceReader() == null) {
+                    repoSession = new DefaultRepositorySystemSession(repoSession).setWorkspaceReader(workspace);
+                    if (config.remoteRepos == null && remoteRepos != null) {
+                        remoteRepos = resolveCurrentProjectRepos(remoteRepos);
+                    }
+                }
+            }
         }
-        userSettings = config.userSettings;
     }
 
     public AppArtifact getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
@@ -229,6 +258,10 @@ public class BootstrapMavenContext {
 
     public List<RemoteRepository> getRemoteRepositories() throws BootstrapMavenException {
         return remoteRepos == null ? remoteRepos = resolveRemoteRepos() : remoteRepos;
+    }
+
+    public List<RemoteRepository> getRemotePluginRepositories() throws BootstrapMavenException {
+        return remotePluginRepos == null ? remotePluginRepos = resolveRemotePluginRepos() : remotePluginRepos;
     }
 
     public Settings getEffectiveSettings() throws BootstrapMavenException {
@@ -318,7 +351,7 @@ public class BootstrapMavenContext {
                     if (!tmp.isDirectory()) {
                         tmp = tmp.getParentFile();
                     }
-                    alternatePomDir = tmp.toString();
+                    alternatePomDir = tmp == null ? null : tmp.toString();
                 }
             }
 
@@ -467,7 +500,7 @@ public class BootstrapMavenContext {
     private List<RemoteRepository> resolveRemoteRepos() throws BootstrapMavenException {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
 
-        getActiveSettingsProfiles().forEach(p -> addProfileRepos(p, rawRepos));
+        getActiveSettingsProfiles().forEach(p -> addProfileRepos(p.getRepositories(), rawRepos));
 
         // central must be there
         if (rawRepos.isEmpty() || !includesDefaultRepo(rawRepos)) {
@@ -477,6 +510,20 @@ public class BootstrapMavenContext {
                 rawRepos);
 
         return workspace == null ? repos : resolveCurrentProjectRepos(repos);
+    }
+
+    private List<RemoteRepository> resolveRemotePluginRepos() throws BootstrapMavenException {
+        final List<RemoteRepository> rawRepos = new ArrayList<>();
+
+        getActiveSettingsProfiles().forEach(p -> addProfileRepos(p.getPluginRepositories(), rawRepos));
+
+        // central must be there
+        if (rawRepos.isEmpty() || !includesDefaultRepo(rawRepos)) {
+            rawRepos.add(newDefaultRepository());
+        }
+        final List<RemoteRepository> repos = getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(),
+                rawRepos);
+        return repos;
     }
 
     public static RemoteRepository newDefaultRepository() {
@@ -502,12 +549,19 @@ public class BootstrapMavenContext {
 
     private List<RemoteRepository> resolveCurrentProjectRepos(List<RemoteRepository> repos)
             throws BootstrapMavenException {
-        final Model model = loadCurrentProjectModel();
-        if (model == null) {
-            return repos;
+        final Artifact projectArtifact;
+        if (currentProject == null) {
+            final Model model = loadCurrentProjectModel();
+            if (model == null) {
+                return repos;
+            }
+            projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), null, "pom",
+                    ModelUtils.getVersion(model));
+        } else {
+            projectArtifact = new DefaultArtifact(currentProject.getGroupId(), currentProject.getArtifactId(), null, "pom",
+                    currentProject.getVersion());
         }
-        final Artifact projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", "pom",
-                ModelUtils.getVersion(model));
+
         final List<RemoteRepository> rawRepos;
         try {
             rawRepos = getRepositorySystem()
@@ -518,6 +572,7 @@ public class BootstrapMavenContext {
         } catch (ArtifactDescriptorException e) {
             throw new BootstrapMavenException("Failed to read artifact descriptor for " + projectArtifact, e);
         }
+
         return getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(), rawRepos);
     }
 
@@ -598,8 +653,8 @@ public class BootstrapMavenContext {
         return false;
     }
 
-    private static void addProfileRepos(final org.apache.maven.model.Profile profile, final List<RemoteRepository> all) {
-        final List<org.apache.maven.model.Repository> repositories = profile.getRepositories();
+    private static void addProfileRepos(List<org.apache.maven.model.Repository> repositories,
+            final List<RemoteRepository> all) {
         for (org.apache.maven.model.Repository repo : repositories) {
             final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(),
                     repo.getUrl());
@@ -651,8 +706,7 @@ public class BootstrapMavenContext {
             locator.setServices(WagonConfigurator.class, new BootstrapWagonConfigurator());
             locator.setServices(WagonProvider.class, new BootstrapWagonProvider());
         }
-        locator.setServices(ModelBuilder.class, new MavenModelBuilder(workspace, getCliOptions(),
-                workspace == null ? Collections.emptyList() : getActiveSettingsProfiles()));
+        locator.setServices(ModelBuilder.class, new MavenModelBuilder(this));
         locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
@@ -798,5 +852,17 @@ public class BootstrapMavenContext {
         // with how Maven discovers the workspace and also created issues testing the Quarkus platform
         // due to its specific FS layout
         return rootProjectDir;
+    }
+
+    public boolean isPreferPomsFromWorkspace() {
+        return preferPomsFromWorkspace;
+    }
+
+    public boolean isEffectiveModelBuilder() {
+        if (effectiveModelBuilder == null) {
+            final String s = PropertyUtils.getProperty(EFFECTIVE_MODEL_BUILDER_PROP);
+            effectiveModelBuilder = s == null ? false : Boolean.parseBoolean(s);
+        }
+        return effectiveModelBuilder;
     }
 }

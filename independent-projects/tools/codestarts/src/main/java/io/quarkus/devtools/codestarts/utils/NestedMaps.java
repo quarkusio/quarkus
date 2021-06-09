@@ -29,26 +29,47 @@ public final class NestedMaps {
 
     public static <T> Map<String, T> deepMerge(final Stream<Map<String, T>> mapStream) {
         final Map<String, T> out = new HashMap<>();
-        mapStream.forEach(m -> deepMerge(out, m));
+        mapStream.forEach(m -> internalDeepMerge(out, m));
+        return out;
+    }
+
+    public static Map<String, Object> deepMerge(final Map<String, Object> left, final Map<String, Object> right) {
+        final Map<String, Object> out = new HashMap<>();
+        internalDeepMerge(out, left);
+        internalDeepMerge(out, right);
         return out;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static void deepMerge(Map left, Map right) {
+    private static void internalDeepMerge(Map left, Map right) {
         for (Object key : right.keySet()) {
             Object rightValue = right.get(key);
             Object leftValue = left.get(key);
 
             if (rightValue instanceof Map && leftValue instanceof Map) {
-                deepMerge((Map) leftValue, (Map) rightValue);
+                internalDeepMerge((Map) leftValue, (Map) rightValue);
             } else if (rightValue instanceof Collection && leftValue instanceof Collection) {
                 Collection c = new LinkedHashSet();
                 c.addAll((Collection) leftValue);
                 c.addAll((Collection) rightValue);
                 left.put(key, c);
-            } else {
+            } else if (rightValue instanceof Map) {
+                final Map map = new HashMap();
+                internalDeepMerge(map, (Map) rightValue);
+                left.put(key, map);
+            } else if (rightValue instanceof Collection) {
+                left.put(key, new LinkedHashSet((Collection) rightValue));
+            } else if (rightValue instanceof Integer
+                    || rightValue instanceof Boolean
+                    || rightValue instanceof Float
+                    || rightValue instanceof Long
+                    || rightValue instanceof Double
+                    || rightValue instanceof String
+                    || rightValue == null) {
                 // Override
                 left.put(key, rightValue);
+            } else {
+                throw new IllegalArgumentException("Invalid value type for deepMerge: " + rightValue.getClass());
             }
         }
     }

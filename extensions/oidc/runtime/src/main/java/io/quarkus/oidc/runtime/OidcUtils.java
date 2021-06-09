@@ -28,9 +28,9 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public final class OidcUtils {
-    static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
-    static final String USER_INFO_ATTRIBUTE = "userinfo";
-    static final String TENANT_ID_ATTRIBUTE = "tenant-id";
+    public static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
+    public static final String USER_INFO_ATTRIBUTE = "userinfo";
+    public static final String TENANT_ID_ATTRIBUTE = "tenant-id";
     /**
      * This pattern uses a positive lookahead to split an expression around the forward slashes
      * ignoring those which are located inside a pair of the double quotes.

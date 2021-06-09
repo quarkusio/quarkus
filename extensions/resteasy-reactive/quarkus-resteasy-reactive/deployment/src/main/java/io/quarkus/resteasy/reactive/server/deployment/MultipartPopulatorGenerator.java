@@ -16,13 +16,16 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.processor.AsmUtil;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.TypeArgMapper;
 import org.jboss.resteasy.reactive.common.util.DeploymentUtils;
 import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.multipart.DefaultFileUpload;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
@@ -37,7 +40,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.server.runtime.multipart.MultipartSupport;
-import io.quarkus.resteasy.reactive.server.runtime.multipart.QuarkusFileUpload;
 
 final class MultipartPopulatorGenerator {
 
@@ -242,19 +244,21 @@ final class MultipartPopulatorGenerator {
                             || fieldDotName.equals(DotNames.INPUT_STREAM_READER_NAME)) {
                         // don't support InputStream as it's too easy to get into trouble
                         throw new IllegalArgumentException(
-                                "InputStream and InputStreamReader are not support as a field type of a Multipart POJO class. Offending field is '"
+                                "InputStream and InputStreamReader are not supported as a field type of a Multipart POJO class. Offending field is '"
                                         + field.name() + "' of class '" + multipartClassName + "'");
                     }
 
                     String formAttrName = field.name();
+                    boolean formAttrNameSet = false;
                     AnnotationValue formParamValue = formParamInstance.value();
                     if (formParamValue != null) {
+                        formAttrNameSet = true;
                         formAttrName = formParamValue.asString();
                     }
 
                     // TODO: not sure this is correct, but it seems to be what RESTEasy does and it also makes most sense in the context of a POJO
                     String partType = MediaType.TEXT_PLAIN;
-                    AnnotationInstance partTypeInstance = field.annotation(DotNames.PART_TYPE_NAME);
+                    AnnotationInstance partTypeInstance = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
                     if (partTypeInstance != null) {
                         AnnotationValue partTypeValue = partTypeInstance.value();
                         if (partTypeValue != null) {
@@ -262,17 +266,14 @@ final class MultipartPopulatorGenerator {
                         }
                     }
 
-                    boolean isFileRelatedField = fieldDotName.equals(DotNames.FIELD_UPLOAD_NAME)
-                            || fieldDotName.equals(DotNames.PATH_NAME)
-                            || fieldDotName.equals(DotNames.FILE_NAME);
                     ResultHandle formAttrNameHandle = populate.load(formAttrName);
                     AssignableResultHandle resultHandle = populate.createVariable(Object.class);
 
-                    if (isFileRelatedField) {
+                    if (isFileRelatedType(fieldDotName)) {
                         // uploaded file are present in the RoutingContext and are extracted using MultipartSupport#getFileUpload
 
                         ResultHandle fileUploadHandle = populate.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUpload", QuarkusFileUpload.class,
+                                MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUpload", DefaultFileUpload.class,
                                         String.class, ResteasyReactiveRequestContext.class),
                                 formAttrNameHandle, rrCtxHandle);
                         if (fieldDotName.equals(DotNames.FIELD_UPLOAD_NAME)) {
@@ -284,7 +285,7 @@ final class MultipartPopulatorGenerator {
                             fileUploadNullTrue.breakScope();
                             BytecodeCreator fileUploadFalse = fileUploadNullBranch.falseBranch();
                             ResultHandle pathHandle = fileUploadFalse.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(QuarkusFileUpload.class, "uploadedFile", Path.class),
+                                    MethodDescriptor.ofMethod(DefaultFileUpload.class, "uploadedFile", Path.class),
                                     fileUploadHandle);
                             if (fieldDotName.equals(DotNames.PATH_NAME)) {
                                 fileUploadFalse.assign(resultHandle, pathHandle);
@@ -294,14 +295,63 @@ final class MultipartPopulatorGenerator {
                             }
                             fileUploadFalse.breakScope();
                         }
+                    } else if (isListOfFileUpload(fieldType)) {
+                        // in this case we allow injection of all the uploaded file as long as a name
+                        // was not provided in @RestForm (which makes no semantic sense)
+                        if (formAttrNameSet) {
+                            Type fieldGenericType = fieldType.asParameterizedType().arguments().get(0);
+                            ResultHandle fileUploadHandle;
+                            if (fieldGenericType.name().equals(DotNames.FIELD_UPLOAD_NAME)) {
+                                fileUploadHandle = populate.invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUploads",
+                                                List.class,
+                                                String.class, ResteasyReactiveRequestContext.class),
+                                        formAttrNameHandle, rrCtxHandle);
+                            } else if (fieldGenericType.name().equals(DotNames.PATH_NAME)) {
+                                fileUploadHandle = populate.invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(MultipartSupport.class, "getJavaPathFileUploads",
+                                                List.class,
+                                                String.class, ResteasyReactiveRequestContext.class),
+                                        formAttrNameHandle, rrCtxHandle);
+                            } else if (fieldGenericType.name().equals(DotNames.FILE_NAME)) {
+                                fileUploadHandle = populate.invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(MultipartSupport.class, "getJavaIOFileUploads",
+                                                List.class,
+                                                String.class, ResteasyReactiveRequestContext.class),
+                                        formAttrNameHandle, rrCtxHandle);
+                            } else {
+                                throw new IllegalArgumentException(
+                                        "Unhandled genetic type '" + fieldGenericType.name().toString() + "'");
+                            }
+                            populate.assign(resultHandle, fileUploadHandle);
+                        } else {
+                            ResultHandle allFileUploadsHandle = populate.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUploads", List.class,
+                                            ResteasyReactiveRequestContext.class),
+                                    rrCtxHandle);
+                            populate.assign(resultHandle, allFileUploadsHandle);
+                        }
                     } else {
+                        // this is a common enough mistake, so let's provide a good error message
+                        failIfFileTypeUsedAsGenericType(field, fieldType, fieldDotName);
+
+                        if (fieldType.kind() == Type.Kind.ARRAY) {
+                            if (fieldType.asArrayType().component().name().equals(DotNames.BYTE_NAME)) {
+                                throw new IllegalArgumentException(
+                                        "'byte[]' cannot be used to read multipart file contents. Offending field is '"
+                                                + field.name() + "' of class '"
+                                                + field.declaringClass().name()
+                                                + "'. If you need to read the contents of the uploaded file, use 'Path' or 'File' as the field type and use File IO APIs to read the bytes, while making sure you annotate the endpoint with '@Blocking'");
+                            }
+                        }
                         if (fieldDotName.equals(DotNames.STRING_NAME) && partType.equals(MediaType.TEXT_PLAIN)) {
                             // in this case all we need to do is read the value of the form attribute
 
                             populate.assign(resultHandle,
-                                    populate.invokeInterfaceMethod(MethodDescriptor.ofMethod(ServerHttpRequest.class,
-                                            "getFormAttribute", String.class, String.class), serverReqHandle,
-                                            formAttrNameHandle));
+                                    populate.invokeVirtualMethod(MethodDescriptor.ofMethod(ResteasyReactiveRequestContext.class,
+                                            "getFormParameter", Object.class, String.class, boolean.class, boolean.class),
+                                            rrCtxHandle,
+                                            formAttrNameHandle, populate.load(true), populate.load(false)));
                         } else {
                             // we need to use the field type and the media type to locate a MessageBodyReader
 
@@ -333,11 +383,11 @@ final class MultipartPopulatorGenerator {
                                     MethodDescriptor.ofMethod(MediaType.class, "valueOf", MediaType.class, String.class),
                                     clinit.load(partType)));
 
-                            ResultHandle formStrValueHandle = populate.invokeInterfaceMethod(
-                                    MethodDescriptor.ofMethod(ServerHttpRequest.class,
-                                            "getFormAttribute", String.class, String.class),
-                                    serverReqHandle,
-                                    formAttrNameHandle);
+                            ResultHandle formStrValueHandle = populate.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(ResteasyReactiveRequestContext.class,
+                                            "getFormParameter", Object.class, String.class, boolean.class, boolean.class),
+                                    rrCtxHandle,
+                                    formAttrNameHandle, populate.load(true), populate.load(false));
 
                             populate.assign(resultHandle, populate.invokeStaticMethod(
                                     MethodDescriptor.ofMethod(MultipartSupport.class, "convertFormAttribute", Object.class,
@@ -388,5 +438,35 @@ final class MultipartPopulatorGenerator {
             populate.returnValue(null);
         }
         return generateClassName;
+    }
+
+    private static boolean isFileRelatedType(DotName type) {
+        return type.equals(DotNames.FIELD_UPLOAD_NAME) || type.equals(DotNames.PATH_NAME) || type.equals(DotNames.FILE_NAME);
+    }
+
+    private static boolean isListOfFileUpload(Type fieldType) {
+        if ((fieldType.kind() == Type.Kind.PARAMETERIZED_TYPE) && fieldType.name().equals(ResteasyReactiveDotNames.LIST)) {
+            ParameterizedType parameterizedType = fieldType.asParameterizedType();
+            if (!parameterizedType.arguments().isEmpty()) {
+                DotName argTypeDotName = parameterizedType.arguments().get(0).name();
+                return isFileRelatedType(argTypeDotName);
+            }
+        }
+        return false;
+    }
+
+    private static void failIfFileTypeUsedAsGenericType(FieldInfo field, Type fieldType, DotName fieldDotName) {
+        if (fieldType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            ParameterizedType parameterizedType = fieldType.asParameterizedType();
+            if (!parameterizedType.arguments().isEmpty()) {
+                DotName argTypeDotName = parameterizedType.arguments().get(0).name();
+                if (isFileRelatedType(argTypeDotName)) {
+                    throw new IllegalArgumentException("Type '" + argTypeDotName.withoutPackagePrefix()
+                            + "' cannot be used as a generic type of '"
+                            + fieldDotName.withoutPackagePrefix() + "'. Offending field is '" + field.name() + "' of class '"
+                            + field.declaringClass().name() + "'");
+                }
+            }
+        }
     }
 }

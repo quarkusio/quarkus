@@ -255,6 +255,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-ssm-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-apache-httpclient-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -944,7 +957,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxrs-client-deployment</artifactId>
+            <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -1023,6 +1036,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mysql-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-oracle-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -1516,6 +1542,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-client-reactive-filter-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-common-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -1582,6 +1621,32 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry-exporter-jaeger-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry-exporter-otlp-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry-rest-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -1984,6 +2049,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-links-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-qute-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -2102,6 +2180,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-graphql-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-graphql-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -2528,6 +2619,19 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets-client-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- END update-extension-dependencies.sh -->
     </dependencies>
 
@@ -2536,7 +2640,7 @@
             <plugin>
                 <groupId>dev.jbang</groupId>
                 <artifactId>jbang-maven-plugin</artifactId>
-                <version>0.0.6</version>
+                <version>0.0.7</version>
                 <executions>
                     <execution>
                         <id>generate-build-item-doc</id>
@@ -2545,7 +2649,6 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <jbangVersion>0.56.0</jbangVersion>
                             <script>${project.basedir}/../.github/quarkusbuilditemdoc.java</script>
                             <args>
                                 <arg>--outputFile ${project.basedir}/../target/asciidoc/generated/config/quarkus-all-build-items.adoc</arg>
@@ -2570,8 +2673,7 @@
                     <skip>${skipDocs}</skip>
                     <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
                     <arguments>
-                        <argument>${project.version}</argument>
-                        <argument>${project.basedir}/../devtools/platform-descriptor-json/target/classes/quarkus-bom-descriptor/extensions.json</argument>
+                        <argument>${project.basedir}/../devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-${project.version}-${project.version}.json</argument>
                     </arguments>
                     <environmentVariables>
                         <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
@@ -2799,6 +2901,27 @@
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>jdk16-workarounds</id>
+            <activation>
+                <jdk>[16,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- It seems there is no way preventing add-opens to be propagated to AllConfigGenerator
+                         which fails due to https://github.com/quarkusio/quarkus/issues/16862
+                         (and add-opens is only required until https://github.com/quarkusio/quarkus/issues/16806#issuecomment-834788411).
+                         So skip the entire plugin until then. -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

@@ -21,7 +21,7 @@ public class BearerOpaqueTokenAuthorizationTest {
         for (String username : Arrays.asList("alice", "admin")) {
             RestAssured.given()
                     .header("Authorization", "Bearer " + username)
-                    .when().get("/opaque/api/users/preferredUserName")
+                    .when().get("/opaque/api/users/preferredUserName/bearer")
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo(username));
@@ -32,7 +32,7 @@ public class BearerOpaqueTokenAuthorizationTest {
     public void testAccessAdminResource() {
         RestAssured.given()
                 .header("Authorization", "Bearer " + "admin")
-                .when().get("/opaque/api/admin")
+                .when().get("/opaque/api/admin/bearer")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
@@ -42,7 +42,7 @@ public class BearerOpaqueTokenAuthorizationTest {
     public void testDeniedAccessAdminResource() {
         RestAssured.given()
                 .header("Authorization", "Bearer " + "alice")
-                .when().get("/opaque/api/admin")
+                .when().get("/opaque/api/admin/bearer")
                 .then()
                 .statusCode(403);
     }
@@ -50,7 +50,7 @@ public class BearerOpaqueTokenAuthorizationTest {
     @Test
     public void testDeniedNoBearerToken() {
         RestAssured.given()
-                .when().get("/opaque/api/users/me").then()
+                .when().get("/opaque/api/users/me/bearer").then()
                 .statusCode(401);
     }
 
@@ -59,7 +59,7 @@ public class BearerOpaqueTokenAuthorizationTest {
 
         RestAssured.given()
                 .header("Authorization", "Bearer " + "expired")
-                .get("/opaque/api/users/me")
+                .get("/opaque/api/users/me/bearer")
                 .then()
                 .statusCode(401);
     }

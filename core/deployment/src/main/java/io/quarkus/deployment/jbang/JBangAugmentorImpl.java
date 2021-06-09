@@ -1,26 +1,19 @@
 package io.quarkus.deployment.jbang;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import io.quarkus.bootstrap.BootstrapGradleException;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
-import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.BuildStepBuilder;
@@ -31,7 +24,6 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
-import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
@@ -57,6 +49,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             builder.setBaseName(quarkusBootstrap.getBaseName());
         }
 
+        builder.setAuxiliaryApplication(curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication());
         builder.setLaunchMode(LaunchMode.NORMAL);
         builder.setRebuild(quarkusBootstrap.isRebuild());
         builder.setLiveReloadState(
@@ -123,39 +116,5 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private DevModeContext.ModuleInfo toModule(WorkspaceModule module) throws BootstrapGradleException {
-        AppArtifactKey key = new AppArtifactKey(module.getArtifactCoords().getGroupId(),
-                module.getArtifactCoords().getArtifactId(), module.getArtifactCoords().getClassifier());
-
-        Set<String> sourceDirectories = new HashSet<>();
-        Set<String> sourceParents = new HashSet<>();
-        for (File srcDir : module.getSourceSourceSet().getSourceDirectories()) {
-            sourceDirectories.add(srcDir.getPath());
-            sourceParents.add(srcDir.getParent());
-        }
-
-        return new DevModeContext.ModuleInfo(key,
-                module.getArtifactCoords().getArtifactId(),
-                module.getProjectRoot().getPath(),
-                sourceDirectories,
-                QuarkusModelHelper.getClassPath(module).toAbsolutePath().toString(),
-                module.getSourceSourceSet().getResourceDirectory().toString(),
-                module.getSourceSet().getResourceDirectory().getPath(),
-                sourceParents,
-                module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
-                module.getBuildDir().toString());
-    }
-
-    private DevModeContext.ModuleInfo toModule(LocalProject project) {
-        return new DevModeContext.ModuleInfo(project.getKey(), project.getArtifactId(),
-                project.getDir().toAbsolutePath().toString(),
-                Collections.singleton(project.getSourcesSourcesDir().toAbsolutePath().toString()),
-                project.getClassesDir().toAbsolutePath().toString(),
-                project.getResourcesSourcesDir().toAbsolutePath().toString(),
-                project.getSourcesDir().toString(),
-                project.getCodeGenOutputDir().toString(),
-                project.getOutputDir().toString());
     }
 }

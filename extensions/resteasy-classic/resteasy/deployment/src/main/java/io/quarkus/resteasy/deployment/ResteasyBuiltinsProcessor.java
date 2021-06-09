@@ -18,7 +18,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
@@ -36,7 +35,7 @@ import io.quarkus.resteasy.runtime.vertx.JsonArrayWriter;
 import io.quarkus.resteasy.runtime.vertx.JsonObjectReader;
 import io.quarkus.resteasy.runtime.vertx.JsonObjectWriter;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
-import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
+import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
@@ -48,15 +47,10 @@ public class ResteasyBuiltinsProcessor {
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.RESTEASY);
-    }
-
-    @BuildStep
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
             JaxRsSecurityConfig config,
             ResteasyDeploymentBuildItem resteasyDeployment,
-            BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
+            BuildProducer<AdditionalSecuredClassesBuildItem> additionalSecuredClasses) {
         if (config.denyJaxRs) {
             final List<ClassInfo> classes = new ArrayList<>();
 
@@ -68,7 +62,7 @@ public class ResteasyBuiltinsProcessor {
                 }
             }
 
-            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildIem(classes));
+            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildItem(classes));
         }
     }
 

@@ -6,9 +6,6 @@ import static org.awaitility.Awaitility.await;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
@@ -34,7 +31,8 @@ import io.grpc.reflection.v1alpha.MutinyServerReflectionGrpc;
 import io.grpc.reflection.v1alpha.ServerReflectionRequest;
 import io.grpc.reflection.v1alpha.ServerReflectionResponse;
 import io.grpc.reflection.v1alpha.ServiceResponse;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -51,11 +49,12 @@ public class GrpcReflectionTest {
                     .addPackage(HealthGrpc.class.getPackage())
                     .addPackage(MutinyReflectableServiceGrpc.class.getPackage())
                     .addClass(MyReflectionService.class))
+            .setFlatClassPath(true)
             .withConfigurationResource("reflection-config.properties");
 
-    @Inject
-    @GrpcService("reflection-service")
+    @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
+
     private UnicastProcessor<ServerReflectionRequest> processor;
     private ResettableSubscriber<ServerReflectionResponse> subscriber;
 
@@ -280,7 +279,7 @@ public class GrpcReflectionTest {
         }
     }
 
-    @Singleton
+    @GrpcService
     public static class MyReflectionService extends MutinyReflectableServiceGrpc.ReflectableServiceImplBase {
         @Override
         public Uni<Reply> method(Request request) {

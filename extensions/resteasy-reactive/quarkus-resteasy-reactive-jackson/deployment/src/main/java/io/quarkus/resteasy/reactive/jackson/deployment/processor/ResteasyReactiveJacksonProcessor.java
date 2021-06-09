@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.processor;
 
 import java.util.Collections;
+import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
@@ -10,8 +11,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyReader;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyReader;
@@ -39,17 +41,19 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     @BuildStep
-    void additionalProviders(BuildProducer<AdditionalBeanBuildItem> additionalBean,
+    void additionalProviders(List<JacksonFeatureBuildItem> jacksonFeatureBuildItems,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
-        // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object
+        boolean applicationNeedsSpecialJacksonFeatures = jacksonFeatureBuildItems.isEmpty();
+        // make these beans to they can get instantiated with the Quarkus CDI configured ObjectMapper object
         additionalBean.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(JacksonMessageBodyReader.class.getName())
-                .addBeanClass(JacksonMessageBodyWriter.class.getName())
+                .addBeanClass(ServerJacksonMessageBodyReader.class.getName())
+                .addBeanClass(getJacksonMessageBodyWriter(applicationNeedsSpecialJacksonFeatures))
                 .setUnremovable().build());
 
         additionalReaders
-                .produce(new MessageBodyReaderBuildItem(JacksonMessageBodyReader.class.getName(), Object.class.getName(),
+                .produce(new MessageBodyReaderBuildItem(ServerJacksonMessageBodyReader.class.getName(), Object.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(VertxJsonArrayMessageBodyReader.class.getName(),
@@ -60,7 +64,8 @@ public class ResteasyReactiveJacksonProcessor {
                         JsonObject.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters
-                .produce(new MessageBodyWriterBuildItem(JacksonMessageBodyWriter.class.getName(), Object.class.getName(),
+                .produce(new MessageBodyWriterBuildItem(getJacksonMessageBodyWriter(applicationNeedsSpecialJacksonFeatures),
+                        Object.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(VertxJsonArrayMessageBodyWriter.class.getName(),
@@ -70,5 +75,10 @@ public class ResteasyReactiveJacksonProcessor {
                 .produce(new MessageBodyWriterBuildItem(VertxJsonObjectMessageBodyWriter.class.getName(),
                         JsonObject.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
+    }
+
+    private String getJacksonMessageBodyWriter(boolean applicationNeedsSpecialJacksonFeatures) {
+        return applicationNeedsSpecialJacksonFeatures ? BasicServerJacksonMessageBodyWriter.class.getName()
+                : FullyFeaturedServerJacksonMessageBodyWriter.class.getName();
     }
 }

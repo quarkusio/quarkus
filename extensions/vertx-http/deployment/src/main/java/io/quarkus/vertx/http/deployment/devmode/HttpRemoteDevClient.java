@@ -134,10 +134,11 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             String session = connection.getHeaderField(RemoteSyncHandler.QUARKUS_SESSION);
             String error = connection.getHeaderField(RemoteSyncHandler.QUARKUS_ERROR);
             if (error != null) {
-                throw new IOException("Server did not start a remote dev session: " + error);
+                throw createIOException("Server did not start a remote dev session: " + error);
             }
             if (session == null) {
-                throw new IOException("Server did not start a remote dev session");
+                throw createIOException(
+                        "Server did not start a remote dev session. Make sure the environment variable 'QUARKUS_LAUNCH_DEVMODE' is set to 'true' when launching the server");
             }
             String result = new String(IoUtil.readBytes(connection.getInputStream()), StandardCharsets.UTF_8);
             Set<String> changed = new HashSet<>();
@@ -162,6 +163,12 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                 log.info("Connected to remote server");
             }
             return session;
+        }
+
+        private IOException createIOException(String message) {
+            IOException result = new IOException(message);
+            result.setStackTrace(new StackTraceElement[] {});
+            return result;
         }
 
         @Override

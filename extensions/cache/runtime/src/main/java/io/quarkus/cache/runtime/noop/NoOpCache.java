@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import io.quarkus.cache.runtime.AbstractCache;
+import io.smallrye.mutiny.Uni;
 
 /**
  * This class is an internal Quarkus cache implementation. Do not use it explicitly from your Quarkus application. The public
@@ -36,5 +37,10 @@ public class NoOpCache extends AbstractCache {
 
     @Override
     public void invalidateAll() {
+    }
+
+    @Override
+    public Uni<Void> replaceUniValue(Object key, Object emittedValue) {
+        return Uni.createFrom().voidItem();
     }
 }

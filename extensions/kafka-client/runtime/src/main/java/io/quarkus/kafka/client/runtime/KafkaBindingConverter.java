@@ -21,7 +21,7 @@ public class KafkaBindingConverter implements ServiceBindingConverter {
         Map<String, String> properties = new HashMap<>();
         ServiceBinding binding = matchingByType.get();
 
-        String bootstrapServers = binding.getProperties().get("bootstrapservers");
+        String bootstrapServers = binding.getProperties().get("bootstrapServers");
         if (bootstrapServers == null) {
             bootstrapServers = binding.getProperties().get("bootstrap-servers");
         }
@@ -29,12 +29,12 @@ public class KafkaBindingConverter implements ServiceBindingConverter {
             properties.put("kafka.bootstrap.servers", bootstrapServers);
         }
 
-        String securityProtocol = binding.getProperties().get("securityprotocol");
+        String securityProtocol = binding.getProperties().get("securityProtocol");
         if (securityProtocol != null) {
             properties.put("kafka.security.protocol", securityProtocol);
         }
 
-        String saslMechanism = binding.getProperties().get("saslmechanism");
+        String saslMechanism = binding.getProperties().get("saslMechanism");
         if (saslMechanism != null) {
             properties.put("kafka.sasl.mechanism", saslMechanism);
         }

@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -39,12 +38,6 @@ public interface ResolutionContext {
      * @return the data
      */
     Object getData();
-
-    /**
-     * 
-     * @return the namespace resolvers
-     */
-    List<NamespaceResolver> getNamespaceResolvers();
 
     /**
      * 

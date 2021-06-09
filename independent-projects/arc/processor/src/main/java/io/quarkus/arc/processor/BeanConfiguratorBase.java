@@ -40,6 +40,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
     protected boolean removable;
     protected final Map<String, Object> params;
     protected Type providerType;
+    protected boolean forceApplicationClass;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
@@ -63,6 +64,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
         types.addAll(base.types);
         qualifiers.clear();
         qualifiers.addAll(base.qualifiers);
+        forceApplicationClass = base.forceApplicationClass;
         scope(base.scope);
         if (base.alternativePriority != null) {
             alternativePriority(base.alternativePriority);
@@ -168,6 +170,17 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
 
     public B unremovable() {
         this.removable = false;
+        return self();
+    }
+
+    /**
+     * Forces the bean to be considered an 'application class', so it will be defined in the runtime
+     * ClassLoader and re-created on each redeployment.
+     *
+     * @return self
+     */
+    public B forceApplicationClass() {
+        this.forceApplicationClass = true;
         return self();
     }
 

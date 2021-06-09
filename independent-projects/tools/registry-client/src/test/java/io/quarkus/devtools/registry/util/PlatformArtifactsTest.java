@@ -55,4 +55,15 @@ public class PlatformArtifactsTest {
         assertEquals(bom, PlatformArtifacts.ensureBomArtifactId(bom));
         assertEquals(bom, PlatformArtifacts.ensureBomArtifactId("acme-bom" + Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX));
     }
+
+    @Test
+    public void ensureBomArtifact() {
+        final ArtifactCoords bom = new ArtifactCoords("org.acme", "acme-bom", null, "pom", "1.0");
+        assertEquals(bom, PlatformArtifacts.ensureBomArtifact(bom));
+        assertEquals(bom,
+                PlatformArtifacts.ensureBomArtifact(new ArtifactCoords(bom.getGroupId(),
+                        bom.getArtifactId() + Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX, bom.getVersion(), "json",
+                        bom.getVersion())));
+    }
+
 }

@@ -1,7 +1,0 @@
-quarkus:
-  log:
-    console:
-      json:
-        pretty-print: true
-        date-format: YYYY-MM-dd HH:mm:ss
-        exception-output-type: detailed-and-formatted

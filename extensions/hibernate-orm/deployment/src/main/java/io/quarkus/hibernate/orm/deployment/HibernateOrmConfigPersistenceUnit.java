@@ -75,14 +75,14 @@ public class HibernateOrmConfigPersistenceUnit {
     /**
      * The size of the batches used when loading entities and collections.
      *
-     * `-1` means batch loading is disabled. This is the default.
+     * `-1` means batch loading is disabled.
      *
      * @deprecated {@link #fetch} should be used to configure fetching properties.
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "-1")
+    @ConfigItem(defaultValueDocumentation = "16")
     @Deprecated
-    public int batchFetchSize;
+    public OptionalInt batchFetchSize;
 
     /**
      * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one).
@@ -111,6 +111,31 @@ public class HibernateOrmConfigPersistenceUnit {
      */
     @ConfigItem
     public Optional<String> implicitNamingStrategy;
+
+    /**
+     * Class name of a custom {@link org.hibernate.boot.spi.MetadataBuilderContributor} implementation.
+     *
+     * [NOTE]
+     * ====
+     * Not all customization options exposed by {@link org.hibernate.boot.MetadataBuilder}
+     * will work correctly. Stay clear of options related to classpath scanning in particular.
+     *
+     * This setting is exposed mainly to allow registration of types, converters and SQL functions.
+     * ====
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> metadataBuilderContributor;
+
+    /**
+     * XML files to configure the entity mapping, e.g. {@code META-INF/my-orm.xml}.
+     * <p>
+     * Defaults to `META-INF/orm.xml` if it exists.
+     * Pass `no-file` to force Hibernate ORM to ignore `META-INF/orm.xml`.
+     */
+    @ConfigItem(defaultValueDocumentation = "META-INF/orm.xml if it exists; no-file otherwise")
+    public Optional<Set<String>> mappingFiles;
 
     /**
      * Query related configuration.
@@ -179,10 +204,11 @@ public class HibernateOrmConfigPersistenceUnit {
                 packages.isPresent() ||
                 dialect.isAnyPropertySet() ||
                 sqlLoadScript.isPresent() ||
-                batchFetchSize > 0 ||
+                batchFetchSize.isPresent() ||
                 maxFetchDepth.isPresent() ||
                 physicalNamingStrategy.isPresent() ||
                 implicitNamingStrategy.isPresent() ||
+                metadataBuilderContributor.isPresent() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
@@ -395,12 +421,12 @@ public class HibernateOrmConfigPersistenceUnit {
         /**
          * The size of the batches used when loading entities and collections.
          *
-         * `-1` means batch loading is disabled. This is the default.
+         * `-1` means batch loading is disabled.
          *
          * @asciidoclet
          */
-        @ConfigItem(defaultValue = "-1")
-        public int batchSize;
+        @ConfigItem(defaultValueDocumentation = "16")
+        public OptionalInt batchSize;
 
         /**
          * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one).
@@ -413,7 +439,7 @@ public class HibernateOrmConfigPersistenceUnit {
         public OptionalInt maxDepth;
 
         public boolean isAnyPropertySet() {
-            return batchSize > 0 || maxDepth.isPresent();
+            return batchSize.isPresent() || maxDepth.isPresent();
         }
 
     }

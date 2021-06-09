@@ -2,9 +2,9 @@ package io.quarkus.it.main;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -31,12 +31,15 @@ public class MethodSourceTest {
     }
 
     private static Collection<Arguments> provideDummyInput() {
-        return Arrays.asList(
+        return List.of(
                 Arguments.of(
-                        new UnusedBean.DummyInput("whatever", new UnusedBean.NestedDummyInput(Arrays.asList(1, 2, 3))),
+                        // note: List.of(...) or Arrays.asList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
+                        new UnusedBean.DummyInput("whatever",
+                                new UnusedBean.NestedDummyInput(new ArrayList<>(List.of(1, 2, 3)))),
                         CoreMatchers.is("whatever/6")),
                 Arguments.of(
-                        new UnusedBean.DummyInput("hi", new UnusedBean.NestedDummyInput(Collections.emptyList())),
+                        // note: Collections.emptyList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
+                        new UnusedBean.DummyInput("hi", new UnusedBean.NestedDummyInput(new ArrayList<>())),
                         CoreMatchers.is("hi/0")));
     }
 

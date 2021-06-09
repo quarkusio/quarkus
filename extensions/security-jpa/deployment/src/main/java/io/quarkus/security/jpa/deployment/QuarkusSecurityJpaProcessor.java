@@ -26,12 +26,10 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
@@ -78,11 +76,6 @@ class QuarkusSecurityJpaProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.SECURITY_JPA);
-    }
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.SECURITY_JPA);
     }
 
     @BuildStep

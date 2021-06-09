@@ -70,6 +70,7 @@ public class VertxRecorder {
         if (!messageConsumerConfigurations.isEmpty()) {
             EventBus eventBus = vertx.eventBus();
             CountDownLatch latch = new CountDownLatch(messageConsumerConfigurations.size());
+            final List<Throwable> registrationFailures = new ArrayList();
             for (Entry<String, ConsumeEvent> entry : messageConsumerConfigurations.entrySet()) {
                 EventConsumerInvoker invoker = createInvoker(entry.getKey());
                 String address = entry.getValue().value();
@@ -117,8 +118,9 @@ public class VertxRecorder {
 
                     @Override
                     public void handle(AsyncResult<Void> ar) {
-                        if (ar.succeeded()) {
-                            latch.countDown();
+                        latch.countDown();
+                        if (ar.failed()) {
+                            registrationFailures.add(ar.cause());
                         }
                     }
                 });
@@ -129,6 +131,10 @@ public class VertxRecorder {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Unable to register all message consumer methods", e);
+            }
+            if (!registrationFailures.isEmpty()) {
+                // just log/raise the first failure
+                throw new RuntimeException("Registration of one or more message consumers failed", registrationFailures.get(0));
             }
         }
     }
@@ -147,8 +153,9 @@ public class VertxRecorder {
         CountDownLatch latch = new CountDownLatch(messageConsumers.size());
         for (MessageConsumer<?> messageConsumer : messageConsumers) {
             messageConsumer.unregister(ar -> {
-                if (ar.succeeded()) {
-                    latch.countDown();
+                latch.countDown();
+                if (ar.failed()) {
+                    LOGGER.warn("Message consumer unregistration failed", ar.cause());
                 }
             });
         }

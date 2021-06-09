@@ -8,9 +8,9 @@ import javax.ws.rs.Path;
 
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 
+import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
 import io.quarkus.resteasy.qute.RestTemplate;
 
 @Path("hello")

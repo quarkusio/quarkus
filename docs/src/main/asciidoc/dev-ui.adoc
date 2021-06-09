@@ -13,7 +13,7 @@ Quarkus now ships with a new experimental Dev UI, which is available in dev mode
 quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev[/q/dev] by default. It will show you something like
 this:
 
-image::dev-ui-overview.png[alt=Dev UI overview,role="center"]
+image::dev-ui-overview.png[alt=Dev UI overview,role="center",width=90%]
 
 It allows you to quickly visualize all the extensions currently loaded, see their status and go directly
 to their documentation.
@@ -39,7 +39,7 @@ You have to add a file named `dev-templates/embedded.html` in your
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`]
 extension module's resources:
 
-image::dev-ui-embedded-file.png[alt=Dev UI embedded.html]
+image::dev-ui-embedded-file.png[alt=Dev UI embedded.html,align=center]
 
 The contents of this file will be included in your extension card, so for example we can place
 two links with some styling and icons:
@@ -122,7 +122,7 @@ a known route configuration key when working with resource paths.
 
 To add full pages for your Dev UI extension such as this one:
 
-image::dev-ui-page.png[alt=Dev UI custom page]
+image::dev-ui-page.png[alt=Dev UI custom page,align=center,width=90%]
 
 You need to place them in your extension's 
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module's 
@@ -313,7 +313,7 @@ public class DevConsoleProcessor {
 
 You can also add actions to your Dev UI templates:
 
-image::dev-ui-interactive.png[alt=Dev UI interactive page]
+image::dev-ui-interactive.png[alt=Dev UI interactive page,align=center,width=90%]
 
 This can be done by adding another link:building-my-first-extension#deploying-the-greeting-feature[build step] to
 declare the action in your extension's
@@ -398,5 +398,5 @@ public class CacheDevConsoleRecorder {
 NOTE: Flash messages are handled by the `main` DEV template and will result in nice notifications for your
 users:
 
-image::dev-ui-message.png[alt=Dev UI message]
+image::dev-ui-message.png[alt=Dev UI message,align=center,width=90%]
 

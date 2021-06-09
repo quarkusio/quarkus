@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-tck-microprofile-rest-client-reactive</artifactId>
-    <name>Quarkus - TCK - MicroProfile REST Client - RestEasy Reactive</name>
+    <name>Quarkus - TCK - MicroProfile REST Client - RESTEasy Reactive</name>
 
     <build>
         <plugins>
@@ -21,10 +21,12 @@
                 <configuration>
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
-                        <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
+                        <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
+                        <quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>
+                        <quarkus.rest-client-reactive.disable-smart-produces>true</quarkus.rest-client-reactive.disable-smart-produces>
+                        <vertx.disableTCCL>true</vertx.disableTCCL>
                         <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
-                        <quarkus.rest-client.scope>javax.enterprise.context.Dependent</quarkus.rest-client.scope>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -49,19 +51,20 @@
                         <!-- into a release -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.cditests.CDIInterceptorTest</exclude>
 
-                        <!-- We have our own version of these tests which set up a config environment -->
-                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonBProviderTest</exclude>
-                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonPProviderTest</exclude>
+                        <!-- We have our own version of this test, the original doesn't failing the build -->
+                        <!-- on invalid interfaces -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.InvalidInterfaceTest</exclude>
 
                         <!-- currently not supported or unapplicable for non-blocking implementation: -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.ssl.SslContextTest</exclude>
                         <exclude>org.eclipse.microprofile.rest.client.tck.ssl.SslHostnameVerifierTest</exclude>
                         <exclude>org.eclipse.microprofile.rest.client.tck.asynctests.AsyncMethodTest</exclude>
-                        <exclude>org.eclipse.microprofile.rest.client.tck.SubResourceTest</exclude>
 
                         <!-- The connection timeout is too small -->
                         <exclude>org/eclipse/microprofile/rest/client/tck/timeout/*.java</exclude>
+
+                        <!-- TODO fix this-->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.jsonb.InvokeWithJsonBProviderTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -85,7 +88,7 @@
             <plugin>
                 <groupId>org.jboss.jandex</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
-                <version>1.0.8</version>
+                <version>1.1.0</version>
                 <executions>
                     <execution>
                         <id>make-index</id>

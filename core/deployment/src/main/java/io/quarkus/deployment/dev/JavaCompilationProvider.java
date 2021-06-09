@@ -23,6 +23,7 @@ import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.gizmo.Gizmo;
 
 public class JavaCompilationProvider implements CompilationProvider {
@@ -94,7 +95,7 @@ public class JavaCompilationProvider implements CompilationProvider {
     }
 
     @Override
-    public Path getSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath) {
+    public Path getSourcePath(Path classFilePath, PathsCollection sourcePaths, String classesPath) {
         Path sourceFilePath = null;
         final RuntimeUpdatesClassVisitor visitor = new RuntimeUpdatesClassVisitor(sourcePaths, classesPath);
         try (final InputStream inputStream = Files.newInputStream(classFilePath)) {
@@ -117,11 +118,11 @@ public class JavaCompilationProvider implements CompilationProvider {
     }
 
     static class RuntimeUpdatesClassVisitor extends ClassVisitor {
-        private Set<String> sourcePaths;
-        private String classesPath;
+        private final PathsCollection sourcePaths;
+        private final String classesPath;
         private String sourceFile;
 
-        public RuntimeUpdatesClassVisitor(Set<String> sourcePaths, String classesPath) {
+        public RuntimeUpdatesClassVisitor(PathsCollection sourcePaths, String classesPath) {
             super(Gizmo.ASM_API_VERSION);
             this.sourcePaths = sourcePaths;
             this.classesPath = classesPath;
@@ -133,8 +134,7 @@ public class JavaCompilationProvider implements CompilationProvider {
         }
 
         public Path getSourceFileForClass(final Path classFilePath) {
-            for (String moduleSourcePath : sourcePaths) {
-                final Path sourcesDir = Paths.get(moduleSourcePath);
+            for (Path sourcesDir : sourcePaths) {
                 final Path classesDir = Paths.get(classesPath);
                 final StringBuilder sourceRelativeDir = new StringBuilder();
                 sourceRelativeDir.append(classesDir.relativize(classFilePath.getParent()));

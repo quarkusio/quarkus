@@ -1,6 +1,6 @@
 package ${package};
 
-import static io.vertx.core.http.HttpMethod.*;
+import static io.quarkus.vertx.web.Route.HttpMethod.*;
 
 import io.quarkus.vertx.web.Route;
 import io.vertx.ext.web.RoutingContext;

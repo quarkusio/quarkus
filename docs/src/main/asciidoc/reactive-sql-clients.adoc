@@ -102,7 +102,7 @@ Reactive REST endpoints in your application that return Uni or Multi need `Mutin
 [TIP]
 ====
 In this guide, we will use the Mutiny API of the Reactive PostgreSQL Client.
-If you're not familiar with Mutiny reactive types, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 ====
 
 === JSON Binding
@@ -531,6 +531,64 @@ return SqlClientHelper.inTransactionUni(client, tx -> tx
         .onItem().ignore().andContinueWithNull());
 ----
 
+== Working with batch query results
+
+When executing batch queries, reactive SQL clients return a `RowSet` that corresponds to the results of the first element in the batch.
+To get the results of the following batch elements, you must invoke the `RowSet#next` method until it returns `null`.
+
+Let's say you want to update some rows and compute the total number of affected rows.
+You must inspect each `RowSet`:
+
+[source, java]
+----
+PreparedQuery<RowSet<Row>> preparedQuery = client.preparedQuery("UPDATE fruits SET name = $1 WHERE id = $2");
+
+Uni<RowSet<Row>> rowSet = preparedQuery.executeBatch(Arrays.asList(
+        Tuple.of("Orange", 1),
+        Tuple.of("Pear", 2),
+        Tuple.of("Apple", 3)));
+
+Uni<Integer> totalAffected = rowSet.onItem().transform(res -> {
+    int total = 0;
+    do {
+        total += res.rowCount(); // <1>
+    } while ((res = res.next()) != null); // <2>
+    return total;
+});
+----
+<1> Compute the sum of `RowSet#rowCount`.
+<2> Invoke `RowSet#next` until it returns `null`.
+
+As another example, if you want to load all the rows you just inserted, you must concatenate the contents of each `RowSet`:
+
+[source, java]
+----
+PreparedQuery<RowSet<Row>> preparedQuery = client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING *");
+
+Uni<RowSet<Row>> rowSet = preparedQuery.executeBatch(Arrays.asList(
+        Tuple.of("Orange"),
+        Tuple.of("Pear"),
+        Tuple.of("Apple")));
+
+// Generate a Multi of RowSet items
+Multi<RowSet<Row>> rowSets = rowSet.onItem().transformToMulti(res -> {
+    return Multi.createFrom().generator(() -> res, (rs, emitter) -> {
+        RowSet<Row> next = null;
+        if (rs != null) {
+            emitter.emit(rs);
+            next = rs.next();
+        }
+        if (next == null) {
+            emitter.complete();
+        }
+        return next;
+    });
+});
+
+// Transform each RowSet into Multi of Row items and Concatenate
+Multi<Row> rows = rowSets.onItem().transformToMultiAndConcatenate(Multi.createFrom()::iterable);
+----
+
 == Multiple Datasources
 
 The reactive SQL clients support defining several datasources.
@@ -616,9 +674,10 @@ In `application.properties` add:
 quarkus.datasource.reactive.url=mysql:///quarkus_test?host=/var/run/mysqld/mysqld.sock
 ----
 
-== TCP Connection `idle-timeout`
+== Pooled Connection `idle-timeout`
 
-Reactive datasources can be configured with an `idle-timeout` (in milliseconds) that applies at the TCP connection level.
+Reactive datasources can be configured with an `idle-timeout` (in milliseconds).
+It is the maximum time a connection remains unused in the pool before it is closed.
 
 NOTE: The `idle-timeout` is disabled by default.
 
@@ -628,26 +687,6 @@ For example, you could expire idle connections after 60 minutes:
 ----
 quarkus.datasource.reactive.idle-timeout=PT60M
 ----
-
-[WARNING]
-====
-This timeout does not apply to the pool, but to the TCP connection.
-
-If it expires while the connection is idle in the pool, the connection is closed and removed from the pool.
-
-If it expires immediately after your borrowed the connection from the pool and before you execute a query, you will get an error.
-
-
-While this is unlikely to happen, you must be prepared for such eventuality:
-
-[source,java]
-----
-// Run a query, retry at most 3 times if it fails
-Uni<RowSet<Row>> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC")
-                            .execute()
-                            .onFailure().retry().atMost(3);
-----
-====
 
 == Configuration Reference
 

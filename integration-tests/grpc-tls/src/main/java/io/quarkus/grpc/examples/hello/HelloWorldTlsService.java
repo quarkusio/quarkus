@@ -1,13 +1,12 @@
 package io.quarkus.grpc.examples.hello;
 
-import javax.inject.Singleton;
-
 import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
-@Singleton
+@GrpcService
 public class HelloWorldTlsService extends MutinyGreeterGrpc.GreeterImplBase {
 
     @Override

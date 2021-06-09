@@ -1,11 +1,11 @@
 package io.quarkus.devtools.codestarts.jbang;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
+import io.quarkus.maven.ArtifactCoords;
 import java.util.Collection;
 
 public final class QuarkusJBangCodestartProjectInput extends CodestartProjectInput {
-    private final Collection<AppArtifactCoords> extensions;
+    private final Collection<ArtifactCoords> extensions;
     private final boolean noJBangWrapper;
 
     public QuarkusJBangCodestartProjectInput(QuarkusJBangCodestartProjectInputBuilder builder) {
@@ -22,7 +22,7 @@ public final class QuarkusJBangCodestartProjectInput extends CodestartProjectInp
         return noJBangWrapper;
     }
 
-    public Collection<AppArtifactCoords> getExtensions() {
+    public Collection<ArtifactCoords> getExtensions() {
         return extensions;
     }
 

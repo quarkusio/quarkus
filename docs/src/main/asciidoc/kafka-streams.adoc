@@ -15,7 +15,7 @@ To complete this guide, you need:
 
 * less than 30 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker Compose to start an Apache Kafka development cluster
 * GraalVM installed if you want to run in native mode.
@@ -66,7 +66,7 @@ the latest result for each weather station can alternatively be obtained via a s
 
 The overall architecture looks like so:
 
-image::kafka-streams-guide-architecture.png[alt=Architecture]
+image::kafka-streams-guide-architecture.png[alt=Architecture, align=center, width=90%]
 
 == Solution
 
@@ -287,7 +287,7 @@ public class WeatherStation {
     public String name;
 }
 ----
-<1> By adding the `@RegisterForReflection` annotation, it is ensured that this type can be instantiated reflectively when running the application in native mode.
+<1> The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on  the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 
 Then the file `aggregator/src/main/java/org/acme/kafka/streams/aggregator/model/TemperatureMeasurement.java`,
 representing temperature measurements for a given station:
@@ -808,7 +808,7 @@ The application can then either fetch the data directly from the other instance,
 
 Launching multiple instances of the `aggregator` application will make look the overall architecture like so:
 
-image::kafka-streams-guide-architecture-distributed.png[alt=Architecture with multiple aggregator nodes]
+image::kafka-streams-guide-architecture-distributed.png[alt=Architecture with multiple aggregator nodes, align=center, width=90%]
 
 The `InteractiveQueries` class must be adjusted slightly for this distributed architecture:
 

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.InboundSseEvent;
@@ -21,21 +22,23 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
     private TimeUnit reconnectUnit;
     private long reconnectDelay;
 
-    private WebTargetImpl webTarget;
+    private final WebTargetImpl webTarget;
+    private final Invocation.Builder invocationBuilder;
     // this tracks user request to open/close
     private volatile boolean isOpen;
     // this tracks whether we have a connection open
     private volatile boolean isInProgress;
 
-    private List<Consumer<InboundSseEvent>> consumers = new ArrayList<>();
-    private List<Consumer<Throwable>> errorListeners = new ArrayList<>();
-    private List<Runnable> completionListeners = new ArrayList<>();
+    private final List<Consumer<InboundSseEvent>> consumers = new ArrayList<>();
+    private final List<Consumer<Throwable>> errorListeners = new ArrayList<>();
+    private final List<Runnable> completionListeners = new ArrayList<>();
     private HttpConnection connection;
-    private SseParser sseParser;
+    private final SseParser sseParser;
     private long timerId = -1;
     private boolean receivedClientClose;
 
-    public SseEventSourceImpl(WebTargetImpl webTarget, long reconnectDelay, TimeUnit reconnectUnit) {
+    public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder,
+            long reconnectDelay, TimeUnit reconnectUnit) {
         // tests set a null endpoint
         Objects.requireNonNull(reconnectUnit);
         if (reconnectDelay <= 0)
@@ -44,6 +47,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         this.reconnectDelay = reconnectDelay;
         this.reconnectUnit = reconnectUnit;
         this.sseParser = new SseParser(this);
+        this.invocationBuilder = invocationBuilder;
     }
 
     WebTargetImpl getWebTarget() {
@@ -83,7 +87,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         isInProgress = true;
         // ignore previous client closes
         receivedClientClose = false;
-        AsyncInvokerImpl invoker = (AsyncInvokerImpl) webTarget.request().rx();
+        AsyncInvokerImpl invoker = (AsyncInvokerImpl) invocationBuilder.rx();
         RestClientRequestContext restClientRequestContext = invoker.performRequestInternal("GET", null, null, false);
         restClientRequestContext.getResult().handle((response, throwable) -> {
             // errors during connection don't currently lead to a retry
@@ -128,11 +132,11 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         // that is set in ClientSendRequestHandler
         vertxClientResponse.request().exceptionHandler(null);
         connection = vertxClientResponse.request().connection();
-        connection.closeHandler(v -> {
-            close(true);
-        });
         String sseContentTypeHeader = vertxClientResponse.getHeader(CommonSseUtil.SSE_CONTENT_TYPE);
         sseParser.setSseContentTypeHeader(sseContentTypeHeader);
+        // we don't add a closeHandler handler on the connection as it can race with this handler
+        // and close before the emitter emits anything
+        // see: https://github.com/quarkusio/quarkus/pull/16438
         vertxClientResponse.handler(sseParser);
         vertxClientResponse.endHandler(v -> {
             close(true);

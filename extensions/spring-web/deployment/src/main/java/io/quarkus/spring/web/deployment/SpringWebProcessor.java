@@ -36,14 +36,12 @@ import org.jboss.resteasy.spring.web.ResponseStatusFeature;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -59,7 +57,7 @@ import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnno
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.spring.web.runtime.ResponseStatusExceptionMapper;
-import io.quarkus.undertow.deployment.BlacklistedServletContainerInitializerBuildItem;
+import io.quarkus.undertow.deployment.IgnoredServletContainerInitializerBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 
 public class SpringWebProcessor {
@@ -109,13 +107,8 @@ public class SpringWebProcessor {
     }
 
     @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.SPRING_WEB);
-    }
-
-    @BuildStep
-    public BlacklistedServletContainerInitializerBuildItem blacklistSpringServlet() {
-        return new BlacklistedServletContainerInitializerBuildItem("org.springframework.web.SpringServletContainerInitializer");
+    public IgnoredServletContainerInitializerBuildItem ignoreSpringServlet() {
+        return new IgnoredServletContainerInitializerBuildItem("org.springframework.web.SpringServletContainerInitializer");
     }
 
     @BuildStep

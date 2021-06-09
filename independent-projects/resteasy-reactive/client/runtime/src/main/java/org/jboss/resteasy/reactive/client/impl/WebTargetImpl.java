@@ -10,7 +10,6 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
@@ -23,19 +22,18 @@ public class WebTargetImpl implements WebTarget {
     private final ConfigurationImpl configuration;
     private boolean chunked = false;
     private final ClientImpl restClient;
-    final ClientRestHandler[] handlerChain;
-    final ClientRestHandler[] abortHandlerChain;
+    final HandlerChain handlerChain;
     final ThreadSetupAction requestContext;
 
     public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration,
-            ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
+            HandlerChain handlerChain,
+            ThreadSetupAction requestContext) {
         this.restClient = restClient;
         this.client = client;
         this.uriBuilder = uriBuilder;
         this.configuration = configuration;
         this.handlerChain = handlerChain;
-        this.abortHandlerChain = abortHandlerChain;
         this.requestContext = requestContext;
     }
 
@@ -262,7 +260,7 @@ public class WebTargetImpl implements WebTarget {
 
     protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration) {
-        return new WebTargetImpl(restClient, client, uriBuilder, configuration, handlerChain, abortHandlerChain,
+        return new WebTargetImpl(restClient, client, uriBuilder, configuration, handlerChain,
                 requestContext);
     }
 
@@ -298,8 +296,7 @@ public class WebTargetImpl implements WebTarget {
 
     protected InvocationBuilderImpl createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             ConfigurationImpl configuration) {
-        return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration, handlerChain,
-                abortHandlerChain, requestContext);
+        return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration, handlerChain, requestContext);
     }
 
     @Override

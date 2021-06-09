@@ -74,9 +74,14 @@ ibmcom/db2:11.5.0.0a
 mcr.microsoft.com/mssql/server:2017-CU12
 ----
 
+[NOTE]
+====
+All services based on containers are ran using `testcontainers`. Even though extra URL properties can be set in your `application.properties` file, specific `testcontainers` properties such as `TC_INITSCRIPT`, `TC_INITFUNCTION`, `TC_DAEMON`, `TC_TMPFS` are not supported.
+====
+
 === JDBC datasource
 
-Add the `agroal` extension plus one of `jdbc-db2`, `jdbc-derby`, `jdbc-h2`, `jdbc-mariadb`, `jdbc-mssql`, `jdbc-mysql`, or `jdbc-postgresql`.
+Add the `agroal` extension plus one of `jdbc-db2`, `jdbc-derby`, `jdbc-h2`, `jdbc-mariadb`, `jdbc-mssql`, `jdbc-mysql`, `jdbc-oracle` or `jdbc-postgresql`.
 
 Then configure your datasource:
 
@@ -133,6 +138,7 @@ We currently include these built-in database kinds:
 * MariaDB: `mariadb`
 * Microsoft SQL Server: `mssql`
 * MySQL: `mysql`
+* Oracle: `oracle`
 * PostgreSQL: `postgresql`, `pgsql` or `pg`
 
 Giving Quarkus the database kind you are targeting will facilitate configuration.
@@ -195,6 +201,7 @@ Quarkus provides driver extensions for:
 * MariaDB - `jdbc-mariadb`
 * Microsoft SQL Server - `jdbc-mssql`
 * MySQL - `jdbc-mysql`
+* Oracle - `jdbc-oracle`
 * PostgreSQL - `jdbc-postgresql`
 
 See <<other-databases>> if you want to use a JDBC driver for another database.
@@ -265,6 +272,10 @@ When using one of the built-in datasource kinds, the JDBC driver is resolved aut
 |`mysql`
 |`com.mysql.cj.jdbc.Driver`
 |`com.mysql.cj.jdbc.MysqlXADataSource`
+
+|`oracle`
+|`oracle.jdbc.driver.OracleDriver`
+|`oracle.jdbc.xa.client.OracleXADataSource`
 
 |`postgresql`
 |`org.postgresql.Driver`

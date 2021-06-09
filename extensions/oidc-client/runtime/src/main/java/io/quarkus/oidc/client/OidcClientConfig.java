@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -48,11 +49,42 @@ public class OidcClientConfig extends OidcCommonConfig {
             /**
              * 'client_credentials' grant requiring an OIDC client authentication only
              */
-            CLIENT,
+            CLIENT("client_credentials"),
             /**
              * 'password' grant requiring both OIDC client and user ('username' and 'password') authentications
              */
-            PASSWORD
+            PASSWORD("password"),
+            /**
+             * 'authorization_code' grant requiring an OIDC client authentication as well as
+             * at least 'code' and 'redirect_uri' parameters which must be passed to OidcClient at the token request time.
+             */
+            CODE("authorization_code"),
+            /**
+             * 'urn:ietf:params:oauth:grant-type:token-exchange' grant requiring an OIDC client authentication as well as
+             * at least 'subject_token' parameter which must be passed to OidcClient at the token request time.
+             */
+            EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange"),
+
+            /**
+             * 'refresh_token' grant requiring an OIDC client authentication and a refresh token.
+             * Note, OidcClient supports this grant by default if an access token acquisition response contained a refresh
+             * token.
+             * However, in some cases, the refresh token is provided out of band, for example, it can be shared between
+             * several of the confidential client's services, etc.
+             * If 'quarkus.oidc-client.grant-type' is set to 'refresh' then `OidcClient` will only support refreshing the
+             * tokens.
+             */
+            REFRESH("refresh_token");
+
+            private String grantType;
+
+            private Type(String grantType) {
+                this.grantType = grantType;
+            }
+
+            public String getGrantType() {
+                return grantType;
+            }
         }
 
         /**
@@ -61,12 +93,54 @@ public class OidcClientConfig extends OidcCommonConfig {
         @ConfigItem(defaultValue = "client")
         public Type type = Type.CLIENT;
 
+        /**
+         * Access token property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.ACCESS_TOKEN_VALUE)
+        public String accessTokenProperty = OidcConstants.ACCESS_TOKEN_VALUE;
+
+        /**
+         * Refresh token property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.REFRESH_TOKEN_VALUE)
+        public String refreshTokenProperty = OidcConstants.REFRESH_TOKEN_VALUE;
+
+        /**
+         * Refresh token property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.EXPIRES_IN)
+        public String expiresInProperty = OidcConstants.EXPIRES_IN;
+
         public Type getType() {
             return type;
         }
 
         public void setType(Type type) {
             this.type = type;
+        }
+
+        public String getAccessTokenProperty() {
+            return accessTokenProperty;
+        }
+
+        public void setAccessTokenProperty(String accessTokenProperty) {
+            this.accessTokenProperty = accessTokenProperty;
+        }
+
+        public String getRefreshTokenProperty() {
+            return refreshTokenProperty;
+        }
+
+        public void setRefreshTokenProperty(String refreshTokenProperty) {
+            this.refreshTokenProperty = refreshTokenProperty;
+        }
+
+        public String getExpiresInProperty() {
+            return expiresInProperty;
+        }
+
+        public void setExpiresInProperty(String expiresInProperty) {
+            this.expiresInProperty = expiresInProperty;
         }
     }
 

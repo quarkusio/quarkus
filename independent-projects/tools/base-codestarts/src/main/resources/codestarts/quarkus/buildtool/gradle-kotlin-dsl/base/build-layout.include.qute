@@ -1,0 +1,54 @@
+{#insert plugins}
+plugins {
+    id("{quarkus.plugin.id}")
+}
+{/}
+
+{#insert repositories}
+repositories {
+    mavenCentral()
+    mavenLocal()
+{#if gradle.repositories}
+{#for rep in gradle.repositories}
+    maven { url = uri("{rep.url}") }
+{/for}
+{/if}
+}
+{/}
+
+{#insert dependencies}
+val quarkusPlatformGroupId: String by project
+val quarkusPlatformArtifactId: String by project
+val quarkusPlatformVersion: String by project
+
+dependencies {
+    implementation(enforcedPlatform("$\{quarkusPlatformGroupId}:$\{quarkusPlatformArtifactId}:$\{quarkusPlatformVersion}"))
+{#for bom in boms}
+    implementation(enforcedPlatform("{bom}"))
+{/for}
+{#for dep in dependencies}
+    implementation("{dep}")
+{/for}
+    testImplementation("io.quarkus:quarkus-junit5")
+{#for dep in test-dependencies}
+    testImplementation("{dep}")
+{/for}
+}
+{/}
+
+{#insert project}
+group = "{project.group-id}"
+version = "{project.version}"
+{/}
+
+{#insert java}
+java {
+    {#if java.version == "11"}
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+    {#else}
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    {/if}
+}
+{/}

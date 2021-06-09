@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -43,6 +42,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ResponseCommitListener;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
@@ -227,26 +227,6 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     @Override
-    public String getFormAttribute(String name) {
-        if (context.queryParams().contains(name)) {
-            return null;
-        }
-        return request.getParameter(name);
-    }
-
-    @Override
-    public List<String> getAllFormAttributes(String name) {
-        if (context.queryParams().contains(name)) {
-            return Collections.emptyList();
-        }
-        String[] values = request.getParameterValues(name);
-        if (values == null) {
-            return Collections.emptyList();
-        }
-        return Arrays.asList(values);
-    }
-
-    @Override
     public String getQueryParam(String name) {
         if (!context.queryParams().contains(name)) {
             return null;
@@ -272,12 +252,6 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     @Override
     public boolean isRequestEnded() {
         return context.request().isEnded();
-    }
-
-    @Override
-    public void setExpectMultipart(boolean expectMultipart) {
-        //read the form data
-        request.getParameterMap();
     }
 
     @Override
@@ -573,5 +547,27 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
             this.value = value;
             return old;
         }
+    }
+
+    @Override
+    public ServerHttpResponse sendFile(String path, long offset, long length) {
+        context.response().sendFile(path, offset, length);
+        return this;
+    }
+
+    @Override
+    public boolean isWriteQueueFull() {
+        return context.response().writeQueueFull();
+    }
+
+    @Override
+    public ServerHttpResponse addDrainHandler(Runnable onDrain) {
+        context.response().drainHandler(new Handler<Void>() {
+            @Override
+            public void handle(Void event) {
+                onDrain.run();
+            }
+        });
+        return this;
     }
 }

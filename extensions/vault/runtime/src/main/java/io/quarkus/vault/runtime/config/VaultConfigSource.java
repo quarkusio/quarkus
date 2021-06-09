@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -46,6 +47,11 @@ public class VaultConfigSource implements ConfigSource {
     @Override
     public Map<String, String> getProperties() {
         return emptyMap();
+    }
+
+    @Override
+    public Set<String> getPropertyNames() {
+        return Collections.emptySet();
     }
 
     @Override

@@ -22,7 +22,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * https://stedolan.github.io/jq/[jq tool]
 * Docker
@@ -413,7 +413,9 @@ A request will be sent to the OpenId Provider UserInfo endpoint using the access
 [[config-metadata]]
 == Configuration Metadata
 
-The discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenId Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
+The current tenant's discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenId Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
+
+The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is public.
 
 == Token Claims And SecurityIdentity Roles
 
@@ -432,7 +434,7 @@ Additionally a custom `SecurityIdentityAugmentor` can also be used to add the ro
 
 If you have a link:security-openid-connect#single-page-applications[Single Page Application for Service Applications] where your OpenId Connect Provider script such as `keycloak.js` is managing an authoriization code flow then that script will also control the SPA authentication session lifespan.
 
-If your work with a Quarkus OIDC `web-app` application then it is Quarkus OIDC Code Authentication mechanism which is managing the user session lifespan.
+If you work with a Quarkus OIDC `web-app` application then it is Quarkus OIDC Code Authentication mechanism which is managing the user session lifespan.
 
 The session age is calculated by adding the lifespan value of the current IDToken and the values of the `quarkus.oidc.authentication.session-age-extension` and `quarkus.oidc.token.lifespan-grace` properties. Of the last two properties only `quarkus.oidc.authentication.session-age-extension` should be used to significantly extend the session lifespan if required since `quarkus.oidc.token.lifespan-grace` is only meant for taking some small clock skews into consideration.
 
@@ -450,9 +452,9 @@ Note this user session can not be extended forever - the returning user with the
 
 === TokenStateManager
 
-OIDC `CodeAuthenticationMechanism` is using the default `io.quarkus.oidc.TokenStateManager' interface implementation to keep the ID, access and refresh tokens returned in the authorization code or refresh grant responses in a session cookie. It makes Quarkus OIDC endpoints completely stateless.
+OIDC `CodeAuthenticationMechanism` is using the default `io.quarkus.oidc.TokenStateManager` interface implementation to keep the ID, access and refresh tokens returned in the authorization code or refresh grant responses in a session cookie. It makes Quarkus OIDC endpoints completely stateless.
 
-Note that some endpoints do not require the access token. An access token is only required if the endpoint needs to retrieve `UserInfo` or access the downstream service with this access token or use the roles associated with the access token (the roles in the ID token are checked by default). In such cases you can set either `quarkus.oidc.state-session-manager.strategy=id-refresh-token` (keep ID and refresh tokens only) or `quarkus.oidc.state-session-manager.strategy=id-token` (keep ID token only).
+Note that some endpoints do not require the access token. An access token is only required if the endpoint needs to retrieve `UserInfo` or access the downstream service with this access token or use the roles associated with the access token (the roles in the ID token are checked by default). In such cases you can set either `quarkus.oidc.token-state-manager.strategy=id-refresh-token` (keep ID and refresh tokens only) or `quarkus.oidc.token-state-manager.strategy=id-token` (keep ID token only).
 
 If the ID, access and refresh tokens are JWT tokens then combining all of them (if the strategy is the default `keep-all-tokens`) or only ID and refresh tokens (if the strategy is `id-refresh-token`) may produce a session cookie value larger than 4KB and the browsers may not be able to keep this cookie.
 In such cases, you can use `quarkus.oidc.token-state-manager.split-tokens=true` to have a unique session token per each of these tokens.
@@ -570,21 +572,22 @@ quarkus.oidc.introspection-path=/protocol/openid-connect/token/introspect
 quarkus.oidc.end-session-path=/protocol/openid-connect/logout
 ----
 
+[[jwt-claim-verification]]
+== JSON Web Token Claim Verification
+
+Please see link:security-openid-connect#jwt-claim-verification[JSON Web Token Claim verification] section about the claim verification, including the `iss` (issuer) claim.
+It applies to ID tokens but also to access tokens in a JWT format if the `web-app` application has requested the access token verification.
+
 == Token Propagation
 Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Authorization Code Flow access token propagation to the downstream services.
 
 [[integration-testing]]
 == Testing
 
-Add the following dependencies to your test project:
+Start by adding the following dependencies to your test project:
 
 [source,xml]
 ----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-test-oidc-server</artifactId>
-    <scope>test</scope>
-</dependency>
 <dependency>
     <groupId>net.sourceforge.htmlunit</groupId>
     <artifactId>htmlunit</artifactId>
@@ -601,10 +604,19 @@ Add the following dependencies to your test project:
     <artifactId>quarkus-junit5</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[[integration-testing-wiremock]]
+=== Wiremock
+
+Add the following dependency:
+
+[source,xml]
+----
 <dependency>
-   <groupId>io.rest-assured</groupId>
-   <artifactId>rest-assured</artifactId>
-   <scope>test</scope>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-oidc-server</artifactId>
+    <scope>test</scope>
 </dependency>
 ----
 
@@ -666,9 +678,86 @@ public class CodeFlowAuthorizationTest {
 ----
 
 `OidcWiremockTestResource` recognizes `alice` and `admin` users. The user `alice` has the `user` role only by default - it can be customized with a `quarkus.test.oidc.token.user-roles` system property. The user `admin` has the `user` and `admin` roles by default - it can be customized with a `quarkus.test.oidc.token.admin-roles` system property.
+
 Additionally, `OidcWiremockTestResource` set token issuer and audience to `https://service.example.com` which can be customized with `quarkus.test.oidc.token.issuer` and `quarkus.test.oidc.token.audience` system properties.
 
-`OidcWiremockTestResource` will be enhanced going forward to support more complex authorization code flow test scenarios.
+`OidcWiremockTestResource` can be used to emulate all OpenId Connect providers.
+
+[[integration-testing-keycloak]]
+=== Keycloak
+
+If you work with Keycloak then you can test against a live Keycloak instance by adding the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-keycloak-server</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+and configure `maven.surefire.plugin` as follows:
+
+[source,xml]
+----
+<plugin>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <configuration>
+        <systemPropertyVariables>
+            <!-- or, alternativey, configure 'keycloak.version' -->
+            <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+            <!--
+              Disable HTTPS if required:
+              <keycloak.use.https>false</keycloak.use.https>
+            -->
+        </systemPropertyVariables>
+    </configuration>
+</plugin>
+----
+
+(and similarly `maven.failsafe.plugin` when testing in native image).
+
+And now set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section above.
+The only difference is the name of `QuarkusTestResource`:
+
+[source, java]
+----
+import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
+
+@QuarkusTest
+@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+public class CodeFlowAuthorizationTest {
+}
+----
+
+`KeycloakTestResourceLifecycleManager` registers `alice` and `admin` users. The user `alice` has the `user` role only by default - it can be customized with a `keycloak.token.user-roles` system property. The user `admin` has the `user` and `admin` roles by default - it can be customized with a `keycloak.token.admin-roles` system property.
+
+By default, `KeycloakTestResourceLifecycleManager` uses HTTPS to initialize a Keycloak instance which can be disabled with `keycloak.use.https=false`.
+Default realm name is `quarkus` and client id - `quarkus-web-app` - set `keycloak.realm` and `keycloak.web-app.client` system properties to customize the values if needed.
+
+[[integration-testing-security-annotation]]
+=== TestSecurity annotation
+
+Please see link:security-openid-connect#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` and `@OidcSecurity` annotations for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
+
+== How to check the errors in the logs ==
+
+Please enable `io.quarkus.oidc.runtime.OidcProvider` `TRACE` level logging to see more details about the token verification errors:
+
+[source, properties]
+----
+quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=TRACE
+quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".min-level=TRACE
+----
+
+== External and Internal Access to OpenId Connect Provider
+
+Note that the OpenId Connect Provider externally accessible authorization, logout and other endpoints may have different HTTP(S) URLs compared to the URLs auto-discovered or configured relative to `quarkus.oidc.auth-server-url` internal URL.
+In such cases an issuer verification failure may be reported by the endpoint and redirects to the externally accessible Connect Provider endpoints may fail.
+
+In such cases, if you work with Keycloak then please start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally accessible base URL.
+If you work with other Openid Connect providers then please check your provider's documentation.
 
 == Configuration Reference
 

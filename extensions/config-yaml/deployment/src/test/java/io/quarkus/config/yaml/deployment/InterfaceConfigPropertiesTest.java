@@ -2,8 +2,6 @@ package io.quarkus.config.yaml.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.List;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -37,38 +35,6 @@ public class InterfaceConfigPropertiesTest {
         assertEquals(100, sqlConfiguration.maxPoolSize());
         assertEquals(200, sqlConfiguration.maxIdleTimeSeconds());
         assertEquals(SqlConfiguration.Type.DEFAULT_TYPE, sqlConfiguration.getType());
-
-        assertEquals(2, sqlConfiguration.getInputs().size());
-        SqlConfiguration.Nested firstInput = sqlConfiguration.getInputs().get(0);
-        assertEquals("my_connection_1", firstInput.name);
-        assertEquals("systemuser", firstInput.user);
-        assertEquals("secret", firstInput.password);
-        assertEquals(SqlConfiguration.Type.MSSQL, firstInput.getType());
-        assertEquals(100, firstInput.getMaxPoolSize());
-        assertEquals(150, firstInput.maxIdleTimeSeconds);
-        SqlConfiguration.Nested secondInput = sqlConfiguration.getInputs().get(1);
-        assertEquals("my_connection_2", secondInput.name);
-        assertEquals("otheruser", secondInput.user);
-        assertEquals("secret", secondInput.password);
-        assertEquals(SqlConfiguration.Type.POSTGRES, secondInput.getType());
-        assertEquals(10, secondInput.getMaxPoolSize());
-        assertEquals(20, secondInput.maxIdleTimeSeconds);
-
-        assertEquals(2, sqlConfiguration.getOutputs().size());
-        SqlConfiguration.Nested firstOutput = sqlConfiguration.getOutputs().get(0);
-        assertEquals("out_connection_1", firstOutput.name);
-        assertEquals("someuser", firstOutput.user);
-        assertEquals("asecret", firstOutput.password);
-        assertEquals(SqlConfiguration.Type.MSSQL, firstOutput.getType());
-        assertEquals(100, firstOutput.getMaxPoolSize());
-        assertEquals(200, firstOutput.maxIdleTimeSeconds);
-        SqlConfiguration.Nested secondOutput = sqlConfiguration.getOutputs().get(1);
-        assertEquals("out_connection_2", secondOutput.name);
-        assertEquals("someuser", secondOutput.user);
-        assertEquals("asecret", secondOutput.password);
-        assertEquals(SqlConfiguration.Type.POSTGRES, secondOutput.getType());
-        assertEquals(200, secondOutput.getMaxPoolSize());
-        assertEquals(300, secondOutput.maxIdleTimeSeconds);
     }
 
     @Singleton
@@ -92,10 +58,6 @@ public class InterfaceConfigPropertiesTest {
         String getPassword();
 
         Type getType();
-
-        List<Nested> getInputs();
-
-        List<Nested> getOutputs();
 
         class Nested {
             @ConfigProperty(name = "max_pool_size")

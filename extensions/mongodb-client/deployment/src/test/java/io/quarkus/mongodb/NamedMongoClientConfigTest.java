@@ -1,12 +1,15 @@
 package io.quarkus.mongodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.lang.annotation.Annotation;
 
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +22,7 @@ import com.mongodb.client.MongoClient;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class NamedMongoClientConfigTest extends MongoWithReplicasTestBase {
@@ -36,6 +40,10 @@ public class NamedMongoClientConfigTest extends MongoWithReplicasTestBase {
     @MongoClientName("cluster2")
     MongoClient client2;
 
+    @Inject
+    @Any
+    MongoHealthCheck health;
+
     @AfterEach
     void cleanup() {
         if (client != null) {
@@ -52,6 +60,15 @@ public class NamedMongoClientConfigTest extends MongoWithReplicasTestBase {
         assertThat(client2.listDatabases().first()).isNotEmpty();
 
         assertNoDefaultClient();
+
+        checkHealth();
+    }
+
+    public void checkHealth() {
+        org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
+        assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
+        assertThat(response.getData()).isNotEmpty();
+        assertThat(response.getData().get()).hasSize(2).contains(entry("cluster1", "OK"), entry("cluster2", "OK"));
     }
 
     private void assertNoDefaultClient() {

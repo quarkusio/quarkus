@@ -72,7 +72,6 @@ import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildIt
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -110,11 +109,6 @@ public class ArcProcessor {
     private static final Logger LOGGER = Logger.getLogger(ArcProcessor.class);
 
     static final DotName ADDITIONAL_BEAN = DotName.createSimple(AdditionalBean.class.getName());
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.CDI);
-    }
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -504,7 +498,7 @@ public class ArcProcessor {
     @BuildStep(onlyIf = IsTest.class)
     public AdditionalBeanBuildItem testApplicationClassPredicateBean() {
         // We need to register the bean implementation for TestApplicationClassPredicate
-        // TestApplicationClassPredicate is used programatically in the ArC recorder when StartupEvent is fired  
+        // TestApplicationClassPredicate is used programatically in the ArC recorder when StartupEvent is fired
         return AdditionalBeanBuildItem.unremovableOf(PreloadedTestApplicationClassPredicate.class);
     }
 

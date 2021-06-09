@@ -35,7 +35,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
 
         realm.getClients().add(createClient("quarkus-app"));
-        realm.getUsers().add(createUser("alice", "user"));
+        realm.getUsers().add(createUser("alice", "user", "superuser"));
         realm.getUsers().add(createUser("admin", "user", "admin"));
         realm.getUsers().add(createUser("jdoe", "user", "confidential"));
 
@@ -66,6 +66,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         realm.setRoles(roles);
 
         realm.getRoles().getRealm().add(new RoleRepresentation("user", null, false));
+        realm.getRoles().getRealm().add(new RoleRepresentation("superuser", null, false));
         realm.getRoles().getRealm().add(new RoleRepresentation("admin", null, false));
         realm.getRoles().getRealm().add(new RoleRepresentation("confidential", null, false));
 
@@ -76,6 +77,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
+        client.setRedirectUris(Arrays.asList("*"));
         client.setPublicClient(false);
         client.setSecret("secret");
         client.setDirectAccessGrantsEnabled(true);
@@ -101,12 +103,32 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
     }
 
     private static void configurePermissionResourcePermission(ResourceServerRepresentation settings) {
-        PolicyRepresentation policy = createJSPolicy("Confidential Policy", "var identity = $evaluation.context.identity;\n" +
+        PolicyRepresentation policyConfidential = createJSPolicy("Confidential Policy",
+                "var identity = $evaluation.context.identity;\n" +
+                        "\n" +
+                        "if (identity.hasRealmRole(\"confidential\")) {\n" +
+                        "$evaluation.grant();\n" +
+                        "}",
+                settings);
+        createPermission(settings, createResource(settings, "Permission Resource", "/api/permission"), policyConfidential);
+
+        PolicyRepresentation policyAdmin = createJSPolicy("Admin Policy", "var identity = $evaluation.context.identity;\n" +
                 "\n" +
-                "if (identity.hasRealmRole(\"confidential\")) {\n" +
+                "if (identity.hasRealmRole(\"admin\")) {\n" +
                 "$evaluation.grant();\n" +
                 "}", settings);
-        createPermission(settings, createResource(settings, "Permission Resource", "/api/permission"), policy);
+
+        createPermission(settings, createResource(settings, "Permission Resource Tenant", "/api-permission-tenant"),
+                policyAdmin);
+
+        PolicyRepresentation policyUser = createJSPolicy("Superuser Policy", "var identity = $evaluation.context.identity;\n" +
+                "\n" +
+                "if (identity.hasRealmRole(\"superuser\")) {\n" +
+                "$evaluation.grant();\n" +
+                "}", settings);
+
+        createPermission(settings, createResource(settings, "Permission Resource WebApp", "/api-permission-webapp"),
+                policyUser);
     }
 
     private static void configureScopePermission(ResourceServerRepresentation settings) {

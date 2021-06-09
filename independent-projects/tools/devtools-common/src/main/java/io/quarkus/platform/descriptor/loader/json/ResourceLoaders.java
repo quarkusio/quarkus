@@ -10,7 +10,9 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.function.Function;
+import org.apache.commons.io.FilenameUtils;
 
 public final class ResourceLoaders {
 
@@ -31,6 +33,17 @@ public final class ResourceLoaders {
                     "There were a problem while reading the resource dir '" + name + "' on the classpath with url: '"
                             + url.toString() + "'");
         }
+    }
+
+    public static ResourceLoader resolveFileResourceLoader(File f) {
+        Objects.requireNonNull(f, "f is required");
+        if (f.isDirectory()) {
+            return new DirectoryResourceLoader(f.toPath());
+        }
+        if (f.isFile() && FilenameUtils.isExtension(f.getName(), "jar", "zip")) {
+            return new ZipResourceLoader(f.toPath());
+        }
+        throw new IllegalStateException("No compatible ResourceLoader have been found for file type: " + f.getName());
     }
 
     // This method is copied from io.quarkus.runtime.util.ClassPathUtils

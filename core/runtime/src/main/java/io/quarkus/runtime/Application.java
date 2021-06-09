@@ -44,9 +44,18 @@ public abstract class Application implements Closeable {
     private static volatile Application currentApplication;
 
     /**
-     * Construct a new instance.
+     * Embedded applications don't setup or modify logging, and don't provide start/
+     * stop notifications to the {@link ApplicationStateNotification}.
      */
-    protected Application() {
+    private final boolean auxilaryApplication;
+
+    /**
+     * Construct a new instance.
+     * 
+     * @param auxilaryApplication
+     */
+    protected Application(boolean auxilaryApplication) {
+        this.auxilaryApplication = auxilaryApplication;
     }
 
     /**
@@ -59,7 +68,9 @@ public abstract class Application implements Closeable {
      *           letting the user hook into it.
      */
     public final void start(String[] args) {
-        currentApplication = this;
+        if (!auxilaryApplication) {
+            currentApplication = this;
+        }
         final Lock stateLock = this.stateLock;
         stateLock.lock();
         try {
@@ -102,14 +113,18 @@ public abstract class Application implements Closeable {
             } finally {
                 stateLock.unlock();
             }
-            ApplicationStateNotification.notifyStartupFailed(t);
+            if (!auxilaryApplication) {
+                ApplicationStateNotification.notifyStartupFailed(t);
+            }
             throw t;
         }
         stateLock.lock();
         try {
             state = ST_STARTED;
             stateCond.signalAll();
-            ApplicationStateNotification.notifyStartupComplete();
+            if (!auxilaryApplication) {
+                ApplicationStateNotification.notifyStartupComplete();
+            }
         } finally {
             stateLock.unlock();
         }
@@ -182,12 +197,14 @@ public abstract class Application implements Closeable {
         } finally {
             stateLock.unlock();
         }
-        Timing.staticInitStopped();
+        Timing.staticInitStopped(auxilaryApplication);
         try {
             ShutdownRecorder.runShutdown();
             doStop();
         } finally {
-            currentApplication = null;
+            if (!auxilaryApplication) {
+                currentApplication = null;
+            }
             if (afterStopTask != null) {
                 try {
                     afterStopTask.run();
@@ -198,9 +215,13 @@ public abstract class Application implements Closeable {
             stateLock.lock();
             try {
                 state = ST_STOPPED;
-                Timing.printStopTime(getName());
+                //note that at the moment if these are started or stopped concurrently
+                //the timing will be off
+                Timing.printStopTime(getName(), auxilaryApplication);
                 stateCond.signalAll();
-                ApplicationStateNotification.notifyApplicationStopped();
+                if (!auxilaryApplication) {
+                    ApplicationStateNotification.notifyApplicationStopped();
+                }
             } finally {
                 stateLock.unlock();
             }

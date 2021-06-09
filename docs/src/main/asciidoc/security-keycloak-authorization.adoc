@@ -15,7 +15,7 @@ In other words, instead of explicitly enforcing access based on some specific ac
 
 By externalizing authorization from your application, you are allowed to protect your applications using different access control mechanisms as well as avoid re-deploying your application every time your security requirements change, where Keycloak will be acting as a centralized authorization service from where your protected resources and their associated permissions are managed.
 
-See the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information about `Bearer Token` authentication mechanism.
+See the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information about `Bearer Token` authentication mechanism. It is important to realize that it is the `Bearer Token` authentication mechanism which does the authentication and creates a security identity - while the `quarkus-keycloak-authorization` extension is responsible for applying a Keycloak Authorization Policy to this identity based on the current request path and other policy settings.
 
 If you are already familiar with Keycloak, you’ll notice that the extension is basically another adapter implementation but specific for Quarkus applications.
 Otherwise, you can find more information in the Keycloak https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[documentation].
@@ -26,7 +26,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * https://stedolan.github.io/jq/[jq tool]
 * https://www.keycloak.org/docs/latest/server_installation/index.html[Keycloak]
@@ -189,7 +189,7 @@ quarkus.oidc.tls.verification=none
 quarkus.keycloak.policy-enforcer.enable=true
 ----
 
-NOTE: By default, applications using the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`). This extension currently supports only such `service` type applications.
+NOTE: By default, applications using the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`). This extension also supports only  `web-app` type applications but only if the access token returned as part of the authorization code grant response is marked as a source of roles: `quarkus.oidc.roles.source=accesstoken` (`web-app` type applications check ID token roles by default).
 
 == Starting and Configuring the Keycloak Server
 
@@ -331,6 +331,20 @@ public class ProtectedResource {
 }
 ----
 
+== Injecting the Authorization Client
+
+In some cases, you may want to use the https://www.keycloak.org/docs/latest/authorization_services/#_service_client_api[Keycloak Authorization Client Java API] to perform
+specific operations like managing resources and obtaining permissions directly from Keycloak. For that, you can inject a
+`AuthzClient` instance into your beans as follows:
+
+[source,java]
+----
+public class ProtectedResource {
+    @Inject
+    AuthzClient authzClient;
+}
+----
+
 == Mapping Protected Resources
 
 By default, the extension is going to fetch resources on-demand from Keycloak where their `URI` are used to map the resources in your application that should be protected.
@@ -344,11 +358,81 @@ quarkus.keycloak.policy-enforcer.lazy-load-paths=false
 
 Note that, depending on how many resources you have in Keycloak the time taken to fetch them may impact your application startup time. 
 
-== More About Configuring Protected Resources 
+== More About Configuring Protected Resources
 
 In the default configuration, Keycloak is responsible for managing the roles and deciding who can access which routes. 
 
-To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the link:security-openid-connect[Using OpenID Connect Adapter to Protect JAX-RS Applications] guide. For more details, check the link:security[Security guide].
+To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the link:security-openid-connect[Using OpenID Connect Adapter to Protect JAX-RS Applications] and link:security-authorization[Security Authorization] guides. For more details, check the link:security[Security guide].
+
+== Access to Public Resources
+
+If you'd like to access a public resource without `quarkus-keycloak-authorization` trying to apply its policies to it then you need to create a `permit` HTTP Policy configuration in `application.properties` as documented in the link:security-authorization[Security Authorization] guide.
+
+Disabling a policy check using a Keycloak Authorization Policy such as:
+
+[source,properties]
+----
+quarkus.keycloak.policy-enforcer.paths.1.path=/api/public
+quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=DISABLED
+----
+
+is no longer required.
+
+If you'd like to block an access to the public resource to anonymous users then you can create an enforcing Keycloak Authorization Policy:
+
+[source,properties]
+----
+quarkus.keycloak.policy-enforcer.paths.1.path=/api/public-enforcing
+quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=ENFORCING
+----
+
+Note only the default tenant configuration applies when controlling an anonymous access to the public resource is required.
+
+== Multi-Tenancy
+
+It is possible to configure multiple policy enforcer configurations, one per each tenant, similarly to how it can be done for link:security-openid-connect-multitenancy[Multi-Tenant OpenId Connect Service Applications].
+
+For example:
+
+[source,properties]
+----
+quarkus.keycloak.policy-enforcer.enable=true
+
+# Default Tenant
+quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.secret=secret
+
+quarkus.keycloak.policy-enforcer.enforcement-mode=PERMISSIVE
+quarkus.keycloak.policy-enforcer.paths.1.name=Permission Resource
+quarkus.keycloak.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
+
+# Service Tenant
+
+quarkus.oidc.service-tenant.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.service-tenant.client-id=quarkus-app
+quarkus.oidc.service-tenant.credentials.secret=secret
+
+quarkus.keycloak.service-tenant.policy-enforcer.enforcement-mode=PERMISSIVE
+quarkus.keycloak.service-tenant.policy-enforcer.paths.1.name=Permission Resource Service
+quarkus.keycloak.service-tenant.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.service-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
+
+
+# WebApp Tenant
+
+quarkus.oidc.webapp-tenant.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.webapp-tenant.client-id=quarkus-app
+quarkus.oidc.webapp-tenant.credentials.secret=secret
+quarkus.oidc.webapp-tenant.application-type=web-app
+quarkus.oidc.webapp-tenant.roles.source=accesstoken
+
+quarkus.keycloak.webapp-tenant.policy-enforcer.enforcement-mode=PERMISSIVE
+quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.name=Permission Resource WebApp
+quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
+----
 
 == Configuration Reference
 

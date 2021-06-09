@@ -53,6 +53,9 @@ public final class PathTestHelper {
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "java" + File.separator + "native-integration-test",
                 "classes" + File.separator + "java" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put( //synthetic tmp dirs when there are multiple outputs
+                "quarkus-app-classes-test",
+                "quarkus-app-classes");
         //endregion
         //region Kotlin
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
@@ -227,13 +230,12 @@ public final class PathTestHelper {
     }
 
     public static boolean isTestClass(String className, ClassLoader classLoader, Path testLocation) {
-        String classFileName = className.replace('.', File.separatorChar) + ".class";
-        URL resource = classLoader.getResource(classFileName);
+        URL resource = classLoader.getResource(className.replace('.', '/') + ".class");
         if (resource == null) {
             return false;
         }
         if (Files.isDirectory(testLocation)) {
-            return resource.getProtocol().startsWith("file") && isInTestDir(resource);
+            return resource.getProtocol().startsWith("file") && toPath(resource).startsWith(testLocation);
         }
         if (!resource.getProtocol().equals("jar")) {
             return false;

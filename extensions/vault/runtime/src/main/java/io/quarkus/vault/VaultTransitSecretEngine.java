@@ -9,6 +9,7 @@ import io.quarkus.vault.transit.EncryptionRequest;
 import io.quarkus.vault.transit.KeyConfigRequestDetail;
 import io.quarkus.vault.transit.KeyCreationRequestDetail;
 import io.quarkus.vault.transit.RewrappingRequest;
+import io.quarkus.vault.transit.SignVerifyOptions;
 import io.quarkus.vault.transit.SigningInput;
 import io.quarkus.vault.transit.SigningRequest;
 import io.quarkus.vault.transit.TransitContext;
@@ -16,6 +17,8 @@ import io.quarkus.vault.transit.VaultDecryptionBatchException;
 import io.quarkus.vault.transit.VaultEncryptionBatchException;
 import io.quarkus.vault.transit.VaultRewrappingBatchException;
 import io.quarkus.vault.transit.VaultSigningBatchException;
+import io.quarkus.vault.transit.VaultTransitExportKeyType;
+import io.quarkus.vault.transit.VaultTransitKeyDetail;
 import io.quarkus.vault.transit.VaultTransitKeyExportDetail;
 import io.quarkus.vault.transit.VaultVerificationBatchException;
 import io.quarkus.vault.transit.VerificationRequest;
@@ -166,8 +169,21 @@ public interface VaultTransitSecretEngine {
     String sign(String keyName, SigningInput input, TransitContext transitContext);
 
     /**
+     * Sign the input with the specified key and an optional explicit sign/verify options and an optional transit
+     * context used for key derivation, if applicable.
+     *
+     * @param keyName the signing key to use
+     * @param input data to sign
+     * @param options optional explicit sign/verify options
+     * @param transitContext optional transit context used for key derivation
+     * @return the signature
+     * @see <a href="https://www.vaultproject.io/api/secret/transit/index.html#sign-data">sign data</a>
+     */
+    String sign(String keyName, SigningInput input, SignVerifyOptions options, TransitContext transitContext);
+
+    /**
      * Sign a list of inputs items. Each item shall specify the input to sign, an optional key version, and
-     * an optional transit context used for ky derivation, if applicable.
+     * an optional transit context used for key derivation, if applicable.
      * If any error occurs, the service will throw a {@link VaultSigningBatchException}
      *
      * @param keyName the signing key to use
@@ -176,6 +192,19 @@ public interface VaultTransitSecretEngine {
      * @see <a href="https://www.vaultproject.io/api/secret/transit/index.html#sign-data">sign data</a>
      */
     Map<SigningRequest, String> sign(String keyName, List<SigningRequest> requests);
+
+    /**
+     * Sign a list of inputs items and an optional explicit sign/verify options. Each item shall specify the input to
+     * sign, an optional key version, and an optional transit context used for key derivation, if applicable.
+     * If any error occurs, the service will throw a {@link VaultSigningBatchException}
+     *
+     * @param keyName the signing key to use
+     * @param requests the list of inputs to sign
+     * @param options optional explicit sign/verify options
+     * @return a map of each request with its corresponding signature item
+     * @see <a href="https://www.vaultproject.io/api/secret/transit/index.html#sign-data">sign data</a>
+     */
+    Map<SigningRequest, String> sign(String keyName, List<SigningRequest> requests, SignVerifyOptions options);
 
     /**
      * Checks that the signature was obtained from signing the input with the specified key.
@@ -201,16 +230,43 @@ public interface VaultTransitSecretEngine {
     void verifySignature(String keyName, String signature, SigningInput input, TransitContext transitContext);
 
     /**
+     * Checks that the signature was obtained from signing the input with the specified key an an optional explicit
+     * sign/verify options.
+     * The service will throw a {@link VaultException} if this is not the case.
+     *
+     * @param keyName the key that was used to sign the input
+     * @param signature the signature obtained from one of the sign methods
+     * @param input the original input data
+     * @param options optional explicit sign/verify options
+     * @param transitContext optional transit context used for key derivation
+     * @see <a href="https://www.vaultproject.io/api/secret/transit/index.html#verify-signed-data">verify signed data</a>
+     */
+    void verifySignature(String keyName, String signature, SigningInput input, SignVerifyOptions options,
+            TransitContext transitContext);
+
+    /**
      * Checks a list of verification requests. Each request shall specify an input and the signature we want to match
-     * against, and an optional transit context used for key derivation, if applicable.
-     * If the signature does not match, or if any other error occurs,
-     * the service will throw a {@link VaultVerificationBatchException}
+     * against, and an optional transit context used for key derivation, if applicable. If the signature does not
+     * match, or if any other error occurs, the service will throw a {@link VaultVerificationBatchException}
      *
      * @param keyName the key that was used to sign the input
      * @param requests a list of items specifying an input and a signature to match against
      * @see <a href="https://www.vaultproject.io/api/secret/transit/index.html#verify-signed-data">verify signed data</a>
      */
     void verifySignature(String keyName, List<VerificationRequest> requests);
+
+    /**
+     * Checks a list of verification requests. Each request shall specify an input and the signature we want to match
+     * against, and an optional explicit sign/verify options and an optionals transit context used for key derivation,
+     * if applicable. If the signature does not match, or if any other error occurs, the service will throw a
+     * {@link VaultVerificationBatchException}
+     *
+     * @param keyName the key that was used to sign the input
+     * @param requests a list of items specifying an input and a signature to match against
+     * @param options optional explicit sign/verify options
+     * @see <a href="https://www.vaultproject.io/api/secret/transit/index.html#verify-signed-data">verify signed data</a>
+     */
+    void verifySignature(String keyName, List<VerificationRequest> requests, SignVerifyOptions options);
 
     // --- admin operations
 
@@ -259,7 +315,7 @@ public interface VaultTransitSecretEngine {
      * @return key detail, or null if the key does not exist
      * @see <a href="https://www.vaultproject.io/api-docs/secret/transit#read-key">read key</a>
      */
-    VaultTransitKeyDetail readKey(String keyName);
+    VaultTransitKeyDetail<?> readKey(String keyName);
 
     /**
      * List all Transit keys.

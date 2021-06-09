@@ -2,6 +2,8 @@ package io.quarkus.oidc.client;
 
 import java.time.Duration;
 
+import io.vertx.core.json.JsonObject;
+
 /**
  * Access and Refresh tokens returned from a token grant request
  */
@@ -10,16 +12,23 @@ public class Tokens {
     final private Long accessTokenExpiresAt;
     final private Long refreshTokenTimeSkew;
     final private String refreshToken;
+    final private JsonObject grantResponse;
 
-    public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration, String refreshToken) {
+    public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration, String refreshToken,
+            JsonObject grantResponse) {
         this.accessToken = accessToken;
         this.accessTokenExpiresAt = accessTokenExpiresAt;
         this.refreshTokenTimeSkew = refreshTokenTimeSkewDuration == null ? null : refreshTokenTimeSkewDuration.getSeconds();
         this.refreshToken = refreshToken;
+        this.grantResponse = grantResponse;
     }
 
     public String getAccessToken() {
         return accessToken;
+    }
+
+    public String get(String propertyName) {
+        return grantResponse.getString(propertyName);
     }
 
     public String getRefreshToken() {

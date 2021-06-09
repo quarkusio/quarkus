@@ -133,7 +133,8 @@ public class LoopSectionTest {
             engine.parse("{#for i in items}{i}:{/for}").data("items", null).render();
             fail();
         } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("[items] resolved to [null]"), expected.getMessage());
+            assertTrue(expected.getMessage().contains("{items} resolved to null, use {items.orEmpty} to ignore this error"),
+                    expected.getMessage());
         }
     }
 
@@ -144,7 +145,20 @@ public class LoopSectionTest {
             engine.parse("{#for i in items}{i}:{/for}").data("items", Boolean.TRUE).render();
             fail();
         } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("[items] resolved to [java.lang.Boolean]"), expected.getMessage());
+            assertTrue(expected.getMessage().contains("{items} resolved to [java.lang.Boolean] which is not iterable"),
+                    expected.getMessage());
+        }
+    }
+
+    @Test
+    public void testNotFound() {
+        Engine engine = Engine.builder().addDefaults().build();
+        try {
+            engine.parse("{#for i in items}{i}:{/for}").render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().contains("{items} not found, use {items.orEmpty} to ignore this error"),
+                    expected.getMessage());
         }
     }
 

@@ -1,5 +1,6 @@
 package io.quarkus.tika.deployment;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,13 +20,11 @@ import org.apache.tika.parser.Parser;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
@@ -59,11 +58,6 @@ public class TikaProcessor {
     }
 
     @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.TIKA);
-    }
-
-    @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.TIKA);
     }
@@ -87,6 +81,7 @@ public class TikaProcessor {
 
     @BuildStep
     public void registerPdfBoxResources(BuildProducer<NativeImageResourceDirectoryBuildItem> resource) {
+        resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/pdfbox/resources/afm"));
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/pdfbox/resources/glyphlist"));
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/fontbox/cmap"));
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/fontbox/unicode"));
@@ -221,18 +216,24 @@ public class TikaProcessor {
     private static String getParserParamType(String parserName, String paramName) {
         try {
             Class<?> parserClass = loadParserClass(parserName);
-            String paramType = parserClass.getMethod("get" + capitalize(paramName), new Class[] {}).getReturnType()
-                    .getSimpleName().toLowerCase();
-            if (paramType.equals(boolean.class.getSimpleName())) {
-                // TikaConfig Param class does not recognize 'boolean', only 'bool'
-                // This whole reflection code is temporary anyway
-                paramType = "bool";
+            Method[] methods = parserClass.getMethods();
+            String setterMethodName = "set" + capitalize(paramName);
+            String paramType = null;
+            for (Method method : methods) {
+                if (method.getName().equals(setterMethodName) && method.getParameterCount() == 1) {
+                    paramType = method.getParameterTypes()[0].getSimpleName().toLowerCase();
+                    if (paramType.equals(boolean.class.getSimpleName())) {
+                        // TikaConfig Param class does not recognize 'boolean', only 'bool'
+                        // This whole reflection code is temporary anyway
+                        paramType = "bool";
+                    }
+                    return paramType;
+                }
             }
-            return paramType;
         } catch (Throwable t) {
-            final String errorMessage = "Parser " + parserName + " has no " + paramName + " property";
-            throw new TikaParseException(errorMessage);
+            throw new TikaParseException(String.format("Parser %s has no %s property", parserName, paramName));
         }
+        throw new TikaParseException(String.format("Parser %s has no %s property", parserName, paramName));
     }
 
     public static class TikaParserParameter {

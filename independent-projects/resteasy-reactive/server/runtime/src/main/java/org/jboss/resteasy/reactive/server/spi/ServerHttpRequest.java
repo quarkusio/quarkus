@@ -30,10 +30,6 @@ public interface ServerHttpRequest {
 
     void closeConnection();
 
-    String getFormAttribute(String name);
-
-    List<String> getAllFormAttributes(String name);
-
     String getQueryParam(String name);
 
     List<String> getAllQueryParams(String name);
@@ -43,8 +39,6 @@ public interface ServerHttpRequest {
     Collection<String> queryParamNames();
 
     boolean isRequestEnded();
-
-    void setExpectMultipart(boolean expectMultipart);
 
     InputStream createInputStream(ByteBuffer existingData);
 

@@ -31,7 +31,7 @@ In this guide, we see how you can get your REST services to use SNS locally and 
 
 To complete this guide, you need:
 
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * an IDE
 * Apache Maven {maven-version}
 * An AWS Account to access the SNS service
@@ -157,6 +157,9 @@ public class Quark {
 }
 ----
 Then, create a `org.acme.sns.QuarksCannonSyncResource` that will provide an API to shoot quarks into the SNS topic via the SNS synchronous client.
+
+TIP: The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on  the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
+
 
 [source,java]
 ----

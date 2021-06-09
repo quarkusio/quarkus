@@ -13,7 +13,6 @@ import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,11 +27,10 @@ import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -52,16 +50,11 @@ public class DockerProcessor {
     private static final String DOCKER_DIRECTORY_NAME = "docker";
     static final String DOCKER_CONTAINER_IMAGE_NAME = "docker";
 
-    private final DockerWorking dockerWorking = new DockerWorking();
+    private final IsDockerWorking isDockerWorking = new IsDockerWorking();
 
     @BuildStep
     public AvailableContainerImageExtensionBuildItem availability() {
         return new AvailableContainerImageExtensionBuildItem(DOCKER);
-    }
-
-    @BuildStep(onlyIf = DockerBuild.class)
-    public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_DOCKER);
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, DockerBuild.class }, onlyIfNot = NativeBuild.class)
@@ -82,7 +75,7 @@ public class DockerProcessor {
             return;
         }
 
-        if (!dockerWorking.getAsBoolean()) {
+        if (!isDockerWorking.getAsBoolean()) {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 
@@ -93,8 +86,10 @@ public class DockerProcessor {
                 false,
                 pushRequest.isPresent(), packageConfig);
 
+        // a pull is not required when using this image locally because the docker strategy always builds the container image
+        // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
-                Collections.singletonMap("container-image", builtContainerImage)));
+                Map.of("container-image", builtContainerImage, "pull-required", "false")));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
@@ -114,7 +109,7 @@ public class DockerProcessor {
             return;
         }
 
-        if (!dockerWorking.getAsBoolean()) {
+        if (!isDockerWorking.getAsBoolean()) {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 
@@ -128,8 +123,11 @@ public class DockerProcessor {
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
                 pushRequest.isPresent(), packageConfig);
+
+        // a pull is not required when using this image locally because the docker strategy always builds the container image
+        // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
-                Collections.singletonMap("container-image", builtContainerImage)));
+                Map.of("container-image", builtContainerImage, "pull-required", "false")));
     }
 
     private String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,

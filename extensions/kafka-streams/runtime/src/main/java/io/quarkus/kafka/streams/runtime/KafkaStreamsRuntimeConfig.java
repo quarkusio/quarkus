@@ -47,17 +47,17 @@ public class KafkaStreamsRuntimeConfig {
     /**
      * The schema registry key.
      *
-     * e.g. to diff between different registry impls / instances
-     * as they have this registry url under different property key.
+     * Different schema registry libraries expect a registry URL
+     * in different configuration properties.
      *
-     * Red Hat / Apicurio - apicurio.registry.url
-     * Confluent - schema.registry.url
+     * For Apicurio Registry, use {@code apicurio.registry.url}.
+     * For Confluent schema registry, use {@code schema.registry.url}.
      */
     @ConfigItem(defaultValue = "schema.registry.url")
     public String schemaRegistryKey;
 
     /**
-     * The schema registry url.
+     * The schema registry URL.
      */
     @ConfigItem
     public Optional<String> schemaRegistryUrl;

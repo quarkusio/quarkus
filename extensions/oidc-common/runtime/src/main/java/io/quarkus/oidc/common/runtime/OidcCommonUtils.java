@@ -1,12 +1,16 @@
 package io.quarkus.oidc.common.runtime;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import javax.crypto.SecretKey;
 
@@ -22,20 +26,38 @@ import io.smallrye.jwt.util.ResourceUtils;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.mutiny.core.MultiMap;
+import io.vertx.mutiny.core.buffer.Buffer;
 
 public class OidcCommonUtils {
+    static final byte AMP = '&';
+    static final byte EQ = '=';
+
     private OidcCommonUtils() {
 
     }
 
-    public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean isServerConfig) {
+    public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean clientIdOptional,
+            boolean isServerConfig) {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
-        if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
+        if (!oidcConfig.getAuthServerUrl().isPresent()) {
             throw new ConfigurationException(
-                    String.format("Both '%1$sauth-server-url' and '%1$sclient-id' properties must be configured",
+                    String.format("'%sauth-server-url' property must be configured",
                             configPrefix));
         }
 
+        if (!clientIdOptional && !oidcConfig.getClientId().isPresent()) {
+            throw new ConfigurationException(
+                    String.format("'%sclient-id' property must be configured", configPrefix));
+        }
+
+        try {
+            // Verify that auth-server-url is a valid URL
+            URI.create(oidcConfig.getAuthServerUrl().get()).toURL();
+        } catch (Throwable ex) {
+            throw new ConfigurationException(
+                    String.format("'%sauth-server-url' is invalid", configPrefix), ex);
+        }
         Credentials creds = oidcConfig.getCredentials();
         if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
             throw new ConfigurationException(
@@ -55,6 +77,27 @@ public class OidcCommonUtils {
         return !path.startsWith("/") ? "/" + path : path;
     }
 
+    public static Buffer encodeForm(MultiMap form) {
+        Buffer buffer = Buffer.buffer();
+        for (Map.Entry<String, String> entry : form) {
+            if (buffer.length() != 0) {
+                buffer.appendByte(AMP);
+            }
+            buffer.appendString(entry.getKey());
+            buffer.appendByte(EQ);
+            buffer.appendString(urlEncode(entry.getValue()));
+        }
+        return buffer;
+    }
+
+    public static String urlEncode(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, TlsConfig tlsConfig, HttpClientOptions options) {
         boolean trustAll = oidcConfig.tls.verification.isPresent() ? oidcConfig.tls.verification.get() == Verification.NONE
                 : tlsConfig.trustAll;
@@ -66,6 +109,12 @@ public class OidcCommonUtils {
         if (proxyOpt.isPresent()) {
             options.setProxyOptions(proxyOpt.get());
         }
+
+        OptionalInt maxPoolSize = oidcConfig.maxPoolSize;
+        if (maxPoolSize.isPresent()) {
+            options.setMaxPoolSize(maxPoolSize.getAsInt());
+        }
+
         options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
     }
 

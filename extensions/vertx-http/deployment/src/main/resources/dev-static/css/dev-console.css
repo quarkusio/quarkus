@@ -28,6 +28,16 @@
     bottom: 9px;
 }
 
+.navbar-right {
+    font-size: 0.9em;
+    position: absolute;
+    right: 5px;
+    bottom: 9px;
+    display: inline-block;
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+}
+
 .navbar {
     justify-content: unset;
 }
@@ -59,4 +69,39 @@ h1 {
 
 .package-name {
     color: dimgray;
+}
+
+.devUiFooterButton {
+   color: #9a9da0; 
+}
+
+.devUiFooterButton:hover {
+   color: #3366ac !important;
+}
+
+#devUiFooter {
+    background: #343a40;
+    height: 40px;
+}
+
+#devUiFooterToolbar {
+    border: 1px solid #414850;
+    max-height: 40px;
+    width: 100%;
+    padding: unset;
+    position: absolute;
+    top: 0px;
+}
+
+#devUiFooterResizeButton {
+    cursor: row-resize !important;
+}
+
+#devUiFooter {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.guide-padding-right {
+    padding-right: 0.25rem;
 }

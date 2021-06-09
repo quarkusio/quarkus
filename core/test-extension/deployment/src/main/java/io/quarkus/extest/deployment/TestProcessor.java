@@ -42,7 +42,6 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
@@ -85,11 +84,6 @@ public final class TestProcessor {
     TestConfigRoot configRoot;
     TestBuildTimeConfig buildTimeConfig;
     TestBuildAndRunTimeConfig buildAndRunTimeConfig;
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem("io.quarkus.test-extension");
-    }
 
     /**
      * Register an extension capability and feature

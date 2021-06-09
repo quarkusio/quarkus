@@ -40,7 +40,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
+import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 
@@ -144,7 +144,7 @@ public class KubernetesDeployer {
         }
 
         if (OPENSHIFT.equals(selectedTarget.getName())) {
-            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.getName().equals(activeContainerImageCapability);
+            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability);
         } else if (MINIKUBE.equals(selectedTarget.getName())) {
             checkForMissingRegistry = false;
         }
@@ -192,7 +192,7 @@ public class KubernetesDeployer {
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("Can't find generated kubernetes manifest: " + manifest.getAbsolutePath());
         } catch (KubernetesClientException e) {
-            KubernetesClientErrorHanlder.handle(e);
+            KubernetesClientErrorHandler.handle(e);
             throw e;
         } catch (IOException e) {
             throw new RuntimeException("Error closing file: " + manifest.getAbsolutePath());

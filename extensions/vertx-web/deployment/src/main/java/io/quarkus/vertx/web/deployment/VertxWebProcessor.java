@@ -19,6 +19,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -97,6 +99,7 @@ import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.runtime.RouteHandler;
 import io.quarkus.vertx.web.runtime.RouteMatcher;
@@ -107,7 +110,6 @@ import io.quarkus.vertx.web.runtime.devmode.ResourceNotFoundRecorder;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
@@ -243,7 +245,7 @@ class VertxWebProcessor {
                         return true;
                     }
                 }
-                return false;
+                return GeneratedClassGizmoAdaptor.isApplicationClass(className);
             }
         };
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, appClassPredicate);
@@ -295,9 +297,10 @@ class VertxWebProcessor {
                 AnnotationValue typeValue = route.value(VALUE_TYPE);
                 Route.HandlerType routeHandlerType = typeValue == null ? Route.HandlerType.NORMAL
                         : Route.HandlerType.from(typeValue.asEnum());
-                HttpMethod[] methods = Arrays.stream(methodsValue.asEnumArray()).map(HttpMethod::valueOf)
-                        .toArray(HttpMethod[]::new);
-                Integer order = orderValue.asInt();
+                String[] methods = Arrays.stream(methodsValue.asStringArray())
+                        .map(String::toUpperCase)
+                        .toArray(String[]::new);
+                int order = orderValue.asInt();
 
                 if (regexValue == null) {
                     if (pathPrefix != null) {
@@ -344,7 +347,7 @@ class VertxWebProcessor {
                 }
 
                 HandlerType handlerType = HandlerType.NORMAL;
-                if (typeValue != null) {
+                if (routeHandlerType != null) {
                     switch (routeHandlerType) {
                         case NORMAL:
                             handlerType = HandlerType.NORMAL;
@@ -387,18 +390,25 @@ class VertxWebProcessor {
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
                         bodyHandler.getHandler());
 
-                routeProducer.produce(new RouteBuildItem(routeFunction, routeHandler, handlerType));
+                //TODO This needs to be refactored to use routeFunction() taking a Consumer<Route> instead
+                RouteBuildItem.Builder builder = RouteBuildItem.builder()
+                        .routeFunction(routeFunction)
+                        .handlerType(handlerType)
+                        .handler(routeHandler);
+                routeProducer.produce(builder.build());
 
                 if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
                     if (methods.length == 0) {
                         // No explicit method declared - match all methods
-                        methods = HttpMethod.values();
+                        methods = Arrays.stream(HttpMethod.values())
+                                .map(Enum::name)
+                                .toArray(String[]::new);
                     }
                     descriptions.produce(new RouteDescriptionBuildItem(
                             businessMethod.getMethod().declaringClass().name().withoutPackagePrefix() + "#"
                                     + businessMethod.getMethod().name() + "()",
                             regex != null ? regex : path,
-                            Arrays.stream(methods).map(Object::toString).collect(Collectors.joining(", ")), produces,
+                            Arrays.stream(methods).collect(Collectors.joining(", ")), produces,
                             consumes));
                 }
             }
@@ -474,12 +484,15 @@ class VertxWebProcessor {
             Route.HandlerType handlerType = typeValue == null ? Route.HandlerType.NORMAL
                     : Route.HandlerType.from(typeValue.asEnum());
 
-            if ((method.returnType().name().equals(io.quarkus.vertx.web.deployment.DotNames.UNI)
-                    || method.returnType().name().equals(io.quarkus.vertx.web.deployment.DotNames.MULTI))
+            DotName returnTypeName = method.returnType().name();
+
+            if ((returnTypeName.equals(DotNames.UNI)
+                    || returnTypeName.equals(DotNames.MULTI)
+                    || returnTypeName.equals(DotNames.COMPLETION_STAGE))
                     && method.returnType().kind() == Kind.CLASS) {
                 throw new IllegalStateException(
                         String.format(
-                                "Route business method returning a Uni/Multi must have a generic parameter [method: %s, bean: %s]",
+                                "Route business method returning a Uni/Multi/CompletionStage must have a generic parameter [method: %s, bean: %s]",
                                 method, bean));
             }
             boolean canEndResponse = false;
@@ -547,13 +560,7 @@ class VertxWebProcessor {
                     "A route requires validation, but the Hibernate Validator extension is not present");
         }
 
-        String baseName;
-        if (bean.getImplClazz().enclosingClass() != null) {
-            baseName = io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
-                    + io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().name());
-        } else {
-            baseName = io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().name());
-        }
+        String baseName = io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().name());
         String targetPackage = io.quarkus.arc.processor.DotNames
                 .internalPackageNameWithTrailingSlash(bean.getImplClazz().name());
 
@@ -727,6 +734,8 @@ class VertxWebProcessor {
             res = invoke.createVariable(Uni.class);
         } else if (descriptor.isReturningMulti()) {
             res = invoke.createVariable(Multi.class);
+        } else if (descriptor.isReturningCompletionStage()) {
+            res = invoke.createVariable(CompletionStage.class);
         } else {
             res = invoke.createVariable(Object.class);
         }
@@ -743,16 +752,17 @@ class VertxWebProcessor {
                 block.assign(res, value);
             }
             CatchBlockCreator caught = block.addCatch(Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION);
+            boolean forceJsonEncoding = !descriptor.isContentTypeString() && !descriptor.isContentTypeBuffer()
+                    && !descriptor.isContentTypeMutinyBuffer();
             caught.invokeStaticMethod(
                     Methods.VALIDATION_HANDLE_VIOLATION_EXCEPTION,
-                    caught.getCaughtException(), invoke.getMethodParam(0));
+                    caught.getCaughtException(), invoke.getMethodParam(0), invoke.load(forceJsonEncoding));
             caught.returnValue(caught.loadNull());
         }
 
         // Get the response: HttpServerResponse response = rc.response()
         MethodDescriptor end = Methods.getEndMethodForContentType(descriptor);
         if (descriptor.isReturningUni()) {
-            ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext);
             // The method returns a Uni.
             // We subscribe to this Uni and write the provided item in the HTTP response
             // If the method returned null, we fail
@@ -760,16 +770,11 @@ class VertxWebProcessor {
             // If the provided item is null, and the method return a Uni<Void>, we reply with a 204 - NO CONTENT
             // If the provided item is not null, if it's a string or buffer, the response.end method is used to write the response
             // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the response
-
-            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, routingContext, end, response,
-                    validatorField);
-
+            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, routingContext, end, validatorField);
             ResultHandle failureCallback = getUniOnFailureCallback(invoke, routingContext);
-
             ResultHandle sub = invoke.invokeInterfaceMethod(Methods.UNI_SUBSCRIBE, res);
             invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
                     failureCallback);
-
             registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
 
         } else if (descriptor.isReturningMulti()) {
@@ -790,6 +795,17 @@ class VertxWebProcessor {
             isRegular.close();
             isNotSSE.close();
 
+            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
+        } else if (descriptor.isReturningCompletionStage()) {
+            // The method returns a CompletionStage - we write the provided item in the HTTP response
+            // If the method returned null, we fail
+            // If the provided item is null and the method does not return a CompletionStage<Void>, we fail
+            // If the provided item is null, and the method return a CompletionStage<Void>, we reply with a 204 - NO CONTENT
+            // If the provided item is not null, if it's a string or buffer, the response.end method is used to write the response
+            // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the response
+            ResultHandle consumer = getWhenCompleteCallback(descriptor, invoke, routingContext, end, validatorField)
+                    .getInstance();
+            invoke.invokeInterfaceMethod(Methods.CS_WHEN_COMPLETE, res, consumer);
             registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
 
         } else if (descriptor.getContentType() != null) {
@@ -983,9 +999,11 @@ class VertxWebProcessor {
      * @return the function creator
      */
     private FunctionCreator getUniOnItemCallback(HandlerDescriptor descriptor, MethodCreator invoke, ResultHandle rc,
-            MethodDescriptor end, ResultHandle response, FieldCreator validatorField) {
+            MethodDescriptor end, FieldCreator validatorField) {
         FunctionCreator callback = invoke.createFunction(Consumer.class);
         BytecodeCreator creator = callback.getBytecode();
+        ResultHandle response = creator.invokeInterfaceMethod(Methods.RESPONSE, rc);
+
         if (Methods.isNoContent(descriptor)) { // Uni<Void> - so return a 204.
             creator.invokeInterfaceMethod(Methods.SET_STATUS, response, creator.load(204));
             creator.invokeInterfaceMethod(Methods.END, response);
@@ -1009,6 +1027,44 @@ class VertxWebProcessor {
         return callback;
     }
 
+    private FunctionCreator getWhenCompleteCallback(HandlerDescriptor descriptor, MethodCreator invoke, ResultHandle rc,
+            MethodDescriptor end, FieldCreator validatorField) {
+        FunctionCreator callback = invoke.createFunction(BiConsumer.class);
+        BytecodeCreator creator = callback.getBytecode();
+        ResultHandle response = creator.invokeInterfaceMethod(Methods.RESPONSE, rc);
+
+        ResultHandle throwable = creator.getMethodParam(1);
+        BranchResult failureCheck = creator.ifNotNull(throwable);
+
+        BytecodeCreator failure = failureCheck.trueBranch();
+        failure.invokeInterfaceMethod(Methods.FAIL, rc, throwable);
+
+        BytecodeCreator success = failureCheck.falseBranch();
+
+        if (Methods.isNoContent(descriptor)) {
+            // CompletionStage<Void> - so always return a 204
+            success.invokeInterfaceMethod(Methods.SET_STATUS, response, success.load(204));
+            success.invokeInterfaceMethod(Methods.END, response);
+        } else {
+            // First check if the item is null
+            ResultHandle item = success.getMethodParam(0);
+            BranchResult itemNullCheck = success.ifNull(item);
+
+            BytecodeCreator itemNotNull = itemNullCheck.falseBranch();
+            ResultHandle content = getContentToWrite(descriptor, response, item, itemNotNull, validatorField,
+                    invoke.getThis());
+            itemNotNull.invokeInterfaceMethod(end, response, content);
+
+            BytecodeCreator itemNull = itemNullCheck.trueBranch();
+            ResultHandle npe = itemNull.newInstance(MethodDescriptor.ofConstructor(NullPointerException.class, String.class),
+                    itemNull.load("Null is not a valid return value for @Route method with return type: "
+                            + descriptor.getReturnType()));
+            itemNull.invokeInterfaceMethod(Methods.FAIL, rc, npe);
+        }
+        Methods.returnAndClose(creator);
+        return callback;
+    }
+
     private ResultHandle getUniOnFailureCallback(MethodCreator writer, ResultHandle routingContext) {
         return writer.newInstance(MethodDescriptor.ofConstructor(UniFailureCallback.class, RoutingContext.class),
                 routingContext);
@@ -1027,7 +1083,8 @@ class VertxWebProcessor {
         // Encode to Json
         Methods.setContentTypeToJson(response, writer);
         // Validate res if needed
-        if (descriptor.isProducedResponseValidated()) {
+        if (descriptor.isProducedResponseValidated()
+                && (descriptor.isReturningUni() || descriptor.isReturningMulti() || descriptor.isReturningCompletionStage())) {
             return Methods.validateProducedItem(response, writer, res, validatorField, owner);
         } else {
             return writer.invokeStaticMethod(Methods.JSON_ENCODE, res);

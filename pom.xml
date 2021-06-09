@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>37</version>
+        <version>38</version>
     </parent>
 
     <groupId>io.quarkus</groupId>
@@ -48,18 +48,21 @@
     </issueManagement>
 
     <properties>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <gitflow-incremental-builder.version>3.13.0</gitflow-incremental-builder.version>
+        <gitflow-incremental-builder.version>3.14.2</gitflow-incremental-builder.version>
+        <quarkus-platform-bom-plugin.version>0.0.10</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
 
-        <sonar.projectKey>quarkusio_quarkus</sonar.projectKey>
-        <sonar.organization>quarkusio</sonar.organization>
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <modules>
@@ -113,13 +116,25 @@
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>sonatype-nexus-release</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-platform-bom-maven-plugin</artifactId>
+                    <version>${quarkus-platform-bom-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
     <profiles>
         <profile>

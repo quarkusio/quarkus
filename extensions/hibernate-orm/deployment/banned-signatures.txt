@@ -1,0 +1,2 @@
+@defaultMessage Don't use the pattern MyClass.class.getName() or DotName.createSimple("org.mycompany.MyClass"). Instead, create constants using createConstant("org.mycompany.MyClass") in io.quarkus.hibernate.orm.deployment.ClassNames. That way, all class names will get checked against the classpath in ConstantsTest.
+java.lang.Class#getName()

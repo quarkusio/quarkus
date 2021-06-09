@@ -1,0 +1,264 @@
+{#include main}
+  {#style}
+.connection-status {
+    font-style: italic;
+    font-size: 0.8em;
+    text-align: right;
+}
+
+.status {
+    position: fixed;
+    width: 80%;
+    z-index: 100;
+}
+.status span {
+    background-color: #f0f0c0;
+    padding: 2px 20px;
+    border-radius: 3px;
+}
+.fa.connected-icon {
+    color: #207020;
+    padding: 0 1em 0 1em;
+}
+
+.form-control.grpc-output {
+    color: #f0f0e0;
+    background-color: #303030;
+}
+
+.fa.connected-icon {
+    color: #107010;
+}
+
+span.connected-status {
+    font-size: 0.5em;
+    margin-left: 1em;
+}
+  {/style}
+  {#script}
+        var grpcWS;
+        var requestId = 0;
+        var clearMessageTimeout;
+
+        var connections = new Map();
+
+        function hideConnected(connection) {
+          const idBase = connection.queryIdentifier.replace('#', '/');
+          const connectedElement = document.getElementById(`$\{idBase}_connected`);
+          if (connectedElement) {
+            connectedElement.style.display = 'none';
+            document.getElementById(`$\{idBase}_disconnect`).style.display = 'none';
+          }
+        }
+
+        function showConnected(connection) {
+            const idBase = connection.queryIdentifier.replace('#', '/');
+            const connectedElement = document.getElementById(`$\{idBase}_connected`);
+            if (connectedElement) {
+              connectedElement.style.display = 'inline';
+              document.getElementById(`$\{idBase}_disconnect`).style.display = 'inline';
+            }
+        }
+
+        function connect() {
+          var wsUri;
+          if (window.location.protocol === "https:") {
+            wsUri = "wss:";
+          } else {
+            wsUri = "ws:";
+          }
+
+          wsUri += "//" + window.location.host + "/q/dev/grpc-test";
+          grpcWS = new WebSocket(wsUri);
+          grpcWS.onopen = function (event) {
+            console.log("websocket connected");
+            info("Web Socket bridge to gRPC connected");
+          }
+
+          grpcWS.onerror = function (error) {
+            console.log("error on gRPC websocket", error);
+          }
+
+          grpcWS.onclose = function () {
+            info("Web Socket bridge to gRPC disconnected, reconnecting");
+            connections.forEach(connection => hideConnected(connection));
+            connections.clear();
+            setTimeout(connect, 2000);
+          }
+
+          grpcWS.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            if (data.status == 'RESET') {
+              connections.clear();
+            } else if (data.status == 'PAYLOAD') {
+              const connection = connections.get(data.id);
+              const responseElement = connection.responseElement;
+              if (connection.responseText != '') {
+                connection.responseText = '\n---------\n' + connection.responseText;
+              }
+
+              connection.responseText = data.body + connection.responseText;
+              responseElement.value = connection.responseText;
+              responseElement.style.height = Math.min(responseElement.scrollHeight + 5, 500) + "px"
+            } else if (data.status == 'COMPLETED') {
+              const connection = connections.get(data.id);
+              hideConnected(connection);
+              connections.delete(data.id);
+            } else if (data.status == 'ERROR') {
+              console.log("failure!", data);
+              const connection = connections.get(data.id);
+              const responseElement = connection.responseElement;
+              if (connection.responseText != '') {
+                  connection.responseText = '\n---------\n' + connection.responseText;
+              }
+              connection.responseText = data.body + connection.responseText;
+              connection.responseText = "FAILURE:\n" + connection.responseText;
+              responseElement.value = connection.responseText;
+            }
+          }
+        }
+
+        function info(message) {
+          clearTimeout(clearMessageTimeout);
+          const statusText = document.getElementById('status-text')
+          statusText.innerText = message;
+          const status = document.getElementById('status-info')
+          status.style.display = 'block';
+          clearMessageTimeout = setTimeout(() => status.style.display = 'none', 2000);
+        }
+
+        $(document).ready(function(){
+          if (!ideKnown()) {
+            return;
+          }
+          $(".class-candidate").each(function() {
+            var className = $(this).text();
+            if (appClassLang(className)) {
+              $(this).addClass("app-class");
+            }
+          });
+
+          $(".app-class").on("click", function() {
+            openInIDE($(this).text());
+          });
+
+          document.querySelectorAll('.grpc-input')
+                .forEach(textArea => textArea.style.height = (textArea.scrollHeight + 5) + "px");
+          connect();
+        });
+
+        function disconnect(serviceName, methodName, methodType) {
+            const queryIdentifier = `$\{serviceName}#$\{methodName}`;
+            const connection = Array.from(connections.values()).find(conn => conn.queryIdentifier == queryIdentifier);
+            connections.delete(connection.id);
+            const request = {
+                id: connection.id,
+                command: 'DISCONNECT'
+            }
+            hideConnected(connection);
+            grpcWS.send(JSON.stringify(request));
+        }
+
+        function sendTestRequest(serviceName, methodName, methodType) {
+            const queryIdentifier = `$\{serviceName}#$\{methodName}`;
+            var connection = Array.from(connections.values()).find(conn => conn.queryIdentifier == queryIdentifier);
+            const testRequest = document.getElementById(serviceName + "/" + methodName + "_request");
+            if (!connection || methodType == 'UNARY') {
+                requestId ++;
+                connection = {
+                    id: requestId,
+                    queryIdentifier: queryIdentifier,
+                    responseElement: document.getElementById(serviceName + "/" + methodName + "_response"),
+                    responseText: '',
+                    unary: methodType == 'UNARY'
+                };
+                connections.set(requestId, connection);
+            }
+
+            const request = {
+                serviceName: serviceName,
+                methodName: methodName,
+                id: requestId,
+                content: testRequest.value
+            };
+
+            grpcWS.send(JSON.stringify(request));
+
+            if (methodType != 'UNARY') {
+              showConnected(connection);
+            }
+        }
+
+  {/script}
+  {#breadcrumbs}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> <a href="/q/dev/io.quarkus.quarkus-grpc/services">Services</a>{/breadcrumbs}
+  {#title}{info:grpcServices.get(currentRequest.params.get('name')).name}{/title}
+  {#body}
+  <div class="status" id="status-info">
+      <span id="status-text"></span>
+  </div>
+
+  {#let service=info:grpcServices.get(currentRequest.params.get('name'))}
+  <h1>
+  {#when service.status}
+        {#is SERVING}
+        <span class="badge badge-success larger-badge" title="{service.status}"><i class="fas fa-check-circle badge-success"></i></span>
+        {#is NOT_SERVING}
+        <span class="badge badge-danger larger-badge" title="{service.status}"><i class="fas fa-exclamation-circle"></i></span>
+        {#is in UNKNOWN UNRECOGNIZED}
+        <span class="badge badge-secondary larger-badge" title="{service.status}"><i class="fas fa-question-circle"></i></span>
+  {/when}
+  {service.name}
+  </h1>
+  <div>
+  Implemented by: <span class="class-candidate">{service.serviceClass}</span>
+  </div>
+
+  {#for method in service.methodsWithPrototypes}
+<hr>
+<div class="container">
+    <h2><span class="badge badge-dark">{method.type}</span> {method.bareMethodName}
+        {#when method.type}
+        {#is in BIDI_STREAMING CLIENT_STREAMING}
+        <span class="connected-status" id="{service.name}/{method.bareMethodName}_connected" style="display:none">
+                    <i class="fas fa-link fa connected-icon"></i>Connected. All the calls are made with the existing connection</span>
+        {#is SERVER_STREAMING}
+        <span class="connected-status" id="{service.name}/{method.bareMethodName}_connected" style="display:none">
+                    <i class="fas fa-link fa connected-icon"></i>Connected.
+        </span>
+        {/when}
+    </h2>
+</div>
+    {#if method.isTestable}
+      <form>
+          <div class="row">
+              <div class="col">
+                  <textarea class="form-control grpc-input" name="test-request"
+                            id="{service.name}/{method.bareMethodName}_request">{method.prototype}</textarea>
+                  <br>
+              </div>
+              <div class="col">
+                  <textarea class="form-control grpc-output" name="test-response" id="{service.name}/{method.bareMethodName}_response" readonly></textarea>
+              </div>
+          </div>
+          <div class="row">
+              <div class="col">
+                  <button type="button" class="btn btn-primary"
+                          onclick="sendTestRequest('{service.name}','{method.bareMethodName}', '{method.type}')">
+                      Send
+                  </button>
+
+                  <button type="button" class="btn btn-secondary"
+                          id="{service.name}/{method.bareMethodName}_disconnect" style="display: none"
+                          onclick="disconnect('{service.name}','{method.bareMethodName}')">
+                      Disconnect
+                  </button>
+              </div>
+          </div>
+      </form>
+    {/if}
+  {/for}
+
+  {/let}
+
+  {/body}
+{/include}

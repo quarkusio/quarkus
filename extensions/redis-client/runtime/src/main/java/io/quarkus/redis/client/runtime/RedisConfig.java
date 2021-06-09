@@ -8,17 +8,19 @@ import java.util.Set;
 
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.vertx.redis.client.RedisClientType;
+import io.vertx.redis.client.RedisReplicas;
 import io.vertx.redis.client.RedisRole;
-import io.vertx.redis.client.RedisSlaves;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME, name = RedisConfig.REDIS_CONFIG_ROOT_NAME)
 public class RedisConfig {
-
+    public final static String REDIS_CONFIG_ROOT_NAME = "redis";
+    public final static String HOSTS_CONFIG_NAME = "hosts";
     /**
      * The default redis client
      */
@@ -59,11 +61,25 @@ public class RedisConfig {
          * 1 element.
          * <p>
          * The URI provided uses the following schema `redis://[username:password@][host][:port][/database]`
+         * Use `quarkus.redis.hosts-provider-name` to provide the hosts programmatically.
+         * <p>
          * 
          * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
          */
-        @ConfigItem(defaultValueDocumentation = "redis://localhost:6379")
+        @ConfigItem(defaultValueDocumentation = "redis://localhost:6379", name = HOSTS_CONFIG_NAME)
         public Optional<Set<URI>> hosts;
+
+        /**
+         * The hosts provider bean name.
+         * <p>
+         * It is the {@code &#64;Named} value of the hosts provider bean. It is used to discriminate if multiple
+         * `io.quarkus.redis.client.RedisHostsProvider` beans are available.
+         *
+         * <p>
+         * Used when `quarkus.redis.hosts` is not set.
+         */
+        @ConfigItem
+        public Optional<String> hostsProviderName;
 
         /**
          * The maximum delay to wait before a blocking command to redis server times out
@@ -90,10 +106,18 @@ public class RedisConfig {
         public Optional<RedisRole> role;
 
         /**
-         * Whether or not to use slave nodes (only considered in Cluster mode).
+         * Whether or not to use replicas nodes (only considered in Cluster mode).
          */
         @ConfigItem(defaultValueDocumentation = "never")
-        public Optional<RedisSlaves> slaves;
+        public Optional<RedisReplicas> replicas;
+
+        /**
+         * The default password for cluster/sentinel connections.
+         * <p>
+         * If not set it will try to extract the value from the current default {@code #hosts}.
+         */
+        @ConfigItem
+        public Optional<String> password;
 
         /**
          * The maximum size of the connection pool. When working with cluster or sentinel.
@@ -135,5 +159,43 @@ public class RedisConfig {
          */
         @ConfigItem(defaultValue = "32")
         public int maxNestedArrays;
+
+        /**
+         * The number of reconnection attempts when a pooled connection cannot be established on first try.
+         */
+        @ConfigItem(defaultValue = "0")
+        public int reconnectAttempts;
+
+        /**
+         * The interval between reconnection attempts when a pooled connection cannot be established on first try.
+         */
+        @ConfigItem(defaultValue = "1")
+        public Duration reconnectInterval;
+
+        /**
+         * The maximum time a connection remains unused in the pool before it is closed.
+         */
+        @ConfigItem(defaultValueDocumentation = "no timeout")
+        public Optional<Integer> idleTimeout;
+
+        /**
+         * Whether TCP keep alive is enabled
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean tcpKeepAlive;
+
+        /**
+         * Whether TCP no delay is enabled
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean tcpNoDelay;
+
+        /**
+         * SSL/TLS config.
+         */
+        @ConfigItem
+        @ConfigDocSection
+        public SslConfig ssl;
+
     }
 }

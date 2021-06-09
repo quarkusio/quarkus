@@ -54,14 +54,35 @@ The syntax used in CRON expressions is controlled by the `quarkus.scheduler.cron
 The values can be `cron4j`, `quartz`, `unix` and `spring`.
 `quartz` is used by default.
 
-If a CRON expression starts with `{` and ends with `}` then the scheduler attempts to find a corresponding config property and use the configured value instead. 
+The `cron` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that "{property.path}" style expressions are still supported but don't offer the full functionality of Property Expressions.)
+
 
 .CRON Config Property Example
 [source,java]
 ----
-@Scheduled(cron = "{myMethod.cron.expr}")
+@Scheduled(cron = "${myMethod.cron.expr}")
 void myMethod() { }
 ----
+
+If you wish to disable a specific scheduled method, you can set its cron expression to `"off"` or `"disabled"`.
+
+.application.properties
+[source,properties]
+----
+myMethod.cron.expr=disabled
+----
+
+Property Expressions allow you to define a default value that is used, if the property is not configured.
+
+.CRON Config Property Example with default `0 0 15 ? * MON *`
+[source,java]
+----
+@Scheduled(cron = "${myMethod.cron.expr:0 0 15 ? * MON *}")
+void myMethod() { }
+----
+
+If the property `myMethod.cron.expr` is undefined or `null`, the default value (`0 0 15 ? * MON *`) will be used.
 
 ==== Intervals
 
@@ -77,14 +98,26 @@ So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minute
 void every15Mins() { }
 ----
 
-If a value starts with `{` and ends with `}` then the scheduler attempts to find a corresponding config property and use the configured value instead.
+The `every` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 .Interval Config Property Example
 [source,java]
 ----
-@Scheduled(every = "{myMethod.every.expr}")
+@Scheduled(every = "${myMethod.every.expr}")
 void myMethod() { }
 ----
+
+Intervals can be disabled by setting their value to `"off"` or `"disabled"`.
+So for example a Property Expression with the default value `"off"` can be used to disable the trigger if its Config Property has not been set.
+
+.Interval Config Property Example with a Default Value
+[source,java]
+----
+@Scheduled(every = "${myMethod.every.expr:off}")
+void myMethod() { }
+----
+
 
 === Identity
 
@@ -99,12 +132,13 @@ Sometimes a possibility to specify an explicit id may come in handy.
 void myMethod() { }
 ----
 
-If a value starts with `{` and ends with `}` then the scheduler attempts to find a corresponding config property and use the configured value instead.
+The `identity` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 .Interval Config Property Example
 [source,java]
 ----
-@Scheduled(identity = "{myMethod.identity.expr}")
+@Scheduled(identity = "${myMethod.identity.expr}")
 void myMethod() { }
 ----
 
@@ -134,14 +168,16 @@ So for example, `15s` can be used instead of `PT15S` and is parsed as "15 second
 void everyTwoSeconds() { }
 ----
 
-NOTE: If `@Scheduled#delay()` is set to a value greater then zero the value of `@Scheduled#delayed()` is ignored.
+NOTE: If `@Scheduled#delay()` is set to a value greater than zero the value of `@Scheduled#delayed()` is ignored.
 
 The main advantage over `@Scheduled#delay()` is that the value is configurable.
-If the value starts with `{` and ends with `}` then the scheduler attempts to find a corresponding config property and use the configured value instead: 
+The `delay` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
+
 
 [source,java]
 ----
-@Scheduled(every = "2s", delayed = "{myMethod.delay.expr}") <1>
+@Scheduled(every = "2s", delayed = "${myMethod.delay.expr}") <1>
 void everyTwoSeconds() { }
 ----
 <1> The config property `myMethod.delay.expr` is used to set the delay.
@@ -165,7 +201,7 @@ void nonConcurrent() {
 
 == Scheduler
 
-Quarkus provides a built-in bean of type `io.quarkus.scheduler.Scheduler` that can be injected and used to pause/resume the scheduler.
+Quarkus provides a built-in bean of type `io.quarkus.scheduler.Scheduler` that can be injected and used to pause/resume the scheduler and individual scheduled methods identified by a specific `Scheduled#identity()`.
 
 .Scheduler Injection Example
 [source,java]
@@ -179,15 +215,19 @@ class MyService {
 
    void ping() {
       scheduler.pause(); <1>
+      scheduler.pause("myIdentity"); <2>
       if (scheduler.isRunning()) {
          throw new IllegalStateException("This should never happen!");
       }
-      scheduler.resume(); <2>
+      scheduler.resume("myIdentity"); <3>
+      scheduler.resume(); <4>
    }
 }
 ----
 <1> Pause all triggers.
-<2> Resume the scheduler.
+<2> Pause a specific scheduled method by its identity
+<3> Resume a specific scheduled method by its identity
+<4> Resume the scheduler.
 
 == Programmatic Scheduling
 

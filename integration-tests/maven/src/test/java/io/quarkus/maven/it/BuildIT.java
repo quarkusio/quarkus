@@ -73,9 +73,22 @@ class BuildIT extends MojoTestBase {
     }
 
     @Test
+    void testClassLoaderLinkageError()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/classloader-linkage-error", "projects/classloader-linkage-error-build");
+        build();
+        for (TestContext context : TestContext.values()) {
+            if (context == TestContext.FAST_NO_PREFIX) {
+                continue;
+            }
+            launch(context, "", "hello");
+        }
+    }
+
+    @Test
     void testModuleWithBuildProfileInProperty() throws MavenInvocationException, InterruptedException, IOException {
         testDir = initProject("projects/build-mode-quarkus-profile-property");
-        build(null);
+        build();
         launch();
     }
 
@@ -86,26 +99,77 @@ class BuildIT extends MojoTestBase {
         launch();
     }
 
+    @Test
+    void testMultiBuildMode() throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/multi-build-mode");
+        build();
+
+        for (TestContext context : TestContext.values()) {
+            if (context == TestContext.FAST_NO_PREFIX) {
+                continue;
+            }
+            launch(context, "foo-", "Foo: hello, from foo-?/MultiSet");
+            launch(context, "bar-", "Bar: hello, from bar-FileUtils/?");
+            launch(context, "foo-full-", "Foo: hello, from foo-FileUtils/MultiSet");
+            launch(context, "bar-empty-", "Bar: hello, from bar-?/?");
+        }
+    }
+
+    @Test
+    void testModulesInProfiles()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/modules-in-profiles");
+        build("-Dquarkus.bootstrap.effective-model-builder");
+    }
+
+    @Test
+    void testMultiBuildModeLaunchedInParallel() throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/multi-build-mode-parallel");
+        build(true);
+
+        launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-1"), "foo-1-", "Hello foo 1");
+        launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-1"), "bar-1-", "Hello bar 1");
+        launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-2"), "foo-2-", "Hello foo 2");
+        launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-2"), "bar-2-", "Hello bar 2");
+    }
+
     private void launch() throws IOException {
-        File output = new File(testDir, "target/output.log");
+        launch(TestContext.FAST_NO_PREFIX, "", "hello, from foo");
+    }
+
+    private void launch(TestContext context, String outputPrefix, String expectedMessage) throws IOException {
+        launch(context, testDir, outputPrefix, expectedMessage);
+    }
+
+    private void launch(TestContext context, File testDir, String outputPrefix, String expectedMessage) throws IOException {
+        File output = new File(testDir, String.format("target/%s%soutput.log", context.prefix, outputPrefix));
         output.createNewFile();
-        Process process = JarRunnerIT.doLaunch(new File(testDir, "target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
-                Collections.emptyList()).start();
+        Process process = JarRunnerIT
+                .doLaunch(new File(testDir, String.format("target/%s%squarkus-app", context.prefix, outputPrefix)),
+                        Paths.get(context.jarFileName), output,
+                        Collections.emptyList())
+                .start();
         try {
-            Assertions.assertEquals("hello, from foo", DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals(expectedMessage, DevModeTestUtils.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }
     }
 
-    private void build(String arg) throws MavenInvocationException, InterruptedException, IOException {
+    private void build(String... arg) throws MavenInvocationException, InterruptedException, IOException {
+        build(false, arg);
+    }
+
+    private void build(boolean parallel, String... arg) throws MavenInvocationException, InterruptedException, IOException {
         assertThat(testDir).isDirectory();
-        running = new RunningInvoker(testDir, false);
+        running = new RunningInvoker(testDir, false, parallel);
 
         final List<String> args = new ArrayList<>(2);
         args.add("package");
-        if (arg != null) {
-            args.add(arg);
+        if (arg.length > 0) {
+            for (String a : arg) {
+                args.add(a);
+            }
         }
         MavenProcessInvocationResult result = running.execute(args, Collections.emptyMap());
         assertThat(result.getProcess().waitFor()).isZero();
@@ -117,6 +181,21 @@ class BuildIT extends MojoTestBase {
                 Manifest manifest = stream.getManifest();
                 assertThat(manifest).isNotNull();
             }
+        }
+    }
+
+    enum TestContext {
+        FAST_NO_PREFIX("", "quarkus-run.jar"),
+        FAST("fast-", "quarkus-run.jar"),
+        LEGACY("legacy-", "legacy-runner.jar"),
+        UBER("uber-", "uber-runner.jar");
+
+        final String prefix;
+        final String jarFileName;
+
+        TestContext(String prefix, String jarFileName) {
+            this.prefix = prefix;
+            this.jarFileName = jarFileName;
         }
     }
 }

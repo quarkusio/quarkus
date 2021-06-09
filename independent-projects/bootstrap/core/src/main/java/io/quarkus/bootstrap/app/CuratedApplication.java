@@ -2,14 +2,17 @@ package io.quarkus.bootstrap.app;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.ClassPathResource;
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,6 +23,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 
 /**
  * The result of the curate step that is done by QuarkusBootstrap.
@@ -171,13 +176,17 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     public synchronized QuarkusClassLoader getAugmentClassLoader() {
         if (augmentClassLoader == null) {
             //first run, we need to build all the class loaders
-            QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Augmentation Class Loader",
+            QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
+                    "Augmentation Class Loader: " + quarkusBootstrap.getMode(),
                     quarkusBootstrap.getBaseClassLoader(), !quarkusBootstrap.isIsolateDeployment());
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
             //we want a class loader that can load the deployment artifacts and all their dependencies, but not
             //any of the runtime artifacts, or user classes
             //this will load any deployment artifacts from the parent CL if they are present
             for (AppDependency i : appModel.getFullDeploymentDeps()) {
+                if (configuredClassLoading.reloadableArtifacts.contains(i.getArtifact().getKey())) {
+                    continue;
+                }
                 processCpElement(i.getArtifact(), element -> addCpElement(builder, i.getArtifact(), element));
             }
 
@@ -200,17 +209,24 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      */
     public synchronized QuarkusClassLoader getBaseRuntimeClassLoader() {
         if (baseRuntimeClassLoader == null) {
-            QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Quarkus Base Runtime ClassLoader",
+            QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
+                    "Quarkus Base Runtime ClassLoader: " + quarkusBootstrap.getMode(),
                     quarkusBootstrap.getBaseClassLoader(), false);
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
-            if (quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST) {
+
+            if (quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST && quarkusBootstrap.isFlatClassPath()) {
                 //in test mode we have everything in the base class loader
                 //there is no need to restart so there is no need for an additional CL
 
                 for (Path root : quarkusBootstrap.getApplicationRoot()) {
                     builder.addElement(ClassPathElement.fromPath(root));
                 }
+            } else {
+                for (Path root : quarkusBootstrap.getApplicationRoot()) {
+                    builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromPath(root)));
+                }
             }
+
             //additional user class path elements first
             Set<Path> hotReloadPaths = new HashSet<>();
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
@@ -221,6 +237,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 } else {
                     for (Path root : i.getArchivePath()) {
                         hotReloadPaths.add(root);
+                        builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromPath(root)));
                     }
                 }
             }
@@ -252,8 +269,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     public QuarkusClassLoader createDeploymentClassLoader() {
         //first run, we need to build all the class loaders
-        QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Deployment Class Loader",
-                getAugmentClassLoader(), false)
+        QuarkusClassLoader.Builder builder = QuarkusClassLoader
+                .builder("Deployment Class Loader: " + quarkusBootstrap.getMode(),
+                        getAugmentClassLoader(), false)
                 .addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners())
                 .setAggregateParentResources(true);
 
@@ -269,13 +287,23 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 builder.addElement(ClassPathElement.fromPath(root));
             }
         }
+        for (AppDependency dependency : appModel.getUserDependencies()) {
+            if (configuredClassLoading.reloadableArtifacts.contains(dependency.getArtifact().getKey())) {
+                processCpElement(dependency.getArtifact(), element -> addCpElement(builder, dependency.getArtifact(), element));
+            }
+        }
         return builder.build();
     }
 
-    public QuarkusClassLoader createRuntimeClassLoader(QuarkusClassLoader loader,
-            Map<String, byte[]> resources, Map<String, byte[]> transformedClasses) {
-        QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Quarkus Runtime ClassLoader",
-                loader, false)
+    public QuarkusClassLoader createRuntimeClassLoader(Map<String, byte[]> resources, Map<String, byte[]> transformedClasses) {
+        return createRuntimeClassLoader(getBaseRuntimeClassLoader(), resources, transformedClasses);
+    }
+
+    public QuarkusClassLoader createRuntimeClassLoader(ClassLoader base, Map<String, byte[]> resources,
+            Map<String, byte[]> transformedClasses) {
+        QuarkusClassLoader.Builder builder = QuarkusClassLoader
+                .builder("Quarkus Runtime ClassLoader: " + quarkusBootstrap.getMode(),
+                        getBaseRuntimeClassLoader(), false)
                 .setAggregateParentResources(true);
         builder.setTransformedClasses(transformedClasses);
 
@@ -308,4 +336,63 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader.close();
         }
     }
+
+    /**
+     * TODO: Fix everything in the universe to do loading properly
+     * 
+     * This class exists because a lot of libraries do getClass().getClassLoader.getResource()
+     * instead of using the context class loader, which breaks tests as these resources are present in the
+     * top CL and not the base CL that is used to load libraries.
+     * 
+     * This yucky yucky hack works around this, by allowing non-class files to be loaded parent first, so they
+     * will be loaded from the application ClassLoader.
+     *
+     * Note that the underlying reason for this 'banned element' existing in the first place
+     * is because other libraries do Class Loading wrong in different ways, and attempt to load
+     * from the TCCL as a fallback instead of as the first priority, so we need to have the banned element
+     * to prevent a load from the application ClassLoader (which won't work).
+     *
+     */
+    static class ClassFilteredBannedElement implements ClassPathElement {
+
+        private final ClassPathElement delegate;
+
+        ClassFilteredBannedElement(ClassPathElement delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Path getRoot() {
+            return delegate.getRoot();
+        }
+
+        @Override
+        public ClassPathResource getResource(String name) {
+            if (!name.endsWith(".class")) {
+                return null;
+            }
+            return delegate.getResource(name);
+        }
+
+        @Override
+        public Set<String> getProvidedResources() {
+            return delegate.getProvidedResources().stream().filter(s -> s.endsWith(".class")).collect(Collectors.toSet());
+        }
+
+        @Override
+        public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
+            return delegate.getProtectionDomain(classLoader);
+        }
+
+        @Override
+        public Manifest getManifest() {
+            return delegate.getManifest();
+        }
+
+        @Override
+        public void close() throws IOException {
+            delegate.close();
+        }
+    }
+
 }

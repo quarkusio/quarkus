@@ -25,7 +25,7 @@ import io.grpc.reflection.v1alpha.MutinyServerReflectionGrpc;
 import io.grpc.reflection.v1alpha.ServerReflectionRequest;
 import io.grpc.reflection.v1alpha.ServerReflectionResponse;
 import io.grpc.reflection.v1alpha.ServiceResponse;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.server.services.BlockingMutinyHelloService;
 import io.quarkus.test.QuarkusUnitTest;
@@ -34,11 +34,13 @@ import io.smallrye.mutiny.Multi;
 public class BlockingServiceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HealthGrpc.class.getPackage())
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addClasses(BlockingMutinyHelloService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setFlatClassPath(true)
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addPackage(HealthGrpc.class.getPackage())
+                            .addPackage(GreeterGrpc.class.getPackage())
+                            .addClasses(BlockingMutinyHelloService.class))
             .withConfigurationResource("reflection-config.properties");
 
     protected ManagedChannel channel;
@@ -46,8 +48,7 @@ public class BlockingServiceTest {
     @Inject
     GrpcHealthStorage healthService;
 
-    @Inject
-    @GrpcService("reflection-service")
+    @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
 
     @BeforeEach
@@ -68,7 +69,7 @@ public class BlockingServiceTest {
     public void testInvokingABlockingService() {
         HelloReply reply = GreeterGrpc.newBlockingStub(channel)
                 .sayHello(HelloRequest.newBuilder().setName("neo").build());
-        assertThat(reply.getMessage()).contains("worker-thread", "neo");
+        assertThat(reply.getMessage()).contains("executor-thread", "neo");
     }
 
     @Test
@@ -91,7 +92,7 @@ public class BlockingServiceTest {
 
     private ServerReflectionResponse invoke(ServerReflectionRequest request) {
         return reflection.serverReflectionInfo(Multi.createFrom().item(request))
-                .collectItems().first()
+                .collect().first()
                 .await().indefinitely();
     }
 }

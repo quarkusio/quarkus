@@ -17,8 +17,8 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
 * A running Redis server, or Docker Compose to start one
 * GraalVM installed if you want to run in native mode.
 
@@ -84,6 +84,11 @@ Then, we need to start a Redis instance (if you do not have one already) using t
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name redis_quarkus_test -p 6379:6379 redis:5.0.6
 ----
 
+[NOTE]
+====
+If you use <<dev-services,DevServices>>, launching the container manually is not necessary!
+====
+
 == Configuring Redis properties
 
 Once we have the Redis server running, we need to configure the Redis connection properties.
@@ -95,6 +100,12 @@ quarkus.redis.hosts=redis://localhost:6379 <1>
 ----
 
 1. Configure Redis hosts to connect to. Here we connect to the Redis server we started in the previous section
+
+[NOTE]
+====
+This is needed if you are not using <<dev-services,DevServices>>
+====
+
 
 == Creating the Increment POJO
 
@@ -540,6 +551,7 @@ So when you access the `/q/health/ready` endpoint of your application you will h
 
 This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
 
+[[multiple-clients-configuration]]
 == Multiple Redis Clients
 
 The Redis extension allows you to configure multiple clients.
@@ -574,6 +586,51 @@ RedisClient redisClient2;
 ReactiveRedisClient reactiveClient2;
 ----
 
+=== Creating Clients Programmatically
+
+The `RedisClient` and `ReactiveRedisClient` provide factory methods to create clients programmatically.
+The client to be created are configured using the usual <<config-reference,Redis configuration>>.
+
+[NOTE]
+====
+This is useful to create a client dynamically in a non-CDI bean e.g a link:hibernate-orm-panache.adoc[Panache entity].
+Or to create a different client when running in pub/sub mode. This mode requires two different connections
+because once a connection invokes a subscriber mode then it cannot be used for running other commands
+than the command to leave that mode.
+====
+
+The below code snippet shows how we can create dynamic clients using the configurations in <<multiple-clients-configuration>>.
+[source,java,indent=0]
+----
+// creating default redis client
+RedisClient defaultRedisClient = RedisClient.createClient();
+
+// creating named redis client whose configuration name is "second"
+RedisClient namedRedisClient = RedisClient.createClient("second");
+
+// creating a default reactive redis client
+ReactiveRedisClient defaultReactiveRedisClient = ReactiveRedisClient.createClient();
+
+// creating a named reactive redis client whose configuration name is "second"
+ReactiveRedisClient namedReactiveRedisClient = ReactiveRedisClient.createClient("second");
+----
+
+
+[[dev-services]]
+=== DevServices (Configuration Free Redis)
+
+Quarkus supports a feature called DevServices that allows you to create various datasources without any config.
+What that means practically, is that if you have docker running and have not configured `quarkus.redis.hosts`,
+Quarkus will automatically start a Redis container when running tests or dev-mode, and automatically configure the connection.
+
+Available properties to customize the Redis DevService.
+include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
+
+When running the production version of the application, the Redis connection need to be configured as normal,
+so if you want to include a production database config in your `application.properties` and continue to use DevServices
+we recommend that you use the `%prod.` profile to define your Redis settings.
+
+[[config-reference]]
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional, leveloffset=+1]

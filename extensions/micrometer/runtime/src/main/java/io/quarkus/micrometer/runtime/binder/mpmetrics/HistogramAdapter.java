@@ -8,14 +8,14 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 
-class HistogramAdapter implements Histogram, MeterHolder {
+public class HistogramAdapter implements Histogram, MeterHolder {
     DistributionSummary summary;
 
     HistogramAdapter register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
         if (summary == null || metadata.cleanDirtyMetadata()) {
             summary = io.micrometer.core.instrument.DistributionSummary.builder(metricInfo.name())
-                    .description(metadata.description())
-                    .baseUnit(metadata.unit())
+                    .description(metadata.getDescription())
+                    .baseUnit(metadata.getUnit())
                     .tags(metricInfo.tags())
                     .register(registry);
         }
@@ -36,6 +36,11 @@ class HistogramAdapter implements Histogram, MeterHolder {
     @Override
     public long getCount() {
         return summary.count();
+    }
+
+    @Override
+    public long getSum() {
+        throw new UnsupportedOperationException("This operation is not supported when used with micrometer");
     }
 
     /** Not supported. */

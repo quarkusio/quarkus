@@ -25,7 +25,7 @@ import grpc.health.v1.HealthOuterClass.HealthCheckResponse;
 import grpc.health.v1.HealthOuterClass.HealthCheckResponse.ServingStatus;
 import grpc.health.v1.MutinyHealthGrpc;
 import io.grpc.examples.helloworld.GreeterGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
@@ -36,7 +36,6 @@ public class GrpcHealthTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HealthGrpc.class.getPackage())
                     .addPackage(GreeterGrpc.class.getPackage())
                     .addClass(HelloService.class))
             .withConfigurationResource("health-config.properties");
@@ -111,12 +110,10 @@ public class GrpcHealthTest {
     @ApplicationScoped
     static class HealthConsumer {
 
-        @Inject
-        @GrpcService("health-service")
+        @GrpcClient("health-service")
         HealthGrpc.HealthBlockingStub healthBlocking;
 
-        @Inject
-        @GrpcService("health-service")
+        @GrpcClient("health-service")
         MutinyHealthGrpc.MutinyHealthStub healthMutiny;
 
         public HealthCheckResponse.ServingStatus checkStatus(

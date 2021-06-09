@@ -24,8 +24,9 @@ public class QuarkusGradleUtils {
 
     private static final String ERROR_COLLECTING_PROJECT_CLASSES = "Failed to collect project's classes in a temporary dir";
 
-    public static Path serializeAppModel(final AppModel appModel, Task context) throws IOException {
-        final Path serializedModel = context.getTemporaryDir().toPath().resolve("quarkus-app-model.dat");
+    public static Path serializeAppModel(final AppModel appModel, Task context, boolean test) throws IOException {
+        final Path serializedModel = context.getTemporaryDir().toPath()
+                .resolve("quarkus-app" + (test ? "-test" : "") + "-model.dat");
         try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
             out.writeObject(appModel);
         }
@@ -55,17 +56,16 @@ public class QuarkusGradleUtils {
         return builder.build();
     }
 
-    public static String getClassesDir(SourceSet sourceSet, File tmpDir) {
-        return getClassesDir(sourceSet, tmpDir, true);
+    public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean test) {
+        return getClassesDir(sourceSet, tmpDir, true, test);
     }
 
-    public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean populated) {
+    public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean populated, boolean test) {
         FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
         Set<File> classDirFiles = classesDirs.getFiles();
         if (classDirFiles.size() == 1) {
             return classesDirs.getAsPath();
         }
-
         Path classesDir = null;
         final Iterator<File> i = classDirFiles.iterator();
         int dirCount = 0;
@@ -83,7 +83,7 @@ public class QuarkusGradleUtils {
                         //there does not seem to be any sane way of dealing with multiple output dirs, as there does not seem
                         //to be a way to map them. We will need to address this at some point, but for now we just stick them
                         //all in a temp dir
-                        final Path tmpClassesDir = tmpDir.toPath().resolve("quarkus-app-classes");
+                        final Path tmpClassesDir = tmpDir.toPath().resolve("quarkus-app-classes" + (test ? "-test" : ""));
                         if (!populated) {
                             return tmpClassesDir.toString();
                         }

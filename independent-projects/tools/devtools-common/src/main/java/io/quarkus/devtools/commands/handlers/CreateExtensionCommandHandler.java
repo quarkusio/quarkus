@@ -44,7 +44,7 @@ public class CreateExtensionCommandHandler {
             throws QuarkusCommandException {
         try {
             final QuarkusExtensionCodestartCatalog catalog = QuarkusExtensionCodestartCatalog
-                    .fromBundledResources();
+                    .fromBaseCodestartsResources();
             catalog.createProject(input).generate(newExtensionDir);
 
             final String extensionDirName = newExtensionDir.getFileName().toString();

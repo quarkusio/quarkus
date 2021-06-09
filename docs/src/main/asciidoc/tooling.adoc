@@ -13,7 +13,7 @@ In this guide, we will explore:
 
 * how to use link:maven-tooling[Maven] as a build tool
 * how to use link:gradle-tooling[Gradle] as a build tool
-* how to use the CLI for your toolchain (coming soon)
+* how to use the link:cli-tooling[CLI] for your toolchain
 * how to create and scaffold a new project
 * how to deal with extensions
 * how to enable live reload
@@ -30,5 +30,5 @@ And we offer a CLI that is convenient to use (coming soon).
 
 * link:maven-tooling[Maven]
 * link:gradle-tooling[Gradle]
-//* link:cli-tooling[CLI]
+* link:cli-tooling[CLI]
 * link:ide-tooling[IDE]

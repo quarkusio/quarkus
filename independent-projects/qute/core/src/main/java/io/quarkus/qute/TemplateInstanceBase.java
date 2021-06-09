@@ -7,7 +7,7 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
 
     protected Object data;
     protected Map<String, Object> dataMap;
-    protected Map<String, Object> attributes;
+    protected final Map<String, Object> attributes;
 
     public TemplateInstanceBase() {
         this.attributes = new HashMap<>();

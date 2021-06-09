@@ -44,6 +44,7 @@ import org.jboss.resteasy.core.providerfactory.ResteasyProviderFactoryImpl;
 import org.jboss.resteasy.microprofile.client.DefaultResponseExceptionMapper;
 import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.async.AsyncInterceptorRxInvokerProvider;
+import org.jboss.resteasy.microprofile.client.publisher.MpPublisherMessageBodyReader;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.arc.BeanDestroyer;
@@ -139,7 +140,7 @@ class RestClientProcessor {
                     "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, true,
-                            "io.quarkus.opentelemetry.tracing.client.QuarkusRestClientListener"));
+                            "io.quarkus.opentelemetry.runtime.tracing.client.QuarkusRestClientListener"));
         }
     }
 
@@ -421,12 +422,24 @@ class RestClientProcessor {
     }
 
     @BuildStep
+    IgnoreClientProviderBuildItem ignoreMPPublisher() {
+        // hack to remove a provider that is manually registered QuarkusRestClientBuilder
+        return new IgnoreClientProviderBuildItem(MpPublisherMessageBodyReader.class.getName());
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
+            List<IgnoreClientProviderBuildItem> ignoreClientProviderBuildItems,
             CombinedIndexBuildItem combinedIndexBuildItem,
             ResteasyInjectionReadyBuildItem injectorFactory,
             RestClientRecorder restClientRecorder) {
+
+        for (IgnoreClientProviderBuildItem item : ignoreClientProviderBuildItems) {
+            jaxrsProvidersToRegisterBuildItem.getProviders().remove(item.getProviderClassName());
+            jaxrsProvidersToRegisterBuildItem.getContributedProviders().remove(item.getProviderClassName());
+        }
 
         restClientRecorder.initializeResteasyProviderFactory(injectorFactory.getInjectorFactory(),
                 jaxrsProvidersToRegisterBuildItem.useBuiltIn(),

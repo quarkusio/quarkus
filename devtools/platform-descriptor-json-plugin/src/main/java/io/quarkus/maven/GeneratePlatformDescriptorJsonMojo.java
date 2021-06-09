@@ -64,8 +64,11 @@ import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 
 /**
  * This goal generates a platform JSON descriptor for a given platform BOM.
+ * 
+ * @deprecated in favor of <code>io.quarkus:quarkus-platform-bom-maven-plugin:generate-platform-descriptor</code>
  */
-@Mojo(name = "generate-platform-descriptor-json")
+@Deprecated
+@Mojo(name = "generate-platform-descriptor-json", threadSafe = true)
 public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
 
     @Parameter(property = "quarkusCoreGroupId", defaultValue = ToolsConstants.QUARKUS_CORE_GROUP_ID)
@@ -143,6 +146,9 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
 
     @Parameter(property = "resolveDependencyManagement")
     boolean resolveDependencyManagement;
+
+    @Parameter(required = false)
+    String quarkusCoreVersion;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -250,7 +256,6 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
         final Set<String> referencedCategories = new HashSet<>();
         final List<io.quarkus.registry.catalog.Extension> extListJson = new ArrayList<>();
         platformJson.setExtensions(extListJson);
-        String quarkusCoreVersion = null;
         boolean jsonFoundInBom = false;
         for (Dependency dep : deps) {
             final Artifact artifact = dep.getArtifact();
@@ -281,7 +286,7 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
                 continue;
             }
 
-            if (artifact.getArtifactId().equals(quarkusCoreArtifactId)
+            if (quarkusCoreVersion == null && artifact.getArtifactId().equals(quarkusCoreArtifactId)
                     && artifact.getGroupId().equals(quarkusCoreGroupId)) {
                 quarkusCoreVersion = artifact.getVersion();
             }

@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -29,7 +30,7 @@ final class LauncherUtil {
     }
 
     static Config installAndGetSomeConfig() {
-        final SmallRyeConfig config = ConfigUtils.configBuilder(false).build();
+        final SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.NORMAL).build();
         QuarkusConfigFactory.setConfig(config);
         final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
         try {
@@ -69,11 +70,34 @@ final class LauncherUtil {
             if (result != null) {
                 return result;
             }
-            quarkusProcess.destroyForcibly();
+            destroyProcess(quarkusProcess);
             throw new IllegalStateException(
                     "Unable to determine the status of the running process. See the above logs for details");
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while waiting to capture listening process port and protocol");
+        }
+    }
+
+    /**
+     * Try to destroy the process normally a few times
+     * and resort to forceful destruction if necessary
+     */
+    private static void destroyProcess(Process quarkusProcess) {
+        quarkusProcess.destroy();
+        int i = 0;
+        while (i++ < 10) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+
+            }
+            if (!quarkusProcess.isAlive()) {
+                break;
+            }
+        }
+
+        if (quarkusProcess.isAlive()) {
+            quarkusProcess.destroyForcibly();
         }
     }
 

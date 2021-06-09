@@ -31,7 +31,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * The completed greeter application from the link:getting-started[Getting Started Guide]
 
@@ -39,6 +39,8 @@ To complete this guide, you need:
 
 In this guide, we expand on the initial test that was created as part of the Getting Started Guide.
 We cover injection into tests and also how to test native executables.
+
+NOTE: Quarkus supports Continuous testing, but this is covered by the link:continuous-testing[Continuous Testing Guide].
 
 == Solution
 
@@ -440,8 +442,6 @@ Alternatively or additionally to an interceptor, you can enrich *all* your `@Qua
 * `io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
 
-WARNING: `io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback` has been deprecated in favor of `io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback` and will be removed in future releases of Quarkus
-
 Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.
 
 E.g. the following sample callback:
@@ -753,6 +753,10 @@ public class MockTestCase {
 
 Note that there is no dependency on Mockito, you can use any mocking library you like, or even manually override the
 objects to provide the behaviour you require.
+
+NOTE: Using `@Inject` will get you a CDI proxy to the mock instance you install, which is not suitable for passing to methods such as `Mockito.verify`
+which want the mock instance itself. So if you need to call methods such as `verify` you need to hang on to the mock instance in your test, or use `@InjectMock`
+as shown below.
 
 ==== Further simplification with `@InjectMock`
 

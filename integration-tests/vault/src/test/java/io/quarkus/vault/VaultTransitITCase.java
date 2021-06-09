@@ -1,18 +1,20 @@
 package io.quarkus.vault;
 
-import static io.quarkus.vault.VaultTransitExportKeyType.encryption;
 import static io.quarkus.vault.test.VaultTestExtension.ENCRYPTION_DERIVED_KEY_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.ENCRYPTION_KEY2_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.ENCRYPTION_KEY_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.SIGN_DERIVATION_KEY_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.SIGN_KEY2_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.SIGN_KEY_NAME;
+import static io.quarkus.vault.transit.VaultTransitExportKeyType.encryption;
 import static io.quarkus.vault.transit.VaultTransitSecretEngineConstants.INVALID_SIGNATURE;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -38,10 +40,16 @@ import io.quarkus.vault.transit.EncryptionRequest;
 import io.quarkus.vault.transit.KeyConfigRequestDetail;
 import io.quarkus.vault.transit.KeyCreationRequestDetail;
 import io.quarkus.vault.transit.RewrappingRequest;
+import io.quarkus.vault.transit.SignVerifyOptions;
 import io.quarkus.vault.transit.SigningInput;
 import io.quarkus.vault.transit.SigningRequest;
 import io.quarkus.vault.transit.TransitContext;
+import io.quarkus.vault.transit.VaultTransitAsymmetricKeyDetail;
+import io.quarkus.vault.transit.VaultTransitAsymmetricKeyVersion;
+import io.quarkus.vault.transit.VaultTransitKeyDetail;
 import io.quarkus.vault.transit.VaultTransitKeyExportDetail;
+import io.quarkus.vault.transit.VaultTransitSymmetricKeyDetail;
+import io.quarkus.vault.transit.VaultTransitSymmetricKeyVersion;
 import io.quarkus.vault.transit.VaultVerificationBatchException;
 import io.quarkus.vault.transit.VerificationRequest;
 
@@ -126,6 +134,66 @@ public class VaultTransitITCase {
     public void signString() {
         String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, null);
         transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, null);
+    }
+
+    @Test
+    public void signStringExplicitHashAlgorithmSha256() {
+        SignVerifyOptions options = new SignVerifyOptions().setHashAlgorithm("sha2-256");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitHashAlgorithmSha512() {
+        SignVerifyOptions options = new SignVerifyOptions().setHashAlgorithm("sha2-512");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitHashAlgorithmMismatched() {
+        SignVerifyOptions options = new SignVerifyOptions().setHashAlgorithm("sha2-256");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        assertThrows(VaultException.class,
+                () -> transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input,
+                        options.setHashAlgorithm("sha1"), null));
+    }
+
+    @Test
+    public void signStringExplicitMarshalingAlgorithmASN1() {
+        SignVerifyOptions options = new SignVerifyOptions().setMarshalingAlgorithm("asn1");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitMarshalingAlgorithmJWS() {
+        SignVerifyOptions options = new SignVerifyOptions().setMarshalingAlgorithm("jws");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitMarshalingAlgorithmMismatched() {
+        SignVerifyOptions options = new SignVerifyOptions().setMarshalingAlgorithm("jws");
+        String signature = transitSecretEngine.sign(SIGN_KEY_NAME, input, options, null);
+        assertThrows(VaultException.class,
+                () -> transitSecretEngine.verifySignature(SIGN_KEY_NAME, signature, input,
+                        options.setMarshalingAlgorithm("asn1"), null));
+    }
+
+    @Test
+    public void signStringExplicitSignatureAlgorithmPKCS1() {
+        SignVerifyOptions options = new SignVerifyOptions().setSignatureAlgorithm("pkcs1v15");
+        String signature = transitSecretEngine.sign(SIGN_KEY2_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY2_NAME, signature, input, options, null);
+    }
+
+    @Test
+    public void signStringExplicitSignatureAlgorithmPSS() {
+        SignVerifyOptions options = new SignVerifyOptions().setSignatureAlgorithm("pss");
+        String signature = transitSecretEngine.sign(SIGN_KEY2_NAME, input, options, null);
+        transitSecretEngine.verifySignature(SIGN_KEY2_NAME, signature, input, options, null);
     }
 
     @Test
@@ -298,6 +366,8 @@ public class VaultTransitITCase {
         assertTrue(mykey.isSupportsDerivation());
         assertEquals(1, mykey.getKeys().size());
         assertTrue(mykey.getKeys().containsKey("1"));
+        assertEquals(1, mykey.getVersions().size());
+        assertTrue(mykey.getVersions().containsKey("1"));
         assertEquals(1, mykey.getMinDecryptionVersion());
         assertEquals(0, mykey.getMinEncryptionVersion());
 
@@ -305,6 +375,116 @@ public class VaultTransitITCase {
         assertEquals(KEY_NAME, exportDetail.getName());
         assertEquals(1, exportDetail.getKeys().size());
         assertTrue(exportDetail.getKeys().containsKey("1"));
+
+        transitSecretEngine.updateKeyConfiguration(KEY_NAME, new KeyConfigRequestDetail().setDeletionAllowed(true));
+        mykey = transitSecretEngine.readKey(KEY_NAME);
+        assertTrue(mykey.isDeletionAllowed());
+
+        transitSecretEngine.deleteKey(KEY_NAME);
+        assertNull(transitSecretEngine.readKey(KEY_NAME));
+    }
+
+    @Test
+    public void asymmetricReadECDSAKey() {
+
+        assertFalse(transitSecretEngine.listKeys().contains(KEY_NAME));
+        transitSecretEngine.createKey(KEY_NAME, new KeyCreationRequestDetail().setType("ecdsa-p256"));
+        assertTrue(transitSecretEngine.listKeys().contains(KEY_NAME));
+
+        VaultTransitKeyDetail<?> mykey = transitSecretEngine.readKey(KEY_NAME);
+        assertTrue(mykey instanceof VaultTransitAsymmetricKeyDetail);
+        assertEquals(KEY_NAME, mykey.getName());
+        assertFalse(mykey.isExportable());
+        assertFalse(mykey.isDeletionAllowed());
+        assertFalse(mykey.isSupportsDecryption());
+        assertFalse(mykey.isSupportsEncryption());
+        assertFalse(mykey.isSupportsDerivation());
+        assertTrue(mykey.isSupportsSigning());
+        assertEquals(mykey.getType(), "ecdsa-p256");
+        assertEquals(1, mykey.getKeys().size());
+        assertTrue(mykey.getKeys().containsKey("1"));
+        assertEquals(1, mykey.getVersions().size());
+        assertTrue(mykey.getVersions().containsKey("1"));
+        assertNotNull(mykey.getVersions().get("1").getCreationTime());
+        assertTrue(mykey.getVersions().get("1") instanceof VaultTransitAsymmetricKeyVersion);
+        assertNotNull(((VaultTransitAsymmetricKeyVersion) mykey.getVersions().get("1")).getPublicKey());
+        assertEquals(1, mykey.getLatestVersion());
+        assertEquals(0, mykey.getMinAvailableVersion());
+        assertEquals(1, mykey.getMinDecryptionVersion());
+        assertEquals(0, mykey.getMinEncryptionVersion());
+
+        transitSecretEngine.updateKeyConfiguration(KEY_NAME, new KeyConfigRequestDetail().setDeletionAllowed(true));
+        mykey = transitSecretEngine.readKey(KEY_NAME);
+        assertTrue(mykey.isDeletionAllowed());
+
+        transitSecretEngine.deleteKey(KEY_NAME);
+        assertNull(transitSecretEngine.readKey(KEY_NAME));
+    }
+
+    @Test
+    public void asymmetricReadRSAKey() {
+
+        assertFalse(transitSecretEngine.listKeys().contains(KEY_NAME));
+        transitSecretEngine.createKey(KEY_NAME, new KeyCreationRequestDetail().setType("rsa-2048"));
+        assertTrue(transitSecretEngine.listKeys().contains(KEY_NAME));
+
+        VaultTransitKeyDetail<?> mykey = transitSecretEngine.readKey(KEY_NAME);
+        assertTrue(mykey instanceof VaultTransitAsymmetricKeyDetail);
+        assertEquals(KEY_NAME, mykey.getName());
+        assertFalse(mykey.isExportable());
+        assertFalse(mykey.isDeletionAllowed());
+        assertTrue(mykey.isSupportsDecryption());
+        assertTrue(mykey.isSupportsEncryption());
+        assertFalse(mykey.isSupportsDerivation());
+        assertTrue(mykey.isSupportsSigning());
+        assertEquals("rsa-2048", mykey.getType());
+        assertEquals(1, mykey.getKeys().size());
+        assertTrue(mykey.getKeys().containsKey("1"));
+        assertEquals(1, mykey.getVersions().size());
+        assertTrue(mykey.getVersions().containsKey("1"));
+        assertNotNull(mykey.getVersions().get("1").getCreationTime());
+        assertTrue(mykey.getVersions().get("1") instanceof VaultTransitAsymmetricKeyVersion);
+        assertNotNull(((VaultTransitAsymmetricKeyVersion) mykey.getVersions().get("1")).getPublicKey());
+        assertEquals(1, mykey.getLatestVersion());
+        assertEquals(0, mykey.getMinAvailableVersion());
+        assertEquals(1, mykey.getMinDecryptionVersion());
+        assertEquals(0, mykey.getMinEncryptionVersion());
+
+        transitSecretEngine.updateKeyConfiguration(KEY_NAME, new KeyConfigRequestDetail().setDeletionAllowed(true));
+        mykey = transitSecretEngine.readKey(KEY_NAME);
+        assertTrue(mykey.isDeletionAllowed());
+
+        transitSecretEngine.deleteKey(KEY_NAME);
+        assertNull(transitSecretEngine.readKey(KEY_NAME));
+    }
+
+    @Test
+    public void symmetricReadAESKey() {
+
+        assertFalse(transitSecretEngine.listKeys().contains(KEY_NAME));
+        transitSecretEngine.createKey(KEY_NAME, new KeyCreationRequestDetail().setType("aes256-gcm96"));
+        assertTrue(transitSecretEngine.listKeys().contains(KEY_NAME));
+
+        VaultTransitKeyDetail<?> mykey = transitSecretEngine.readKey(KEY_NAME);
+        assertTrue(mykey instanceof VaultTransitSymmetricKeyDetail);
+        assertEquals(KEY_NAME, mykey.getName());
+        assertFalse(mykey.isExportable());
+        assertFalse(mykey.isDeletionAllowed());
+        assertTrue(mykey.isSupportsDecryption());
+        assertTrue(mykey.isSupportsEncryption());
+        assertTrue(mykey.isSupportsDerivation());
+        assertFalse(mykey.isSupportsSigning());
+        assertEquals(mykey.getType(), "aes256-gcm96");
+        assertEquals(1, mykey.getKeys().size());
+        assertTrue(mykey.getKeys().containsKey("1"));
+        assertEquals(1, mykey.getVersions().size());
+        assertTrue(mykey.getVersions().containsKey("1"));
+        assertNotNull(mykey.getVersions().get("1").getCreationTime());
+        assertTrue(mykey.getVersions().get("1") instanceof VaultTransitSymmetricKeyVersion);
+        assertEquals(1, mykey.getLatestVersion());
+        assertEquals(0, mykey.getMinAvailableVersion());
+        assertEquals(1, mykey.getMinDecryptionVersion());
+        assertEquals(0, mykey.getMinEncryptionVersion());
 
         transitSecretEngine.updateKeyConfiguration(KEY_NAME, new KeyConfigRequestDetail().setDeletionAllowed(true));
         mykey = transitSecretEngine.readKey(KEY_NAME);

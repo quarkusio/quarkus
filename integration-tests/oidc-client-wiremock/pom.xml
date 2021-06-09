@@ -14,10 +14,6 @@
     <name>Quarkus - Integration Tests - OpenID Connect Client Wiremock</name>
     <description>Module that contains OpenID Connect Client tests using Wiremock</description>
 
-    <properties>
-        <keycloak.url>http://localhost:8180/auth</keycloak.url>
-    </properties>
-
     <dependencies>
         <!-- test dependencies -->
         <dependency>
@@ -64,6 +60,23 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-mutiny</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-mutiny-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-client-filter</artifactId>
         </dependency>
         <dependency>
@@ -91,19 +104,9 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <keycloak.url>${keycloak.url}</keycloak.url>
-                    </systemPropertyVariables>
-                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <keycloak.url>${keycloak.url}</keycloak.url>
-                    </systemPropertyVariables>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>

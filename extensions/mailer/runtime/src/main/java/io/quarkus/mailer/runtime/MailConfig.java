@@ -132,4 +132,10 @@ public class MailConfig {
      */
     @ConfigItem
     public Optional<String> keyStorePassword;
+
+    /**
+     * Whether or not the mail should always been sent as multipart even if they don't have attachments.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean multiPartOnly;
 }

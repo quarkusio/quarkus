@@ -7,10 +7,13 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
+IMPORTANT: The content of this guide and been revised and split into additional topics. Please check the
+<<additional-information,Additional Information>> section.
+
 :toc:
 
 Hardcoded values in your code are a _no go_ (even if we all did it at some point ;-)).
-In this guide, we learn how to configure your application.
+In this guide, we will learn how to configure a Quarkus application.
 
 == Prerequisites
 
@@ -18,7 +21,7 @@ To complete this guide, you need:
 
 * between 5 and 10 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 == Solution
@@ -30,7 +33,7 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `config-quickstart` {quickstarts-tree-url}/config-quickstart[directory].
 
-== Creating the Maven project
+== Create the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
@@ -58,10 +61,11 @@ It generates:
 A Quarkus application uses the https://github.com/smallrye/smallrye-config[SmallRye Config] API to provide all
 mechanisms related with configuration.
 
-By default, Quarkus reads configuration properties from <<config-reference.adoc#configuration_sources,several sources>>.
+By default, Quarkus reads configuration properties from <<config-reference.adoc#configuration-sources,several sources>>.
 For the purpose of this guide, we will use an application configuration file located in `src/main/resources/application.properties`.
 Edit the file with the following content:
 
+.application.properties
 [source,properties]
 ----
 # Your configuration properties
@@ -69,21 +73,20 @@ greeting.message = hello
 greeting.name = quarkus
 ----
 
-== Injecting configuration properties
+== Inject the configuration
 
-Quarkus uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the configuration properties in the application.
+Quarkus uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the
+configuration properties in the application.
 
 [source,java]
 ----
 @ConfigProperty(name = "greeting.message") <1>
 String message;
 ----
-<1> You can use `@Inject @ConfigProperty` or just `@ConfigProperty`.
-The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`.
-This behavior differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config].
+<1> You can use `@Inject @ConfigProperty` or just `@ConfigProperty`. The `@Inject` annotation is not necessary for
+members annotated with `@ConfigProperty`.
 
 NOTE: If the application attempts to inject a configuration property that is not set, an error is thrown.
-So you can quickly know when your configuration is complete.
 
 Edit the `org.acme.config.GreetingResource`, and introduce the following configuration properties:
 
@@ -121,8 +124,8 @@ $ curl http://localhost:8080/greeting
 hello quarkus!
 ----
 
-TIP: As an alternative to injecting multiple related configuration values, you can also use the `@io.quarkus.arc.config.ConfigProperties` annotation to group these properties together. 
-See the <<config-reference.adoc#using_configproperties,Configuration Reference Guide>> for more information.
+TIP: Use `@io.smallrye.config.ConfigMapping` annotation to group multiple configurations in a single interface. Please,
+check the https://smallrye.io/docs/smallrye-config/main/mapping/mapping.html[Config Mappings] documentation.
 
 == Update the test
 
@@ -167,33 +170,14 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 
 == Programmatically access the configuration
 
-You can also access the configuration programmatically.
-It can be handy to achieve dynamic lookup, or retrieve configured values from classes that are neither CDI beans or JAX-RS resources.
-
-You can access the configuration programmatically using `org.eclipse.microprofile.config.ConfigProvider.getConfig()` such as in:
+The `org.eclipse.microprofile.config.ConfigProvider.getConfig()` API allows to access the Config API programmatically.
+This API is mostly useful in situations where CDI injection is not available.
 
 [source,java]
 ----
 String databaseName = ConfigProvider.getConfig().getValue("database.name", String.class);
 Optional<String> maybeDatabaseName = ConfigProvider.getConfig().getOptionalValue("database.name", String.class);
 ----
-
-== Configuration Profiles
-
-Quarkus supports the notion of configuration profiles. 
-These allow you to have multiple configuration values in the same file and select between them via a profile name.
-
-The syntax for this is `%{profile}.config.key=value`. For example if I have the following:
-
-[source,properties]
-----
-quarkus.http.port=9090
-%dev.quarkus.http.port=8181
-----
-
-Then the Quarkus HTTP port will be 9090, unless the `dev` profile is active, in which case it will be 8181.
-
-See the <<config-reference.adoc#configuration_profiles,Configuration Reference Guide>> for more information about configuration profiles.
 
 == Configuring Quarkus
 
@@ -203,24 +187,44 @@ for its own configuration. For example to configure the HTTP server port you can
 
 [IMPORTANT]
 ====
-As mentioned above, properties prefixed with `quarkus.` are effectively reserved for configuring Quarkus itself and
-therefore `quarkus.` should **never** be used as prefix for application specific properties.
-
-In the previous examples using `quarkus.message` instead of `greeting.message` would result in unexpected behavior.
+As mentioned above, properties prefixed with `quarkus.` are effectively reserved for configuring Quarkus itself and its
+extensions. Therefore, the `quarkus.` prefix should **never** be used for application specific properties.
 ====
 
-Quarkus does much of its configuration and bootstrap at build time and some configuration properties are read and used during the build.
-These properties are _fixed at build time_ and it's not possible to change them at runtime.
-You always need to repackage your application in order to reflect changes of such properties.
+=== Build Time configuration
+
+Some Quarkus configurations only take effect during build time, meaning is not possible to change them at runtime. These
+configurations are still available at runtime but as read-only and have no effect in Quarkus behaviour. A change to any
+of these configurations requires a rebuild of the application itself to reflect changes of such properties.
 
 TIP: The properties fixed at build time are marked with a lock icon (icon:lock[]) in the link:all-config[list of all configuration options].
 
-However, some extensions do define properties _overridable at runtime_.
-A canonical example is the database URL, username and password which is only known specifically in your target environment.
+However, some extensions do define properties _overridable at runtime_. A simple example is the database URL, username
+and password which is only known specifically in your target environment, so they can be set and influence the
+application behaviour at runtime.
 
-1. System properties
-2. Environment variables
-3. An environment file named `.env` placed in the current working directory
-4. A configuration file placed in `$PWD/config/application.properties`
+[[additional-information]]
+== Additional Information
 
-See the <<config-reference.adoc#configuring_quarkus,Configuration Reference Guide>> for more information.
+* xref:config-reference.adoc[Configuration Reference Guide]
+* xref:config-yaml.adoc[YAML ConfigSource Extension]
+* xref:vault.adoc[HashiCorp Vault ConfigSource Extension]
+* xref:consul-config.adoc[Consul ConfigSource Extension]
+* xref:spring-cloud-config-client.adoc[Spring Cloud ConfigSource Extension]
+* xref:config-mappings.adoc[Mapping configuration to objects]
+* xref:config-extending-support.adoc[Extending configuration support]
+
+Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Config] and inherits its features:
+
+* Additional ``ConfigSource``s
+* Additional ``Converter``s
+* Indexed properties
+* Parent profile
+* Interceptors for configuration value resolution
+* Relocate configuration properties
+* Fallback configuration properties
+* Logging
+* Hide secrets
+
+For more information, please check the
+link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].

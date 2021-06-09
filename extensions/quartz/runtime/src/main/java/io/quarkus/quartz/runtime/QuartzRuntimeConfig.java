@@ -1,7 +1,5 @@
 package io.quarkus.quartz.runtime;
 
-import java.util.Optional;
-
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -26,17 +24,6 @@ public class QuartzRuntimeConfig {
      */
     @ConfigItem(defaultValue = "5")
     public int threadPriority;
-
-    /**
-     * By default, the scheduler is not started unless a {@link io.quarkus.scheduler.Scheduled} business method is found.
-     * If set to true the scheduler will be started even if no scheduled business methods are found. This is necessary for
-     * "pure" programmatic scheduling.
-     *
-     * @deprecated use quarkus.quartz.start-mode=forced instead.
-     */
-    @Deprecated
-    @ConfigItem
-    public Optional<Boolean> forceStart;
 
     /**
      * Scheduler can be started in different modes: normal, forced or halted.

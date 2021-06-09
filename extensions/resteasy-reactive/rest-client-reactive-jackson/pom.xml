@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-reactive-jackson-parent</artifactId>
-    <name>Quarkus - MicroProfile Rest Client with Reactive RestEasy and Jackson - Parent</name>
+    <name>Quarkus - REST Client Reactive Jackson</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

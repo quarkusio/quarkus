@@ -1,5 +1,6 @@
 package io.quarkus.rest.client.reactive.registerclientheaders;
 
+import static io.quarkus.rest.client.reactive.RestClientTestUtil.setUrlForClass;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -28,10 +29,6 @@ public class RegisterClientHeadersTest {
                                                 + HeaderSettingClient.HEADER),
                                 "application.properties");
             });
-
-    private static String setUrlForClass(Class<?> clazz) {
-        return clazz.getName() + "/mp-rest/url=${test.url}\n";
-    }
 
     @RestClient
     EchoClient client;

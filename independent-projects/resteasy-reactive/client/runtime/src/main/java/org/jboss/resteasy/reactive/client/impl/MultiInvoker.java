@@ -5,7 +5,6 @@ import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpConnection;
 import io.vertx.core.net.impl.ConnectionBase;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.TimeUnit;
@@ -14,14 +13,13 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.client.impl.MultiInvoker.MultiRequest;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
-    private WebTargetImpl target;
+    private final InvocationBuilderImpl invocationBuilder;
 
-    public MultiInvoker(WebTargetImpl target) {
-        this.target = target;
+    public MultiInvoker(InvocationBuilderImpl target) {
+        this.invocationBuilder = target;
     }
 
     @SuppressWarnings("unchecked")
@@ -45,7 +43,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
         private final AtomicReference<Runnable> onCancel = new AtomicReference<>();
 
-        private MultiEmitter<? super R> emitter;
+        private final MultiEmitter<? super R> emitter;
 
         private static final Runnable CLEARED = () -> {
         };
@@ -86,7 +84,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
     @Override
     public <R> Multi<R> method(String name, Entity<?> entity, GenericType<R> responseType) {
-        AsyncInvokerImpl invoker = (AsyncInvokerImpl) target.request().rx();
+        AsyncInvokerImpl invoker = (AsyncInvokerImpl) invocationBuilder.rx();
         // FIXME: backpressure setting?
         return Multi.createFrom().emitter(emitter -> {
             MultiRequest<R> multiRequest = new MultiRequest<>(emitter);
@@ -123,7 +121,8 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
         // For now we don't want multi to reconnect
-        SseEventSourceImpl sseSource = new SseEventSourceImpl(target, Integer.MAX_VALUE, TimeUnit.SECONDS);
+        SseEventSourceImpl sseSource = new SseEventSourceImpl(invocationBuilder.getTarget(),
+                invocationBuilder, Integer.MAX_VALUE, TimeUnit.SECONDS);
         // FIXME: deal with cancellation
         sseSource.register(event -> {
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
@@ -155,11 +154,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 multiRequest.emitter.fail(t);
             }
         });
-        HttpConnection connection = vertxClientResponse.request().connection();
-        // this captures the server closing
-        connection.closeHandler(v -> {
-            multiRequest.emitter.complete();
-        });
+        // we don't add a closeHandler handler on the connection as it can race with this handler
+        // and close before the emitter emits anything
+        // see: https://github.com/quarkusio/quarkus/pull/16438
         vertxClientResponse.handler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer buffer) {

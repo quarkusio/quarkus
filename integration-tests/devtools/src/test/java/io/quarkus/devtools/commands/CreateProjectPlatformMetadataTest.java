@@ -17,12 +17,12 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 

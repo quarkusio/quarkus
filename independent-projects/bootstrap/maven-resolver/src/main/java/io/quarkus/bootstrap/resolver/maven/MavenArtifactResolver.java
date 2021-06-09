@@ -4,7 +4,6 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -208,7 +207,7 @@ public class MavenArtifactResolver {
         }
     }
 
-    public String getLatestVersionFromRange(Artifact artifact, String range) throws AppModelResolverException {
+    public String getLatestVersionFromRange(Artifact artifact, String range) throws BootstrapMavenException {
         return getLatest(resolveVersionRange(new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(), artifact.getExtension(), range)));
     }
@@ -272,6 +271,15 @@ public class MavenArtifactResolver {
                             newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, excludedScopes)));
         } catch (DependencyResolutionException e) {
             throw new BootstrapMavenException("Failed to resolve dependencies for " + artifact, e);
+        }
+    }
+
+    public DependencyResult resolvePluginDependencies(Artifact pluginArtifact) throws BootstrapMavenException {
+        try {
+            return repoSystem.resolveDependencies(repoSession, new DependencyRequest().setCollectRequest(new CollectRequest()
+                    .setRoot(new Dependency(pluginArtifact, null)).setRepositories(context.getRemotePluginRepositories())));
+        } catch (DependencyResolutionException e) {
+            throw new BootstrapMavenException("Failed to resolve dependencies for Maven plugin " + pluginArtifact, e);
         }
     }
 

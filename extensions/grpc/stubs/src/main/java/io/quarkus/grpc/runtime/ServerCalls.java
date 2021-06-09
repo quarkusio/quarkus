@@ -3,23 +3,37 @@ package io.quarkus.grpc.runtime;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.jboss.logging.Logger;
+
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 
 public class ServerCalls {
+    private static final Logger log = Logger.getLogger(ServerCalls.class);
+
     private static StreamCollector streamCollector = StreamCollector.NO_OP;
 
     private ServerCalls() {
     }
 
-    public static <I, O> void oneToOne(I request, StreamObserver<O> response, Function<I, Uni<O>> implementation) {
+    public static <I, O> void oneToOne(I request, StreamObserver<O> response, String compression,
+            Function<I, Uni<O>> implementation) {
+        trySetCompression(response, compression);
         try {
             Uni<O> uni = implementation.apply(request);
+            if (uni == null) {
+                log.error("gRPC service method returned null instead of Uni. " +
+                        "Please change the implementation to return a Uni object, either carrying a value or a failure," +
+                        " or throw StatusRuntimeException");
+                response.onError(Status.fromCode(Status.Code.INTERNAL).asException());
+                return;
+            }
             uni.subscribe().with(
                     new Consumer<O>() {
                         @Override
@@ -39,29 +53,36 @@ public class ServerCalls {
         }
     }
 
-    public static <I, O> void oneToMany(I request, StreamObserver<O> response, Function<I, Multi<O>> implementation) {
+    public static <I, O> void oneToMany(I request, StreamObserver<O> response, String compression,
+            Function<I, Multi<O>> implementation) {
         try {
             streamCollector.add(response);
-            implementation.apply(request)
-                    .subscribe().with(
-                            new Consumer<O>() {
-                                @Override
-                                public void accept(O v) {
-                                    response.onNext(v);
-                                }
-                            },
-                            new Consumer<Throwable>() {
-                                @Override
-                                public void accept(Throwable throwable) {
-                                    onError(response, throwable);
-                                }
-                            },
-                            new Runnable() {
-                                @Override
-                                public void run() {
-                                    onCompleted(response);
-                                }
-                            });
+            Multi<O> returnValue = implementation.apply(request);
+            if (returnValue == null) {
+                log.error("gRPC service method returned null instead of Multi. " +
+                        "Please change the implementation to return a Multi object or throw StatusRuntimeException");
+                response.onError(Status.fromCode(Status.Code.INTERNAL).asException());
+                return;
+            }
+            returnValue.subscribe().with(
+                    new Consumer<O>() {
+                        @Override
+                        public void accept(O v) {
+                            response.onNext(v);
+                        }
+                    },
+                    new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) {
+                            onError(response, throwable);
+                        }
+                    },
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            onCompleted(response);
+                        }
+                    });
         } catch (Throwable throwable) {
             onError(response, toStatusFailure(throwable));
         }
@@ -75,6 +96,13 @@ public class ServerCalls {
             streamCollector.add(response);
 
             Uni<O> uni = implementation.apply(input);
+            if (uni == null) {
+                log.error("gRPC service method returned null instead of Uni. " +
+                        "Please change the implementation to return a Uni object, either carrying a value or a failure," +
+                        " or throw StatusRuntimeException");
+                response.onError(Status.fromCode(Status.Code.INTERNAL).asException());
+                return null;
+            }
             uni.subscribe().with(
                     new Consumer<O>() {
                         @Override
@@ -102,8 +130,14 @@ public class ServerCalls {
             streamCollector.add(response);
             UnicastProcessor<I> input = UnicastProcessor.create();
             StreamObserver<I> pump = getStreamObserverFeedingProcessor(input);
-            Multi<O> uni = implementation.apply(input);
-            uni.subscribe().with(
+            Multi<O> multi = implementation.apply(input);
+            if (multi == null) {
+                log.error("gRPC service method returned null instead of Multi. " +
+                        "Please change the implementation to return a Multi object or throw StatusRuntimeException");
+                response.onError(Status.fromCode(Status.Code.INTERNAL).asException());
+                return null;
+            }
+            multi.subscribe().with(
                     new Consumer<O>() {
                         @Override
                         public void accept(O v) {
@@ -175,9 +209,17 @@ public class ServerCalls {
             if (throwable instanceof IllegalArgumentException) {
                 return Status.INVALID_ARGUMENT.withDescription(desc).asException();
             }
+            log.warn("gRPC service threw an exception other than StatusRuntimeException", throwable);
             return Status.fromThrowable(throwable)
                     .withDescription(desc)
                     .asException();
+        }
+    }
+
+    private static void trySetCompression(StreamObserver<?> response, String compression) {
+        if (compression != null && response instanceof ServerCallStreamObserver<?>) {
+            ServerCallStreamObserver<?> serverResponse = (ServerCallStreamObserver<?>) response;
+            serverResponse.setCompression(compression);
         }
     }
 

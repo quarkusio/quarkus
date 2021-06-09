@@ -14,14 +14,15 @@ import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 import org.jacoco.core.instr.Instrumenter;
 import org.jacoco.core.runtime.OfflineInstrumentationAccessGenerator;
-import org.jacoco.report.MultiSourceFileLocator;
 import org.jboss.jandex.ClassInfo;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -31,6 +32,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.jacoco.runtime.JacocoConfig;
 import io.quarkus.jacoco.runtime.ReportCreator;
@@ -49,6 +51,7 @@ public class JacocoProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             ShutdownContextBuildItem shutdownContextBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             JacocoConfig config) throws Exception {
         String dataFile = outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
                 + config.dataFile;
@@ -57,30 +60,37 @@ public class JacocoProcessor {
         Files.deleteIfExists(Paths.get(dataFile));
 
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
-        for (ClassInfo i : indexBuildItem.getIndex().getKnownClasses()) {
-            String className = i.name().toString();
-            transformers.produce(
-                    new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
-                            .setCacheable(true)
-                            .setEager(true)
-                            .setInputTransformer(new BiFunction<String, byte[], byte[]>() {
-                                @Override
-                                public byte[] apply(String className, byte[] bytes) {
-                                    try {
-                                        byte[] enhanced = instrumenter.instrument(bytes, className);
-                                        if (enhanced == null) {
-                                            return bytes;
+        Set<String> seen = new HashSet<>();
+        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+            for (ClassInfo i : archive.getIndex().getKnownClasses()) {
+                String className = i.name().toString();
+                if (seen.contains(className)) {
+                    continue;
+                }
+                seen.add(className);
+                transformers.produce(
+                        new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+                                .setCacheable(true)
+                                .setEager(true)
+                                .setInputTransformer(new BiFunction<String, byte[], byte[]>() {
+                                    @Override
+                                    public byte[] apply(String className, byte[] bytes) {
+                                        try {
+                                            byte[] enhanced = instrumenter.instrument(bytes, className);
+                                            if (enhanced == null) {
+                                                return bytes;
+                                            }
+                                            return enhanced;
+                                        } catch (IOException e) {
+                                            throw new RuntimeException(e);
                                         }
-                                        return enhanced;
-                                    } catch (IOException e) {
-                                        throw new RuntimeException(e);
                                     }
-                                }
-                            }).build());
+                                }).build());
+            }
         }
         if (config.report) {
             ReportInfo info = new ReportInfo();
-            info.savedData = dataFile;
+            info.dataFile = dataFile;
 
             File targetdir = new File(
                     outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
@@ -92,24 +102,34 @@ public class JacocoProcessor {
             info.classFiles = classes;
 
             Set<String> sources = new HashSet<>();
-            MultiSourceFileLocator sourceFileLocator = new MultiSourceFileLocator(4);
             if (BuildToolHelper.isMavenProject(targetdir.toPath())) {
+                Set<AppArtifactKey> runtimeDeps = new HashSet<>();
+                for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
+                    runtimeDeps.add(new AppArtifactKey(i.getArtifact().getGroupId(), i.getArtifact().getArtifactId()));
+                }
                 LocalProject project = LocalProject.loadWorkspace(targetdir.toPath());
+                runtimeDeps.add(project.getKey());
                 for (Map.Entry<AppArtifactKey, LocalProject> i : project.getWorkspace().getProjects().entrySet()) {
-                    sources.add(i.getValue().getSourcesSourcesDir().toFile().getAbsolutePath());
-                    File classesDir = i.getValue().getClassesDir().toFile();
-                    if (classesDir.isDirectory()) {
-                        for (final File file : FileUtils.getFiles(classesDir, includes, excludes,
-                                true)) {
-                            if (file.getName().endsWith(".class")) {
-                                classes.add(file.getAbsolutePath());
+                    if (runtimeDeps.contains(i.getKey())) {
+                        info.savedData.add(i.getValue().getOutputDir().resolve(config.dataFile).toAbsolutePath().toString());
+                        sources.add(i.getValue().getSourcesSourcesDir().toFile().getAbsolutePath());
+                        File classesDir = i.getValue().getClassesDir().toFile();
+                        if (classesDir.isDirectory()) {
+                            for (final File file : FileUtils.getFiles(classesDir, includes, excludes,
+                                    true)) {
+                                if (file.getName().endsWith(".class")) {
+                                    classes.add(file.getAbsolutePath());
+                                }
                             }
                         }
                     }
                 }
             } else if (BuildToolHelper.isGradleProject(targetdir.toPath())) {
-                QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(targetdir.toPath());
+                //this seems counter productive, but we want the dev mode model and not the test model
+                //as the test model will include the test classes that we don't want in the report
+                QuarkusModel model = BuildToolHelper.enableGradleAppModelForDevMode(targetdir.toPath());
                 for (WorkspaceModule i : model.getWorkspace().getAllModules()) {
+                    info.savedData.add(new File(i.getBuildDir(), config.dataFile).getAbsolutePath());
                     for (File src : i.getSourceSourceSet().getSourceDirectories()) {
                         sources.add(src.getAbsolutePath());
                     }

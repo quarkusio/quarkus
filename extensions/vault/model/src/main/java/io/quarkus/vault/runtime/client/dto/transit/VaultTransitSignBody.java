@@ -15,5 +15,7 @@ public class VaultTransitSignBody implements VaultModel {
     public Boolean prehashed;
     @JsonProperty("signature_algorithm")
     public String signatureAlgorithm;
+    @JsonProperty("marshaling_algorithm")
+    public String marshalingAlgorithm;
 
 }

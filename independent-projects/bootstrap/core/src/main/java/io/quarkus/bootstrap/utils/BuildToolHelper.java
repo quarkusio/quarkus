@@ -4,9 +4,9 @@ import static io.quarkus.bootstrap.util.QuarkusModelHelper.DEVMODE_REQUIRED_TASK
 import static io.quarkus.bootstrap.util.QuarkusModelHelper.ENABLE_JAR_PACKAGING;
 import static io.quarkus.bootstrap.util.QuarkusModelHelper.TEST_REQUIRED_TASKS;
 
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,6 +47,18 @@ public class BuildToolHelper {
 
     private BuildToolHelper() {
 
+    }
+
+    public static Path getProjectDir(Path p) {
+        Path currentPath = p;
+        while (currentPath != null) {
+            if (BuildTool.MAVEN.exists(currentPath) || BuildTool.GRADLE.exists(currentPath)) {
+                return currentPath;
+            }
+            currentPath = currentPath.getParent();
+        }
+        log.warnv("Unable to find a project directory for {0}.", p.toString());
+        return null;
     }
 
     public static BuildTool findBuildTool(Path project) {
@@ -94,7 +106,7 @@ public class BuildToolHelper {
         if (isGradleProject(projectRoot)) {
             final QuarkusModel model = QuarkusGradleModelFactory.create(getBuildFile(projectRoot, BuildTool.GRADLE).toFile(),
                     mode, jvmArgs, tasks);
-            QuarkusModelHelper.exportModel(model);
+            QuarkusModelHelper.exportModel(model, "TEST".equalsIgnoreCase(mode));
             return model;
         }
         return null;
@@ -105,7 +117,7 @@ public class BuildToolHelper {
         if (isGradleProject(projectRoot)) {
             final QuarkusModel model = QuarkusGradleModelFactory
                     .createForTasks(getBuildFile(projectRoot, BuildTool.GRADLE).toFile(), DEVMODE_REQUIRED_TASKS);
-            QuarkusModelHelper.exportModel(model);
+            QuarkusModelHelper.exportModel(model, false);
             return model;
         }
         return null;

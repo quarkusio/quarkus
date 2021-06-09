@@ -19,7 +19,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 == Architecture
@@ -463,6 +463,8 @@ public class Legume {
 }
 ----
 
+TIP: The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
+
 Let's do that and follow the same steps as before:
 
  * hit `Ctrl+C` to stop the application
@@ -510,8 +512,7 @@ Use `Multi` when you have multiple items that may be emitted asynchronously.
 
 You can use `Uni` and `Response` to return asynchronous HTTP responses: `Uni<Response>`.
 
-More details about Mutiny can be found in the link:getting-started-reactive#mutiny[Getting Started with Reactive guide].
-
+More details about Mutiny can be found in xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 
 == HTTP filters and interceptors
 

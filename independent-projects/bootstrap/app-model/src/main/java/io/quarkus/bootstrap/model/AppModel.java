@@ -16,6 +16,8 @@ import org.jboss.logging.Logger;
 /**
  * A representation of the Quarkus dependency model for a given application.
  *
+ * Changes made to this class should also be reflected in {@link PersistentAppModel}
+ *
  * @author Alexey Loubyansky
  */
 public class AppModel implements Serializable {
@@ -60,35 +62,30 @@ public class AppModel implements Serializable {
      */
     private final Set<AppArtifactKey> localProjectArtifacts;
 
-    private final Map<String, String> platformProperties;
+    private final PlatformImports platformImports;
 
-    private AppModel(AppArtifact appArtifact, List<AppDependency> runtimeDeps, List<AppDependency> deploymentDeps,
-            List<AppDependency> fullDeploymentDeps, Set<AppArtifactKey> parentFirstArtifacts,
-            Set<AppArtifactKey> runnerParentFirstArtifacts, Set<AppArtifactKey> lesserPriorityArtifacts,
-            Set<AppArtifactKey> localProjectArtifacts) {
-        this(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps, parentFirstArtifacts, runnerParentFirstArtifacts,
-                lesserPriorityArtifacts,
-                localProjectArtifacts, Collections.emptyMap());
-    }
+    private final Map<String, CapabilityContract> capabilitiesContracts;
 
-    private AppModel(AppArtifact appArtifact, List<AppDependency> runtimeDeps, List<AppDependency> deploymentDeps,
-            List<AppDependency> fullDeploymentDeps, Set<AppArtifactKey> parentFirstArtifacts,
-            Set<AppArtifactKey> runnerParentFirstArtifacts, Set<AppArtifactKey> lesserPriorityArtifacts,
-            Set<AppArtifactKey> localProjectArtifacts,
-            Map<String, String> platformProperties) {
-        this.appArtifact = appArtifact;
-        this.runtimeDeps = runtimeDeps;
-        this.deploymentDeps = deploymentDeps;
-        this.fullDeploymentDeps = fullDeploymentDeps;
-        this.parentFirstArtifacts = parentFirstArtifacts;
-        this.runnerParentFirstArtifacts = runnerParentFirstArtifacts;
-        this.lesserPriorityArtifacts = lesserPriorityArtifacts;
-        this.localProjectArtifacts = localProjectArtifacts;
-        this.platformProperties = platformProperties;
+    private AppModel(Builder builder) {
+        this.appArtifact = builder.appArtifact;
+        this.runtimeDeps = builder.filter(builder.runtimeDeps);
+        this.deploymentDeps = builder.filter(builder.deploymentDeps);
+        this.fullDeploymentDeps = builder.filter(builder.fullDeploymentDeps);
+        this.parentFirstArtifacts = builder.parentFirstArtifacts;
+        this.runnerParentFirstArtifacts = builder.runnerParentFirstArtifacts;
+        this.lesserPriorityArtifacts = builder.lesserPriorityArtifacts;
+        this.localProjectArtifacts = builder.localProjectArtifacts;
+        this.platformImports = builder.platformImports;
+        this.capabilitiesContracts = builder.capabilitiesContracts;
+        log.debugf("Created AppModel %s", this);
     }
 
     public Map<String, String> getPlatformProperties() {
-        return platformProperties;
+        return platformImports == null ? Collections.emptyMap() : platformImports.getPlatformProperties();
+    }
+
+    public PlatformImports getPlatforms() {
+        return platformImports;
     }
 
     public AppArtifact getAppArtifact() {
@@ -131,6 +128,10 @@ public class AppModel implements Serializable {
         return localProjectArtifacts;
     }
 
+    public Map<String, CapabilityContract> getCapabilityContracts() {
+        return capabilitiesContracts;
+    }
+
     @Override
     public String toString() {
         return "AppModel{" +
@@ -155,19 +156,23 @@ public class AppModel implements Serializable {
         private final Set<AppArtifactKey> excludedArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> lesserPriorityArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> localProjectArtifacts = new HashSet<>();
-        private Map<String, String> platformProperties = Collections.emptyMap();
+        private PlatformImports platformImports;
+        private Map<String, CapabilityContract> capabilitiesContracts = Collections.emptyMap();
+
+        private Predicate<AppDependency> depPredicate;
 
         public Builder setAppArtifact(AppArtifact appArtifact) {
             this.appArtifact = appArtifact;
             return this;
         }
 
-        public Builder addPlatformProperties(Map<String, String> platformProperties) {
-            if (this.platformProperties.isEmpty()) {
-                this.platformProperties = platformProperties;
-            } else {
-                this.platformProperties.putAll(platformProperties);
-            }
+        public Builder setPlatformImports(PlatformImports platformImports) {
+            this.platformImports = platformImports;
+            return this;
+        }
+
+        public Builder setCapabilitiesContracts(Map<String, CapabilityContract> capabilitiesContracts) {
+            this.capabilitiesContracts = capabilitiesContracts;
             return this;
         }
 
@@ -289,26 +294,26 @@ public class AppModel implements Serializable {
             }
         }
 
-        public AppModel build() {
-            Predicate<AppDependency> includePredicate = s -> {
-                //we never include the ide launcher in the final app model
-                if (s.getArtifact().getGroupId().equals("io.quarkus")
-                        && s.getArtifact().getArtifactId().equals("quarkus-ide-launcher")) {
-                    return false;
-                }
-                return !excludedArtifacts.contains(s.getArtifact().getKey());
-            };
-            List<AppDependency> runtimeDeps = this.runtimeDeps.stream().filter(includePredicate).collect(Collectors.toList());
-            List<AppDependency> deploymentDeps = this.deploymentDeps.stream().filter(includePredicate)
-                    .collect(Collectors.toList());
-            List<AppDependency> fullDeploymentDeps = this.fullDeploymentDeps.stream().filter(includePredicate)
-                    .collect(Collectors.toList());
-            AppModel appModel = new AppModel(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps,
-                    parentFirstArtifacts, runnerParentFirstArtifacts, lesserPriorityArtifacts, localProjectArtifacts,
-                    platformProperties);
-            log.debugf("Created AppModel %s", appModel);
-            return appModel;
+        private Predicate<AppDependency> dependencyPredicate() {
+            if (depPredicate == null) {
+                depPredicate = s -> {
+                    // we never include the ide launcher in the final app model
+                    if (s.getArtifact().getGroupId().equals("io.quarkus")
+                            && s.getArtifact().getArtifactId().equals("quarkus-ide-launcher")) {
+                        return false;
+                    }
+                    return !excludedArtifacts.contains(s.getArtifact().getKey());
+                };
+            }
+            return depPredicate;
+        }
 
+        private List<AppDependency> filter(List<AppDependency> deps) {
+            return deps.stream().filter(dependencyPredicate()).collect(Collectors.toList());
+        }
+
+        public AppModel build() {
+            return new AppModel(this);
         }
     }
 }

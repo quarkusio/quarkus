@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.enterprise.context.spi.Context;
@@ -34,6 +36,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniSubscribe;
 import io.smallrye.mutiny.subscription.Cancellable;
+import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -126,11 +129,11 @@ class Methods {
     static final MethodDescriptor MULTI_JSON_FAIL = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
             "fail", Void.TYPE, RoutingContext.class);
 
-    static final MethodDescriptor END = MethodDescriptor.ofMethod(HttpServerResponse.class, "end", Void.TYPE);
+    static final MethodDescriptor END = MethodDescriptor.ofMethod(HttpServerResponse.class, "end", Future.class);
     static final MethodDescriptor END_WITH_STRING = MethodDescriptor
-            .ofMethod(HttpServerResponse.class, "end", Void.TYPE, String.class);
+            .ofMethod(HttpServerResponse.class, "end", Future.class, String.class);
     static final MethodDescriptor END_WITH_BUFFER = MethodDescriptor
-            .ofMethod(HttpServerResponse.class, "end", Void.TYPE, Buffer.class);
+            .ofMethod(HttpServerResponse.class, "end", Future.class, Buffer.class);
     static final MethodDescriptor SET_STATUS = MethodDescriptor
             .ofMethod(HttpServerResponse.class, "setStatusCode", HttpServerResponse.class, Integer.TYPE);
     static final MethodDescriptor MUTINY_GET_DELEGATE = MethodDescriptor
@@ -179,7 +182,7 @@ class Methods {
     static final MethodDescriptor VALIDATION_HANDLE_VIOLATION_EXCEPTION = MethodDescriptor
             .ofMethod(ValidationSupport.class.getName(), "handleViolationException",
                     Void.TYPE.getName(), Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION,
-                    RoutingContext.class.getName());
+                    RoutingContext.class.getName(), Boolean.TYPE.getName());
 
     static final MethodDescriptor VALIDATOR_VALIDATE = MethodDescriptor
             .ofMethod("javax.validation.Validator", "validate", "java.util.Set",
@@ -210,6 +213,10 @@ class Methods {
             Object.class);
     static final MethodDescriptor ITERATOR_NEXT = MethodDescriptor.ofMethod(Iterator.class, "next", Object.class);
     static final MethodDescriptor ITERATOR_HAS_NEXT = MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class);
+
+    public static final MethodDescriptor CS_WHEN_COMPLETE = MethodDescriptor.ofMethod(CompletionStage.class,
+            "whenComplete",
+            CompletionStage.class, BiConsumer.class);
 
     private Methods() {
         // Avoid direct instantiation

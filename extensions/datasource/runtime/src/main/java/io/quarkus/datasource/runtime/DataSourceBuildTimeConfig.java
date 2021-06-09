@@ -22,4 +22,13 @@ public class DataSourceBuildTimeConfig {
     @ConfigItem
     public DevServicesBuildTimeConfig devservices;
 
+    /**
+     * Whether this particular data source should be excluded from the health check if
+     * the general health check for data sources is enabled.
+     * <p>
+     * By default, the health check includes all configured data sources (if it is enabled).
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean healthExclude;
+
 }

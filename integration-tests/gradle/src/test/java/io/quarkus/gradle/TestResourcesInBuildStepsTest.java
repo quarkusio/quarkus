@@ -16,7 +16,8 @@ public class TestResourcesInBuildStepsTest extends QuarkusGradleWrapperTestBase 
 
         final File projectDir = getProjectDir("test-resources-in-build-steps");
 
-        runGradleWrapper(projectDir, "clean", "build");
+        runGradleWrapper(projectDir, "clean", ":application:publishAcmeExt");
+        runGradleWrapper(projectDir, "build");
 
         final Path buildDir = projectDir.toPath().resolve("application").resolve("build");
         final Path libDir = buildDir.resolve("quarkus-app").resolve("lib").resolve("main");

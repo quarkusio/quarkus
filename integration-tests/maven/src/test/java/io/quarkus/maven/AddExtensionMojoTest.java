@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.devtools.test.RegistryClientTestHelper;
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 
 class AddExtensionMojoTest {
 

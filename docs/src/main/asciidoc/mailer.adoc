@@ -16,7 +16,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * The SMTP hostname, port and credentials, and an email address
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * GraalVM installed if you want to run in native mode.
 
@@ -127,7 +127,8 @@ NOTE: The two APIs are equivalent feature-wise. Actually the `Mailer` implementa
 [TIP]
 .Mutiny
 ====
-The reactive mailer uses Mutiny reactive types, if you're not familiar with them, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+The reactive mailer uses Mutiny reactive types.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 ====
 
 To send a simple email, proceed as follows:
@@ -312,7 +313,7 @@ public Uni<Response> send() { <1>
 <1> The method returns a `Uni`
 <2> Transform the `Uni<Void>` returned by `MailTemplate` into `Unit<Response>`
 
-[[testing]]]
+[[testing]]
 == Testing email sending
 
 Because it is very inconvenient to send emails during development and testing, you can set the `quarkus.mailer.mock` boolean

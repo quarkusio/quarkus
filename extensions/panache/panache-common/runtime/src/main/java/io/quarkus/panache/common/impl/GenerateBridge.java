@@ -17,4 +17,9 @@ public @interface GenerateBridge {
      */
     boolean targetReturnTypeErased() default false;
 
+    /**
+     * Set to true to delegate to the super method instead of JpaOperations. This is useful to
+     * still inject interceptor calls and mock stubs.
+     */
+    boolean callSuperMethod() default false;
 }

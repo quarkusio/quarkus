@@ -31,13 +31,16 @@
         <module>amazon-lambda</module>
         <module>arquillian</module>
         <module>devmode-test-utils</module>
-        <module>devtools</module>
         <module>maven</module>
         <module>vault</module>
         <module>ldap</module>
         <module>security</module>
+        <module>security-jwt</module>
+        <module>security-oidc</module>
         <module>oidc-server</module>
+        <module>keycloak-server</module>
         <module>jacoco</module>
+        <module>mongodb</module>
     </modules>
 
 </project>

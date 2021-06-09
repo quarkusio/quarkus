@@ -9,6 +9,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 import java.io.InputStream;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -36,27 +38,41 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     protected final RoutingContext context;
     protected final HttpServerRequest request;
     protected final HttpServerResponse response;
+    private final Executor contextExecutor;
+    private final ClassLoader devModeTccl;
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
     ContinueState continueState = ContinueState.NONE;
 
     public VertxResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
             RoutingContext context,
-            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
+            ClassLoader devModeTccl) {
         super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
         this.context = context;
         this.request = context.request();
         this.response = context.response();
+        this.devModeTccl = devModeTccl;
         context.addHeadersEndHandler(this);
         String expect = request.getHeader(HttpHeaderNames.EXPECT);
+        ContextInternal internal = ((ConnectionBase) context.request().connection()).getContext();
         if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
             continueState = ContinueState.REQUIRED;
         }
+        this.contextExecutor = new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                internal.execute(command);
+            }
+        };
     }
 
     @Override
     public ServerHttpResponse addCloseHandler(Runnable onClose) {
-        this.response.closeHandler(v -> {
-            onClose.run();
+        this.response.closeHandler(new Handler<Void>() {
+            @Override
+            public void handle(Void v) {
+                onClose.run();
+            }
         });
         return this;
     }
@@ -78,6 +94,10 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     protected EventLoop getEventLoop() {
         return ((ConnectionBase) context.request().connection()).channel().eventLoop();
+    }
+
+    protected Executor getContextExecutor() {
+        return contextExecutor;
     }
 
     @Override
@@ -118,7 +138,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public String getRequestMethod() {
-        return request.rawMethod();
+        return request.method().name();
     }
 
     @Override
@@ -147,16 +167,6 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
-    public String getFormAttribute(String name) {
-        return request.getFormAttribute(name);
-    }
-
-    @Override
-    public List<String> getAllFormAttributes(String name) {
-        return request.formAttributes().getAll(name);
-    }
-
-    @Override
     public String getQueryParam(String name) {
         return context.queryParams().get(name);
     }
@@ -179,11 +189,6 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public boolean isRequestEnded() {
         return request.isEnded();
-    }
-
-    @Override
-    public void setExpectMultipart(boolean expectMultipart) {
-        request.setExpectMultipart(expectMultipart);
     }
 
     @Override
@@ -225,12 +230,18 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         request.handler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer event) {
+                if (devModeTccl != null) {
+                    Thread.currentThread().setContextClassLoader(devModeTccl);
+                }
                 callback.data(ByteBuffer.wrap(event.getBytes()));
             }
         });
         request.endHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
+                if (devModeTccl != null) {
+                    Thread.currentThread().setContextClassLoader(devModeTccl);
+                }
                 callback.done();
             }
         });
@@ -255,7 +266,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse setStatusCode(int code) {
-        response.setStatusCode(code);
+        if (!response.headWritten()) {
+            response.setStatusCode(code);
+        }
         return this;
     }
 
@@ -348,6 +361,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
+    public ServerHttpResponse sendFile(String path, long offset, long length) {
+        response.sendFile(path, offset, length);
+        return this;
+    }
+
+    @Override
     public OutputStream createResponseOutputStream() {
         return new ResteasyReactiveOutputStream(this);
     }
@@ -362,6 +381,22 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         if (preCommitTask != null) {
             preCommitTask.accept(this);
         }
+    }
+
+    @Override
+    public ServerHttpResponse addDrainHandler(Runnable onDrain) {
+        response.drainHandler(new Handler<Void>() {
+            @Override
+            public void handle(Void event) {
+                onDrain.run();
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public boolean isWriteQueueFull() {
+        return response.writeQueueFull();
     }
 
     public HttpServerRequest vertxServerRequest() {

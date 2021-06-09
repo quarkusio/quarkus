@@ -93,7 +93,8 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
     private MethodInfo validateSignature(MethodInfo method) {
         List<Type> parameters = method.parameters();
-        if (parameters.size() != 1 || !parameters.get(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
+        if (parameters.size() != 1 || !(parameters.get(0).name().equals(DotNames.INVOCATION_CONTEXT)
+                || parameters.get(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT))) {
             throw new IllegalStateException(
                     "An interceptor method must accept exactly one parameter of type javax.interceptor.InvocationContext: "
                             + method + " declared on " + method.declaringClass());

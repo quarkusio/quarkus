@@ -26,6 +26,7 @@
         <module>microprofile-rest-client-reactive</module>
         <module>microprofile-openapi</module>
         <module>microprofile-opentracing</module>
+        <module>resteasy-reactive</module>
     </modules>
 
     <properties>

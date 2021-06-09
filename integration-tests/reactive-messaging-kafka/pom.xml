@@ -13,6 +13,10 @@
     <name>Quarkus - Integration Tests - Reactive Messaging - Kafka</name>
     <description>The Kafka Reactive Messaging integration tests module</description>
 
+    <properties>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -69,19 +73,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-core</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.12</artifactId>
+            <groupId>io.strimzi</groupId>
+            <artifactId>strimzi-test-container</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -197,14 +190,14 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
-                    <skip>false</skip>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
 
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <skip>false</skip>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>
@@ -234,19 +227,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>native-image</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <!-- add some custom config, the rest comes from parent -->
-            <properties>
-                <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
-            </properties>
         </profile>
     </profiles>
 

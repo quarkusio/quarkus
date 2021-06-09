@@ -15,9 +15,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
@@ -37,6 +39,29 @@ public class ToolsUtils {
 
     public static String getProperty(String name, String defaultValue) {
         return System.getProperty(name, defaultValue);
+    }
+
+    public static Map<String, String> stringToMap(
+            String str, String entrySeparator, String keyValueSeparator) {
+        HashMap<String, String> result = new HashMap<>();
+        for (String entry : StringUtils.splitByWholeSeparator(str, entrySeparator)) {
+            String[] pair = StringUtils.splitByWholeSeparator(entry, keyValueSeparator, 2);
+
+            if (pair.length > 0 && StringUtils.isBlank(pair[0])) {
+                throw new IllegalArgumentException("Entry with empty key " + entry);
+            }
+
+            switch (pair.length) {
+                case 1:
+                    result.put(pair[0].trim(), "");
+                    break;
+                case 2:
+                    result.put(pair[0].trim(), pair[1].trim());
+                    break;
+            }
+        }
+
+        return result;
     }
 
     public static boolean isNullOrEmpty(String arg) {

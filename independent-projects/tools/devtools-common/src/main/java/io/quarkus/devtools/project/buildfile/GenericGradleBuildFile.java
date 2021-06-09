@@ -1,9 +1,9 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.ArtifactKey;
 import java.io.IOException;
 import java.util.Collection;
 
@@ -13,12 +13,17 @@ import java.util.Collection;
 abstract class GenericGradleBuildFile implements ExtensionManager {
 
     @Override
-    public Collection<AppArtifactCoords> getInstalled() throws IOException {
+    public Collection<ArtifactCoords> getInstalled() throws IOException {
         throw new IllegalStateException("This feature is not yet implemented outside of the Gradle Plugin.");
     }
 
     @Override
-    public InstallResult install(Collection<AppArtifactCoords> coords) throws IOException {
+    public Collection<ArtifactCoords> getInstalledPlatforms() throws IOException {
+        throw new IllegalStateException("This feature is not yet implemented outside of the Gradle Plugin.");
+    }
+
+    @Override
+    public InstallResult install(Collection<ArtifactCoords> coords) throws IOException {
         throw new IllegalStateException("This feature is not yet implemented outside of the Gradle Plugin.");
     }
 
@@ -28,7 +33,7 @@ abstract class GenericGradleBuildFile implements ExtensionManager {
     }
 
     @Override
-    public UninstallResult uninstall(Collection<AppArtifactKey> keys) throws IOException {
+    public UninstallResult uninstall(Collection<ArtifactKey> keys) throws IOException {
         throw new IllegalStateException("This feature is not yet implemented outside of the Gradle Plugin.");
     }
 

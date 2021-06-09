@@ -12,6 +12,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DEFAULT_VALUE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DOUBLE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DUMMY_ELEMENT_TYPE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FLOAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
@@ -80,6 +81,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -239,7 +241,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
-    protected abstract METHOD createResourceMethod(MethodInfo info, Map<String, Object> methodContext);
+    protected abstract METHOD createResourceMethod(MethodInfo info, ClassInfo actualEndpointClass,
+            Map<String, Object> methodContext);
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
@@ -446,7 +449,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (hasBodyParam) {
                     throw new RuntimeException(
                             "'@MultipartForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo.toString() + "'");
+                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
                 }
                 boolean validConsumes = false;
                 if (consumes != null) {
@@ -461,7 +464,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (!validConsumes) {
                     throw new RuntimeException(
                             "'@MultipartForm' can only be used on methods that annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)'. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo.toString() + "'");
+                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
                 }
             }
 
@@ -495,7 +498,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
 
-            ResourceMethod method = createResourceMethod(currentMethodInfo, methodContext)
+            ResourceMethod method = createResourceMethod(currentMethodInfo, actualEndpointInfo, methodContext)
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(methodPath)
                     .setConsumes(consumes)
@@ -514,6 +517,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     // FIXME: resolved arguments ?
                     .setReturnType(
                             determineReturnType(currentMethodInfo, typeArgMapper, currentClassInfo, actualEndpointInfo, index));
+
+            if (httpMethod == null) {
+                handleClientSubResource(method, currentMethodInfo, index);
+            }
+
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, currentMethodInfo);
             if (resourceMethodCallback != null) {
                 resourceMethodCallback.accept(new AbstractMap.SimpleEntry<>(currentMethodInfo, method));
@@ -521,8 +529,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return method;
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + currentMethodInfo.declaringClass().name() + "#"
-                    + currentMethodInfo.toString(), e);
+                    + currentMethodInfo, e);
         }
+    }
+
+    protected void handleClientSubResource(ResourceMethod resourceMethod, MethodInfo method, IndexView index) {
+
     }
 
     private boolean isBlocking(MethodInfo info, boolean defaultValue) {
@@ -650,7 +662,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return false;
     }
 
-    private static String[] extractProducesConsumesValues(AnnotationInstance annotation, String[] defaultValue) {
+    public static String[] extractProducesConsumesValues(AnnotationInstance annotation, String[] defaultValue) {
         String[] read = extractProducesConsumesValues(annotation);
         if (read == null) {
             return defaultValue;
@@ -707,6 +719,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 return indexType.asParameterizedType().name().toString();
             case ARRAY:
                 return indexType.asArrayType().name().toString();
+            case WILDCARD_TYPE:
+                WildcardType wildcardType = indexType.asWildcardType();
+                Type extendsBound = wildcardType.extendsBound();
+                if (extendsBound.name().equals(ResteasyReactiveDotNames.OBJECT)) {
+                    // this is a super bound type that we don't support
+                    throw new RuntimeException("Cannot handle wildcard type " + indexType);
+                }
+                // this is an extend bound type, so we just user the bound
+                return wildcardType.name().toString();
             case TYPE_VARIABLE:
                 TypeVariable typeVariable = indexType.asTypeVariable();
                 if (typeVariable.bounds().isEmpty()) {
@@ -840,7 +861,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             builder.setType(ParameterType.HEADER);
             convertible = true;
         } else if (restHeaderParam != null) {
-            builder.setName(valueOrDefault(restHeaderParam.value(), sourceName));
+            if (restHeaderParam.value() == null || restHeaderParam.value().asString().isEmpty()) {
+                builder.setName(StringUtil.hyphenate(sourceName));
+            } else {
+                builder.setName(restHeaderParam.value().asString());
+            }
             builder.setType(ParameterType.HEADER);
             convertible = true;
         } else if (formParam != null) {
@@ -931,6 +956,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 builder.setOptional(true);
             } else if (convertible) {
                 throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
+            } else {
+                // the "element" type is not of importance as in this case the signature is used at runtime to determine the proper types
+                elementType = DUMMY_ELEMENT_TYPE.toString();
+                addReaderForType(additionalReaders, pt);
+                typeHandled = true;
             }
         } else if ((paramType.name().equals(PATH_SEGMENT)) && (type == ParameterType.PATH)) {
             elementType = paramType.name().toString();

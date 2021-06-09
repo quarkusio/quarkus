@@ -67,6 +67,35 @@ public class TikaProcessorTest {
     }
 
     @Test
+    public void testTesseractParserConfig() throws Exception {
+        String ocrParserFullName = "org.apache.tika.parser.ocr.TesseractOCRParser";
+        Map<String, List<TikaProcessor.TikaParserParameter>> parserConfig = getParserConfig(null, "ocr",
+                Collections.singletonMap("ocr",
+                        Collections.singletonMap("tesseract-path", "/opt/tesseract/")),
+                Collections.singletonMap("ocr", ocrParserFullName));
+        assertEquals(1, parserConfig.size());
+
+        assertEquals(1, parserConfig.get(ocrParserFullName).size());
+        assertEquals("tesseractPath", parserConfig.get(ocrParserFullName).get(0).getName());
+        assertEquals("/opt/tesseract/", parserConfig.get(ocrParserFullName).get(0).getValue());
+    }
+
+    @Test
+    public void testUnknownParserConfig() throws Exception {
+        String ocrParserFullName = "org.apache.tika.parser.ocr.TesseractOCRParser";
+        try {
+            Map<String, List<TikaProcessor.TikaParserParameter>> parserConfig = getParserConfig(null, "ocr",
+                    Collections.singletonMap("ocr",
+                            Collections.singletonMap("tesseract-unknown-opt", "/opt/tesseract/")),
+                    Collections.singletonMap("ocr", ocrParserFullName));
+        } catch (Exception e) {
+            // expected
+            assertEquals("Parser org.apache.tika.parser.ocr.TesseractOCRParser has no tesseractUnknownOpt property",
+                    e.getMessage());
+        }
+    }
+
+    @Test
     public void testUnresolvableCustomAbbreviation() throws Exception {
         try {
             getParserNames(null, "classparser");
@@ -78,13 +107,13 @@ public class TikaProcessorTest {
 
     @Test
     public void testAllSupportedParserNames() throws Exception {
-        assertEquals(72, getParserNames(null, null).size());
+        assertEquals(77, getParserNames(null, null).size());
     }
 
     @Test
     public void testSupportedParserNamesWithTikaConfigPath() throws Exception {
         Set<String> names = getParserNames("tika-config.xml", "pdf");
-        assertEquals(72, names.size());
+        assertEquals(77, names.size());
     }
 
     @Test

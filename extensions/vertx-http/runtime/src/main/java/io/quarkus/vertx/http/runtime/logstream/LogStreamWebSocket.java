@@ -38,7 +38,7 @@ public class LogStreamWebSocket implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {
-        if ("websocket".equalsIgnoreCase(event.request().getHeader(HttpHeaderNames.UPGRADE))) {
+        if ("websocket".equalsIgnoreCase(event.request().getHeader(HttpHeaderNames.UPGRADE)) && !event.request().isEnded()) {
             event.request().toWebSocket(new Handler<AsyncResult<ServerWebSocket>>() {
                 @Override
                 public void handle(AsyncResult<ServerWebSocket> event) {

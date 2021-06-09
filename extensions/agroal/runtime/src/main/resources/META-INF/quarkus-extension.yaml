@@ -1,5 +1,6 @@
 ---
 name: "Agroal - Database connection pool"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
   - "agroal"

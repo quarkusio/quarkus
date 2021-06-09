@@ -2,8 +2,8 @@ package io.quarkus.devtools.project.buildfile;
 
 import org.gradle.api.Project;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class GradleGroovyProjectBuildFile extends GradleProjectBuildFile {
@@ -26,7 +26,12 @@ public class GradleGroovyProjectBuildFile extends GradleProjectBuildFile {
     }
 
     @Override
-    protected boolean addDependency(AppArtifactCoords coords, boolean managed) {
+    protected boolean importBom(ArtifactCoords coords) {
+        return importBomInModel(getModel(), coords);
+    }
+
+    @Override
+    protected boolean addDependency(ArtifactCoords coords, boolean managed) {
         return addDependencyInModel(getModel(), coords, managed);
     }
 
@@ -35,7 +40,13 @@ public class GradleGroovyProjectBuildFile extends GradleProjectBuildFile {
         return BuildTool.GRADLE;
     }
 
-    static boolean addDependencyInModel(Model model, AppArtifactCoords coords, boolean managed) {
+    static boolean importBomInModel(Model model, ArtifactCoords coords) {
+        return addDependencyInModel(model,
+                String.format("    implementation enforcedPlatform(%s)%n",
+                        createDependencyCoordinatesString(coords, false, '\'')));
+    }
+
+    static boolean addDependencyInModel(Model model, ArtifactCoords coords, boolean managed) {
         return addDependencyInModel(model,
                 String.format("    implementation %s%n", createDependencyCoordinatesString(coords, managed, '\'')));
     }

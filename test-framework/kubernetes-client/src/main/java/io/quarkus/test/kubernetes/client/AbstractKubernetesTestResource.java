@@ -29,6 +29,11 @@ public abstract class AbstractKubernetesTestResource<T> implements QuarkusTestRe
         }
 
         configureServer();
+        //these actually need to be system properties
+        //as they are read directly as system props, and not from Quarkus config
+        for (Map.Entry<String, String> entry : systemProps.entrySet()) {
+            System.setProperty(entry.getKey(), entry.getValue());
+        }
 
         return systemProps;
     }

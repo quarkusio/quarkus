@@ -7,9 +7,9 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
+import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
 import io.quarkus.resteasy.reactive.qute.RestTemplate;
 
 @Path("hello")

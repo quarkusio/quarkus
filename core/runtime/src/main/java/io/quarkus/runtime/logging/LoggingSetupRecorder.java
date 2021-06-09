@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -37,6 +36,7 @@ import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
@@ -48,28 +48,6 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 public class LoggingSetupRecorder {
 
     private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
-
-    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
-
-    /**
-     * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
-     * used by <a href="https://cmder.net/">cmder</a>
-     */
-    private static final boolean IS_CON_EMU_ANSI = IS_WINDOWS && "ON".equals(System.getenv("ConEmuANSI"));
-
-    /**
-     * These tests are same as used in jansi
-     * Source: https://github.com/fusesource/jansi/commit/bb3d538315c44f799d34fd3426f6c91c8e8dfc55
-     */
-    private static final boolean IS_CYGWIN = IS_WINDOWS
-            && System.getenv("PWD") != null
-            && System.getenv("PWD").startsWith("/")
-            && !"cygwin".equals(System.getenv("TERM"));
-
-    private static final boolean IS_MINGW_XTERM = IS_WINDOWS
-            && System.getenv("MSYSTEM") != null
-            && System.getenv("MSYSTEM").startsWith("MINGW")
-            && "xterm".equals(System.getenv("TERM"));
 
     public LoggingSetupRecorder() {
     }
@@ -327,24 +305,6 @@ public class LoggingSetupRecorder {
         }
     }
 
-    private static boolean hasColorSupport() {
-
-        if (IS_WINDOWS) {
-            // On Windows without a known good emulator
-            // TODO: optimally we would check if Win32 getConsoleMode has
-            // ENABLE_VIRTUAL_TERMINAL_PROCESSING enabled or enable it via
-            // setConsoleMode.
-            // For now we turn it off to not generate noisy output for most
-            // users.
-            // Must be on some Unix variant or ANSI-enabled windows terminal...
-            return IS_CON_EMU_ANSI || IS_CYGWIN || IS_MINGW_XTERM;
-        } else {
-            // on sane operating systems having a console is a good indicator
-            // you are attached to a TTY with colors.
-            return System.console() != null;
-        }
-    }
-
     private static Handler configureConsoleHandler(final ConsoleConfig config, final ErrorManager defaultErrorManager,
             final List<LogCleanupFilterElement> filterElements,
             final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
@@ -366,7 +326,7 @@ public class LoggingSetupRecorder {
             if (possibleBannerSupplier != null && possibleBannerSupplier.getValue().isPresent()) {
                 bannerSupplier = possibleBannerSupplier.getValue().get();
             }
-            if (config.color.orElse(hasColorSupport())) {
+            if (config.color.orElse(QuarkusConsole.hasColorSupport())) {
                 ColorPatternFormatter colorPatternFormatter = new ColorPatternFormatter(config.darken,
                         config.format);
                 if (bannerSupplier != null) {
@@ -383,7 +343,7 @@ public class LoggingSetupRecorder {
                 }
             }
         }
-        final ConsoleHandler consoleHandler = new ConsoleHandler(formatter);
+        final ConsoleHandler consoleHandler = new ConsoleHandler(ConsoleHandler.Target.SYSTEM_OUT, formatter);
         consoleHandler.setLevel(config.level);
         consoleHandler.setErrorManager(defaultErrorManager);
         consoleHandler.setFilter(new LogCleanupFilter(filterElements));

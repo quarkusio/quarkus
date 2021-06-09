@@ -9,7 +9,6 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
-import io.vertx.core.http.impl.headers.VertxHttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
 public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
@@ -21,7 +20,7 @@ public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
             //but we can't really re-use the netty one
             String data = event.getBodyAsString();
             String[] parts = data.split("&");
-            MultiMap post = new VertxHttpHeaders();
+            MultiMap post = MultiMap.caseInsensitiveMultiMap();
             for (String i : parts) {
                 String[] pair = i.split("=");
                 try {
@@ -73,7 +72,7 @@ public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
         }
     }
 
-    private void actionSuccess(RoutingContext event) {
+    protected void actionSuccess(RoutingContext event) {
         event.response().setStatusCode(HttpResponseStatus.SEE_OTHER.code()).headers()
                 .set(HttpHeaderNames.LOCATION, event.request().absoluteURI());
         event.response().end();

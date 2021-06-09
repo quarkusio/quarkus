@@ -51,7 +51,7 @@ class BasicInteractionTest extends MongoTestBase {
     @Test
     void testConnection() {
         assertThat(client.listDatabases()
-                .collectItems().first()
+                .collect().first()
                 .await().indefinitely()).isNotNull();
     }
 
@@ -62,9 +62,9 @@ class BasicInteractionTest extends MongoTestBase {
         ReactiveMongoDatabase database = client.getDatabase(name);
         assertThat(database).isNotNull();
         database.createCollection(col).await().indefinitely();
-        assertThat(database.listCollectionNames().collectItems().first().await().indefinitely()).contains(col);
+        assertThat(database.listCollectionNames().collect().first().await().indefinitely()).contains(col);
         database.drop().await().indefinitely();
-        assertThat(client.listDatabaseNames().collectItems().asList().await().indefinitely()).doesNotContain(name);
+        assertThat(client.listDatabaseNames().collect().asList().await().indefinitely()).doesNotContain(name);
     }
 
     @Test
@@ -82,7 +82,7 @@ class BasicInteractionTest extends MongoTestBase {
         ReactiveMongoCollection<DBObject> collection = database.getCollection(randomAlphaString(8), DBObject.class);
         collection.insertOne(person).await().indefinitely();
 
-        Optional<DBObject> maybe = collection.find().collectItems().first().await().asOptional().indefinitely();
+        Optional<DBObject> maybe = collection.find().collect().first().await().asOptional().indefinitely();
         assertThat(maybe).isNotEmpty().containsInstanceOf(DBObject.class)
                 .hasValueSatisfying(obj -> assertThat(obj.get("name")).isEqualTo("Jo Bloggs"));
     }
@@ -102,7 +102,7 @@ class BasicInteractionTest extends MongoTestBase {
         ReactiveMongoCollection<DBObject> collection = database.getCollection(randomAlphaString(8), DBObject.class);
         collection.insertOne(person, new InsertOneOptions().bypassDocumentValidation(true)).await().indefinitely();
 
-        Optional<DBObject> maybe = collection.find().collectItems().first().await().asOptional().indefinitely();
+        Optional<DBObject> maybe = collection.find().collect().first().await().asOptional().indefinitely();
         assertThat(maybe).isNotEmpty().containsInstanceOf(DBObject.class)
                 .hasValueSatisfying(obj -> assertThat(obj.get("name")).isEqualTo("Jo Bloggs"));
     }
@@ -133,16 +133,16 @@ class BasicInteractionTest extends MongoTestBase {
         count = collection.countDocuments(eq("i", 10)).await().indefinitely();
         assertThat(count).isEqualTo(1);
 
-        Optional<Document> document = collection.find().collectItems().first().await().asOptional().indefinitely();
+        Optional<Document> document = collection.find().collect().first().await().asOptional().indefinitely();
         assertThat(document).isNotEmpty().hasValueSatisfying(doc -> assertThat(doc.get("i", 0)));
 
-        document = collection.find(eq("i", 20)).collectItems().first().await().asOptional().indefinitely();
+        document = collection.find(eq("i", 20)).collect().first().await().asOptional().indefinitely();
         assertThat(document).isNotEmpty().hasValueSatisfying(doc -> assertThat(doc.get("i", 20)));
 
-        List<Document> list = collection.find().collectItems().asList().await().indefinitely();
+        List<Document> list = collection.find().collect().asList().await().indefinitely();
         assertThat(list).hasSize(100);
 
-        list = collection.find(gt("i", 50)).collectItems().asList().await().indefinitely();
+        list = collection.find(gt("i", 50)).collect().asList().await().indefinitely();
         assertThat(list).hasSize(49);
     }
 
@@ -163,16 +163,16 @@ class BasicInteractionTest extends MongoTestBase {
         count = collection.countDocuments(eq("i", 10)).await().indefinitely();
         assertThat(count).isEqualTo(1);
 
-        Optional<Document> document = collection.find().collectItems().first().await().asOptional().indefinitely();
+        Optional<Document> document = collection.find().collect().first().await().asOptional().indefinitely();
         assertThat(document).isNotEmpty().hasValueSatisfying(doc -> assertThat(doc.get("i", 0)));
 
-        document = collection.find(eq("i", 20)).collectItems().first().await().asOptional().indefinitely();
+        document = collection.find(eq("i", 20)).collect().first().await().asOptional().indefinitely();
         assertThat(document).isNotEmpty().hasValueSatisfying(doc -> assertThat(doc.get("i", 20)));
 
-        List<Document> list = collection.find().collectItems().asList().await().indefinitely();
+        List<Document> list = collection.find().collect().asList().await().indefinitely();
         assertThat(list).hasSize(100);
 
-        list = collection.find(gt("i", 50)).collectItems().asList().await().indefinitely();
+        list = collection.find(gt("i", 50)).collect().asList().await().indefinitely();
         assertThat(list).hasSize(49);
     }
 
@@ -195,8 +195,8 @@ class BasicInteractionTest extends MongoTestBase {
         assertThat(result.getModifiedCount()).isEqualTo(1);
         assertThat(result.getMatchedCount()).isEqualTo(1);
 
-        assertThat(collection.find(eq("i", 10)).collectItems().first().await().asOptional().indefinitely()).isEmpty();
-        assertThat(collection.find(eq("i", 110)).collectItems().first().await().asOptional().indefinitely()).isNotEmpty();
+        assertThat(collection.find(eq("i", 10)).collect().first().await().asOptional().indefinitely()).isEmpty();
+        assertThat(collection.find(eq("i", 110)).collect().first().await().asOptional().indefinitely()).isNotEmpty();
 
     }
 
@@ -218,10 +218,10 @@ class BasicInteractionTest extends MongoTestBase {
         assertThat(result.getModifiedCount()).isEqualTo(100);
         assertThat(result.getMatchedCount()).isEqualTo(100);
 
-        assertThat(collection.find(eq("i", 10)).collectItems().first().await().indefinitely()).isNull();
-        assertThat(collection.find(eq("i", 20)).collectItems().first().await().indefinitely()).isNull();
-        assertThat(collection.find(eq("i", 110)).collectItems().first().await().indefinitely()).isNotNull();
-        assertThat(collection.find(eq("i", 120)).collectItems().first().await().indefinitely()).isNotNull();
+        assertThat(collection.find(eq("i", 10)).collect().first().await().indefinitely()).isNull();
+        assertThat(collection.find(eq("i", 20)).collect().first().await().indefinitely()).isNull();
+        assertThat(collection.find(eq("i", 110)).collect().first().await().indefinitely()).isNotNull();
+        assertThat(collection.find(eq("i", 120)).collect().first().await().indefinitely()).isNotNull();
     }
 
     @Test
@@ -237,7 +237,7 @@ class BasicInteractionTest extends MongoTestBase {
 
         DeleteResult result = collection.deleteOne(eq("i", 10)).await().indefinitely();
         assertThat(result.getDeletedCount()).isEqualTo(1);
-        assertThat(collection.find(eq("i", 10)).collectItems().first().await().indefinitely()).isNull();
+        assertThat(collection.find(eq("i", 10)).collect().first().await().indefinitely()).isNull();
         Long count = collection.countDocuments().await().indefinitely();
         assertThat(count).isEqualTo(99);
     }
@@ -258,7 +258,7 @@ class BasicInteractionTest extends MongoTestBase {
                         Collation.builder().locale("en").caseLevel(true).build()))
                 .await().indefinitely();
         assertThat(result.getDeletedCount()).isEqualTo(1);
-        assertThat(collection.find(eq("i", 10)).collectItems().first().await().indefinitely()).isNull();
+        assertThat(collection.find(eq("i", 10)).collect().first().await().indefinitely()).isNull();
         Long count = collection.countDocuments().await().indefinitely();
         assertThat(count).isEqualTo(99);
     }
@@ -276,7 +276,7 @@ class BasicInteractionTest extends MongoTestBase {
 
         DeleteResult result = collection.deleteMany(gte("i", 90)).await().indefinitely();
         assertThat(result.getDeletedCount()).isEqualTo(10);
-        assertThat(collection.find(eq("i", 90)).collectItems().first().await().indefinitely()).isNull();
+        assertThat(collection.find(eq("i", 90)).collect().first().await().indefinitely()).isNull();
         Long count = collection.countDocuments().await().indefinitely();
         assertThat(count).isEqualTo(90);
     }
@@ -296,7 +296,7 @@ class BasicInteractionTest extends MongoTestBase {
                 Collation.builder().locale("en").caseLevel(true).build()))
                 .await().indefinitely();
         assertThat(result.getDeletedCount()).isEqualTo(10);
-        assertThat(collection.find(eq("i", 90)).collectItems().first().await().asOptional().indefinitely()).isEmpty();
+        assertThat(collection.find(eq("i", 90)).collect().first().await().asOptional().indefinitely()).isEmpty();
         Long count = collection.countDocuments().await().indefinitely();
         assertThat(count).isEqualTo(90);
     }
@@ -313,15 +313,15 @@ class BasicInteractionTest extends MongoTestBase {
         collection.insertMany(documents).await().indefinitely();
 
         // It contains the default index on _id.
-        assertThat(collection.listIndexes().collectItems().asList().await().indefinitely()).hasSize(1);
+        assertThat(collection.listIndexes().collect().asList().await().indefinitely()).hasSize(1);
 
         String i = collection.createIndex(new Document("i", 1), new IndexOptions().name("my-index"))
                 .await().indefinitely();
         assertThat(i).isEqualTo("my-index");
-        assertThat(collection.listIndexes().collectItems().asList().await().indefinitely()).hasSize(2);
+        assertThat(collection.listIndexes().collect().asList().await().indefinitely()).hasSize(2);
 
         collection.dropIndex(i).await().indefinitely();
-        assertThat(collection.listIndexes().collectItems().asList().await().indefinitely()).hasSize(1);
+        assertThat(collection.listIndexes().collect().asList().await().indefinitely()).hasSize(1);
 
     }
 

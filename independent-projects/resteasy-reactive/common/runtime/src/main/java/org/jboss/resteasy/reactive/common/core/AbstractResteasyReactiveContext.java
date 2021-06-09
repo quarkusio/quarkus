@@ -68,10 +68,16 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             suspended = false;
             if (executor == null) {
                 if (lastExecutor == null) {
-                    getEventLoop().execute(this);
+                    // TODO CES - Ugly Ugly hack!
+                    Executor ctxtExecutor = getContextExecutor();
+                    if (ctxtExecutor == null) {
+                        // Won't use the TCCL.
+                        getEventLoop().execute(this);
+                    } else {
+                        // Use the TCCL.
+                        ctxtExecutor.execute(this);
+                    }
                 } else {
-                    // we need to do this to ensure that if we suspended while not on the event-loop,
-                    // that we come back on a thread from this executor
                     lastExecutor.execute(this);
                 }
             } else {
@@ -102,6 +108,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     }
 
     protected abstract Executor getEventLoop();
+
+    protected Executor getContextExecutor() {
+        return null;
+    }
 
     protected boolean isRequestScopeManagementRequired() {
         return true;
@@ -188,6 +198,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     }
 
+    /**
+     * Ensures the CDI request scope is running when inside a handler chain
+     */
     public void requireCDIRequestScope() {
         if (!running) {
             throw new RuntimeException("Cannot be called when outside a handler chain");
@@ -206,6 +219,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             currentRequestScope = requestContext.currentState();
         }
         handleRequestScopeActivation();
+    }
+
+    /**
+     * Captures the CDI request scope for use outside of handler chains.
+     */
+    public ThreadSetupAction.ThreadState captureCDIRequestScope() {
+        requireCDIRequestScope();
+        return currentRequestScope;
     }
 
     protected abstract void handleRequestScopeActivation();

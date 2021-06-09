@@ -424,7 +424,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
         mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(),
                 operationDescriptor, false);
-        if (returnType.kind() != Type.Kind.PRIMITIVE) {
+        if (returnType.kind() != Type.Kind.PRIMITIVE && returnType.kind() != Type.Kind.VOID) {
             String retType = operationReturnType.substring(1, operationReturnType.length() - 1);
             String annotationDesc = NOT_NULL_DESCRIPTOR;
             if ("findById".equals(method.name())) {

@@ -21,7 +21,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 == Architecture
@@ -319,6 +319,10 @@ error along with the health check response.
                     .withData("error", e.getMessage()); // pass the exception message
         }
 ----
+
+== Context propagation into the health check invocations
+
+For the perfomance reasons the context (e.g., CDI or security context) is not propagated into each health check invocation. However, if you need to enable this functionality you can set the config property `quarkus.smallrye-health.context-propagation=true` to allow the context propagation into every health check call.
 
 == Extension health checks
 

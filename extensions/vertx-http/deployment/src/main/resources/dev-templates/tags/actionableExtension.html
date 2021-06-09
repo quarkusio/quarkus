@@ -1,10 +1,16 @@
 <div class="col mb-4">
     <div class="card h-100 shadow">
-        <div class="card-header bg-primary text-light">
-            {it['name']}
-            {#if it['metadata'] && it['metadata']['guide']}
-            <a href="{it['metadata']['guide']}" class="text-light float-right" title="Guide"><i class="fa fa-book"></i></a>
-            {/if}
+        <div class="card-header bg-primary text-light guide-padding-right">
+            <div class="row">
+                <div class="col-md-10">
+                    {it['name']}
+                </div>
+                <div class="col-md-1">
+                    {#if it['metadata'] && it['metadata']['guide']}
+                    <a href="{it['metadata']['guide']}" class="text-light float-right" title="Guide"><i class="fa fa-book"></i></a>
+                    {/if}
+                </div>
+            </div>
         </div>
         <div class="card-body">
             <p class="card-text">

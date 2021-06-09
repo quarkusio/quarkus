@@ -95,7 +95,7 @@ public class SecurityTest extends AbstractGraphQLTest {
                 .body("data.foo.bonusBar", nullValue());
     }
 
-    static class Foo {
+    public static class Foo {
 
         private String message;
 

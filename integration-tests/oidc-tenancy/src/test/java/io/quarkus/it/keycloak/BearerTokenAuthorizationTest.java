@@ -157,6 +157,27 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testTenantBAllClients() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b"))
+                .when().get("/tenant/tenant-b2/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("tenant-b2:alice"));
+
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b2"))
+                .when().get("/tenant/tenant-b2/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("tenant-b2:alice"));
+
+        // should give a 401 given that access token from issuer c can not access tenant b
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "c"))
+                .when().get("/tenant/tenant-b2/api/user")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void testResolveTenantIdentifier() {
         RestAssured.given().auth().oauth2(getAccessToken("alice", "b"))
                 .when().get("/tenant/tenant-b/api/user")
@@ -336,6 +357,20 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testOpaqueTokenIntrospectionDisallowed() {
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+
+        // Verify the the opaque token is rejected with 401 
+        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
+                .when().get("/tenant-opaque/tenant-oidc-no-opaque-token/api/user")
+                .then()
+                .statusCode(401);
+
+        // Confirm no introspection request has been made
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+    }
+
+    @Test
     public void testResolveTenantIdentifierWebAppDynamic() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/webapp");
@@ -353,6 +388,10 @@ public class BearerTokenAuthorizationTest {
     }
 
     private String getAccessToken(String userName, String clientId) {
+        return getAccessToken(userName, clientId, clientId);
+    }
+
+    private String getAccessToken(String userName, String realmId, String clientId) {
         return RestAssured
                 .given()
                 .param("grant_type", "password")
@@ -361,7 +400,7 @@ public class BearerTokenAuthorizationTest {
                 .param("client_id", "quarkus-app-" + clientId)
                 .param("client_secret", "secret")
                 .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + clientId + "/protocol/openid-connect/token")
+                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + realmId + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
     }
 

@@ -1,13 +1,16 @@
 package io.quarkus.mongodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
@@ -22,6 +25,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.ClientProxyUnwrapper;
+import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.test.QuarkusUnitTest;
@@ -41,6 +45,10 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
     @MongoClientName("cluster2")
     ReactiveMongoClient client2;
 
+    @Inject
+    @Any
+    MongoHealthCheck health;
+
     private final ClientProxyUnwrapper unwrapper = new ClientProxyUnwrapper();
 
     @AfterEach
@@ -58,10 +66,19 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
         assertProperConnection(client, 27018);
         assertProperConnection(client2, 27019);
 
-        assertThat(client.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
-        assertThat(client2.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
+        assertThat(client.listDatabases().collect().first().await().indefinitely()).isNotEmpty();
+        assertThat(client2.listDatabases().collect().first().await().indefinitely()).isNotEmpty();
 
         assertNoDefaultClient();
+
+        checkHealth();
+    }
+
+    public void checkHealth() {
+        org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
+        assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
+        assertThat(response.getData()).isNotEmpty();
+        assertThat(response.getData().get()).hasSize(2).contains(entry("cluster1", "OK"), entry("cluster2", "OK"));
     }
 
     private void assertProperConnection(ReactiveMongoClient client, int expectedPort) {

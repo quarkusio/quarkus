@@ -32,7 +32,7 @@ public final class EvaluatedParams {
             return new EvaluatedParams(context.evaluate(params.get(0)));
         }
         CompletableFuture<?>[] allResults = new CompletableFuture<?>[params.size()];
-        List<CompletableFuture<?>> results = new LinkedList<>();
+        List<CompletableFuture<?>> results = null;
         int i = 0;
         Iterator<Expression> it = params.iterator();
         while (it.hasNext()) {
@@ -40,10 +40,21 @@ public final class EvaluatedParams {
             CompletableFuture<Object> result = context.evaluate(expression).toCompletableFuture();
             allResults[i++] = result;
             if (!expression.isLiteral()) {
+                if (results == null) {
+                    results = new LinkedList<>();
+                }
                 results.add(result);
             }
         }
-        return new EvaluatedParams(CompletableFuture.allOf(results.toArray(new CompletableFuture[0])), allResults);
+        CompletionStage<?> cs;
+        if (results == null) {
+            cs = Futures.COMPLETED;
+        } else if (results.size() == 1) {
+            cs = results.get(0);
+        } else {
+            cs = CompletableFuture.allOf(results.toArray(new CompletableFuture[0]));
+        }
+        return new EvaluatedParams(cs, allResults);
     }
 
     public static EvaluatedParams evaluateMessageKey(EvalContext context) {
@@ -68,15 +79,15 @@ public final class EvaluatedParams {
         return new EvaluatedParams(CompletableFuture.allOf(results), results);
     }
 
-    public final CompletionStage stage;
+    public final CompletionStage<?> stage;
     private final CompletableFuture<?>[] results;
 
-    EvaluatedParams(CompletionStage stage) {
+    EvaluatedParams(CompletionStage<?> stage) {
         this.stage = stage;
         this.results = new CompletableFuture<?>[] { stage.toCompletableFuture() };
     }
 
-    EvaluatedParams(CompletionStage stage, CompletableFuture[] results) {
+    EvaluatedParams(CompletionStage<?> stage, CompletableFuture[] results) {
         this.stage = stage;
         this.results = results;
     }
@@ -102,15 +113,13 @@ public final class EvaluatedParams {
         } else {
             if (varargs) {
                 int diff = types.length - results.length;
-                if (diff == 1) {
-                    // varargs may be empty
-                    return true;
-                } else if (diff > 1) {
+                if (diff > 1) {
                     return false;
+                } else if (diff < 1) {
+                    Class<?> varargsType = types[types.length - 1];
+                    types[types.length - 1] = varargsType.getComponentType();
                 }
-                // diff < 1
-                Class<?> varargsType = types[types.length - 1];
-                types[types.length - 1] = varargsType.getComponentType();
+                // if diff == 1 then vargs may be empty and we need to compare the result types
             } else {
                 return false;
             }
@@ -123,7 +132,7 @@ public final class EvaluatedParams {
                 return false;
             }
             if (types.length > ++i) {
-                paramType = types[i];
+                paramType = boxType(types[i]);
             }
         }
         return true;

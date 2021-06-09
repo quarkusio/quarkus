@@ -11,13 +11,20 @@ import io.quarkus.security.identity.SecurityIdentity;
 @RequestScoped
 public class OidcConfigurationMetadataProducer {
     @Inject
+    TenantConfigBean tenantConfig;
+    @Inject
     SecurityIdentity identity;
 
     @Produces
     @RequestScoped
     OidcConfigurationMetadata produce() {
-        OidcConfigurationMetadata configMetadata = (OidcConfigurationMetadata) identity
-                .getAttribute(OidcUtils.CONFIG_METADATA_ATTRIBUTE);
+        OidcConfigurationMetadata configMetadata = null;
+
+        configMetadata = (OidcConfigurationMetadata) identity.getAttribute(OidcUtils.CONFIG_METADATA_ATTRIBUTE);
+
+        if (configMetadata == null && tenantConfig.getDefaultTenant().oidcConfig.tenantEnabled) {
+            configMetadata = tenantConfig.getDefaultTenant().provider.getMetadata();
+        }
         if (configMetadata == null) {
             throw new OIDCException("OidcConfigurationMetadata can not be injected");
         }

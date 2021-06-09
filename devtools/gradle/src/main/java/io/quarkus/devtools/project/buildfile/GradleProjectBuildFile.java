@@ -2,7 +2,7 @@ package io.quarkus.devtools.project.buildfile;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -14,8 +14,10 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.util.PlatformArtifacts;
 
 public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
 
@@ -29,9 +31,26 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
     }
 
     @Override
-    protected List<AppArtifactCoords> getDependencies() throws IOException {
+    protected List<ArtifactCoords> getDependencies() throws IOException {
 
-        final Set<Dependency> boms = new HashSet<>();
+        final List<Dependency> boms = boms();
+
+        final Set<ResolvedArtifact> resolvedArtifacts = project.getConfigurations()
+                .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).getResolvedConfiguration()
+                .getResolvedArtifacts();
+        final List<ArtifactCoords> coords = new ArrayList<>(boms.size() + resolvedArtifacts.size());
+        boms.forEach(d -> {
+            coords.add(new ArtifactCoords(d.getGroup(), d.getName(), null, "pom", d.getVersion()));
+        });
+        resolvedArtifacts.forEach(a -> {
+            coords.add(new ArtifactCoords(a.getModuleVersion().getId().getGroup(), a.getName(),
+                    a.getClassifier(), a.getExtension(), a.getModuleVersion().getId().getVersion()));
+        });
+        return coords;
+    }
+
+    private List<Dependency> boms() {
+        final List<Dependency> boms = new ArrayList<>();
         // collect enforced platforms
         final Configuration impl = project.getConfigurations()
                 .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
@@ -46,18 +65,27 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
                 boms.add(d);
             }
         }
+        return boms;
+    }
 
-        final Set<ResolvedArtifact> resolvedArtifacts = project.getConfigurations()
-                .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).getResolvedConfiguration()
-                .getResolvedArtifacts();
-        final List<AppArtifactCoords> coords = new ArrayList<>(boms.size() + resolvedArtifacts.size());
-        boms.forEach(d -> {
-            coords.add(new AppArtifactCoords(d.getGroup(), d.getName(), null, "pom", d.getVersion()));
+    @Override
+    public List<ArtifactCoords> getInstalledPlatforms() throws IOException {
+        final List<Dependency> bomDeps = boms();
+        if (bomDeps.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final Configuration boms = project.getConfigurations()
+                .detachedConfiguration(bomDeps.toArray(new org.gradle.api.artifacts.Dependency[0]));
+        final List<ArtifactCoords> platforms = new ArrayList<>();
+        boms.getResolutionStrategy().eachDependency(d -> {
+            if (!d.getTarget().getName().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)) {
+                return;
+            }
+            final ArtifactCoords platform = new ArtifactCoords(d.getTarget().getGroup(),
+                    PlatformArtifacts.ensureBomArtifactId(d.getTarget().getName()), null, "pom", d.getTarget().getVersion());
+            platforms.add(platform);
         });
-        resolvedArtifacts.forEach(a -> {
-            coords.add(new AppArtifactCoords(a.getModuleVersion().getId().getGroup(), a.getName(),
-                    a.getClassifier(), a.getExtension(), a.getModuleVersion().getId().getVersion()));
-        });
-        return coords;
+        boms.getResolvedConfiguration();
+        return platforms;
     }
 }

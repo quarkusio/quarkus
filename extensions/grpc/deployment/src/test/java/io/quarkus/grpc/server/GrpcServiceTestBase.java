@@ -111,7 +111,7 @@ public class GrpcServiceTestBase {
                 .newMutinyStub(channel)
                 .streamingOutputCall(Messages.StreamingOutputCallRequest.newBuilder().build());
         assertThat(multi).isNotNull();
-        List<String> list = multi.map(o -> o.getPayload().getBody().toStringUtf8()).collectItems().asList()
+        List<String> list = multi.map(o -> o.getPayload().getBody().toStringUtf8()).collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
     }
@@ -135,7 +135,7 @@ public class GrpcServiceTestBase {
         List<String> response = MutinyTestServiceGrpc
                 .newMutinyStub(channel).fullDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull();
         assertThat(response).containsExactly("a1", "b2", "c3", "d4");
@@ -149,7 +149,7 @@ public class GrpcServiceTestBase {
         List<String> response = MutinyTestServiceGrpc
                 .newMutinyStub(channel).halfDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collectItems().asList()
+                .collect().asList()
                 .await().atMost(TIMEOUT);
         assertThat(response).isNotNull();
         assertThat(response).containsExactly("A", "B", "C", "D");

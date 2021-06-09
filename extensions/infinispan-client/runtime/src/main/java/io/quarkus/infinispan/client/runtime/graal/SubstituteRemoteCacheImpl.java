@@ -5,7 +5,6 @@ import javax.management.ObjectName;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.impl.RemoteCacheImpl;
 import org.infinispan.client.hotrod.impl.operations.OperationsFactory;
-import org.infinispan.commons.marshall.Marshaller;
 
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
@@ -32,7 +31,6 @@ public final class SubstituteRemoteCacheImpl {
     // Sadly this method is public, so technically a user could get a Runtime error if they were referencing
     // it before - but it is the only way to make graal happy
     @Delete
-    public void init(Marshaller marshaller, OperationsFactory operationsFactory,
-            Configuration configuration, ObjectName jmxParent) {
+    public void init(OperationsFactory operationsFactory, Configuration configuration, ObjectName jmxParent) {
     }
 }

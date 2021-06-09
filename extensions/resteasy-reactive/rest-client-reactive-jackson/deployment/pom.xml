@@ -9,7 +9,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-rest-client-reactive-jackson-deployment</artifactId>
-    <name>Quarkus - MicroProfile Rest Client with Reactive RestEasy and Jackson - Deployment</name>
+    <name>Quarkus - REST Client Reactive Jackson - Deployment</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

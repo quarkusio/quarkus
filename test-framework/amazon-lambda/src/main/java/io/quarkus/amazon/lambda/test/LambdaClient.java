@@ -2,13 +2,13 @@ package io.quarkus.amazon.lambda.test;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.Duration;
+import java.util.AbstractMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.Arc;
@@ -100,44 +100,47 @@ public class LambdaClient {
      * @return
      */
     public static <T> T invoke(Class<T> returnType, Object input) {
-        if (problem != null) {
-            throw new RuntimeException(problem);
-        }
+        return invoke(returnType, input, Duration.ofNanos(Long.MAX_VALUE));
+    }
+
+    public static <T> T invoke(Class<T> returnType, Object input, Duration timeout) {
         try {
-            final ObjectMapper mapper = getObjectMapper();
-            String id = "aws-request-" + REQUEST_ID_GENERATOR.incrementAndGet();
-            CompletableFuture<String> result = new CompletableFuture<>();
-            REQUESTS.put(id, result);
-            String requestBody = mapper.writeValueAsString(input);
-            REQUEST_QUEUE.add(new Map.Entry<String, String>() {
-
-                @Override
-                public String getKey() {
-                    return id;
-                }
-
-                @Override
-                public String getValue() {
-                    return requestBody;
-                }
-
-                @Override
-                public String setValue(String value) {
-                    return null;
-                }
-            });
-            String output = result.get();
-            return mapper.readerFor(returnType).readValue(output);
-        } catch (Exception e) {
-            if (e instanceof ExecutionException) {
-                Throwable ex = e.getCause();
-                if (ex instanceof RuntimeException) {
-                    throw (RuntimeException) ex;
-                }
-                throw new RuntimeException(ex);
+            return invokeAsync(returnType, input).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (ExecutionException e) {
+            Throwable ex = e.getCause();
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
             }
+            throw new RuntimeException(ex);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static <T> CompletableFuture<T> invokeAsync(Class<T> returnType, Object input) {
+        if (problem != null) {
+            CompletableFuture<T> failed = new CompletableFuture<>();
+            failed.completeExceptionally(problem);
+            return failed;
+        }
+        final ObjectMapper mapper = getObjectMapper();
+        final String id = "aws-request-" + REQUEST_ID_GENERATOR.incrementAndGet();
+        final String requestBody;
+        final CompletableFuture<String> result = new CompletableFuture<>();
+        REQUESTS.put(id, result);
+        try {
+            requestBody = mapper.writeValueAsString(input);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        REQUEST_QUEUE.add(new AbstractMap.SimpleImmutableEntry(id, requestBody));
+        return result.thenApply(s -> {
+            try {
+                return mapper.readerFor(returnType).readValue(s);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**

@@ -57,10 +57,13 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
+import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.test.common.GroovyCacheCleaner;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -113,6 +116,7 @@ public class QuarkusUnitTest
     private String[] commandLineParameters = new String[0];
 
     private boolean allowTestClassOutsideDeployment;
+    private boolean flatClassPath;
     private List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
@@ -179,6 +183,18 @@ public class QuarkusUnitTest
 
     public QuarkusUnitTest setLogRecordPredicate(Predicate<LogRecord> predicate) {
         this.inMemoryLogHandler = new InMemoryLogHandler(predicate);
+        return this;
+    }
+
+    /**
+     * If this test should use a single ClassLoader to load all the classes.
+     *
+     * This is sometimes nessesary when testing Quarkus itself, and we want the test classes
+     * and Quarkus classes to be in the same CL.
+     *
+     */
+    public QuarkusUnitTest setFlatClassPath(boolean flatClassPath) {
+        this.flatClassPath = flatClassPath;
         return this;
     }
 
@@ -379,15 +395,18 @@ public class QuarkusUnitTest
             PropertyTestUtil.setLogFileProperty();
         }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
-        if (store.get(TestResourceManager.class.getName()) == null) {
-            TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            manager.init();
-            manager.start();
-            store.put(TestResourceManager.class.getName(), new ExtensionContext.Store.CloseableResource() {
+        TestResourceManager testResourceManager = (TestResourceManager) store.get(TestResourceManager.class.getName());
+        if (testResourceManager == null) {
+            testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
+            testResourceManager.init();
+            testResourceManager.start();
+            TestResourceManager tm = testResourceManager;
+            store.put(TestResourceManager.class.getName(), testResourceManager);
+            store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {
 
                 @Override
                 public void close() throws Throwable {
-                    manager.close();
+                    tm.close();
                 }
             });
         }
@@ -421,6 +440,24 @@ public class QuarkusUnitTest
                             }
                         }).produces(buildItem)
                                 .build();
+
+                        buildChainBuilder.addBuildStep(new BuildStep() {
+                            @Override
+                            public void execute(BuildContext context) {
+                                //we need to make sure all hot reloadable classes are application classes
+                                context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
+                                    @Override
+                                    public boolean test(String s) {
+                                        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
+                                                .getContextClassLoader();
+                                        //if the class file is present in this (and not the parent) CL then it is an application class
+                                        List<ClassPathElement> res = cl
+                                                .getElementsWithResource(s.replace(".", "/") + ".class", true);
+                                        return !res.isEmpty();
+                                    }
+                                }));
+                            }
+                        }).produces(ApplicationClassPredicateBuildItem.class).build();
                     }
                 });
             } catch (ClassNotFoundException e) {
@@ -437,6 +474,7 @@ public class QuarkusUnitTest
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
                         .setProjectRoot(testLocation)
+                        .setFlatClassPath(flatClassPath)
                         .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
                                 .collect(Collectors.toList()));
                 if (!forcedDependencies.isEmpty()) {
@@ -455,8 +493,10 @@ public class QuarkusUnitTest
                 builder.addClassLoaderEventListeners(this.classLoadListeners);
                 curatedApplication = builder.build().bootstrap();
 
-                runningQuarkusApplication = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
-                        .createInitialRuntimeApplication()
+                StartupActionImpl startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
+                        .createInitialRuntimeApplication();
+                startupAction.overrideConfig(testResourceManager.getConfigProperties());
+                runningQuarkusApplication = startupAction
                         .run(commandLineParameters);
                 //we restore the CL at the end of the test
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
@@ -556,6 +596,8 @@ public class QuarkusUnitTest
                 afterAllCustomizer.run();
             }
         }
+        ClearCache.clearAnnotationCache();
+        GroovyCacheCleaner.clearGroovyCache();
     }
 
     @Override

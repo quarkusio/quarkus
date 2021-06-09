@@ -1,10 +1,13 @@
 package io.quarkus.gradle.tasks;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -16,6 +19,8 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.CompileClasspath;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 
@@ -24,6 +29,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.deployment.CodeGenerator;
 
@@ -32,11 +38,13 @@ public class QuarkusGenerateCode extends QuarkusTask {
     public static final String QUARKUS_GENERATED_SOURCES = "quarkus-generated-sources";
     public static final String QUARKUS_TEST_GENERATED_SOURCES = "quarkus-test-generated-sources";
     // TODO dynamically load generation provider, or make them write code directly in quarkus-generated-sources
-    public static final String[] CODE_GENERATION_PROVIDER = new String[] { "grpc" };
+    public static final String[] CODE_GENERATION_PROVIDER = new String[] { "grpc", "avdl", "avpr", "avsc" };
+    public static final String[] CODE_GENERATION_INPUT = new String[] { "proto", "avro" };
 
     public static final String INIT_AND_RUN = "initAndRun";
     private Set<Path> sourcesDirectories;
-    private Consumer<Path> sourceRegistrar;
+    private Consumer<Path> sourceRegistrar = (p) -> {
+    };
     private boolean test = false;
 
     public QuarkusGenerateCode() {
@@ -51,6 +59,29 @@ public class QuarkusGenerateCode extends QuarkusTask {
     @CompileClasspath
     public FileCollection getClasspath() {
         return QuarkusGradleUtils.getSourceSet(getProject(), SourceSet.MAIN_SOURCE_SET_NAME).getCompileClasspath();
+    }
+
+    @InputFiles
+    public Set<File> getInputDirectory() {
+        Set<File> inputDirectories = new HashSet<>();
+
+        final String inputSourceSetName = test ? SourceSet.TEST_SOURCE_SET_NAME : SourceSet.MAIN_SOURCE_SET_NAME;
+        Path src = getProject().getProjectDir().toPath().resolve("src").resolve(inputSourceSetName);
+
+        for (String input : CODE_GENERATION_INPUT) {
+            Path providerSrcDir = src.resolve(input);
+            if (Files.exists(providerSrcDir)) {
+                inputDirectories.add(providerSrcDir.toFile());
+            }
+        }
+
+        return inputDirectories;
+    }
+
+    @OutputDirectory
+    public File getGeneratedOutputDirectory() {
+        final String generatedSourceSetName = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
+        return QuarkusGradleUtils.getSourceSet(getProject(), generatedSourceSetName).getJava().getOutputDir();
     }
 
     @TaskAction
@@ -101,7 +132,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
                     throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
                 }
                 initAndRun.get().invoke(null, deploymentClassLoader,
-                        sourcesDirectories,
+                        PathsCollection.from(sourcesDirectories),
                         paths.iterator().next(),
                         buildDir,
                         sourceRegistrar,
@@ -116,10 +147,6 @@ public class QuarkusGenerateCode extends QuarkusTask {
 
     public void setSourcesDirectories(Set<Path> sourcesDirectories) {
         this.sourcesDirectories = sourcesDirectories;
-    }
-
-    public void setSourceRegistrar(Consumer<Path> sourceRegistrar) {
-        this.sourceRegistrar = sourceRegistrar;
     }
 
     public void setTest(boolean test) {

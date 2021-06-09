@@ -219,12 +219,12 @@ public abstract class Serialisers {
         }
     }
 
-    public abstract BuiltinWriter[] getBultinWriters();
+    public abstract BuiltinWriter[] getBuiltinWriters();
 
-    public abstract BuiltinReader[] getBultinReaders();
+    public abstract BuiltinReader[] getBuiltinReaders();
 
     public void registerBuiltins(RuntimeType constraint) {
-        for (BuiltinWriter builtinWriter : getBultinWriters()) {
+        for (BuiltinWriter builtinWriter : getBuiltinWriters()) {
             if (builtinWriter.constraint == null || builtinWriter.constraint == constraint) {
                 MessageBodyWriter<?> writer;
                 try {
@@ -241,7 +241,7 @@ public abstract class Serialisers {
                 addWriter(builtinWriter.entityClass, resourceWriter);
             }
         }
-        for (BuiltinReader builtinReader : getBultinReaders()) {
+        for (BuiltinReader builtinReader : getBuiltinReaders()) {
             if (builtinReader.constraint == null || builtinReader.constraint == constraint) {
                 MessageBodyReader<?> reader;
                 try {

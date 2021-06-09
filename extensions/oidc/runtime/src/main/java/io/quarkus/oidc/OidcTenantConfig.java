@@ -640,6 +640,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * Expected issuer 'iss' claim value.
+         * Note this property overrides the `issuer` property which may be set in OpenId Connect provider's well-known
+         * configuration.
+         * If the `iss` claim value varies depending on the host/IP address or tenant id of the provider then you may skip the
+         * issuer verification by setting this property to 'any' but it should be done only when other options (such as
+         * configuring
+         * the provider to use the fixed `iss` claim value) are not possible.
          */
         @ConfigItem
         public Optional<String> issuer = Optional.empty();
@@ -738,6 +744,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem(defaultValue = "true")
         public boolean allowJwtIntrospection = true;
 
+        /**
+         * Allow the remote introspection of the opaque tokens.
+         *
+         * Set this property to 'false' if only JWT tokens are expected.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean allowOpaqueTokenIntrospection = true;
+
         public Optional<String> getIssuer() {
             return issuer;
         }
@@ -816,6 +830,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setAllowJwtIntrospection(boolean allowJwtIntrospection) {
             this.allowJwtIntrospection = allowJwtIntrospection;
+        }
+
+        public boolean isAllowOpaqueTokenIntrospection() {
+            return allowOpaqueTokenIntrospection;
+        }
+
+        public void setAllowOpaqueTokenIntrospection(boolean allowOpaqueTokenIntrospection) {
+            this.allowOpaqueTokenIntrospection = allowOpaqueTokenIntrospection;
         }
     }
 

@@ -1,16 +1,15 @@
 
 package io.quarkus.grpc.server.services;
 
-import javax.inject.Singleton;
-
+import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
-import io.grpc.examples.helloworld.MutinyGreeterGrpc;
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 
-@Singleton
-public class BlockingMutinyHelloService extends MutinyGreeterGrpc.GreeterImplBase {
+@GrpcService
+public class BlockingMutinyHelloService implements Greeter {
 
     @Override
     @Blocking

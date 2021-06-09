@@ -23,6 +23,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -41,11 +42,14 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -67,6 +71,8 @@ import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLi
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
 import io.quarkus.smallrye.reactivemessaging.runtime.WorkerConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactory;
+import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactoryInterceptor;
 import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
@@ -116,7 +122,8 @@ public class SmallRyeReactiveMessagingProcessor {
                         return;
                     }
                     if (annotations.containsKey(ReactiveMessagingDotNames.INCOMING)
-                            || annotations.containsKey(ReactiveMessagingDotNames.OUTGOING)) {
+                            || annotations.containsKey(ReactiveMessagingDotNames.OUTGOING)
+                            || annotations.containsKey(ReactiveMessagingDotNames.CHANNEL)) {
                         LOGGER.debugf(
                                 "Found reactive messaging annotations on a class %s with no scope defined - adding @Dependent",
                                 ctx.getTarget());
@@ -360,13 +367,6 @@ public class SmallRyeReactiveMessagingProcessor {
             MethodInfo methodInfo = mediatorMethod.getMethod();
             BeanInfo bean = mediatorMethod.getBean();
 
-            String generatedInvokerName = generateInvoker(bean, methodInfo, classOutput);
-            /*
-             * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
-             * We could potentially lift this restriction with some extra CDI bean generation but it's probably not worth it
-             */
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
-
             if (methodInfo.hasAnnotation(BLOCKING) || methodInfo.hasAnnotation(SMALLRYE_BLOCKING)) {
                 // Just in case both annotation are used, use @Blocking value.
                 String poolName = Blocking.DEFAULT_WORKER_POOL;
@@ -379,11 +379,22 @@ public class SmallRyeReactiveMessagingProcessor {
             }
 
             try {
+                boolean isSuspendMethod = isSuspendMethod(methodInfo);
+
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
-                        .create(methodInfo, bean,
-                                generatedInvokerName, recorderContext,
-                                Thread.currentThread().getContextClassLoader());
+                        .create(methodInfo, isSuspendMethod, bean, recorderContext,
+                                Thread.currentThread().getContextClassLoader(), conf.strict);
                 mediatorConfigurations.add(mediatorConfiguration);
+
+                String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,
+                        classOutput);
+                /*
+                 * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
+                 * We could potentially lift this restriction with some extra CDI bean generation but it's probably not worth it
+                 */
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
+                mediatorConfiguration
+                        .setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
             } catch (IllegalArgumentException e) {
                 throw new DeploymentException(e); // needed to pass the TCK
             }
@@ -400,6 +411,16 @@ public class SmallRyeReactiveMessagingProcessor {
                 .supplier(recorder.createContext(mediatorConfigurations, workerConfigurations, emittersConfiguratons,
                         channelConfigurations))
                 .done());
+    }
+
+    private boolean isSuspendMethod(MethodInfo methodInfo) {
+        if (!methodInfo.parameters().isEmpty()) {
+            if (methodInfo.parameters().get(methodInfo.parameters().size() - 1).name()
+                    .equals(ReactiveMessagingDotNames.CONTINUATION)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -419,7 +440,9 @@ public class SmallRyeReactiveMessagingProcessor {
      * }
      * </pre>
      */
-    private String generateInvoker(BeanInfo bean, MethodInfo method, ClassOutput classOutput) {
+    private String generateInvoker(BeanInfo bean, MethodInfo method, boolean isSuspendMethod,
+            QuarkusMediatorConfiguration mediatorConfiguration,
+            ClassOutput classOutput) {
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
             baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
@@ -437,6 +460,23 @@ public class SmallRyeReactiveMessagingProcessor {
                 + INVOKER_SUFFIX + "_" + method.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
 
+        if (isSuspendMethod
+                && ((mediatorConfiguration.getIncoming().isEmpty()) && (mediatorConfiguration.getOutgoing() != null))) {
+            // TODO: this restriction needs to be lifted
+            throw new IllegalStateException(
+                    "Currently suspend methods for Reactive Messaging are not supported on methods that are only annotated with @Outgoing");
+        }
+
+        if (!isSuspendMethod) {
+            generateStandardInvoker(method, classOutput, generatedName);
+        } else if (!mediatorConfiguration.getIncoming().isEmpty()) {
+            generateSubscribingCoroutineInvoker(method, classOutput, generatedName);
+        }
+
+        return generatedName.replace('/', '.');
+    }
+
+    private void generateStandardInvoker(MethodInfo method, ClassOutput classOutput, String generatedName) {
         try (ClassCreator invoker = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(Invoker.class)
                 .build()) {
@@ -479,8 +519,117 @@ public class SmallRyeReactiveMessagingProcessor {
                 }
             }
         }
+    }
 
-        return generatedName.replace('/', '.');
+    private void generateSubscribingCoroutineInvoker(MethodInfo method, ClassOutput classOutput, String generatedName) {
+        try (ClassCreator invoker = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                .superClass(ReactiveMessagingDotNames.ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString())
+                .build()) {
+
+            // generate a constructor that takes the bean instance as an argument
+            // the method type needs to be Object because that is what is used as the call site in SmallRye Reactive Messaging
+            try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
+                ctor.setModifiers(Modifier.PUBLIC);
+                ctor.invokeSpecialMethod(
+                        MethodDescriptor.ofConstructor(
+                                ReactiveMessagingDotNames.ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString(),
+                                Object.class.getName()),
+                        ctor.getThis(),
+                        ctor.getMethodParam(0));
+                ctor.returnValue(null);
+            }
+
+            try (MethodCreator invoke = invoker.getMethodCreator("invokeBean", Object.class, Object.class, Object[].class,
+                    ReactiveMessagingDotNames.CONTINUATION.toString())) {
+                ResultHandle[] args = new ResultHandle[method.parameters().size()];
+                ResultHandle array = invoke.getMethodParam(1);
+                for (int i = 0; i < method.parameters().size() - 1; ++i) {
+                    args[i] = invoke.readArrayValue(array, i);
+                }
+                args[args.length - 1] = invoke.getMethodParam(2);
+                ResultHandle result = invoke.invokeVirtualMethod(method, invoke.getMethodParam(0), args);
+                invoke.returnValue(result);
+            }
+        }
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void devmodeSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+        beans.produce(new AdditionalBeanBuildItem(DevModeSupportConnectorFactory.class,
+                DevModeSupportConnectorFactoryInterceptor.class));
+
+        transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                ClassInfo clazz = ctx.getTarget().asClass();
+                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())) {
+                    ctx.transform().add(DevModeSupportConnectorFactory.class).done();
+                }
+            }
+
+            private boolean doesImplement(ClassInfo clazz, DotName iface, IndexView index) {
+                while (clazz != null && !clazz.name().equals(ReactiveMessagingDotNames.OBJECT)) {
+                    if (clazz.interfaceNames().contains(iface)) {
+                        return true;
+                    }
+
+                    clazz = index.getClassByName(clazz.superName());
+                }
+
+                return false;
+            }
+        }));
+    }
+
+    @BuildStep
+    CoroutineConfigurationBuildItem producesCoroutineConfiguration() {
+        try {
+            Class.forName("kotlinx.coroutines.future.FutureKt", false, getClass().getClassLoader());
+            return new CoroutineConfigurationBuildItem(true);
+        } catch (ClassNotFoundException e) {
+            return new CoroutineConfigurationBuildItem(false);
+        }
+    }
+
+    @BuildStep
+    void produceCoroutineScope(
+            CoroutineConfigurationBuildItem coroutineConfigurationBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer) {
+        if (coroutineConfigurationBuildItem.isEnabled()) {
+            buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(
+                            "io.quarkus.smallrye.reactivemessaging.runtime.kotlin.ApplicationCoroutineScope")
+                    .setUnremovable().build());
+        }
+    }
+
+    private void ensureKotlinCoroutinesEnabled(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem,
+            MethodInfo method) {
+        if (!coroutineConfigurationBuildItem.isEnabled()) {
+            String format = String.format(
+                    "Method %s.%s is suspendable but kotlinx-coroutines-jdk8 dependency not detected",
+                    method.declaringClass().name(), method.name());
+            throw new IllegalStateException(format);
+        }
+    }
+
+    public static final class CoroutineConfigurationBuildItem extends SimpleBuildItem {
+        private final boolean isEnabled;
+
+        public CoroutineConfigurationBuildItem(boolean isEnabled) {
+            this.isEnabled = isEnabled;
+        }
+
+        public boolean isEnabled() {
+            return isEnabled;
+        }
     }
 
 }

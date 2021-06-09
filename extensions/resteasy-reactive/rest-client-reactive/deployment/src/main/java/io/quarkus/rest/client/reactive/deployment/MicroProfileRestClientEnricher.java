@@ -4,8 +4,7 @@ import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
-import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
-import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
+import static org.jboss.resteasy.reactive.common.processor.HashUtil.sha1;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.lang.annotation.Annotation;
@@ -52,10 +51,10 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
 import io.quarkus.rest.client.reactive.HeaderFiller;
-import io.quarkus.rest.client.reactive.MicroProfileRestClientRequestFilter;
-import io.quarkus.rest.client.reactive.NoOpHeaderFiller;
-import io.quarkus.resteasy.reactive.client.deployment.JaxrsClientEnricher;
+import io.quarkus.rest.client.reactive.runtime.MicroProfileRestClientRequestFilter;
+import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import io.quarkus.runtime.util.HashUtil;
 
 /**
@@ -64,7 +63,7 @@ import io.quarkus.runtime.util.HashUtil;
  * Used mostly to handle the `@RegisterProvider` annotation that e.g. registers filters
  * and to add support for `@ClientHeaderParam` annotations for specifying (possibly) computed headers via annotations
  */
-class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
+class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     private static final Logger log = Logger.getLogger(MicroProfileRestClientEnricher.class);
 
     public static final String DEFAULT_HEADERS_FACTORY = DefaultClientHeadersFactoryImpl.class.getName();
@@ -87,16 +86,6 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
     @Override
     public void forClass(MethodCreator constructor, AssignableResultHandle webTargetBase,
             ClassInfo interfaceClass, IndexView index) {
-
-        AnnotationInstance annotation = interfaceClass.classAnnotation(REGISTER_PROVIDER);
-        AnnotationInstance groupAnnotation = interfaceClass.classAnnotation(REGISTER_PROVIDERS);
-
-        if (annotation != null) {
-            addProvider(constructor, webTargetBase, index, annotation);
-        }
-        for (AnnotationInstance annotationInstance : extractAnnotations(groupAnnotation)) {
-            addProvider(constructor, webTargetBase, index, annotationInstance);
-        }
 
         ResultHandle clientHeadersFactory = null;
 
@@ -137,59 +126,55 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
     }
 
     @Override
-    public void forMethod(ClassCreator classCreator, MethodCreator constructor,
-            MethodCreator methodCreator,
-            ClassInfo interfaceClass,
-            MethodInfo method, AssignableResultHandle invocationBuilder,
+    public void forSubResourceMethod(ClassCreator subClassCreator, MethodCreator subConstructor,
+            MethodCreator subClinit, MethodCreator subMethodCreator, ClassInfo rootInterfaceClass,
+            ClassInfo subInterfaceClass, MethodInfo subMethod, MethodInfo rootMethod,
+            AssignableResultHandle invocationBuilder, // sub-level
             IndexView index, BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            int methodIndex) {
+            int methodIndex, int subMethodIndex) {
+        addJavaMethodToContext(subClassCreator, subClinit, subMethodCreator, subInterfaceClass, subMethod,
+                invocationBuilder, subMethodIndex);
 
-        // create a field in the stub class to contain (interface) java.lang.reflect.Method corresponding to this method
-        // MP Rest Client spec says it has to be in the request context, keeping it in a field we don't have to
-        // initialize it on each call
-        ResultHandle interfaceClassHandle = constructor.loadClass(interfaceClass.toString());
+        Map<String, HeaderData> headerFillersByName = new HashMap<>();
+        collectHeaderFillers(rootInterfaceClass, rootMethod, headerFillersByName);
+        collectHeaderFillers(subInterfaceClass, subMethod, headerFillersByName);
+        String subHeaderFillerName = subInterfaceClass.name().toString() + sha1(rootInterfaceClass.name().toString()) +
+                "$$" + methodIndex + "$$" + subMethodIndex;
+        createAndReturnHeaderFiller(subClassCreator, subConstructor, subMethodCreator, subMethod,
+                invocationBuilder, index, generatedClasses, subMethodIndex, subHeaderFillerName, headerFillersByName);
+    }
 
-        ResultHandle parameterArray = constructor.newArray(Class.class, method.parameters().size());
-        for (int i = 0; i < method.parameters().size(); i++) {
-            String parameterClass = method.parameters().get(i).name().toString();
-            constructor.writeArrayValue(parameterArray, i, constructor.loadClass(parameterClass));
-        }
+    @Override
+    public void forMethod(ClassCreator classCreator, MethodCreator constructor,
+            MethodCreator clinit, MethodCreator methodCreator, ClassInfo interfaceClass,
+            MethodInfo method, AssignableResultHandle invocationBuilder, IndexView index,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex) {
 
-        ResultHandle javaMethodHandle = constructor.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Class.class, "getMethod", Method.class, String.class, Class[].class),
-                interfaceClassHandle, constructor.load(method.name()), parameterArray);
-        FieldDescriptor javaMethodField = FieldDescriptor.of(classCreator.getClassName(), "javaMethod" + methodIndex,
-                Method.class);
-        classCreator.getFieldCreator(javaMethodField).setModifiers(Modifier.PRIVATE | Modifier.FINAL);
-        constructor.writeInstanceField(javaMethodField, constructor.getThis(), javaMethodHandle);
+        addJavaMethodToContext(classCreator, clinit, methodCreator, interfaceClass, method, invocationBuilder,
+                methodIndex);
 
         // header filler
-        Map<String, AnnotationInstance> headerFillersByName = new HashMap<>();
 
-        AnnotationInstance classLevelHeader = interfaceClass.classAnnotation(CLIENT_HEADER_PARAM);
-        if (classLevelHeader != null) {
-            headerFillersByName.put(classLevelHeader.value("name").asString(), classLevelHeader);
-        }
-        putAllHeaderAnnotations(headerFillersByName,
-                extractAnnotations(interfaceClass.classAnnotation(CLIENT_HEADER_PARAMS)));
+        Map<String, HeaderData> headerFillersByName = new HashMap<>();
 
-        Map<String, AnnotationInstance> methodLevelHeadersByName = new HashMap<>();
-        AnnotationInstance methodLevelHeader = method.annotation(CLIENT_HEADER_PARAM);
-        if (methodLevelHeader != null) {
-            methodLevelHeadersByName.put(methodLevelHeader.value("name").asString(), methodLevelHeader);
-        }
-        putAllHeaderAnnotations(methodLevelHeadersByName, extractAnnotations(method.annotation(CLIENT_HEADER_PARAMS)));
+        collectHeaderFillers(interfaceClass, method, headerFillersByName);
 
-        headerFillersByName.putAll(methodLevelHeadersByName);
+        createAndReturnHeaderFiller(classCreator, constructor, methodCreator, method,
+                invocationBuilder, index, generatedClasses, methodIndex,
+                interfaceClass + "$$" + method.name() + "$$" + methodIndex, headerFillersByName);
+    }
 
+    private void createAndReturnHeaderFiller(ClassCreator classCreator, MethodCreator constructor,
+            MethodCreator methodCreator, MethodInfo method,
+            AssignableResultHandle invocationBuilder, IndexView index,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex, String fillerClassName,
+            Map<String, HeaderData> headerFillersByName) {
         FieldDescriptor headerFillerField = FieldDescriptor.of(classCreator.getClassName(),
                 "headerFiller" + methodIndex, HeaderFiller.class);
         classCreator.getFieldCreator(headerFillerField).setModifiers(Modifier.PRIVATE | Modifier.FINAL);
         ResultHandle headerFiller;
         // create header filler for this method if headerFillersByName is not empty
         if (!headerFillersByName.isEmpty()) {
-            String fillerClassName = interfaceClass.toString() + "$$" + method.name() + "$$" + methodIndex;
-
             GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
             try (ClassCreator headerFillerClass = ClassCreator.builder().className(fillerClassName)
                     .interfaces(HeaderFiller.class)
@@ -210,8 +195,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
                         .getMethodCreator(
                                 MethodDescriptor.ofMethod(HeaderFiller.class, "addHeaders", void.class, MultivaluedMap.class));
 
-                for (Map.Entry<String, AnnotationInstance> headerEntry : headerFillersByName.entrySet()) {
-                    addHeaderParam(interfaceClass, method, fillHeaders, headerEntry.getValue(), generatedClasses,
+                for (Map.Entry<String, HeaderData> headerEntry : headerFillersByName.entrySet()) {
+                    addHeaderParam(method, fillHeaders, headerEntry.getValue(), generatedClasses,
                             fillerClassName, index);
                 }
                 fillHeaders.returnValue(null);
@@ -224,11 +209,6 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
         }
         constructor.writeInstanceField(headerFillerField, constructor.getThis(), headerFiller);
 
-        ResultHandle javaMethod = methodCreator.readInstanceField(javaMethodField, methodCreator.getThis());
-        ResultHandle javaMethodAsObject = methodCreator.checkCast(javaMethod, Object.class);
-        methodCreator.assign(invocationBuilder,
-                methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
-                        methodCreator.load(INVOKED_METHOD), javaMethodAsObject));
         ResultHandle headerFillerAsObject = methodCreator.checkCast(
                 methodCreator.readInstanceField(headerFillerField, methodCreator.getThis()), Object.class);
         methodCreator.assign(invocationBuilder,
@@ -236,10 +216,76 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
                         methodCreator.load(HeaderFiller.class.getName()), headerFillerAsObject));
     }
 
-    private void putAllHeaderAnnotations(Map<String, AnnotationInstance> headerMap, AnnotationInstance[] annotations) {
+    private void collectHeaderFillers(ClassInfo interfaceClass, MethodInfo method,
+            Map<String, HeaderData> headerFillersByName) {
+        AnnotationInstance classLevelHeader = interfaceClass.classAnnotation(CLIENT_HEADER_PARAM);
+        if (classLevelHeader != null) {
+            headerFillersByName.put(classLevelHeader.value("name").asString(),
+                    new HeaderData(classLevelHeader, interfaceClass));
+        }
+        putAllHeaderAnnotations(headerFillersByName,
+                interfaceClass,
+                extractAnnotations(interfaceClass.classAnnotation(CLIENT_HEADER_PARAMS)));
+
+        Map<String, HeaderData> methodLevelHeadersByName = new HashMap<>();
+        AnnotationInstance methodLevelHeader = method.annotation(CLIENT_HEADER_PARAM);
+        if (methodLevelHeader != null) {
+            methodLevelHeadersByName.put(methodLevelHeader.value("name").asString(),
+                    new HeaderData(methodLevelHeader, interfaceClass));
+        }
+        putAllHeaderAnnotations(methodLevelHeadersByName, interfaceClass,
+                extractAnnotations(method.annotation(CLIENT_HEADER_PARAMS)));
+
+        headerFillersByName.putAll(methodLevelHeadersByName);
+    }
+
+    /**
+     * create a field in the stub class to contain (interface) java.lang.reflect.Method corresponding to this method
+     * MP Rest Client spec says it has to be in the request context, keeping it in a field we don't have to
+     * initialize it on each call
+     * 
+     * @param classCreator client (or sub-resource client) class creator
+     * @param methodCreator method for which we put the java.lang.reflect.Method to context (aka this method)
+     * @param interfaceClass class of the interface for this client
+     * @param method jandex counterpart of this method
+     * @param invocationBuilder Invocation.Builder in this method
+     * @param methodIndex index of this method
+     */
+    private void addJavaMethodToContext(ClassCreator classCreator, MethodCreator clinit, MethodCreator methodCreator,
+            ClassInfo interfaceClass, MethodInfo method, AssignableResultHandle invocationBuilder, int methodIndex) {
+        FieldDescriptor javaMethodField = createJavaMethodField(classCreator, clinit, interfaceClass, method, methodIndex);
+        ResultHandle javaMethod = methodCreator.readStaticField(javaMethodField);
+        ResultHandle javaMethodAsObject = methodCreator.checkCast(javaMethod, Object.class);
+        methodCreator.assign(invocationBuilder,
+                methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
+                        methodCreator.load(INVOKED_METHOD), javaMethodAsObject));
+    }
+
+    private FieldDescriptor createJavaMethodField(ClassCreator classCreator, MethodCreator clinit,
+            ClassInfo interfaceClass, MethodInfo method, int methodIndex) {
+        ResultHandle interfaceClassHandle = clinit.loadClass(interfaceClass.toString());
+
+        ResultHandle parameterArray = clinit.newArray(Class.class, method.parameters().size());
+        for (int i = 0; i < method.parameters().size(); i++) {
+            String parameterClass = method.parameters().get(i).name().toString();
+            clinit.writeArrayValue(parameterArray, i, clinit.loadClass(parameterClass));
+        }
+
+        ResultHandle javaMethodHandle = clinit.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Class.class, "getMethod", Method.class, String.class, Class[].class),
+                interfaceClassHandle, clinit.load(method.name()), parameterArray);
+        FieldDescriptor javaMethodField = FieldDescriptor.of(classCreator.getClassName(), "javaMethod" + methodIndex,
+                Method.class);
+        classCreator.getFieldCreator(javaMethodField).setModifiers(Modifier.PRIVATE | Modifier.FINAL | Modifier.STATIC);
+        clinit.writeStaticField(javaMethodField, javaMethodHandle);
+        return javaMethodField;
+    }
+
+    private void putAllHeaderAnnotations(Map<String, HeaderData> headerMap, ClassInfo interfaceClass,
+            AnnotationInstance[] annotations) {
         for (AnnotationInstance annotation : annotations) {
             String headerName = annotation.value("name").asString();
-            if (headerMap.put(headerName, annotation) != null) {
+            if (headerMap.put(headerName, new HeaderData(annotation, interfaceClass)) != null) {
                 throw new RestClientDefinitionException("Duplicate ClientHeaderParam annotation for header: " + headerName +
                         " on " + annotation.target());
             }
@@ -247,12 +293,14 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
     }
 
     // fillHeaders takes `MultivaluedMap<String, String>` as param and modifies it
-    private void addHeaderParam(ClassInfo declaringClass,
-            MethodInfo declaringMethod, MethodCreator fillHeadersCreator,
-            AnnotationInstance annotation,
+    private void addHeaderParam(MethodInfo declaringMethod, MethodCreator fillHeadersCreator,
+            HeaderData headerData,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             String fillerClassName,
             IndexView index) {
+
+        AnnotationInstance annotation = headerData.annotation;
+        ClassInfo declaringClass = headerData.definingClass;
 
         String headerName = annotation.value("name").asString();
 
@@ -280,7 +328,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
 
             fillHeaders.invokeInterfaceMethod(MAP_PUT_METHOD, headerMap, fillHeaders.load(headerName), headerList);
         } else { // method call :O {some.package.ClassName.methodName} or {defaultMethodWithinThisInterfaceName}
-            // if `required` an exception on header filling does not fail the invocation:
+            // if `!required` an exception on header filling does not fail the invocation:
             boolean required = annotation.valueWithDefault(index, "required").asBoolean();
 
             BytecodeCreator fillHeader = fillHeaders;
@@ -292,7 +340,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
             }
             String methodName = values[0].substring(1, values[0].length() - 1); // strip curly braces
 
-            MethodInfo headerFillingMethod = null;
+            MethodInfo headerFillingMethod;
             ResultHandle headerValue;
             if (methodName.contains(".")) {
                 // calling a static method
@@ -335,7 +383,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
                             fillHeader.load(headerName));
                 } else {
                     throw new RestClientDefinitionException(
-                            "ClientHeaderParam method " + declaringClass.toString() + "#" + methodName
+                            "ClientHeaderParam method " + declaringClass + "#" + methodName
                                     + " has too many parameters, at most one parameter, header name, expected");
                 }
 
@@ -431,15 +479,18 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
         return EMPTY_ANNOTATION_INSTANCES;
     }
 
-    private void addProvider(MethodCreator ctor, AssignableResultHandle target, IndexView index,
-            AnnotationInstance registerProvider) {
-        ResultHandle provider = ctor.newInstance(MethodDescriptor.ofConstructor(registerProvider.value().asString()));
-        ResultHandle alteredTarget = ctor.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class,
-                        int.class),
-                target, provider,
-                ctor.load(registerProvider.valueWithDefault(index, "priority").asInt()));
-        ctor.assign(target, alteredTarget);
-    }
+    /**
+     * ClientHeaderParam annotations can be defined on a JAX-RS interface or a sub-client (sub-resource).
+     * If we're filling headers for a sub-client, we need to know the defining class of the ClientHeaderParam
+     * to properly resolve default methods of the "root" client
+     */
+    private static class HeaderData {
+        private final AnnotationInstance annotation;
+        private final ClassInfo definingClass;
 
+        public HeaderData(AnnotationInstance annotation, ClassInfo definingClass) {
+            this.annotation = annotation;
+            this.definingClass = definingClass;
+        }
+    }
 }

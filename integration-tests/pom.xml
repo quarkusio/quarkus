@@ -23,6 +23,7 @@
         <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
     <modules>
+        <module>avro-reload</module>
         <module>bouncycastle</module>
         <module>bouncycastle-fips</module>
         <module>bouncycastle-fips-jsse</module>
@@ -38,10 +39,14 @@
         <module>gradle</module>
         <module>main</module>
         <module>kafka</module>
+        <module>kafka-ssl</module>
+        <module>kafka-sasl</module>
         <module>kafka-snappy</module>
         <module>kafka-avro</module>
+        <module>kafka-avro-apicurio2</module>
         <module>kafka-streams</module>
         <module>jpa</module>
+        <module>jpa-mapping-xml</module>
         <module>jpa-db2</module>
         <module>jpa-derby</module>
         <module>jpa-postgresql</module>
@@ -52,6 +57,7 @@
         <module>jpa-h2</module>
         <module>jpa-mssql</module>
         <module>jpa-mysql</module>
+        <module>jpa-oracle</module>
         <module>hibernate-orm-panache</module>
         <module>hibernate-orm-rest-data-panache</module>
         <module>hibernate-orm-panache-kotlin</module>
@@ -62,9 +68,9 @@
         <module>hibernate-search-orm-elasticsearch</module>
         <module>hibernate-tenancy</module>
         <module>hibernate-orm-envers</module>
-        <module>legacy-redirect</module>
         <module>vertx-http</module>
         <module>vertx-web</module>
+        <module>vertx-web-jackson</module>
         <module>vertx</module>
         <module>spring-di</module>
         <module>spring-web</module>
@@ -81,6 +87,7 @@
         <module>liquibase</module>
         <module>oidc</module>
         <module>oidc-client</module>
+        <module>oidc-client-reactive</module>
         <module>oidc-client-wiremock</module>
         <module>oidc-token-propagation</module>
         <module>smallrye-jwt-token-propagation</module>
@@ -132,6 +139,7 @@
         <module>smallrye-context-propagation</module>
         <module>smallrye-metrics</module>
         <module>smallrye-graphql</module>
+        <module>smallrye-graphql-client</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>
         <module>redis-client</module>
@@ -144,8 +152,9 @@
         <module>reactive-messaging-kafka</module>
         <module>reactive-messaging-http</module>
         <module>rest-client</module>
+        <module>resteasy-reactive-kotlin</module>
         <module>resteasy-reactive-rest-client</module>
-        <module>resteasy-reactive-rest-client-standalone</module>
+        <module>resteasy-reactive-rest-client-multipart</module>
         <module>packaging</module>
         <module>simple with space</module>
         <module>consul-config</module>
@@ -165,6 +174,7 @@
         <module>native-config-profile</module>
         <module>logging-min-level-unset</module>
         <module>logging-min-level-set</module>
+        <module>redis-devservices</module>
 
         <!-- gRPC tests -->
         <module>grpc-tls</module>

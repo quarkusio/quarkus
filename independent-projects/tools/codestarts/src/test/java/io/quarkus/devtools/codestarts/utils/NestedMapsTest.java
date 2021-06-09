@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,8 +23,27 @@ class NestedMapsTest {
     private static final Map<String, Object> NESTED_MAP_2 = readTestYamlMap("/nested-map-2.yml");
 
     @Test
+    void testDeepMerge() {
+        final Map<String, Object> target = NestedMaps.deepMerge(NESTED_MAP_1, NESTED_MAP_2);
+
+        checkTargetMap(target);
+        ((Map) target.get("hello")).put("world", "changed");
+        final Map<String, Object> targetAgain = NestedMaps.deepMerge(NESTED_MAP_1, NESTED_MAP_2);
+        checkTargetMap(targetAgain);
+    }
+
+    @Test
+    void testDeepMergeStream() {
+        final Map<String, Object> target = NestedMaps.deepMerge(Stream.of(NESTED_MAP_1, NESTED_MAP_2));
+
+        checkTargetMap(target);
+    }
+
+    @Test
     void testGetValue() {
         assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.baz")).hasValue("baz");
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.int")).hasValue(1);
+        assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bool")).hasValue(false);
         assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.foo")).hasValue("bar");
         assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.baz")).isEmpty();
         assertThat(NestedMaps.getValue(NESTED_MAP_1, "baa")).isEmpty();
@@ -37,33 +57,18 @@ class NestedMapsTest {
         });
     }
 
-    @Test
-    void testDeepMerge() {
-        final HashMap<String, Object> target = new HashMap<>();
-
-        NestedMaps.deepMerge(target, NESTED_MAP_1);
-        NestedMaps.deepMerge(target, NESTED_MAP_2);
-
-        checkTargetMap(target);
-    }
-
-    @Test
-    void testDeepMergeStream() {
-        final Map<String, Object> target = NestedMaps.deepMerge(Stream.of(NESTED_MAP_1, NESTED_MAP_2));
-
-        checkTargetMap(target);
-    }
-
     private void checkTargetMap(Map<String, Object> target) {
         assertThat(NestedMaps.getValue(target, "foo.baz")).hasValue("baz");
         assertThat(NestedMaps.getValue(target, "foo.foo")).hasValue("bar");
         assertThat(NestedMaps.getValue(target, "foo.bar")).hasValue("foo");
+        assertThat(NestedMaps.getValue(target, "foo.int")).hasValue(1);
+        assertThat(NestedMaps.getValue(target, "foo.bool")).hasValue(false);
         assertThat(NestedMaps.getValue(target, "foo.bar.baz")).isEmpty();
         assertThat(NestedMaps.getValue(target, "baz")).hasValue("bar");
 
         assertThat(NestedMaps.getValue(target, "bar.foo.bar.foo")).hasValue("bar");
         assertThat(NestedMaps.getValue(target, "bar.foo.bar.baz")).hasValue("foo");
-        assertThat(NestedMaps.getValue(target, "hello")).hasValue("world");
+        assertThat(NestedMaps.getValue(target, "hello.world")).hasValue("helloworld");
         assertThat((Collection) NestedMaps.getValue(target, "list").get()).containsExactly("foo", "bar", "baz");
     }
 
@@ -73,10 +78,12 @@ class NestedMapsTest {
         data.put("foo.baz", "baz");
         data.put("foo.foo", "bar");
         data.put("foo.bar", "foo");
+        data.put("foo.int", 1);
+        data.put("foo.bool", false);
         data.put("baz", "bar");
         data.put("bar.foo.bar.foo", "bar");
         data.put("bar.foo.bar.baz", "foo");
-        data.put("hello", "world");
+        data.put("hello", Collections.singletonMap("world", "helloworld"));
         data.put("list", Arrays.asList("foo", "bar", "baz"));
         final Map<String, Object> target = NestedMaps.unflatten(data);
 

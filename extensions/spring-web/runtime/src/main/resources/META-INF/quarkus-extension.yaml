@@ -1,4 +1,5 @@
 name: "Quarkus Extension for Spring Web API"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
   - "spring-web"
@@ -6,13 +7,11 @@ metadata:
   guide: "https://quarkus.io/guides/spring-web"
   categories:
   - "compatibility"
-  status: "preview"
+  status: "stable"
   codestart:
     name: "spring-web"
-    kind: "example"
     languages:
       - "java"
       - "kotlin"
       - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
-

@@ -5,7 +5,6 @@ import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -89,24 +89,22 @@ public class ResteasyServerCommonProcessor {
 
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
-    private static final DotName[] METHOD_ANNOTATIONS = {
+    private static final List<DotName> METHOD_ANNOTATIONS = List.of(
             ResteasyDotNames.GET,
             ResteasyDotNames.HEAD,
             ResteasyDotNames.DELETE,
             ResteasyDotNames.OPTIONS,
             ResteasyDotNames.PATCH,
             ResteasyDotNames.POST,
-            ResteasyDotNames.PUT,
-    };
+            ResteasyDotNames.PUT);
 
-    private static final DotName[] RESTEASY_PARAM_ANNOTATIONS = {
+    private static final List<DotName> RESTEASY_PARAM_ANNOTATIONS = List.of(
             ResteasyDotNames.RESTEASY_QUERY_PARAM,
             ResteasyDotNames.RESTEASY_FORM_PARAM,
             ResteasyDotNames.RESTEASY_COOKIE_PARAM,
             ResteasyDotNames.RESTEASY_PATH_PARAM,
             ResteasyDotNames.RESTEASY_HEADER_PARAM,
-            ResteasyDotNames.RESTEASY_MATRIX_PARAM,
-    };
+            ResteasyDotNames.RESTEASY_MATRIX_PARAM);
 
     /**
      * JAX-RS configuration.
@@ -145,11 +143,11 @@ public class ResteasyServerCommonProcessor {
         /**
          * Whether or not detailed JAX-RS metrics should be enabled if the smallrye-metrics
          * extension is present.
-         *
+         * <p>
          * See <a href=
          * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile
          * Metrics: Optional REST metrics</a>.
-         *
+         * <p>
          * Deprecated. Use {@code quarkus.smallrye-metrics.jaxrs.enabled}.
          */
         @ConfigItem(name = "metrics.enabled", defaultValue = "false")
@@ -236,7 +234,8 @@ public class ResteasyServerCommonProcessor {
         final Collection<AnnotationInstance> allPaths;
         if (filterClasses) {
             allPaths = paths.stream().filter(
-                    annotationInstance -> keepEnclosingClass(allowedClasses, excludedClasses, annotationInstance))
+                    annotationInstance -> keepAnnotation(beanArchiveIndexBuildItem.getIndex(), allowedClasses, excludedClasses,
+                            annotationInstance))
                     .collect(Collectors.toList());
         } else {
             allPaths = new ArrayList<>(paths);
@@ -328,6 +327,14 @@ public class ResteasyServerCommonProcessor {
                 if (!implementor.hasNoArgsConstructor()) {
                     withoutDefaultCtor.put(implementor.name(), implementor);
                 }
+            }
+        }
+
+        // look for all annotated providers with no default constructor
+        for (final String cls : jaxrsProvidersToRegisterBuildItem.getAnnotatedProviders()) {
+            final ClassInfo info = index.getClassByName(DotName.createSimple(cls));
+            if (info != null && !info.hasNoArgsConstructor()) {
+                withoutDefaultCtor.put(info.name(), info);
             }
         }
 
@@ -459,6 +466,7 @@ public class ResteasyServerCommonProcessor {
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("javax.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("java.lang"));
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("javax.inject"));
         return prefixes;
     }
 
@@ -706,8 +714,9 @@ public class ResteasyServerCommonProcessor {
     private static void checkParameterNames(IndexView index,
             List<AdditionalJaxRsResourceMethodParamAnnotations> additionalJaxRsResourceMethodParamAnnotations) {
 
-        final List<DotName> methodParameterAnnotations = new ArrayList<>(RESTEASY_PARAM_ANNOTATIONS.length);
-        methodParameterAnnotations.addAll(Arrays.asList(RESTEASY_PARAM_ANNOTATIONS));
+        final List<DotName> methodParameterAnnotations = new ArrayList<>(
+                RESTEASY_PARAM_ANNOTATIONS.size() + additionalJaxRsResourceMethodParamAnnotations.size());
+        methodParameterAnnotations.addAll(RESTEASY_PARAM_ANNOTATIONS);
         for (AdditionalJaxRsResourceMethodParamAnnotations annotations : additionalJaxRsResourceMethodParamAnnotations) {
             methodParameterAnnotations.addAll(annotations.getAnnotationClasses());
         }
@@ -787,8 +796,9 @@ public class ResteasyServerCommonProcessor {
             }
         }
 
-        final List<DotName> annotations = new ArrayList<>(METHOD_ANNOTATIONS.length);
-        annotations.addAll(Arrays.asList(METHOD_ANNOTATIONS));
+        final List<DotName> annotations = new ArrayList<>(
+                METHOD_ANNOTATIONS.size() + additionalJaxRsResourceMethodAnnotations.size());
+        annotations.addAll(METHOD_ANNOTATIONS);
         for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
             annotations.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
         }
@@ -888,21 +898,32 @@ public class ResteasyServerCommonProcessor {
     }
 
     /**
-     * @param allowedClasses the classes returned by the methods {@link Application#getClasses()} and
-     *        {@link Application#getSingletons()} to keep.
-     * @param excludedClasses the classes that have been annotated wih unsuccessful build time conditions and that
+     * @param index the Jandex index view from which the class information is extracted.
+     * @param allowedClasses the classes to keep provided by the methods {@link Application#getClasses()} and
+     *        {@link Application#getSingletons()}.
+     * @param excludedClasses the classes that have been annotated with unsuccessful build time conditions and that
      *        need to be excluded from the list of paths.
-     * @param annotationInstance the annotation instance from which the enclosing class will be extracted.
-     * @return {@code true} if the enclosing class of the annotation is part of the allowed classes if not empty
-     *         or if is not part of the excluded classes, {@code false} otherwise.
+     * @param annotationInstance the annotation instance to test.
+     * @return {@code true} if the enclosing class of the annotation is a concrete class and is part of the allowed
+     *         classes, or is an interface and at least one concrete implementation is included, or is an abstract class
+     *         and at least one concrete sub class is included, or is not part of the excluded classes, {@code false} otherwise.
      */
-    private static boolean keepEnclosingClass(Set<String> allowedClasses, Set<String> excludedClasses,
+    private static boolean keepAnnotation(IndexView index, Set<String> allowedClasses, Set<String> excludedClasses,
             AnnotationInstance annotationInstance) {
-        final String className = JandexUtil.getEnclosingClass(annotationInstance).toString();
+        final ClassInfo classInfo = JandexUtil.getEnclosingClass(annotationInstance);
+        final String className = classInfo.toString();
         if (allowedClasses.isEmpty()) {
             // No allowed classes have been set, meaning that only excluded classes have been provided.
             // Keep the enclosing class only if not excluded
             return !excludedClasses.contains(className);
+        } else if (Modifier.isAbstract(classInfo.flags())) {
+            // Only keep the annotation if a concrete implementation or a sub class has been included
+            return (Modifier.isInterface(classInfo.flags()) ? index.getAllKnownImplementors(classInfo.name())
+                    : index.getAllKnownSubclasses(classInfo.name()))
+                            .stream()
+                            .filter(clazz -> !Modifier.isAbstract(clazz.flags()))
+                            .map(Objects::toString)
+                            .anyMatch(allowedClasses::contains);
         }
         return allowedClasses.contains(className);
     }
@@ -953,6 +974,9 @@ public class ResteasyServerCommonProcessor {
         Application application;
         ClassInfo selectedAppClass = null;
         for (ClassInfo applicationClassInfo : applications) {
+            if (Modifier.isAbstract(applicationClassInfo.flags())) {
+                continue;
+            }
             if (selectedAppClass != null) {
                 throw new RuntimeException("More than one Application class: " + applications);
             }

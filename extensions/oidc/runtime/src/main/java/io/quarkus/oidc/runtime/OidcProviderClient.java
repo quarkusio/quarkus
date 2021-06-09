@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 
@@ -23,6 +24,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcProviderClient {
     private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
+
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
     private final WebClient client;
@@ -51,7 +53,7 @@ public class OidcProviderClient {
     }
 
     public Uni<JsonObject> getUserInfo(String token) {
-        return client.postAbs(metadata.getUserInfoUri())
+        return client.getAbs(metadata.getUserInfoUri())
                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
                 .send().onItem().transform(resp -> getUserInfo(resp));
     }
@@ -91,20 +93,26 @@ public class OidcProviderClient {
         return getHttpResponse(metadata.getTokenUri(), refreshGrantParams).transform(resp -> getAuthorizationCodeTokens(resp));
     }
 
-    private UniOnItem<HttpResponse<Buffer>> getHttpResponse(String uri, MultiMap reqBody) {
+    private UniOnItem<HttpResponse<Buffer>> getHttpResponse(String uri, MultiMap formBody) {
         HttpRequest<Buffer> request = client.postAbs(uri);
+        request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
         if (clientSecretBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
         } else if (clientJwtKey != null) {
-            reqBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
-            reqBody.add(OidcConstants.CLIENT_ASSERTION, OidcCommonUtils.signJwtWithKey(oidcConfig, clientJwtKey));
+            formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+            formBody.add(OidcConstants.CLIENT_ASSERTION, OidcCommonUtils.signJwtWithKey(oidcConfig, clientJwtKey));
         } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials)) {
-            reqBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-            reqBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));
+            formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+            formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));
         } else {
-            reqBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+            formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
         }
-        return request.sendForm(reqBody).onItem();
+        // Retry up to three times with a one second delay between the retries if the connection is closed.
+        Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(formBody))
+                .onFailure(ConnectException.class)
+                .retry()
+                .atMost(oidcConfig.connectionRetryCount).onFailure().transform(t -> t.getCause());
+        return response.onItem();
     }
 
     private AuthorizationCodeTokens getAuthorizationCodeTokens(HttpResponse<Buffer> resp) {

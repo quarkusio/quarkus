@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>37</version>
+        <version>38</version>
     </parent>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-tools-parent</artifactId>
@@ -21,13 +21,14 @@
     </licenses>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.release>11</maven.compiler.release>
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.6.3</proposed-maven-version>
+        <proposed-maven-version>3.8.1</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>6.8.3</gradle-wrapper.version>
+        <gradle-wrapper.version>6.9</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
@@ -39,22 +40,21 @@
         <!-- Versions -->
         <jline.version>2.14.6</jline.version>
         <assertj.version>3.19.0</assertj.version>
-        <jackson.version>2.12.1</jackson.version>
+        <jackson.version>2.12.3</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
-        <junit.version>5.7.1</junit.version>
+        <junit.version>5.7.2</junit.version>
         <commons-compress.version>1.20</commons-compress.version>
-        <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <maven-core.version>3.6.3</maven-core.version>
-        <mockito.version>3.8.0</mockito.version>
+        <jboss-logging.version>3.4.2.Final</jboss-logging.version>
+        <maven-core.version>3.8.1</maven-core.version>
+        <mockito.version>3.11.0</mockito.version>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>18</maven-model-helper.version>
-        <commons-io.version>2.8.0</commons-io.version>
-        <quarkus-http.version>3.0.18.Final</quarkus-http.version>
-        <smallrye-commons.version>1.5.0</smallrye-commons.version>
+        <commons-io.version>2.9.0</commons-io.version>
+        <smallrye-common.version>1.6.0</smallrye-common.version>
     </properties>
     <modules>
         <module>artifact-api</module>
@@ -62,6 +62,7 @@
         <module>message-writer</module>
         <module>devtools-testing</module>
         <module>codestarts</module>
+        <module>base-codestarts</module>
         <module>devtools-common</module>
         <module>utilities</module>
     </modules>
@@ -70,6 +71,17 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-artifact-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-base-codestarts</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-testing</artifactId>
+                <scope>test</scope>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -94,7 +106,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus.qute</groupId>
-                <artifactId>qute-generator</artifactId>
+                <artifactId>qute-core</artifactId>
                 <version>${quarkus.version}</version>
             </dependency>
             <dependency>
@@ -116,17 +128,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-common</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus.http</groupId>
-                <artifactId>quarkus-http-websockets-jsr</artifactId>
-                <version>${quarkus-http.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.spec.javax.annotation</groupId>
-                        <artifactId>jboss-annotations-api_1.2_spec</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>jline</groupId>
@@ -162,16 +163,6 @@
                 <groupId>jakarta.enterprise</groupId>
                 <artifactId>jakarta.enterprise.cdi-api</artifactId>
                 <version>${jakarta.enterprise.cdi-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.servlet</groupId>
-                <artifactId>jakarta.servlet-api</artifactId>
-                <version>${jakarta.servlet-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.websocket</groupId>
-                <artifactId>jakarta.websocket-api</artifactId>
-                <version>${jakarta.websocket-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
@@ -213,8 +204,10 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-os</artifactId>
-                <version>${smallrye-commons.version}</version>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${smallrye-common.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
@@ -230,11 +223,11 @@
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>sonatype-nexus-release</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
@@ -330,13 +323,17 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${version.surefire.plugin}</version>
                 <configuration>
-                    <argLine>${jacoco.agent.argLine}</argLine>
+                    <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+                    <systemPropertyVariables combine.self="override"/>
+                    <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+                    <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
+                    <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.14.0</version>
+                <version>2.15.0</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>
@@ -355,7 +352,7 @@
             <plugin>
                 <groupId>net.revelc.code</groupId>
                 <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.6.0</version>
+                <version>1.6.2</version>
                 <configuration>
                     <!-- store outside of target to speed up formatting when mvn clean is used -->
                     <cachedir>.cache</cachedir>
@@ -367,16 +364,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>jdk-8-classpath</id>
-            <activation>
-                <!-- activate this on any JDK from 9 onwards -->
-                <jdk>[9,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>8</maven.compiler.release>
-            </properties>
-        </profile>
         <profile>
             <id>quick-build</id>
             <activation>

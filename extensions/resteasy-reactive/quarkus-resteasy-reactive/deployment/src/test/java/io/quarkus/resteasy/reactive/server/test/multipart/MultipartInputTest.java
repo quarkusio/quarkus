@@ -23,7 +23,7 @@ import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageForm
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class MultipartInputTest {
+public class MultipartInputTest extends AbstractMultipartTest {
 
     private static final Path uploadDir = Paths.get("file-uploads");
 
@@ -34,7 +34,7 @@ public class MultipartInputTest {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(FormDataBase.class, OtherPackageFormDataBase.class, FormData.class, Status.class,
-                                    OtherFormData.class,
+                                    OtherFormData.class, FormDataSameFileName.class,
                                     OtherFormDataBase.class,
                                     MultipartResource.class, OtherMultipartResource.class)
                             .addAsResource(new StringAsset(
@@ -47,21 +47,18 @@ public class MultipartInputTest {
             });
 
     private final File HTML_FILE = new File("./src/test/resources/test.html");
+    private final File HTML_FILE2 = new File("./src/test/resources/test2.html");
     private final File XML_FILE = new File("./src/test/resources/test.html");
     private final File TXT_FILE = new File("./src/test/resources/lorem.txt");
 
     @BeforeEach
     public void assertEmptyUploads() {
-        Assertions.assertEquals(0, uploadDir.toFile().listFiles().length);
+        Assertions.assertTrue(isDirectoryEmpty(uploadDir));
     }
 
     @AfterEach
     public void clearDirectory() {
-        for (File file : uploadDir.toFile().listFiles()) {
-            if (!file.isDirectory()) {
-                file.delete();
-            }
-        }
+        clearDirectory(uploadDir);
     }
 
     @Test
@@ -125,6 +122,26 @@ public class MultipartInputTest {
                 .body(equalTo("foo - bar - final - static"));
 
         Assertions.assertEquals(0, uploadDir.toFile().listFiles().length);
+    }
+
+    @Test
+    public void testSameName() {
+        RestAssured.given()
+                .multiPart("active", "false")
+                .multiPart("status", "EATING")
+                .multiPart("htmlFile", HTML_FILE, "text/html")
+                .multiPart("htmlFile", HTML_FILE2, "text/html")
+                .multiPart("xmlFile", XML_FILE, "text/xml")
+                .multiPart("txtFile", TXT_FILE, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart/same-name")
+                .then()
+                .statusCode(200)
+                .body(equalTo("EATING - 2 - 1 - 1"));
+
+        // ensure that the 3 uploaded files where created on disk
+        Assertions.assertEquals(4, uploadDir.toFile().listFiles().length);
     }
 
     private String filePath(File file) {

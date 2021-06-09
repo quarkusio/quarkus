@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime.filters;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
@@ -9,6 +10,7 @@ import io.vertx.core.http.HttpFrame;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.StreamPriority;
+import io.vertx.core.streams.ReadStream;
 
 class AbstractResponseWrapper implements HttpServerResponse {
 
@@ -25,15 +27,13 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-    public HttpServerResponse write(Buffer data) {
-        delegate.write(data);
-        return this;
+    public Future<Void> write(Buffer data) {
+        return delegate.write(data);
     }
 
     @Override
-    public HttpServerResponse write(Buffer data, Handler<AsyncResult<Void>> handler) {
+    public void write(Buffer data, Handler<AsyncResult<Void>> handler) {
         delegate.write(data, handler);
-        return this;
     }
 
     @Override
@@ -168,30 +168,25 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     @Override
 
-    public HttpServerResponse write(String chunk, String enc) {
-        delegate.write(chunk, enc);
-        return this;
+    public Future<Void> write(String chunk, String enc) {
+        return delegate.write(chunk, enc);
     }
 
     @Override
-
-    public HttpServerResponse write(String chunk, String enc, Handler<AsyncResult<Void>> handler) {
+    public void write(String chunk, String enc, Handler<AsyncResult<Void>> handler) {
         delegate.write(chunk, enc, handler);
-        return this;
     }
 
     @Override
 
-    public HttpServerResponse write(String chunk) {
-        delegate.write(chunk);
-        return this;
+    public Future<Void> write(String chunk) {
+        return delegate.write(chunk);
     }
 
     @Override
 
-    public HttpServerResponse write(String chunk, Handler<AsyncResult<Void>> handler) {
+    public void write(String chunk, Handler<AsyncResult<Void>> handler) {
         delegate.write(chunk, handler);
-        return this;
     }
 
     @Override
@@ -202,8 +197,8 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-    public void end(String chunk) {
-        delegate.end(chunk);
+    public Future<Void> end(String chunk) {
+        return delegate.end(chunk);
     }
 
     @Override
@@ -212,8 +207,8 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-    public void end(String chunk, String enc) {
-        delegate.end(chunk, enc);
+    public Future<Void> end(String chunk, String enc) {
+        return delegate.end(chunk, enc);
     }
 
     @Override
@@ -222,8 +217,8 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-    public void end(Buffer chunk) {
-        delegate.end(chunk);
+    public Future<Void> end(Buffer chunk) {
+        return delegate.end(chunk);
     }
 
     @Override
@@ -232,29 +227,65 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-    public void end() {
-        delegate.end();
+    public Future<Void> end() {
+        return delegate.end();
+    }
+
+    @Override
+    public void send(Handler<AsyncResult<Void>> handler) {
+        delegate.send(handler);
+    }
+
+    @Override
+    public Future<Void> send() {
+        return delegate.send();
+    }
+
+    @Override
+    public void send(String body, Handler<AsyncResult<Void>> handler) {
+        delegate.send(body, handler);
+    }
+
+    @Override
+    public Future<Void> send(String body) {
+        return delegate.send(body);
+    }
+
+    @Override
+    public void send(Buffer body, Handler<AsyncResult<Void>> handler) {
+        delegate.send(body, handler);
+    }
+
+    @Override
+    public Future<Void> send(Buffer body) {
+        return delegate.send(body);
+    }
+
+    @Override
+    public void send(ReadStream<Buffer> body, Handler<AsyncResult<Void>> handler) {
+        delegate.send(body, handler);
+    }
+
+    @Override
+    public Future<Void> send(ReadStream<Buffer> body) {
+        return delegate.send(body);
+    }
+
+    @Override
+    public Future<Void> sendFile(String filename) {
+        return delegate.sendFile(filename);
     }
 
     @Override
 
-    public HttpServerResponse sendFile(String filename) {
-        delegate.sendFile(filename);
-        return this;
+    public Future<Void> sendFile(String filename, long offset) {
+        return delegate.sendFile(filename, offset);
     }
 
     @Override
 
-    public HttpServerResponse sendFile(String filename, long offset) {
-        delegate.sendFile(filename, offset);
-        return this;
-    }
-
-    @Override
-
-    public HttpServerResponse sendFile(String filename, long offset, long length) {
-        delegate.sendFile(filename, offset, length);
-        return this;
+    public Future<Void> sendFile(String filename, long offset, long length) {
+        return delegate.sendFile(filename, offset, length);
     }
 
     @Override
@@ -332,6 +363,11 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
+    public Future<HttpServerResponse> push(HttpMethod method, String host, String path) {
+        return null;
+    }
+
+    @Override
 
     public HttpServerResponse push(HttpMethod method, String path, MultiMap headers,
             Handler<AsyncResult<HttpServerResponse>> handler) {
@@ -340,10 +376,20 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
+    public Future<HttpServerResponse> push(HttpMethod method, String path, MultiMap headers) {
+        return null;
+    }
+
+    @Override
 
     public HttpServerResponse push(HttpMethod method, String path, Handler<AsyncResult<HttpServerResponse>> handler) {
         delegate.push(method, path, handler);
         return this;
+    }
+
+    @Override
+    public Future<HttpServerResponse> push(HttpMethod method, String path) {
+        return null;
     }
 
     @Override
@@ -355,13 +401,18 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-    public void reset() {
-        delegate.reset();
+    public Future<HttpServerResponse> push(HttpMethod method, String host, String path, MultiMap headers) {
+        return null;
     }
 
     @Override
-    public void reset(long code) {
-        delegate.reset(code);
+    public boolean reset() {
+        return delegate.reset();
+    }
+
+    @Override
+    public boolean reset(long code) {
+        return delegate.reset(code);
     }
 
     @Override

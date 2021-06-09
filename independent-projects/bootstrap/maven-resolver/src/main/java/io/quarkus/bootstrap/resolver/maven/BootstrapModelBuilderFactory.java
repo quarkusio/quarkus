@@ -2,11 +2,18 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuilderFactory;
+import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.validation.ModelValidator;
 
-class BootstrapModelBuilderFactory extends DefaultModelBuilderFactory {
+public class BootstrapModelBuilderFactory extends DefaultModelBuilderFactory {
+
+    private static ModelBuilder delegate;
+
+    public static ModelBuilder getDefaultModelBuilder() {
+        return delegate == null ? delegate = new BootstrapModelBuilderFactory().newInstance() : delegate;
+    }
 
     @Override
     protected ModelValidator newModelValidator() {

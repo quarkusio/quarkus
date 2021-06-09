@@ -27,6 +27,8 @@ import io.quarkus.smallrye.faulttolerance.test.fallback.FallbackBean;
 import io.quarkus.smallrye.faulttolerance.test.retry.RetryBean;
 import io.quarkus.smallrye.faulttolerance.test.timeout.TimeoutBean;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.faulttolerance.api.CircuitBreakerMaintenance;
+import io.smallrye.faulttolerance.api.CircuitBreakerState;
 
 public class FaultToleranceTest {
     @RegisterExtension
@@ -46,7 +48,7 @@ public class FaultToleranceTest {
     @Inject
     CircuitBreakerBean circuitbreaker;
     @Inject
-    CircuitBreakerBean.Observer circuitBreakerObserver;
+    CircuitBreakerMaintenance circuitBreakerMaintenance;
     @Inject
     AsynchronousBean asynchronous;
 
@@ -97,11 +99,23 @@ public class FaultToleranceTest {
         assertThrows(RuntimeException.class, () -> circuitbreaker.breakCircuit());
         assertThrows(RuntimeException.class, () -> circuitbreaker.breakCircuit());
         assertThrows(CircuitBreakerOpenException.class, () -> circuitbreaker.breakCircuit());
-        assertTrue(circuitBreakerObserver.isOpen());
+        assertEquals(CircuitBreakerState.OPEN, circuitBreakerMaintenance.currentState("my-cb"));
     }
 
     @Test
     public void testAsynchronous() throws ExecutionException, InterruptedException {
         assertEquals("hello", asynchronous.asynchronous().toCompletableFuture().get());
     }
+
+    @Test
+    public void undefinedCircuitBreaker() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            circuitBreakerMaintenance.currentState("undefined");
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            circuitBreakerMaintenance.reset("undefined");
+        });
+    }
+
 }

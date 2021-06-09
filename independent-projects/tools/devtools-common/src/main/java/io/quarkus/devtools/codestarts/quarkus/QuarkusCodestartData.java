@@ -36,20 +36,16 @@ public final class QuarkusCodestartData {
         MAVEN_COMPILER_PLUGIN_VERSION("maven-compiler-plugin.version"),
         MAVEN_SUREFIRE_PLUGIN_VERSION("maven-surefire-plugin.version"),
 
-        RESTEASY_EXAMPLE_RESOURCE_PATH("resteasy-example.resource.path"),
-        RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME("resteasy-example.resource.class-name"),
+        RESTEASY_CODESTART_RESOURCE_PATH("resteasy-codestart.resource.path"),
+        RESTEASY_CODESTART_RESOURCE_CLASS_NAME("resteasy-codestart.resource.class-name"),
 
-        RESTEASY_REACTIVE_EXAMPLE_RESOURCE_PATH("resteasy-reactive-example.resource.path"),
-        RESTEASY_REACTIVE_EXAMPLE_RESOURCE_CLASS_NAME("resteasy-reactive-example.resource.class-name"),
+        RESTEASY_REACTIVE_CODESTART_RESOURCE_PATH("resteasy-reactive-codestart.resource.path"),
+        RESTEASY_REACTIVE_CODESTART_RESOURCE_CLASS_NAME("resteasy-reactive-codestart.resource.class-name"),
 
-        SPRING_WEB_EXAMPLE_RESOURCE_PATH("spring-web-example.resource.path"),
-        SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME("spring-web-example.resource.class-name"),
+        SPRING_WEB_CODESTART_RESOURCE_PATH("spring-web-codestart.resource.path"),
+        SPRING_WEB_CODESTART_RESOURCE_CLASS_NAME("spring-web-codestart.resource.class-name"),
 
-        COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME("commandmode-example.main.class-name"),
-
-        NO_EXAMPLES("quarkus-project.no-examples"),
-        NO_BUILD_TOOL_WRAPPER("quarkus-project.no-build-tool-wrapper"),
-        NO_DOCKERFILES("quarkus-project.no-dockerfiles");
+        APP_CONFIG("app-config");
 
         private final String key;
 
@@ -85,14 +81,14 @@ public final class QuarkusCodestartData {
         MAVEN_COMPILER_PLUGIN_VERSION("compiler_plugin_version"),
         MAVEN_SUREFIRE_PLUGIN_VERSION("surefire_plugin_version"),
 
-        RESTEASY_EXAMPLE_RESOURCE_PATH("path"),
-        RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),
+        RESTEASY_CODESTART_RESOURCE_PATH("path"),
+        RESTEASY_CODESTART_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),
 
-        RESTEASY_REACTIVE_EXAMPLE_RESOURCE_PATH("path"),
-        RESTEASY_REACTIVE_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),
+        RESTEASY_REACTIVE_CODESTART_RESOURCE_PATH("path"),
+        RESTEASY_REACTIVE_CODESTART_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),
 
-        SPRING_WEB_EXAMPLE_RESOURCE_PATH("path"),
-        SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName);
+        SPRING_WEB_CODESTART_RESOURCE_PATH("path"),
+        SPRING_WEB_CODESTART_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName);
 
         private final String key;
         private final Function<Map<String, Object>, Object> converter;

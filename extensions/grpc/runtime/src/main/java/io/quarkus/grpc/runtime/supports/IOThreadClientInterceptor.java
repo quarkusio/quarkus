@@ -1,10 +1,5 @@
 package io.quarkus.grpc.runtime.supports;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.Prioritized;
 
@@ -20,6 +15,9 @@ import io.grpc.Status;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
+/**
+ * gRPC Client emissions should be on the event loop if the subscription is executed on the event loop
+ */
 @ApplicationScoped
 public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized {
 
@@ -27,6 +25,7 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
             CallOptions callOptions, Channel next) {
 
+        boolean isOnEventLoop = Context.isOnEventLoopThread();
         Context context = Vertx.currentContext();
 
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
@@ -34,20 +33,11 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
             @Override
             public void start(Listener<RespT> responseListener, Metadata headers) {
                 super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
-                    private volatile CompletableFuture<Void> onMessageCompletion;
 
                     @Override
                     public void onMessage(RespT message) {
-                        if (context != null) {
-                            onMessageCompletion = new CompletableFuture<>();
-                            context.runOnContext(unused -> {
-                                try {
-                                    super.onMessage(message);
-                                    onMessageCompletion.complete(null);
-                                } catch (Throwable any) {
-                                    onMessageCompletion.completeExceptionally(any);
-                                }
-                            });
+                        if (isOnEventLoop && context != null) {
+                            context.runOnContext(unused -> super.onMessage(message));
                         } else {
                             super.onMessage(message);
                         }
@@ -55,15 +45,8 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
 
                     @Override
                     public void onClose(Status status, Metadata trailers) {
-                        if (onMessageCompletion != null && !Context.isOnEventLoopThread()) {
-                            try {
-                                onMessageCompletion.get(60, TimeUnit.SECONDS);
-                            } catch (InterruptedException | ExecutionException e) {
-                                throw new RuntimeException("`onMessage` failed or interrupted", e);
-                            } catch (TimeoutException e) {
-                                throw new RuntimeException("`onMessage` did not complete in 60 seconds");
-                            }
-                            super.onClose(status, trailers);
+                        if (isOnEventLoop && context != null) {
+                            context.runOnContext(unused -> super.onClose(status, trailers));
                         } else {
                             super.onClose(status, trailers);
                         }

@@ -18,6 +18,7 @@ import java.util.Set;
 public class MemoryClassPathElement extends AbstractClassPathElement {
 
     private volatile Map<String, byte[]> resources;
+    private volatile long lastModified = System.currentTimeMillis();
 
     public MemoryClassPathElement(Map<String, byte[]> resources) {
         this.resources = resources;
@@ -39,6 +40,7 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
             }
         }
         this.resources = newResources;
+        lastModified = System.currentTimeMillis();
     }
 
     @Override
@@ -127,6 +129,21 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
                 @Override
                 public InputStream getInputStream() throws IOException {
                     return new ByteArrayInputStream(resources.get(name));
+                }
+
+                @Override
+                public long getLastModified() {
+                    return lastModified;
+                }
+
+                @Override
+                public int getContentLength() {
+                    return resources.get(name).length;
+                }
+
+                @Override
+                public long getContentLengthLong() {
+                    return resources.get(name).length;
                 }
             };
         }

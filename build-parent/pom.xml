@@ -15,15 +15,12 @@
     <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-
         <!-- Maven plugin versions -->
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <dokka.version>1.4.32</dokka.version>
         <kotlin.version>1.4.32</kotlin.version>
         <scala.version>2.12.13</scala.version>
         <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
@@ -39,11 +36,10 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>21.0.0</graal-sdk.version-for-documentation>
+        <graal-sdk.version-for-documentation>21.1.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
         <rest-assured.version>4.3.2</rest-assured.version>
         <mutiny-client.version>1.1.0</mutiny-client.version>
-        <vertx.version>3.9.2</vertx.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -60,21 +56,21 @@
         <supported-maven-versions>[3.6.2,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.6.3</proposed-maven-version>
+        <proposed-maven-version>3.8.1</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>6.8.3</gradle-wrapper.version>
+        <gradle-wrapper.version>6.9</gradle-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>2.2</microprofile-health-api.version>
-        <microprofile-config-api.version>1.4</microprofile-config-api.version>
-        <microprofile-metrics-api.version>2.3.2</microprofile-metrics-api.version>
-        <microprofile-fault-tolerance-api.version>2.1.1</microprofile-fault-tolerance-api.version>
-        <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
-        <microprofile-rest-client-api.version>1.4.1</microprofile-rest-client-api.version>
-        <microprofile-open-api.version>1.1.3-RC1</microprofile-open-api.version>
-        <microprofile-opentracing-api.version>1.3.3</microprofile-opentracing-api.version>
+        <microprofile-health-api.version>3.0</microprofile-health-api.version>
+        <microprofile-config-api.version>2.0</microprofile-config-api.version>
+        <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
+        <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
+        <microprofile-reactive-messaging-api.version>2.0</microprofile-reactive-messaging-api.version>
+        <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
+        <microprofile-open-api.version>2.0.1-RC1</microprofile-open-api.version>
+        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
-        <microprofile-jwt-api.version>1.1.1</microprofile-jwt-api.version>
+        <microprofile-jwt-api.version>1.2</microprofile-jwt-api.version>
         <microprofile-graphql-api.version>1.0.3</microprofile-graphql-api.version>
 
         <!-- Antlr is used by the PanacheQL parser-->
@@ -88,11 +84,11 @@
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
         <jsoup.version>1.11.3</jsoup.version>
-        <wagon-provider-api.version>3.3.3</wagon-provider-api.version>
+        <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:12.0.4</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:12.0.3</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 
@@ -102,15 +98,13 @@
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
         <!-- Note: this version is also set in quarkus-bom but BOMs don't contribute to pluginManagement or properties -->
-        <jacoco.version>0.8.6</jacoco.version>
+        <jacoco.version>0.8.7</jacoco.version>
 
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
         <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
-        <protoc.version>3.12.3</protoc.version> <!--keep in sync with the BOM-->
-        <grpc.version>1.30.2</grpc.version> <!--keep in sync with the BOM -->
-
-        <boring-ssl.version>2.0.30.Final</boring-ssl.version>
+        <protoc.version>3.14.0</protoc.version> <!--keep in sync with the BOM-->
+        <grpc.version>1.35.0</grpc.version> <!--keep in sync with the BOM -->
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
@@ -136,13 +130,15 @@
         <!-- Forbidden API checks -->
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
 
-        <!-- platform properties -->
-        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.0.0-java11</platform.quarkus.native.builder-image>
+        <!-- platform properties - this is a floating tag -->
+        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.1-java11</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
 
         <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
+
+        <surefire.argLine.additional></surefire.argLine.additional>
     </properties>
 
     <dependencyManagement>
@@ -160,8 +156,9 @@
             <!-- Dev tools -->
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-test-devtools</artifactId>
+                <artifactId>quarkus-devtools-testing</artifactId>
                 <version>${project.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -258,12 +255,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-tcnative-boringssl-static</artifactId>
-                <scope>test</scope>
-                <version>${boring-ssl.version}</version>
-            </dependency>            
-            <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>
                 <version>${project.version}</version>
@@ -291,7 +282,7 @@
                 <version>${project.version}</version>
                 <scope>test</scope>
             </dependency>
-            
+
             <!-- Webjars for UI related -->
             <dependency>
                 <groupId>org.webjars</groupId>
@@ -318,16 +309,20 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${version.surefire.plugin}</version>
                     <configuration>
-                        <systemPropertyVariables>
+                        <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+                        <systemPropertyVariables combine.self="override">
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
                             <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
                         </systemPropertyVariables>
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m</argLine> <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
+                        <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
+                        <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional}</argLine>
                         <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
                         <trimStackTrace>false</trimStackTrace>
+                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -341,8 +336,11 @@
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
                             <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
                         </systemPropertyVariables>
+                        <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+                        <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
                         <trimStackTrace>false</trimStackTrace>
+                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -382,6 +380,9 @@
                             <configuration>
                                 <rules>
                                     <dependencyConvergence/>
+                                    <requireJavaVersion>
+                                        <version>[${maven.compiler.release},)</version>
+                                    </requireJavaVersion>
                                     <requireMavenVersion>
                                         <version>${supported-maven-versions}</version>
                                     </requireMavenVersion>
@@ -493,15 +494,34 @@
                                             <exclude>io.quarkus:quarkus-test-*</exclude>
                                             <exclude>io.rest-assured:*</exclude>
                                             <exclude>org.assertj:*</exclude>
-                                            <exclude>org.junit.jupiter:*</exclude>
                                         </excludes>
                                         <includes>
                                             <include>io.quarkus:quarkus-test-*:*:*:test</include>
                                             <include>io.rest-assured:*:*:*:test</include>
                                             <include>org.assertj:*:*:*:test</include>
-                                            <include>org.junit.jupiter:*:*:*:test</include>
                                         </includes>
                                         <message>Found test dependencies with wrong scope:</message>
+                                    </bannedDependencies>
+                                </rules>
+                                <skip>${enforce-test-deps-scope.skip}</skip>
+                            </configuration>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>enforce-test-deps-junit-scope</id>
+                            <configuration>
+                                <rules>
+                                    <bannedDependencies>
+                                        <searchTransitive>false</searchTransitive>
+                                        <excludes>
+                                            <exclude>org.junit.jupiter:*</exclude>
+                                        </excludes>
+                                        <includes>
+                                            <include>org.junit.jupiter:*:*:*:test</include>
+                                        </includes>
+                                        <message>Found JUnit dependencies with wrong scope:</message>
                                     </bannedDependencies>
                                 </rules>
                                 <skip>${enforce-test-deps-scope.skip}</skip>
@@ -528,12 +548,12 @@
                 <plugin>
                     <groupId>org.jboss.jandex</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
-                    <version>1.0.8</version>
+                    <version>1.1.0</version>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.14.0</version>
+                    <version>2.15.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -552,7 +572,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <version>1.6.2</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache</cachedir>
@@ -600,22 +620,24 @@
                     <artifactId>revapi-maven-plugin</artifactId>
                     <version>${revapi-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-maven-plugin</artifactId>
+                    <version>${kotlin.version}</version>
+                    <configuration>
+                        <javaParameters>true</javaParameters>
+                        <jvmTarget>${maven.compiler.release}</jvmTarget>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-invoker-plugin</artifactId>
+                    <version>3.2.2</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
 
     <profiles>
-        <profile>
-            <id>jdk-8-classpath</id>
-            <activation>
-                <!-- activate this on any JDK from 9 onwards -->
-                <jdk>[9,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>8</maven.compiler.release>
-            </properties>
-        </profile>
-
         <profile>
             <id>format</id>
             <activation>
@@ -767,6 +789,46 @@
             </build>
         </profile>
         <profile>
+            <id>dokka</id>
+            <activation>
+                <property>
+                    <name>dokka</name>
+                </property>
+                <jdk>[,16)</jdk>
+                <file>
+                    <exists>src/main/kotlin</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jetbrains.dokka</groupId>
+                        <artifactId>dokka-maven-plugin</artifactId>
+                        <version>${dokka.version}</version>
+                        <executions>
+                            <execution>
+                                <id>dokka</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>javadocJar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <jdkVersion>11</jdkVersion>
+                            <outputFormat>html</outputFormat>
+                            <externalDocumentationLinks>
+                                <link>
+                                    <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
+                                    <url>https://docs.oracle.com/en/java/javase/11/docs/api/</url>
+                                </link>
+                            </externalDocumentationLinks>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>eclipse</id>
             <activation>
                 <property>
@@ -850,7 +912,7 @@
                                                     jandex-maven-plugin
                                                 </artifactId>
                                                 <versionRange>
-                                                    [1.0.5,)
+                                                    [1.1.0,)
                                                 </versionRange>
                                                 <goals>
                                                     <goal>jandex</goal>
@@ -1036,6 +1098,17 @@
             </activation>
             <properties>
                 <script.extension>bat</script.extension>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>jdk16-workarounds</id>
+            <activation>
+                <jdk>[16,)</jdk>
+            </activation>
+            <properties>
+                <!-- auto-exclude tests that are known to fail on JDK 16 (tagged via @Tag("failsOnJDK16")) -->
+                <excludedGroups>failsOnJDK16</excludedGroups>
             </properties>
         </profile>
 

@@ -12,8 +12,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.smallrye.common.annotation.Blocking;
-import io.vertx.core.http.HttpMethod;
 
 public class BlockingRouteTest {
 
@@ -30,7 +30,7 @@ public class BlockingRouteTest {
 
         get("/blocking")
                 .then().statusCode(200)
-                .body(containsString("blocking-"), containsString("worker"));
+                .body(containsString("blocking-"), containsString("executor"));
 
         get("/worker")
                 .then().statusCode(200)

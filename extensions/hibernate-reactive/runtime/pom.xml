@@ -59,6 +59,9 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.hibernate.reactive</provides>
+                    </capabilities>
                     <excludedArtifacts>
                         <excludedArtifact>javax.persistence:javax.persistence-api</excludedArtifact>
                         <excludedArtifact>javax.persistence:persistence-api</excludedArtifact>

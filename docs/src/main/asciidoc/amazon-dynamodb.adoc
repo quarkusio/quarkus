@@ -30,7 +30,7 @@ In this guide, we see how you can get your REST services to use the DynamoDB loc
 
 To complete this guide, you need:
 
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * an IDE
 * Apache Maven {maven-version}
 * An AWS Account to access the DynamoDB service
@@ -179,6 +179,9 @@ public class Fruit {
     }
 }
 ----
+
+TIP: The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
+
 
 Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer. The static `from` method creates a bean based on the `Map`
 object provided by the DynamoDB client response.

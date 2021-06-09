@@ -14,7 +14,7 @@ public class RestPathTestCase {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withConfigurationResource("empty.properties")
-            .overrideConfigKey("quarkus.rest.path", "/foo")
+            .overrideConfigKey("quarkus.resteasy-reactive.path", "/foo")
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(HelloResource.class));
@@ -22,7 +22,7 @@ public class RestPathTestCase {
     @Test
     public void testRestPath() {
         RestAssured.basePath = "/";
-        RestAssured.when().get("/app/foo/hello").then().body(Matchers.is("hello"));
-        RestAssured.when().get("/app/foo/hello/nested").then().body(Matchers.is("world hello"));
+        RestAssured.when().get("/app/foo/hello").then().statusCode(200).body(Matchers.is("hello"));
+        RestAssured.when().get("/app/foo/hello/nested").then().statusCode(200).body(Matchers.is("world hello"));
     }
 }

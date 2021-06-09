@@ -26,6 +26,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Vertx;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
+import io.vertx.mysqlclient.SslMode;
 import io.vertx.sqlclient.PoolOptions;
 
 @Recorder
@@ -65,7 +66,7 @@ public class MySQLPoolRecorder {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return new ThreadLocalMySQLPool(vertx, mysqlConnectOptions, poolOptions);
+        return MySQLPool.pool(vertx, mysqlConnectOptions, poolOptions);
     }
 
     private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -76,6 +77,11 @@ public class MySQLPoolRecorder {
 
         if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
             poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
+        }
+
+        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
+            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
+            poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
 
         return poolOptions;
@@ -136,7 +142,15 @@ public class MySQLPoolRecorder {
         }
 
         if (dataSourceReactiveMySQLConfig.sslMode.isPresent()) {
-            mysqlConnectOptions.setSslMode(dataSourceReactiveMySQLConfig.sslMode.get());
+            final SslMode sslMode = dataSourceReactiveMySQLConfig.sslMode.get();
+            mysqlConnectOptions.setSslMode(sslMode);
+
+            // If sslMode is verify-identity, we also need a hostname verification algorithm
+            if (sslMode == SslMode.VERIFY_IDENTITY && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm
+                    .isPresent() || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get()))) {
+                throw new IllegalArgumentException(
+                        "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-identity sslmode");
+            }
         }
 
         mysqlConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
@@ -153,9 +167,9 @@ public class MySQLPoolRecorder {
 
         mysqlConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
 
-        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
-            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
-            mysqlConnectOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
+            mysqlConnectOptions.setHostnameVerificationAlgorithm(
+                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
         }
 
         return mysqlConnectOptions;

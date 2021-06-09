@@ -2,6 +2,7 @@ package io.quarkus.tck.restclient;
 
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
+import org.jboss.arquillian.testng.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.container.ClassContainer;
@@ -29,7 +30,7 @@ public class RestClientProcessor implements ApplicationArchiveProcessor {
         if (ClassContainer.class.isInstance(applicationArchive) && testClass.getJavaClass().getSuperclass() != null) {
             ClassContainer<?> classContainer = ClassContainer.class.cast(applicationArchive);
             Class<?> clazz = testClass.getJavaClass().getSuperclass();
-            while (clazz != Object.class && clazz != null) {
+            while (clazz != Object.class && clazz != null && clazz != Arquillian.class) {
                 classContainer.addClass(clazz);
                 clazz = clazz.getSuperclass();
             }

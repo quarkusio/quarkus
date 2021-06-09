@@ -3,15 +3,6 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.junit.IntegrationTestUtil.*;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.CodeSource;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -108,75 +99,6 @@ public class QuarkusIntegrationTestExtension
         return state;
     }
 
-    private Properties readQuarkusArtifactProperties(ExtensionContext context) {
-        Path buildOutputDirectory = determineBuildOutputDirectory(context);
-        Path artifactProperties = buildOutputDirectory.resolve("quarkus-artifact.properties");
-        if (!Files.exists(artifactProperties)) {
-            throw new IllegalStateException(
-                    "Unable to locate the artifact metadata file created that must be created by Quarkus in order to run tests annotated with '@QuarkusIntegrationTest'.");
-        }
-        try {
-            Properties properties = new Properties();
-            properties.load(new FileInputStream(artifactProperties.toFile()));
-            return properties;
-        } catch (IOException e) {
-            throw new UncheckedIOException(
-                    "Unable to read artifact metadata file created that must be created by Quarkus in order to run tests annotated with '@QuarkusIntegrationTest'.",
-                    e);
-        }
-    }
-
-    private Path determineBuildOutputDirectory(ExtensionContext context) {
-        String buildOutputDirStr = System.getProperty("build.output.directory");
-        Path result = null;
-        if (buildOutputDirStr != null) {
-            result = Paths.get(buildOutputDirStr);
-        } else {
-            // we need to guess where the artifact properties file is based on the location of the test class
-            Class<?> testClass = context.getRequiredTestClass();
-            final CodeSource codeSource = testClass.getProtectionDomain().getCodeSource();
-            if (codeSource != null) {
-                URL codeSourceLocation = codeSource.getLocation();
-                File artifactPropertiesDirectory = determineBuildOutputDirectory(codeSourceLocation);
-                if (artifactPropertiesDirectory == null) {
-                    throw new IllegalStateException(
-                            "Unable to determine the output of the Quarkus build. Consider setting the 'build.output.directory' system property.");
-                }
-                result = artifactPropertiesDirectory.toPath();
-            }
-        }
-        if (result == null) {
-            throw new IllegalStateException(
-                    "Unable to locate the artifact metadata file created that must be created by Quarkus in order to run tests annotated with '@QuarkusIntegrationTest'.");
-        }
-        if (!Files.isDirectory(result)) {
-            throw new IllegalStateException(
-                    "The determined Quarkus build output '" + result.toAbsolutePath().toString() + "' is not a directory");
-        }
-        return result;
-    }
-
-    private static File determineBuildOutputDirectory(final URL url) {
-        if (url == null) {
-            return null;
-        }
-        if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
-            //we have the maven test classes dir
-            File testClasses = new File(url.getPath());
-            return testClasses.getParentFile();
-        } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
-            //we have the gradle test classes dir, build/classes/java/test
-            File testClasses = new File(url.getPath());
-            return testClasses.getParentFile().getParentFile().getParentFile();
-        } else if (url.getProtocol().equals("file") && url.getPath().contains("/target/surefire/")) {
-            //this will make mvn failsafe:integration-test work
-            String path = url.getPath();
-            int index = path.lastIndexOf("/target/");
-            return new File(path.substring(0, index) + "/target/");
-        }
-        return null;
-    }
-
     private IntegrationTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
             Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
             throws Throwable {
@@ -198,7 +120,31 @@ public class QuarkusIntegrationTestExtension
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
             additionalProperties.putAll(devDbProps);
-            additionalProperties.putAll(testResourceManager.start());
+            Map<String, String> resourceManagerProps = testResourceManager.start();
+            Map<String, String> old = new HashMap<>();
+            for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
+                old.put(i.getKey(), System.getProperty(i.getKey()));
+                if (i.getValue() == null) {
+                    System.clearProperty(i.getKey());
+                } else {
+                    System.setProperty(i.getKey(), i.getValue());
+                }
+            }
+            context.getStore(ExtensionContext.Namespace.GLOBAL).put(NativeTestExtension.class.getName() + ".systemProps",
+                    new ExtensionContext.Store.CloseableResource() {
+                        @Override
+                        public void close() throws Throwable {
+                            for (Map.Entry<String, String> i : old.entrySet()) {
+                                old.put(i.getKey(), System.getProperty(i.getKey()));
+                                if (i.getValue() == null) {
+                                    System.clearProperty(i.getKey());
+                                } else {
+                                    System.setProperty(i.getKey(), i.getValue());
+                                }
+                            }
+                        }
+                    });
+            additionalProperties.putAll(resourceManagerProps);
 
             String artifactType = quarkusArtifactProperties.getProperty("type");
             if (artifactType == null) {
@@ -231,8 +177,10 @@ public class QuarkusIntegrationTestExtension
                 case "jar-container":
                 case "native-container":
                     String containerImage = quarkusArtifactProperties.getProperty("metadata.container-image");
+                    boolean pullRequired = Boolean
+                            .parseBoolean(quarkusArtifactProperties.getProperty("metadata.pull-required", "false"));
                     if ((containerImage != null) && !containerImage.isEmpty()) {
-                        launcher = new DockerContainerLauncher(containerImage);
+                        launcher = new DockerContainerLauncher(containerImage, pullRequired);
                     } else {
                         throw new IllegalStateException("The container image to be launched could not be determined");
                     }

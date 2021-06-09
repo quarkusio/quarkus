@@ -7,7 +7,10 @@ import javax.inject.Inject;
 import javax.persistence.LockModeType;
 import javax.ws.rs.WebApplicationException;
 
+import org.hibernate.Session;
+import org.hibernate.query.Query;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -19,6 +22,17 @@ import io.quarkus.test.junit.mockito.InjectMock;
 
 @QuarkusTest
 public class PanacheMockingTest {
+
+    @InjectMock
+    Session session;
+
+    @BeforeEach
+    public void setup() {
+        Query mockQuery = Mockito.mock(Query.class);
+        Mockito.doNothing().when(session).persist(Mockito.any());
+        Mockito.when(session.createQuery(Mockito.anyString())).thenReturn(mockQuery);
+        Mockito.when(mockQuery.getSingleResult()).thenReturn(0l);
+    }
 
     @Test
     @Order(1)
@@ -77,6 +91,12 @@ public class PanacheMockingTest {
         Assertions.assertSame(p, Person.findById(12l));
         Assertions.assertNull(Person.findById(42l));
 
+        Person.persist(p);
+        Assertions.assertNull(p.id);
+        // mocked via EntityManager mocking
+        p.persist();
+        Assertions.assertNull(p.id);
+
         Mockito.when(Person.findById(12l)).thenThrow(new WebApplicationException());
         try {
             Person.findById(12l);
@@ -89,8 +109,10 @@ public class PanacheMockingTest {
 
         PanacheMock.verify(Person.class, Mockito.atLeast(5)).voidMethod();
         PanacheMock.verify(Person.class).findOrdered();
+        PanacheMock.verify(Person.class).persist(Mockito.<Object> any(), Mockito.<Object> any());
         PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
         PanacheMock.verifyNoMoreInteractions(Person.class);
+        Mockito.verify(session, Mockito.times(1)).persist(Mockito.any());
 
         Assertions.assertEquals(0, Person.methodWithPrimitiveParams(true, (byte) 0, (short) 0, 0, 2, 2.0f, 2.0, 'c'));
     }
@@ -124,6 +146,9 @@ public class PanacheMockingTest {
         Assertions.assertSame(p, mockablePersonRepository.findById(12l));
         Assertions.assertNull(mockablePersonRepository.findById(42l));
 
+        mockablePersonRepository.persist(p);
+        Assertions.assertNull(p.id);
+
         Mockito.when(mockablePersonRepository.findById(12l)).thenThrow(new WebApplicationException());
         try {
             mockablePersonRepository.findById(12l);
@@ -136,6 +161,7 @@ public class PanacheMockingTest {
 
         Mockito.verify(mockablePersonRepository).findOrdered();
         Mockito.verify(mockablePersonRepository, Mockito.atLeastOnce()).findById(Mockito.any());
+        Mockito.verify(mockablePersonRepository).persist(Mockito.<Person> any());
         Mockito.verifyNoMoreInteractions(mockablePersonRepository);
     }
 

@@ -46,7 +46,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.logging.CategoryBuildTimeConfig;
@@ -133,24 +132,24 @@ public final class LoggingResourceProcessor {
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             List<LogCleanupFilterBuildItem> logCleanupFilters) {
-        final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
-                .map(LogHandlerBuildItem::getHandlerValue)
-                .collect(Collectors.toList());
-        final List<RuntimeValue<Map<String, Handler>>> namedHandlers = namedHandlerBuildItems.stream()
-                .map(NamedLogHandlersBuildItem::getNamedHandlersMap).collect(Collectors.toList());
+        if (!launchModeBuildItem.isAuxiliaryApplication()) {
+            final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
+                    .map(LogHandlerBuildItem::getHandlerValue)
+                    .collect(Collectors.toList());
+            final List<RuntimeValue<Map<String, Handler>>> namedHandlers = namedHandlerBuildItems.stream()
+                    .map(NamedLogHandlersBuildItem::getNamedHandlersMap).collect(Collectors.toList());
 
-        ConsoleFormatterBannerBuildItem bannerBuildItem = null;
-        RuntimeValue<Optional<Supplier<String>>> possibleSupplier = null;
-        if (possibleBannerBuildItem.isPresent()) {
-            bannerBuildItem = possibleBannerBuildItem.get();
-        }
-        if (bannerBuildItem != null) {
-            possibleSupplier = bannerBuildItem.getBannerSupplier();
-        }
-        recorder.initializeLogging(log, buildLog, handlers, namedHandlers,
-                consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
-                possibleSupplier);
-        if (launchModeBuildItem.getLaunchMode() != LaunchMode.NORMAL) {
+            ConsoleFormatterBannerBuildItem bannerBuildItem = null;
+            RuntimeValue<Optional<Supplier<String>>> possibleSupplier = null;
+            if (possibleBannerBuildItem.isPresent()) {
+                bannerBuildItem = possibleBannerBuildItem.get();
+            }
+            if (bannerBuildItem != null) {
+                possibleSupplier = bannerBuildItem.getBannerSupplier();
+            }
+            recorder.initializeLogging(log, buildLog, handlers, namedHandlers,
+                    consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
+                    possibleSupplier);
             LogConfig logConfig = new LogConfig();
             ConfigInstantiator.handleObject(logConfig);
             for (LogCleanupFilterBuildItem i : logCleanupFilters) {
@@ -169,14 +168,15 @@ public final class LoggingResourceProcessor {
                 }
             });
         }
-
         return new LoggingSetupBuildItem();
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupRecorder recorder) {
-        recorder.initializeLoggingForImageBuild();
+    void setupLoggingStaticInit(LoggingSetupRecorder recorder, LaunchModeBuildItem launchModeBuildItem) {
+        if (!launchModeBuildItem.isAuxiliaryApplication()) {
+            recorder.initializeLoggingForImageBuild();
+        }
     }
 
     // This is specifically to help out with presentations, to allow an env var to always override this value

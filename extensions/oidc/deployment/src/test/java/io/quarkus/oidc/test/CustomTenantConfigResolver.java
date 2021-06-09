@@ -14,8 +14,9 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         if (context.request().path().endsWith("/tenant-config-resolver")) {
             OidcTenantConfig config = new OidcTenantConfig();
             config.setTenantId("tenant-config-resolver");
-            config.setAuthServerUrl(getIssuerUrl() + "/realms/devmode");
-            config.setClientId("client-dev-mode");
+            config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus");
+            config.setClientId("quarkus-web-app");
+            config.getCredentials().setSecret("secret");
             config.applicationType = ApplicationType.WEB_APP;
             return config;
         }
@@ -23,6 +24,6 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private String getIssuerUrl() {
-        return System.getProperty("keycloak.url", "http://localhost:8180/auth");
+        return System.getProperty("keycloak.url");
     }
 }

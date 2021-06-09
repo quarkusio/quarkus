@@ -479,7 +479,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             int spaceIdx = content.indexOf(" ");
             String key = content.substring(spaceIdx + 1, content.length());
             String value = content.substring(1, spaceIdx);
-            currentScope.putBinding(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
+            currentScope.putBinding(key, Expressions.typeInfoFrom(value));
             sectionStack.peek().currentBlock().addNode(new ParameterDeclarationNode(content, origin(0)));
         } else {
             // Expression
@@ -738,7 +738,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             }
             parts.add(part);
         }
-        return new ExpressionImpl(idGenerator.get(), namespace, parts, Result.NOT_FOUND, origin);
+        return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), Result.NOT_FOUND, origin);
     }
 
     private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first,
@@ -822,12 +822,15 @@ class Parser implements Function<String, Expression>, ParserHelper {
         if (currentLine == null) {
             currentLine = new ArrayList<>();
         }
-        if (!ROOT_HELPER_NAME.equals(sectionNode.name)) {
+        boolean isRoot = ROOT_HELPER_NAME.equals(sectionNode.name);
+        if (!isRoot) {
             // Simulate the start tag
             currentLine.add(sectionNode);
         }
         for (SectionBlock block : sectionNode.blocks) {
-            currentLine.add(BLOCK_NODE);
+            if (!isRoot) {
+                currentLine.add(BLOCK_NODE);
+            }
             for (TemplateNode node : block.nodes) {
                 if (node instanceof SectionNode) {
                     currentLine = readLines(lines, currentLine, (SectionNode) node);
@@ -840,7 +843,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
                     currentLine.add(node);
                 }
             }
-            currentLine.add(BLOCK_NODE);
+            if (!isRoot) {
+                currentLine.add(BLOCK_NODE);
+            }
         }
         if (!ROOT_HELPER_NAME.equals(sectionNode.name)) {
             // Simulate the end tag
@@ -984,7 +989,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     public void addParameter(String name, String type) {
         // {@org.acme.Foo foo}
         Scope currentScope = scopeStack.peek();
-        currentScope.putBinding(name, Expressions.TYPE_INFO_SEPARATOR + type + Expressions.TYPE_INFO_SEPARATOR);
+        currentScope.putBinding(name, Expressions.typeInfoFrom(type));
     }
 
     @Override

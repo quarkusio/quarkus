@@ -3,6 +3,7 @@ package io.quarkus.scheduler.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -64,6 +66,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
@@ -87,6 +90,7 @@ public class SchedulerProcessor {
             Kind.CLASS);
 
     static final String INVOKER_SUFFIX = "_ScheduledInvoker";
+    static final String NESTED_SEPARATOR = "$_";
 
     @BuildStep
     void beans(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -158,6 +162,12 @@ public class SchedulerProcessor {
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             MethodInfo method = scheduledMethod.getMethod();
 
+            if (Modifier.isPrivate(method.flags()) || Modifier.isStatic(method.flags())) {
+                errors.add(new IllegalStateException("@Scheduled method must be non-private and non-static: "
+                        + method.declaringClass().name() + "#" + method.name() + "()"));
+                continue;
+            }
+
             // Validate method params and return type
             List<Type> params = method.parameters();
             if (params.size() > 1
@@ -196,13 +206,25 @@ public class SchedulerProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     public FeatureBuildItem build(SchedulerConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            SchedulerRecorder recorder,
-            List<ScheduledBusinessMethodItem> scheduledMethods,
-            BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            SchedulerRecorder recorder, List<ScheduledBusinessMethodItem> scheduledMethods,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             AnnotationProxyBuildItem annotationProxy, ExecutorBuildItem executor) {
 
         List<ScheduledMethodMetadata> scheduledMetadata = new ArrayList<>();
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
+            @Override
+            public String apply(String name) {
+                // org/acme/Foo_ScheduledInvoker_run_0000 -> org.acme.Foo
+                int idx = name.indexOf(INVOKER_SUFFIX);
+                if (idx != -1) {
+                    name = name.substring(0, idx);
+                }
+                if (name.contains(NESTED_SEPARATOR)) {
+                    name = name.replace(NESTED_SEPARATOR, "$");
+                }
+                return name;
+            }
+        });
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             ScheduledMethodMetadata metadata = new ScheduledMethodMetadata();
@@ -227,9 +249,11 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    public DevConsoleRuntimeTemplateInfoBuildItem devConsoleInfo() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
-                new BeanLookupSupplier(SchedulerContext.class));
+    public void devConsoleInfo(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos) {
+        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
+                new BeanLookupSupplier(SchedulerContext.class)));
+        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("scheduler",
+                new BeanLookupSupplier(Scheduler.class)));
     }
 
     @BuildStep
@@ -245,8 +269,8 @@ public class SchedulerProcessor {
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
-            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
-                    + DotNames.simpleName(bean.getImplClazz().name());
+            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + NESTED_SEPARATOR
+                    + DotNames.simpleName(bean.getImplClazz());
         } else {
             baseName = DotNames.simpleName(bean.getImplClazz().name());
         }

@@ -14,6 +14,7 @@ This guide covers:
 * Deploying a JAR to Google App Engine Standard
 * Deploying a Docker image to Google App Engine Flexible Custom Runtimes
 * Deploying a Docker image to Google Cloud Run
+* Using Cloud SQL
 
 == Prerequisites
 
@@ -217,9 +218,53 @@ After you answer to these questions, it will deploy your application.
 
 When the deployment is done, the output will display the URL to access your application.
 
+== Using Cloud SQL
+
+Google Cloud SQL provides managed instances for MySQL, PostgreSQL and Microsoft SQL Server.
+Quarkus has support for all three databases.
+
+To make your applications work with Cloud SQL, you first need to use the corresponding JDBC extension, for example, for PostgreSQL,
+add the `quarkus-jdbc-postgresql` extension.
+
+Then you need to add to your `pom.xml` the Cloud SQL JDBC library that provides the additional connectivity to Cloud SQL.
+For PostgreSQL you will need to include the following dependency:
+
+[source, xml]
+----
+<dependency>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>postgres-socket-factory</artifactId>
+    <version>${postgres-socket-factory.version}</version>
+</dependency>
+----
+
+Finally, you need to configure your datasource specifically to use the socket factory:
+
+[source, properties]
+----
+quarkus.datasource.db-kind=other <1>
+quarkus.datasource.jdbc.url=jdbc:postgresql:///mydatabase <2>
+quarkus.datasource.jdbc.driver=org.postgresql.Driver
+quarkus.datasource.username=quarkus
+quarkus.datasource.password=quarkus
+quarkus.datasource.jdbc.additional-jdbc-properties.cloudSqlInstance=project-id:gcp-region:instance <3>
+quarkus.datasource.jdbc.additional-jdbc-properties.socketFactory=com.google.cloud.sql.postgres.SocketFactory <4>
+----
+<1> Database kind must be 'other' as we need to skip Quarkus auto-configuration.
+<2> The JDBC URL should not include the hostname / IP of the database.
+<3> We add the `cloudSqlInstance` additional JDBC property to configure the instance id.
+<4> We add the `socketFactory` additional JDBC property to configure the socket factory used to connect to Cloud SQL,
+this one is coming from the `postgres-socket-factory` dependency.
+
+NOTE: If you use Hibernate ORM, you also need to configure `quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQL10Dialect`
+as Hibernate ORM would not be able to automatically detect the dialect of your database.
+
+WARNING: Using a PostgreSQL socket factory is not possible in dev mode at the moment
+due to issue link:https://github.com/quarkusio/quarkus/issues/15782[#15782].
+
 == Going further
 
 You can find a set of extensions to access various Google Cloud Services in the Quarkiverse (a GitHub organization for Quarkus extensions maintained by the community),
-including PubSub, BigQuery, Storage, Spanner, Firestore (visit the repository for an accurate list of supported services).
+including PubSub, BigQuery, Storage, Spanner, Firestore, Secret Manager (visit the repository for an accurate list of supported services).
 
 You can find some documentation about them in the link:https://github.com/quarkiverse/quarkiverse-google-cloud-services[Quarkiverse Google Cloud Services repository].

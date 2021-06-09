@@ -6,7 +6,7 @@ updates:
       interval: daily
       time: "23:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 4
     labels:
       - area/dependencies
     allow:
@@ -42,8 +42,6 @@ updates:
       # Kafka
       - dependency-name: org.apache.kafka:*
       - dependency-name: org.apache.zookeeper:zookeeper
-      # Debezium
-      - dependency-name: io.debezium:debezium-core
       # Scala
       - dependency-name: org.scala-lang:*
       - dependency-name: net.alchim31.maven:scala-maven-plugin
@@ -55,7 +53,7 @@ updates:
       - dependency-name: io.smallrye:smallrye-opentracing
       - dependency-name: io.smallrye:smallrye-fault-tolerance
       - dependency-name: io.smallrye:smallrye-context-propagation
-      - dependency-name: io.smallrye.common:smallrye-common-bom
+      - dependency-name: io.smallrye.common:*
       - dependency-name: io.smallrye.config:smallrye-config
       - dependency-name: io.smallrye.reactive:mutiny
       - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
@@ -130,7 +128,7 @@ updates:
       interval: daily
       time: "21:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 4
     labels:
       - area/dependencies
     rebase-strategy: disabled
@@ -140,7 +138,7 @@ updates:
       interval: daily
       time: "21:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 4
     labels:
       - area/dependencies
     rebase-strategy: disabled

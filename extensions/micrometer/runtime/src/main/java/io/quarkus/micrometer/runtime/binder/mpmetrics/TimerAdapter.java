@@ -12,7 +12,7 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 
-class TimerAdapter
+public class TimerAdapter
         implements org.eclipse.microprofile.metrics.Timer, org.eclipse.microprofile.metrics.SimpleTimer, MeterHolder {
     final MeterRegistry registry;
     Timer timer;
@@ -24,14 +24,13 @@ class TimerAdapter
     public TimerAdapter register(MpMetadata metadata, MetricDescriptor descriptor) {
         if (timer == null || metadata.cleanDirtyMetadata()) {
             timer = io.micrometer.core.instrument.Timer.builder(descriptor.name())
-                    .description(metadata.description())
+                    .description(metadata.getDescription())
                     .tags(descriptor.tags())
                     .register(registry);
         }
         return this;
     }
 
-    @Override
     public void update(long l, TimeUnit timeUnit) {
         timer.record(l, timeUnit);
     }
@@ -64,6 +63,16 @@ class TimerAdapter
     @Override
     public long getCount() {
         return timer.count();
+    }
+
+    @Override
+    public Duration getMaxTimeDuration() {
+        return Duration.ofNanos(((long) timer.max(TimeUnit.NANOSECONDS)));
+    }
+
+    @Override
+    public Duration getMinTimeDuration() {
+        throw new UnsupportedOperationException("This operation is not supported when used with micrometer");
     }
 
     @Override

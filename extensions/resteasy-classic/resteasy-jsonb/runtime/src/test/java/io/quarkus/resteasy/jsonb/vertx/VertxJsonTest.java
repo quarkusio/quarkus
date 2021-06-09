@@ -62,7 +62,8 @@ class VertxJsonTest {
         Instant instant = Instant.now();
         JsonArray array = new JsonArray()
                 .add("s").add(MyEnum.VALUE).add(2222222L).add(21.3f).add(12).add(55.55).add(true).add(false)
-                .add("hello".getBytes()).add(instant)
+                .add("hello".getBytes())
+                .add(instant)
                 .add(new JsonObject().put("hello", "world")).add(new JsonArray().add(1).add(2).add("3"));
 
         JsonObject json2 = new JsonObject()
@@ -128,7 +129,8 @@ class VertxJsonTest {
         Assertions.assertEquals(2, one.getInteger("int"));
         Assertions.assertTrue(one.getBoolean("true"));
         Assertions.assertFalse(one.getBoolean("false"));
-        Assertions.assertArrayEquals("hello".getBytes(), one.getBinary("binary"));
+        byte[] binaries = one.getBinary("binary");
+        Assertions.assertArrayEquals("hello".getBytes(), binaries);
         Assertions.assertEquals(instant, one.getInstant("instant"));
         Assertions.assertNull(one.getValue("null"));
     }

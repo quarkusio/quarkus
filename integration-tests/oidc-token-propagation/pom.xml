@@ -213,6 +213,7 @@
                                         <env>
                                             <KEYCLOAK_USER>admin</KEYCLOAK_USER>
                                             <KEYCLOAK_PASSWORD>admin</KEYCLOAK_PASSWORD>
+                                            <JAVA_OPTS>-Dkeycloak.profile.feature.token_exchange=enabled -Dkeycloak.profile=preview</JAVA_OPTS>
                                         </env>
                                         <log>
                                             <prefix>Keycloak:</prefix>

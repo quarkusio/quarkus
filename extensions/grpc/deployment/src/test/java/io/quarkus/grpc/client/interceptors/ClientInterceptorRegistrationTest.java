@@ -9,13 +9,15 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.grpc.examples.helloworld.Greeter;
+import io.grpc.examples.helloworld.GreeterBean;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.MutinyHelloService;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -25,15 +27,15 @@ public class ClientInterceptorRegistrationTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MutinyHelloService.class, MyFirstClientInterceptor.class,
-                            GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
+                            GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
+                            MutinyGreeterGrpc.class,
                             HelloRequestOrBuilder.class, HelloReplyOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject
     MyFirstClientInterceptor interceptor;
 
-    @Inject
-    @GrpcService("hello-service")
+    @GrpcClient("hello-service")
     GreeterGrpc.GreeterBlockingStub client;
 
     @Test

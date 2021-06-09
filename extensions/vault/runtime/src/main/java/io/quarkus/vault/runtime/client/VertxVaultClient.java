@@ -11,15 +11,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Singleton;
 
-import org.jboss.logging.Logger;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultException;
@@ -36,7 +36,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @Singleton
 public class VertxVaultClient implements VaultClient {
 
-    private static final Logger log = Logger.getLogger(VertxVaultClient.class);
+    private static final HttpMethod LIST = HttpMethod.valueOf("LIST");
 
     private static final List<String> ROOT_NAMESPACE_API = Arrays.asList("sys/init", "sys/license", "sys/leader", "sys/health",
             "sys/metrics", "sys/config/state", "sys/host-info", "sys/key-status", "sys/storage", "sys/storage/raft");
@@ -47,7 +47,7 @@ public class VertxVaultClient implements VaultClient {
     private final VaultConfigHolder vaultConfigHolder;
     private WebClient webClient;
 
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     public VertxVaultClient(VaultConfigHolder vaultConfigHolder, TlsConfig tlsConfig) {
         this.vaultConfigHolder = vaultConfigHolder;
@@ -60,7 +60,12 @@ public class VertxVaultClient implements VaultClient {
     public void init() {
         VaultBootstrapConfig config = vaultConfigHolder.getVaultBootstrapConfig();
         this.webClient = createHttpClient(vertx, config, tlsConfig);
-        this.baseUrl = config.url.orElseThrow(() -> new VaultException("no vault url provided"));
+        this.baseUrl = config.url.orElseThrow(new Supplier<VaultException>() {
+            @Override
+            public VaultException get() {
+                return new VaultException("no vault url provided");
+            }
+        });
     }
 
     @PreDestroy
@@ -83,7 +88,7 @@ public class VertxVaultClient implements VaultClient {
     }
 
     public <T> T list(String path, String token, Class<T> resultClass) {
-        HttpRequest<Buffer> request = builder(path, token).rawMethod("LIST");
+        HttpRequest<Buffer> request = builder(path, token).method(LIST);
         return exec(request, resultClass);
     }
 

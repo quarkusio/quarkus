@@ -22,6 +22,8 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
 
     @Override
     public void setupHotDeployment(HotReplacementContext context) {
+        // ensure that Vert.x runs in dev mode, this prevents Vert.x from caching static resources
+        System.setProperty("vertxweb.environment", "dev");
         this.hotReplacementContext = context;
         VertxHttpRecorder.setHotReplacement(this::handleHotReplacementRequest, hotReplacementContext);
         hotReplacementContext.addPreScanStep(new Runnable() {
@@ -61,7 +63,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                         try {
                             restart = hotReplacementContext.doScan(true);
                         } catch (Exception e) {
-                            event.fail(new IllegalStateException("Unable to perform hot replacement scanning", e));
+                            event.fail(new IllegalStateException("Unable to perform live reload scanning", e));
                             return;
                         }
                     }

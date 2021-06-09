@@ -111,6 +111,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
@@ -151,6 +157,39 @@
                         <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
                         <parentFirstArtifact>org.jacoco:org.jacoco.agent:runtime</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
+
+                        <!-- RestAssured uses groovy, which seems to do some things with soft references that
+                        prevent the ClassLoader from being GC'ed, see https://github.com/quarkusio/quarkus/issues/12498 -->
+                        <parentFirstArtifact>org.codehaus.groovy:groovy</parentFirstArtifact>
+
+                        <!-- Load the junit engine parent first, so it is shared between the outer dev mode
+                        process and the test application-->
+                        <parentFirstArtifact>org.junit.platform:junit-platform-launcher</parentFirstArtifact>
+                        <parentFirstArtifact>org.apiguardian:apiguardian-api</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.platform:junit-platform-engine</parentFirstArtifact>
+                        <parentFirstArtifact>org.opentest4j:opentest4j</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
+
+                        <!-- Pact[<4.1.0] support. It would be great if there was somewhere better to put this-->
+                        <parentFirstArtifact>au.com.dius:pact-jvm-provider-junit5</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius:pact-jvm-provider</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius:pact-jvm-core-support</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius:pact-jvm-core-pact-broker</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius:pact-jvm-core-model</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius:pact-jvm-core-matchers</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius:pact-jvm-junit5</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius:pact-jvm-consumer-java8</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius:pact-jvm-consumer</parentFirstArtifact>
+                        <!-- Pact[>=4.1.0] support.-->
+                        <parentFirstArtifact>au.com.dius.pact.provider:junit5</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact:provider</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:support</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:pactbroker</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:model</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:matcher</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.consumer:junit5</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact:consumer</parentFirstArtifact>
+
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
@@ -163,9 +202,7 @@
                         <runnerParentFirstArtifact>org.wildfly.common:wildfly-common</runnerParentFirstArtifact>
                         <!-- This is needed because it contains some jar handling classes -->
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
-                        <!-- RestAssured uses groovy, which seems to do some things with soft references that
-                        prevent the ClassLoader from being GC'ed, see https://github.com/quarkusio/quarkus/issues/12498 -->
-                        <runnerParentFirstArtifact>org.codehaus.groovy:groovy</runnerParentFirstArtifact>
+
                     </runnerParentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

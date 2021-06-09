@@ -17,8 +17,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.smallrye.mutiny.Multi;
-import io.vertx.core.http.HttpMethod;
 
 public class MultiValidationTest {
 
@@ -49,15 +49,6 @@ public class MultiValidationTest {
                 .body("details", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
-
-        // Input parameter violation - HTML
-        given()
-                .queryParam("name", "doesNotMatch")
-                .when()
-                .get("/query")
-                .then().statusCode(400)
-                .body(containsString("ConstraintViolation"))
-                .body(is(not(emptyString())));
     }
 
     @ApplicationScoped

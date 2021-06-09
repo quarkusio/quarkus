@@ -20,14 +20,16 @@ public class FSWatchUtil {
 
     private static final Logger log = Logger.getLogger(FSWatchUtil.class);
 
-    private static final List<ExecutorService> executors = new ArrayList<>();
+    private final List<ExecutorService> executors = new ArrayList<>();
+
+    private volatile boolean closed = false;
 
     /**
      * in a loop, checks for modifications in the files
      * 
      * @param watchers list of {@link Watcher}s
      */
-    public static void observe(Collection<Watcher> watchers,
+    public void observe(Collection<Watcher> watchers,
             long intervalMs) {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(
@@ -35,13 +37,13 @@ public class FSWatchUtil {
         executors.add(executorService);
     }
 
-    private static void doObserve(Collection<Watcher> watchers, long intervalMs) {
+    private void doObserve(Collection<Watcher> watchers, long intervalMs) {
         Map<Path, Long> lastModified = new HashMap<>();
         long lastCheck = 0;
         // we're assuming no changes between the compilation and first execution, so don't trigger the watcher on first run
         boolean firstRun = true;
         //noinspection InfiniteLoopStatement
-        while (true) {
+        while (!closed) {
             for (Watcher watcher : watchers) {
                 try {
                     Path rootPath = watcher.rootPath;
@@ -79,9 +81,10 @@ public class FSWatchUtil {
         }
     }
 
-    public static void shutdown() {
+    public void shutdown() {
         executors.forEach(ExecutorService::shutdown);
         executors.clear();
+        closed = true;
     }
 
     public static class Watcher {

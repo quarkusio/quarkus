@@ -7,6 +7,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
@@ -27,9 +28,8 @@ import org.eclipse.microprofile.metrics.Timer;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
-import io.smallrye.metrics.api.FunctionGaugeSupport;
 
-class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSupport {
+public class MetricRegistryAdapter implements MetricRegistry {
 
     final Type type;
     final MeterRegistry registry;
@@ -67,6 +67,13 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     public Counter counter(String name, Tag... tags) {
         return internalCounter(internalGetMetadata(name, MetricType.COUNTER),
                 new MetricDescriptor(name, scopeTags(tags)));
+    }
+
+    @Override
+    public Counter counter(MetricID metricID) {
+        String name = metricID.getName();
+        return internalCounter(internalGetMetadata(name, MetricType.COUNTER),
+                new MetricDescriptor(name, scopeTags(metricID.getTagsAsArray())));
     }
 
     @Override
@@ -111,6 +118,13 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     }
 
     @Override
+    public ConcurrentGauge concurrentGauge(MetricID metricID) {
+        String name = metricID.getName();
+        return internalConcurrentGauge(internalGetMetadata(name, MetricType.CONCURRENT_GAUGE),
+                new MetricDescriptor(name, scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
     public ConcurrentGauge concurrentGauge(Metadata metadata) {
         return internalConcurrentGauge(internalGetMetadata(metadata, MetricType.CONCURRENT_GAUGE),
                 new MetricDescriptor(metadata.getName(), scopeTags()));
@@ -149,10 +163,37 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
                 new MetricDescriptor(name, scopeTags(tags)), o, f);
     }
 
+    @Override
+    public <T, R extends Number> Gauge<R> gauge(String name, T o, Function<T, R> f, Tag... tags) {
+        return internalGauge(internalGetMetadata(name, MetricType.GAUGE),
+                new MetricDescriptor(name, scopeTags(tags)), o, f);
+    }
+
+    @Override
+    public <T, R extends Number> Gauge<R> gauge(MetricID metricID, T o, Function<T, R> f) {
+        String name = metricID.getName();
+        return internalGauge(internalGetMetadata(name, MetricType.GAUGE),
+                new MetricDescriptor(name, scopeTags()), o, f);
+    }
+
+    @Override
+    public <T, R extends Number> Gauge<R> gauge(Metadata metadata, T o, Function<T, R> f, Tag... tags) {
+        String name = metadata.getName();
+        return internalGauge(internalGetMetadata(name, MetricType.GAUGE),
+                new MetricDescriptor(name, scopeTags(tags)), o, f);
+    }
+
     @SuppressWarnings("unchecked")
     <T> GaugeAdapter<Double> internalGauge(MpMetadata metadata, MetricDescriptor id, T obj, ToDoubleFunction<T> f) {
         GaugeAdapter.DoubleFunctionGauge<T> result = checkCast(GaugeAdapter.DoubleFunctionGauge.class, metadata,
                 constructedMeters.computeIfAbsent(id, k -> new GaugeAdapter.DoubleFunctionGauge<>(obj, f)));
+        return result.register(metadata, id, registry);
+    }
+
+    @SuppressWarnings("unchecked")
+    <T, R extends Number> GaugeAdapter<R> internalGauge(MpMetadata metadata, MetricDescriptor id, T obj, Function<T, R> f) {
+        GaugeAdapter.FunctionGauge<T, R> result = checkCast(GaugeAdapter.FunctionGauge.class, metadata,
+                constructedMeters.computeIfAbsent(id, k -> new GaugeAdapter.FunctionGauge<>(obj, f)));
         return result.register(metadata, id, registry);
     }
 
@@ -162,6 +203,20 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     }
 
     public <T extends Number> Gauge<T> gauge(String name, Supplier<T> f, Tag... tags) {
+        return internalGauge(internalGetMetadata(name, MetricType.GAUGE),
+                new MetricDescriptor(name, scopeTags(tags)), f);
+    }
+
+    @Override
+    public <T extends Number> Gauge<T> gauge(MetricID metricID, Supplier<T> f) {
+        String name = metricID.getName();
+        return internalGauge(internalGetMetadata(name, MetricType.GAUGE),
+                new MetricDescriptor(name, scopeTags()), f);
+    }
+
+    @Override
+    public <T extends Number> Gauge<T> gauge(Metadata metadata, Supplier<T> f, Tag... tags) {
+        String name = metadata.getName();
         return internalGauge(internalGetMetadata(name, MetricType.GAUGE),
                 new MetricDescriptor(name, scopeTags(tags)), f);
     }
@@ -197,6 +252,13 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     public Histogram histogram(String name, Tag... tags) {
         return internalHistogram(internalGetMetadata(name, MetricType.HISTOGRAM),
                 new MetricDescriptor(name, scopeTags(tags)));
+    }
+
+    @Override
+    public Histogram histogram(MetricID metricID) {
+        String name = metricID.getName();
+        return internalHistogram(internalGetMetadata(name, MetricType.HISTOGRAM),
+                new MetricDescriptor(name, scopeTags(metricID.getTagsAsArray())));
     }
 
     @Override
@@ -236,6 +298,13 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     }
 
     @Override
+    public Meter meter(MetricID metricID) {
+        String name = metricID.getName();
+        return internalMeter(internalGetMetadata(name, MetricType.METERED),
+                new MetricDescriptor(name, scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
     public Meter meter(Metadata metadata) {
         return internalMeter(internalGetMetadata(metadata, MetricType.METERED),
                 new MetricDescriptor(metadata.getName(), scopeTags()));
@@ -270,6 +339,13 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     public Timer timer(String name, Tag... tags) {
         return internalTimer(internalGetMetadata(name, MetricType.TIMER),
                 new MetricDescriptor(name, scopeTags(tags)));
+    }
+
+    @Override
+    public Timer timer(MetricID metricID) {
+        String name = metricID.getName();
+        return internalTimer(internalGetMetadata(name, MetricType.TIMER),
+                new MetricDescriptor(name, scopeTags(metricID.getTagsAsArray())));
     }
 
     @Override
@@ -314,6 +390,13 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     }
 
     @Override
+    public SimpleTimer simpleTimer(MetricID metricID) {
+        String name = metricID.getName();
+        return internalSimpleTimer(internalGetMetadata(name, MetricType.SIMPLE_TIMER),
+                new MetricDescriptor(name, scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
     public SimpleTimer simpleTimer(Metadata metadata) {
         return internalSimpleTimer(internalGetMetadata(metadata, MetricType.SIMPLE_TIMER),
                 new MetricDescriptor(metadata.getName(), scopeTags()));
@@ -323,6 +406,60 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     public SimpleTimer simpleTimer(Metadata metadata, Tag... tags) {
         return internalSimpleTimer(internalGetMetadata(metadata, MetricType.SIMPLE_TIMER),
                 new MetricDescriptor(metadata.getName(), scopeTags(tags)));
+    }
+
+    @Override
+    public Metric getMetric(MetricID metricID) {
+        return constructedMeters.get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
+    public <T extends Metric> T getMetric(MetricID metricID, Class<T> asType) {
+        return asType
+                .cast(constructedMeters.get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray()))));
+    }
+
+    @Override
+    public Counter getCounter(MetricID metricID) {
+        return (Counter) constructedMeters.get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
+    public ConcurrentGauge getConcurrentGauge(MetricID metricID) {
+        return (ConcurrentGauge) constructedMeters
+                .get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
+    public Gauge<?> getGauge(MetricID metricID) {
+        return (Gauge<?>) constructedMeters.get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
+    public Histogram getHistogram(MetricID metricID) {
+        return (Histogram) constructedMeters
+                .get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
+    public Meter getMeter(MetricID metricID) {
+        return (Meter) constructedMeters.get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
+    public Timer getTimer(MetricID metricID) {
+        return (Timer) constructedMeters.get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
+    public SimpleTimer getSimpleTimer(MetricID metricID) {
+        return (SimpleTimer) constructedMeters
+                .get(new MetricDescriptor(metricID.getName(), scopeTags(metricID.getTagsAsArray())));
+    }
+
+    @Override
+    public Metadata getMetadata(String name) {
+        return metadataMap.get(name);
     }
 
     TimerAdapter injectedSimpleTimer(org.eclipse.microprofile.metrics.annotation.Metric annotation) {
@@ -461,6 +598,32 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     }
 
     @Override
+    public SortedMap<MetricID, Metric> getMetrics(MetricFilter filter) {
+        SortedMap<MetricID, Metric> out = new TreeMap<>();
+        for (Map.Entry<MetricDescriptor, MeterHolder> e : constructedMeters.entrySet()) {
+            MetricID mid = e.getKey().toMetricID();
+            if (filter.matches(mid, e.getValue())) {
+                out.put(e.getKey().toMetricID(), e.getValue());
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public <T extends Metric> SortedMap<MetricID, T> getMetrics(Class<T> ofType, MetricFilter filter) {
+        SortedMap<MetricID, T> out = new TreeMap<>();
+        for (Map.Entry<MetricDescriptor, MeterHolder> e : constructedMeters.entrySet()) {
+            if (e.getValue().getType().equals(MetricType.from(ofType))) {
+                MetricID mid = e.getKey().toMetricID();
+                if (filter.matches(mid, e.getValue())) {
+                    out.put(e.getKey().toMetricID(), (T) e.getValue());
+                }
+            }
+        }
+        return out;
+    }
+
+    @Override
     public Map<MetricID, Metric> getMetrics() {
         SortedMap<MetricID, Metric> out = new TreeMap<>();
         for (Map.Entry<MetricDescriptor, MeterHolder> e : constructedMeters.entrySet()) {
@@ -486,6 +649,12 @@ class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSuppo
     @Override
     public Map<String, Metadata> getMetadata() {
         return Collections.unmodifiableMap(metadataMap);
+    }
+
+    @Override
+    public Type getType() {
+        // In Micrometer mode, we don't apply the concept of metric registry types
+        return null;
     }
 
     Tags scopeTags(Tag... tags) {

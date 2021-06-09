@@ -1,8 +1,6 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
@@ -13,13 +11,11 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
+import io.vertx.core.spi.observability.HttpRequest;
+import io.vertx.core.spi.observability.HttpResponse;
 
 /**
  * HttpServerMetrics<R, W, S>
@@ -34,8 +30,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     static final Logger log = Logger.getLogger(VertxHttpServerMetrics.class);
     static final String METRICS_CONTEXT = "HTTP_REQUEST_METRICS_CONTEXT";
 
-    final List<Pattern> ignorePatterns;
-    final Map<Pattern, String> matchPatterns;
+    HttpBinderConfiguration config;
 
     final String nameWebsocketConnections;
     final String nameHttpServerPush;
@@ -43,41 +38,12 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
 
     VertxHttpServerMetrics(MeterRegistry registry, HttpBinderConfiguration config) {
         super(registry, "http.server");
+        this.config = config;
+
+        // not dev-mode changeable
         nameWebsocketConnections = config.getHttpServerWebSocketConnectionsName();
         nameHttpServerPush = config.getHttpServerPushName();
         nameHttpServerRequests = config.getHttpServerRequestsName();
-
-        ignorePatterns = config.getServerIgnorePatterns();
-        matchPatterns = config.getServerMatchPatterns();
-    }
-
-    /**
-     * Stash the RequestMetric in the Vertx Context
-     *
-     * @param context Vertx context to store RequestMetric in
-     * @param requestMetric
-     * @see VertxMeterFilter
-     */
-    public static void setRequestMetric(Context context, HttpRequestMetric requestMetric) {
-        if (context != null) {
-            context.put(METRICS_CONTEXT, requestMetric);
-        }
-    }
-
-    /**
-     * Retrieve and remove the RequestMetric from the Vertx Context
-     *
-     * @param context
-     * @return the RequestMetricContext stored in the Vertx Context, or null
-     * @see VertxMeterFilter
-     */
-    public static HttpRequestMetric retrieveRequestMetric(Context context) {
-        if (context != null) {
-            HttpRequestMetric requestMetric = context.get(METRICS_CONTEXT);
-            context.remove(METRICS_CONTEXT);
-            return requestMetric;
-        }
-        return null;
     }
 
     /**
@@ -91,18 +57,27 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      */
     @Override
     public HttpRequestMetric responsePushed(Map<String, Object> socketMetric, HttpMethod method, String uri,
-            HttpServerResponse response) {
-        HttpRequestMetric requestMetric = new HttpRequestMetric(matchPatterns, ignorePatterns, uri);
-        if (requestMetric.isMeasure()) {
+            HttpResponse response) {
+        HttpRequestMetric requestMetric = new HttpRequestMetric(uri);
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
+        if (path != null) {
             registry.counter(nameHttpServerPush, Tags.of(
-                    HttpCommonTags.uri(requestMetric.getPath(), response.getStatusCode()),
+                    HttpCommonTags.uri(path, response.statusCode()),
                     VertxMetricsTags.method(method),
                     VertxMetricsTags.outcome(response),
-                    HttpCommonTags.status(response.getStatusCode())))
+                    HttpCommonTags.status(response.statusCode())))
                     .increment();
         }
-        log.debugf("responsePushed %s: %s, %s", uri, socketMetric, requestMetric);
+        log.debugf("responsePushed %s, %s", socketMetric, requestMetric);
         return requestMetric;
+    }
+
+    @Override
+    public void requestRouted(HttpRequestMetric requestMetric, String route) {
+        log.debugf("requestRouted %s %s", route, requestMetric);
+        requestMetric.appendCurrentRoutePath(route);
     }
 
     /**
@@ -115,19 +90,11 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      * @return a RequestMetricContext
      */
     @Override
-    public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpServerRequest request) {
-        // evaluate and remember the path to monitor for use later (maybe a 404 or redirect..)
-        HttpRequestMetric requestMetric = new HttpRequestMetric(matchPatterns, ignorePatterns, request.path());
-        setRequestMetric(Vertx.currentContext(), requestMetric);
+    public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpRequest request) {
+        HttpRequestMetric requestMetric = new HttpRequestMetric(request);
+        requestMetric.setSample(Timer.start(registry));
 
-        if (requestMetric.isMeasure()) {
-            // If we're measuring this request, create/remember the sample
-            requestMetric.setSample(Timer.start(registry));
-            requestMetric.setTags(Tags.of(VertxMetricsTags.method(request.method())));
-
-            log.debugf("requestBegin %s: %s, %s", requestMetric.getPath(), socketMetric, requestMetric);
-        }
-
+        log.debugf("requestBegin %s, %s", socketMetric, requestMetric);
         return requestMetric;
     }
 
@@ -139,16 +106,20 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      */
     @Override
     public void requestReset(HttpRequestMetric requestMetric) {
-        log.debugf("requestReset: %s", requestMetric);
-        Timer.Sample sample = getRequestSample(requestMetric);
-        if (sample != null) {
-            String requestPath = getServerRequestPath(requestMetric);
+        log.debugf("requestReset %s", requestMetric);
+
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
+        if (path != null) {
+            Timer.Sample sample = requestMetric.getSample();
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
-                    .tags(requestMetric.getTags())
                     .tags(Tags.of(
-                            HttpCommonTags.uri(requestPath, 0),
+                            VertxMetricsTags.method(requestMetric.request().method()),
+                            HttpCommonTags.uri(path, 0),
                             Outcome.CLIENT_ERROR.asTag(),
                             HttpCommonTags.STATUS_RESET));
+
             sample.stop(builder.register(registry));
         }
     }
@@ -158,20 +129,23 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      *
      * @param requestMetric a RequestMetricContext or null
      * @param response the http server response
+     * @param bytesWritten bytes written
      */
     @Override
-    public void responseEnd(HttpRequestMetric requestMetric, HttpServerResponse response) {
-        log.debugf("responseEnd: %s, %s", requestMetric, response);
+    public void responseEnd(HttpRequestMetric requestMetric, HttpResponse response, long bytesWritten) {
+        log.debugf("responseEnd %s, %s", response, requestMetric);
 
-        Timer.Sample sample = getRequestSample(requestMetric);
-        if (sample != null) {
-            String requestPath = getServerRequestPath(requestMetric);
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
+        if (path != null) {
+            Timer.Sample sample = requestMetric.getSample();
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
-                    .tags(requestMetric.getTags())
                     .tags(Tags.of(
-                            HttpCommonTags.uri(requestPath, response.getStatusCode()),
+                            VertxMetricsTags.method(requestMetric.request().method()),
+                            HttpCommonTags.uri(path, response.statusCode()),
                             VertxMetricsTags.outcome(response),
-                            HttpCommonTags.status(response.getStatusCode())));
+                            HttpCommonTags.status(response.statusCode())));
 
             sample.stop(builder.register(registry));
         }
@@ -188,8 +162,11 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     @Override
     public LongTaskTimer.Sample connected(Map<String, Object> socketMetric, HttpRequestMetric requestMetric,
             ServerWebSocket serverWebSocket) {
-        log.debugf("websocket connected: %s, %s, %s", socketMetric, requestMetric, serverWebSocket);
-        String path = getServerRequestPath(requestMetric);
+        log.debugf("websocket connected %s, %s, %s", socketMetric, serverWebSocket, requestMetric);
+
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
         if (path != null) {
             return LongTaskTimer.builder(nameWebsocketConnections)
                     .tags(Tags.of(HttpCommonTags.uri(path, 0)))
@@ -206,23 +183,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      */
     @Override
     public void disconnected(LongTaskTimer.Sample websocketMetric) {
-        log.debugf("websocket disconnected: %s", websocketMetric);
+        log.debugf("websocket disconnected %s", websocketMetric);
         if (websocketMetric != null) {
             websocketMetric.stop();
         }
-    }
-
-    private Timer.Sample getRequestSample(HttpRequestMetric metricsContext) {
-        if (metricsContext == null) {
-            return null;
-        }
-        return metricsContext.getSample();
-    }
-
-    private String getServerRequestPath(HttpRequestMetric metricsContext) {
-        if (metricsContext == null) {
-            return null;
-        }
-        return metricsContext.getHttpRequestPath();
     }
 }

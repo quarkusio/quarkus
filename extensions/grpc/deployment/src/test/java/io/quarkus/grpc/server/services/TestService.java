@@ -7,16 +7,15 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Singleton;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.EmptyProtos;
 
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.TestServiceGrpc;
+import io.quarkus.grpc.GrpcService;
 
-@Singleton
+@GrpcService
 public class TestService extends TestServiceGrpc.TestServiceImplBase {
 
     @Override
@@ -82,8 +81,6 @@ public class TestService extends TestServiceGrpc.TestServiceImplBase {
         };
     }
 
-    ;
-
     @Override
     public StreamObserver<Messages.StreamingOutputCallRequest> fullDuplexCall(
             StreamObserver<Messages.StreamingOutputCallResponse> responseObserver) {
@@ -122,6 +119,7 @@ public class TestService extends TestServiceGrpc.TestServiceImplBase {
         return new StreamObserver<Messages.StreamingOutputCallRequest>() {
             @Override
             public void onNext(Messages.StreamingOutputCallRequest streamingOutputCallRequest) {
+                assertThatTheRequestScopeIsActive();
                 String payload = streamingOutputCallRequest.getPayload().getBody().toStringUtf8();
                 ByteString value = ByteString.copyFromUtf8(payload.toUpperCase());
                 Messages.Payload response = Messages.Payload.newBuilder().setBody(value).build();

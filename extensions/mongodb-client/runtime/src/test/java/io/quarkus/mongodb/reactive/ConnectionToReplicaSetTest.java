@@ -30,14 +30,14 @@ class ConnectionToReplicaSetTest extends MongoWithReplicasTestBase {
     void testConnection() {
         String cs = "mongodb://localhost:27018,localhost:27019";
         client = new ReactiveMongoClientImpl(MongoClients.create(cs));
-        assertThat(client.listDatabases().collectItems().first().await().asOptional().indefinitely()).isNotEmpty();
+        assertThat(client.listDatabases().collect().first().await().asOptional().indefinitely()).isNotEmpty();
     }
 
     @Test
     void testConnectionWithReplicaSet() {
         String cs = "mongodb://localhost:27018,localhost:27019/?replicaSet=test001";
         client = new ReactiveMongoClientImpl(MongoClients.create(cs));
-        assertThat(client.listDatabases().collectItems().first().await().asOptional().indefinitely()).isNotEmpty();
+        assertThat(client.listDatabases().collect().first().await().asOptional().indefinitely()).isNotEmpty();
     }
 
     @Test

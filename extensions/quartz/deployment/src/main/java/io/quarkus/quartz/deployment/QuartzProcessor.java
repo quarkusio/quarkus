@@ -45,7 +45,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -66,11 +65,6 @@ import io.quarkus.quartz.runtime.QuartzSupport;
 public class QuartzProcessor {
 
     private static final DotName JOB = DotName.createSimple(Job.class.getName());
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.QUARTZ);
-    }
 
     @BuildStep
     FeatureBuildItem feature() {

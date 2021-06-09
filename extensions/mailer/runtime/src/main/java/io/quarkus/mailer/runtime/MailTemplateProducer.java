@@ -15,9 +15,10 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.mailer.MailTemplate;
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.ResourcePath;
+import io.quarkus.qute.runtime.LocationLiteral;
 
 @Singleton
 public class MailTemplateProducer {
@@ -50,19 +51,19 @@ public class MailTemplateProducer {
         return new MailTemplate() {
             @Override
             public MailTemplateInstance instance() {
-                return new MailTemplateInstanceImpl(mailer, template.select(new ResourcePath.Literal(name)).get().instance());
+                return new MailTemplateInstanceImpl(mailer, template.select(new LocationLiteral(name)).get().instance());
             }
 
         };
     }
 
-    @ResourcePath("ignored")
+    @Location("ignored")
     @Produces
     MailTemplate get(InjectionPoint injectionPoint) {
-        ResourcePath path = null;
+        Location path = null;
         for (Annotation qualifier : injectionPoint.getQualifiers()) {
-            if (qualifier.annotationType().equals(ResourcePath.class)) {
-                path = (ResourcePath) qualifier;
+            if (qualifier.annotationType().equals(Location.class)) {
+                path = (Location) qualifier;
                 break;
             }
         }
@@ -73,7 +74,7 @@ public class MailTemplateProducer {
         return new MailTemplate() {
             @Override
             public MailTemplateInstance instance() {
-                return new MailTemplateInstanceImpl(mailer, template.select(new ResourcePath.Literal(name)).get().instance());
+                return new MailTemplateInstanceImpl(mailer, template.select(new LocationLiteral(name)).get().instance());
             }
         };
     }

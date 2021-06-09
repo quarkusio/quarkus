@@ -147,16 +147,14 @@ public class CombinedFormBasicAuthTestCase {
         CookieFilter cookies = new CookieFilter();
         RestAssured
                 .given()
-                .auth().basic("admin", "wrongpassword")
+                .auth().preemptive().basic("admin", "wrongpassword")
                 .filter(cookies)
                 .redirects().follow(false)
-                .when()
                 .get("/admin")
                 .then()
                 .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/login"))
-                .cookie("quarkus-redirect-location", containsString("/admin"));
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
 
     }
 }

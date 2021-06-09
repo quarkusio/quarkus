@@ -82,4 +82,9 @@ public @interface CheckedTemplate {
      */
     String basePath() default DEFAULTED;
 
+    /**
+     * If set to true then the defined templates can only contain type-safe expressions.
+     */
+    boolean requireTypeSafeExpressions() default true;
+
 }

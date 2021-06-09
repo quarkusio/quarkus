@@ -29,6 +29,7 @@ public class ScoreSystem {
 
     public static class EndpointScore {
 
+        public final String className;
         public final String httpMethod;
         public final String fullPath;
         public final List<MediaType> produces;
@@ -37,8 +38,10 @@ public class ScoreSystem {
         public final int score;
         public final List<RequestFilterEntry> requestFilterEntries;
 
-        public EndpointScore(String httpMethod, String fullPath, List<MediaType> produces, List<MediaType> consumes,
+        public EndpointScore(String className, String httpMethod, String fullPath, List<MediaType> produces,
+                List<MediaType> consumes,
                 Map<Category, List<Diagnostic>> diagnostics, int score, List<RequestFilterEntry> requestFilterEntries) {
+            this.className = className;
             this.httpMethod = httpMethod;
             this.fullPath = fullPath;
             this.produces = produces;
@@ -115,7 +118,7 @@ public class ScoreSystem {
     public final static RuntimeResourceVisitor ScoreVisitor = new RuntimeResourceVisitor() {
         int overallScore = 0;
         int overallTotal = 0;
-        List<EndpointScore> endpoints = new ArrayList<>();
+        final List<EndpointScore> endpoints = new ArrayList<>();
 
         @Override
         public void visitRuntimeResource(String httpMethod, String fullPath, RuntimeResource runtimeResource) {
@@ -153,7 +156,8 @@ public class ScoreSystem {
             score = (int) Math.floor(((float) score / (float) total) * 100f);
             overallScore += score;
             overallTotal += 100;
-            endpoints.add(new EndpointScore(httpMethod, fullPath, produces, consumes, runtimeResource.getScore(), score,
+            endpoints.add(new EndpointScore(runtimeResource.getResourceClass().getName(), httpMethod, fullPath, produces,
+                    consumes, runtimeResource.getScore(), score,
                     requestFilters));
         }
 

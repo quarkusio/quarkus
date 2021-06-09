@@ -43,7 +43,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -54,7 +53,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.ReaderInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
-import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
+import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 
 public class ResteasyReactiveCommonProcessor {
@@ -64,9 +63,9 @@ public class ResteasyReactiveCommonProcessor {
 
     @BuildStep
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
-            JaxRsSecurityConfig config,
+            ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resteasyDeployment,
-            BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
+            BuildProducer<AdditionalSecuredClassesBuildItem> additionalSecuredClasses) {
         if (config.denyJaxRs && resteasyDeployment.isPresent()) {
             final List<ClassInfo> classes = new ArrayList<>();
 
@@ -78,7 +77,7 @@ public class ResteasyReactiveCommonProcessor {
                 }
             }
 
-            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildIem(classes));
+            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildItem(classes));
         }
     }
 

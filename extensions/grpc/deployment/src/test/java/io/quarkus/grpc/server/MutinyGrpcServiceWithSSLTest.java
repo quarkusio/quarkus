@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.google.protobuf.EmptyProtos;
 
+import io.grpc.examples.helloworld.Greeter;
+import io.grpc.examples.helloworld.GreeterBean;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
@@ -37,13 +39,15 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MutinyGrpcServiceWithSSLTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
-                            GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
-                            HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
-                            EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
-                            TestServiceGrpc.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setFlatClassPath(true).setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
+                                    GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
+                                    MutinyGreeterGrpc.class,
+                                    HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
+                                    EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
+                                    TestServiceGrpc.class))
             .withConfigurationResource("grpc-server-tls-configuration.properties");
 
     @Override

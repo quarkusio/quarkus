@@ -29,11 +29,19 @@ public class FlashScopeUtil {
 
     public static void handleFlashCookie(RoutingContext event) {
         Cookie cookie = event.request().getCookie(FLASH_COOKIE_NAME);
-        event.response().removeCookie(FLASH_COOKIE_NAME);
         if (cookie != null) {
-            Map<String, Object> data = unmarshallMap(Base64.getDecoder().decode(cookie.getValue().getBytes()));
-            event.data().put(FLASH_CONTEXT_DATA_NAME, data);
+            byte[] bytes = cookie.getValue().getBytes();
+            if (bytes != null && bytes.length != 0) {
+                byte[] decoded = Base64.getDecoder().decode(bytes);
+                // API says it can't be null
+                if (decoded.length > 0) {
+                    Map<String, Object> data = unmarshallMap(decoded);
+                    event.data().put(FLASH_CONTEXT_DATA_NAME, data);
+                }
+            }
         }
+        // must do this after we've read the value, otherwise we can't read it, for some reason
+        event.response().removeCookie(FLASH_COOKIE_NAME);
     }
 
     // we don't use json because quarkus-vertx-http does not depend on Jackson databind and therefore the

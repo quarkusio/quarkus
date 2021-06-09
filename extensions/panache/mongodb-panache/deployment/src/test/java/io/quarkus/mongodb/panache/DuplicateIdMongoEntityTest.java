@@ -13,6 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DuplicateIdMongoEntityTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .setExpectedException(BuildException.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DuplicateIdMongoEntity.class));

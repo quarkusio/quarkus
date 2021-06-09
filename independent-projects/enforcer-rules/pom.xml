@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>37</version>
+        <version>38</version>
     </parent>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-enforcer-rules</artifactId>
@@ -22,12 +22,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.release>11</maven.compiler.release>
 
         <enforcer-api.version>3.0.0-M3</enforcer-api.version>
-        <maven-invoker-plugin.version>3.2.1</maven-invoker-plugin.version>
-        <maven-core.version>3.6.3</maven-core.version>
+        <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
+        <maven-core.version>3.8.1</maven-core.version>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>
@@ -86,7 +87,7 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.14.0</version>
+                <version>2.15.0</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>
@@ -105,7 +106,7 @@
             <plugin>
                 <groupId>net.revelc.code</groupId>
                 <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.6.0</version>
+                <version>1.6.2</version>
                 <configuration>
                     <!-- store outside of target to speed up formatting when mvn clean is used -->
                     <cachedir>.cache</cachedir>
@@ -119,25 +120,15 @@
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>sonatype-nexus-releases</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
     <profiles>
-        <profile>
-            <id>jdk-8-classpath</id>
-            <activation>
-                <!-- activate this on any JDK from 9 onwards -->
-                <jdk>[9,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>8</maven.compiler.release>
-            </properties>
-        </profile>
         <profile>
             <id>quick-build</id>
             <activation>

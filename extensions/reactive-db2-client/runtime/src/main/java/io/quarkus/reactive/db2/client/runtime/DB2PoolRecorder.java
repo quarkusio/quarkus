@@ -64,7 +64,7 @@ public class DB2PoolRecorder {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return new ThreadLocalDB2Pool(vertx, connectOptions, poolOptions);
+        return DB2Pool.pool(vertx, connectOptions, poolOptions);
     }
 
     private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -75,6 +75,11 @@ public class DB2PoolRecorder {
 
         if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
             poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
+        }
+
+        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
+            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
+            poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
 
         return poolOptions;
@@ -144,9 +149,9 @@ public class DB2PoolRecorder {
 
         connectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
 
-        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
-            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
-            connectOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
+            connectOptions.setHostnameVerificationAlgorithm(
+                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
         }
 
         return connectOptions;

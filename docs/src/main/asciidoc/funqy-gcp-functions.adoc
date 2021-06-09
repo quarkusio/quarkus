@@ -10,8 +10,6 @@ include::./attributes.adoc[]
 
 The guide walks through quickstart code to show you how you can deploy Funqy functions to Google Cloud Functions.
 
-As the Google Cloud Function Java engine is a new Beta feature of Google Cloud, this extension is flagged as experimental.
-
 include::./status-include.adoc[]
 
 == Prerequisites
@@ -33,13 +31,6 @@ Login to Google Cloud is necessary for deploying the application and it can be d
 gcloud auth login
 ----
 
-At the time of this writing, Cloud Functions are still in beta so make sure to install the `beta` command group.
-
-[source,bash,subs=attributes+]
-----
-gcloud components install beta
-----
-
 == The Quickstart
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
@@ -58,15 +49,8 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=funqy-google-cloud-functions \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="resteasy,funqy-google-cloud-functions"
+    -Dextensions="funqy-google-cloud-functions"
 ----
-
-Now, let's remove what's not needed inside the generated application:
-
-- Remove the dependency `io.quarkus:quarkus-reasteasy` from your `pom.xml` file.
-- Remove the generated `org.acme.quickstart.GreetingResource` class.
-- Remove the `index.html` from `resources/META-INF/resources` or it will be picked up instead of your Function.
-- Remove the existing tests.
 
 == The Code
 
@@ -158,11 +142,11 @@ Then you will be able to use `gcloud` to deploy your function to Google Cloud, t
 
 [WARNING]
 ====
-The first time you launch the `gcloud beta functions deploy`, you can have the following error message:
+The first time you launch the `gcloud functions deploy`, you can have the following error message:
 
 [source]
 ----
-ERROR: (gcloud.beta.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
+ERROR: (gcloud.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
 ----
 This means that Cloud Build is not activated yet. To overcome this error, open the URL shown in the error, follow the instructions and then wait a few minutes before retrying the command.
 ====
@@ -173,7 +157,7 @@ Use this command to deploy to Google Cloud Functions:
 
 [source,bash]
 ----
-gcloud beta functions deploy quarkus-example-funky-pubsub \
+gcloud functions deploy quarkus-example-funky-pubsub \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
   --runtime=java11 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish \
   --source=target/deployment
@@ -207,7 +191,7 @@ Then, use this command to deploy to Google Cloud Functions:
 
 [source,bash]
 ----
-gcloud beta functions deploy quarkus-example-funky-storage \
+gcloud functions deploy quarkus-example-funky-storage \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
   --runtime=java11 --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
   --source=target/deployment
@@ -239,7 +223,7 @@ You can download it via Maven using the following command:
 [source,bash]
 ----
 mvn dependency:copy \
-  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-beta1' \
+  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.2' \
   -DoutputDirectory=.
 ----
 
@@ -253,7 +237,7 @@ For background functions, you launch the invoker with a target class of `io.quar
 
 [source,bash]
 ----
-java -jar java-function-invoker-1.0.0-beta1.jar \
+java -jar java-function-invoker-1.0.2.jar \
   --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction
 ----
@@ -275,7 +259,7 @@ For background functions, you launch the invoker with a target class of `io.quar
 
 [source,bash]
 ----
-java -jar java-function-invoker-1.0.0-beta1.jar \
+java -jar java-function-invoker-1.0.2.jar \
   --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction
 ----

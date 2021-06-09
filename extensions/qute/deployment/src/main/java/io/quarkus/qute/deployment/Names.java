@@ -12,8 +12,6 @@ import org.jboss.jandex.DotName;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
-import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
@@ -26,7 +24,6 @@ final class Names {
     static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
     static final DotName MESSAGE_PARAM = DotName.createSimple(MessageParam.class.getName());
     static final DotName LOCALIZED = DotName.createSimple(Localized.class.getName());
-    static final DotName RESOURCE_PATH = DotName.createSimple(ResourcePath.class.getName());
     static final DotName TEMPLATE = DotName.createSimple(Template.class.getName());
     static final DotName ITERABLE = DotName.createSimple(Iterable.class.getName());
     static final DotName ITERATOR = DotName.createSimple(Iterator.class.getName());
@@ -34,7 +31,6 @@ final class Names {
     static final DotName MAP = DotName.createSimple(Map.class.getName());
     static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
     static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
-    static final DotName CHECKED_TEMPLATE_OLD = DotName.createSimple(CheckedTemplate.class.getName());
     static final DotName TEMPLATE_INSTANCE = DotName.createSimple(TemplateInstance.class.getName());
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     static final DotName UNI = DotName.createSimple(Uni.class.getName());

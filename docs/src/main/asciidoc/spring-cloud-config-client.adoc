@@ -6,11 +6,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus - Reading properties from Spring Cloud Config Server
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 This guide explains how your Quarkus application can read configuration properties at runtime from the https://cloud.spring.io/spring-cloud-config[Spring Cloud Config Server].
-
-include::./status-include.adoc[]
 
 == Prerequisites
 
@@ -18,7 +15,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 

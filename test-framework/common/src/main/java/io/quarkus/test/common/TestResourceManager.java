@@ -30,10 +30,14 @@ import org.jboss.jandex.IndexView;
 
 public class TestResourceManager implements Closeable {
 
+    public static final String CLOSEABLE_NAME = TestResourceManager.class.getName() + ".closeable";
+
+    private static final int ANNOTATION = 0x00002000;
+
     private final List<TestResourceEntry> sequentialTestResourceEntries;
     private final List<TestResourceEntry> parallelTestResourceEntries;
     private final List<TestResourceEntry> allTestResourceEntries;
-    private Map<String, String> oldSystemProps;
+    private final Map<String, String> configProperties = new ConcurrentHashMap<>();
     private boolean started = false;
     private boolean hasPerTestResources = false;
 
@@ -115,19 +119,10 @@ public class TestResourceManager implements Closeable {
 
             waitForAllFutures(startFutures);
 
-            oldSystemProps = new HashMap<>();
-            for (Map.Entry<String, String> i : ret.entrySet()) {
-                oldSystemProps.put(i.getKey(), System.getProperty(i.getKey()));
-                if (i.getValue() == null) {
-                    System.clearProperty(i.getKey());
-                } else {
-                    System.setProperty(i.getKey(), i.getValue());
-                }
-            }
         } finally {
             executor.shutdown();
         }
-
+        configProperties.putAll(ret);
         return ret;
 
     }
@@ -157,17 +152,6 @@ public class TestResourceManager implements Closeable {
             return;
         }
         started = false;
-        if (oldSystemProps != null) {
-            for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
-                if (e.getValue() == null) {
-                    System.clearProperty(e.getKey());
-                } else {
-                    System.setProperty(e.getKey(), e.getValue());
-                }
-
-            }
-        }
-        oldSystemProps = null;
         for (TestResourceEntry entry : allTestResourceEntries) {
             try {
                 entry.getTestResource().stop();
@@ -180,6 +164,11 @@ public class TestResourceManager implements Closeable {
             cpr.releaseConfig(cpr.getConfig());
         } catch (Throwable ignored) {
         }
+        configProperties.clear();
+    }
+
+    public Map<String, String> getConfigProperties() {
+        return configProperties;
     }
 
     private Set<TestResourceClassEntry> initParallelTestResources(Set<TestResourceClassEntry> uniqueEntries) {
@@ -387,11 +376,19 @@ public class TestResourceManager implements Closeable {
     }
 
     private boolean keepTestResourceAnnotation(AnnotationInstance annotation, ClassInfo targetClass, Set<String> testClasses) {
+        if (isAnnotation(targetClass)) {
+            // meta-annotations have already been handled in collectMetaAnnotations
+            return false;
+        }
         AnnotationValue restrict = annotation.value("restrictToAnnotatedClass");
         if (restrict != null && restrict.asBoolean()) {
             return testClasses.contains(targetClass.name().toString('.'));
         }
         return true;
+    }
+
+    private boolean isAnnotation(ClassInfo info) {
+        return (info.flags() & ANNOTATION) != 0;
     }
 
     public static class TestResourceClassEntry {

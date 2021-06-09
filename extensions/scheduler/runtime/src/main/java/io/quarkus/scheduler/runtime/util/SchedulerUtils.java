@@ -1,10 +1,20 @@
 package io.quarkus.scheduler.runtime.util;
 
-import java.time.Duration;
+import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
+import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 
+import java.time.Duration;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.function.BiConsumer;
+
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.scheduler.Scheduled;
+import io.smallrye.common.expression.Expression;
+import io.smallrye.common.expression.ResolveContext;
 
 /**
  * Utilities class for scheduler extensions.
@@ -26,17 +36,28 @@ public class SchedulerUtils {
      * @return returns the duration in milliseconds.
      */
     public static long parseDelayedAsMillis(Scheduled scheduled) {
-        return parseDurationAsMillis(scheduled, scheduled.delayed(), DELAYED);
+        String value = lookUpPropertyValue(scheduled.delayed());
+        return parseDurationAsMillis(scheduled, value, DELAYED);
     }
 
     /**
      * Parse the `@Scheduled(every = "")` field into milliseconds.
      *
      * @param scheduled annotation
-     * @return returns the duration in milliseconds.
+     * @return returns the duration in milliseconds or {@link OptionalLong#empty()} if the expression evaluates to "off" or
+     *         "disabled".
      */
-    public static long parseEveryAsMillis(Scheduled scheduled) {
-        return parseDurationAsMillis(scheduled, scheduled.every(), EVERY);
+    public static OptionalLong parseEveryAsMillis(Scheduled scheduled) {
+        String value = lookUpPropertyValue(scheduled.every());
+        OptionalLong optionalMillis = OptionalLong.empty();
+        if (!isOff(value)) {
+            optionalMillis = OptionalLong.of(parseDurationAsMillis(scheduled, value, EVERY));
+        }
+        return optionalMillis;
+    }
+
+    public static boolean isOff(String value) {
+        return value != null && (value.equalsIgnoreCase("off") || value.equalsIgnoreCase("disabled"));
     }
 
     /**
@@ -48,19 +69,63 @@ public class SchedulerUtils {
     public static String lookUpPropertyValue(String propertyValue) {
         String value = propertyValue.trim();
         if (!value.isEmpty() && isConfigValue(value)) {
-            value = ConfigProviderResolver.instance().getConfig().getValue(getConfigProperty(value), String.class);
+            value = resolvePropertyExpression(adjustExpressionSyntax(value));
         }
-
         return value;
     }
 
     public static boolean isConfigValue(String val) {
+        return isSimpleConfigValue(val) || isConfigExpression(val);
+    }
+
+    private static boolean isSimpleConfigValue(String val) {
         val = val.trim();
         return val.startsWith("{") && val.endsWith("}");
     }
 
-    private static String getConfigProperty(String val) {
-        return val.substring(1, val.length() - 1);
+    /**
+     * Converts "{property}" to "${property}" for backwards compatibility
+     */
+    private static String adjustExpressionSyntax(String val) {
+        if (isSimpleConfigValue(val)) {
+            return '$' + val;
+        }
+        return val;
+    }
+
+    /**
+     * Adapted from {@link io.smallrye.config.ExpressionConfigSourceInterceptor}
+     */
+    private static String resolvePropertyExpression(String expr) {
+        final Config config = ConfigProviderResolver.instance().getConfig();
+        final Expression expression = Expression.compile(expr, LENIENT_SYNTAX, NO_TRIM);
+        final String expanded = expression.evaluate(new BiConsumer<ResolveContext<RuntimeException>, StringBuilder>() {
+            @Override
+            public void accept(ResolveContext<RuntimeException> resolveContext, StringBuilder stringBuilder) {
+                final Optional<String> resolve = config.getOptionalValue(resolveContext.getKey(), String.class);
+                if (resolve.isPresent()) {
+                    stringBuilder.append(resolve.get());
+                } else if (resolveContext.hasDefault()) {
+                    resolveContext.expandDefault();
+                } else {
+                    throw new NoSuchElementException(String.format("Could not expand value %s in property %s",
+                            resolveContext.getKey(), expr));
+                }
+            }
+        });
+        return expanded;
+    }
+
+    private static boolean isConfigExpression(String val) {
+        if (val == null) {
+            return false;
+        }
+        int exprStart = val.indexOf("${");
+        int exprEnd = -1;
+        if (exprStart >= 0) {
+            exprEnd = val.indexOf('}', exprStart + 2);
+        }
+        return exprEnd > 0;
     }
 
     private static long parseDurationAsMillis(Scheduled scheduled, String value, String memberName) {
@@ -68,7 +133,6 @@ public class SchedulerUtils {
     }
 
     private static Duration parseDuration(Scheduled scheduled, String value, String memberName) {
-        value = lookUpPropertyValue(value);
         if (Character.isDigit(value.charAt(0))) {
             value = "PT" + value;
         }

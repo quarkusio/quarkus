@@ -75,6 +75,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -126,7 +127,7 @@ public class FastBootMetadataBuilder {
 
         final RecordableBootstrap ssrBuilder = RecordableBootstrapFactory.createRecordableBootstrapBuilder(puDefinition);
 
-        final MergedSettings mergedSettings = mergeSettings(persistenceUnit);
+        final MergedSettings mergedSettings = mergeSettings(puDefinition);
         this.buildTimeSettings = new BuildTimeSettings(mergedSettings.getConfigurationValues());
 
         // Build the "standard" service registry
@@ -160,6 +161,12 @@ public class FastBootMetadataBuilder {
 
         final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
         // No need to populate annotatedClassNames/annotatedPackages: they are populated through scanning
+        // XML mappings, however, cannot be contributed through the scanner,
+        // which only allows specifying mappings as files/resources,
+        // and we really don't want any XML parsing here...
+        for (RecordableXmlMapping mapping : puDefinition.getXmlMappings()) {
+            metadataSources.addXmlBinding(mapping.toHibernateOrmBinding());
+        }
 
         this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources
                 .getMetadataBuilder(standardServiceRegistry);
@@ -197,7 +204,8 @@ public class FastBootMetadataBuilder {
      * java.util.Map, org.hibernate.boot.registry.StandardServiceRegistryBuilder)
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private MergedSettings mergeSettings(PersistenceUnitDescriptor persistenceUnit) {
+    private MergedSettings mergeSettings(QuarkusPersistenceUnitDefinition puDefinition) {
+        PersistenceUnitDescriptor persistenceUnit = puDefinition.getActualHibernateDescriptor();
         final MergedSettings mergedSettings = new MergedSettings();
         final Map cfg = mergedSettings.configurationValues;
 
@@ -261,20 +269,29 @@ public class FastBootMetadataBuilder {
         }
         cfg.put(WRAP_RESULT_SETS, "false");
 
-        // Hibernate Envers (and others) require XML_MAPPING_ENABLED to be activated,
-        // but we don't want to enable this for any other use:
+        // XML mapping support can be costly, so we only enable it when XML mappings are actually used
+        // or when integrations (e.g. Envers) need it.
         List<String> integrationsRequiringXmlMapping = integrationStaticDescriptors.stream()
                 .filter(HibernateOrmIntegrationStaticDescriptor::isXmlMappingRequired)
                 .map(HibernateOrmIntegrationStaticDescriptor::getIntegrationName).collect(Collectors.toList());
-        if (integrationStaticDescriptors.stream().anyMatch(HibernateOrmIntegrationStaticDescriptor::isXmlMappingRequired)) {
-            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
-                LOG.warnf(
-                        "XML mapping is not supported. It will be partially activated to allow compatibility with %s, but this support is temporary",
+        Optional<Boolean> xmlMappingEnabledOptional = readOptionalBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED);
+        if (!puDefinition.getXmlMappings().isEmpty() || !integrationsRequiringXmlMapping.isEmpty()) {
+            if (xmlMappingEnabledOptional.isPresent() && !xmlMappingEnabledOptional.get()) {
+                // Explicitly disabled even though we need it...
+                LOG.warnf("XML mapping is necessary in persistence unit '%s':"
+                        + " %d XML mapping files are used, and %d extensions require XML mapping (%s)."
+                        + " Setting '%s' to false.",
+                        persistenceUnit.getName(), XML_MAPPING_ENABLED,
+                        puDefinition.getXmlMappings().size(), integrationsRequiringXmlMapping.size(),
                         integrationsRequiringXmlMapping);
             }
+            cfg.put(XML_MAPPING_ENABLED, "true");
         } else {
-            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
-                LOG.warn("XML mapping is not supported. Setting " + XML_MAPPING_ENABLED + " to false.");
+            if (xmlMappingEnabledOptional.isPresent() && xmlMappingEnabledOptional.get()) {
+                // Explicitly enabled even though we do not need it...
+                LOG.warnf("XML mapping is not necessary in persistence unit '%s'."
+                        + " Setting '%s' to false.",
+                        persistenceUnit.getName(), XML_MAPPING_ENABLED);
             }
             cfg.put(XML_MAPPING_ENABLED, "false");
         }
@@ -439,6 +456,12 @@ public class FastBootMetadataBuilder {
         return propertyValue != null && Boolean.parseBoolean(propertyValue.toString());
     }
 
+    @SuppressWarnings("rawtypes")
+    private Optional<Boolean> readOptionalBooleanConfigurationValue(Map configurationValues, String propertyName) {
+        Object propertyValue = configurationValues.get(propertyName);
+        return propertyValue == null ? Optional.empty() : Optional.of(Boolean.parseBoolean(propertyValue.toString()));
+    }
+
     private CacheRegionDefinition parseCacheRegionDefinitionEntry(String role, String value,
             CacheRegionDefinition.CacheRegionType cacheType) {
         final StringTokenizer params = new StringTokenizer(value, ";, ");
@@ -574,9 +597,7 @@ public class FastBootMetadataBuilder {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void applyMetadataBuilderContributor() {
-
         Object metadataBuilderContributorSetting = buildTimeSettings
                 .get(EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR);
 
@@ -584,36 +605,54 @@ public class FastBootMetadataBuilder {
             return;
         }
 
-        MetadataBuilderContributor metadataBuilderContributor = null;
-        Class<? extends MetadataBuilderContributor> metadataBuilderContributorImplClass = null;
-
-        if (metadataBuilderContributorSetting instanceof MetadataBuilderContributor) {
-            metadataBuilderContributor = (MetadataBuilderContributor) metadataBuilderContributorSetting;
-        } else if (metadataBuilderContributorSetting instanceof Class) {
-            metadataBuilderContributorImplClass = (Class<? extends MetadataBuilderContributor>) metadataBuilderContributorSetting;
-        } else if (metadataBuilderContributorSetting instanceof String) {
-            final ClassLoaderService classLoaderService = standardServiceRegistry.getService(ClassLoaderService.class);
-
-            metadataBuilderContributorImplClass = classLoaderService
-                    .classForName((String) metadataBuilderContributorSetting);
-        } else {
-            throw new IllegalArgumentException(
-                    "The provided " + EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR + " setting value ["
-                            + metadataBuilderContributorSetting + "] is not supported!");
-        }
-
-        if (metadataBuilderContributorImplClass != null) {
-            try {
-                metadataBuilderContributor = metadataBuilderContributorImplClass.getDeclaredConstructor().newInstance();
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                throw new IllegalArgumentException("The MetadataBuilderContributor class ["
-                        + metadataBuilderContributorImplClass + "] could not be instantiated!", e);
-            }
-        }
+        MetadataBuilderContributor metadataBuilderContributor = loadSettingInstance(
+                EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR,
+                metadataBuilderContributorSetting,
+                MetadataBuilderContributor.class);
 
         if (metadataBuilderContributor != null) {
             metadataBuilderContributor.contribute(metamodelBuilder);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T loadSettingInstance(String settingName, Object settingValue, Class<T> clazz) {
+        T instance = null;
+        Class<? extends T> instanceClass = null;
+
+        if (clazz.isAssignableFrom(settingValue.getClass())) {
+            instance = (T) settingValue;
+        } else if (settingValue instanceof Class) {
+            instanceClass = (Class<? extends T>) settingValue;
+        } else if (settingValue instanceof String) {
+            String settingStringValue = (String) settingValue;
+            if (standardServiceRegistry != null) {
+                final ClassLoaderService classLoaderService = standardServiceRegistry.getService(ClassLoaderService.class);
+
+                instanceClass = classLoaderService.classForName(settingStringValue);
+            } else {
+                try {
+                    instanceClass = (Class<? extends T>) Class.forName(settingStringValue);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalArgumentException("Can't load class: " + settingStringValue, e);
+                }
+            }
+        } else {
+            throw new IllegalArgumentException(
+                    "The provided " + settingName + " setting value [" + settingValue + "] is not supported!");
+        }
+
+        if (instanceClass != null) {
+            try {
+                instance = instanceClass.getConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+                throw new IllegalArgumentException(
+                        "The " + clazz.getSimpleName() + " class [" + instanceClass + "] could not be instantiated!",
+                        e);
+            }
+        }
+
+        return instance;
     }
 
 }

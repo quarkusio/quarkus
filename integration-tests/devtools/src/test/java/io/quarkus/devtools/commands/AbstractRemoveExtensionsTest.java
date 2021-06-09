@@ -11,9 +11,9 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
 
 abstract class AbstractRemoveExtensionsTest<T> extends PlatformAwareTestBase {
 

@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.PlatformAwareTestBase;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -19,10 +19,10 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
         final Extension resteasy = findExtension(catalog, "quarkus-resteasy");
         final ExtensionProcessor extensionProcessor = ExtensionProcessor.of(resteasy);
 
-        assertThat(extensionProcessor.getTags()).contains("provides-example");
+        assertThat(extensionProcessor.getTags()).contains("provides-code");
         assertThat(extensionProcessor.getShortName()).contains("jax-rs");
         assertThat(extensionProcessor.getCategories()).contains("web");
-        assertThat(extensionProcessor.getCodestartKind()).isEqualTo(ExtensionProcessor.CodestartKind.EXAMPLE);
+        assertThat(extensionProcessor.getCodestartKind()).isEqualTo(ExtensionProcessor.CodestartKind.EXTENSION_CODESTART);
         assertThat(extensionProcessor.getCodestartName()).isEqualTo("resteasy");
         assertThat(extensionProcessor.getCodestartArtifact())
                 .isEqualTo("io.quarkus:quarkus-project-core-extension-codestarts::jar:" + getQuarkusCoreVersion());

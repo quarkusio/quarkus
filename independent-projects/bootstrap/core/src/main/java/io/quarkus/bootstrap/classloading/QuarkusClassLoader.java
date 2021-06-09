@@ -88,7 +88,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
-        super(new GetPackageBlockingClassLoader(builder.parent));
+        super(builder.parent);
         this.name = builder.name;
         this.elements = builder.elements;
         this.bannedElements = builder.bannedElements;
@@ -115,6 +115,32 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             name = name.substring(0, name.length() - 1);
         }
         return name;
+    }
+
+    /**
+     * Returns true if the supplied class is a class that would be loaded parent-first
+     */
+    public boolean isParentFirst(String name) {
+        if (name.startsWith(JAVA)) {
+            return true;
+        }
+
+        //even if the thread is interrupted we still want to be able to load classes
+        //if the interrupt bit is set then we clear it and restore it at the end
+        boolean interrupted = Thread.interrupted();
+        try {
+            ClassLoaderState state = getState();
+            synchronized (getClassLoadingLock(name)) {
+                String resourceName = sanitizeName(name).replace(".", "/") + ".class";
+                return parentFirst(resourceName, state);
+            }
+
+        } finally {
+            if (interrupted) {
+                //restore interrupt state
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private boolean parentFirst(String name, ClassLoaderState state) {
@@ -223,7 +249,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                             } else {
                                 List<ClassPathElement> list = elementMap.get(i);
                                 if (list == null) {
-                                    elementMap.put(i, list = new ArrayList<>());
+                                    elementMap.put(i, list = new ArrayList<>(2)); //default initial capacity of 10 is way too large
                                 }
                                 list.add(element);
                             }
@@ -354,7 +380,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      * @param name
      * @return
      */
-    //@Override
+    @Override
     protected Class<?> findClass(String moduleName, String name) {
         try {
             return loadClass(name, false);
@@ -485,6 +511,16 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return ret;
     }
 
+    public List<String> getLocalClassNames() {
+        List<String> ret = new ArrayList<>();
+        for (String name : getState().loadableResources.keySet()) {
+            if (name.endsWith(".class")) {
+                ret.add(name.substring(0, name.length() - 6).replace("/", "."));
+            }
+        }
+        return ret;
+    }
+
     @SuppressWarnings("unused")
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
         return super.defineClass(name, b, off, len);
@@ -531,8 +567,22 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 log.error("Failed to close " + element, e);
             }
         }
+        for (ClassPathElement element : bannedElements) {
+            //note that this is a 'soft' close
+            //all resources are closed, however the CL can still be used
+            //but after close no resources will be held past the scope of an operation
+            try (ClassPathElement ignored = element) {
+                //the close() operation is implied by the try-with syntax
+            } catch (Exception e) {
+                log.error("Failed to close " + element, e);
+            }
+        }
         ResourceBundle.clearCache(this);
 
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 
     @Override
@@ -702,23 +752,4 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
-    /**
-     * Horrible JDK8 hack
-     *
-     * getPackage() on JDK8 will always delegate to the parent, so QuarkusClassLoader will never define a package,
-     * which can cause issues if you then try and read package annotations as they will be from the wrong ClassLoader.
-     *
-     * We add this ClassLoader into the mix to block the getPackage() delegation.
-     */
-    private static class GetPackageBlockingClassLoader extends ClassLoader {
-
-        protected GetPackageBlockingClassLoader(ClassLoader parent) {
-            super(parent);
-        }
-
-        @Override
-        protected Package getPackage(String name) {
-            return null;
-        }
-    }
 }

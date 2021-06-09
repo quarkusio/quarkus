@@ -1,0 +1,49 @@
+package io.quarkus.qute;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import io.quarkus.qute.Results.Result;
+import org.junit.jupiter.api.Test;
+
+public class NamespaceResolversTest {
+
+    @Test
+    public void testMultipleSamePriority() {
+        try {
+            Engine.builder().addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> {
+                return null;
+            }).build()).addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> {
+                return null;
+            }).build());
+            fail();
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage()
+                    .startsWith("Namespace [foo] may not be handled by multiple resolvers of the same priority [1]:"));
+        }
+    }
+
+    @Test
+    public void testMultipleDifferentPriority() {
+        Engine engine = Engine.builder().addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> {
+            return "foo1";
+        }).build()).addNamespaceResolver(NamespaceResolver.builder("foo").priority(50).resolve(e -> {
+            return "foo2";
+        }).build()).build();
+        assertEquals("foo2", engine.parse("{foo:baz}").render());
+    }
+
+    @Test
+    public void testMultipleAndNotFound() {
+        Engine engine = Engine.builder().addValueResolver(new ReflectionValueResolver())
+                .addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> {
+                    return "foo1";
+                }).build()).addNamespaceResolver(NamespaceResolver.builder("foo").priority(50).resolve(e -> {
+                    // This one should we used first but returns NOT_FOUND and so the other resolver is used
+                    return Result.NOT_FOUND;
+                }).build()).build();
+        assertEquals("FOO1", engine.parse("{foo:baz.toUpperCase}").render());
+    }
+
+}

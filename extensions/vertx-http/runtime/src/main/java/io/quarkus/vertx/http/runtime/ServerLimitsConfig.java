@@ -32,4 +32,10 @@ public class ServerLimitsConfig {
     @ConfigItem(defaultValue = "4096")
     public int maxInitialLineLength;
 
+    /**
+     * The maximum length of a form attribute.
+     */
+    @ConfigItem(defaultValue = "2048")
+    public MemorySize maxFormAttributeSize;
+
 }

@@ -49,7 +49,7 @@ public class CreateExtension {
 
     public static final String DEFAULT_QUARKIVERSE_PARENT_GROUP_ID = "io.quarkiverse";
     public static final String DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID = "quarkiverse-parent";
-    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "6";
+    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "7";
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
 
     private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.0.0-M5";
@@ -186,6 +186,11 @@ public class CreateExtension {
         if (!isEmpty(extensionsRelativeDir)) {
             this.extensionsRelativeDir = extensionsRelativeDir;
         }
+        return this;
+    }
+
+    public CreateExtension messageWriter(MessageWriter log) {
+        this.log = log;
         return this;
     }
 

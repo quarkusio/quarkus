@@ -15,9 +15,12 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
 
     private final Optional<DevModeType> devModeType;
 
-    public LaunchModeBuildItem(LaunchMode launchMode, Optional<DevModeType> devModeType) {
+    private final boolean auxiliaryApplication;
+
+    public LaunchModeBuildItem(LaunchMode launchMode, Optional<DevModeType> devModeType, boolean auxiliaryApplication) {
         this.launchMode = launchMode;
         this.devModeType = devModeType;
+        this.auxiliaryApplication = auxiliaryApplication;
     }
 
     public LaunchMode getLaunchMode() {
@@ -26,11 +29,21 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
 
     /**
      * The development mode type.
-     *
+     * <p>
      * Note that even for NORMAL launch modes this could be generating an application for the local side of remote
      * dev mode, so this may be set even for launch mode normal.
      */
     public Optional<DevModeType> getDevModeType() {
         return devModeType;
+    }
+
+    /**
+     * An Auxiliary Application is a second application running in the same JVM as a primary application.
+     * <p>
+     * Currently this is done to allow running tests in dev mode, while the main dev mode process continues to
+     * run.
+     */
+    public boolean isAuxiliaryApplication() {
+        return auxiliaryApplication;
     }
 }

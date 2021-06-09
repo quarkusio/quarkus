@@ -1,0 +1,8 @@
+name: my-extension-codestart
+ref: my-extension
+type: code
+tags: extension-codestart
+metadata:
+  title: My Extension
+  description: This is an example Hello Quarkus codestart, it contains the base of a Quarkus extension codestart.
+  related-guide-section: https://github.com/quarkusio/quarkus/blob/main/independent-projects/tools/codestarts/README.adoc

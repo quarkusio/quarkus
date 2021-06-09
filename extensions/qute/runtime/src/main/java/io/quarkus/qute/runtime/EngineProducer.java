@@ -3,8 +3,9 @@ package io.quarkus.qute.runtime;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -162,10 +163,11 @@ public class EngineProducer {
             Class<?> resolverClazz = Thread.currentThread()
                     .getContextClassLoader().loadClass(resolverClassName);
             if (Resolver.class.isAssignableFrom(resolverClazz)) {
-                return (Resolver) resolverClazz.newInstance();
+                return (Resolver) resolverClazz.getDeclaredConstructor().newInstance();
             }
             throw new IllegalStateException("Not a resolver: " + resolverClassName);
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | IllegalArgumentException
+                | InvocationTargetException | NoSuchMethodException | SecurityException e) {
             throw new IllegalStateException("Unable to create resolver: " + resolverClassName, e);
         }
     }
@@ -221,7 +223,7 @@ public class EngineProducer {
         @Override
         public Reader read() {
             try {
-                return new InputStreamReader(resource.openStream(), Charset.forName("utf-8"));
+                return new InputStreamReader(resource.openStream(), StandardCharsets.UTF_8);
             } catch (IOException e) {
                 return null;
             }

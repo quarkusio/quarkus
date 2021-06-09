@@ -1,10 +1,10 @@
 package io.quarkus.security.test.cdi;
 
-import static io.quarkus.security.test.IdentityMock.ADMIN;
-import static io.quarkus.security.test.IdentityMock.ANONYMOUS;
-import static io.quarkus.security.test.IdentityMock.USER;
-import static io.quarkus.security.test.SecurityTestUtils.assertFailureFor;
-import static io.quarkus.security.test.SecurityTestUtils.assertSuccess;
+import static io.quarkus.security.test.utils.IdentityMock.ADMIN;
+import static io.quarkus.security.test.utils.IdentityMock.ANONYMOUS;
+import static io.quarkus.security.test.utils.IdentityMock.USER;
+import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
+import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
 import javax.inject.Inject;
 
@@ -15,9 +15,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
-import io.quarkus.security.test.AuthData;
-import io.quarkus.security.test.IdentityMock;
-import io.quarkus.security.test.SecurityTestUtils;
+import io.quarkus.security.test.utils.AuthData;
+import io.quarkus.security.test.utils.IdentityMock;
+import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SecurityAnnotationOnFinalMethodTest {

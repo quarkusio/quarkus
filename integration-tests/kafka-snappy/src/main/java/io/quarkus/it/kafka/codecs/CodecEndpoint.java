@@ -19,6 +19,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
@@ -32,36 +33,39 @@ import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 @Path("/codecs")
 public class CodecEndpoint {
 
-    public static Producer<String, Pet> createPetProducer() {
+    @ConfigProperty(name = "kafka.bootstrap.servers")
+    String bootstrap;
+
+    public Producer<String, Pet> createPetProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "pet");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, PetCodec.class.getName());
         return new KafkaProducer<>(props);
     }
 
-    public static Producer<String, Person> createPersonProducer() {
+    public Producer<String, Person> createPersonProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "person");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonbSerializer.class.getName());
         return new KafkaProducer<>(props);
     }
 
-    public static Producer<String, Movie> createMovieProducer() {
+    public Producer<String, Movie> createMovieProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "movie");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
         return new KafkaProducer<>(props);
     }
 
-    public static KafkaConsumer<String, Pet> createPetConsumer() {
+    public KafkaConsumer<String, Pet> createPetConsumer() {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "pet");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, PetCodec.class.getName());
@@ -72,9 +76,9 @@ public class CodecEndpoint {
         return consumer;
     }
 
-    public static KafkaConsumer<String, Person> createPersonConsumer() {
+    public KafkaConsumer<String, Person> createPersonConsumer() {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "person");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, PersonDeserializer.class.getName());
@@ -85,9 +89,9 @@ public class CodecEndpoint {
         return consumer;
     }
 
-    public static KafkaConsumer<String, Movie> createMovieConsumer() {
+    public KafkaConsumer<String, Movie> createMovieConsumer() {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "movie");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MovieDeserializer.class.getName());

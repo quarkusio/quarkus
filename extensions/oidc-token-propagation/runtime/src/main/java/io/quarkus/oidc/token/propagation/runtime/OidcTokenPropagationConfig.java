@@ -1,5 +1,7 @@
 package io.quarkus.oidc.token.propagation.runtime;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -38,4 +40,20 @@ public class OidcTokenPropagationConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean secureJsonWebToken;
+
+    /**
+     * Exchange the current token with OpenId Connect Provider for a new token before propagating it.
+     *
+     * Note this property is injected into AccessTokenRequestFilter.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean exchangeToken;
+
+    /**
+     * Name of the configured OidcClient.
+     * 
+     * Note this property is injected into AccessTokenRequestFilter and is only used if the `exchangeToken` property is enabled.
+     */
+    @ConfigItem
+    public Optional<String> clientName;
 }

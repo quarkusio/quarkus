@@ -13,8 +13,8 @@
         <quarkus.platform.version>@project.version@</quarkus.platform.version>
         <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
         <quarkus.version>@project.version@</quarkus.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

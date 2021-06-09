@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.config.ConfigMappings;
+import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigValidationException;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.inject.ConfigProducerUtil;
@@ -43,10 +44,19 @@ public class ConfigRecorder {
         }
     }
 
-    public void registerConfigMappings(final Set<ConfigMappings.ConfigMappingWithPrefix> configMappingsWithPrefix) {
+    public void registerConfigMappings(final Set<ConfigClassWithPrefix> configClasses) {
         try {
             SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-            ConfigMappings.registerConfigMappings(config, configMappingsWithPrefix);
+            ConfigMappings.registerConfigMappings(config, configClasses);
+        } catch (ConfigValidationException e) {
+            throw new DeploymentException(e.getMessage(), e);
+        }
+    }
+
+    public void registerConfigProperties(final Set<ConfigClassWithPrefix> configClasses) {
+        try {
+            SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+            ConfigMappings.registerConfigProperties(config, configClasses);
         } catch (ConfigValidationException e) {
             throw new DeploymentException(e.getMessage(), e);
         }

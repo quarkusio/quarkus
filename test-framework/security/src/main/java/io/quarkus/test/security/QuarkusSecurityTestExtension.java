@@ -1,12 +1,15 @@
 package io.quarkus.test.security;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
@@ -25,7 +28,7 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
     public void beforeEach(QuarkusTestMethodContext context) {
         try {
             //the usual ClassLoader hacks to get our copy of the TestSecurity annotation
-            ClassLoader cl = QuarkusSecurityTestExtension.class.getClassLoader();
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
             Class<?> original = cl.loadClass(context.getTestMethod().getDeclaringClass().getName());
             Method method = original.getDeclaredMethod(context.getTestMethod().getName(),
                     Arrays.stream(context.getTestMethod().getParameterTypes()).map(s -> {
@@ -38,13 +41,22 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                             throw new RuntimeException(e);
                         }
                     }).toArray(Class<?>[]::new));
+            Annotation[] allAnnotations = new Annotation[] {};
             TestSecurity testSecurity = method.getAnnotation(TestSecurity.class);
             if (testSecurity == null) {
                 testSecurity = original.getAnnotation(TestSecurity.class);
+                if (testSecurity != null) {
+                    allAnnotations = original.getAnnotations();
+                }
                 while (testSecurity == null && original != Object.class) {
                     original = original.getSuperclass();
                     testSecurity = original.getAnnotation(TestSecurity.class);
+                    if (testSecurity != null) {
+                        allAnnotations = original.getAnnotations();
+                    }
                 }
+            } else {
+                allAnnotations = method.getAnnotations();
             }
             if (testSecurity == null) {
                 return;
@@ -64,11 +76,20 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                             .collect(Collectors.toMap(s -> s.key(), s -> s.value())));
                 }
 
-                CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(user.build());
+                SecurityIdentity userIdentity = augment(user.build(), allAnnotations);
+                CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(userIdentity);
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to setup @TestSecurity", e);
         }
 
+    }
+
+    private SecurityIdentity augment(SecurityIdentity identity, Annotation[] annotations) {
+        Instance<TestSecurityIdentityAugmentor> producer = CDI.current().select(TestSecurityIdentityAugmentor.class);
+        if (producer.isResolvable()) {
+            return producer.get().augment(identity, annotations);
+        }
+        return identity;
     }
 }

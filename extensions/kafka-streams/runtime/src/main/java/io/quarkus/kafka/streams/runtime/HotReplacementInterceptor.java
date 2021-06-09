@@ -7,7 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 
 public class HotReplacementInterceptor implements ConsumerInterceptor {
 
-    private static Runnable onMessage;
+    private static volatile Runnable onMessage;
 
     @Override
     public void configure(Map<String, ?> configs) {

@@ -13,7 +13,6 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
@@ -39,7 +38,9 @@ public class SmallRyeOpenTracingProcessor {
     }
 
     @BuildStep
-    void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
+    void setupFilter(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
             BuildProducer<FilterBuildItem> filterProducer,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<CustomContainerResponseFilterBuildItem> customResponseFilters,
@@ -48,6 +49,7 @@ public class SmallRyeOpenTracingProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENTRACING));
 
+        additionalBeans.produce(new AdditionalBeanBuildItem(QuarkusSmallRyeTracingDynamicFeature.class));
         providers.produce(new ResteasyJaxrsProviderBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));
 
         if (capabilities.isPresent(Capability.SERVLET)) {
@@ -69,10 +71,4 @@ public class SmallRyeOpenTracingProcessor {
             dynamicFeatures.produce(new DynamicFeatureBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));
         }
     }
-
-    @BuildStep
-    public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.SMALLRYE_OPENTRACING);
-    }
-
 }

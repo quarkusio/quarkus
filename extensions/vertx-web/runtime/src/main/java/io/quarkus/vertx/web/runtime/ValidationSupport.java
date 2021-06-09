@@ -1,9 +1,12 @@
 package io.quarkus.vertx.web.runtime;
 
+import java.util.Iterator;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
+import javax.validation.ElementKind;
+import javax.validation.Path.Node;
 import javax.validation.Validator;
 
 import io.quarkus.arc.ArcContainer;
@@ -51,7 +54,7 @@ public class ValidationSupport {
         JsonArray array = new JsonArray();
         boolean isProduced = false;
         for (ConstraintViolation<?> cv : violations) {
-            if (cv.getExecutableReturnValue() != null) {
+            if (isReturnValueConstraintViolation(cv)) {
                 isProduced = true;
             }
             JsonObject violation = new JsonObject();
@@ -64,9 +67,9 @@ public class ValidationSupport {
         return json;
     }
 
-    public static void handleViolationException(ConstraintViolationException ex, RoutingContext rc) {
+    public static void handleViolationException(ConstraintViolationException ex, RoutingContext rc, boolean forceJsonEncoding) {
         String accept = rc.request().getHeader(ACCEPT_HEADER);
-        if (accept != null && accept.contains(APPLICATION_JSON)) {
+        if (forceJsonEncoding || accept != null && accept.contains(APPLICATION_JSON)) {
             rc.response().putHeader(RouteHandlers.CONTENT_TYPE, APPLICATION_JSON);
             JsonObject json = generateJsonResponse(ex.getConstraintViolations(), false);
             rc.response().setStatusCode(json.getInteger(PROBLEM_STATUS));
@@ -74,8 +77,8 @@ public class ValidationSupport {
         } else {
             // Check status
             int status = 400;
-            for (ConstraintViolation<?> constraintViolation : ex.getConstraintViolations()) {
-                if (constraintViolation.getExecutableReturnValue() != null) {
+            for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+                if (isReturnValueConstraintViolation(violation)) {
                     status = 500;
                     break;
                 }
@@ -84,4 +87,12 @@ public class ValidationSupport {
             rc.fail(status, ex);
         }
     }
+
+    static boolean isReturnValueConstraintViolation(ConstraintViolation<?> violation) {
+        Iterator<Node> pathNodes = violation.getPropertyPath().iterator();
+        // Returns true if there are at least two nodes and the first is METHOD and the second RETURN_VALUE
+        return pathNodes.hasNext() && pathNodes.next().getKind() == ElementKind.METHOD && pathNodes.hasNext()
+                && pathNodes.next().getKind() == ElementKind.RETURN_VALUE;
+    }
+
 }

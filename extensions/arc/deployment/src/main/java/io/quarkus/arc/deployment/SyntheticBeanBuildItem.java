@@ -141,6 +141,5 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         RuntimeValue<?> getRuntimeValue() {
             return runtimeValue;
         }
-
     }
 }

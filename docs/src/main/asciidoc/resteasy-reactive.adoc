@@ -426,6 +426,8 @@ while the `file` field will contain data about the uploaded file in the `image` 
 
 NOTE: `FileUpload` provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
 
+NOTE: When access to all uploaded files without specifying the form names is needed, RESTEasy Reactive allows the use of `@RestForm List<FileUpload>`, where it is important to **not** set a name for the `@RestForm` annotation.
+
 NOTE: `@PartType` is used to aid in deserialization of the corresponding part of the request into the desired Java type. It is very useful when for example the corresponding body part is JSON
 and needs to be converted to a POJO.
 
@@ -471,6 +473,26 @@ response (see <<negotiation>> for more advanced information).
 
 You can return any of the pre-defined types that you can read from the <<resource-types,HTTP response>>,
 and any other type will be mapped <<json,from that type to JSON>>.
+
+In addition, the following return types are also supported:
+
+.Table Additional response body parameter type
+|===
+|Type|Usage
+
+|link:{jdkapi}/java/nio/file/Path.html[`Path`]
+|The contents of the file specified by the given path
+
+|`PathPart`
+|The partial contents of the file specified by the given path
+
+|`FilePart`
+|The partial contents of a file
+
+|link:{vertxapi}io/vertx/core/file/AsyncFile.html[`AsyncFile`]
+|Vert.x AsyncFile, which can be in full, or partial
+
+|===
 
 Alternately, you can also return a <<reactive,reactive type>> such as link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni`], 
 link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] or 
@@ -633,6 +655,17 @@ public class Endpoint {
     }
 }
 ----
+
+=== Controlling HTTP Caching features
+
+RESTEasy Reactive provides the `@org.jboss.resteasy.reactive.Cache` and `@org.jboss.resteasy.reactive.NoCache` annotations to facilitate handling HTTP caching semantics, i.e. setting the 'Cache-Control' HTTP header.
+
+These annotations can be placed either on a Resource Method or a Resource Class (in which case it applies to all Resource Methods of the class that do *not* contain the same annotation) and allow users
+to return domain objects and not have to deal with building up the `Cache-Control` HTTP header explicitly.
+
+While `@Cache` builds a complex `Cache-Control` header, `@NoCache` is a simplified notation to say that you don't want anything cached; i.e. `Cache-Control: nocache`.
+
+NOTE: More information on the `Cache-Control` header and be found in link:https://datatracker.ietf.org/doc/html/rfc7234[RFC 7234]
 
 === Accessing context objects
 
@@ -942,7 +975,7 @@ public class Endpoint {
 
 Most of the time, there are ways to achieve the same blocking operations in an asynchronous/reactive
 way, using https://smallrye.io/smallrye-mutiny/[Mutiny], http://hibernate.org/reactive/[Hibernate Reactive] 
-or any of the link:getting-started-reactive[Quarkus Reactive extensions] for example:
+or any of the xref:quarkus-reactive-architecture.adoc#quarkus-extensions-enabling-reactive[Quarkus Reactive extensions] for example:
 
 [source,java]
 ----
@@ -1836,13 +1869,6 @@ Please note that if a JAX-RS Application has been detected and the method `getCl
 == RESTEasy Reactive client
 In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile Rest Client implementation that is non-blocking at its core.
 
-To use it, add the `quarkus-rest-client-reactive` extension to your project.
-The client can be used as described in https://quarkus.io/guides/rest-client[Using the REST Client guide] and specified in the https://download.eclipse.org/microprofile/microprofile-rest-client-1.4.1/microprofile-rest-client-1.4.1.html[MicroProfile Rest Client specification], with a few exceptions:
+Please note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
 
-- the extension name
-- the default scope of the client for the new extension is `@ApplicationScoped` while the `quarkus-rest-client` defaults to `@Dependent`
-To change this behavior, set the `quarkus.rest.client.scope` property to the fully qualified scope name.
-- it is not possible to set `HostnameVerifier` or `SSLContext`
-- a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
-
-It is important to note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
+See link:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive client.

@@ -66,7 +66,7 @@ public class HelloResource {
     }
 }
 ----
-<1> If there is no `@ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
+<1> If there is no `@Location` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
 <2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
@@ -442,7 +442,7 @@ package org.acme.quarkus.sample;
 import javax.inject.Inject;
 
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.ResourcePath;
+import io.quarkus.qute.Location;
 import io.quarkus.scheduler.Scheduled;
 
 public class ReportGenerator {
@@ -450,7 +450,7 @@ public class ReportGenerator {
     @Inject
     SampleService service;
 
-    @ResourcePath("reports/v1/report_01") <1>
+    @Location("reports/v1/report_01") <1>
     Template report;
 
     @Scheduled(cron="0 30 * * * ?") <2>
@@ -463,7 +463,7 @@ public class ReportGenerator {
     }
 }
 ----
-<1> In this case, we use the `@ResourcePath` qualifier to specify the template path: `templates/reports/v1/report_01.html`.
+<1> In this case, we use the `@Location` qualifier to specify the template path: `templates/reports/v1/report_01.html`.
 <2> Use the `@Scheduled` annotation to instruct Quarkus to execute this method on the half hour. For more information see the link:scheduler[Scheduler] guide.
 <3> The `TemplateInstance.render()` method triggers rendering. Note that this method blocks the current thread.
 

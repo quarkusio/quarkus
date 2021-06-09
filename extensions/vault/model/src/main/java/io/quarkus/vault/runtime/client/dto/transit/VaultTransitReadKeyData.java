@@ -3,6 +3,7 @@ package io.quarkus.vault.runtime.client.dto.transit;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.quarkus.vault.runtime.client.dto.VaultModel;
 
@@ -15,7 +16,12 @@ public class VaultTransitReadKeyData implements VaultModel {
     public boolean exportable;
     @JsonProperty(value = "allow_plaintext_backup")
     public boolean allowPlaintextBackup;
-    public Map<String, Integer> keys;
+    @JsonDeserialize(contentUsing = VaultTransitKeyVersionData.Deserializer.class)
+    public Map<String, VaultTransitKeyVersionData> keys;
+    @JsonProperty(value = "latest_version")
+    public int latestVersion;
+    @JsonProperty(value = "min_available_version")
+    public int minAvailableVersion;
     @JsonProperty(value = "min_decryption_version")
     public int minDecryptionVersion;
     @JsonProperty(value = "min_encryption_version")
@@ -29,4 +35,5 @@ public class VaultTransitReadKeyData implements VaultModel {
     public boolean supportsDerivation;
     @JsonProperty(value = "supports_signing")
     public boolean supportsSigning;
+    public String type;
 }

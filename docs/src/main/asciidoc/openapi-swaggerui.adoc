@@ -16,7 +16,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 == Architecture
@@ -306,17 +306,17 @@ For example, add the following to your `application.properties`:
 
 [source, properties]
 ----
-mp.openapi.extensions.smallrye.info.title=Example API
-%dev.mp.openapi.extensions.smallrye.info.title=Example API (development)
-%test.mp.openapi.extensions.smallrye.info.title=Example API (test)
-mp.openapi.extensions.smallrye.info.version=1.0.1
-mp.openapi.extensions.smallrye.info.description=Just an example service
-mp.openapi.extensions.smallrye.info.termsOfService=Your terms here
-mp.openapi.extensions.smallrye.info.contact.email=techsupport@example.com
-mp.openapi.extensions.smallrye.info.contact.name=Example API Support
-mp.openapi.extensions.smallrye.info.contact.url=http://exampleurl.com/contact
-mp.openapi.extensions.smallrye.info.license.name=Apache 2.0
-mp.openapi.extensions.smallrye.info.license.url=https://www.apache.org/licenses/LICENSE-2.0.html
+quarkus.smallrye-openapi.info-title=Example API
+%dev.quarkus.smallrye-openapi.info-title=Example API (development)
+%test.quarkus.smallrye-openapi.info-title=Example API (test)
+quarkus.smallrye-openapi.info-version=1.0.1
+quarkus.smallrye-openapi.info-description=Just an example service
+quarkus.smallrye-openapi.info-terms-of-service=Your terms here
+quarkus.smallrye-openapi.info-contact-email=techsupport@example.com
+quarkus.smallrye-openapi.info-contact-name=Example API Support
+quarkus.smallrye-openapi.info-contact-url=http://exampleurl.com/contact
+quarkus.smallrye-openapi.info-license-name=Apache 2.0
+quarkus.smallrye-openapi.info-license-url=https://www.apache.org/licenses/LICENSE-2.0.html
 ----
 
 This will give you similar information as the `@OpenAPIDefinition` example above.

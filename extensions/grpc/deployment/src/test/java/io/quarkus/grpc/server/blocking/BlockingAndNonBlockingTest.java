@@ -25,7 +25,7 @@ import io.grpc.reflection.v1alpha.ServerReflectionResponse;
 import io.grpc.reflection.v1alpha.ServiceResponse;
 import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.TestServiceGrpc;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingMutinyHelloService;
@@ -36,34 +36,33 @@ import io.smallrye.mutiny.Multi;
 public class BlockingAndNonBlockingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HealthGrpc.class.getPackage())
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addPackage(TestServiceGrpc.class.getPackage())
-                    .addPackage(EmptyProtos.class.getPackage())
-                    .addClasses(BlockingMutinyHelloService.class, TestService.class, AssertHelper.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setFlatClassPath(true)
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addPackage(HealthGrpc.class.getPackage())
+                            .addPackage(GreeterGrpc.class.getPackage())
+                            .addPackage(TestServiceGrpc.class.getPackage())
+                            .addPackage(EmptyProtos.class.getPackage())
+                            .addClasses(BlockingMutinyHelloService.class, TestService.class, AssertHelper.class))
             .withConfigurationResource("blocking-config.properties");
 
     @Inject
     GrpcHealthStorage healthService;
 
-    @Inject
-    @GrpcService("reflection-service")
+    @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
 
-    @Inject
-    @GrpcService("test-service")
+    @GrpcClient("test-service")
     TestServiceGrpc.TestServiceBlockingStub test;
 
-    @Inject
-    @GrpcService("greeter-service")
+    @GrpcClient("greeter-service")
     GreeterGrpc.GreeterBlockingStub greeter;
 
     @Test
     public void testInvokingABlockingService() {
         HelloReply reply = greeter.sayHello(HelloRequest.newBuilder().setName("neo").build());
-        assertThat(reply.getMessage()).contains("worker-thread", "neo");
+        assertThat(reply.getMessage()).contains("executor-thread", "neo");
     }
 
     @Test
@@ -96,7 +95,7 @@ public class BlockingAndNonBlockingTest {
 
     private ServerReflectionResponse invoke(ServerReflectionRequest request) {
         return reflection.serverReflectionInfo(Multi.createFrom().item(request))
-                .collectItems().first()
+                .collect().first()
                 .await().indefinitely();
     }
 

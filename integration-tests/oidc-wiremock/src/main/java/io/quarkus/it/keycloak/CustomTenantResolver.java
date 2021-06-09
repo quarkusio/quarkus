@@ -10,9 +10,12 @@ public class CustomTenantResolver implements TenantResolver {
 
     @Override
     public String resolve(RoutingContext context) {
-        String path = context.normalisedPath();
+        String path = context.normalizedPath();
         if (path.endsWith("code-flow")) {
             return "code-flow";
+        }
+        if (path.endsWith("bearer")) {
+            return "bearer";
         }
         return null;
     }

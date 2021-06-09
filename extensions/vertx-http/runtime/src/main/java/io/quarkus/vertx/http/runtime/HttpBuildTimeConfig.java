@@ -50,28 +50,6 @@ public class HttpBuildTimeConfig {
     public String nonApplicationRootPath;
 
     /**
-     * Provide redirect endpoints for extension-provided endpoints existing prior to Quarkus 1.11.
-     * This will trigger HTTP 301 Redirects for the following:
-     *
-     * * `/graphql-ui`
-     * * `/health`
-     * * `/health-ui`
-     * * `/metrics`
-     * * `/openapi`
-     * * `/swagger-ui`
-     *
-     * Default is `true` for Quarkus 1.11.x to facilitate transition to name-spaced URIs using
-     * `${quarkus.http.non-application-root-path}`.
-     *
-     * Quarkus 1.13 will change the default to `false`,
-     * and the config item will be removed in Quarkus 2.0.
-     *
-     * @asciidoclet
-     */
-    @ConfigItem(defaultValue = "true")
-    public boolean redirectToNonApplicationRootPath;
-
-    /**
      * The REST Assured client timeout for testing.
      */
     @ConfigItem(defaultValue = "30s")

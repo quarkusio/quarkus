@@ -16,8 +16,8 @@
     <description>Dependency management for integration tests. Importable by third party extension developers.</description>
 
     <properties>
-        <debezium.version>1.4.2.Final</debezium.version>
-        <testcontainers.version>1.15.2</testcontainers.version>
+        <testcontainers.version>1.15.3</testcontainers.version>
+        <strimzi-test-container.version>0.22.1</strimzi-test-container.version>
     </properties>
 
     <dependencyManagement>
@@ -31,15 +31,20 @@
             </dependency>
 
             <dependency>
-                <groupId>io.debezium</groupId>
-                <artifactId>debezium-core</artifactId>
-                <version>${debezium.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.debezium</groupId>
-                <artifactId>debezium-core</artifactId>
-                <version>${debezium.version}</version>
-                <type>test-jar</type>
+                <groupId>io.strimzi</groupId>
+                <artifactId>strimzi-test-container</artifactId>
+                <version>${strimzi-test-container.version}</version>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.docker-java</groupId>
+                        <artifactId>docker-java-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
         </dependencies>

@@ -2,21 +2,20 @@ package io.quarkus.grpc.example.streaming;
 
 import java.time.Duration;
 
-import javax.inject.Singleton;
-
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.MutinyStreamingGrpc;
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-@Singleton
+@GrpcService
 public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
 
     @Override
     public Multi<Item> source(Empty request) {
         return Multi.createFrom().ticks().every(Duration.ofMillis(2))
-                .transform().byTakingFirstItems(10)
+                .select().first(10)
                 .map(l -> Item.newBuilder().setValue(Long.toString(l)).build());
     }
 
@@ -25,7 +24,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
         return request
                 .map(Item::getValue)
                 .map(Long::parseLong)
-                .collectItems().last()
+                .collect().last()
                 .map(l -> Empty.newBuilder().build());
     }
 

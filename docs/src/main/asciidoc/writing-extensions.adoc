@@ -69,6 +69,10 @@ To fully enable the close world assumptions that Quarkus can optimize best, it i
 Of course properties like host, port, password should be overridable at runtime.
 But many properties like enable caching or setting the JDBC driver can safely require a rebuild of the application.
 
+==== Static Init Config
+
+If the extension provides additional Config Sources and if these are required during Static Init, these must be registered with `AdditionalStaticInitConfigSourceProviderBuildItem`. Configuration in Static Init does not scan for additional sources to avoid double initialization at application startup time.
+
 ////
 === API
 
@@ -963,6 +967,7 @@ and add them to the reflective hierarchy for `BUILD_TIME` analysis.
 
 ----
 
+[[configuration]]
 === Configuration
 
 Configuration in Quarkus is based on SmallRye Config, an implementation of the MicroProfile Config specification.
@@ -1842,7 +1847,7 @@ import java.util.List;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.health.Health;
+import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import io.quarkus.test.QuarkusUnitTest;
@@ -1865,7 +1870,7 @@ public class FailingUnitTest {
             );
 
     @Inject                                                                             // <3>
-    @Health
+    @Liveness
     Instance<HealthCheck> checks;
 
     @Test

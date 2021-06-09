@@ -16,7 +16,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker
 
@@ -257,6 +257,28 @@ mp.messaging.incoming.prices.interceptor.classes=io.opentracing.contrib.kafka.Tr
 ----
 
 NOTE: `interceptor.classes` accept a list of classes separated by a comma.
+
+
+=== MongoDB client
+
+The https://github.com/opentracing-contrib/java-mongo-driver[Mongo Driver instrumentation] will add a span for each command executed by your application. To enable it, add the following dependency to your pom.xml:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.opentracing.contrib</groupId>
+    <artifactId>opentracing-mongo-common</artifactId>
+</dependency>
+----
+
+It contains the OpenTracing CommandListener that will be registered on the configuration of the mongo client.
+Following the link:mongodb[MongoDB guide], the command listener will be registered defining the config property as follows:
+
+[source, properties]
+----
+# Enable tracing commands in mongodb client 
+quarkus.mongodb.tracing.enabled=true
+----
 
 [[configuration-reference]]
 == Jaeger Configuration Reference

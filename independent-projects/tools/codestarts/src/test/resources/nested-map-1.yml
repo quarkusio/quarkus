@@ -2,6 +2,8 @@
 foo:
   baz: baz
   foo: bar
+  int: 1
+  bool: false
   bar:
     foo: bar
     bar: foo

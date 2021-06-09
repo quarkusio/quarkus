@@ -76,8 +76,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>de.flapdoodle.embed</groupId>
-            <artifactId>de.flapdoodle.embed.mongo</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-mongodb</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -164,7 +164,6 @@
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
-                <version>${kotlin.version}</version>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -195,7 +194,6 @@
                     <pluginOptions>
                         <option>all-open:annotation=javax.ws.rs.Path</option>
                     </pluginOptions>
-                    <jvmTarget>1.8</jvmTarget>
                 </configuration>
             </plugin>
             <plugin>

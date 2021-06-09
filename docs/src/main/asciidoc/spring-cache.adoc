@@ -6,13 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus - Quarkus Extension for Spring Cache API
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 While users are encouraged to use link:cache[Quarkus annotations for caching], Quarkus nevertheless provides a compatibility layer for Spring Cache annotations in the form of the `spring-cache` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Cache annotations to enable application data caching for their Spring beans.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 
@@ -20,7 +17,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Some familiarity with the Spring DI extension
 

@@ -2,6 +2,7 @@ package io.quarkus.container.image.openshift.deployment;
 
 import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.mergeConfig;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
+import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -50,12 +51,10 @@ import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -64,7 +63,7 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
-import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
+import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -81,11 +80,6 @@ public class OpenshiftProcessor {
     @BuildStep
     public AvailableContainerImageExtensionBuildItem availability() {
         return new AvailableContainerImageExtensionBuildItem(OPENSHIFT);
-    }
-
-    @BuildStep(onlyIf = OpenshiftBuild.class)
-    public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_OPENSHIFT);
     }
 
     @BuildStep(onlyIf = { OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)
@@ -252,7 +246,8 @@ public class OpenshiftProcessor {
         //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
         //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
         //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
-        String contextRoot = config.buildStrategy == BuildStrategy.DOCKER ? "target" : null;
+        String outputDirName = out.getOutputDirectory().getFileName().toString();
+        String contextRoot = getContextRoot(outputDirName, packageConfig.isFastJar(), config.buildStrategy);
         if (packageConfig.isFastJar()) {
             createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                     jar.getPath().getParent());
@@ -264,6 +259,16 @@ public class OpenshiftProcessor {
                     jar.getPath());
         }
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+    }
+
+    private String getContextRoot(String outputDirName, boolean isFastJar, BuildStrategy buildStrategy) {
+        if (buildStrategy != BuildStrategy.DOCKER) {
+            return null;
+        }
+        if (!isFastJar) {
+            return outputDirName;
+        }
+        return outputDirName + "/" + DEFAULT_FAST_JAR_DIRECTORY_NAME;
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class, NativeBuild.class })
@@ -328,7 +333,7 @@ public class OpenshiftProcessor {
         //Let's disable http2 as it causes issues with duplicate build triggers.
         config.setHttp2Disable(true);
         try (KubernetesClient client = Clients.fromConfig(config)) {
-            OpenShiftClient openShiftClient = client.adapt(OpenShiftClient.class);
+            OpenShiftClient openShiftClient = toOpenshiftClient(client);
             KubernetesList kubernetesList = Serialization
                     .unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
 
@@ -338,6 +343,15 @@ public class OpenshiftProcessor {
 
             applyOpenshiftResources(openShiftClient, buildResources);
             openshiftBuild(openShiftClient, buildResources, tar, openshiftConfig);
+        }
+    }
+
+    private static OpenShiftClient toOpenshiftClient(KubernetesClient client) {
+        try {
+            return client.adapt(OpenShiftClient.class);
+        } catch (KubernetesClientException e) {
+            KubernetesClientErrorHandler.handle(e);
+            return null; // will never happen
         }
     }
 
@@ -379,7 +393,7 @@ public class OpenshiftProcessor {
             OpenshiftUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
 
         } catch (KubernetesClientException e) {
-            KubernetesClientErrorHanlder.handle(e);
+            KubernetesClientErrorHandler.handle(e);
         }
     }
 
@@ -487,7 +501,7 @@ public class OpenshiftProcessor {
 
     private static RuntimeException openshiftException(Throwable t) {
         if (t instanceof KubernetesClientException) {
-            KubernetesClientErrorHanlder.handle((KubernetesClientException) t);
+            KubernetesClientErrorHandler.handle((KubernetesClientException) t);
         }
         return new RuntimeException("Execution of openshift build failed. See build output for more details", t);
     }

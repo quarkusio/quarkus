@@ -88,14 +88,14 @@ public class DevModeMain implements Closeable {
                 }
             }
             final PathsCollection.Builder appRoots = PathsCollection.builder();
-            Path p = Paths.get(context.getApplicationRoot().getClassesPath());
+            Path p = Paths.get(context.getApplicationRoot().getMain().getClassesPath());
             if (Files.exists(p)) {
                 appRoots.add(p);
             }
-            if (context.getApplicationRoot().getResourcesOutputPath() != null
-                    && !context.getApplicationRoot().getResourcesOutputPath()
-                            .equals(context.getApplicationRoot().getClassesPath())) {
-                p = Paths.get(context.getApplicationRoot().getResourcesOutputPath());
+            if (context.getApplicationRoot().getMain().getResourcesOutputPath() != null
+                    && !context.getApplicationRoot().getMain().getResourcesOutputPath()
+                            .equals(context.getApplicationRoot().getMain().getClassesPath())) {
+                p = Paths.get(context.getApplicationRoot().getMain().getResourcesOutputPath());
                 if (Files.exists(p)) {
                     appRoots.add(p);
                 }
@@ -120,13 +120,14 @@ public class DevModeMain implements Closeable {
                 bootstrapBuilder.addLocalArtifact(i);
             }
 
-            for (DevModeContext.ModuleInfo i : context.getAllModules()) {
-                if (i.getClassesPath() != null) {
-                    Path classesPath = Paths.get(i.getClassesPath());
+            for (DevModeContext.ModuleInfo i : context.getAdditionalModules()) {
+                if (i.getMain().getClassesPath() != null) {
+                    Path classesPath = Paths.get(i.getMain().getClassesPath());
                     bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(classesPath, true, false));
                 }
-                if (i.getResourcesOutputPath() != null && !i.getResourcesOutputPath().equals(i.getClassesPath())) {
-                    Path resourceOutputPath = Paths.get(i.getResourcesOutputPath());
+                if (i.getMain().getResourcesOutputPath() != null
+                        && !i.getMain().getResourcesOutputPath().equals(i.getMain().getClassesPath())) {
+                    Path resourceOutputPath = Paths.get(i.getMain().getResourcesOutputPath());
                     bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(resourceOutputPath, true, false));
                 }
             }
@@ -225,5 +226,7 @@ public class DevModeMain implements Closeable {
         if (ApplicationStateNotification.getState() == ApplicationStateNotification.State.STARTED) {
             ApplicationStateNotification.waitForApplicationStop();
         }
+        curatedApplication.close();
+        curatedApplication = null;
     }
 }

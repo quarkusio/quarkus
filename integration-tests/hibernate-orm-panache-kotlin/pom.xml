@@ -196,7 +196,6 @@
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
-                <version>${kotlin.version}</version>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -227,7 +226,6 @@
                     <pluginOptions>
                         <option>all-open:annotation=javax.ws.rs.Path</option>
                     </pluginOptions>
-                    <jvmTarget>1.8</jvmTarget>
                 </configuration>
             </plugin>
             <plugin>

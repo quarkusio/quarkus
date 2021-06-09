@@ -25,8 +25,8 @@ public class ConsumesXMLTestCase {
     @Test
     public void testConsumesXML() {
         RestAssured.given()
-                .body(new Bar("open", "bar"))
                 .contentType(ContentType.XML)
+                .body(new Bar("open", "bar"))
                 .when().post("/foo")
                 .then()
                 .log().ifValidationFails()

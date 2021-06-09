@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
@@ -43,6 +44,10 @@ public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
 
         public Map<String, String> getProperties() {
             return entries;
+        }
+
+        public Set<String> getPropertyNames() {
+            return entries.keySet();
         }
 
         public String getValue(final String propertyName) {

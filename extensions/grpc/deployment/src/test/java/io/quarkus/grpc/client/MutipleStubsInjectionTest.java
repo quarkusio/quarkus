@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.grpc.Channel;
 import io.grpc.examples.goodbyeworld.*;
 import io.grpc.examples.helloworld.*;
-import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.GoodbyeService;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
@@ -59,24 +59,19 @@ public class MutipleStubsInjectionTest {
     @ApplicationScoped
     static class MyConsumer {
 
-        @Inject
-        @GrpcService("hello-service")
+        @GrpcClient("hello-service")
         MutinyGreeterGrpc.MutinyGreeterStub mutinyGreeter;
 
-        @Inject
-        @GrpcService("hello-service")
+        @GrpcClient("hello-service")
         GreeterGrpc.GreeterBlockingStub blockingGreeter;
 
-        @Inject
-        @GrpcService("hello-service")
+        @GrpcClient("hello-service")
         MutinyFarewellGrpc.MutinyFarewellStub mutinyFarewell;
 
-        @Inject
-        @GrpcService("hello-service")
+        @GrpcClient("hello-service")
         FarewellGrpc.FarewellBlockingStub blockingFarewell;
 
-        @Inject
-        @GrpcService("hello-service-2")
+        @GrpcClient("hello-service-2")
         Channel channel;
 
         public String invokeMutinyGreeter(String s) {

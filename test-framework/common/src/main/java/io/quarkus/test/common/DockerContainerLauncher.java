@@ -3,8 +3,10 @@ package io.quarkus.test.common;
 import static io.quarkus.test.common.LauncherUtil.installAndGetSomeConfig;
 import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
+import static java.lang.ProcessBuilder.Redirect.DISCARD;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,37 +30,61 @@ public class DockerContainerLauncher implements ArtifactLauncher {
     private final String containerImage;
     private final String profile;
     private Process quarkusProcess;
-    private final int httpPort;
-    private final int httpsPort;
+    private int httpPort;
+    private int httpsPort;
     private final long jarWaitTime;
     private final Map<String, String> systemProps = new HashMap<>();
+    private final boolean pullRequired;
 
     private boolean isSsl;
 
-    private DockerContainerLauncher(String containerImage, Config config) {
+    private DockerContainerLauncher(String containerImage, Config config, boolean pullRequired) {
         this(containerImage,
                 config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                 config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                 config.getValue("quarkus.test.jar-wait-time", OptionalLong.class).orElse(DEFAULT_WAIT_TIME),
                 config.getOptionalValue("quarkus.test.native-image-profile", String.class)
-                        .orElse(null));
+                        .orElse(null),
+                pullRequired);
     }
 
-    public DockerContainerLauncher(String containerImage) {
-        this(containerImage, installAndGetSomeConfig());
+    public DockerContainerLauncher(String containerImage, boolean pullRequired) {
+        this(containerImage, installAndGetSomeConfig(), pullRequired);
     }
 
-    public DockerContainerLauncher(String containerImage, int httpPort, int httpsPort, long jarWaitTime, String profile) {
+    private DockerContainerLauncher(String containerImage, int httpPort, int httpsPort, long jarWaitTime, String profile,
+            boolean pullRequired) {
         this.containerImage = containerImage;
         this.httpPort = httpPort;
         this.httpsPort = httpsPort;
         this.jarWaitTime = jarWaitTime;
         this.profile = profile;
+        this.pullRequired = pullRequired;
     }
 
     public void start() throws IOException {
 
+        if (pullRequired) {
+            System.out.println("Pulling container image '" + containerImage + "'");
+            try {
+                int pullResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                        .command(List.of("docker", "pull", containerImage).toArray(new String[0])).start().waitFor();
+                if (pullResult > 0) {
+                    throw new RuntimeException("Pulling container image '" + containerImage + "' completed unsuccessfully");
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Unable to pull container image '" + containerImage + "'", e);
+            }
+        }
+
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
+
+        if (httpPort == 0) {
+            httpPort = getRandomPort();
+        }
+        if (httpsPort == 0) {
+            httpsPort = getRandomPort();
+        }
 
         List<String> args = new ArrayList<>();
         args.add("docker"); // TODO: determine this dynamically?
@@ -84,6 +110,7 @@ public class DockerContainerLauncher implements ArtifactLauncher {
 
         Path logFile = PropertyTestUtil.getLogFilePath();
         Files.deleteIfExists(logFile);
+        Files.createDirectories(logFile.getParent());
 
         System.out.println("Executing " + args);
 
@@ -95,6 +122,12 @@ public class DockerContainerLauncher implements ArtifactLauncher {
         ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, jarWaitTime);
         updateConfigForPort(result.getPort());
         isSsl = result.isSsl();
+    }
+
+    private int getRandomPort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
     }
 
     public boolean listensOnSsl() {

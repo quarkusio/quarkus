@@ -27,6 +27,7 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.graphql.ApolloWSHandler;
 import io.vertx.ext.web.handler.graphql.GraphQLHandler;
 
@@ -48,6 +49,7 @@ public class VertxGraphqlResource {
 
         GraphQL graphQL = GraphQL.newGraphQL(graphQLSchema).build();
 
+        router.post().handler(BodyHandler.create());
         router.route("/graphql").handler(ApolloWSHandler.create(graphQL));
         router.route("/graphql").handler(GraphQLHandler.create(graphQL));
     }

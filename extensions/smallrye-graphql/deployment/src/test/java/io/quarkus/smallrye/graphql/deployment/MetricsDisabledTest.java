@@ -10,7 +10,6 @@ import org.eclipse.microprofile.metrics.SimpleTimer;
 import org.eclipse.microprofile.metrics.annotation.RegistryType;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -18,7 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Verify that quarkus.smallrye-graphql.metrics.enabled=false turn off GraphQL metrics even
+ * Verify that GraphQL metrics are disabled by default even
  * if the SmallRye Metrics extension is present.
  */
 public class MetricsDisabledTest {
@@ -27,7 +26,6 @@ public class MetricsDisabledTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.metrics.enabled=false"), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject

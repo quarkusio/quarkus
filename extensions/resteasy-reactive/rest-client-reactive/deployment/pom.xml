@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
-    <name>Quarkus - MicroProfile Rest Client with RestEasy Reactive - Deployment</name>
+    <name>Quarkus - REST Client Reactive - Deployment</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -18,7 +18,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxrs-client-deployment</artifactId>
+            <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
         </dependency>
         <!-- test dependencies: -->
         <dependency>
@@ -39,6 +39,16 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

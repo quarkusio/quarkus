@@ -9,10 +9,12 @@ import org.jboss.logging.Logger;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
+import com.arjuna.ats.arjuna.coordinator.TransactionReaper;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.jta.common.jtaPropertyManager;
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -70,5 +72,14 @@ public class NarayanaJtaRecorder {
 
     public void setConfig(final TransactionManagerConfiguration transactions) {
         arjPropertyManager.getObjectStoreEnvironmentBean().setObjectStoreDir(transactions.objectStoreDirectory);
+    }
+
+    public void handleShutdown(ShutdownContext context) {
+        context.addLastShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                TransactionReaper.terminate(false);
+            }
+        });
     }
 }

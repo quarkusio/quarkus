@@ -26,9 +26,9 @@ In this guide, we see how you can get your REST services to use S3 locally and o
 
 To complete this guide, you need:
 
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * an IDE
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html[AWS Command line interface]
 * An AWS Account to access the S3 service. Before you can use the AWS SDKs with Amazon S3, you must get an AWS access key ID and secret access key.
 * Optionally, Docker for your system to run S3 locally for testing purposes
@@ -511,7 +511,7 @@ public class S3AsyncClientResource extends CommonResource {
         return Uni.createFrom()
                 .completionStage(() -> s3.getObject(buildGetRequest(objectKey), AsyncResponseTransformer.toFile(tempFile)))
                 .onItem()
-                .apply(object -> Response.ok(tempFile)
+                .transform(object -> Response.ok(tempFile)
                         .header("Content-Disposition", "attachment;filename=" + objectKey)
                         .header("Content-Type", object.contentType()).build());
     }

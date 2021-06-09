@@ -18,7 +18,7 @@ To complete this guide, you need:
 
 * roughly 10 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * access to a Kubernetes cluster (Minikube is a viable option)
 
@@ -680,6 +680,20 @@ quarkus.kubernetes.readiness-probe.period=45s
 In this example `initial-delay` and `period` are fields of the type `Probe`.
 Below you will find tables describing all available types.
 
+==== Client Connection Configuration
+You may need to configure the connection to your Kubernetes cluster.
+By default, it automatically uses the active _context_ used by `kubectl`.
+
+For instance, if your cluster API endpoint uses a self-signed SSL Certificate you need to explicitly configure the client to trust it. You can achieve this by defining the following property:
+
+[source,properties]
+----
+quarkus.kubernetes-client.trust-certs=true
+----
+
+The full list of the Kuberneters client configuration properties is provided below.
+
+include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
 
 ==== Basic Types
 

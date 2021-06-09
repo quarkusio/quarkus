@@ -25,6 +25,7 @@ public class LogCleanupFilter implements Filter {
         if (record.getLevel().intValue() > Level.WARNING.intValue()) {
             return true;
         }
+
         LogCleanupFilterElement filterElement = filterElements.get(record.getLoggerName());
         if (filterElement != null) {
             for (String messageStart : filterElement.getMessageStarts()) {

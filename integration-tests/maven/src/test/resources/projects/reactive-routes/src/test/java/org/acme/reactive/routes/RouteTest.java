@@ -26,6 +26,10 @@ public class RouteTest {
                 .header("X-Header", "intercepting the request")
                 .statusCode(200)
                 .body(is("hello quarkus"));
+
+        RestAssured.get("/netty-version").then()
+                .statusCode(200)
+                .body(is("true;true;true"));
     }
 
 }

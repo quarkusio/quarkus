@@ -10,9 +10,6 @@
     <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
     <name>Quarkus - Bootstrap - Maven plugin</name>
     <packaging>maven-plugin</packaging>
-    <properties>
-        <version.maven-plugin-plugin>3.5.2</version.maven-plugin-plugin>
-    </properties>
     <build>
         <plugins>
             <plugin>

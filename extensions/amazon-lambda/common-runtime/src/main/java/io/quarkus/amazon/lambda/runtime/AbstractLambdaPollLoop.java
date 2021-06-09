@@ -72,8 +72,11 @@ public abstract class AbstractLambdaPollLoop {
                                     }
                                 } else {
                                     Object input = null;
-                                    if (running.get() && getInputReader() != null) {
-                                        input = getInputReader().readValue(requestConnection.getInputStream());
+                                    if (running.get()) {
+                                        LambdaInputReader inputReader = getInputReader();
+                                        if (inputReader != null) {
+                                            input = inputReader.readValue(requestConnection.getInputStream());
+                                        }
                                         Object output = processRequest(input, createContext(requestConnection));
                                         postResponse(url, output);
                                     }

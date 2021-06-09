@@ -28,8 +28,9 @@ public class QuartzBuildTimeConfig {
     /**
      * The type of store to use.
      * <p>
-     * When using the `db` store type configuration value make sure that you have the datasource configured.
-     * See <a href="https://quarkus.io/guides/datasource"> Configuring your datasource</a> for more information.
+     * When using {@link StoreType#JDBC_CMT} or {@link StoreType#JDBC_TX} configuration values make sure that you have the
+     * datasource configured. See <a href="https://quarkus.io/guides/datasource"> Configuring your datasource</a> for more
+     * information.
      * <p>
      * To create Quartz tables, you can perform a schema migration via the <a href="https://quarkus.io/guides/flyway"> Flyway
      * extension</a> using a SQL script matching your database picked from <a href=

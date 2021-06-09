@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -26,7 +27,8 @@ public class ResteasyReactiveVertxWebSocketIntegrationProcessor {
     MethodScannerBuildItem scanner() {
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
-            public List<HandlerChainCustomizer> scan(MethodInfo method, Map<String, Object> methodContext) {
+            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                    Map<String, Object> methodContext) {
                 if (methodContext.containsKey(NAME)) {
                     return Collections.singletonList(new VertxWebSocketRestHandler());
                 }

@@ -1,38 +1,30 @@
-<nav id="logstreamManagerNav" class="navbar position-sticky navbar-expand-lg navbar-dark bg-dark">
-    <a id="logstreamManagerNavBrand" class="navbar-brand" href="">
-        <img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
-        <span id="navbar_title" class="align-middle">Logging manager</span>
-    </a>
-    <div class="collapse navbar-collapse" id="logstreamManagerNavText">
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-item" data-toggle="tooltip" data-placement="bottom" title="Stop log stream">
-                <a id="logstreamStopStartButton" class="logstreamIcon nav-link"><i class="fas fa-stop"></i></a>
-            </li>
-            <li class="nav-item" data-toggle="tooltip" data-placement="bottom" title="Clear log">
-                <a id="logstreamClearLogButton" class="logstreamIcon nav-link"><i class="fas fa-trash-alt"></i></a>
-            </li>
-            <li class="nav-item" data-toggle="tooltip" data-placement="bottom" title="Zoom out">
-                <a id="logstreamZoomOutButton" class="logstreamIcon nav-link"><i class="fas fa-search-minus"></i></a>
-            </li>
-            <li class="nav-item" data-toggle="tooltip" data-placement="bottom" title="Zoom in">
-                <a id="logstreamZoomInButton" class="logstreamIcon nav-link"><i class="fas fa-search-plus"></i></a>
-            </li>
-            <li class="nav-item" data-toggle="tooltip" data-placement="bottom" title="Log levels">
-                <a id="logstreamLogLevelsButton" class="logstreamIcon nav-link" data-toggle="modal" data-target="#logstreamLogLevelsModal"><i class="fas fa-layer-group"></i></a>
-            </li>
-            <li class="nav-item" data-toggle="tooltip" data-placement="bottom" title="Columns">
-                <a id="logstreamColumnsButton" class="logstreamIcon nav-link" data-toggle="modal" data-target="#logstreamColumnsModal"><i class="fas fa-columns"></i></a>
-            </li>
-            <li class="nav-item" data-toggle="tooltip" data-placement="bottom" title="Filter">
-                <a id="logstreamFilterButton" class="logstreamIcon nav-link" data-toggle="modal" data-target="#logstreamFilterModal"><i class="fas fa-filter"></i></a>
-            </li>
-            <li id="logstreamCurrentFilter" class="navbar-text">
-            </li>
-            <li id="logstreamResizeButton" class="nav-item"><a class="nav-link"><i class="fas fa-arrows-alt-v"></i></a></li>
-            <li id="logstreamHideLogButton" class="nav-item" data-toggle="tooltip" data-placement="left" title="Hide Log"><a class="logstreamIcon nav-link" onclick="hideLog();"><i class="fas fa-caret-down fa-lg"></i></a></li>
-        </ul>
+<!-- Logging manager toolbar -->
+<div id="logstreamManagerNav" class="btn-toolbar showOnOpenFooter" role="toolbar" aria-label="Logging manager controls">
+    <div class="logstreamToolbar btn-group" role="group" aria-label="All options">
+        <a id="logstreamStopStartButton" class="logstreamIcon btn">
+            <i class="fas fa-stop" data-toggle="tooltip" data-placement="bottom" title="Stop log stream"></i>
+        </a>
+        <a id="logstreamClearLogButton" class="logstreamIcon btn">
+            <i class="fas fa-trash-alt" data-toggle="tooltip" data-placement="bottom" title="Clear log"></i>
+        </a>
+        <a id="logstreamZoomOutButton" class="logstreamIcon btn">
+            <i class="fas fa-search-minus" data-toggle="tooltip" data-placement="bottom" title="Zoom out"></i>
+        </a>
+        <a id="logstreamZoomInButton" class="logstreamIcon btn">
+            <i class="fas fa-search-plus" data-toggle="tooltip" data-placement="bottom" title="Zoom in"></i>
+        </a>
+        <a id="logstreamLogLevelsButton" class="logstreamIcon btn" data-toggle="modal" data-target="#logstreamLogLevelsModal">
+            <i class="fas fa-layer-group" data-toggle="tooltip" data-placement="bottom" title="Log levels"></i>
+        </a>
+        <a id="logstreamColumnsButton" class="logstreamIcon btn" data-toggle="modal" data-target="#logstreamColumnsModal">
+            <i class="fas fa-columns" data-toggle="tooltip" data-placement="bottom" title="Columns"></i>
+        </a>
+        <a id="logstreamFilterButton" class="logstreamIcon btn" data-toggle="modal" data-target="#logstreamFilterModal">
+            <i class="fas fa-filter" data-toggle="tooltip" data-placement="bottom" title="Filter"></i>
+        </a>
+        
+        <a id="logstreamCurrentFilter" class="logstreamIcon btn text-right">
+        </a>
+        
     </div>
-    <span id="logstreamManagerNavAppInfo" class="navbar-text">
-      {applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion})
-    </span>
-</nav> 
+</div> 

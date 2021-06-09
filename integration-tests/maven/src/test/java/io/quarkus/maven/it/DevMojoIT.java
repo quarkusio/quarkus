@@ -5,14 +5,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -33,6 +36,7 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.model.CapabilityErrors;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -59,6 +63,60 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         testDir = initProject("projects/dev-mode-env-vars-config");
         run(true);
         assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello, WORLD");
+    }
+
+    @Test
+    void testClassLoaderLinkageError()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/classloader-linkage-error", "projects/classloader-linkage-error-dev");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello");
+    }
+
+    @Test
+    public void testCapabilitiesConflict() throws MavenInvocationException, IOException {
+        testDir = getTargetDir("projects/capabilities-conflict");
+        final File runnerPom = new File(testDir, "runner/pom.xml");
+        if (!runnerPom.exists()) {
+            fail("Failed to locate runner/pom.xml in " + testDir);
+        }
+        run(true);
+
+        final CapabilityErrors error = new CapabilityErrors();
+        error.addConflict("sunshine", "org.acme:alt-quarkus-ext::jar:1.0-SNAPSHOT");
+        error.addConflict("sunshine", "org.acme:acme-quarkus-ext::jar:1.0-SNAPSHOT");
+        String response = DevModeTestUtils.getHttpResponse("/hello", true);
+        assertThat(response).contains(error.report());
+
+        final StringWriter buf = new StringWriter();
+        try (BufferedWriter writer = new BufferedWriter(buf)) {
+            writer.write("        <dependency>");
+            writer.newLine();
+            writer.write("            <groupId>org.acme</groupId>");
+            writer.newLine();
+            writer.write("            <artifactId>acme-quarkus-ext</artifactId>");
+            writer.newLine();
+            writer.write("        </dependency>");
+            writer.newLine();
+        }
+        final String acmeDep = buf.toString();
+        filter(runnerPom, Collections.singletonMap(acmeDep, ""));
+        assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
+
+        buf.getBuffer().setLength(0);
+        try (BufferedWriter writer = new BufferedWriter(buf)) {
+            writer.write("        <dependency>");
+            writer.newLine();
+            writer.write("            <groupId>org.acme</groupId>");
+            writer.newLine();
+            writer.write("            <artifactId>alt-quarkus-ext</artifactId>");
+            writer.newLine();
+            writer.write("        </dependency>");
+            writer.newLine();
+        }
+        final String altDep = buf.toString();
+        filter(runnerPom, Collections.singletonMap(acmeDep, altDep));
+        assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
     }
 
     @Test
@@ -220,7 +278,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         testDir = initProject("projects/classic-inst", "projects/project-intrumentation-reload");
         runAndCheck();
 
-        //if there is an insturmentation based reload this will stay the same
+        // Enable instrumentation based reload to begin with
+        DevModeTestUtils.getHttpResponse("/app/enable");
+
+        //if there is an instrumentation based reload this will stay the same
         String firstUuid = DevModeTestUtils.getHttpResponse("/app/uuid");
 
         // Edit the "Hello" message.
@@ -579,7 +640,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 "        return \"bar\";\n" +
                 "    }\n" +
                 "}\n";
-        FileUtils.write(source, myNewResource, Charset.forName("UTF-8"));
+        FileUtils.write(source, myNewResource, StandardCharsets.UTF_8);
 
         // Wait until we get "bar"
         await()
@@ -613,7 +674,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 "        return \"to be deleted\";\n" +
                 "    }\n" +
                 "}";
-        FileUtils.write(source, classDeletionResource, Charset.forName("UTF-8"));
+        FileUtils.write(source, classDeletionResource, StandardCharsets.UTF_8);
 
         runAndCheck();
         // Wait until source file is compiled
@@ -793,6 +854,51 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> DevModeTestUtils.getHttpResponse("/lorem.txt", 404));
+    }
+
+    @Test
+    public void testThatMultipleResourceDirectoriesAreSupported() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-multiple-resource-dirs");
+        testMultipleResourceDirectories();
+    }
+
+    @Test
+    public void testThatMultipleResourceDirectoriesAreSupportedWithProfile() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-multiple-resource-dirs-with-profile");
+        testMultipleResourceDirectories();
+    }
+
+    private void testMultipleResourceDirectories() throws MavenInvocationException, IOException {
+        runAndCheck();
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Bonjour/Other"));
+
+        // Update the application.properties
+        File source = new File(testDir, "src/main/resources-primary/application.properties");
+        FileUtils.write(source, "greeting=Salut", "UTF-8");
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Salut/Other"));
+
+        // Add the application.yaml
+        source = new File(testDir, "src/main/resources-secondary/application.yaml");
+        FileUtils.write(source, "other:\n" +
+                "  greeting: Buenos dias", "UTF-8");
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Salut/Buenos dias"));
+
+        // Update the application.yaml
+        FileUtils.write(source, "other:\n" +
+                "  greeting: Hola", "UTF-8");
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Salut/Hola"));
     }
 
     @Test
@@ -1027,5 +1133,13 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         assertThat(running.log()).doesNotContain("Skipping Quarkus code generation");
         assertThat(running.log()).contains("Copying 1 resource"); // maven-resource-plugin
         assertThat(running.log()).contains("Compiling 2 source files"); // maven-compiler-plugin
+    }
+
+    @Test
+    public void testPropertyExpansion() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/property-expansion");
+        runAndCheck();
+        assertThat(DevModeTestUtils.getHttpResponse("/app/hello/")).isEqualTo("hello");
+        assertThat(DevModeTestUtils.getHttpResponse("/app/hello/applicationName")).isEqualTo("myapp");
     }
 }

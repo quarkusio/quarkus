@@ -494,33 +494,37 @@ And finally, run it with:
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
 
-NOTE: If you are interested in tiny Docker images, check the {quarkus-images-url}/main/distroless[distroless] version.
-
 === Using a multi-stage Docker build
 
-The previous section showed you how to build a native executable using Maven, but implicitly required that the proper GraalVM version be installed on the building machine (be it your local machine or your CI/CD infrastructure).
+The previous section showed you how to build a native executable using Maven or Gradle, but it requires you to have created the native executable first.
+In addition, this native executable must be a Linux 64 bits executable.
 
-In cases where the GraalVM requirement cannot be met, you can use Docker to perform the Maven or Gradle build by using a multi-stage Docker build. A multi-stage Docker build is like two Dockerfile files combined in one, the first is used to build the artifact used by the second.
+You may want to build the native executable directly in a container without having a final container containing the build tools.
+That approach is possible with a multi-stage Docker build:
 
-In this guide we will use the first stage to generate the native executable and the second stage to create our runtime image.
+1. The first stage builds the native executable using Maven or Gradle
+2. The second stage is a minimal image copying the produced native executable
+
+Such a multi-stage build can be achieved as follows:
 
 Sample Dockerfile for building with Maven:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/centos-quarkus-maven:{graalvm-flavor} AS build
-COPY pom.xml /usr/src/app/
-RUN mvn -f /usr/src/app/pom.xml -B de.qaware.maven:go-offline-maven-plugin:1.2.5:resolve-dependencies
-COPY src /usr/src/app/src
-USER root
-RUN chown -R quarkus /usr/src/app
+FROM quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11 AS build
+COPY pom.xml /project/
+COPY mvnw /project/mvnw
+COPY .mvn /project/.mvn
 USER quarkus
-RUN mvn -f /usr/src/app/pom.xml -Pnative clean package
+WORKDIR /project
+RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
+COPY src /project/src
+RUN ./mvnw package -Pnative
 
 ## Stage 2 : create the docker final image
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
 WORKDIR /work/
-COPY --from=build /usr/src/app/target/*-runner /work/application
+COPY --from=build /project/target/*-runner /work/application
 
 # set up permissions for user `1001`
 RUN chmod 775 /work /work/application \
@@ -534,26 +538,32 @@ USER 1001
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
+NOTE: This multi-stage Docker build copies the Maven wrapper from the host machine.
+The Maven wrapper (or the Gradle wrapper) is a convenient way to provide a specific version of Maven/Gradle.
+It avoids having to create a base image with Maven and Gradle.
+To provision the Maven Wrapper in your project, use: `mvn -N io.takari:maven:0.7.7:wrapper`.
+
 Save this file in `src/main/docker/Dockerfile.multistage` as it is not included in the getting started quickstart.
 
 Sample Dockerfile for building with Gradle:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/centos-quarkus-maven:{graalvm-flavor} AS build
-COPY src /usr/src/app/src
-COPY build.gradle /usr/src/app
-COPY settings.gradle /usr/src/app
-COPY gradle.properties /usr/src/app
-USER root
-RUN chown -R quarkus /usr/src/app
+FROM quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11 AS build
+COPY gradlew /project/gradlew
+COPY gradle /project/gradle
+COPY build.gradle /project/
+COPY settings.gradle /project/
+COPY gradle.properties /project/
 USER quarkus
-RUN gradle -b /usr/src/app/build.gradle clean buildNative
+WORKDIR /project
+COPY src /project/src
+RUN gradle -b /project/build.gradle buildNative
 
 ## Stage 2 : create the docker final image
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 WORKDIR /work/
-COPY --from=build /usr/src/app/build/*-runner /work/application
+COPY --from=build /project/build/*-runner /work/application
 RUN chmod 775 /work
 EXPOSE 8080
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
@@ -563,7 +573,7 @@ If you are using Gradle in your project, you can use this sample Dockerfile.  Sa
 
 [WARNING]
 ====
-Before launching our Docker build, we need to update the default `.dockerignore` file as it filters everything except the `target` directory and as we plan to build inside a container we need to be able to copy the `src` directory. So edit your `.dockerignore` and remove or comment its content.
+Before launching our Docker build, we need to update the default `.dockerignore` file as it filters everything except the `target` directory. As we plan to build inside a container, we need to copy the `src` directory. Thus, edit your `.dockerignore` and update the content.
 ====
 
 [source,bash]
@@ -571,7 +581,7 @@ Before launching our Docker build, we need to update the default `.dockerignore`
 docker build -f src/main/docker/Dockerfile.multistage -t quarkus-quickstart/getting-started .
 ----
 
-And finally, run it with:
+And, finally, run it with:
 
 [source,bash]
 ----
@@ -584,6 +594,34 @@ If you need SSL support in your native executable, you can easily include the ne
 
 Please see link:native-and-ssl#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
+
+NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel:$TAG AS build`.
+`$TAG` can be found on the https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[Quarkus Mandrel Images Tags page].
+
+=== Using a distroless base image
+
+If you are looking for small container images, the https://github.com/GoogleContainerTools/distroless[distroless] approach reduces the size of the base layer.
+The idea behind _distroless_ is the usage of a single and minimal base image containing all the requirements, and sometimes even the application itself.
+
+Quarkus provides a distroless base image that you can use in your `Dockerfile`.
+You only need to copy your application, and you are done:
+
+[source, dockerfile]
+----
+FROM quay.io/quarkus/quarkus-distroless-image:1.0
+COPY target/*-runner /application
+
+EXPOSE 8080
+USER nonroot
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+----
+
+TIP: Projects generated with https://code.quarkus.io already have this Dockerfile in the `src/main/docker` directory.
+
+Quarkus provides the `quay.io/quarkus/quarkus-distroless-image:1.0` image.
+It contains the required packages to run a native executable and is only **9Mb**.
+Just add your application on top of this image, and you will get a tiny container image.
 
 == Debugging native executable
 

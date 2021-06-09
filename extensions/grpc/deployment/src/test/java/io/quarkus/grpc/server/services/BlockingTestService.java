@@ -8,17 +8,16 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Singleton;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.EmptyProtos;
 
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.integration.Messages;
+import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.blocking.BlockingTestServiceGrpc;
 import io.smallrye.common.annotation.Blocking;
 
-@Singleton
+@GrpcService
 public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestServiceImplBase {
 
     @Override

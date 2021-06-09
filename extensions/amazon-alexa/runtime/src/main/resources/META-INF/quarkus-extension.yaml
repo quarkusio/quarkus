@@ -1,5 +1,6 @@
 ---
 name: "Amazon Alexa"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
   - "lambda"

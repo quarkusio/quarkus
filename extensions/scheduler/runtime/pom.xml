@@ -45,6 +45,12 @@
             <artifactId>quarkus-vertx-http</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- TEST dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

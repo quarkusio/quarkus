@@ -1,9 +1,65 @@
 {#include main}
 {#style}
-.annotation {
-color: gray;
+.clearCacheIcon:hover {
+    color: #3366ac !important;
+    cursor: pointer;
+}
+.refreshCacheIcon:hover {
+    color: #3366ac !important;
+    cursor: pointer;
 }
 {/style}
+
+{#script}
+
+function refreshCache(cacheName){
+    $.post("",
+        {
+          name: cacheName,
+          action: "refresh"
+        },
+        function(data, status){
+            if(status === "success"){
+                updateSize(data,cacheName);
+            }
+        });
+}
+
+function clearCache(cacheName){
+    $.post("",
+        {
+          name: cacheName,
+          action: "clearCache"
+        },
+        function(data, status){
+            if(status === "success"){
+                updateSize(data,cacheName);
+                changeBackgroundColor("#76be6b", cacheName);
+            }else{
+                changeBackgroundColor("#ff6366", cacheName);
+            }
+        });
+}
+
+function updateSize(data, cacheName){
+    var r = JSON.parse(data);
+    var spanId = 'size-' + cacheName;
+    $('#' + spanId).html(r.size);
+}
+
+function changeBackgroundColor(color, cacheName){
+    var className = 'tr-' + cacheName;
+    var element = $('#' + className);
+    
+    var x = 3000;
+    var originalColor = element.css("background-color");
+
+    element.css("background", color);
+        setTimeout(function(){
+        element.css("background", originalColor);
+    }, x);
+}
+{/script}
 {#title}Caches{/title}
 {#body}
 <table class="table table-striped">
@@ -15,18 +71,13 @@ color: gray;
     </thead>
     <tbody>
     {#for cacheInfo in info:cacheInfos}
-    <tr>
+    <tr id="tr-{cacheInfo.name}">
         <td>
-            {cacheInfo.name}
+            <i class="fas fa-sync-alt text-success refreshCacheIcon align-middle" onclick="refreshCache('{cacheInfo.name}');" title="Refresh"></i> {cacheInfo.name}
         </td>
         <td>
-            <form method="post"  enctype="application/x-www-form-urlencoded">
-                <label class="form-check-label" for="clear">
-                    {cacheInfo.size}
-                </label>
-                <input type="hidden" name="name" value="{cacheInfo.name}">
-                <input id="clear" type="submit" class="btn btn-primary btn-sm" value="Clear" >
-            </form>
+            <span id="size-{cacheInfo.name}">{cacheInfo.size}</span>
+            <i class="fas fa-trash-alt float-right text-danger clearCacheIcon align-middle" onclick="clearCache('{cacheInfo.name}');" title="Clear"></i>    
         </td>
     {/for}
     </tbody>

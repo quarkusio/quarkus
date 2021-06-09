@@ -136,7 +136,8 @@ public class GreetingService {
 [TIP]
 .Mutiny
 ====
-The previous example uses Mutiny reactive types, if you're not familiar with them, we recommend reading the link:getting-started-reactive#mutiny[Getting Started with Reactive guide].
+The previous example uses Mutiny reactive types.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 ====
 
 === Configuring the address
@@ -210,6 +211,13 @@ public void consume(Message<String> msg) {
     System.out.println(msg.body());
 }
 ----
+
+=== Handling Failures
+
+If a method annotated with `@ConsumeEvent` throws an exception then:
+
+* if a reply handler is set then the failure is propagated back to the sender via an `io.vertx.core.eventbus.ReplyException` with code `ConsumeEvent#FAILURE_CODE` and the exception message,
+* if no reply handler is set then the exception is rethrown (and wrapped in a `RuntimeException` if necessary) and can be handled by the default exception handler, i.e. `io.vertx.core.Vertx#exceptionHandler()`.
 
 == Sending messages
 

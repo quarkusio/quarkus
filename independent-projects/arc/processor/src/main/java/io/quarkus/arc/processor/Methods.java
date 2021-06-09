@@ -4,6 +4,7 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.Gizmo;
+import io.quarkus.gizmo.MethodDescriptor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,6 +130,20 @@ final class Methods {
                         "Final method %s.%s() is ignored during proxy generation and should never be invoked upon the proxy instance!",
                         className, method.name()));
             }
+            return true;
+        }
+        return false;
+    }
+
+    static boolean skipForDelegateSubclass(MethodInfo method) {
+        if (Modifier.isStatic(method.flags())) {
+            return true;
+        }
+        if (IGNORED_METHODS.contains(method.name())) {
+            return true;
+        }
+        // skip all Object methods
+        if (method.declaringClass().name().equals(DotNames.OBJECT)) {
             return true;
         }
         return false;
@@ -262,11 +277,13 @@ final class Methods {
 
         final String name;
         final List<DotName> params;
+        final DotName returnType;
         final MethodInfo method;
 
         public MethodKey(MethodInfo method) {
-            this.method = method;
+            this.method = Objects.requireNonNull(method, "Method must not be null");
             this.name = method.name();
+            this.returnType = method.returnType().name();
             this.params = new ArrayList<>();
             for (Type i : method.parameters()) {
                 params.add(i.name());
@@ -277,8 +294,9 @@ final class Methods {
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + ((name == null) ? 0 : name.hashCode());
-            result = prime * result + ((params == null) ? 0 : params.hashCode());
+            result = prime * result + name.hashCode();
+            result = prime * result + params.hashCode();
+            result = prime * result + returnType.hashCode();
             return result;
         }
 
@@ -298,6 +316,9 @@ final class Methods {
                 return false;
             }
             if (!params.equals(other.params)) {
+                return false;
+            }
+            if (!returnType.equals(other.returnType)) {
                 return false;
             }
             return true;
@@ -361,6 +382,39 @@ final class Methods {
             default:
                 return DotNames.OBJECT;
         }
+    }
+
+    static void addDelegateTypeMethods(IndexView index, ClassInfo delegateTypeClass, List<MethodInfo> methods) {
+        if (delegateTypeClass != null) {
+            for (MethodInfo method : delegateTypeClass.methods()) {
+                if (skipForDelegateSubclass(method)) {
+                    continue;
+                }
+                methods.add(method);
+            }
+            // Interfaces
+            for (Type interfaceType : delegateTypeClass.interfaceTypes()) {
+                ClassInfo interfaceClassInfo = getClassByName(index, interfaceType.name());
+                if (interfaceClassInfo != null) {
+                    addDelegateTypeMethods(index, interfaceClassInfo, methods);
+                }
+            }
+            if (delegateTypeClass.superClassType() != null) {
+                ClassInfo superClassInfo = getClassByName(index, delegateTypeClass.superName());
+                if (superClassInfo != null) {
+                    addDelegateTypeMethods(index, superClassInfo, methods);
+                }
+            }
+        }
+    }
+
+    static boolean containsTypeVariableParameter(MethodInfo method) {
+        for (Type param : method.parameters()) {
+            if (Types.containsTypeVariable(param)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static class RemoveFinalFromMethod implements BiFunction<String, ClassVisitor, ClassVisitor> {
@@ -538,6 +592,11 @@ final class Methods {
             }
             return true;
         }
+    }
+
+    static boolean descriptorMatches(MethodDescriptor d1, MethodDescriptor d2) {
+        return d1.getName().equals(d2.getName())
+                && d1.getDescriptor().equals(d2.getDescriptor());
     }
 
 }

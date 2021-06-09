@@ -1,0 +1,143 @@
+File-Date: 2018-04-23
+%%
+Type: language
+Subtag: aa
+Description: Afar
+Added: 2005-10-16
+%%
+Type: language
+Subtag: ab
+Description: Abkhazian
+Added: 2005-10-16
+Suppress-Script: Cyrl
+%%
+Type: language
+Subtag: ae
+Description: Avestan
+Added: 2005-10-16
+%%
+Type: language
+Subtag: af
+Description: Afrikaans
+Added: 2005-10-16
+Suppress-Script: Latn
+%%
+Type: language
+Subtag: ak
+Description: Akan
+Added: 2005-10-16
+Scope: macrolanguage
+%%
+Type: language
+Subtag: am
+Description: Amharic
+Added: 2005-10-16
+Suppress-Script: Ethi
+%%
+Type: language
+Subtag: an
+Description: Aragonese
+Added: 2005-10-16
+%%
+Type: language
+Subtag: ar
+Description: Arabic
+Added: 2005-10-16
+Suppress-Script: Arab
+Scope: macrolanguage
+%%
+Type: language
+Subtag: as
+Description: Assamese
+Added: 2005-10-16
+Suppress-Script: Beng
+%%
+Type: language
+Subtag: av
+Description: Avaric
+Added: 2005-10-16
+%%
+Type: language
+Subtag: ay
+Description: Aymara
+Added: 2005-10-16
+Suppress-Script: Latn
+Scope: macrolanguage
+%%
+Type: language
+Subtag: az
+Description: Azerbaijani
+Added: 2005-10-16
+Scope: macrolanguage
+%%
+Type: language
+Subtag: ba
+Description: Bashkir
+Added: 2005-10-16
+%%
+Type: language
+Subtag: be
+Description: Belarusian
+Added: 2005-10-16
+Suppress-Script: Cyrl
+%%
+Type: language
+Subtag: bg
+Description: Bulgarian
+Added: 2005-10-16
+Suppress-Script: Cyrl
+%%
+Type: language
+Subtag: bh
+Description: Bihari languages
+Added: 2005-10-16
+Scope: collection
+%%
+Type: language
+Subtag: bi
+Description: Bislama
+Added: 2005-10-16
+%%
+Type: language
+Subtag: bm
+Description: Bambara
+Added: 2005-10-16
+%%
+Type: language
+Subtag: bn
+Description: Bengali
+Description: Bangla
+Added: 2005-10-16
+Suppress-Script: Beng
+%%
+Type: language
+Subtag: bo
+Description: Tibetan
+Added: 2005-10-16
+%%
+Type: language
+Subtag: br
+Description: Breton
+Added: 2005-10-16
+%%
+Type: language
+Subtag: bs
+Description: Bosnian
+Added: 2005-10-16
+Suppress-Script: Latn
+Macrolanguage: sh
+%%
+Type: language
+Subtag: ca
+Description: Catalan
+Description: Valencian
+Added: 2005-10-16
+Suppress-Script: Latn
+%%
+Type: language
+Subtag: ce
+Description:
+%%
+Type: language
+Subtag: ce
+Description:

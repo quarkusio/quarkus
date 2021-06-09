@@ -20,7 +20,7 @@ public class OpaqueUsersResource {
     SecurityIdentity identity;
 
     @GET
-    @Path("/me")
+    @Path("/me/bearer")
     @RolesAllowed("user")
     @Produces(MediaType.APPLICATION_JSON)
     public User principalName() {
@@ -28,7 +28,7 @@ public class OpaqueUsersResource {
     }
 
     @GET
-    @Path("/preferredUserName")
+    @Path("/preferredUserName/bearer")
     @RolesAllowed("user")
     @Produces(MediaType.APPLICATION_JSON)
     public User opaquePreferredUserName() {

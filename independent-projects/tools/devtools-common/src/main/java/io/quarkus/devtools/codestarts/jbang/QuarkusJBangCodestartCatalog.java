@@ -1,10 +1,9 @@
 package io.quarkus.devtools.codestarts.jbang;
 
-import static io.quarkus.devtools.codestarts.QuarkusPlatformCodestartResourceLoader.platformPathLoader;
+import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
 import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
-import io.quarkus.devtools.codestarts.CodestartPathLoader;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
@@ -12,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<QuarkusJBangCodestartProjectInput> {
 
@@ -47,12 +47,17 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
         super(codestarts);
     }
 
-    public static QuarkusJBangCodestartCatalog fromResourceLoader(ResourceLoader resourceLoader)
+    public static QuarkusJBangCodestartCatalog fromBaseCodestartsResources()
             throws IOException {
-        final CodestartPathLoader pathLoader = platformPathLoader(resourceLoader);
-        final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader,
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(),
                 QUARKUS_JBANG_CODESTARTS_DIR);
-        return new QuarkusJBangCodestartCatalog(codestarts);
+        return new QuarkusJBangCodestartCatalog(codestarts.values());
+    }
+
+    public static QuarkusJBangCodestartCatalog fromResourceLoaders(List<ResourceLoader> resourceLoaders)
+            throws IOException {
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(resourceLoaders, QUARKUS_JBANG_CODESTARTS_DIR);
+        return new QuarkusJBangCodestartCatalog(codestarts.values());
     }
 
     @Override

@@ -1,0 +1,20 @@
+name: spring-web-codestart
+ref: spring-web
+type: code
+tags: extension-codestart
+metadata:
+  title: Spring Web
+  description: Spring, the Quarkus way! Start your RESTful Web Services with a Spring Controller.
+  related-guide-section: https://quarkus.io/guides/spring-web#greetingcontroller
+language:
+  base:
+    data:
+      resource:
+        class-name: GreetingController
+        path: "/greeting"
+        response: "Hello Spring"
+      package-name: org.acme
+    dependencies:
+      - io.quarkus:quarkus-spring-web
+    test-dependencies:
+      - io.rest-assured:rest-assured

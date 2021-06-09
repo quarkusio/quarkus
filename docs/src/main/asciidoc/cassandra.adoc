@@ -20,11 +20,11 @@ include::./platform-include.adoc[]
 To complete this quickstart guide, you need:
 
 * an IDE;
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately;
+* JDK 11+ installed with `JAVA_HOME` configured appropriately;
 * link:https://www.graalvm.org/[GraalVM] installed with the `GRAALVM_HOME` environment variable
 configured appropriately, if you want to
 link:https://quarkus.io/guides/building-native-image[use the native mode];
-* Apache Maven 3.5.3+;
+* Apache Maven {maven-version} 
 * A running link:https://cassandra.apache.org[Apache Cassandra],
 link:https://www.datastax.fr/products/datastax-enterprise[DataStax Enterprise] (DSE) or
 link:https://astra.datastax.com[DataStax Astra] database; or alternatively, a fresh Docker
@@ -413,8 +413,7 @@ link:https://javadoc.io/doc/com.datastax.oss.quarkus/cassandra-quarkus-client/la
 interface] gives you access to a series of reactive methods that integrate seamlessly with Quarkus
 and its reactive framework, Mutiny.
 
-TIP:  If you're not familiar with Mutiny, read the
-link:https://quarkus.io/guides/getting-started-reactive[Getting Started with Reactive guide] first.
+TIP:  If you are not familiar with Mutiny, please check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 
 Let's rewrite our application using reactive programming with Mutiny.
 

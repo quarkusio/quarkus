@@ -43,13 +43,13 @@ public class SmallRyeGraphQLStaticHandler implements Handler<RoutingContext> {
                 .setWebRoot(graphqlUiFinalDestination)
                 .setDefaultContentEncoding("UTF-8");
 
-        if (event.normalisedPath().length() == graphqlUiPath.length()) {
+        if (event.normalizedPath().length() == graphqlUiPath.length()) {
 
             event.response().setStatusCode(302);
             event.response().headers().set(HttpHeaders.LOCATION, graphqlUiPath + "/");
             event.response().end();
             return;
-        } else if (event.normalisedPath().length() == graphqlUiPath.length() + 1) {
+        } else if (event.normalizedPath().length() == graphqlUiPath.length() + 1) {
             event.reroute(graphqlUiPath + "/index.html");
             return;
         }

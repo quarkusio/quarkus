@@ -14,32 +14,44 @@ import org.jboss.logging.Logger;
  */
 public class Timing {
 
-    private static volatile long bootStartTime = -1;
+    public volatile long bootStartTime = -1;
 
-    private static volatile long bootStopTime = -1;
+    private volatile long bootStopTime = -1;
 
-    private static volatile String httpServerInfo = "";
+    private volatile String httpServerInfo = "";
 
     private static final String UNSET_VALUE = "<<unset>>";
 
-    public static void staticInitStarted() {
-        if (bootStartTime < 0) {
-            bootStartTime = System.nanoTime();
+    private static final Timing main = new Timing();
+    private static final Timing auxiliary = new Timing();
+
+    private static Timing get(boolean anc) {
+        if (anc) {
+            return auxiliary;
+        }
+        return main;
+    }
+
+    public static void staticInitStarted(boolean auxiliary) {
+        Timing t = get(auxiliary);
+        if (t.bootStartTime < 0) {
+            t.bootStartTime = System.nanoTime();
         }
     }
 
-    public static void staticInitStarted(ClassLoader cl) {
+    public static void staticInitStarted(ClassLoader cl, boolean auxiliary) {
         try {
             Class<?> realTiming = cl.loadClass(Timing.class.getName());
-            realTiming.getMethod("staticInitStarted").invoke(null);
+            realTiming.getMethod("staticInitStarted", boolean.class).invoke(null, auxiliary);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void staticInitStopped() {
-        if (bootStopTime < 0) {
-            bootStopTime = System.nanoTime();
+    public static void staticInitStopped(boolean auxiliary) {
+        Timing t = get(auxiliary);
+        if (t.bootStopTime < 0) {
+            t.bootStopTime = System.nanoTime();
         }
     }
 
@@ -49,8 +61,9 @@ public class Timing {
      *
      * @param info
      */
-    public static void setHttpServer(String info) {
-        httpServerInfo = info;
+    public static void setHttpServer(String info, boolean auxiliary) {
+        Timing t = get(auxiliary);
+        t.httpServerInfo = info;
     }
 
     /**
@@ -60,7 +73,7 @@ public class Timing {
     }
 
     public static void restart() {
-        bootStartTime = System.nanoTime();
+        main.bootStartTime = System.nanoTime();
     }
 
     public static void restart(ClassLoader cl) {
@@ -73,8 +86,9 @@ public class Timing {
     }
 
     public static void printStartupTime(String name, String version, String quarkusVersion, String features, String profile,
-            boolean liveCoding) {
-        final long bootTimeNanoSeconds = System.nanoTime() - bootStartTime;
+            boolean liveCoding, boolean anc) {
+        Timing t = get(anc);
+        final long bootTimeNanoSeconds = System.nanoTime() - t.bootStartTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
@@ -83,33 +97,36 @@ public class Timing {
         final String nativeOrJvm = ImageInfo.inImageRuntimeCode() ? "native" : "on JVM";
         if (UNSET_VALUE.equals(safeAppName) || UNSET_VALUE.equals(safeAppVersion)) {
             logger.infof("Quarkus %s %s started in %ss. %s", quarkusVersion, nativeOrJvm, secondsRepresentation,
-                    httpServerInfo);
+                    t.httpServerInfo);
         } else {
             logger.infof("%s %s %s (powered by Quarkus %s) started in %ss. %s", name, version, nativeOrJvm, quarkusVersion,
-                    secondsRepresentation, httpServerInfo);
+                    secondsRepresentation, t.httpServerInfo);
         }
         logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");
         logger.infof("Installed features: [%s]", features);
-        bootStartTime = -1;
+        t.bootStartTime = -1;
     }
 
-    public static void printStopTime(String name) {
-        final long stopTimeNanoSeconds = System.nanoTime() - bootStopTime;
+    public static void printStopTime(String name, boolean auxiliaryApplication) {
+        Timing t = get(auxiliaryApplication);
+        final long stopTimeNanoSeconds = System.nanoTime() - t.bootStopTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
         logger.infof("%s stopped in %ss",
                 (UNSET_VALUE.equals(name) || name == null || name.trim().isEmpty()) ? "Quarkus" : name,
                 secondsRepresentation);
-        bootStopTime = -1;
+        t.bootStopTime = -1;
 
-        /**
-         * We can safely close log handlers after stop time has been printed.
-         */
-        Handler[] handlers = InitialConfigurator.DELAYED_HANDLER.clearHandlers();
-        for (Handler handler : handlers) {
-            try {
-                handler.close();
-            } catch (Throwable ignored) {
+        if (!auxiliaryApplication) {
+            /**
+             * We can safely close log handlers after stop time has been printed.
+             */
+            Handler[] handlers = InitialConfigurator.DELAYED_HANDLER.clearHandlers();
+            for (Handler handler : handlers) {
+                try {
+                    handler.close();
+                } catch (Throwable ignored) {
+                }
             }
         }
     }

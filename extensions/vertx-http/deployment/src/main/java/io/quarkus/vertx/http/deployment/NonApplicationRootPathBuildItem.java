@@ -179,7 +179,6 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      */
     public static class Builder extends RouteBuildItem.Builder {
         private final NonApplicationRootPathBuildItem buildItem;
-        private boolean requiresLegacyRedirect = false;
         private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
         private String path;
 
@@ -234,15 +233,6 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             return this;
         }
 
-        /**
-         * @deprecated This will be removed in Quarkus 2.0, don't use unless you have to.
-         */
-        @Deprecated
-        public Builder requiresLegacyRedirect() {
-            this.requiresLegacyRedirect = true;
-            return this;
-        }
-
         @Override
         public Builder handler(Handler<RoutingContext> handler) {
             super.handler(handler);
@@ -280,12 +270,6 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         }
 
         @Override
-        public Builder displayOnNotFoundPage(String notFoundPageTitle, String notFoundPagePath) {
-            super.displayOnNotFoundPage(notFoundPageTitle, notFoundPagePath);
-            return this;
-        }
-
-        @Override
         public Builder routeConfigKey(String attributeName) {
             super.routeConfigKey(attributeName);
             return this;
@@ -293,11 +277,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
         @Override
         public RouteBuildItem build() {
-            // If path is same as absolute, we don't enable legacy redirect
-            if (requiresLegacyRedirect && path.equals(super.absolutePath)) {
-                requiresLegacyRedirect = false;
-            }
-            return new RouteBuildItem(this, routeType, requiresLegacyRedirect);
+            return new RouteBuildItem(this, routeType);
         }
 
         @Override

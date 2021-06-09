@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>37</version>
+        <version>38</version>
     </parent>
     <groupId>io.quarkus.qute</groupId>
     <artifactId>qute-parent</artifactId>
@@ -33,14 +33,15 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <version.junit>5.7.1</version.junit>
-        <version.gizmo>1.0.7.Final</version.gizmo>
-        <version.jboss-logging>3.3.2.Final</version.jboss-logging>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>11</maven.compiler.release>
+        <version.junit>5.7.2</version.junit>
+        <version.gizmo>1.0.8.Final</version.gizmo>
+        <version.jboss-logging>3.4.2.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
-        <version.smallrye-mutiny>0.14.0</version.smallrye-mutiny>
+        <version.smallrye-mutiny>0.17.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
@@ -186,13 +187,17 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${version.surefire.plugin}</version>
                     <configuration>
-                        <argLine>${jacoco.agent.argLine}</argLine>
+                        <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+                        <systemPropertyVariables combine.self="override"/>
+                        <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+                        <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
+                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.14.0</version>
+                    <version>2.15.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -211,7 +216,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <version>1.6.2</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache</cachedir>
@@ -226,25 +231,15 @@
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>sonatype-nexus-releases</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
     <profiles>
-        <profile>
-            <id>jdk-8-classpath</id>
-            <activation>
-                <!-- activate this on any JDK from 9 onwards -->
-                <jdk>[9,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>8</maven.compiler.release>
-            </properties>
-        </profile>
         <profile>
             <id>quick-build</id>
             <activation>

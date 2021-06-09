@@ -1,0 +1,3 @@
+# ./mvnw fails on Windows in git bash if -Xmx in that file has a trailing CRLF
+.mvn/jvm.config		text eol=lf
+

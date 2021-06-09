@@ -25,7 +25,12 @@ public enum BuildTool {
     /** Gradle build tool with Kotlin DSL */
     GRADLE_KOTLIN_DSL("\n# Gradle\n.gradle/\nbuild/",
             "build",
-            new String[] { "build.gradle.kts", "settings.gradle.kts", "gradle.properties" });
+            new String[] { "build.gradle.kts", "settings.gradle.kts", "gradle.properties" }),
+
+    /** JBang build tool */
+    JBANG("\n# JBang\n.target/\nbuild/",
+            "build",
+            new String[0]);
 
     private final String gitIgnoreEntries;
 

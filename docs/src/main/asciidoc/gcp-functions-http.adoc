@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Google Cloud Functions (Serverless) with RESTEasy, Undertow, or Vert.x Web
-:extension-status: experimental
+:extension-status: preview
 
 include::./attributes.adoc[]
 
@@ -12,8 +12,6 @@ The `quarkus-google-cloud-functions-http` extension allows you to write microser
 Undertow (Servlet), Vert.x Web, or link:funqy-http[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.
 
 One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Vert.x Web, or link:funqy-http[Funqy HTTP] endpoints.
-
-As the Google Cloud Function Java engine is a new Beta feature of Google Cloud, this extension is flagged as experimental.
 
 include::./status-include.adoc[]
 
@@ -61,13 +59,6 @@ Login to Google Cloud is necessary for deploying the application and it can be d
 [source,bash,subs=attributes+]
 ----
 gcloud auth login
-----
-
-At the time of this writing, Cloud Functions are still in beta so make sure to install the `beta` command group.
-
-[source,bash,subs=attributes+]
-----
-gcloud components install beta
 ----
 
 == Creating the endpoints
@@ -132,7 +123,7 @@ public class GreetingServlet extends HttpServlet {
 
 [source,java]
 ----
-import static io.vertx.core.http.HttpMethod.GET;
+import static io.quarkus.vertx.web.Route.HttpMethod.GET;
 
 import io.quarkus.vertx.web.Route;
 import io.vertx.ext.web.RoutingContext;
@@ -171,7 +162,7 @@ Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 
 [source,bash]
 ----
-gcloud beta functions deploy quarkus-example-http \
+gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
   --runtime=java11 --trigger-http --source=target/deployment
 ----
@@ -186,7 +177,7 @@ The entry point must always be set to `io.quarkus.gcp.functions.http.QuarkusHttp
 The first time you launch this command, you can have the following error message:
 [source]
 ----
-ERROR: (gcloud.beta.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
+ERROR: (gcloud.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
 ----
 This means that Cloud Build is not activated yet. To overcome this error, open the URL shown in the error, follow the instructions and then wait a few minutes before retrying the command.
 ====
@@ -210,7 +201,7 @@ You can download it via Maven using the following command:
 [source,bash]
 ----
 mvn dependency:copy \
-  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-beta1' \
+  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.2' \
   -DoutputDirectory=.
 ----
 
@@ -220,7 +211,7 @@ Then you can use it to launch your function locally.
 
 [source,bash]
 ----
-java -jar java-function-invoker-1.0.0-beta1.jar \
+java -jar java-function-invoker-1.0.2.jar \
   --classpath target/deployment/google-cloud-functions-http-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.http.QuarkusHttpFunction
 ----

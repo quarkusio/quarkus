@@ -29,6 +29,8 @@ import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
+import org.jboss.resteasy.reactive.FilePart;
+import org.jboss.resteasy.reactive.PathPart;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -47,9 +49,12 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerCharArrayM
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerCharacterMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerDefaultTextPlainBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFileBodyHandler;
+import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFilePartBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerInputStreamMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerNumberMessageBodyHandler;
+import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathBodyHandler;
+import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathPartBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
@@ -103,6 +108,12 @@ public class ServerSerialisers extends Serialisers {
             new BuiltinWriter(Reader.class, ServerReaderBodyHandler.class,
                     MediaType.WILDCARD),
             new BuiltinWriter(File.class, ServerFileBodyHandler.class,
+                    MediaType.WILDCARD),
+            new BuiltinWriter(FilePart.class, ServerFilePartBodyHandler.class,
+                    MediaType.WILDCARD),
+            new BuiltinWriter(java.nio.file.Path.class, ServerPathBodyHandler.class,
+                    MediaType.WILDCARD),
+            new BuiltinWriter(PathPart.class, ServerPathPartBodyHandler.class,
                     MediaType.WILDCARD),
     };
     private static final String CONTENT_TYPE = "Content-Type"; // use this instead of the Vert.x constant because the TCK expects upper case
@@ -385,12 +396,12 @@ public class ServerSerialisers extends Serialisers {
     }
 
     @Override
-    public BuiltinWriter[] getBultinWriters() {
+    public BuiltinWriter[] getBuiltinWriters() {
         return BUILTIN_WRITERS;
     }
 
     @Override
-    public BuiltinReader[] getBultinReaders() {
+    public BuiltinReader[] getBuiltinReaders() {
         return BUILTIN_READERS;
     }
 
@@ -481,7 +492,9 @@ public class ServerSerialisers extends Serialisers {
         for (Map.Entry<String, List<Object>> entry : headers.entrySet()) {
             if (entry.getValue().size() == 1) {
                 Object o = entry.getValue().get(0);
-                if (o instanceof CharSequence) {
+                if (o == null) {
+                    vertxResponse.setResponseHeader(entry.getKey(), "");
+                } else if (o instanceof CharSequence) {
                     vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) o);
                 } else {
                     vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) HeaderUtil.headerToString(o));

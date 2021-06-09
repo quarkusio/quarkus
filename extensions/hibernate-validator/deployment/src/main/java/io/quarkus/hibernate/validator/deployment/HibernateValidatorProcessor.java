@@ -48,6 +48,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.ConfigClassBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
@@ -60,7 +61,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -109,11 +109,6 @@ class HibernateValidatorProcessor {
     private static final DotName REPEATABLE = DotName.createSimple(Repeatable.class.getName());
 
     private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.HIBERNATE_VALIDATOR);
-    }
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
@@ -188,6 +183,7 @@ class HibernateValidatorProcessor {
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             BuildProducer<BeanValidationAnnotationsBuildItem> beanValidationAnnotations,
             ShutdownContextBuildItem shutdownContext,
+            List<ConfigClassBuildItem> configClasses,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             Capabilities capabilities,
             LocalesBuildTimeConfig localesBuildTimeConfig,
@@ -276,7 +272,35 @@ class HibernateValidatorProcessor {
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass().name());
                     // no need for reflection in the case of a class level constraint
+                } else if (annotation.target().kind() == AnnotationTarget.Kind.TYPE) {
+                    // container element constraints
+                    AnnotationTarget enclosingTarget = annotation.target().asType().enclosingTarget();
+                    if (enclosingTarget.kind() == AnnotationTarget.Kind.FIELD) {
+                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asField().declaringClass().name());
+                        reflectiveFields.produce(new ReflectiveFieldBuildItem(enclosingTarget.asField()));
+                        if (annotation.target().asType().target() != null) {
+                            contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
+                                    consideredAnnotation,
+                                    annotation.target().asType().target());
+                        }
+                    } else if (enclosingTarget.kind() == AnnotationTarget.Kind.METHOD) {
+                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asMethod().declaringClass().name());
+                        reflectiveMethods.produce(new ReflectiveMethodBuildItem(enclosingTarget.asMethod()));
+                        if (annotation.target().asType().target() != null) {
+                            contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
+                                    consideredAnnotation,
+                                    annotation.target().asType().target());
+                        }
+                        contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
+                                enclosingTarget.asMethod());
+                    }
                 }
+            }
+        }
+
+        for (ConfigClassBuildItem configClass : configClasses) {
+            for (String generatedClass : configClass.getGeneratedClasses()) {
+                classNamesToBeValidated.add(DotName.createSimple(generatedClass));
             }
         }
 

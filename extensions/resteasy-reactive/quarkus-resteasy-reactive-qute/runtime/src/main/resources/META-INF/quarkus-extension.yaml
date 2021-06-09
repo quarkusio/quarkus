@@ -1,5 +1,5 @@
----
 name: "RESTEasy Reactive Qute"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
     - "templating"
@@ -9,4 +9,10 @@ metadata:
     - "web"
     - "reactive"
   status: "experimental"
-
+  codestart:
+    name: "resteasy-reactive"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -201,5 +202,20 @@ public class JarResource implements ClassLoadingResource {
         return "JarResource{" +
                 jarPath.getFileName() +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        JarResource that = (JarResource) o;
+        return Objects.equals(manifestInfo, that.manifestInfo) && jarPath.equals(that.jarPath);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(manifestInfo, jarPath);
     }
 }

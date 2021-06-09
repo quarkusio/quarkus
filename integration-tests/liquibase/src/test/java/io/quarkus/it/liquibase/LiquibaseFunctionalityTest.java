@@ -20,6 +20,7 @@ public class LiquibaseFunctionalityTest {
                 .then()
                 .body(is(
                         "create-tables-1,test-1,create-view-inline,create-view-file-abs,create-view-file-rel,"
+                                + (isIncludeAllExpectedToWork() ? "includeAll-1,includeAll-2," : "")
                                 + "json-create-tables-1,json-test-1,"
                                 + "sql-create-tables-1,sql-test-1,"
                                 + "yaml-create-tables-1,yaml-test-1,"
@@ -27,4 +28,7 @@ public class LiquibaseFunctionalityTest {
                                 + "1613578374533-1,1613578374533-2,1613578374533-3"));
     }
 
+    protected boolean isIncludeAllExpectedToWork() {
+        return true;
+    }
 }

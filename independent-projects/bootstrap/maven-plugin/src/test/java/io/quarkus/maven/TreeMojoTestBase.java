@@ -44,6 +44,7 @@ public abstract class TreeMojoTestBase {
                 .setOffline(true)
                 .setLocalRepository(repoHome.toString())
                 .setRemoteRepositories(Collections.emptyList())
+                .setWorkspaceDiscovery(false)
                 .build();
 
         repoBuilder = TsRepoBuilder.getInstance(new BootstrapAppModelResolver(mvnResolver), workDir);

@@ -14,7 +14,6 @@ import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.pkg.steps.NativeImageBuildStep.GraalVM;
 import io.quarkus.deployment.util.ProcessUtil;
 
 public abstract class NativeImageBuildRunner {
@@ -43,10 +42,8 @@ public abstract class NativeImageBuildRunner {
     public void setup(boolean processInheritIODisabled) {
     }
 
-    public void cleanupServer(File outputDir) throws InterruptedException, IOException {
-    }
-
-    public int build(List<String> args, Path outputDir, boolean processInheritIODisabled)
+    public int build(List<String> args, String nativeImageName, String resultingExecutableName, Path outputDir,
+            boolean debugEnabled, boolean processInheritIODisabled)
             throws InterruptedException, IOException {
         preBuild(args);
         try {
@@ -61,15 +58,43 @@ public abstract class NativeImageBuildRunner {
                     errorReportLatch));
             executor.shutdown();
             errorReportLatch.await();
-            return process.waitFor();
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                return exitCode;
+            }
+
+            if (objcopyExists()) {
+                if (debugEnabled) {
+                    splitDebugSymbols(nativeImageName, resultingExecutableName);
+                } else {
+                    // Strip debug symbols regardless, because the underlying JDK might contain them
+                    objcopy("--strip-debug", resultingExecutableName);
+                }
+            } else {
+                log.warn("objcopy executable not found in PATH. Debug symbols will not be separated from executable.");
+                log.warn("That will result in a larger native image with debug symbols embedded in it.");
+            }
+            return 0;
         } finally {
             postBuild();
         }
     }
 
+    private void splitDebugSymbols(String nativeImageName, String resultingExecutableName) {
+        String symbols = String.format("%s.debug", nativeImageName);
+        objcopy("--only-keep-debug", resultingExecutableName, symbols);
+        objcopy(String.format("--add-gnu-debuglink=%s", symbols), resultingExecutableName);
+    }
+
     protected abstract String[] getGraalVMVersionCommand(List<String> args);
 
     protected abstract String[] getBuildCommand(List<String> args);
+
+    protected boolean objcopyExists() {
+        return true;
+    }
+
+    protected abstract void objcopy(String... args);
 
     protected void preBuild(List<String> buildArgs) throws IOException, InterruptedException {
     }
@@ -85,7 +110,7 @@ public abstract class NativeImageBuildRunner {
      *        If {@code null} the failure is ignored, but logged.
      * @param workingDirectory The directory in which to run the command
      */
-    void runCommand(String[] command, String errorMsg, File workingDirectory) {
+    static void runCommand(String[] command, String errorMsg, File workingDirectory) {
         log.info(String.join(" ", command).replace("$", "\\$"));
         Process process = null;
         try {

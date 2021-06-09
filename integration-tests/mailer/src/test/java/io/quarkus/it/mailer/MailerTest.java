@@ -1,11 +1,13 @@
 package io.quarkus.it.mailer;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.lang.reflect.Type;
 import java.util.List;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +35,7 @@ public class MailerTest {
 
     @BeforeEach
     public void init() {
-        mailServer = "http://" + System.getProperty("fake.mailer") + "/api/emails";
+        mailServer = "http://" + ConfigProvider.getConfig().getValue("fake.mailer", String.class) + "/api/emails";
     }
 
     @AfterEach
@@ -100,6 +102,33 @@ public class MailerTest {
                     assertThat(attachment.contentDisposition).isEqualTo("attachment");
                     assertThat(attachment.contentType).isEqualTo("text/plain");
                 });
+    }
+
+    @Test
+    public void sendEmailFromTemplate() {
+        RestAssured.get("/mail/text-from-template");
+
+        await().until(() -> getLastEmail() != null);
+
+        TextEmail email = getLastEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.subject).isEqualTo("template mail");
+        assertThat(email.text).contains("Hello John!");
+        assertThat(email.to.text).isEqualTo("nobody@quarkus.io");
+    }
+
+    @Test
+    public void sendEmailWithHeaders() {
+        RestAssured.get("mail/text-with-headers");
+
+        await().until(() -> getLastEmail() != null);
+
+        TextEmail email = getLastEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.to.text).isEqualTo("nobody@quarkus.io");
+        assertThat(email.subject).isEqualTo("simple test email");
+        assertThat(email.headerLines).isNotNull();
+        assertThat(email.headerLines).anySatisfy(header -> assertThat(header.line).isEqualTo("Accept: http"));
     }
 
     @SuppressWarnings("UnstableApiUsage")

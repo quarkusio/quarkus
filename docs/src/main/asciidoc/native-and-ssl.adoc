@@ -64,7 +64,7 @@ It's not. The magic happens when building the native executable:
 [INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dcom.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize=true -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar rest-client-1.0.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:+PrintAnalysisCallTree -H:EnableURLProtocols=http,https --enable-all-security-services -H:-SpawnIsolates -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
 ----
 
-The important elements are these 3 options:
+The important elements are these 3 options that were automatically added by Quarkus:
 
 [source,bash]
 ----
@@ -72,29 +72,47 @@ The important elements are these 3 options:
 ----
 
 They enable the native SSL support for your native executable.
+But you should not set them manually, we have a nice configuration property for this purpose as described below.
 
 As SSL is de facto the standard nowadays, we decided to enable its support automatically for some of our extensions:
 
  * the Agroal connection pooling extension (`quarkus-agroal`),
- * the Amazon DynamoDB extension (`quarkus-amazon-dynamodb`),
- * the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-orm-elasticsearch`),
+ * the Amazon Services extension (`quarkus-amazon-*`),
+ * the Consul Config extension (`quarkus-consul-config`),
+ * the Elasticsearch client extensions (`quarkus-elasticsearch-rest-client` and `quarkus-elasticsearch-rest-high-level-client`) and thus the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-orm-elasticsearch`),
+ * the Elytron Security OAuth2 extension (`quarkus-elytron-security-oauth2`),
+ * the gRPC extension (`quarkus-grpc`),
  * the Infinispan Client extension (`quarkus-infinispan-client`).
  * the Jaeger extension (`quarkus-jaeger`),
  * the JGit extension (`quarkus-jgit`),
- * the Keycloak extension (`quarkus-keycloak`),
+ * the JSch extension (`quarkus-jsch`),
+ * the Kafka Client extension (`quarkus-kafka-client`), if Apicurio Registry 2.x Avro library is used
+ * the Keycloak Authorization extension (`quarkus-keycloak-authorization`),
  * the Kubernetes client extension (`quarkus-kubernetes-client`),
+ * the Logging Sentry extension (`quarkus-logging-sentry`),
  * the Mailer extension (`quarkus-mailer`),
- * the Redis client extension (`quarkus-redis-client`),
- * the MongoDB extension (`quarkus-mongodb-client`),
+ * the MongoDB client extension (`quarkus-mongodb-client`),
  * the Neo4j extension (`quarkus-neo4j`),
- * the OAuth2 extension (`quarkus-elytron-security-oauth2`),
- * the REST client extension (`quarkus-rest-client`),
+ * the OIDC and OIDC client extensions (`quarkus-oidc` and `quarkus-oidc-client`),
+ * the Reactive client for IBM DB2 extension (`quarkus-reactive-db2-client`),
  * the Reactive client for PostgreSQL extension (`quarkus-reactive-pg-client`),
  * the Reactive client for MySQL extension (`quarkus-reactive-mysql-client`),
  * the Reactive client for DB2 extension (`quarkus-reactive-db2-client`).
+ * the Redis client extension (`quarkus-redis-client`),
+ * the REST Client extension (`quarkus-rest-client`),
+ * the REST Client Reactive extension (`quarkus-rest-client-reactive`),
+ * the Spring Cloud Config client extension (`quarkus-spring-cloud-config-client`),
+ * the Vault extension (`quarkus-vault`),
  * the Cassandra client extensions (`cassandra-quarkus-client`)
 
-As long as you have one of those extensions in your project, the SSL support will be enabled by default.
+As long as you have one of these extensions in your project, the SSL support will be enabled by default.
+
+If you are not using any of them and you want to enable SSL support anyway, please add the following to your configuration:
+
+[source,properties]
+----
+quarkus.ssl.native=true
+----
 
 Now, let's just check the size of our native executable as it will be useful later:
 

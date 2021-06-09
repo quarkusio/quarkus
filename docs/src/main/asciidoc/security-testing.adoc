@@ -82,6 +82,8 @@ This will run the test with an identity with the given username and roles. Note 
 disable authorization while also providing an identity to run the test under, which can be useful if the endpoint expects an
 identity to be present.
 
+See link:security-openid-connect#integration-testing-security-annotation[OpenId Connect Bearer Token Integration testing], link:security-openid-connect-web-authentication#integration-testing-security-annotation[OpenId Connect Authorization Code Flow Integration testing] and link:security-jwt#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
+
 [WARNING]
 ====
 The feature is only available for `@QuarkusTest` and will **not** work on a `@NativeImageTest`.
@@ -96,7 +98,7 @@ for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.aut
 == Use Wiremock for Integration Testing
 
 You can also use Wiremock to mock the authorization OAuth2 and OIDC services: 
-See link:security-oauth2#integration-testing[OAuth2 Integration testing], link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing], link:security-openid-connect-web-authentication#integration-testing[OpenId Connect Authorization Code Flow Integration testing] and link:security-jwt#integration-testing[SmallRye JWT Integration testing] for more details.
+See link:security-oauth2#integration-testing[OAuth2 Integration testing], link:security-openid-connect#integration-testing-wiremock[OpenId Connect Bearer Token Integration testing], link:security-openid-connect-web-authentication#integration-testing-wiremock[OpenId Connect Authorization Code Flow Integration testing] and link:security-jwt#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
 
 == References
 

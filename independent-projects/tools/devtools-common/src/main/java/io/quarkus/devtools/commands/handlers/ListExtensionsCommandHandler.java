@@ -4,8 +4,6 @@ import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 import static java.util.stream.Collectors.toMap;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -13,6 +11,8 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.ArtifactKey;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionOrigin;
@@ -79,10 +79,10 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
                 currentFormatter = this::conciseFormatter;
         }
 
-        Map<AppArtifactKey, AppArtifactCoords> installedByKey;
+        Map<ArtifactKey, ArtifactCoords> installedByKey;
         try {
             installedByKey = extensionManager.getInstalled().stream()
-                    .collect(toMap(AppArtifactCoords::getKey, Function.identity()));
+                    .collect(toMap(ArtifactCoords::getKey, Function.identity()));
         } catch (IOException e) {
             throw new QuarkusCommandException("Failed to determine the list of installed extensions", e);
         }
@@ -151,7 +151,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         }
     }
 
-    private void display(MessageWriter messageWriter, final Extension e, final AppArtifactCoords installed,
+    private void display(MessageWriter messageWriter, final Extension e, final ArtifactCoords installed,
             boolean all,
             boolean installedOnly,
             BiConsumer<MessageWriter, Object[]> formatter) {

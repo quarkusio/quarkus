@@ -91,7 +91,7 @@ public final class DefaultCodestartProjectDefinition implements CodestartProject
     @Override
     public Map<String, Object> getDepsData() {
         return buildDependenciesData(getCodestarts().stream(), getLanguageName(),
-                getProjectInput().getDependencies());
+                getProjectInput().getDependencies(), getProjectInput().getBoms());
     }
 
     @Override

@@ -94,6 +94,7 @@ public class OpenshiftProcessor {
         result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator(config.route)));
 
         if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
+                && !capabilities.isPresent("io.quarkus.openshift")
                 && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
             result.add(new ConfiguratorBuildItem(new DisableS2iConfigurator()));
 
@@ -196,6 +197,7 @@ public class OpenshiftProcessor {
 
         // Hanlde non-s2i
         if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
+                && !capabilities.isPresent("io.quarkus.openshift")
                 && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
             result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator()));
         }

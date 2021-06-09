@@ -4,6 +4,7 @@ import static org.jboss.resteasy.reactive.common.util.DeploymentUtils.loadClass;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -12,9 +13,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -144,8 +147,12 @@ public class RuntimeResourceDeployment {
         for (int i = 0; i < method.getParameters().length; ++i) {
             parameterClasses[i] = loadClass(method.getParameters()[i].declaredType);
         }
+        Set<String> classAnnotationNames = new HashSet<>();
+        for (Annotation annotation : resourceClass.getAnnotations()) {
+            classAnnotationNames.add(annotation.annotationType().getName());
+        }
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterClasses, method.getMethodAnnotationNames());
+                parameterClasses, classAnnotationNames, method.getMethodAnnotationNames());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(method, lazyMethod);
@@ -168,6 +175,13 @@ public class RuntimeResourceDeployment {
             } else {
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
             }
+        }
+
+        // special case for AsyncFile which can't do async IO and handle interceptors
+        if (method.getReturnType().equals("Lio/vertx/core/file/AsyncFile;")
+                && interceptorDeployment.hasWriterInterceptors()) {
+            throw new RuntimeException(
+                    "Endpoints that return an AsyncFile cannot have any WriterInterceptor set");
         }
 
         //spec doesn't seem to test this, but RESTEasy does not run request filters again for sub resources (which makes sense)
@@ -205,18 +219,9 @@ public class RuntimeResourceDeployment {
             }
         }
         // form params can be everywhere (field, beanparam, param)
-        if (method.isFormParamRequired() && !defaultBlocking) {
+        if (method.isFormParamRequired() || method.isMultipart()) {
             // read the body as multipart in one go
-            handlers.add(new FormBodyHandler(bodyParameter != null));
-        } else if (method.isMultipart()) {
-            Supplier<ServerRestHandler> multipartHandlerSupplier = customServerRestHandlers.getMultipartHandlerSupplier();
-            if (multipartHandlerSupplier != null) {
-                // multipart needs special body handling
-                handlers.add(multipartHandlerSupplier.get());
-            } else {
-                throw new RuntimeException(
-                        "The current execution environment does not implement a ServerRestHandler for multipart form support");
-            }
+            handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
         } else if (bodyParameter != null) {
             if (!defaultBlocking) {
                 if (method.isBlocking()) {
@@ -249,7 +254,6 @@ public class RuntimeResourceDeployment {
 
         // given that we may inject form params in the endpoint we need to make sure we read the body before
         // we create/inject our endpoint
-        EndpointInvoker invoker = method.getInvoker().get();
         ServerRestHandler instanceHandler = null;
         if (!locatableResource) {
             if (clazz.isPerRequestResource()) {
@@ -294,7 +298,13 @@ public class RuntimeResourceDeployment {
                     param.isObtainedAsCollection(), param.isOptional()));
         }
         addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
-        handlers.add(new InvocationHandler(invoker));
+        EndpointInvoker invoker = method.getInvoker().get();
+        ServerRestHandler alternate = alternateInvoker(method, invoker);
+        if (alternate != null) {
+            handlers.add(alternate);
+        } else {
+            handlers.add(new InvocationHandler(invoker));
+        }
         addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
@@ -383,6 +393,7 @@ public class RuntimeResourceDeployment {
             responseFilterHandlers = Collections.emptyList();
         } else {
             handlers.add(new ResponseHandler());
+            addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED);
             responseFilterHandlers = new ArrayList<>(interceptorDeployment.setupResponseFilterHandler());
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
@@ -427,6 +438,16 @@ public class RuntimeResourceDeployment {
         for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
             handlers.addAll(method.getHandlerChainCustomizers().get(i).handlers(phase));
         }
+    }
+
+    private ServerRestHandler alternateInvoker(ServerResourceMethod method, EndpointInvoker invoker) {
+        for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
+            ServerRestHandler ret = method.getHandlerChainCustomizers().get(i).alternateInvocationHandler(invoker);
+            if (ret != null) {
+                return ret;
+            }
+        }
+        return null;
     }
 
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, boolean locatableResource,

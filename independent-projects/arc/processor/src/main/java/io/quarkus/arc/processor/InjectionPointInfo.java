@@ -1,5 +1,7 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.Annotations.contains;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +40,7 @@ public class InjectionPointInfo {
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
                 transformer.applyTransformers(type, field, qualifiers), field, -1,
-                Annotations.contains(annotations, DotNames.TRANSIENT_REFERENCE));
+                contains(annotations, DotNames.TRANSIENT_REFERENCE), contains(annotations, DotNames.DELEGATE));
     }
 
     static InjectionPointInfo fromResourceField(FieldInfo field, ClassInfo beanClass, BeanDeployment beanDeployment,
@@ -46,7 +48,7 @@ public class InjectionPointInfo {
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
                 transformer.applyTransformers(type, field, new HashSet<>(field.annotations())),
-                InjectionPointKind.RESOURCE, field, -1, false);
+                InjectionPointKind.RESOURCE, field, -1, false, false);
     }
 
     static List<InjectionPointInfo> fromMethod(MethodInfo method, ClassInfo beanClass, BeanDeployment beanDeployment,
@@ -72,32 +74,28 @@ public class InjectionPointInfo {
             Type type = resolveType(paramType, beanClass, method.declaringClass(), beanDeployment);
             injectionPoints.add(new InjectionPointInfo(type,
                     transformer.applyTransformers(type, method, paramQualifiers),
-                    method, position, Annotations.contains(paramAnnotations, DotNames.TRANSIENT_REFERENCE)));
+                    method, position, contains(paramAnnotations, DotNames.TRANSIENT_REFERENCE),
+                    contains(paramAnnotations, DotNames.DELEGATE)));
         }
         return injectionPoints;
     }
 
     private final TypeAndQualifiers typeAndQualifiers;
-
     private final AtomicReference<BeanInfo> resolvedBean;
-
     private final InjectionPointKind kind;
-
     private final boolean hasDefaultedQualifier;
-
     private final AnnotationTarget target;
-
     private final int position;
-
     private final boolean isTransientReference;
+    private final boolean isDelegate;
 
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target, int position,
-            boolean isTransientReference) {
-        this(requiredType, requiredQualifiers, InjectionPointKind.CDI, target, position, isTransientReference);
+            boolean isTransientReference, boolean isDelegate) {
+        this(requiredType, requiredQualifiers, InjectionPointKind.CDI, target, position, isTransientReference, isDelegate);
     }
 
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind,
-            AnnotationTarget target, int position, boolean isTransientReference) {
+            AnnotationTarget target, int position, boolean isTransientReference, boolean isDelegate) {
         this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
                 requiredQualifiers.isEmpty()
                         ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
@@ -108,6 +106,7 @@ public class InjectionPointInfo {
         this.target = target;
         this.position = position;
         this.isTransientReference = isTransientReference;
+        this.isDelegate = isDelegate;
     }
 
     void resolve(BeanInfo bean) {
@@ -172,6 +171,14 @@ public class InjectionPointInfo {
     boolean isDependentTransientReference() {
         BeanInfo bean = getResolvedBean();
         return bean != null && isParam() && BuiltinScope.DEPENDENT.is(bean.getScope()) && isTransientReference;
+    }
+
+    public boolean isTransientReference() {
+        return isTransientReference;
+    }
+
+    public boolean isDelegate() {
+        return isDelegate;
     }
 
     /**

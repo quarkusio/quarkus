@@ -18,7 +18,7 @@ To complete this guide, you need:
 
 * less than 20 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker
 * link:building-native-image[GraalVM installed if you want to run in native mode]
@@ -707,7 +707,7 @@ Entities are attached to a persistence unit by
 link:hibernate-orm#multiple-persistence-units-attaching-model-classes[configuring the Hibernate ORM extension].
 
 [[multiple-persistence-units-attaching-cdi]]
-=== CDI integration
+== CDI integration
 
 You can inject Hibernate Search's main entry points, `SearchSession` and `SearchMapping`, using CDI:
 
@@ -760,6 +760,35 @@ The startup is a bit slower than usual: it is mostly due to us dropping and recr
 We also inject some data and execute the mass indexer.
 
 In a real life application, it is obviously something you won't do at startup.
+====
+
+[[offline-startup]]
+== Offline startup
+
+By default, Hibernate Search sends a few requests to the Elasticsearch cluster on startup.
+If the Elasticsearch cluster is not necessarily up and running when Hibernate Search starts,
+this could cause a startup failure.
+
+To address this, you can configure Hibernate Search to not send any request on startup:
+
+* Disable Elasticsearch version checks on startup by setting the configuration property
+  link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.elasticsearch.version-check.enabled[`quarkus.hibernate-search-orm.elasticsearch.version-check.enabled`]
+  to `false`.
+* Disable schema management on startup by setting the configuration property
+  link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.schema-management.strategy[`quarkus.hibernate-search-orm.schema-management.strategy`]
+  to `none`.
+
+Of course, even with this configuration, Hibernate Search still won't be able to index anything or run search queries
+until the Elasticsearch cluster becomes accessible.
+
+[IMPORTANT]
+====
+If you disable automatic schema creation by setting `quarkus.hibernate-search-orm.schema-management.strategy` to `none`,
+you will have to create the schema manually at some point before your application starts persisting/updating entities
+and executing search requests.
+
+See link:{hibernate-search-doc-prefix}#mapper-orm-schema-management-manager[this section of the reference documentation]
+for more information.
 ====
 
 == Further reading

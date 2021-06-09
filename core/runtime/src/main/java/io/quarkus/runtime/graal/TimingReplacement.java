@@ -10,11 +10,11 @@ import io.quarkus.bootstrap.runner.Timing;
 final class TimingReplacement {
 
     @Alias
-    private static volatile long bootStartTime;
+    private static Timing main = null;
 
     @Substitute
     public static void mainStarted() {
-        bootStartTime = System.nanoTime();
+        main.bootStartTime = System.nanoTime();
     }
 
 }

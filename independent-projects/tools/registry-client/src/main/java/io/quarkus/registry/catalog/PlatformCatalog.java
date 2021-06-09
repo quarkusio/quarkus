@@ -1,11 +1,18 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.maven.ArtifactCoords;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
+import java.util.Map;
 
 public interface PlatformCatalog {
 
     List<Platform> getPlatforms();
 
-    ArtifactCoords getDefaultPlatform();
+    Map<String, Object> getMetadata();
+
+    @JsonIgnore
+    default Platform getRecommendedPlatform() {
+        final List<Platform> platforms = getPlatforms();
+        return platforms.isEmpty() ? null : platforms.get(0);
+    }
 }

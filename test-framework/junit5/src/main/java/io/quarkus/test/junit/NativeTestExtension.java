@@ -120,7 +120,31 @@ public class NativeTestExtension
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
             additionalProperties.putAll(devDbProps);
-            additionalProperties.putAll(testResourceManager.start());
+            Map<String, String> resourceManagerProps = testResourceManager.start();
+            Map<String, String> old = new HashMap<>();
+            for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
+                old.put(i.getKey(), System.getProperty(i.getKey()));
+                if (i.getValue() == null) {
+                    System.clearProperty(i.getKey());
+                } else {
+                    System.setProperty(i.getKey(), i.getValue());
+                }
+            }
+            context.getStore(ExtensionContext.Namespace.GLOBAL).put(NativeTestExtension.class.getName() + ".systemProps",
+                    new ExtensionContext.Store.CloseableResource() {
+                        @Override
+                        public void close() throws Throwable {
+                            for (Map.Entry<String, String> i : old.entrySet()) {
+                                old.put(i.getKey(), System.getProperty(i.getKey()));
+                                if (i.getValue() == null) {
+                                    System.clearProperty(i.getKey());
+                                } else {
+                                    System.setProperty(i.getKey(), i.getValue());
+                                }
+                            }
+                        }
+                    });
+            additionalProperties.putAll(resourceManagerProps);
 
             NativeImageLauncher launcher = new NativeImageLauncher(requiredTestClass);
             startLauncher(launcher, additionalProperties, () -> ssl = true);
@@ -151,10 +175,15 @@ public class NativeTestExtension
         }
     }
 
-    private void throwBootFailureException() {
+    private void throwBootFailureException() throws Exception {
         if (firstException != null) {
             Throwable throwable = firstException;
             firstException = null;
+
+            if (throwable instanceof Exception) {
+                throw (Exception) throwable;
+            }
+
             throw new RuntimeException(throwable);
         } else {
             throw new TestAbortedException("Boot failed");

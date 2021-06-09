@@ -10,7 +10,7 @@ final class ObjectMapperProducer {
     private ObjectMapperProducer() {
     }
 
-    // Try to get JSON-B from Arc but fallback to regular ObjectMapper creation
+    // Try to get the ObjectMapper from Arc but fallback to regular ObjectMapper creation
     // The fallback could be used for example in unit tests where Arc has not been initialized
     static ObjectMapper get() {
         ObjectMapper objectMapper = null;

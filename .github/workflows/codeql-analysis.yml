@@ -51,7 +51,7 @@ jobs:
 
     - if: matrix.language == 'java' 
       name: Build Java
-      run: mvn -B --settings .github/mvn-settings.xml -Dquickly-ci install
+      run: ./mvnw -B --settings .github/mvn-settings.xml -Dquickly-ci install
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1

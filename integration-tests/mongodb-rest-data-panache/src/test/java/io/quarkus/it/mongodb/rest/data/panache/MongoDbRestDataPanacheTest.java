@@ -15,13 +15,17 @@ import javax.ws.rs.core.MediaType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource.class)
+@DisabledOnOs(OS.WINDOWS)
 class MongoDbRestDataPanacheTest {
 
     private Author dostoevsky;

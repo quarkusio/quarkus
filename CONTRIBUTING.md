@@ -84,7 +84,7 @@ Just do the following:
 ```
 git clone git@github.com:quarkusio/quarkus.git
 cd quarkus
-export MAVEN_OPTS="-Xmx1563m"
+export MAVEN_OPTS="-Xmx4g"
 ./mvnw -Dquickly
 ```
 
@@ -189,11 +189,27 @@ with `./mvnw -Dquickly`.
 
 ##### `OutOfMemoryError` while importing
 
-After creating an IDEA project, the first import will most likely fail with an `OutOfMemoryError`.
+After creating an IDEA project, the first import might fail with an `OutOfMemory` error,
+as the size of the project requires more memory than the IDEA default settings allow.
+
+**Note** In some IDEA versions the `OutOfMemory` error goes unreported. 
+So if no error is reported but IDEA is still failing to find symbols or the dependencies are wrong in the imported project, then importing might have failed due to an unreported `OutOfMemory` exception.
+One can further investigate this by inspecting the `org.jetbrains.idea.maven.server.RemoteMavenServer36` process (or processes) using `JConsole`.
 
 To fix that, open the _Preferences_ window (or _Settings_ depending on your edition),
 then navigate to _Build, Execution, Deployment_ > _Build Tools_ > _Maven_ > _Importing_.
-In _VM options for importer_, raise the heap to at least 2 GB, e.g. `-Xmx2g -Xms2g`.
+In _VM options for importer_, raise the heap to at least 2 GB; some people reported
+needing more, e.g. `-Xmx8g`.
+
+In recent IDEA versions (e.g. 2020.3) this might not work because _VM options for importer_ get ignored when `.mvn/jdk.config` is present (see [IDEA-250160](https://youtrack.jetbrains.com/issue/IDEA-250160))
+it disregards the _VM options for importer_ settings.
+An alternative solution is to go to _Help_ > _Edit Custom Properties..._ and
+add the following line:
+
+`idea.maven.embedder.xmx=8g`
+
+After these configurations, you might need to run  _File_ -> _Invalidate Caches and Restart_ 
+and then trigger a `Reload all Maven projects`.
 
 ##### `package sun.misc does not exist` while building
 
@@ -225,13 +241,13 @@ Do the same with _Names count to use static import with '\*'_.
 
 * Clone the repository: `git clone https://github.com/quarkusio/quarkus.git`
 * Navigate to the directory: `cd quarkus`
-* Set Maven heap to 1.5GB `export MAVEN_OPTS="-Xmx1563m"`
+* Set Maven heap to 4GB `export MAVEN_OPTS="-Xmx4g"`
 * Invoke `./mvnw -Dquickly` from the root directory
 
 ```bash
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
-export MAVEN_OPTS="-Xmx1563m"
+export MAVEN_OPTS="-Xmx4g"
 ./mvnw -Dquickly
 # Wait... success!
 ```
@@ -243,10 +259,6 @@ Adding `-DskipTests=false -DskipITs=false` enables the tests.
 It will take much longer to build but will give you more guarantees on your code.
 
 You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
-
-By default the build will use the native image server. This speeds up the build, but can cause problems due to the cache
-not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
-`./mvnw install -Dnative-image.new-server=true`.
 
 ### Workflow tips
 
@@ -450,17 +462,13 @@ This project is an open source project, please act responsibly, be nice, polite 
 
 * The Maven build fails with `OutOfMemoryException`
 
-  Set Maven options to use 1.5GB of heap: `export MAVEN_OPTS="-Xmx1563m"`.
+  Set Maven options to use more memory: `export MAVEN_OPTS="-Xmx4g"`.
 
 * IntelliJ fails to import Quarkus Maven project with `java.lang.OutOfMemoryError: GC overhead limit exceeded` 
 
-  In IntelliJ IDEA (version older than `2019.2`) if you see problems in the Maven view claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
+  In IntelliJ IDEA if you see problems in the Maven view claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
 
-  To fix the issue, you need to update the Maven importing settings:
-  `Build, Execution, Deployment` > `Build Tools`> `Maven` > `Importing` > `VM options for importer`
-  To import Quarkus you need to define the JVM Max Heap Size (E.g. `-Xmx1g`)
-
-  **Note** As for now, we can't provide a unique Max Heap Size value. We have been reported to require from 768M to more than 3G to import Quarkus properly.
+  See section `IDEA Setup` as there are different possible solutions described.
 
 * Build hangs with DevMojoIT running infinitely
   ```

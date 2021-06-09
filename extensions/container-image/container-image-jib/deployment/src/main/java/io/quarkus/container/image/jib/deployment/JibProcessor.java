@@ -52,11 +52,9 @@ import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.container.util.PathsUtil;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSContainerImageBuildItem;
@@ -80,11 +78,6 @@ public class JibProcessor {
     @BuildStep
     public AvailableContainerImageExtensionBuildItem availability() {
         return new AvailableContainerImageExtensionBuildItem(JIB);
-    }
-
-    @BuildStep(onlyIf = JibBuild.class)
-    public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_JIB);
     }
 
     // when AppCDS are enabled and a container image build via Jib has been requested,
@@ -115,8 +108,9 @@ public class JibProcessor {
             Optional<AppCDSResultBuildItem> appCDSResult,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        Boolean buildContainerImage = containerImageConfig.build || buildRequest.isPresent();
+        Boolean pushContainerImage = containerImageConfig.push || pushRequest.isPresent();
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -139,7 +133,8 @@ public class JibProcessor {
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
-                Collections.singletonMap("container-image", container.getTargetImage().toString())));
+                Map.of("container-image", container.getTargetImage().toString(), "pull-required",
+                        pushContainerImage.toString())));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, JibBuild.class, NativeBuild.class })
@@ -152,8 +147,9 @@ public class JibProcessor {
             List<ContainerImageLabelBuildItem> containerImageLabels,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        Boolean buildContainerImage = containerImageConfig.build || buildRequest.isPresent();
+        Boolean pushContainerImage = containerImageConfig.push || pushRequest.isPresent();
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -171,7 +167,8 @@ public class JibProcessor {
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
-                Collections.singletonMap("container-image", container.getTargetImage().toString())));
+                Map.of("container-image", container.getTargetImage().toString(), "pull-required",
+                        pushContainerImage.toString())));
     }
 
     private JibContainer containerize(ContainerImageConfig containerImageConfig,
@@ -227,10 +224,11 @@ public class JibProcessor {
         CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                 log::info);
         RegistryImage registryImage = RegistryImage.named(imageReference);
-        registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
-        registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
         if (username.isPresent() && password.isPresent()) {
             registryImage.addCredential(username.get(), password.get());
+        } else {
+            registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
+            registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
         }
         return registryImage;
     }

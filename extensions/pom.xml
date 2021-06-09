@@ -47,7 +47,6 @@
         <module>micrometer</module>
         <module>micrometer-registry-prometheus</module>
         <module>opentelemetry</module>
-        <module>opentelemetry-exporter-jaeger</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>
@@ -129,6 +128,7 @@
         <module>oidc-token-propagation</module>
         <module>oidc-client</module>
         <module>oidc-client-filter</module>
+        <module>oidc-client-reactive-filter</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
 
@@ -179,6 +179,7 @@
         <!-- GraphQL -->
         <module>vertx-graphql</module>
         <module>smallrye-graphql</module>
+        <module>smallrye-graphql-client</module>
 
         <!-- Logging -->
         <module>logging-json</module>
@@ -196,6 +197,12 @@
     </modules>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

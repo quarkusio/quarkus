@@ -4,8 +4,8 @@ import java.util.Map;
 
 import javax.ws.rs.Path;
 
+import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
 
 @Path("missing-template")
 public class MissingTemplateResource {

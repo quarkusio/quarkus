@@ -167,10 +167,22 @@ Below is a summary of the options.
 |No
 |Yes
 |No
+|SecretKey support
+|No
+|In JsonWebKey format
+|No
 |InnerSigned/Encrypted or Encrypted tokens
 |Introspection
 |Local Verification
 |Introspection
+|Custom Token Verificition
+|No
+|With Injected JWTParser
+|No
+|Accept JWT as cookie
+|No
+|Yes
+|No
 |===
 
 === LDAP
@@ -194,6 +206,25 @@ You can also use link:security-testing#configuring-user-information[User Propert
 
 One can combine multiple authentication mechanisms if they get the authentication credentials from the different sources.
 For example, combining built-in `Basic` and `quarkus-oidc` `Bearer` authentication mechanisms is allowed, but combining `quarkus-oidc` `Bearer` and `smallrye-jwt` authentication mechanisms is not allowed because both will attempt to verify the token extracted from the HTTP `Authorization Bearer` scheme.
+
+=== Path Specific Authentication Mechanism
+
+You can enforce that only a single authentication mechanism is selected for a given request path, for example:
+[source,properties]
+----
+quarkus.http.auth.permission.basic-or-bearer.paths=/service
+quarkus.http.auth.permission.basic-or-bearer.policy=authenticated
+
+quarkus.http.auth.permission.basic.paths=/basic-only
+quarkus.http.auth.permission.basic.policy=authenticated
+quarkus.http.auth.permission.basic.auth-mechanism=basic
+
+quarkus.http.auth.permission.bearer.paths=/bearer-only
+quarkus.http.auth.permission.bearer.policy=authenticated
+quarkus.http.auth.permission.bearer.auth-mechanism=bearer
+----
+
+The value of the `auth-mechanism` property must match the authentication scheme supported by HttpAuthenticationMechanism such as `basic` or `bearer` or `form`, etc.
 
 == Proactive Authentication
 

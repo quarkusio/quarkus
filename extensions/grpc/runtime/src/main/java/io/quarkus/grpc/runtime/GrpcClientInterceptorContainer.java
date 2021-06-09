@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Prioritized;
 import javax.inject.Inject;
@@ -13,8 +14,9 @@ import io.grpc.ClientInterceptor;
 
 @ApplicationScoped
 public class GrpcClientInterceptorContainer {
-    // Cannot be empty, as we have the IO Thread client interceptor
+
     @Inject
+    @Any
     Instance<ClientInterceptor> interceptors;
 
     public List<ClientInterceptor> getSortedInterceptors() {

@@ -15,13 +15,13 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.vault.VaultKVSecretEngine;
-import io.quarkus.vault.VaultTransitExportKeyType;
 import io.quarkus.vault.VaultTransitSecretEngine;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.transit.ClearData;
 import io.quarkus.vault.transit.KeyConfigRequestDetail;
 import io.quarkus.vault.transit.KeyCreationRequestDetail;
 import io.quarkus.vault.transit.SigningInput;
+import io.quarkus.vault.transit.VaultTransitExportKeyType;
 
 @ApplicationScoped
 public class VaultTestService {

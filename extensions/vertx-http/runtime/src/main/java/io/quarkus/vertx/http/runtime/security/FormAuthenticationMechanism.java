@@ -24,6 +24,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
 public class FormAuthenticationMechanism implements HttpAuthenticationMechanism {
+    private static final String FORM = "form";
 
     private static final Logger log = Logger.getLogger(FormAuthenticationMechanism.class);
 
@@ -74,8 +75,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                 return;
                             }
                             securityContext
-                                    .authenticate(new UsernamePasswordAuthenticationRequest(jUsername,
-                                            new PasswordCredential(jPassword.toCharArray())))
+                                    .authenticate(HttpSecurityUtils
+                                            .setRoutingContextAttribute(new UsernamePasswordAuthenticationRequest(jUsername,
+                                                    new PasswordCredential(jPassword.toCharArray())), exchange))
                                     .subscribe().with(new Consumer<SecurityIdentity>() {
                                         @Override
                                         public void accept(SecurityIdentity identity) {
@@ -152,14 +154,15 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
 
-        if (context.normalisedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
+        if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
             //we always re-auth if it is a post to the auth URL
             return runFormAuth(context, identityProviderManager);
         } else {
             PersistentLoginManager.RestoreResult result = loginManager.restore(context);
             if (result != null) {
                 Uni<SecurityIdentity> ret = identityProviderManager
-                        .authenticate(new TrustedAuthenticationRequest(result.getPrincipal()));
+                        .authenticate(HttpSecurityUtils
+                                .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
                 return ret.onItem().invoke(new Consumer<SecurityIdentity>() {
                     @Override
                     public void accept(SecurityIdentity securityIdentity) {
@@ -173,7 +176,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        if (context.normalisedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
+        if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
             log.debugf("Serving form auth error page %s for %s", loginPage, context);
             // This method would no longer be called if authentication had already occurred.
             return getRedirect(context, errorPage);
@@ -192,6 +195,6 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation);
+        return new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM);
     }
 }

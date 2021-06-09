@@ -13,7 +13,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class SslProcessor {
 
     private static final String JAVA_11_PLUS_SSL_LOGGER = "sun.security.ssl.SSLLogger";
-    private static final String JAVA_8_PLUS_SSL_LOGGER = "sun.security.ssl.Debug";
 
     SslConfig ssl;
 
@@ -33,16 +32,6 @@ public class SslProcessor {
 
     @BuildStep
     void runtime(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized) {
-        registerIfExists(reinitialized, JAVA_11_PLUS_SSL_LOGGER);
-        registerIfExists(reinitialized, JAVA_8_PLUS_SSL_LOGGER);
-    }
-
-    private void registerIfExists(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized, String className) {
-        try {
-            Class.forName(className, false, Thread.currentThread().getContextClassLoader());
-            reinitialized.produce(new RuntimeReinitializedClassBuildItem(className));
-        } catch (ClassNotFoundException ignored) {
-
-        }
+        reinitialized.produce(new RuntimeReinitializedClassBuildItem(JAVA_11_PLUS_SSL_LOGGER));
     }
 }

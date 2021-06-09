@@ -33,7 +33,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 8 or 11+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 [TIP]
@@ -50,7 +50,7 @@ You can verify which JDK Maven uses by running `mvn --version`.
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
 dependency injection, this endpoint uses a `greeting` bean.
 
-image::getting-started-architecture.png[alt=Architecture]
+image::getting-started-architecture.png[alt=Architecture, align=center]
 
 This guide also covers the testing of the endpoint.
 
@@ -461,7 +461,7 @@ the dependencies are copied into subdirectories of `quarkus-app/lib/`.
 
 You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`
 
-NOTE: If you want to deploy your application soemwhere (typically in a container), you need to deploy the whole `quarkus-app` directory.
+NOTE: If you want to deploy your application somewhere (typically in a container), you need to deploy the whole `quarkus-app` directory.
 
 NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
 
@@ -493,7 +493,7 @@ Furthermore, users can supply a custom banner by placing the banner file in `src
 This guide covered the creation of an application using Quarkus.
 However, there is much more.
 We recommend continuing the journey with the link:building-native-image[building a native executable guide], where you learn about creating a native executable and packaging it in a container.
-If you are interested in reactive, we recommend the link:getting-started-reactive[Getting started with reactive guide], where you can see how to implement reactive applications with Quarkus.
+If you are interested in reactive, we recommend the xref:getting-started-reactive.adoc[Getting Started with Reactive guide], where you can see how to implement reactive applications with Quarkus.
 
 In addition, the link:tooling[tooling guide] document explains how to:
 

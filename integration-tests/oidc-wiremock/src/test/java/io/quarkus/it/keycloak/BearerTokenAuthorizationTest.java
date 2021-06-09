@@ -24,7 +24,7 @@ public class BearerTokenAuthorizationTest {
     public void testSecureAccessSuccessPreferredUsername() {
         for (String username : Arrays.asList("alice", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username, new HashSet<>(Arrays.asList("user", "admin"))))
-                    .when().get("/api/users/preferredUserName")
+                    .when().get("/api/users/preferredUserName/bearer")
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo(username));
@@ -34,7 +34,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testAccessAdminResource() {
         RestAssured.given().auth().oauth2(getAccessToken("admin", new HashSet<>(Arrays.asList("admin"))))
-                .when().get("/api/admin")
+                .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
@@ -43,7 +43,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testAccessAdminResourceAudienceArray() {
         RestAssured.given().auth().oauth2(getAccessTokenAudienceArray("admin", new HashSet<>(Arrays.asList("admin"))))
-                .when().get("/api/admin")
+                .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
@@ -52,7 +52,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testDeniedAccessAdminResource() {
         RestAssured.given().auth().oauth2(getAccessToken("alice", new HashSet<>(Arrays.asList("user"))))
-                .when().get("/api/admin")
+                .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(403);
     }
@@ -60,8 +60,9 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testDeniedNoBearerToken() {
         RestAssured.given()
-                .when().get("/api/users/me").then()
-                .statusCode(401);
+                .when().get("/api/users/me/bearer").then()
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     @Test
@@ -69,9 +70,10 @@ public class BearerTokenAuthorizationTest {
         String token = getExpiredAccessToken("alice", new HashSet<>(Arrays.asList("user")));
 
         RestAssured.given().auth().oauth2(token).when()
-                .get("/api/users/me")
+                .get("/api/users/me/bearer")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     @Test
@@ -79,9 +81,10 @@ public class BearerTokenAuthorizationTest {
         String token = getAccessTokenWrongIssuer("alice", new HashSet<>(Arrays.asList("user")));
 
         RestAssured.given().auth().oauth2(token).when()
-                .get("/api/users/me")
+                .get("/api/users/me/bearer")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     @Test
@@ -89,9 +92,10 @@ public class BearerTokenAuthorizationTest {
         String token = getAccessTokenWrongAudience("alice", new HashSet<>(Arrays.asList("user")));
 
         RestAssured.given().auth().oauth2(token).when()
-                .get("/api/users/me")
+                .get("/api/users/me/bearer")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     private String getAccessToken(String userName, Set<String> groups) {
@@ -99,8 +103,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
-                .jws()
-                .keyId("1")
                 .sign();
     }
 
@@ -109,8 +111,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience("https://services.com")
-                .jws()
-                .keyId("1")
                 .sign();
     }
 
@@ -119,8 +119,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience(new HashSet<>(Arrays.asList("https://service.example.com", "https://frontendservice.example.com")))
-                .jws()
-                .keyId("1")
                 .sign();
     }
 
@@ -130,8 +128,6 @@ public class BearerTokenAuthorizationTest {
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
                 .expiresAt(Instant.MIN)
-                .jws()
-                .keyId("1")
                 .sign();
     }
 
@@ -140,8 +136,6 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://example.com")
                 .audience("https://service.example.com")
-                .jws()
-                .keyId("1")
                 .sign();
     }
 

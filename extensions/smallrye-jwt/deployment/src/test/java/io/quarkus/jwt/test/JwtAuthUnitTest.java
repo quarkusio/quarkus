@@ -1,5 +1,7 @@
 package io.quarkus.jwt.test;
 
+import static org.hamcrest.Matchers.equalTo;
+
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
@@ -48,11 +50,11 @@ public class JwtAuthUnitTest {
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
     }
 
-    // Basic @ServletSecurity tests
     @Test()
     public void testSecureAccessFailure() {
         RestAssured.when().get("/endp/verifyInjectedIssuer").then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     /**

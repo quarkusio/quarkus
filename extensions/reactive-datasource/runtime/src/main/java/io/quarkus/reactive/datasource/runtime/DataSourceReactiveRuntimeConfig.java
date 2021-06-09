@@ -28,7 +28,6 @@ public class DataSourceReactiveRuntimeConfig {
 
     /**
      * The datasource pool maximum size.
-     * Note that a separate pool instance is started for each thread using it: the size limits each individual pool instance.
      */
     @ConfigItem
     public OptionalInt maxSize = OptionalInt.empty();
@@ -88,8 +87,7 @@ public class DataSourceReactiveRuntimeConfig {
     public PfxConfiguration keyCertificatePfx = new PfxConfiguration();
 
     /**
-     * Deprecated: this will be removed with no replacement.
-     * We always return a threadsafe pool now, using a separate Pool instance for each Thread.
+     * Deprecated: this was removed and is no longer available.
      * 
      * @Deprecated
      */
@@ -110,7 +108,14 @@ public class DataSourceReactiveRuntimeConfig {
     public Duration reconnectInterval = Duration.ofSeconds(1L);
 
     /**
-     * The maximum time without data written to or read from a connection before it is closed.
+     * The hostname verification algorithm to use in case the server's identity should be checked.
+     * Should be HTTPS, LDAPS or an empty string.
+     */
+    @ConfigItem
+    public Optional<String> hostnameVerificationAlgorithm = Optional.empty();
+
+    /**
+     * The maximum time a connection remains unused in the pool before it is closed.
      */
     @ConfigItem(defaultValueDocumentation = "no timeout")
     public Optional<Duration> idleTimeout = Optional.empty();

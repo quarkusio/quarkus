@@ -162,11 +162,12 @@ public class ArcConfig {
     public boolean detectUnusedFalsePositives;
 
     /**
-     * If set to true then the container attempts to detect usage of <i>wrong</i> annotations.
+     * If set to true then the container attempts to detect <i>wrong</i> usages of annotations and eventually fails the build to
+     * prevent unexpected behavior of a Quarkus application.
      * <p>
-     * A <i>wrong</i> annotation may lead to unexpected behavior in a Quarkus application. A typical example is
-     * {@code @javax.ejb.Singleton} which is often confused with {@code @javax.inject.Singleton}. As a result a component
-     * annotated with {@code @javax.ejb.Singleton} can be completely ignored.
+     * A typical example is {@code @javax.ejb.Singleton} which is often confused with {@code @javax.inject.Singleton}. As a
+     * result a component annotated with {@code @javax.ejb.Singleton} would be completely ignored. Another example is an inner
+     * class annotated with a scope annotation - this component would be again completely ignored.
      */
     @ConfigItem(defaultValue = "true")
     public boolean detectWrongAnnotations;

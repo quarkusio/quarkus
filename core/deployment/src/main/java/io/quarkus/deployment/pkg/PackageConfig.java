@@ -2,6 +2,7 @@ package io.quarkus.deployment.pkg;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -55,6 +56,37 @@ public class PackageConfig {
      */
     @ConfigItem
     public Optional<List<String>> userConfiguredIgnoredEntries;
+
+    /**
+     * List of all the dependencies that have been defined as optional to include into the final package of the application.
+     * Each optional dependency needs to be expressed in the following format:
+     * <p>
+     * groupId:artifactId:classifier:type
+     * <p>
+     * With the classifier and type being optional.
+     * <p>
+     * If the type is missing, the artifact is assumed to be of type {@code jar}.
+     * <p>
+     * This parameter is optional, if absent, no optional dependencies will be included into the final package of
+     * the application.
+     * <p>
+     * For backward compatibility reasons, this parameter is ignored by default and can be enabled by setting the
+     * parameter {@code quarkus.package.filter-optional-dependencies} to {@code true}.
+     * <p>
+     * This parameter is meant to be used in modules where multi-builds have been configured to avoid getting a final
+     * package with unused dependencies.
+     */
+    @ConfigItem
+    public Optional<Set<String>> includedOptionalDependencies;
+
+    /**
+     * Flag indicating whether the optional dependencies should be filtered out or not.
+     * <p>
+     * This parameter is meant to be used in modules where multi-builds have been configured to avoid getting a final
+     * package with unused dependencies.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean filterOptionalDependencies;
 
     /**
      * The suffix that is applied to the runner jar and native images
@@ -142,6 +174,10 @@ public class PackageConfig {
     public boolean isLegacyJar() {
         return (type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
                 type.equalsIgnoreCase(PackageConfig.LEGACY));
+    }
+
+    public boolean isUberJar() {
+        return type.equalsIgnoreCase(PackageConfig.UBER_JAR);
     }
 
     @ConfigGroup

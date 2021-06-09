@@ -12,7 +12,7 @@ import io.quarkus.qute.TemplateExtension;
 @Vetoed // Make sure no bean is created from this class
 @TemplateExtension
 public class MapTemplateExtensions {
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "rawtypes" })
     @TemplateExtension(matchName = ANY)
     static Object map(Map map, String name) {
         switch (name) {
@@ -29,11 +29,15 @@ public class MapTemplateExtensions {
             case "isEmpty":
                 return map.isEmpty();
             default:
-                return map.getOrDefault(name, Result.NOT_FOUND);
+                Object val = map.get(name);
+                if (val == null) {
+                    return map.containsKey(name) ? null : Result.NOT_FOUND;
+                }
+                return val;
         }
     }
 
-    static Object get(Map<?, ?> map, Object key) {
+    static <V> V get(Map<?, V> map, Object key) {
         return map.get(key);
     }
 

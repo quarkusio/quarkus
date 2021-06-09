@@ -1,6 +1,5 @@
 package io.quarkus.registry.client.maven;
 
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
@@ -18,11 +17,11 @@ public class MavenNonPlatformExtensionsResolver
         implements RegistryNonPlatformExtensionsResolver {
 
     private final RegistryNonPlatformExtensionsConfig config;
-    private final MavenArtifactResolver artifactResolver;
+    private final MavenRegistryArtifactResolver artifactResolver;
     private final MessageWriter log;
 
     public MavenNonPlatformExtensionsResolver(RegistryNonPlatformExtensionsConfig config,
-            MavenArtifactResolver artifactResolver, MessageWriter log) {
+            MavenRegistryArtifactResolver artifactResolver, MessageWriter log) {
         this.config = Objects.requireNonNull(config);
         this.artifactResolver = Objects.requireNonNull(artifactResolver);
         this.log = Objects.requireNonNull(log);
@@ -35,13 +34,15 @@ public class MavenNonPlatformExtensionsResolver
         final Artifact catalogArtifact = new DefaultArtifact(baseCoords.getGroupId(),
                 baseCoords.getArtifactId(), quarkusVersion, baseCoords.getType(), baseCoords.getVersion());
         log.debug("Resolving non-platform extension catalog %s", catalogArtifact);
+
         final Path jsonFile;
         try {
-            jsonFile = artifactResolver.resolve(catalogArtifact).getArtifact().getFile().toPath();
+            jsonFile = artifactResolver.resolve(catalogArtifact);
         } catch (Exception e) {
             log.debug("Failed to resolve non-platform extension catalog %s", catalogArtifact);
             return null;
         }
+
         try {
             return JsonCatalogMapperHelper.deserialize(jsonFile, JsonExtensionCatalog.class);
         } catch (Exception e) {

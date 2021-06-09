@@ -26,6 +26,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-caffeine-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny-deployment</artifactId>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

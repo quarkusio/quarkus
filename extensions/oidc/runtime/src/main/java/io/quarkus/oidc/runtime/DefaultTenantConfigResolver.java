@@ -75,12 +75,26 @@ public class DefaultTenantConfigResolver {
     }
 
     Uni<TenantConfigContext> resolveContext(RoutingContext context) {
-        Uni<TenantConfigContext> tenantContext = getDynamicTenantContext(context);
-
-        if (tenantContext == null) {
-            tenantContext = Uni.createFrom().item(getStaticTenantContext(context));
+        Uni<TenantConfigContext> uniTenantContext = getDynamicTenantContext(context);
+        if (uniTenantContext != null) {
+            return uniTenantContext;
         }
-        return tenantContext;
+        TenantConfigContext tenantContext = getStaticTenantContext(context);
+        if (tenantContext != null && !tenantContext.ready) {
+
+            // check if it the connection has already been created            
+            TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
+                    .get(tenantContext.oidcConfig.tenantId.get());
+            if (readyTenantContext == null) {
+                LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
+                        tenantContext.oidcConfig.tenantId.get());
+                return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
+            } else {
+                tenantContext = readyTenantContext;
+            }
+        }
+
+        return Uni.createFrom().item(tenantContext);
     }
 
     private TenantConfigContext getStaticTenantContext(RoutingContext context) {
@@ -102,7 +116,9 @@ public class DefaultTenantConfigResolver {
         TenantConfigContext configContext = tenantId != null ? tenantConfigBean.getStaticTenantsConfig().get(tenantId) : null;
         if (configContext == null) {
             if (tenantId != null && !tenantId.isEmpty()) {
-                LOG.debugf("No configuration with a tenant id '%s' has been found, using the default configuration");
+                LOG.debugf(
+                        "Registered TenantResolver has not provided the configuration for tenant '%s', using the default tenant",
+                        tenantId);
             }
             configContext = tenantConfigBean.getDefaultTenant();
         }

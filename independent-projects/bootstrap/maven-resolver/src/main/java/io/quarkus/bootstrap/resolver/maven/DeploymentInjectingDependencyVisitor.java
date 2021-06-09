@@ -6,6 +6,7 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
@@ -71,6 +72,8 @@ public class DeploymentInjectingDependencyVisitor {
     private final Deque<Collection<Exclusion>> exclusionStack = new ArrayDeque<>();
 
     public final Set<AppArtifactKey> allRuntimeDeps = new HashSet<>();
+
+    private final Map<String, CapabilityContract> capabilitiesContracts = new HashMap<>();
 
     public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps,
             List<RemoteRepository> mainRepos, AppModel.Builder appBuilder) throws BootstrapDependencyProcessingException {
@@ -144,6 +147,8 @@ public class DeploymentInjectingDependencyVisitor {
                 injectDeploymentDependencies(cd.getExtensionDependency());
             }
         }
+
+        appBuilder.setCapabilitiesContracts(capabilitiesContracts);
     }
 
     private boolean isRuntimeArtifact(AppArtifactKey key) {
@@ -466,6 +471,12 @@ public class DeploymentInjectingDependencyVisitor {
             }
             activated = true;
             appBuilder.handleExtensionProperties(props, runtimeArtifact.toString());
+
+            final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
+            if (providesCapabilities != null) {
+                capabilitiesContracts.put(toGactv(runtimeArtifact),
+                        CapabilityContract.providesCapabilities(toGactv(runtimeArtifact), providesCapabilities));
+            }
         }
     }
 
@@ -576,5 +587,10 @@ public class DeploymentInjectingDependencyVisitor {
             appArtifact.setPaths(PathsCollection.of(file.toPath()));
         }
         return appArtifact;
+    }
+
+    private static String toGactv(Artifact a) {
+        return a.getGroupId() + ":" + a.getArtifactId() + ":" + a.getClassifier() + ":" + a.getExtension() + ":"
+                + a.getVersion();
     }
 }

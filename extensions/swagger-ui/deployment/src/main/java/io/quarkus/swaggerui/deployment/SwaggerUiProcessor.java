@@ -161,12 +161,11 @@ public class SwaggerUiProcessor {
                     .displayOnNotFoundPage("Open API UI")
                     .routeConfigKey("quarkus.swagger-ui.path")
                     .handler(handler)
-                    .requiresLegacyRedirect()
                     .build());
+
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .route(swaggerUiConfig.path + "/*")
+                    .route(swaggerUiConfig.path + "*")
                     .handler(handler)
-                    .requiresLegacyRedirect()
                     .build());
         }
     }

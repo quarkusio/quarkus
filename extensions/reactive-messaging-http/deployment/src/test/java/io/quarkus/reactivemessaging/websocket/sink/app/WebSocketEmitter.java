@@ -7,7 +7,6 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-@SuppressWarnings("rawtypes")
 @ApplicationScoped
 public class WebSocketEmitter {
 

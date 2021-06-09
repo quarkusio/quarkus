@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
 import static org.fusesource.jansi.Ansi.ansi;
 
 import java.io.File;
@@ -27,6 +28,7 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
@@ -102,8 +104,12 @@ public class CreateJBangMojo extends AbstractMojo {
                 StringUtils.defaultIfBlank(bomVersion, null),
                 QuarkusProjectHelper.getCatalogResolver(mvn, log), mvn, log);
 
+        final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder()
+                .catalog(catalog)
+                .artifactResolver(mvn)
+                .build();
         final CreateJBangProject createJBangProject = new CreateJBangProject(QuarkusProject.of(projectDirPath, catalog,
-                QuarkusProjectHelper.getResourceLoader(catalog, mvn), log, BuildTool.MAVEN))
+                codestartsResourceLoader, log, BuildTool.MAVEN))
                         .extensions(extensions)
                         .setValue("noJBangWrapper", noJBangWrapper);
 

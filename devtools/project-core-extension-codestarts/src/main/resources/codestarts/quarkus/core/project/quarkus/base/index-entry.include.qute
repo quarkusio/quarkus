@@ -1,7 +1,0 @@
-        <div class="example-code">
-            <h3>{title}</h3>
-            <p>{description}</p>
-            {#if path}<p><code>@Path: <a href="{path}" class="path-link" target="_blank">{path}</a></code></p>{/if}
-            {#if related-guide-section}<p><a href="{related-guide-section}" class="guide-link" target="_blank">Related guide section...</a></p>{/if}
-            {#insert body}{/}
-        </div>

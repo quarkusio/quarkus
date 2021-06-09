@@ -36,11 +36,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-codestarts</artifactId>
+            <artifactId>quarkus-devtools-base-codestarts</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.qute</groupId>
-            <artifactId>qute-generator</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-codestarts</artifactId>
         </dependency>
         <!-- user prompt -->
         <dependency>
@@ -102,30 +102,6 @@
         <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus.http</groupId>
-            <artifactId>quarkus-http-websockets-jsr</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jboss.spec.javax.servlet</groupId>
-                    <artifactId>jboss-servlet-api_4.0_spec</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.spec.javax.websocket</groupId>
-                    <artifactId>
-                        jboss-websocket-api_1.1_spec
-                    </artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.websocket</groupId>
-            <artifactId>jakarta.websocket-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

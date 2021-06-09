@@ -16,7 +16,7 @@ To complete this guide, you need:
 
 * roughly 5 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * access to an OpenShift cluster (Minishift is a viable option)
 * OpenShift CLI (Optional. Only required for manually deploying)
@@ -395,3 +395,7 @@ quarkus.container-image.registry=image-registry.openshift-image-registry.svc:500
 ----
 
 The application can then be deployed to OpenShift Serverless by enabling the standard `quarkus.kubernetes.deploy=true` property.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-openshift-openshift-config.adoc[opts=optional, leveloffset=+1]

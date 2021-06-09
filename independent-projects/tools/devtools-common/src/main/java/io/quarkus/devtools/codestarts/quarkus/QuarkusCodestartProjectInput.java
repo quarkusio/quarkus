@@ -2,52 +2,47 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.maven.ArtifactCoords;
 import java.util.Collection;
 import java.util.Set;
 
 public final class QuarkusCodestartProjectInput extends CodestartProjectInput {
     private final BuildTool buildTool;
-    private final Collection<AppArtifactCoords> extensions;
-    private final Set<String> overrideExamples;
-    private final boolean noExamples;
-    private final boolean noDockerfiles;
-    private final boolean noBuildToolWrapper;
+    private final Collection<ArtifactCoords> extensions;
+    private final Collection<ArtifactCoords> platforms;
+    private final String example;
+    private Set<AppContent> appContent;
 
     public QuarkusCodestartProjectInput(QuarkusCodestartProjectInputBuilder builder) {
         super(builder);
         this.extensions = builder.extensions;
-        this.overrideExamples = builder.overrideExamples;
+        this.platforms = builder.platforms;
+        this.example = builder.example;
         this.buildTool = requireNonNull(builder.buildTool, "buildTool is required");
-        this.noExamples = builder.noExamples;
-        this.noDockerfiles = builder.noDockerfiles;
-        this.noBuildToolWrapper = builder.noBuildToolWrapper;
+        this.appContent = builder.appContent;
     }
 
     public static QuarkusCodestartProjectInputBuilder builder() {
         return new QuarkusCodestartProjectInputBuilder();
     }
 
-    public Collection<AppArtifactCoords> getExtensions() {
+    public Collection<ArtifactCoords> getExtensions() {
         return extensions;
     }
 
-    public Set<String> getOverrideExamples() {
-        return overrideExamples;
+    public Collection<ArtifactCoords> getPlatforms() {
+        return platforms;
     }
 
-    public boolean noExamples() {
-        return noExamples;
+    public String getExample() {
+        return example;
     }
 
-    public boolean noDockerfiles() {
-        return noDockerfiles;
-    }
-
-    public boolean noBuildToolWrapper() {
-        return noBuildToolWrapper;
+    public Set<AppContent> getAppContent() {
+        return appContent;
     }
 
     public BuildTool getBuildTool() {

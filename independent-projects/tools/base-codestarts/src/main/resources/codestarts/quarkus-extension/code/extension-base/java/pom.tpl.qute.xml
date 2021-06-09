@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+{#if parent}
+    <parent>
+        <groupId>{parent.group-id}</groupId>
+        <artifactId>{parent.artifact-id}</artifactId>
+        <version>{parent.version}</version>
+        {#if parent.relative-path}
+        <relativePath>{parent.relative-path}</relativePath>
+        {/if}
+    </parent>
+    {#if group-id and group-id ne parent.group-id}
+    <groupId>{group-id}</groupId>
+    {/if}
+    {#if version and version ne parent.version}
+    <version>{version}</version>
+    {/if}
+{#else}
+    <groupId>{group-id}</groupId>
+    <version>{version}</version>
+{/if}
+    <artifactId>{namespace.id}{extension.id}-parent</artifactId>
+{#if extension.name}
+    <name>{namespace.name}{extension.name} - Parent</name>
+{/if}
+    <packaging>pom</packaging>
+
+    {#if !properties.from-parent}
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+        {#if quarkus.version}<quarkus.version>{quarkus.version}</quarkus.version>{/if}
+        {#if maven.compiler-plugin-version}<compiler-plugin.version>{maven.compiler-plugin-version}</compiler-plugin.version>{/if}
+        {#if maven.surefire-plugin.version}
+        <surefire-plugin.version>{maven.surefire-plugin.version}</surefire-plugin.version>
+        <failsafe-plugin.version>$\{surefire-plugin.version}</failsafe-plugin.version>
+        {/if}
+    </properties>
+
+    {/if}
+    <modules>
+        <module>deployment</module>
+        <module>runtime</module>
+    </modules>
+{#if quarkus.bom}
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>{quarkus.bom.group-id}</groupId>
+                <artifactId>{quarkus.bom.artifact-id}</artifactId>
+                <version>{quarkus.bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+{/if}
+{#if quarkus.version or maven.compiler-plugin-version or maven.surefire-plugin.version}
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                {#if quarkus.version}
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>$\{quarkus.version}</version>
+                </plugin>
+                {/if}
+                {#if maven.surefire-plugin.version}
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>$\{surefire-plugin.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                            <maven.home>$\{maven.home}</maven.home>
+                            <maven.repo>$\{settings.localRepository}</maven.repo>
+                        </systemPropertyVariables>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>$\{failsafe-plugin.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                            <maven.home>$\{maven.home}</maven.home>
+                            <maven.repo>$\{settings.localRepository}</maven.repo>
+                        </systemPropertyVariables>
+                    </configuration>
+                </plugin>
+                {/if}
+                {#if maven.compiler-plugin-version}
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>$\{compiler-plugin.version}</version>
+                </plugin>
+                {/if}
+            </plugins>
+        </pluginManagement>
+    </build>
+{/if}
+</project>

@@ -1,0 +1,642 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Using the REST Client Reactive
+
+include::./attributes.adoc[]
+
+This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
+REST Client Reactive is a non-blocking counterpart of the RESTEasy REST Client.
+
+If your application uses a client and exposes REST endpoints, please use link:resteasy-reactive.adoc[RESTEasy Reactive]
+for the server part.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `rest-client-reactive-quickstart` {quickstarts-tree-url}/rest-client-reactive-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=rest-client-reactive-quickstart \
+    -DclassName="org.acme.rest.client.CountriesResource" \
+    -Dpath="/country" \
+    -Dextensions="resteasy-reactive-jackson,rest-client-reactive-jackson"
+cd rest-client-reactive-quickstart
+----
+
+This command generates the Maven project with a REST endpoint and imports:
+
+* the `resteasy-reactive-jackson` extension for the REST server support. Use `resteasy-reactive` instead if you do not wish to use Jackson;
+* the `rest-client-reactive-jackson` extension for the REST client support. Use `rest-client-reactive` instead if you do not wish to use Jackson
+
+If you already have your Quarkus project configured, you can add the `rest-client-reactive-jackson` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="rest-client-reactive-jackson"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+</dependency>
+----
+
+== Setting up the model
+
+In this guide we will be demonstrating how to consume part of the REST API supplied by the link:https://restcountries.eu[restcountries.eu] service.
+Our first order of business is to setup the model we will be using, in the form of a `Country` POJO.
+
+Create a `src/main/java/org/acme/rest/client/Country.java` file and set the following content:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import java.util.List;
+
+public class Country {
+
+    public String name;
+    public String alpha2Code;
+    public String capital;
+    public List<Currency> currencies;
+
+    public static class Currency {
+        public String code;
+        public String name;
+        public String symbol;
+    }
+}
+----
+
+The model above is only a subset of the fields provided by the service (thus the `@JsonIgnoreProperties` annotation),
+but it suffices for the purposes of this guide.
+
+== Create the interface
+
+Using the REST Client Reactive is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/CountriesService.java` and have the following content:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import java.util.Set;
+
+@Path("/v2")
+@RegisterRestClient
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{countryName}")
+    Set<Country> getByName(String countryName);
+}
+----
+
+The `getByName` method gives our code the ability to query a country by name from the REST Countries API.
+The client will handle all the networking and marshalling leaving our code clean of such technical details.
+
+[NOTE]
+====
+No `@PathParam` annotation is necessary on `countryName` as the name of the parameter matches the value used in the `@Path` annotation
+====
+
+The purpose of the annotations in the code above is the following:
+
+* `@RegisterRestClient` allows Quarkus to know that this interface is meant to be available for
+CDI injection as a REST Client
+* `@Path`, `@GET` and `@PathParam` are the standard JAX-RS annotations used to define how to access the service
+* `@Produces` defines the expected content-type
+
+[NOTE]
+====
+When the `quarkus-rest-client-reactive-jackson` extension is installed, Quarkus will use the `application/json` media type
+by default for most return values, unless the media type is explicitly set via `@Produces` or `@Consumes` annotations.
+
+If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
+It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
+====
+
+[WARNING]
+====
+The `getByName` method above is a blocking call. It should not be invoked on the event loop.
+The <<async-support>> section describes how to make non-blocking calls.
+====
+
+=== Query Parameters
+
+If the GET request requires query parameters you can leverage the `@QueryParam("parameter-name")` annotation instead of
+(or in addition to) the `@PathParam`. Path and query parameters can be combined, as required, as illustrated in the example below.
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import java.util.Set;
+
+@Path("/v2")
+@RegisterRestClient
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{region}")
+    Set<Country> getByRegion(String region, @QueryParam("city") String city);
+}
+----
+
+
+== Create the configuration
+
+In order to determine the base URL to which REST calls will be made, the REST Client uses configuration from `application.properties`.
+The name of the property needs to follow a certain convention which is best displayed in the following code:
+
+[source,properties]
+----
+# Your configuration properties
+org.acme.rest.client.CountriesService/mp-rest/url=https://restcountries.eu/rest # // <1>
+----
+
+<1> Having this configuration means that all requests performed using `org.acme.rest.client.CountriesService` will use `https://restcountries.eu/rest` as the base URL.
+Using the configuration above, calling the `getByName` method of `CountriesService` with a value of `France` would result in an HTTP GET request being made to `https://restcountries.eu/rest/v2/name/France`.
+
+Note that `org.acme.rest.client.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
+
+To facilitate the configuration, you can use the `@RegisterRestClient` `configKey` property that allows to use different configuration root than the fully qualified name of your interface.
+
+[source, java]
+----
+
+@RegisterRestClient(configKey="country-api")
+public interface CountriesService {
+    [...]
+}
+----
+
+[source,properties]
+----
+# Your configuration properties
+country-api/mp-rest/url=https://restcountries.eu/rest
+country-api/mp-rest/scope=javax.inject.Singleton
+----
+
+== Update the JAX-RS resource
+
+Open the `src/main/java/org/acme/rest/client/CountriesResource.java` file and update it with the following content:
+
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.common.annotation.Blocking;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.RestPath;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.util.Set;
+
+@Path("/country")
+public class CountriesResource {
+
+    @RestClient // <1>
+    CountriesService countriesService;
+
+
+    @GET
+    @Path("/name/{name}")
+    @Blocking // <2>
+    public Set<Country> name(String name) {
+        return countriesService.getByName(name);
+    }
+}
+----
+
+There are two interesting parts in this listing:
+
+<1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
+<2> the call we are making with the client is blocking, hence we need the `@Blocking` annotation on the REST endpoint
+
+== Update the test
+
+We also need to update the functional test to reflect the changes made to the endpoint.
+Edit the `src/test/java/org/acme/rest/client/CountriesResourceTest.java` file and change the content of the `testCountryNameEndpoint` method to:
+
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@QuarkusTest
+public class CountriesResourceTest {
+
+    @Test
+    public void testCountryNameEndpoint() {
+        given()
+          .when().get("/country/name/greece")
+          .then()
+             .statusCode(200)
+             .body("$.size()", is(1),
+                     "[0].alpha2Code", is("GR"),
+                     "[0].capital", is("Athens"),
+                     "[0].currencies.size()", is(1),
+                     "[0].currencies[0].name", is("Euro")
+             );
+    }
+
+}
+----
+
+The code above uses link:http://rest-assured.io/[REST Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities.
+
+
+[#async-support]
+== Async Support
+To get the full power of the reactive nature of the client, you can use the non-blocking flavor of REST Client Reactive extension,
+which comes with support for `CompletionStage` and `Uni`.
+Let's see it in action by adding a `getByNameAsync` method in our `CountriesService` REST interface. The code should look like:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+
+@Path("/v2")
+@RegisterRestClient(configKey="country-api")
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{name}")
+    Set<Country> getByName(String name);
+
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    CompletionStage<Set<Country>> getByNameAsync(String name);
+}
+----
+
+Open the `src/main/java/org/acme/rest/client/CountriesResource.java` file and update it with the following content:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.common.annotation.Blocking;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+
+@Path("/country")
+public class CountriesResource {
+
+    @RestClient
+    CountriesService countriesService;
+
+
+    @GET
+    @Path("/name/{name}")
+    @Blocking
+    public Set<Country> name(String name) {
+        return countriesService.getByName(name);
+    }
+
+    @GET
+    @Path("/name-async/{name}")
+    public CompletionStage<Set<Country>> nameAsync(String name) {
+        return countriesService.getByNameAsync(name);
+    }
+}
+----
+
+Please note that since the invocation is now non-blocking, we don't need the `@Blocking` annotation anymore on the endpoint.
+This means that the `nameAsync` method will be invoked on the event loop, i.e. will not get offloaded to a worker pool thread
+and thus reducing hardware resource utilization.
+
+
+To test asynchronous methods, add the test method below in `CountriesResourceTest`:
+[source,java]
+----
+@Test
+public void testCountryNameAsyncEndpoint() {
+    given()
+    .when().get("/country/name-async/greece")
+    .then()
+        .statusCode(200)
+        .body("$.size()", is(1),
+             "[0].alpha2Code", is("GR"),
+             "[0].capital", is("Athens"),
+             "[0].currencies.size()", is(1),
+             "[0].currencies[0].name", is("Euro")
+        );
+}
+----
+
+The `Uni` version is very similar:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+
+@Path("/v2")
+@RegisterRestClient
+public interface CountriesService {
+
+    // ...
+
+    @GET
+    @Path("/name/{name}")
+    Uni<Set<Country>> getByNameAsUni(String name);
+}
+----
+
+The `CountriesResource` becomes:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+
+@Path("/country")
+public class CountriesResource {
+
+    @RestClient
+    CountriesService countriesService;
+
+
+    // ...
+
+    @GET
+    @Path("/name-uni/{name}")
+    public Uni<Set<Country>> nameUni(String name) {
+        return countriesService.getByNameAsUni(name);
+    }
+}
+----
+
+[TIP]
+.Mutiny
+====
+The previous snippet uses Mutiny reactive types.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
+====
+
+When returning a `Uni`, every _subscription_ invokes the remote service.
+It means you can re-send the request by re-subscribing on the `Uni`, or use a `retry` as follows:
+
+[source, java]
+----
+
+@RestClient CountriesResource service;
+
+// ...
+
+service.nameAsync("Greece")
+   .onFailure().retry().atMost(10);
+
+----
+
+If you use a `CompletionStage`, you would need to call the service's method to retry.
+This difference comes from the laziness aspect of Mutiny and its subscription protocol.
+More details about this can be found in https://smallrye.io/smallrye-mutiny/#_uni_and_multi[the Mutiny documentation].
+
+== Custom headers support
+The MicroProfile REST client allows amending request headers by registering a `ClientHeadersFactory` with the `@RegisterClientHeaders` annotation.
+
+Let's see it in action by adding a `@RegisterClientHeaders` annotation pointing to a `RequestUUIDHeaderFactory` class in our `CountriesService` REST interface:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import java.util.concurrent.CompletionStage;
+import java.util.Set;
+
+@Path("/v2")
+@RegisterRestClient
+@RegisterClientHeaders(RequestUUIDHeaderFactory.class)
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{name}")
+    Set<Country> getByName(@PathParam("name") String name);
+
+    @GET
+    @Path("/name/{name}")
+    CompletionStage<Set<Country>> getByNameAsync(@PathParam("name") String name);
+}
+----
+
+And the `RequestUUIDHeaderFactory` would look like:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
+import org.jboss.resteasy.specimpl.MultivaluedMapImpl;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.core.MultivaluedMap;
+import java.util.UUID;
+
+@ApplicationScoped
+public class RequestUUIDHeaderFactory implements ClientHeadersFactory {
+
+    @Override
+    public MultivaluedMap<String, String> update(MultivaluedMap<String, String> incomingHeaders, MultivaluedMap<String, String> clientOutgoingHeaders) {
+        MultivaluedMap<String, String> result = new MultivaluedMapImpl<>();
+        result.add("X-request-uuid", UUID.randomUUID().toString());
+        return result;
+    }
+}
+----
+
+As you see in the example above, you can make your `ClientHeadersFactory` implementation a CDI bean by
+annotating it with a scope-defining annotation, such as `@Singleton`, `@ApplicationScoped`, etc.
+
+=== Default header factory
+You can also use `@RegisterClientHeaders` annotation without any custom factory specified. In that case the `DefaultClientHeadersFactoryImpl` factory will be used and all headers listed in `org.eclipse.microprofile.rest.client.propagateHeaders` configuration property will be amended. Individual header names are comma-separated.
+[source, java]
+----
+
+@Path("/v2")
+@RegisterRestClient
+@RegisterClientHeaders
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    Set<Country> getByName(@PathParam("name") String name);
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    CompletionStage<Set<Country>> getByNameAsync(@PathParam("name") String name);
+}
+----
+
+[source,properties]
+----
+org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Authorization
+----
+
+== Multipart Form support
+Rest Client Reactive allows sending data as multipart forms. This way you can for example
+send files efficiently.
+
+To send data as a multipart form, you need to create a class that would encapsulate all the fields
+to be sent, e.g.
+
+[source, java]
+----
+class FormDto {
+    @FormParam("file")
+    @PartType(MediaType.APPLICATION_OCTET_STREAM)
+    public File file;
+
+    @FormParam("otherField")
+    @PartType(MediaType.TEXT_PLAIN)
+    public String textProperty;
+}
+----
+
+The method that sends a form needs to specify multipart form data as the consumed media type, e.g.
+[source, java]
+----
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/binary")
+    String sendMultipart(@MultipartForm FormDto data);
+----
+
+Fields specified as `File`, `Path`, `byte[]` or `Buffer` are sent as files; as binary files for
+`@PartType(MediaType.APPLICATION_OCTET_STREAM)`, as text files for other content types.
+Other fields are sent as form attributes.
+
+There are a few modes in which the form data can be encoded. By default,
+Rest Client Reactive uses RFC1738.
+You can override it by specifying the mode either on the client level,
+by setting `io.quarkus.rest.client.multipart-post-encoder-mode` RestBuilder property
+to the selected value of `HttpPostRequestEncoder.EncoderMode` or
+by specfying `quarkus.rest.client.multipart-post-encoder-mode` in your
+`application.properties`. Please note that the latter works only for
+clients created with the `@RegisterRestClient` annotation.
+All the available modes are described in the link:https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html[Netty documentation]
+
+
+== Package and run the application
+
+Run the application with: `./mvnw compile quarkus:dev`.
+Open your browser to http://localhost:8080/country/name/greece.
+
+You should see a JSON object containing some basic information about Greece.
+
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
+You can also generate the native executable with `./mvnw clean package -Pnative`.
+
+== Using a Mock HTTP Server for tests
+
+For tests, you can easily mock the HTTP server with Wiremock.
+The link:rest-client.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
+describes how to set it up in detail.
+
+== Known limitations
+While the REST Client Reactive extension aims to be a drop-in replacement for the REST Client extension, there are some differences
+and limitations:
+
+- the default scope of the client for the new extension is `@ApplicationScoped` while the `quarkus-rest-client` defaults to `@Dependent`
+To change this behavior, set the `quarkus.rest.client.scope` property to the fully qualified scope name.
+- it is not possible to set `HostnameVerifier` or `SSLContext`
+- a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
+
+
+
+== Further reading
+
+ * link:https://download.eclipse.org/microprofile/microprofile-rest-client-2.0/microprofile-rest-client-spec-2.0.html[MicroProfile Rest Client specification]

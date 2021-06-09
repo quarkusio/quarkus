@@ -32,19 +32,19 @@ class ListDatabaseTest extends MongoWithReplicasTestBase {
     @Test
     void testListingDatabasesWithNoCreatedDatabases() {
         // local, and admin are created by default in replicas mode (admin because of the replicas registration)
-        List<Document> documents = client.listDatabases().collectItems().asList().await().indefinitely();
+        List<Document> documents = client.listDatabases().collect().asList().await().indefinitely();
         assertThat(documents).hasSize(2);
         assertThat(documents).hasSize(2);
-        assertThat(client.listDatabaseNames().collectItems().asList().await().indefinitely())
+        assertThat(client.listDatabaseNames().collect().asList().await().indefinitely())
                 .containsExactlyInAnyOrder("local", "admin");
 
         List<String> names = client.startSession()
-                .chain(session -> client.listDatabaseNames(session).collectItems().asList())
+                .chain(session -> client.listDatabaseNames(session).collect().asList())
                 .await().indefinitely();
         assertThat(names).containsExactlyInAnyOrder("local", "admin");
 
         names = client.startSession()
-                .chain(session -> client.listDatabases(session).map(doc -> doc.getString("name")).collectItems().asList())
+                .chain(session -> client.listDatabases(session).map(doc -> doc.getString("name")).collect().asList())
                 .await().indefinitely();
         assertThat(names).containsExactlyInAnyOrder("local", "admin");
     }

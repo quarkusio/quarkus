@@ -1,6 +1,5 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile.Model;
 import io.quarkus.maven.ArtifactCoords;
@@ -95,11 +94,11 @@ public class KotlinGradleBuildFilesCreator extends AbstractGradleBuildFilesCreat
     }
 
     @Override
-    void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException {
+    void addDependencyInBuildFile(ArtifactCoords coords) throws IOException {
         addDependencyInModel(getModel(), coords, false);
     }
 
-    static boolean addDependencyInModel(Model model, AppArtifactCoords coords, boolean managed) {
+    static boolean addDependencyInModel(Model model, ArtifactCoords coords, boolean managed) {
         return AbstractGradleBuildFile.addDependencyInModel(model,
                 String.format("    implementation(%s)%n",
                         AbstractGradleBuildFile.createDependencyCoordinatesString(coords, managed, '"')));

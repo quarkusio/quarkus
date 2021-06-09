@@ -29,13 +29,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.codegen.writer.FileProjectWriter;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -124,18 +124,18 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("<artifactId>quarkus-spring-web</artifactId>"))
                 .satisfies(checkContains("<artifactId>quarkus-resteasy</artifactId>"));
 
-        assertThat(projectDir.resolve("src/main/java/io/test/SpringGreetingController.java"))
+        assertThat(projectDir.resolve("src/main/java/io/test/GreetingController.java"))
                 .exists()
                 .satisfies(checkContains("package io.test;"))
                 .satisfies(checkContains("@RestController"))
-                .satisfies(checkContains("class SpringGreetingController"))
-                .satisfies(checkContains("@RequestMapping(\"/hello-spring\")"));
+                .satisfies(checkContains("class GreetingController"))
+                .satisfies(checkContains("@RequestMapping(\"/greeting\")"));
 
         assertThat(projectDir.resolve("src/main/java/io/test/GreetingResource.java"))
                 .exists()
                 .satisfies(checkContains("package io.test;"))
                 .satisfies(checkContains("class GreetingResource"))
-                .satisfies(checkContains("@Path(\"/hello-resteasy\")"));
+                .satisfies(checkContains("@Path(\"/hello\")"));
     }
 
     @Test

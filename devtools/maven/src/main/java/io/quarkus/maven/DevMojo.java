@@ -21,20 +21,28 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.aesh.readline.tty.terminal.TerminalConnection;
+import org.aesh.terminal.Attributes;
+import org.aesh.terminal.Connection;
+import org.aesh.terminal.utils.ANSI;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.Profile;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -69,6 +77,7 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.dev.DevModeContext;
@@ -77,6 +86,7 @@ import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.utilities.OS;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
@@ -84,7 +94,7 @@ import io.quarkus.maven.utilities.MojoUtils;
  * <p>
  * You can use this dev mode in a remote container environment with {@code remote-dev}.
  */
-@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST)
 public class DevMojo extends AbstractMojo {
 
     private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
@@ -95,7 +105,7 @@ public class DevMojo extends AbstractMojo {
      * running any one of these phases means the compile phase will have been run, if these have
      * not been run we manually run compile
      */
-    private static final Set<String> POST_COMPILE_PHASES = new HashSet<>(Arrays.asList(
+    private static final Set<String> POST_COMPILE_PHASES = Set.of(
             "compile",
             "process-classes",
             "generate-test-sources",
@@ -112,8 +122,24 @@ public class DevMojo extends AbstractMojo {
             "post-integration-test",
             "verify",
             "install",
-            "deploy"));
+            "deploy");
 
+    /**
+     * running any one of these phases means the test-compile phase will have been run, if these have
+     * not been run we manually run test-compile
+     */
+    private static final Set<String> POST_TEST_COMPILE_PHASES = Set.of(
+            "test-compile",
+            "process-test-classes",
+            "test",
+            "prepare-package",
+            "package",
+            "pre-integration-test",
+            "integration-test",
+            "post-integration-test",
+            "verify",
+            "install",
+            "deploy");
     private static final String QUARKUS_PLUGIN_GROUPID = "io.quarkus";
     private static final String QUARKUS_PLUGIN_ARTIFACTID = "quarkus-maven-plugin";
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
@@ -285,6 +311,12 @@ public class DevMojo extends AbstractMojo {
     @Component
     private ToolchainManager toolchainManager;
 
+    /**
+     * console attributes, used to restore the console state
+     */
+    private Attributes attributes;
+    private Connection connection;
+
     @Override
     public void setLog(Log log) {
         super.setLog(log);
@@ -293,6 +325,7 @@ public class DevMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
+        saveTerminalState();
 
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
 
@@ -326,7 +359,8 @@ public class DevMojo extends AbstractMojo {
                 if (System.currentTimeMillis() > nextCheck) {
                     nextCheck = System.currentTimeMillis() + 100;
                     if (!runner.alive()) {
-                        if (runner.exitValue() != 0) {
+                        restoreTerminalState();
+                        if (!runner.isExpectedExitValue()) {
                             throw new MojoExecutionException("Dev mode process did not complete successfully");
                         }
                         return;
@@ -343,7 +377,8 @@ public class DevMojo extends AbstractMojo {
                         getLog().info("Changes detected to " + changed + ", restarting dev mode");
                         final DevModeRunner newRunner;
                         try {
-                            triggerCompile();
+                            triggerCompile(false);
+                            triggerCompile(true);
                             newRunner = new DevModeRunner();
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
@@ -362,9 +397,49 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
+    /**
+     * if the process is forcibly killed then the terminal may be left in raw mode, which
+     * messes everything up. This attempts to fix that by saving the state so it can be restored
+     */
+    private void saveTerminalState() {
+        if (OS.determineOS() == OS.WINDOWS) {
+            //this does not work on windows
+            //jansi creates an input pump thread, that will steal
+            //input from the dev mode process
+            return;
+        }
+        try {
+            new TerminalConnection(new Consumer<Connection>() {
+                @Override
+                public void accept(Connection connection) {
+                    attributes = connection.getAttributes();
+                    DevMojo.this.connection = connection;
+                }
+            });
+        } catch (IOException e) {
+            getLog().error(
+                    "Failed to setup console restore, console may be left in an inconsistent state if the process is killed",
+                    e);
+        }
+    }
+
+    private void restoreTerminalState() {
+        if (attributes == null || connection == null) {
+            return;
+        }
+        connection.setAttributes(attributes);
+        int height = connection.size().getHeight();
+        connection.write(ANSI.MAIN_BUFFER);
+        connection.write(ANSI.CURSOR_SHOW);
+        connection.write("\u001B[0m");
+        connection.write("\033[" + height + ";0H");
+        connection.close();
+    }
+
     private void handleAutoCompile() throws MojoExecutionException {
         //we check to see if there was a compile (or later) goal before this plugin
         boolean compileNeeded = true;
+        boolean testCompileNeeded = true;
         boolean prepareNeeded = true;
         for (String goal : session.getGoals()) {
             if (goal.endsWith("quarkus:prepare")) {
@@ -373,6 +448,10 @@ public class DevMojo extends AbstractMojo {
 
             if (POST_COMPILE_PHASES.contains(goal)) {
                 compileNeeded = false;
+                break;
+            }
+            if (POST_TEST_COMPILE_PHASES.contains(goal)) {
+                testCompileNeeded = false;
                 break;
             }
             if (goal.endsWith("quarkus:dev")) {
@@ -385,7 +464,14 @@ public class DevMojo extends AbstractMojo {
             if (prepareNeeded) {
                 triggerPrepare();
             }
-            triggerCompile();
+            triggerCompile(false);
+        }
+        if (testCompileNeeded) {
+            try {
+                triggerCompile(true);
+            } catch (Throwable t) {
+                getLog().error("Test compile failed, you will need to fix your tests before you can use continuous testing", t);
+            }
         }
     }
 
@@ -397,25 +483,25 @@ public class DevMojo extends AbstractMojo {
         executeIfConfigured(QUARKUS_PLUGIN_GROUPID, QUARKUS_PLUGIN_ARTIFACTID, QUARKUS_GENERATE_CODE_GOAL);
     }
 
-    private void triggerCompile() throws MojoExecutionException {
-        handleResources();
+    private void triggerCompile(boolean test) throws MojoExecutionException {
+        handleResources(test);
 
         // compile the Kotlin sources if needed
-        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, "compile");
+        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile");
 
         // Compile the Java sources if needed
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, "compile");
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, test ? "testCompile" : "compile");
     }
 
     /**
      * Execute the resources:resources goal if resources have been configured on the project
      */
-    private void handleResources() throws MojoExecutionException {
+    private void handleResources(boolean test) throws MojoExecutionException {
         List<Resource> resources = project.getResources();
         if (resources.isEmpty()) {
             return;
         }
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, "resources");
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, test ? "testResources" : "resources");
     }
 
     private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal) throws MojoExecutionException {
@@ -500,10 +586,14 @@ public class DevMojo extends AbstractMojo {
 
     private void addProject(MavenDevModeLauncher.Builder builder, LocalProject localProject, boolean root) throws Exception {
 
-        String projectDirectory = null;
-        Set<String> sourcePaths = null;
+        String projectDirectory;
+        Set<Path> sourcePaths;
         String classesPath = null;
-        String resourcePath = null;
+        Set<Path> resourcePaths;
+        Set<Path> testSourcePaths;
+        String testClassesPath = null;
+        Set<Path> testResourcePaths;
+        List<Profile> activeProfiles = Collections.emptyList();
 
         final MavenProject mavenProject = session.getProjectMap().get(
                 String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
@@ -511,18 +601,29 @@ public class DevMojo extends AbstractMojo {
             projectDirectory = localProject.getDir().toAbsolutePath().toString();
             Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
             if (Files.isDirectory(sourcePath)) {
-                sourcePaths = Collections.singleton(
-                        sourcePath.toString());
+                sourcePaths = Collections.singleton(sourcePath);
             } else {
                 sourcePaths = Collections.emptySet();
+            }
+            Path testSourcePath = localProject.getTestSourcesSourcesDir().toAbsolutePath();
+            if (Files.isDirectory(testSourcePath)) {
+                testSourcePaths = Collections.singleton(testSourcePath);
+            } else {
+                testSourcePaths = Collections.emptySet();
             }
         } else {
             projectDirectory = mavenProject.getBasedir().getPath();
             sourcePaths = mavenProject.getCompileSourceRoots().stream()
                     .map(Paths::get)
                     .filter(Files::isDirectory)
-                    .map(src -> src.toAbsolutePath().toString())
-                    .collect(Collectors.toSet());
+                    .map(Path::toAbsolutePath)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            testSourcePaths = mavenProject.getTestCompileSourceRoots().stream()
+                    .map(Paths::get)
+                    .filter(Files::isDirectory)
+                    .map(Path::toAbsolutePath)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            activeProfiles = mavenProject.getActiveProfiles();
         }
         Path sourceParent = localProject.getSourcesDir().toAbsolutePath();
 
@@ -530,27 +631,58 @@ public class DevMojo extends AbstractMojo {
         if (Files.isDirectory(classesDir)) {
             classesPath = classesDir.toAbsolutePath().toString();
         }
-        Path resourcesSourcesDir = localProject.getResourcesSourcesDir();
-        if (Files.isDirectory(resourcesSourcesDir)) {
-            resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
+        Path testClassesDir = localProject.getTestClassesDir();
+        if (Files.isDirectory(testClassesDir)) {
+            testClassesPath = testClassesDir.toAbsolutePath().toString();
+        }
+        resourcePaths = localProject.getResourcesSourcesDirs().toList().stream()
+                .map(Path::toAbsolutePath)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        testResourcePaths = localProject.getTestResourcesSourcesDirs().toList().stream()
+                .map(Path::toAbsolutePath)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        // Add the resources and test resources from the profiles
+        for (Profile profile : activeProfiles) {
+            final BuildBase build = profile.getBuild();
+            if (build != null) {
+                resourcePaths.addAll(
+                        build.getResources().stream()
+                                .map(Resource::getDirectory)
+                                .map(localProject::resolveRelativeToBaseDir)
+                                .map(Path::toAbsolutePath)
+                                .collect(Collectors.toList()));
+                testResourcePaths.addAll(
+                        build.getTestResources().stream()
+                                .map(Resource::getDirectory)
+                                .map(localProject::resolveRelativeToBaseDir)
+                                .map(Path::toAbsolutePath)
+                                .collect(Collectors.toList()));
+            }
         }
 
-        if (classesPath == null && (!sourcePaths.isEmpty() || resourcePath != null)) {
+        if (classesPath == null && (!sourcePaths.isEmpty() || !resourcePaths.isEmpty())) {
             throw new MojoExecutionException("Hot reloadable dependency " + localProject.getAppArtifact()
                     + " has not been compiled yet (the classes directory " + classesDir + " does not exist)");
         }
 
         Path targetDir = Paths.get(project.getBuild().getDirectory());
 
-        DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(localProject.getKey(),
-                localProject.getArtifactId(),
-                projectDirectory,
-                sourcePaths,
-                classesPath,
-                resourcePath,
-                sourceParent.toAbsolutePath().toString(),
-                targetDir.resolve("generated-sources").toAbsolutePath().toString(),
-                targetDir.toAbsolutePath().toString());
+        DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo.Builder().setAppArtifactKey(localProject.getKey())
+                .setName(localProject.getArtifactId())
+                .setProjectDirectory(projectDirectory)
+                .setSourcePaths(PathsCollection.from(sourcePaths))
+                .setClassesPath(classesPath)
+                .setResourcesOutputPath(classesPath)
+                .setResourcePaths(PathsCollection.from(resourcePaths))
+                .setSourceParents(PathsCollection.of(sourceParent.toAbsolutePath()))
+                .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
+                .setTargetDir(targetDir.toAbsolutePath().toString())
+                .setTestSourcePaths(PathsCollection.from(testSourcePaths))
+                .setTestClassesPath(testClassesPath)
+                .setTestResourcesOutputPath(testClassesPath)
+                .setTestResourcePaths(PathsCollection.from(testResourcePaths))
+                .build();
+
         if (root) {
             builder.mainModule(moduleInfo);
         } else {
@@ -572,11 +704,16 @@ public class DevMojo extends AbstractMojo {
         }
 
         boolean alive() {
-            return process == null ? false : process.isAlive();
+            return process != null && process.isAlive();
         }
 
         int exitValue() {
             return process == null ? -1 : process.exitValue();
+        }
+
+        boolean isExpectedExitValue() {
+            // '130' is what the process exits with in remote-dev mode under bash
+            return exitValue() == 0 || exitValue() == 130;
         }
 
         void run() throws Exception {
@@ -600,8 +737,8 @@ public class DevMojo extends AbstractMojo {
                     process.destroy();
                     try {
                         process.waitFor();
-                    } catch (InterruptedException ignored) {
-                        getLog().warn("Unable to properly wait for dev-mode end", ignored);
+                    } catch (InterruptedException e) {
+                        getLog().warn("Unable to properly wait for dev-mode end", e);
                     }
                 }
             }, "Development Mode Shutdown Hook"));

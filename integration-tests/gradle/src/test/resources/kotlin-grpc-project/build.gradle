@@ -1,10 +1,11 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version "1.3.72"
-    id "org.jetbrains.kotlin.plugin.allopen" version "1.3.72"
+    id 'org.jetbrains.kotlin.jvm' version "1.4.32"
+    id "org.jetbrains.kotlin.plugin.allopen" version "1.4.32"
     id 'io.quarkus'
 }
 
 repositories {
+    mavenCentral()
     // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
     if (System.properties.containsKey('maven.repo.local')) {
         maven {
@@ -13,7 +14,6 @@ repositories {
     } else {
         mavenLocal()
     }
-    mavenCentral()
 }
 
 dependencies {

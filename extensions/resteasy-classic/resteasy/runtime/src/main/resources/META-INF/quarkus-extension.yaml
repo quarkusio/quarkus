@@ -1,4 +1,5 @@
 name: "RESTEasy JAX-RS"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   short-name: "jax-rs"
   keywords:
@@ -12,7 +13,6 @@ metadata:
   status: "stable"
   codestart:
     name: "resteasy"
-    kind: "example"
     languages:
       - "java"
       - "kotlin"

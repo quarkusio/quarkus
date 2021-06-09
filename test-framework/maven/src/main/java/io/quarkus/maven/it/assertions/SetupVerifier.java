@@ -18,7 +18,7 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.test.RegistryClientTestHelper;
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.registry.catalog.ExtensionCatalog;

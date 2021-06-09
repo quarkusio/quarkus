@@ -1,22 +1,17 @@
 package io.quarkus.deployment.pkg.steps;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
 
     private final String nativeImageExecutable;
+    private final File workingDirectory;
 
-    public NativeImageBuildLocalRunner(String nativeImageExecutable) {
+    public NativeImageBuildLocalRunner(String nativeImageExecutable, File workingDirectory) {
         this.nativeImageExecutable = nativeImageExecutable;
-    }
-
-    @Override
-    public void cleanupServer(File outputDir) throws InterruptedException, IOException {
-        final String[] cleanupCommand = { nativeImageExecutable, "--server-shutdown" };
-        runCommand(cleanupCommand, null, outputDir);
+        this.workingDirectory = workingDirectory;
     }
 
     @Override
@@ -27,6 +22,34 @@ public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
     @Override
     protected String[] getBuildCommand(List<String> args) {
         return buildCommand(args);
+    }
+
+    @Override
+    protected void objcopy(String... args) {
+        final String[] command = new String[args.length + 1];
+        command[0] = "objcopy";
+        System.arraycopy(args, 0, command, 1, args.length);
+        runCommand(command, null, workingDirectory);
+    }
+
+    @Override
+    protected boolean objcopyExists() {
+        // System path
+        String systemPath = System.getenv("PATH");
+        if (systemPath != null) {
+            String[] pathDirs = systemPath.split(File.pathSeparator);
+            for (String pathDir : pathDirs) {
+                File dir = new File(pathDir);
+                if (dir.isDirectory()) {
+                    File file = new File(dir, "objcopy");
+                    if (file.exists()) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private String[] buildCommand(List<String> args) {

@@ -4,6 +4,7 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -55,6 +56,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.quarkus.runtime.configuration.ConfigDiagnostic;
@@ -106,6 +108,8 @@ public final class RunTimeConfigurationGenerator {
     static final FieldDescriptor C_SPECIFIED_RUN_TIME_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
             "specifiedRunTimeConfigSource",
             ConfigSource.class);
+    static final FieldDescriptor C_UNUSED = FieldDescriptor.of(CONFIG_CLASS_NAME, "unused", List.class);
+    static final FieldDescriptor C_UNUSED_RUNTIME = FieldDescriptor.of(CONFIG_CLASS_NAME, "unusedRuntime", List.class);
 
     static final MethodDescriptor CD_INVALID_VALUE = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "invalidValue",
             void.class, String.class, IllegalArgumentException.class);
@@ -114,10 +118,10 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor CD_MISSING_VALUE = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "missingValue",
             void.class, String.class, NoSuchElementException.class);
     static final MethodDescriptor CD_RESET_ERROR = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "resetError", void.class);
-    static final MethodDescriptor CD_UNKNOWN = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "unknown",
-            void.class, NameIterator.class);
-    static final MethodDescriptor CD_UNKNOWN_RT = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "unknownRunTime",
-            void.class, NameIterator.class);
+    static final MethodDescriptor CD_UNKNOWN_PROPERTIES = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "unknownProperties",
+            void.class, List.class);
+    static final MethodDescriptor CD_UNKNOWN_PROPERTIES_RT = MethodDescriptor.ofMethod(ConfigDiagnostic.class,
+            "unknownPropertiesRuntime", void.class, List.class);
 
     static final MethodDescriptor CONVS_NEW_ARRAY_CONVERTER = MethodDescriptor.ofMethod(Converters.class,
             "newArrayConverter", Converter.class, Converter.class, Class.class);
@@ -149,14 +153,21 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor CU_SORTED_SET_FACTORY = MethodDescriptor.ofMethod(ConfigUtils.class, "sortedSetFactory",
             IntFunction.class);
     static final MethodDescriptor CU_CONFIG_BUILDER = MethodDescriptor.ofMethod(ConfigUtils.class, "configBuilder",
-            SmallRyeConfigBuilder.class, boolean.class);
+            SmallRyeConfigBuilder.class, boolean.class, LaunchMode.class);
     static final MethodDescriptor CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED = MethodDescriptor.ofMethod(ConfigUtils.class,
             "configBuilder",
-            SmallRyeConfigBuilder.class, boolean.class, boolean.class);
+            SmallRyeConfigBuilder.class, boolean.class, boolean.class, LaunchMode.class);
+    static final MethodDescriptor CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED_AND_BOOTSRAP = MethodDescriptor.ofMethod(
+            ConfigUtils.class,
+            "configBuilder",
+            SmallRyeConfigBuilder.class, boolean.class, boolean.class, boolean.class, LaunchMode.class);
     static final MethodDescriptor CU_ADD_SOURCE_PROVIDER = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProvider",
             void.class, SmallRyeConfigBuilder.class, ConfigSourceProvider.class);
     static final MethodDescriptor CU_ADD_SOURCE_PROVIDERS = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProviders",
             void.class, SmallRyeConfigBuilder.class, Collection.class);
+
+    static final MethodDescriptor AL_NEW = MethodDescriptor.ofConstructor(ArrayList.class);
+    static final MethodDescriptor AL_ADD = MethodDescriptor.ofMethod(ArrayList.class, "add", boolean.class, Object.class);
 
     static final MethodDescriptor HM_NEW = MethodDescriptor.ofConstructor(HashMap.class);
     static final MethodDescriptor HM_PUT = MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class,
@@ -240,17 +251,30 @@ public final class RunTimeConfigurationGenerator {
     private RunTimeConfigurationGenerator() {
     }
 
-    public static void generate(BuildTimeConfigurationReader.ReadResult readResult, final ClassOutput classOutput,
-            boolean devMode,
-            final Map<String, String> runTimeDefaults, List<Class<?>> additionalTypes,
-            List<String> additionalBootstrapConfigSourceProviders) {
-        new GenerateOperation.Builder().setBuildTimeReadResult(readResult).setClassOutput(classOutput).setDevMode(devMode)
-                .setRunTimeDefaults(runTimeDefaults).setAdditionalTypes(additionalTypes)
-                .setAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders).build().run();
+    public static void generate(
+            final BuildTimeConfigurationReader.ReadResult readResult,
+            final ClassOutput classOutput,
+            LaunchMode launchMode,
+            final Map<String, String> runTimeDefaults,
+            final List<Class<?>> additionalTypes,
+            final List<String> additionalStaticInitConfigSourceProviders,
+            final List<String> additionalBootstrapConfigSourceProviders) {
+
+        new GenerateOperation.Builder()
+                .setBuildTimeReadResult(readResult)
+                .setClassOutput(classOutput)
+                .setLaunchMode(launchMode)
+                .setRunTimeDefaults(runTimeDefaults)
+                .setAdditionalTypes(additionalTypes)
+                .setAdditionalStaticInitConfigSourceProviders(additionalStaticInitConfigSourceProviders)
+                .setAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders)
+                .build()
+                .run();
     }
 
     static final class GenerateOperation implements AutoCloseable {
         final boolean devMode;
+        final LaunchMode launchMode;
         final AccessorFinder accessorFinder;
         final ClassOutput classOutput;
         final ClassCreator cc;
@@ -275,6 +299,7 @@ public final class RunTimeConfigurationGenerator {
         final ResultHandle clinitConfig;
         final Map<FieldDescriptor, Class<?>> convertersToRegister = new HashMap<>();
         final List<Class<?>> additionalTypes;
+        final List<String> additionalStaticInitConfigSourceProviders;
         final List<String> additionalBootstrapConfigSourceProviders;
         /**
          * Regular converters organized by type. Each converter is stored in a separate field. Some are used
@@ -294,7 +319,8 @@ public final class RunTimeConfigurationGenerator {
         int converterIndex = 0;
 
         GenerateOperation(Builder builder) {
-            this.devMode = builder.devMode;
+            this.launchMode = builder.launchMode;
+            this.devMode = builder.launchMode == LaunchMode.DEVELOPMENT;
             final BuildTimeConfigurationReader.ReadResult buildTimeReadResult = builder.buildTimeReadResult;
             buildTimeConfigResult = Assert.checkNotNullParam("buildTimeReadResult", buildTimeReadResult);
             specifiedRunTimeDefaultValues = Assert.checkNotNullParam("specifiedRunTimeDefaultValues",
@@ -305,7 +331,8 @@ public final class RunTimeConfigurationGenerator {
             roots = Assert.checkNotNullParam("builder.roots", builder.getBuildTimeReadResult().getAllRoots());
             runTimeDefaults = Assert.checkNotNullParam("runTimeDefaults", builder.getRunTimeDefaults());
             additionalTypes = Assert.checkNotNullParam("additionalTypes", builder.getAdditionalTypes());
-            additionalBootstrapConfigSourceProviders = builder.additionalBootstrapConfigSourceProviders;
+            additionalStaticInitConfigSourceProviders = builder.getAdditionalStaticInitConfigSourceProviders();
+            additionalBootstrapConfigSourceProviders = builder.getAdditionalBootstrapConfigSourceProviders();
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
             generateEmptyParsers(cc);
             // not instantiable
@@ -324,6 +351,12 @@ public final class RunTimeConfigurationGenerator {
             // create <clinit>
             clinit = cc.getMethodCreator(MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "<clinit>", void.class));
             clinit.setModifiers(Opcodes.ACC_STATIC);
+
+            cc.getFieldCreator(C_UNUSED).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            clinit.writeStaticField(C_UNUSED, clinit.newInstance(AL_NEW));
+
+            cc.getFieldCreator(C_UNUSED_RUNTIME).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            clinit.writeStaticField(C_UNUSED_RUNTIME, clinit.newInstance(AL_NEW));
 
             clinit.invokeStaticMethod(PM_SET_RUNTIME_DEFAULT_PROFILE, clinit.load(ProfileManager.getActiveProfile()));
             clinitNameBuilder = clinit.newInstance(SB_NEW);
@@ -365,13 +398,19 @@ public final class RunTimeConfigurationGenerator {
             clinit.writeStaticField(C_RUN_TIME_DEFAULTS_CONFIG_SOURCE, clinit.newInstance(RTDVCS_NEW));
 
             // the build time config, which is for user use only (not used by us other than for loading converters)
-            final ResultHandle buildTimeBuilder = clinit.invokeStaticMethod(CU_CONFIG_BUILDER, clinit.load(true));
+            final ResultHandle buildTimeBuilder = clinit.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED,
+                    clinit.load(true), clinit.load(false), clinit.load(launchMode));
             final ResultHandle array = clinit.newArray(ConfigSource[].class, 2);
             // build time values
             clinit.writeArrayValue(array, 0, buildTimeConfigSource);
             // build time defaults
             clinit.writeArrayValue(array, 1, buildTimeRunTimeDefaultValuesConfigSource);
             clinit.invokeVirtualMethod(SRCB_WITH_SOURCES, buildTimeBuilder, array);
+            // add static init sources
+            for (String providerClass : additionalStaticInitConfigSourceProviders) {
+                ResultHandle providerInstance = clinit.newInstance(MethodDescriptor.ofConstructor(providerClass));
+                clinit.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, buildTimeBuilder, providerInstance);
+            }
             clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
                     SmallRyeConfig.class);
 
@@ -420,7 +459,8 @@ public final class RunTimeConfigurationGenerator {
                 final ResultHandle buildTimeConfigSource = reinit.newInstance(PCS_NEW, buildTimeValues,
                         reinit.load("Build time config = Reloaded"), reinit.load(100));
                 // the build time config, which is for user use only (not used by us other than for loading converters)
-                final ResultHandle buildTimeBuilder = reinit.invokeStaticMethod(CU_CONFIG_BUILDER, reinit.load(true));
+                final ResultHandle buildTimeBuilder = reinit.invokeStaticMethod(CU_CONFIG_BUILDER, reinit.load(true),
+                        reinit.load(launchMode));
                 final ResultHandle array = reinit.newArray(ConfigSource[].class, 2);
                 // build time values
                 reinit.writeArrayValue(array, 0, buildTimeConfigSource);
@@ -470,12 +510,14 @@ public final class RunTimeConfigurationGenerator {
             // create the bootstrap config if necessary
             ResultHandle bootstrapBuilder = null;
             if (bootstrapConfigSetupNeeded()) {
-                bootstrapBuilder = readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED,
-                        readBootstrapConfig.load(false), readBootstrapConfig.load(false));
+                bootstrapBuilder = readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED_AND_BOOTSRAP,
+                        readBootstrapConfig.load(false), readBootstrapConfig.load(true), readBootstrapConfig.load(false),
+                        readBootstrapConfig.load(launchMode));
             }
 
             // create the run time config
-            final ResultHandle runTimeBuilder = readConfig.invokeStaticMethod(CU_CONFIG_BUILDER, readConfig.load(true));
+            final ResultHandle runTimeBuilder = readConfig.invokeStaticMethod(CU_CONFIG_BUILDER, readConfig.load(true),
+                    readConfig.load(launchMode));
 
             // add in our run time only config source provider
             readConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, runTimeBuilder, readConfig.newInstance(
@@ -718,11 +760,17 @@ public final class RunTimeConfigurationGenerator {
             // generate sweep for clinit
             configSweepLoop(siParserBody, clinit, clinitConfig);
 
+            clinit.invokeStaticMethod(CD_UNKNOWN_PROPERTIES,
+                    clinit.readStaticField(FieldDescriptor.of(cc.getClassName(), "unused", List.class)));
+
             if (devMode) {
                 configSweepLoop(siParserBody, readConfig, runTimeConfig);
             }
             // generate sweep for run time
             configSweepLoop(rtParserBody, readConfig, runTimeConfig);
+
+            readConfig.invokeStaticMethod(CD_UNKNOWN_PROPERTIES_RT,
+                    readConfig.readStaticField(FieldDescriptor.of(cc.getClassName(), "unusedRuntime", List.class)));
 
             if (bootstrapConfigSetupNeeded()) {
                 // generate sweep for bootstrap config
@@ -1069,7 +1117,7 @@ public final class RunTimeConfigurationGenerator {
                 // return;
                 matchedBody.returnValue(null);
             }
-            body.invokeStaticMethod(CD_UNKNOWN_RT, keyIter);
+            reportUnknownRuntime(body, keyIter);
             body.returnValue(null);
 
             body = cc.getMethodCreator(EMPTY_PARSER);
@@ -1080,7 +1128,7 @@ public final class RunTimeConfigurationGenerator {
                 // return;
                 matchedBody.returnValue(null);
             }
-            body.invokeStaticMethod(CD_UNKNOWN, keyIter);
+            reportUnknown(body, keyIter);
             body.returnValue(null);
         }
 
@@ -1158,7 +1206,11 @@ public final class RunTimeConfigurationGenerator {
                         }
                     } else if (ignoreMatched == null) {
                         // name is unknown
-                        matchedBody.invokeStaticMethod(type == Type.BUILD_TIME ? CD_UNKNOWN : CD_UNKNOWN_RT, keyIter);
+                        if (type == Type.BUILD_TIME) {
+                            reportUnknown(matchedBody, keyIter);
+                        } else {
+                            reportUnknownRuntime(matchedBody, keyIter);
+                        }
                     }
                     // return;
                     matchedBody.returnValue(null);
@@ -1249,7 +1301,11 @@ public final class RunTimeConfigurationGenerator {
                         matchedBody.returnValue(null);
                     }
                 }
-                body.invokeStaticMethod(type == Type.BUILD_TIME ? CD_UNKNOWN : CD_UNKNOWN_RT, keyIter);
+                if (type == Type.BUILD_TIME) {
+                    reportUnknown(body, keyIter);
+                } else {
+                    reportUnknownRuntime(body, keyIter);
+                }
                 body.returnValue(null);
                 return body.getMethodDescriptor();
             }
@@ -1550,6 +1606,18 @@ public final class RunTimeConfigurationGenerator {
             return fd;
         }
 
+        private void reportUnknown(BytecodeCreator methodCreator, ResultHandle unusedProperty) {
+            ResultHandle unused = methodCreator.readStaticField(C_UNUSED);
+            methodCreator.invokeVirtualMethod(AL_ADD, unused,
+                    methodCreator.invokeVirtualMethod(NI_GET_NAME, unusedProperty));
+        }
+
+        private void reportUnknownRuntime(BytecodeCreator methodCreator, ResultHandle unusedProperty) {
+            ResultHandle unused = methodCreator.readStaticField(C_UNUSED_RUNTIME);
+            methodCreator.invokeVirtualMethod(AL_ADD, unused,
+                    methodCreator.invokeVirtualMethod(NI_GET_NAME, unusedProperty));
+        }
+
         public void close() {
             try {
                 clinit.close();
@@ -1566,11 +1634,12 @@ public final class RunTimeConfigurationGenerator {
         }
 
         static final class Builder {
-            private boolean devMode;
+            private LaunchMode launchMode;
             private ClassOutput classOutput;
             private BuildTimeConfigurationReader.ReadResult buildTimeReadResult;
             private Map<String, String> runTimeDefaults;
             private List<Class<?>> additionalTypes;
+            private List<String> additionalStaticInitConfigSourceProviders;
             private List<String> additionalBootstrapConfigSourceProviders;
 
             Builder() {
@@ -1612,13 +1681,26 @@ public final class RunTimeConfigurationGenerator {
                 return this;
             }
 
-            public boolean isDevMode() {
-                return devMode;
+            public LaunchMode getLaunchMode() {
+                return launchMode;
             }
 
-            public Builder setDevMode(boolean devMode) {
-                this.devMode = devMode;
+            public Builder setLaunchMode(LaunchMode launchMode) {
+                this.launchMode = launchMode;
                 return this;
+            }
+
+            List<String> getAdditionalStaticInitConfigSourceProviders() {
+                return additionalStaticInitConfigSourceProviders;
+            }
+
+            Builder setAdditionalStaticInitConfigSourceProviders(List<String> additionalStaticInitConfigSourceProviders) {
+                this.additionalStaticInitConfigSourceProviders = additionalStaticInitConfigSourceProviders;
+                return this;
+            }
+
+            List<String> getAdditionalBootstrapConfigSourceProviders() {
+                return additionalBootstrapConfigSourceProviders;
             }
 
             Builder setAdditionalBootstrapConfigSourceProviders(List<String> additionalBootstrapConfigSourceProviders) {

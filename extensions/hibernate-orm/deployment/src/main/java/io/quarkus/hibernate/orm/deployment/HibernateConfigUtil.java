@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitCache;
 
@@ -35,5 +36,9 @@ public class HibernateConfigUtil {
 
     private static String getCacheConfigKey(String regionName, String configKey) {
         return HIBERNATE_CACHE_PREFIX + regionName + configKey;
+    }
+
+    public static <T> OptionalInt firstPresent(OptionalInt first, OptionalInt second) {
+        return first.isPresent() ? first : second;
     }
 }

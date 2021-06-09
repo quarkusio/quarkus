@@ -11,6 +11,7 @@ on:
       - '*.md'
       - '*.adoc'
       - '*.txt'
+      - 'adr/**'
       - 'docs/src/main/asciidoc/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
@@ -19,6 +20,10 @@ on:
   schedule:
     # first day of month at 12:10am
     - cron: '10 0 1 * *'
+
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   LANG: en_US.UTF-8
@@ -55,7 +60,7 @@ jobs:
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build
         run: |
-          mvn -T1C -e -B --settings .github/mvn-settings.xml -Dquickly-ci -Dtcks clean install
+          ./mvnw -T1C -e -B --settings .github/mvn-settings.xml -Dquickly-ci -Dtcks clean install
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus

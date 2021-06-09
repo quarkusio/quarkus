@@ -1,0 +1,19 @@
+name: resteasy-reactive-codestart
+ref: resteasy-reactive
+type: code
+tags: extension-codestart
+metadata:
+  title: RESTEasy Reactive
+  description: Easily start your Reactive RESTful Web Services
+  related-guide-section: https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources
+language:
+  base:
+    data:
+      resource:
+        class-name: ReactiveGreetingResource
+        path: "/hello"
+        response: "Hello RESTEasy Reactive"
+    dependencies:
+      - io.quarkus:quarkus-resteasy-reactive
+    test-dependencies:
+      - io.rest-assured:rest-assured

@@ -2,21 +2,24 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Resource;
+import org.apache.maven.model.building.ModelBuildingResult;
 
 /**
  *
@@ -28,149 +31,8 @@ public class LocalProject {
 
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String PROJECT_BUILD_DIR = "${project.build.directory}";
-    private static final String POM_XML = "pom.xml";
 
-    private static class WorkspaceLoader {
-
-        private final LocalWorkspace workspace = new LocalWorkspace();
-        private final Map<Path, Model> cachedModels = new HashMap<>();
-        private final Path currentProjectPom;
-        private Path workspaceRootPom;
-        // indicates whetehr the workspace root pom has been resolved or provided by the caller
-        private boolean workspaceRootResolved;
-
-        private WorkspaceLoader(Path currentProjectPom) throws BootstrapMavenException {
-            this.currentProjectPom = isPom(currentProjectPom) ? currentProjectPom
-                    : locateCurrentProjectPom(currentProjectPom, true);
-        }
-
-        private boolean isPom(Path p) {
-            if (Files.exists(p) && !Files.isDirectory(p)) {
-                try {
-                    loadAndCache(p);
-                    return true;
-                } catch (BootstrapMavenException e) {
-                    // not a POM file
-                }
-            }
-            return false;
-        }
-
-        private Model model(Path pomFile) throws BootstrapMavenException {
-            Model model = cachedModels.get(pomFile.getParent());
-            if (model == null) {
-                model = loadAndCache(pomFile);
-            }
-            return model;
-        }
-
-        private Model loadAndCache(Path pomFile) throws BootstrapMavenException {
-            final Model model = readModel(pomFile);
-            cachedModels.put(pomFile.getParent(), model);
-            return model;
-        }
-
-        void setWorkspaceRootPom(Path rootPom) {
-            this.workspaceRootPom = rootPom;
-        }
-
-        private Path getWorkspaceRootPom() throws BootstrapMavenException {
-            return workspaceRootPom == null ? workspaceRootPom = resolveWorkspaceRootPom(false) : workspaceRootPom;
-        }
-
-        private Path resolveWorkspaceRootPom(boolean stopAtCached) throws BootstrapMavenException {
-            Path rootPom = null;
-            Path projectPom = currentProjectPom;
-            Model model = model(projectPom);
-            do {
-                rootPom = projectPom;
-                final Parent parent = model.getParent();
-                if (parent != null
-                        && parent.getRelativePath() != null
-                        && !parent.getRelativePath().isEmpty()) {
-                    projectPom = projectPom.getParent().resolve(parent.getRelativePath()).normalize();
-                    if (Files.isDirectory(projectPom)) {
-                        projectPom = projectPom.resolve(POM_XML);
-                    }
-                } else {
-                    final Path parentDir = projectPom.getParent().getParent();
-                    if (parentDir == null) {
-                        break;
-                    }
-                    projectPom = parentDir.resolve(POM_XML);
-                }
-                model = null;
-                if (Files.exists(projectPom)) {
-                    model = cachedModels.get(projectPom.getParent());
-                    if (model == null) {
-                        model = loadAndCache(projectPom);
-                    } else {
-                        // if the parent is not at the top of the FS tree, it might have already been parsed
-                        model = null;
-                        if (!stopAtCached) {
-                            for (Map.Entry<Path, Model> entry : cachedModels.entrySet()) {
-                                // we are looking for the root dir of the workspace
-                                if (rootPom.getNameCount() > entry.getKey().getNameCount()) {
-                                    rootPom = entry.getValue().getPomFile().toPath();
-                                }
-                            }
-                            // it is supposed to be the root pom
-                            workspaceRootResolved = true;
-                        }
-                    }
-                }
-            } while (model != null);
-            return rootPom;
-        }
-
-        LocalProject load() throws BootstrapMavenException {
-            final Path rootPom = getWorkspaceRootPom();
-            load(null, rootPom);
-            if (workspace.getCurrentProject() == null) {
-                if (!currentProjectPom.equals(rootPom)) {
-                    // if the root pom wasn't resolved but provided we are going to try to navigate
-                    // to the very top pom that hasn't already been loaded
-                    if (!workspaceRootResolved) {
-                        final Path resolvedRootPom = resolveWorkspaceRootPom(true);
-                        if (!rootPom.equals(resolvedRootPom)) {
-                            load(null, resolvedRootPom);
-                        }
-                    }
-                    // if the project still wasn't found, we load it directly
-                    if (workspace.getCurrentProject() == null) {
-                        load(null, currentProjectPom);
-                    }
-                }
-                if (workspace.getCurrentProject() == null) {
-                    throw new BootstrapMavenException(
-                            "Failed to locate project " + currentProjectPom + " in the loaded workspace");
-                }
-            }
-            return workspace.getCurrentProject();
-        }
-
-        private void load(LocalProject parent, Path pom) throws BootstrapMavenException {
-            final Model model = model(pom);
-            final LocalProject project = new LocalProject(model, workspace);
-            if (parent != null) {
-                parent.modules.add(project);
-            }
-            try {
-                if (workspace.getCurrentProject() == null
-                        && Files.isSameFile(currentProjectPom.getParent(), project.getDir())) {
-                    workspace.setCurrentProject(project);
-                }
-            } catch (IOException e) {
-                throw new BootstrapMavenException("Failed to load current project", e);
-            }
-            final List<String> modules = project.getRawModel().getModules();
-            if (!modules.isEmpty()) {
-                for (String module : modules) {
-                    load(project, project.getDir().resolve(module).resolve(POM_XML));
-                }
-            }
-        }
-    }
+    static final String POM_XML = "pom.xml";
 
     public static LocalProject load(Path path) throws BootstrapMavenException {
         return load(path, true);
@@ -195,7 +57,7 @@ public class LocalProject {
 
     public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapMavenException {
         try {
-            return new WorkspaceLoader(path.normalize().toAbsolutePath()).load();
+            return new WorkspaceLoader(null, path.normalize().toAbsolutePath()).load();
         } catch (Exception e) {
             if (required) {
                 throw e;
@@ -218,16 +80,15 @@ public class LocalProject {
             return null;
         }
         final Path rootProjectBaseDir = ctx.getRootProjectBaseDir();
-        final WorkspaceLoader wsLoader = new WorkspaceLoader(currentProjectPom);
+        final WorkspaceLoader wsLoader = new WorkspaceLoader(ctx, currentProjectPom);
+
         if (rootProjectBaseDir != null && !rootProjectBaseDir.equals(currentProjectPom.getParent())) {
             wsLoader.setWorkspaceRootPom(rootProjectBaseDir.resolve(POM_XML));
         }
-        final LocalProject lp = wsLoader.load();
-        lp.getWorkspace().setBootstrapMavenContext(ctx);
-        return lp;
+        return wsLoader.load();
     }
 
-    private static final Model readModel(Path pom) throws BootstrapMavenException {
+    static final Model readModel(Path pom) throws BootstrapMavenException {
         try {
             final Model model = ModelUtils.readModel(pom);
             model.setPomFile(pom.toFile());
@@ -237,7 +98,7 @@ public class LocalProject {
         }
     }
 
-    private static Path locateCurrentProjectPom(Path path, boolean required) throws BootstrapMavenException {
+    static Path locateCurrentProjectPom(Path path, boolean required) throws BootstrapMavenException {
         Path p = path;
         while (p != null) {
             final Path pom = p.resolve(POM_XML);
@@ -255,13 +116,29 @@ public class LocalProject {
     private final Model rawModel;
     private final String groupId;
     private final String artifactId;
-    private final String version;
+    private String version;
     private final Path dir;
     private final LocalWorkspace workspace;
-    private final List<LocalProject> modules = new ArrayList<>(0);
+    final List<LocalProject> modules = new ArrayList<>(0);
     private AppArtifactKey key;
+    private final ModelBuildingResult modelBuildingResult;
 
-    private LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapMavenException {
+    LocalProject(ModelBuildingResult modelBuildingResult, LocalWorkspace workspace) {
+        this.rawModel = modelBuildingResult.getRawModel();
+        final Model effectiveModel = modelBuildingResult.getEffectiveModel();
+        this.groupId = effectiveModel.getGroupId();
+        this.artifactId = effectiveModel.getArtifactId();
+        this.version = effectiveModel.getVersion();
+        this.dir = effectiveModel.getProjectDirectory().toPath();
+        this.modelBuildingResult = modelBuildingResult;
+        this.workspace = workspace;
+        if (workspace != null) {
+            workspace.addProject(this, rawModel.getPomFile().lastModified());
+        }
+    }
+
+    LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapMavenException {
+        this.modelBuildingResult = null;
         this.rawModel = rawModel;
         this.dir = rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
@@ -270,25 +147,16 @@ public class LocalProject {
 
         final String rawVersion = ModelUtils.getRawVersion(rawModel);
         final boolean rawVersionIsUnresolved = ModelUtils.isUnresolvedVersion(rawVersion);
-        String resolvedVersion = rawVersionIsUnresolved ? ModelUtils.resolveVersion(rawVersion, rawModel) : rawVersion;
+        version = rawVersionIsUnresolved ? ModelUtils.resolveVersion(rawVersion, rawModel) : rawVersion;
 
         if (workspace != null) {
             workspace.addProject(this, rawModel.getPomFile().lastModified());
-            if (rawVersionIsUnresolved) {
-                if (resolvedVersion == null) {
-                    resolvedVersion = workspace.getResolvedVersion();
-                    if (resolvedVersion == null) {
-                        throw UnresolvedVersionException.forGa(groupId, artifactId, rawVersion);
-                    }
-                } else {
-                    workspace.setResolvedVersion(resolvedVersion);
-                }
+            if (rawVersionIsUnresolved && version != null) {
+                workspace.setResolvedVersion(version);
             }
-        } else if (resolvedVersion == null) {
+        } else if (version == null && rawVersionIsUnresolved) {
             throw UnresolvedVersionException.forGa(groupId, artifactId, rawVersion);
         }
-
-        this.version = resolvedVersion;
     }
 
     public LocalProject getLocalParent() {
@@ -311,6 +179,15 @@ public class LocalProject {
     }
 
     public String getVersion() {
+        if (version != null) {
+            return version;
+        }
+        if (workspace != null) {
+            version = workspace.getResolvedVersion();
+        }
+        if (version == null) {
+            throw UnresolvedVersionException.forGa(groupId, artifactId, ModelUtils.getRawVersion(rawModel));
+        }
         return version;
     }
 
@@ -319,7 +196,9 @@ public class LocalProject {
     }
 
     public Path getOutputDir() {
-        return resolveRelativeToBaseDir(configuredBuildDir(this, build -> build.getDirectory()), "target");
+        return modelBuildingResult == null
+                ? resolveRelativeToBaseDir(configuredBuildDir(this, build -> build.getDirectory()), "target")
+                : Paths.get(modelBuildingResult.getEffectiveModel().getBuild().getDirectory());
     }
 
     public Path getCodeGenOutputDir() {
@@ -327,27 +206,57 @@ public class LocalProject {
     }
 
     public Path getClassesDir() {
-        return resolveRelativeToBuildDir(configuredBuildDir(this, build -> build.getOutputDirectory()), "classes");
+        return modelBuildingResult == null
+                ? resolveRelativeToBuildDir(configuredBuildDir(this, build -> build.getOutputDirectory()), "classes")
+                : Paths.get(modelBuildingResult.getEffectiveModel().getBuild().getOutputDirectory());
     }
 
     public Path getTestClassesDir() {
-        return resolveRelativeToBuildDir(configuredBuildDir(this, build -> build.getTestOutputDirectory()), "test-classes");
+        return modelBuildingResult == null
+                ? resolveRelativeToBuildDir(configuredBuildDir(this, build -> build.getTestOutputDirectory()), "test-classes")
+                : Paths.get(modelBuildingResult.getEffectiveModel().getBuild().getTestOutputDirectory());
     }
 
     public Path getSourcesSourcesDir() {
-        return resolveRelativeToBaseDir(configuredBuildDir(this, build -> build.getSourceDirectory()), "src/main/java");
+        return modelBuildingResult == null
+                ? resolveRelativeToBaseDir(configuredBuildDir(this, build -> build.getSourceDirectory()), "src/main/java")
+                : Paths.get(modelBuildingResult.getEffectiveModel().getBuild().getSourceDirectory());
+    }
+
+    public Path getTestSourcesSourcesDir() {
+        return resolveRelativeToBaseDir(configuredBuildDir(this, build -> build.getTestSourceDirectory()), "src/test/java");
     }
 
     public Path getSourcesDir() {
         return getSourcesSourcesDir().getParent();
     }
 
-    public Path getResourcesSourcesDir() {
+    public PathsCollection getResourcesSourcesDirs() {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getResources();
-        //todo: support multiple resources dirs for config hot deployment
-        final String resourcesDir = resources.isEmpty() ? null : resources.get(0).getDirectory();
-        return resolveRelativeToBaseDir(resourcesDir, "src/main/resources");
+        if (resources.isEmpty()) {
+            return PathsCollection.of(resolveRelativeToBaseDir(null, "src/main/resources"));
+        }
+        return PathsCollection.from(resources.stream()
+                .map(Resource::getDirectory)
+                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/main/resources"))
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
+    }
+
+    public PathsCollection getTestResourcesSourcesDirs() {
+        final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
+                : rawModel.getBuild().getTestResources();
+        if (resources.isEmpty()) {
+            return PathsCollection.of(resolveRelativeToBaseDir(null, "src/test/resources"));
+        }
+        return PathsCollection.from(resources.stream()
+                .map(Resource::getDirectory)
+                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/test/resources"))
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
+    }
+
+    public ModelBuildingResult getModelBuildingResult() {
+        return modelBuildingResult;
     }
 
     public Model getRawModel() {
@@ -363,11 +272,16 @@ public class LocalProject {
     }
 
     public AppArtifact getAppArtifact() {
-        return getAppArtifact(rawModel.getPackaging());
+        return getAppArtifact(
+                modelBuildingResult == null ? rawModel.getPackaging() : modelBuildingResult.getEffectiveModel().getPackaging());
     }
 
     public AppArtifact getAppArtifact(String extension) {
-        return new AppArtifact(groupId, artifactId, "", extension, version);
+        return new AppArtifact(groupId, artifactId, "", extension, getVersion());
+    }
+
+    public Path resolveRelativeToBaseDir(String path) {
+        return resolveRelativeToBaseDir(path, null);
     }
 
     private Path resolveRelativeToBaseDir(String path, String defaultPath) {
@@ -389,7 +303,9 @@ public class LocalProject {
             if (project == null) {
                 break;
             }
-            dir = project.rawModel.getBuild() == null ? null : f.apply(project.rawModel.getBuild());
+            if (project.rawModel.getBuild() != null) {
+                dir = f.apply(project.rawModel.getBuild());
+            }
         }
         return dir;
     }

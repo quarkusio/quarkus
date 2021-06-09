@@ -8,14 +8,13 @@ import static io.grpc.stub.ServerCalls.asyncServerStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncClientStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
 
-
 {{#deprecated}}
 @java.lang.Deprecated
 {{/deprecated}}
 @javax.annotation.Generated(
 value = "by {{classPrefix}} Grpc generator",
 comments = "Source: {{protoName}}")
-public final class {{className}} {
+public final class {{className}} implements io.quarkus.grpc.runtime.MutinyGrpc {
     private {{className}}() {}
 
     public static {{classPrefix}}{{serviceName}}Stub new{{classPrefix}}Stub(io.grpc.Channel channel) {
@@ -23,7 +22,7 @@ public final class {{className}} {
     }
 
     {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
-    public static final class {{classPrefix}}{{serviceName}}Stub extends io.grpc.stub.AbstractStub<{{classPrefix}}{{serviceName}}Stub> {
+    public static final class {{classPrefix}}{{serviceName}}Stub extends io.grpc.stub.AbstractStub<{{classPrefix}}{{serviceName}}Stub> implements io.quarkus.grpc.runtime.MutinyStub {
         private {{serviceName}}Grpc.{{serviceName}}Stub delegateStub;
 
         private {{classPrefix}}{{serviceName}}Stub(io.grpc.Channel channel) {
@@ -57,21 +56,32 @@ public final class {{className}} {
         {{/unaryManyMethods}}
         {{#manyUnaryMethods}}
         {{{methodHeader}}}
-        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> hdlr) {
-            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(request, delegateStub::{{methodName}});
         }
 
         {{/manyUnaryMethods}}
         {{#manyManyMethods}}
         {{{methodHeader}}}
-        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> hdlr) {
-            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(request, delegateStub::{{methodName}});
         }
         {{/manyManyMethods}}
     }
 
     {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
     public static abstract class {{serviceName}}ImplBase implements io.grpc.BindableService {
+
+        private String compression;
+        /**
+        * Set whether the server will try to use a compressed response.
+        *
+        * @param compression the compression, e.g {@code gzip}
+        */
+        public {{serviceName}}ImplBase withCompression(String compression) {
+        this.compression = compression;
+        return this;
+        }
 
 
         {{#unaryUnaryMethods}}
@@ -111,7 +121,7 @@ public final class {{className}} {
                                     new MethodHandlers<
                                             {{inputType}},
                                             {{outputType}}>(
-                                            this, METHODID_{{methodNameUpperUnderscore}})))
+                                            this, METHODID_{{methodNameUpperUnderscore}}, compression)))
                     {{/methods}}
                     .build();
         }
@@ -128,10 +138,12 @@ public final class {{className}} {
             io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
         private final {{serviceName}}ImplBase serviceImpl;
         private final int methodId;
+        private final String compression;
 
-        MethodHandlers({{serviceName}}ImplBase serviceImpl, int methodId) {
+        MethodHandlers({{serviceName}}ImplBase serviceImpl, int methodId, String compression) {
             this.serviceImpl = serviceImpl;
             this.methodId = methodId;
+            this.compression = compression;
         }
 
         @java.lang.Override
@@ -143,6 +155,7 @@ public final class {{className}} {
                 case METHODID_{{methodNameUpperUnderscore}}:
                     io.quarkus.grpc.runtime.ServerCalls.{{mutinyCallsMethodName}}(({{inputType}}) request,
                             (io.grpc.stub.StreamObserver<{{outputType}}>) responseObserver,
+                            compression,
                             serviceImpl::{{methodName}});
                     break;
                 {{/isManyInput}}

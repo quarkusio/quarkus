@@ -19,7 +19,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <suiteXmlFiles>
-                        <suiteXmlFile>tck-base-suite.xml</suiteXmlFile>
+                        <suiteXmlFile>${project.build.directory}/tck-suite/suites/tck-base-suite.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
@@ -33,6 +33,34 @@
                         <dependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck</dependency>
                     </dependenciesToScan>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack-suite-files</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.eclipse.microprofile.jwt</groupId>
+                                    <artifactId>microprofile-jwt-auth-tck</artifactId>
+                                    <version>${microprofile-jwt-api.version}</version>
+                                    <type>test-jar</type>
+                                    <classifier>tests</classifier>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}/tck-suite</outputDirectory>
+                                    <includes>**/tck-base-suite.xml</includes>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -67,6 +95,10 @@
                     <groupId>org.osgi</groupId>
                     <artifactId>org.osgi.annotation.versioning</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.bitbucket.b_c</groupId>
+                    <artifactId>jose4j</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -74,7 +106,6 @@
             <artifactId>microprofile-jwt-auth-tck</artifactId>
             <version>${microprofile-jwt-api.version}</version>
             <type>test-jar</type>
-            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>org.jboss.shrinkwrap.resolver</groupId>
@@ -83,6 +114,10 @@
                 <exclusion>
                     <groupId>org.osgi</groupId>
                     <artifactId>org.osgi.annotation.versioning</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bitbucket.b_c</groupId>
+                    <artifactId>jose4j</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -47,9 +47,9 @@ public class ManagedReplacedDependencyTestCase extends CollectDependenciesBase {
         root.addDependency(TsArtifact.jar(ext300.getRuntime().getArtifactId(), null));
 
         // the dependency management
-        addManagedDep(ext103.getRuntime());
-        addManagedDep(ext201.getRuntime());
-        addManagedDep(ext301.getRuntime());
+        addManagedDep(ext103);
+        addManagedDep(ext201);
+        addManagedDep(ext301);
 
         addCollectedDep(ext301.getRuntime());
         addCollectedDeploymentDep(ext301.getDeployment());

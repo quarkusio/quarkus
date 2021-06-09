@@ -66,7 +66,6 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
      */
     public static final String USER_AGENT_CHARSETS = "user-agent-charsets";
 
-    private final String name;
     private final String challenge;
 
     private static final String BASIC = "basic";
@@ -87,30 +86,38 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     private final Map<Pattern, Charset> userAgentCharsets;
 
     public BasicAuthenticationMechanism(final String realmName) {
-        this(realmName, "BASIC");
+        this(realmName, false);
     }
 
-    public BasicAuthenticationMechanism(final String realmName, final String mechanismName) {
-        this(realmName, mechanismName, false);
+    public BasicAuthenticationMechanism(final String realmName, final boolean silent) {
+        this(realmName, silent, StandardCharsets.UTF_8, Collections.emptyMap());
     }
 
-    public BasicAuthenticationMechanism(final String realmName, final String mechanismName, final boolean silent) {
-        this(realmName, mechanismName, silent, StandardCharsets.UTF_8, Collections.emptyMap());
-    }
-
-    public BasicAuthenticationMechanism(final String realmName, final String mechanismName, final boolean silent,
+    public BasicAuthenticationMechanism(final String realmName, final boolean silent,
             Charset charset, Map<Pattern, Charset> userAgentCharsets) {
         this.challenge = BASIC_PREFIX + "realm=\"" + realmName + "\"";
-        this.name = mechanismName;
         this.silent = silent;
         this.charset = charset;
         this.userAgentCharsets = Collections.unmodifiableMap(new LinkedHashMap<>(userAgentCharsets));
     }
 
-    private static void clear(final char[] array) {
-        for (int i = 0; i < array.length; i++) {
-            array[i] = 0x00;
-        }
+    @Deprecated
+    public BasicAuthenticationMechanism(final String realmName, final String mechanismName) {
+        this(realmName, mechanismName, false);
+    }
+
+    @Deprecated
+    public BasicAuthenticationMechanism(final String realmName, final String mechanismName, final boolean silent) {
+        this(realmName, mechanismName, silent, StandardCharsets.UTF_8, Collections.emptyMap());
+    }
+
+    @Deprecated
+    public BasicAuthenticationMechanism(final String realmName, final String mechanismName, final boolean silent,
+            Charset charset, Map<Pattern, Charset> userAgentCharsets) {
+        this.challenge = BASIC_PREFIX + "realm=\"" + realmName + "\"";
+        this.silent = silent;
+        this.charset = charset;
+        this.userAgentCharsets = Collections.unmodifiableMap(new LinkedHashMap<>(userAgentCharsets));
     }
 
     @Override
@@ -147,6 +154,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
 
                         UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(userName,
                                 new PasswordCredential(password));
+                        HttpSecurityUtils.setRoutingContextAttribute(credential, context);
                         return identityProviderManager.authenticate(credential);
                     }
 

@@ -94,7 +94,7 @@ public class StreamResource {
     }
 
     public static Uni<Buffer> concatenateBuffers(Multi<Buffer> multi) {
-        return multi.collectItems().in(() -> Buffer.buffer(INITIAL_BUFFER_SIZE),
+        return multi.collect().in(() -> Buffer.buffer(INITIAL_BUFFER_SIZE),
                 (accumulatingBuffer, receivedBuffer) -> accumulatingBuffer.appendBuffer(receivedBuffer));
     }
 

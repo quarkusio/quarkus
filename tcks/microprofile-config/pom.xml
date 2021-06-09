@@ -23,11 +23,19 @@
                     </suiteXmlFiles>
                     <!-- These env variables are required for org.eclipse.microprofile.config.tck.CDIPropertyNameMatchingTest -->
                     <environmentVariables>
+                        <MP_TCK_ENV_DUMMY>dummy</MP_TCK_ENV_DUMMY>
                         <my_int_property>45</my_int_property>
                         <MY_BOOLEAN_PROPERTY>true</MY_BOOLEAN_PROPERTY>
                         <my_string_property>haha</my_string_property>
                         <MY_STRING_PROPERTY>woohoo</MY_STRING_PROPERTY>
+                        <config_ordinal>45</config_ordinal>
+                        <customer_name>Bob</customer_name>
                     </environmentVariables>
+                    <systemProperties>
+                        <mp.tck.prop.dummy>dummy</mp.tck.prop.dummy>
+                        <customer.hobby>Tennis</customer.hobby>
+                        <config_ordinal>120</config_ordinal>
+                    </systemProperties>
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
@@ -52,29 +60,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arquillian</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.eclipse.microprofile.config</groupId>
             <artifactId>microprofile-config-tck</artifactId>
             <version>${microprofile-config-api.version}</version>
-        </dependency>
-
-        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 

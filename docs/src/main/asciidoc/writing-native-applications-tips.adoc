@@ -27,7 +27,34 @@ Resources that are meant to be part of the native executable need to be configur
 
 Quarkus automatically includes the resources present in `META-INF/resources` (the web resources) but, outside of this directory, you are on your own.
 
-To include more resources in the native executable, create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
+[WARNING]
+====
+Note that you need to be extremely careful here as anything in `META-INF/resources` will be exposed as static web resources.
+So this directory is not a shortcut for "let's automatically include these resources in the native executable" and should only be used for static web resources.
+
+Other resources should be declared explicitly.
+====
+
+To include more resources in the native executable, the easiest way is to use the `quarkus.native.resources.includes` configuration property,
+and its counterpart to exclude resources `quarkus.native.resources.excludes`.
+
+Both configuration properties support glob patterns.
+
+For instance, having the following properties in your `application.properties`:
+
+[source,properties]
+----
+quarkus.native.resources.includes=foo/**,bar/**/*.txt
+quarkus.native.resources.excludes=foo/private/**
+----
+
+will include:
+
+* all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
+* all text files in the `bar/` directory and its subdirectories.
+
+If globs are not sufficiently precise for your use case and you need to rely on regular expressions or if you prefer relying on the GraalVM infrastructure,
+you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
 
 [source,json]
 ----
@@ -161,6 +188,7 @@ An even nastier possible outcome could be for no exception to be thrown, but ins
 
 There are two different ways to fix this type of issues.
 
+[#registerForReflection]
 ==== Using the @RegisterForReflection annotation
 
 The easiest way to register a class for reflection is to use the `@RegisterForReflection` annotation:
@@ -176,12 +204,22 @@ If your class is in a third-party jar, you can do it by using an empty class tha
 
 [source,java]
 ----
-@RegisterForReflection(targets=MyClass.class)
+@RegisterForReflection(targets={ MyClassRequiringReflection.class, MySecondClassRequiringReflection.class})
 public class MyReflectionConfiguration {
 }
 ----
 
-Note that `MyClass` will be registered for reflection but not `MyReflectionConfiguration`.
+Note that `MyClassRequiringReflection` and  `MySecondClassRequiringReflection` will be registered for reflection but not `MyReflectionConfiguration`.
+
+This feature is handy when using third-party libraries using object mapping features (such as Jackson or GSON):
+
+[source, java]
+----
+@RegisterForReflection(targets = {User.class, UserImpl.class})
+public class MyReflectionConfiguration {
+
+}
+----
 
 ==== Using a configuration file
 

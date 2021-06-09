@@ -22,7 +22,7 @@ import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.web.Cookie;
+import io.vertx.core.http.Cookie;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -53,7 +53,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
         ChallengeData result = new ChallengeData(
                 HttpResponseStatus.UNAUTHORIZED.code(),
                 HttpHeaderNames.WWW_AUTHENTICATE,
-                "Bearer {token}");
+                "Bearer");
         return Uni.createFrom().item(result);
     }
 

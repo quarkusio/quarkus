@@ -17,10 +17,10 @@ public class RestApplicationPathTestCase {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withConfigurationResource("empty.properties")
-            .overrideConfigKey("quarkus.rest.path", "/foo")
+            .overrideConfigKey("quarkus.resteasy-reactive.path", "/foo")
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class, BarApp.class));
+                    .addClasses(HelloResource.class, BarApp.class, BaseApplication.class));
 
     /**
      * Using @ApplicationPath will overlay/replace `quarkus.rest.path`.
@@ -33,7 +33,10 @@ public class RestApplicationPathTestCase {
      * This path will also be relative to the configured HTTP root
      */
     @ApplicationPath("/bar")
-    public static class BarApp extends Application {
+    public static class BarApp extends BaseApplication {
+    }
+
+    public static abstract class BaseApplication extends Application {
     }
 
     @Test

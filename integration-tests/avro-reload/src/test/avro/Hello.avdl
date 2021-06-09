@@ -1,0 +1,13 @@
+@namespace("test")
+protocol Hello {
+
+	enum Level{
+		LOW, MEDIUM, HIGH
+	}
+
+	record Message {
+		string name;
+		string desc;
+		Level priority;
+	}
+}

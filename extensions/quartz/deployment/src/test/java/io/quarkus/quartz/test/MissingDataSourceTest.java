@@ -17,7 +17,7 @@ public class MissingDataSourceTest {
             .setExpectedException(ConfigurationError.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleJobs.class)
-                    .addAsResource(new StringAsset("quarkus.quartz.store-type=db"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.quartz.store-type=jdbc-cmt"), "application.properties"));
 
     @Test
     public void shouldFailAndNotReachHere() {

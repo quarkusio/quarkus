@@ -75,6 +75,12 @@
                     <groupId>javax.activation</groupId>
                     <artifactId>javax.activation-api</artifactId>
                 </exclusion>
+
+                <!-- Not necessary at runtime -->
+                <exclusion>
+                    <groupId>org.jboss</groupId>
+                    <artifactId>jandex</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -136,6 +142,9 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.hibernate.orm</provides>
+                    </capabilities>
                     <excludedArtifacts>
                         <excludedArtifact>javax.persistence:javax.persistence-api</excludedArtifact>
                         <excludedArtifact>javax.persistence:persistence-api</excludedArtifact>

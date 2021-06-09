@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 
 import org.jboss.logging.Logger;
 
+import io.netty.buffer.Unpooled;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.DevConsoleRequest;
 import io.quarkus.dev.console.DevConsoleResponse;
@@ -34,12 +35,12 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
             headers.put(entry.getKey(), event.request().headers().getAll(entry.getKey()));
         }
         if (event.getBody() != null) {
-            DevConsoleRequest request = new DevConsoleRequest(event.request().rawMethod(), event.request().uri(), headers,
+            DevConsoleRequest request = new DevConsoleRequest(event.request().method().name(), event.request().uri(), headers,
                     event.getBody().getBytes());
             setupFuture(event, request.getResponse());
             DevConsoleManager.sentRequest(request);
         } else if (event.request().isEnded()) {
-            DevConsoleRequest request = new DevConsoleRequest(event.request().rawMethod(), event.request().uri(), headers,
+            DevConsoleRequest request = new DevConsoleRequest(event.request().method().name(), event.request().uri(), headers,
                     new byte[0]);
             setupFuture(event, request.getResponse());
             DevConsoleManager.sentRequest(request);
@@ -47,7 +48,7 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
             event.request().bodyHandler(new Handler<Buffer>() {
                 @Override
                 public void handle(Buffer body) {
-                    DevConsoleRequest request = new DevConsoleRequest(event.request().rawMethod(), event.request().uri(),
+                    DevConsoleRequest request = new DevConsoleRequest(event.request().method().name(), event.request().uri(),
                             headers, body.getBytes());
                     setupFuture(event, request.getResponse());
                     DevConsoleManager.sentRequest(request);
@@ -71,7 +72,7 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
                         event.response().headers().add(entry.getKey(), entry.getValue());
                     }
                     event.response().setStatusCode(devConsoleResponse.getStatus())
-                            .end(Buffer.buffer(devConsoleResponse.getBody()));
+                            .end(Buffer.buffer(Unpooled.copiedBuffer(devConsoleResponse.getBody())));
                 }
                 return null;
             }

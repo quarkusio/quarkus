@@ -31,12 +31,13 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -85,7 +86,14 @@ public class JacksonProcessor {
     List<IgnoreJsonDeserializeClassBuildItem> ignoreJsonDeserializeClassBuildItems;
 
     @BuildStep
-    CapabilityBuildItem register(
+    void unremovable(Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> producer) {
+        if (capabilities.isPresent(Capability.VERTX_CORE)) {
+            producer.produce(UnremovableBeanBuildItem.beanTypes(ObjectMapper.class));
+        }
+    }
+
+    @BuildStep
+    void register(
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
@@ -127,6 +135,17 @@ public class JacksonProcessor {
                 // the Deserializers are constructed internally by Jackson using a no-args constructor
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().name().toString()));
             }
+            AnnotationValue keyUsingValue = deserializeInstance.value("keyUsing");
+            if (keyUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, keyUsingValue.asClass().name().toString()));
+            }
+            AnnotationValue contentUsingValue = deserializeInstance.value("contentUsing");
+            if (contentUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(false, false, contentUsingValue.asClass().name().toString()));
+            }
         }
 
         // handle the various @JsonSerialize cases
@@ -135,6 +154,23 @@ public class JacksonProcessor {
             if (usingValue != null) {
                 // the Serializers are constructed internally by Jackson using a no-args constructor
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().name().toString()));
+            }
+            AnnotationValue keyUsingValue = serializeInstance.value("keyUsing");
+            if (keyUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, keyUsingValue.asClass().name().toString()));
+            }
+            AnnotationValue contentUsingValue = serializeInstance.value("contentUsing");
+            if (contentUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(false, false, contentUsingValue.asClass().name().toString()));
+            }
+            AnnotationValue nullsUsingValue = serializeInstance.value("nullsUsing");
+            if (nullsUsingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(false, false, nullsUsingValue.asClass().name().toString()));
             }
         }
 
@@ -170,8 +206,6 @@ public class JacksonProcessor {
 
         // this needs to be registered manually since the runtime module is not indexed by Jandex
         additionalBeans.produce(new AdditionalBeanBuildItem(ObjectMapperProducer.class));
-
-        return new CapabilityBuildItem(Capability.JACKSON);
     }
 
     private void addReflectiveHierarchyClass(DotName className,

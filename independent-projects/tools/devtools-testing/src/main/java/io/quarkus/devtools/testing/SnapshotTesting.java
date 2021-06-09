@@ -105,15 +105,16 @@ public class SnapshotTesting {
 
         final String snapshotNotFoundDescription = "corresponding snapshot not found for " + snapshotIdentifier
                 + " (Use -Dsnap to create it automatically)";
+        final String description = "Snapshot is not matching (use -Dsnap to udpate it automatically): " + snapshotIdentifier;
         if (isUTF8File(fileToCheck)) {
-            final String description = "check snapshot for: " + snapshotIdentifier;
             assertThat(snapshotFile).as(snapshotNotFoundDescription).isRegularFile();
-            assertThat(fileToCheck).as(description).exists().usingCharset(StandardCharsets.UTF_8)
-                    .hasContent(getContent(snapshotFile));
+            assertThat(fileToCheck).as(description).exists()
+                    .usingCharset(StandardCharsets.UTF_8)
+                    .hasSameTextualContentAs(snapshotFile, StandardCharsets.UTF_8);
+
         } else {
-            final String description = "check binary snapshot for: " + snapshotIdentifier;
             assertThat(snapshotFile).as(snapshotNotFoundDescription).isRegularFile();
-            assertThat(fileToCheck).as(description).hasBinaryContent(getBinaryContent(snapshotFile));
+            assertThat(fileToCheck).as(description).hasSameBinaryContentAs(snapshotFile);
         }
         return assertThat(fileToCheck);
     }
@@ -134,7 +135,25 @@ public class SnapshotTesting {
      * @throws Throwable
      */
     public static ListAssert<String> assertThatDirectoryTreeMatchSnapshots(TestInfo testInfo, Path dir) throws Throwable {
-        final String snapshotName = getSnapshotDirName(testInfo) + "/dir-tree.snapshot";
+        return assertThatDirectoryTreeMatchSnapshots(getSnapshotDirName(testInfo), dir);
+    }
+
+    /**
+     * Test directory tree to make sure it is valid by comparing it to a snapshot.
+     * <br />
+     * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
+     * <br />
+     * <br />
+     * The snapshot will be created/updated using <code>-Dsnap</code> or
+     * <code>-Dupdate-snapshots</code>
+     *
+     * @param snapshotDirName the snapshot dir name for storage
+     * @param dir the {@link Path} of the directory to test
+     * @return a {@link ListAssert} with the directory tree as a list
+     * @throws Throwable
+     */
+    public static ListAssert<String> assertThatDirectoryTreeMatchSnapshots(String snapshotDirName, Path dir) throws Throwable {
+        final String snapshotName = snapshotDirName + "/dir-tree.snapshot";
         final Path snapshotFile = SNAPSHOTS_DIR.resolve(snapshotName);
 
         assertThat(dir).isDirectory();
@@ -147,6 +166,7 @@ public class SnapshotTesting {
                     }
                     return r;
                 })
+                .sorted()
                 .collect(toList());
 
         final boolean updateSnapshot = shouldUpdateSnapshot(snapshotName);
@@ -163,22 +183,16 @@ public class SnapshotTesting {
                 .as("corresponding snapshot not found for " + snapshotName + " (Use -Dsnap to create it automatically)")
                 .isRegularFile();
 
-        final List<String> content = Arrays.stream(getContent(snapshotFile).split("\\v"))
+        final List<String> content = Arrays.stream(getTextContent(snapshotFile).split("\\v"))
                 .filter(s -> !s.isEmpty())
                 .collect(toList());
 
-        return assertThat(tree).containsExactlyInAnyOrderElementsOf(content);
+        return assertThat(tree)
+                .as("Snapshot is not matching (use -Dsnap to udpate it automatically):" + snapshotName)
+                .containsExactlyInAnyOrderElementsOf(content);
     }
 
-    public static byte[] getBinaryContent(Path file) {
-        try {
-            return Files.readAllBytes(file);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Unable to read " + file.toString(), e);
-        }
-    }
-
-    public static String getContent(Path file) {
+    public static String getTextContent(Path file) {
         try {
             return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -200,11 +214,11 @@ public class SnapshotTesting {
      * @return a {@link Consumer<Path>} to use with {@link AbstractPathAssert#satisfies(Consumer)}
      */
     public static Consumer<Path> checkContains(String s) {
-        return (p) -> assertThat(getContent(p)).contains(s);
+        return (p) -> assertThat(getTextContent(p)).contains(s);
     }
 
     public static Consumer<Path> checkMatches(String regex) {
-        return (p) -> assertThat(getContent(p)).matches(regex);
+        return (p) -> assertThat(getTextContent(p)).matches(regex);
     }
 
     public static String getSnapshotDirName(TestInfo testInfo) {

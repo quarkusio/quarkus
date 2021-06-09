@@ -17,7 +17,6 @@
         <gradle-wrapper.path>${project.basedir}/../gradle</gradle-wrapper.path>
         <gradle.executable>gradlew</gradle.executable>
     </properties>
-
     <build>
         <resources>
             <resource>

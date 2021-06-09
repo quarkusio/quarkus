@@ -1,126 +1,142 @@
 {
-    "category": [
-        "Main",
-        "Data1",
-        "Data2",
-        "Data3",
-        "Data4",
-        "Data5",
-        "Data6",
-        "Security1",
-        "Security2",
-        "Security3",
-        "Amazon",
-        "Messaging",
-        "Cache",
-        "HTTP",
-        "Misc1",
-        "Misc2",
-        "Misc3",
-        "Misc4",
-        "Spring",
-        "gRPC"
-    ],
     "include": [
         {
             "category": "Main",
             "timeout": 40,
-            "test-modules": "main"
+            "test-modules": "main",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Data1",
             "timeout": 65,
-            "test-modules": "jpa-h2 jpa-mariadb jpa-mssql jpa-derby jpa-without-entity hibernate-tenancy"
+            "test-modules": "jpa-h2, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-tenancy",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Data2",
             "timeout": 65,
-            "test-modules": "jpa jpa-mysql jpa-db2 reactive-mysql-client reactive-db2-client hibernate-reactive-db2 hibernate-reactive-mysql"
+            "test-modules": "jpa, jpa-mysql, jpa-db2, jpa-oracle",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Data3",
             "timeout": 70,
-            "test-modules": "flyway hibernate-orm-panache hibernate-orm-panache-kotlin hibernate-orm-envers liquibase"
+            "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Data4",
             "timeout": 55,
-            "test-modules": "mongodb-client mongodb-panache mongodb-rest-data-panache mongodb-panache-kotlin redis-client neo4j hibernate-orm-rest-data-panache"
+            "test-modules": "mongodb-client, mongodb-panache, mongodb-rest-data-panache, mongodb-panache-kotlin, redis-client, neo4j, hibernate-orm-rest-data-panache",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Data5",
             "timeout": 65,
-            "test-modules": "jpa-postgresql narayana-stm narayana-jta reactive-pg-client hibernate-reactive-postgresql"
+            "test-modules": "jpa-postgresql, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Data6",
             "timeout": 50,
-            "test-modules": "elasticsearch-rest-client elasticsearch-rest-high-level-client hibernate-search-orm-elasticsearch hibernate-reactive-panache"
+            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-reactive-panache",
+            "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "Data7",
+            "timeout": 65,
+            "test-modules": "reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mysql",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Amazon",
             "timeout": 45,
-            "test-modules": "amazon-services amazon-lambda amazon-lambda-http"
+            "test-modules": "amazon-services, amazon-lambda, amazon-lambda-http",
+            "os-name": "ubuntu-latest"
         },
         {
-            "category": "Messaging",
-            "timeout": 120,
-            "test-modules": "artemis-core artemis-jms kafka kafka-avro kafka-snappy kafka-streams reactive-messaging-amqp reactive-messaging-kafka reactive-messaging-http"
+            "category": "Messaging1",
+            "timeout": 100,
+            "test-modules": "kafka, kafka-ssl, kafka-sasl, kafka-avro, kafka-avro-apicurio2, kafka-snappy, kafka-streams, reactive-messaging-kafka",
+            "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "Messaging2",
+            "timeout": 70,
+            "test-modules": "artemis-core, artemis-jms, reactive-messaging-amqp, reactive-messaging-http",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Security1",
             "timeout": 50,
-            "test-modules": "elytron-security-oauth2 elytron-security elytron-security-jdbc elytron-undertow elytron-security-ldap bouncycastle bouncycastle-jsse bouncycastle-fips"
+            "test-modules": "elytron-security-oauth2, elytron-security, elytron-security-jdbc, elytron-undertow, elytron-security-ldap, bouncycastle, bouncycastle-jsse, bouncycastle-fips",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Security2",
             "timeout": 70,
-            "test-modules": "oidc oidc-code-flow oidc-tenancy keycloak-authorization oidc-client oidc-token-propagation smallrye-jwt-token-propagation oidc-wiremock oidc-client-wiremock"
+            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Security3",
             "timeout": 50,
-            "test-modules": "vault vault-app vault-agroal"
+            "test-modules": "vault, vault-app, vault-agroal, keycloak-authorization, smallrye-jwt-token-propagation",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Cache",
             "timeout": 55,
-            "test-modules": "infinispan-cache-jpa infinispan-client cache"
+            "test-modules": "infinispan-cache-jpa, infinispan-client, cache",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "HTTP",
-            "timeout": 65,
-            "test-modules": "elytron-resteasy resteasy-jackson resteasy-mutiny vertx vertx-http vertx-web vertx-graphql virtual-http rest-client"
+            "timeout": 70,
+            "test-modules": "elytron-resteasy, resteasy-jackson, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc1",
             "timeout": 65,
-            "test-modules": "maven jackson jsonb jsch jgit quartz qute consul-config logging-min-level-unset logging-min-level-set"
+            "test-modules": "maven, jackson, jsonb, jsch, jgit, quartz, qute, consul-config, logging-min-level-unset, logging-min-level-set, simple with space",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc2",
             "timeout": 65,
-            "test-modules": "tika hibernate-validator test-extension logging-gelf bootstrap-config mailer native-config-profile"
+            "test-modules": "tika, hibernate-validator, test-extension, logging-gelf, bootstrap-config, mailer, native-config-profile",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc3",
             "timeout": 65,
-            "test-modules": "kubernetes-client openshift-client"
+            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc4",
             "timeout": 65,
-            "test-modules": "smallrye-config smallrye-graphql picocli-native gradle micrometer-mp-metrics micrometer-prometheus smallrye-metrics logging-json jaxp opentelemetry"
+            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, opentelemetry",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "Spring",
             "timeout": 55,
-            "test-modules": "spring-di spring-web spring-data-jpa spring-boot-properties spring-cloud-config-client spring-data-rest"
+            "test-modules": "spring-di, spring-web, spring-data-jpa, spring-boot-properties, spring-cloud-config-client, spring-data-rest",
+            "os-name": "ubuntu-latest"
         },
         {
             "category": "gRPC",
             "timeout": 65,
-            "test-modules": "grpc-health grpc-interceptors grpc-mutual-auth grpc-plain-text-gzip grpc-plain-text-mutiny grpc-proto-v2 grpc-streaming grpc-tls"
+            "test-modules": "grpc-health, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls",
+            "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "Windows - hibernate-validator",
+            "timeout": 20,
+            "test-modules": "hibernate-validator",
+            "os-name": "windows-latest"
         }
     ]
 }

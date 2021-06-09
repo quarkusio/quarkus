@@ -32,6 +32,9 @@ class FlywayCreator {
     public Flyway createFlyway(DataSource dataSource) {
         FluentConfiguration configure = Flyway.configure();
         configure.dataSource(dataSource);
+        if (flywayRuntimeConfig.initSql.isPresent()) {
+            configure.initSql(flywayRuntimeConfig.initSql.get());
+        }
         if (flywayRuntimeConfig.connectRetries.isPresent()) {
             configure.connectRetries(flywayRuntimeConfig.connectRetries.getAsInt());
         }
@@ -48,6 +51,7 @@ class FlywayCreator {
         if (flywayRuntimeConfig.repeatableSqlMigrationPrefix.isPresent()) {
             configure.repeatableSqlMigrationPrefix(flywayRuntimeConfig.repeatableSqlMigrationPrefix.get());
         }
+        configure.cleanDisabled(flywayRuntimeConfig.cleanDisabled);
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
         configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
         configure.ignoreMissingMigrations(flywayRuntimeConfig.ignoreMissingMigrations);

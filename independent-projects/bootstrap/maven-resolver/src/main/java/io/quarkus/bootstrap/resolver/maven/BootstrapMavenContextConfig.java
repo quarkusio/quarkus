@@ -21,12 +21,15 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected RepositorySystem repoSystem;
     protected RepositorySystemSession repoSession;
     protected List<RemoteRepository> remoteRepos;
+    protected List<RemoteRepository> remotePluginRepos;
     protected RemoteRepositoryManager remoteRepoManager;
     protected String alternatePomName;
     protected File userSettings;
     protected boolean artifactTransferLogging = true;
     protected BootstrapMavenOptions cliOptions;
     protected Path rootProjectDir;
+    protected boolean preferPomsFromWorkspace;
+    protected Boolean effectiveModelBuilder;
 
     /**
      * Local repository location
@@ -97,7 +100,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     /**
      * RepositorySystemSession that should be used by the resolver
      *
-     * @param repoSystem
+     * @param repoSession repository session
      * @return
      */
     @SuppressWarnings("unchecked")
@@ -109,12 +112,24 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     /**
      * Remote repositories that should be used by the resolver
      *
-     * @param repoSystem
+     * @param remoteRepos remote repositories
      * @return
      */
     @SuppressWarnings("unchecked")
     public T setRemoteRepositories(List<RemoteRepository> remoteRepos) {
         this.remoteRepos = remoteRepos;
+        return (T) this;
+    }
+
+    /**
+     * Remote plugin repositories that should be used by the resolver
+     *
+     * @param repoPluginRepos remote plugin repositories
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public T setRemotePluginRepositories(List<RemoteRepository> remotePluginRepos) {
+        this.remotePluginRepos = remotePluginRepos;
         return (T) this;
     }
 
@@ -193,6 +208,40 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setRootProjectDir(Path rootProjectDir) {
         this.rootProjectDir = rootProjectDir;
+        return (T) this;
+    }
+
+    /**
+     * By default POM artifacts of modules with packaging other than {@code pom} are resolved from the workspace
+     * only if the main artifact has been built locally, otherwise both the main artifact and the POM will be
+     * resolved from a Maven repository (local and/or remote).
+     * <p>
+     * Enabling this option will make the resolver ignore the fact that the main artifact hasn't been built yet and
+     * will pick up its {@code pom} from the workspace.
+     *
+     * @param preferPomsFromWorkspace whether the POM artifact should always be resolved from the workspace
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setPreferPomsFromWorkspace(boolean preferPomsFromWorkspace) {
+        this.preferPomsFromWorkspace = preferPomsFromWorkspace;
+        return (T) this;
+    }
+
+    /**
+     * When workspace is loaded, the current implementation reads the POM files of every project found and
+     * initializes the workspace model based on the raw POMs. This approach has its limitations, e.g.
+     * it doesn't properly support interpolation of POMs, including properties and profiles. But it is
+     * relatively fast compared to the resolving the effective POMs.
+     * <p>
+     * This option enables workspace initialization based on effective POMs of every found project.
+     *
+     * @param effectiveModelBuilder whether to enable effective model builder for workspace discovery
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setEffectiveModelBuilder(boolean effectiveModelBuilder) {
+        this.effectiveModelBuilder = effectiveModelBuilder;
         return (T) this;
     }
 

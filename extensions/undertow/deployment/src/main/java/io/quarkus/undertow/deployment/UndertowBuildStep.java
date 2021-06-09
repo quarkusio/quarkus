@@ -84,6 +84,7 @@ import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -91,7 +92,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -102,6 +102,8 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.runtime.RuntimeValue;
@@ -146,13 +148,26 @@ public class UndertowBuildStep {
     CombinedIndexBuildItem combinedIndexBuildItem;
 
     @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.SERVLET);
+    public FeatureBuildItem setupCapability() {
+        return new FeatureBuildItem(Feature.SERVLET);
     }
 
     @BuildStep
-    public FeatureBuildItem setupCapability() {
-        return new FeatureBuildItem(Feature.SERVLET);
+    void build(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<RuntimeInitializedClassBuildItem> producer) {
+        if (!jacksonOnClasspath(curateOutcomeBuildItem)) {
+            producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.core.json.Json"));
+            producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.core.spi.JsonFactory"));
+        }
+    }
+
+    private boolean jacksonOnClasspath(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
+            if (appDep.getArtifact().getArtifactId().equals("jackson-core")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @BuildStep
@@ -179,8 +194,10 @@ public class UndertowBuildStep {
         if (servletContextPathBuildItem.getServletContextPath().equals("/")) {
             undertowProducer.accept(new DefaultRouteBuildItem(ut));
         } else {
-            routeProducer.produce(new RouteBuildItem(servletContextPathBuildItem.getServletContextPath() + "/*", ut, false));
-            routeProducer.produce(new RouteBuildItem(servletContextPathBuildItem.getServletContextPath(), ut, false));
+            routeProducer.produce(RouteBuildItem.builder().route(servletContextPathBuildItem.getServletContextPath() + "/*")
+                    .handler(ut).build());
+            routeProducer.produce(
+                    RouteBuildItem.builder().route(servletContextPathBuildItem.getServletContextPath()).handler(ut).build());
         }
         return new ServiceStartBuildItem("undertow");
     }
@@ -229,27 +246,33 @@ public class UndertowBuildStep {
         }
     }
 
+    @BuildStep
+    List<IgnoredServletContainerInitializerBuildItem> translateDeprecated(
+            List<BlacklistedServletContainerInitializerBuildItem> old) {
+        return old.stream().map(BlacklistedServletContainerInitializerBuildItem::getSciClass)
+                .map(IgnoredServletContainerInitializerBuildItem::new).collect(Collectors.toList());
+    }
+
     /*
      * look for Servlet container initializers
      *
      */
     @BuildStep
     public List<ServletContainerInitializerBuildItem> servletContainerInitializer(
-            ApplicationArchivesBuildItem archives,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            List<BlacklistedServletContainerInitializerBuildItem> blacklistedBuildItems,
+            List<IgnoredServletContainerInitializerBuildItem> ignoredScis,
             BuildProducer<AdditionalBeanBuildItem> beans) throws IOException {
 
-        Set<String> blacklistedClassNames = new HashSet<>();
-        for (BlacklistedServletContainerInitializerBuildItem bi : blacklistedBuildItems) {
-            blacklistedClassNames.add(bi.getSciClass());
+        Set<String> ignoredClassNames = new HashSet<>();
+        for (IgnoredServletContainerInitializerBuildItem bi : ignoredScis) {
+            ignoredClassNames.add(bi.getSciClass());
         }
         List<ServletContainerInitializerBuildItem> ret = new ArrayList<>();
         Set<String> initializers = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                 SERVLET_CONTAINER_INITIALIZER);
 
         for (String initializer : initializers) {
-            if (blacklistedClassNames.contains(initializer)) {
+            if (ignoredClassNames.contains(initializer)) {
                 continue;
             }
             beans.produce(AdditionalBeanBuildItem.unremovableOf(initializer));

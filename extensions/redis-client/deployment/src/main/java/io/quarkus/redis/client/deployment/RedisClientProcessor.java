@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
+import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.quarkus.redis.client.runtime.MutinyRedis;
 import io.quarkus.redis.client.runtime.MutinyRedisAPI;
@@ -54,11 +55,19 @@ public class RedisClientProcessor {
     }
 
     @BuildStep
+    AdditionalBeanBuildItem registerAdditionalBeans() {
+        return new AdditionalBeanBuildItem.Builder()
+                .setUnremovable()
+                .addBeanClass(RedisHostsProvider.class)
+                .build();
+    }
+
+    @BuildStep
     List<AdditionalBeanBuildItem> registerRedisBeans() {
         return Arrays.asList(
                 AdditionalBeanBuildItem
                         .builder()
-                        .addBeanClass("io.quarkus.redis.client.runtime.RedisAPIProducer")
+                        .addBeanClass("io.quarkus.redis.client.runtime.RedisClientsProducer")
                         .setDefaultScope(SINGLETON.getName())
                         .setUnremovable()
                         .build(),

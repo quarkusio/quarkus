@@ -258,6 +258,7 @@ For the AWS REST API you can inject the AWS variables `com.amazonaws.services.la
 ----
 import javax.ws.rs.core.Context;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
+import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 
 
 @Path("/myresource")
@@ -266,7 +267,10 @@ public class MyResource {
     public String ctx(@Context com.amazonaws.services.lambda.runtime.Context ctx) { }
 
     @GET
-    public String req(@Context AwsProxyRequestContext req) { }
+    public String reqContext(@Context AwsProxyRequestContext req) { }
+
+    @GET
+    public String req(@Context AwsProxyRequest req) { }
 
 }
 ----
@@ -276,3 +280,203 @@ public class MyResource {
 If you are building native images, and want to use https://aws.amazon.com/xray[AWS X-Ray Tracing] with your lambda
 you will need to include `quarkus-amazon-lambda-xray` as a dependency in your pom.  The AWS X-Ray
 library is not fully compatible with GraalVM so we had to do some integration work to make this work.
+
+== Security Integration
+
+When you invoke an HTTP request on the API Gateway, the Gateway turns that HTTP request into a JSON event document that is
+forwarded to a Quarkus Lambda.  The Quarkus Lambda parses this json and converts in into an internal representation of an HTTP
+request that can be consumed by any HTTP framework Quarkus supports (JAX-RS, servlet, Vert.x Web).
+
+API Gateway supports many different ways to securely invoke on your HTTP endpoints that are backed by Lambda and Quarkus.
+If you enable it, Quarkus will automatically parse relevant parts of the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html[event json document]
+and look for security based metadata and register a `java.security.Principal` internally that can be looked up in JAX-RS
+by injecting a `javax.ws.rs.core.SecurityContext`, via `HttpServletRequest.getUserPrincipal()` in servlet, and `RouteContext.user()` in Vert.x Web.
+If you want more security information, the `Principal` object can be typecast to
+a class that will give you more information.
+
+To enable this security feature, add this to your `application.properties` file:
+----
+quarkus.lambda-http.enable-security=true
+----
+
+
+Here's how its mapped:
+
+.HTTP `quarkus-amazon-lambda-http`
+[options="header"]
+|=======================
+|Auth Type       |Principal Class                                 |Json path of Principal Name
+|Cognito JWT     |`io.quarkus.amazon.lambda.http.CognitoPrincipal`|`requestContext.authorizer.jwt.claims.cognito:username`
+|IAM             |`io.quarkus.amazon.lambda.http.IAMPrincipal`    |`requestContext.authorizer.iam.userId`
+|Custom Lambda   |`io.quarkus.amazon.lambda.http.CustomPrincipal` |`requestContext.authorizer.lambda.principalId`
+
+|=======================
+
+.REST `quarkus-amazon-lambda-rest`
+[options="header"]
+|=======================
+|Auth Type       |Principal Class                                 |Json path of Principal Name
+|Cognito         |`io.quarkus.amazon.lambda.http.CognitoPrincipal`|`requestContext.authorizer.claims.cognito:username`
+|IAM             |`io.quarkus.amazon.lambda.http.IAMPrincipal`    |`requestContext.identity.user`
+|Custom Lambda   |`io.quarkus.amazon.lambda.http.CustomPrincipal` |`requestContext.authorizer.principalId`
+
+|=======================
+
+== Custom Security Integration
+
+The default support for AWS security only maps the principal name to Quarkus security
+APIs and does nothing to map claims or roles or permissions.  You have can full control
+how security metadata in the lambda HTTP event is mapped to Quarkus security APIs using
+implementations of the `io.quarkus.amazon.lambda.http.LambdaIdentityProvider`
+interface.  By implementing this interface, you can do things like define role mappings for your principal
+or publish additional attributes provided by IAM or Cognito or your Custom Lambda security integration.
+
+.HTTP `quarkus-amazon-lambda-http`
+[source, java]
+----
+package io.quarkus.amazon.lambda.http;
+
+/**
+ * Helper interface that removes some boilerplate for creating
+ * an IdentityProvider that processes APIGatewayV2HTTPEvent
+ */
+public interface LambdaIdentityProvider extends IdentityProvider<LambdaAuthenticationRequest> {
+    @Override
+    default public Class<LambdaAuthenticationRequest> getRequestType() {
+        return LambdaAuthenticationRequest.class;
+    }
+
+    @Override
+    default Uni<SecurityIdentity> authenticate(LambdaAuthenticationRequest request, AuthenticationRequestContext context) {
+        APIGatewayV2HTTPEvent event = request.getEvent();
+        SecurityIdentity identity = authenticate(event);
+        if (identity == null) {
+            return Uni.createFrom().optional(Optional.empty());
+        }
+        return Uni.createFrom().item(identity);
+    }
+
+    /**
+     * You must override this method unless you directly override
+     * IdentityProvider.authenticate
+     *
+     * @param event
+     * @return
+     */
+    default SecurityIdentity authenticate(APIGatewayV2HTTPEvent event) {
+        throw new IllegalStateException("You must override this method or IdentityProvider.authenticate");
+    }
+}
+----
+
+For HTTP, the important method to override is `LambdaIdentityProvider.authenticate(APIGatewayV2HTTPEvent event)`.  From this
+you will allocate a SecurityIdentity based on how you want to map security data from `APIGatewayV2HTTPEvent`
+
+.REST `quarkus-amazon-lambda-rest`
+[source, java]
+----
+package io.quarkus.amazon.lambda.http;
+
+import java.util.Optional;
+
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+
+import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
+/**
+ * Helper interface that removes some boilerplate for creating
+ * an IdentityProvider that processes APIGatewayV2HTTPEvent
+ */
+public interface LambdaIdentityProvider extends IdentityProvider<LambdaAuthenticationRequest> {
+...
+
+    /**
+     * You must override this method unless you directly override
+     * IdentityProvider.authenticate
+     *
+     * @param event
+     * @return
+     */
+    default SecurityIdentity authenticate(AwsProxyRequest event) {
+        throw new IllegalStateException("You must override this method or IdentityProvider.authenticate");
+    }
+}
+----
+
+For REST, the important method to override is `LambdaIdentityProvider.authenticate(AwsProxyRequest event)`.  From this
+you will allocate a SecurityIdentity based on how you want to map security data from `AwsProxyRequest`.
+
+Your implemented provider must be a CDI bean.  Here's an example:
+
+[source,java]
+----
+package org.acme;
+
+import java.security.Principal;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+
+import io.quarkus.amazon.lambda.http.LambdaIdentityProvider;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.runtime.QuarkusPrincipal;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+
+@ApplicationScoped
+public class CustomSecurityProvider implements LambdaIdentityProvider {
+    @Override
+    public SecurityIdentity authenticate(APIGatewayV2HTTPEvent event) {
+        if (event.getHeaders() == null || !event.getHeaders().containsKey("x-user"))
+            return null;
+        Principal principal = new QuarkusPrincipal(event.getHeaders().get("x-user"));
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+        builder.setPrincipal(principal);
+        return builder.build();
+    }
+}
+----
+
+Here's the same example, but with the AWS Gateway REST API:
+
+[source,java]
+----
+package org.acme;
+
+import java.security.Principal;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
+
+import io.quarkus.amazon.lambda.http.LambdaIdentityProvider;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.runtime.QuarkusPrincipal;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+
+@ApplicationScoped
+public class CustomSecurityProvider implements LambdaIdentityProvider {
+    @Override
+    public SecurityIdentity authenticate(AwsProxyRequest event) {
+        if (event.getMultiValueHeaders() == null || !event.getMultiValueHeaders().containsKey("x-user"))
+            return null;
+        Principal principal = new QuarkusPrincipal(event.getMultiValueHeaders().getFirst("x-user"));
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+        builder.setPrincipal(principal);
+        return builder.build();
+    }
+}
+----
+
+Quarkus should automatically discover this implementation and use it instead of the default implementation
+discussed earlier.
+
+== Simple SAM Local Principal
+
+If you are testing your application with `sam local` you can
+hardcode a principal name to use when your application runs by setting
+the `QUARKUS_AWS_LAMBDA_FORCE_USER_NAME` environment variable

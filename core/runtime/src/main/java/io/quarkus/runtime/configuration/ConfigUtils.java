@@ -1,10 +1,10 @@
 package io.quarkus.runtime.configuration;
 
-import static io.smallrye.config.AbstractLocationConfigSourceFactory.SMALLRYE_LOCATIONS;
 import static io.smallrye.config.DotEnvConfigSourceProvider.dotEnvSources;
-import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE;
-import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE_PARENT;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 
 import java.io.IOException;
@@ -23,15 +23,19 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.IntFunction;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
+import io.smallrye.config.Expressions;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -59,8 +63,8 @@ public final class ConfigUtils {
         return size -> new TreeSet<>();
     }
 
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime) {
-        return configBuilder(runTime, true);
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, LaunchMode launchMode) {
+        return configBuilder(runTime, true, launchMode);
     }
 
     /**
@@ -70,30 +74,29 @@ public final class ConfigUtils {
      * @param addDiscovered {@code true} if the ConfigSource and Converter objects should be auto-discovered
      * @return the configuration builder
      */
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered) {
-        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withDefaultValue(SMALLRYE_PROFILE, ProfileManager.getActiveProfile());
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered,
+            LaunchMode launchMode) {
+        return configBuilder(runTime, false, addDiscovered, launchMode);
+    }
 
-        final Map<String, String> relocations = new HashMap<>();
-        relocations.put(SMALLRYE_LOCATIONS, "quarkus.config.locations");
-        relocations.put(SMALLRYE_PROFILE_PARENT, "quarkus.config.profile.parent");
-        // Override the priority, because of the ProfileConfigSourceInterceptor and profile.parent.
-        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
-            @Override
-            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                return new RelocateConfigSourceInterceptor(relocations);
-            }
-
-            @Override
-            public OptionalInt getPriority() {
-                return OptionalInt.of(Priorities.LIBRARY + 600 - 5);
-            }
-        });
+    /**
+     * Get the basic configuration builder.
+     *
+     * @param runTime {@code true} if the configuration is run time, {@code false} if build time
+     * @param addDiscovered {@code true} if the ConfigSource and Converter objects should be auto-discovered
+     * @return the configuration builder
+     */
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean bootstrap,
+            final boolean addDiscovered,
+            LaunchMode launchMode) {
+        final SmallRyeConfigBuilder builder = emptyConfigBuilder();
 
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem().getConfigSources(classLoader));
         builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath().getConfigSources(classLoader));
-        builder.addDefaultInterceptors();
+        if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
+            builder.withSources(new RuntimeOverrideConfigSource(classLoader));
+        }
         if (runTime) {
             builder.addDefaultSources();
             builder.withSources(dotEnvSources(classLoader));
@@ -107,9 +110,34 @@ public final class ConfigUtils {
         }
         if (addDiscovered) {
             builder.addDiscoveredSources();
-            builder.addDiscoveredInterceptors();
-            builder.addDiscoveredConverters();
         }
+        return builder;
+    }
+
+    public static SmallRyeConfigBuilder emptyConfigBuilder() {
+        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+        builder.withDefaultValue(SMALLRYE_CONFIG_PROFILE, ProfileManager.getActiveProfile());
+
+        final Map<String, String> relocations = new HashMap<>();
+        relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
+        relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
+        // Override the priority, because of the ProfileConfigSourceInterceptor and profile.parent.
+        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                return new RelocateConfigSourceInterceptor(relocations);
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 600 - 5);
+            }
+        });
+
+        builder.addDefaultInterceptors();
+        builder.addDiscoveredInterceptors();
+        builder.addDiscoveredConverters();
+        builder.addDiscoveredValidator();
         return builder;
     }
 
@@ -136,6 +164,24 @@ public final class ConfigUtils {
         for (ConfigSourceProvider provider : providers) {
             addSourceProvider(builder, provider);
         }
+    }
+
+    /**
+     * Checks if a property is present in the current Configuration.
+     *
+     * Because the sources may not expose the property directly in {@link ConfigSource#getPropertyNames()}, we cannot
+     * reliable determine if the property is present in the properties list. The property needs to be retrieved to make
+     * sure it exists. Also, if the value is an expression, we want to ignore expansion, because this is not relevant
+     * for the check and the expansion value may not be available at this point.
+     *
+     * It may be interesting to expose such API in SmallRyeConfig directly.
+     *
+     * @param propertyName the property name.
+     * @return true if the property is present or false otherwise.
+     */
+    public static boolean isPropertyPresent(String propertyName) {
+        Config config = ConfigProvider.getConfig();
+        return Expressions.withoutExpansion(() -> config.getOptionalValue(propertyName, String.class)).isPresent();
     }
 
     /**

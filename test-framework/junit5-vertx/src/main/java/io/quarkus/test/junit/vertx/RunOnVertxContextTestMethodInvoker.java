@@ -7,6 +7,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.test.junit.TestMethodInvoker;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Handler;
@@ -91,7 +93,17 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
 
         @Override
         public void handle(Void event) {
-            doRun();
+            ManagedContext requestContext = Arc.container().requestContext();
+            if (requestContext.isActive()) {
+                doRun();
+            } else {
+                try {
+                    requestContext.activate();
+                    doRun();
+                } finally {
+                    requestContext.terminate();
+                }
+            }
         }
 
         private void doRun() {
@@ -108,7 +120,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
                     future.complete(testMethodResult);
                 }
             } catch (Throwable t) {
-                future.completeExceptionally(t);
+                future.completeExceptionally(t.getCause());
             }
         }
     }

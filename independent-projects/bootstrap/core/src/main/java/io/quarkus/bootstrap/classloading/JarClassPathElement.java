@@ -47,6 +47,12 @@ public class JarClassPathElement implements ClassPathElement {
             //version 8
         }
         JAVA_VERSION = version;
+        //force this class to be loaded
+        //if quarkus is recompiled it needs to have already
+        //been loaded
+        //this is just a convenience for quarkus devs that means exit
+        //should work properly if you recompile while quarkus is running
+        new ZipFileMayHaveChangedException(null);
     }
 
     private static final Logger log = Logger.getLogger(JarClassPathElement.class);

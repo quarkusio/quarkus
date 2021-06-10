@@ -26,6 +26,7 @@ import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
+import io.quarkus.runtime.Quarkus;
 
 /**
  * The main entry point of quarkus:test
@@ -116,7 +117,6 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                 oo.writeObject(potentialContext);
                 context = (DevModeContext) new ObjectInputStream(new ByteArrayInputStream(out.toByteArray())).readObject();
             }
-
             augmentAction = new AugmentActionImpl(curatedApplication);
             RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT));
 
@@ -146,6 +146,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                     }
                 }
             }, "Quarkus Shutdown Thread"));
+            Quarkus.waitForExit();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

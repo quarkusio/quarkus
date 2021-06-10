@@ -58,33 +58,13 @@ cd amqp-quickstart
 
 This command generates a Maven project, importing the Reactive Messaging and AMQP connector extensions.
 
-== Starting an AMQP broker
+[TIP]
+.Dev Services
+====
+No need to start an AMQP broker when using the dev mode or for tests. Quarkus starts a broker for you automatically.
+See xref:amqp-dev-services.adoc[Dev Services for AMQP] for details.
+====
 
-Then, we need an AMQP broker.
-You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis web site] or create a `docker-compose.yaml` file with the following content:
-
-[source, yaml]
-----
-# A docker compose file to start an Artemis AMQP broker
-# more details on https://github.com/vromero/activemq-artemis-docker.
-version: '2'
-
-services:
-
-  artemis:
-    image: vromero/activemq-artemis:2.8.0-alpine
-    ports:
-      - "8161:8161"
-      - "61616:61616"
-      - "5672:5672"
-    environment:
-      ARTEMIS_USERNAME: quarkus
-      ARTEMIS_PASSWORD: quarkus
-----
-
-Once created, run `docker-compose up`.
-
-NOTE: This is a development cluster, do not use in production.
 
 == The price generator
 
@@ -226,10 +206,6 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 
 [source,properties]
 ----
-# Configures the AMQP broker credentials.
-amqp-username=quarkus
-amqp-password=quarkus
-
 # Configure the AMQP connector to write to the `prices` address
 mp.messaging.outgoing.generated-price.connector=smallrye-amqp
 mp.messaging.outgoing.generated-price.address=prices
@@ -295,15 +271,50 @@ Then, you just need to run the application using:
 
 Open `http://localhost:8080/prices.html` in your browser.
 
-NOTE: If you started the AMQP broker with docker compose, stop it using `CTRL+C` followed by `docker-compose down`.
+== Running in JVM or Native mode
 
-== Running Native
+When not running in dev or test mode, you will need to start your AMQP broker.
+You can follow the instructions from the https://activemq.apache.org/components/artemis/documentation/[Apache ActiveMQ Artemis] or create a `docker-compose.yaml` file with the following content:
 
-You can build the native executable with:
+[source, yaml]
+----
+# A docker compose file to start an Artemis AMQP broker
+version: '2'
+
+services:
+
+  artemis:
+    image: quay.io/artemiscloud/activemq-artemis-broker:0.1.2
+    ports:
+      - "8161:8161"
+      - "61616:61616"
+      - "5672:5672"
+    environment:
+      AMQ_USER: quarkus
+      AMQ_PASSWORD: quarkus
+----
+
+Once created, run `docker-compose up`.
+
+NOTE: This is a development broker, do not use in production.
+
+You can build and run the application in JVM mode with:
+
+[source, bash]
+----
+./mvnw package
+java -Damqp-user=quarkus -Damqp-password=quarkus -jar target/quarkus-app/quarkus-run.jar
+----
+
+NOTE: By default, the application tries to connect to a AMQP broker listening at `localhost:5672`.
+You can configure the bootstrap server using: `java -Damqp-host=... -Damqp-port=... -jar target/quarkus-app/quarkus-run.jar`
+
+You can build and run the native executable with:
 
 [source,bash]
 ----
 ./mvnw package -Pnative
+./target/amqp-quickstart-1.0.0-SNAPSHOT-runner -Damqp-host=localhost -Damqp-port=5672 -Damqp-user=quarkus -Damqp-password=quarkus
 ----
 
 == Imperative usage

@@ -149,7 +149,7 @@ public class DockerContainerLauncher implements ArtifactLauncher {
     }
 
     private String convertPropertyToEnVar(String property) {
-        return property.toUpperCase().replace('-', '_').replace('.', '_');
+        return property.toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_');
     }
 
     @Override

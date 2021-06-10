@@ -30,4 +30,8 @@ public interface TestListener {
     default void setInstrumentationBasedReload(boolean ibr) {
 
     }
+
+    default void testCompileFailed(String message) {
+
+    }
 }

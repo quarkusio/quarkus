@@ -2,6 +2,7 @@ package io.quarkus.amazon.sns.runtime;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
@@ -11,41 +12,40 @@ import software.amazon.awssdk.services.sns.SnsClientBuilder;
 
 @ApplicationScoped
 public class SnsClientProducer {
-    private volatile SnsClientBuilder syncConfiguredBuilder;
-    private volatile SnsAsyncClientBuilder asyncConfiguredBuilder;
+    private final SnsClient syncClient;
+    private final SnsAsyncClient asyncClient;
 
-    private SnsClient client;
-    private SnsAsyncClient asyncClient;
+    SnsClientProducer(Instance<SnsClientBuilder> syncClientBuilderInstance,
+            Instance<SnsAsyncClientBuilder> asyncClientBuilderInstance) {
+        this.syncClient = syncClientBuilderInstance.isResolvable() ? syncClientBuilderInstance.get().build() : null;
+        this.asyncClient = asyncClientBuilderInstance.isResolvable() ? asyncClientBuilderInstance.get().build() : null;
+    }
 
     @Produces
     @ApplicationScoped
     public SnsClient client() {
-        client = syncConfiguredBuilder.build();
-        return client;
+        if (syncClient == null) {
+            throw new IllegalStateException("The SnsClient is required but has not been detected/configured.");
+        }
+        return syncClient;
     }
 
     @Produces
     @ApplicationScoped
     public SnsAsyncClient asyncClient() {
-        asyncClient = asyncConfiguredBuilder.build();
+        if (asyncClient == null) {
+            throw new IllegalStateException("The SnsAsyncClient is required but has not been detected/configured.");
+        }
         return asyncClient;
     }
 
     @PreDestroy
     public void destroy() {
-        if (client != null) {
-            client.close();
+        if (syncClient != null) {
+            syncClient.close();
         }
         if (asyncClient != null) {
             asyncClient.close();
         }
-    }
-
-    public void setSyncConfiguredBuilder(SnsClientBuilder syncConfiguredBuilder) {
-        this.syncConfiguredBuilder = syncConfiguredBuilder;
-    }
-
-    public void setAsyncConfiguredBuilder(SnsAsyncClientBuilder asyncConfiguredBuilder) {
-        this.asyncConfiguredBuilder = asyncConfiguredBuilder;
     }
 }

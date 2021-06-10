@@ -4,9 +4,7 @@ import io.quarkus.amazon.common.runtime.AwsConfig;
 import io.quarkus.amazon.common.runtime.NettyHttpClientConfig;
 import io.quarkus.amazon.common.runtime.SdkConfig;
 import io.quarkus.amazon.common.runtime.SyncHttpClientConfig;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.http.SdkHttpClient.Builder;
@@ -56,24 +54,6 @@ public class S3Recorder {
             builder.httpClientBuilder(transport.getValue());
         }
         return new RuntimeValue<>(builder);
-    }
-
-    public RuntimeValue<S3Client> buildClient(RuntimeValue<? extends AwsClientBuilder> builder,
-            BeanContainer beanContainer,
-            ShutdownContext shutdown) {
-        S3ClientProducer producer = beanContainer.instance(S3ClientProducer.class);
-        producer.setSyncConfiguredBuilder((S3ClientBuilder) builder.getValue());
-        shutdown.addShutdownTask(producer::destroy);
-        return new RuntimeValue<>(producer.client());
-    }
-
-    public RuntimeValue<S3AsyncClient> buildAsyncClient(RuntimeValue<? extends AwsClientBuilder> builder,
-            BeanContainer beanContainer,
-            ShutdownContext shutdown) {
-        S3ClientProducer producer = beanContainer.instance(S3ClientProducer.class);
-        producer.setAsyncConfiguredBuilder((S3AsyncClientBuilder) builder.getValue());
-        shutdown.addShutdownTask(producer::destroy);
-        return new RuntimeValue<>(producer.asyncClient());
     }
 
     private void configureS3Client(S3BaseClientBuilder builder, S3Config config) {

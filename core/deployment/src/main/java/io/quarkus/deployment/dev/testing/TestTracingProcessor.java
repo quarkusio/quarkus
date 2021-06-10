@@ -45,7 +45,8 @@ public class TestTracingProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Produce(TestSetupBuildItem.class)
-    void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer) {
+    void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer,
+            LaunchModeBuildItem launchModeBuildItem) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
             return;
@@ -56,7 +57,7 @@ public class TestTracingProcessor {
         consoleInstalled = true;
         if (config.console) {
             ConsoleHelper.installConsole(config);
-            TestConsoleHandler consoleHandler = new TestConsoleHandler();
+            TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get());
             consoleHandler.install();
             testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(consoleHandler));
         }
@@ -65,14 +66,16 @@ public class TestTracingProcessor {
     @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(LogHandlerBuildItem.class)
     @Produce(TestSetupBuildItem.class)
-    ServiceStartBuildItem startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
+    @Produce(ServiceStartBuildItem.class)
+    void startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, List<TestListenerBuildItem> testListenerBuildItems) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
-            return null;
+            return;
         }
-        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
-            return null;
+        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
+        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
+            return;
         }
         TestSupport testSupport = TestSupport.instance().get();
         for (TestListenerBuildItem i : testListenerBuildItems) {
@@ -99,7 +102,6 @@ public class TestTracingProcessor {
                 testSupport.stop();
             }
         });
-        return null;
     }
 
     @BuildStep(onlyIf = IsTest.class)

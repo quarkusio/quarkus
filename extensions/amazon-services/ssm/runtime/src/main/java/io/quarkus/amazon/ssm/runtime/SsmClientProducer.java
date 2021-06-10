@@ -2,6 +2,7 @@ package io.quarkus.amazon.ssm.runtime;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 
 import software.amazon.awssdk.services.ssm.SsmAsyncClient;
@@ -11,42 +12,40 @@ import software.amazon.awssdk.services.ssm.SsmClientBuilder;
 
 @ApplicationScoped
 public class SsmClientProducer {
+    private final SsmClient syncClient;
+    private final SsmAsyncClient asyncClient;
 
-    private volatile SsmClientBuilder syncConfiguredBuilder;
-    private volatile SsmAsyncClientBuilder asyncConfiguredBuilder;
-
-    private SsmClient client;
-    private SsmAsyncClient asyncClient;
+    SsmClientProducer(Instance<SsmClientBuilder> syncClientBuilderInstance,
+            Instance<SsmAsyncClientBuilder> asyncClientBuilderInstance) {
+        this.syncClient = syncClientBuilderInstance.isResolvable() ? syncClientBuilderInstance.get().build() : null;
+        this.asyncClient = asyncClientBuilderInstance.isResolvable() ? asyncClientBuilderInstance.get().build() : null;
+    }
 
     @Produces
     @ApplicationScoped
     public SsmClient client() {
-        client = syncConfiguredBuilder.build();
-        return client;
+        if (syncClient == null) {
+            throw new IllegalStateException("The SsmClient is required but has not been detected/configured.");
+        }
+        return syncClient;
     }
 
     @Produces
     @ApplicationScoped
     public SsmAsyncClient asyncClient() {
-        asyncClient = asyncConfiguredBuilder.build();
+        if (asyncClient == null) {
+            throw new IllegalStateException("The SsmAsyncClient is required but has not been detected/configured.");
+        }
         return asyncClient;
     }
 
     @PreDestroy
     public void destroy() {
-        if (client != null) {
-            client.close();
+        if (syncClient != null) {
+            syncClient.close();
         }
         if (asyncClient != null) {
             asyncClient.close();
         }
-    }
-
-    public void setSyncConfiguredBuilder(SsmClientBuilder syncConfiguredBuilder) {
-        this.syncConfiguredBuilder = syncConfiguredBuilder;
-    }
-
-    public void setAsyncConfiguredBuilder(SsmAsyncClientBuilder asyncConfiguredBuilder) {
-        this.asyncConfiguredBuilder = asyncConfiguredBuilder;
     }
 }

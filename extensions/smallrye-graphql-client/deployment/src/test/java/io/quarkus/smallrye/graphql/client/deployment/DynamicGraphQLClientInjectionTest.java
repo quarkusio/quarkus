@@ -19,7 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.graphql.client.NamedClient;
+import io.smallrye.graphql.client.GraphQLClient;
 import io.smallrye.graphql.client.core.Document;
 import io.smallrye.graphql.client.core.Operation;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
@@ -38,7 +38,7 @@ public class DynamicGraphQLClientInjectionTest {
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
-    @NamedClient("people")
+    @GraphQLClient("people")
     DynamicGraphQLClient client;
 
     @Test

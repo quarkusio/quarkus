@@ -307,7 +307,7 @@ public class BeanDeployment {
                 // Instance<Foo>
                 for (InjectionPointInfo injectionPoint : instanceInjectionPoints) {
                     if (Beans.hasQualifiers(bean, injectionPoint.getRequiredQualifiers()) && Beans.matchesType(bean,
-                            injectionPoint.getRequiredType().asParameterizedType().arguments().get(0))) {
+                            injectionPoint.getType().asParameterizedType().arguments().get(0))) {
                         continue test;
                     }
                 }

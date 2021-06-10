@@ -74,9 +74,12 @@ public class SmallRyeOpenTracingProcessor {
             providers.produce(
                     new ResteasyJaxrsProviderBuildItem(
                             QuarkusSmallRyeTracingStandaloneContainerResponseFilter.class.getName()));
+<<<<<<< HEAD
             writerInterceptors.produce(
                     new WriterInterceptorBuildItem.Builder(
                             QuarkusSmallRyeTracingStandaloneContainerResponseFilter.class.getName()).build());
+=======
+>>>>>>> c9cdfbb0059c58cd01ec040ec28cb5722b0939a6
         }
     }
 }

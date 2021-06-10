@@ -793,6 +793,8 @@ public GraphQLSchema.Builder addMyOwnEnum(@Observes GraphQLSchema.Builder builde
 
 By using the `@Observer` you can add anything to the Schema builder. 
 
+NOTE: For the Observer to work, you need to enable events. In `application.properties`, add the following: `quarkus.smallrye-graphql.events.enabled=true`.
+
 == Map to Scalar
 
 Another SmallRye specific experimental feature, allows you to map an existing scalar (that is mapped by the implementation to a certain Java type) to another type,

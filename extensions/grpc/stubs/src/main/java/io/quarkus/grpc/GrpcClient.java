@@ -24,9 +24,9 @@ public @interface GrpcClient {
     String ELEMENT_NAME = "<<element name>>";
 
     /**
-     * The service name is used to configure the gRPC client, e.g. the location, TLS/SSL, etc.
+     * The name is used to configure the gRPC client, e.g. the location, TLS/SSL, etc.
      * 
-     * @return the service name
+     * @return the client name
      */
     String value() default ELEMENT_NAME;
 

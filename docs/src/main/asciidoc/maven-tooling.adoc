@@ -440,7 +440,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
             <version>${quarkus-plugin.version}</version>
-            <extensions>true</extensions>
+            <extensions>true</extensions> <3>
             <executions>
                 <execution>
                     <goals>
@@ -451,7 +451,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
                 </execution>
             </executions>
         </plugin>
-        <plugin> <3>
+        <plugin> <4>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <version>${surefire-plugin.version}</version>
@@ -466,14 +466,14 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 </build>
 
 <profiles>
-    <profile> <4>
+    <profile> <5>
         <id>native</id>
-        <properties> <5>
+        <properties> <6>
             <quarkus.package.type>native</quarkus.package.type>
         </properties>
         <build>
             <plugins>
-                <plugin> <6>
+                <plugin> <7>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${surefire-plugin.version}</version>
@@ -501,11 +501,12 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 
 <1> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
 <2> Use the Quarkus Maven plugin that will hook into the build process.
-<3> Add system properties to `maven-surefire-plugin`. +
+<3> Enabling Maven plugin extensions will register a Quarkus `MavenLifecycleParticipant` which will make sure the Quarkus classloaders used during the build are properly closed. During the `generate-code` and `generate-code-tests` goals the Quarkus application bootstrap is initialized and re-used in the `build` goal (which actually builds and packages a production application). The Quarkus classloaders will be properly closed in the `build` goal of the `quarkus-maven-plugin`. However, if the build fails in between the `generate-code` or `generate-code-tests` and `build` then the Quarkus augmentation classloader won't be properly closed, which may lead to locking of JAR files that happened to be on the classpath on Windows OS.
+<4> Add system properties to `maven-surefire-plugin`. +
 `maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
-<4> Use a specific `native` profile for native executable building.
-<5> Enable the `native` package type. The build will therefore produce a native executable.
-<6> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
+<5> Use a specific `native` profile for native executable building.
+<6> Enable the `native` package type. The build will therefore produce a native executable.
+<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
 
 [[fast-jar]]
 === Using fast-jar

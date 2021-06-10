@@ -343,7 +343,8 @@ public class LoggingSetupRecorder {
                 }
             }
         }
-        final ConsoleHandler consoleHandler = new ConsoleHandler(ConsoleHandler.Target.SYSTEM_OUT, formatter);
+        final ConsoleHandler consoleHandler = new ConsoleHandler(
+                config.stderr ? ConsoleHandler.Target.SYSTEM_ERR : ConsoleHandler.Target.SYSTEM_OUT, formatter);
         consoleHandler.setLevel(config.level);
         consoleHandler.setErrorManager(defaultErrorManager);
         consoleHandler.setFilter(new LogCleanupFilter(filterElements));

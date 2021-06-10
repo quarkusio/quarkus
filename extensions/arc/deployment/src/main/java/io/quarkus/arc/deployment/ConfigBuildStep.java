@@ -280,6 +280,10 @@ public class ConfigBuildStep {
                 reflectiveClasses
                         .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true).build());
 
+                for (Class<?> parent : getHierarchy(mappingMetadata.getInterfaceType())) {
+                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods(true).build());
+                }
+
                 generatedClassesNames.add(mappingMetadata.getClassName());
 
                 ClassInfo mappingInfo = combinedIndex.getIndex()
@@ -389,6 +393,15 @@ public class ConfigBuildStep {
         } else {
             throw new IllegalArgumentException();
         }
+    }
+
+    private static List<Class<?>> getHierarchy(Class<?> mapping) {
+        List<Class<?>> interfaces = new ArrayList<>();
+        for (Class<?> i : mapping.getInterfaces()) {
+            interfaces.add(i);
+            interfaces.addAll(getHierarchy(i));
+        }
+        return interfaces;
     }
 
     private String getPropertyName(String name, ClassInfo declaringClass) {

@@ -150,7 +150,7 @@
         <aws-lambda-java-events.version>3.9.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.9.1</aws-xray.version>
-        <awssdk.version>2.16.78</awssdk.version>
+        <awssdk.version>2.16.81</awssdk.version>
         <aws-alexa-sdk.version>2.38.1</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
         <kotlin.version>1.4.32</kotlin.version>
@@ -2468,6 +2468,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-opentelemetry-exporter-jaeger</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-exporter-otlp-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-exporter-otlp</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -72,7 +72,13 @@ public class JavaCompilationProvider implements CompilationProvider {
                     compilerFlags.toList(), null, sources);
 
             if (!task.call()) {
-                throw new RuntimeException("Compilation failed" + diagnostics.getDiagnostics());
+                StringBuilder sb = new StringBuilder("\u001B[91mCompilation Failed:");
+                for (Diagnostic<? extends JavaFileObject> i : diagnostics.getDiagnostics()) {
+                    sb.append("\n");
+                    sb.append(i.toString());
+                }
+                sb.append("\u001b[0m");
+                throw new RuntimeException(sb.toString());
             }
 
             logDiagnostics(diagnostics);

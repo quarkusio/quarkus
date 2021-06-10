@@ -24,6 +24,12 @@ public class AeshConsole extends QuarkusConsole {
     private int totalStatusLines = 0;
     private int lastWriteCursorX;
     /**
+     * if the status area has gotten big then small again
+     * this tracks how many lines of blank space we have
+     * so we start writing in the correct place.
+     */
+    private int bottomBlankSpace = 0;
+    /**
      * The write queue
      * <p>
      * Data must be added to this, before it is written out by {@link #deadlockSafeWrite()}
@@ -68,18 +74,31 @@ public class AeshConsole extends QuarkusConsole {
             } else {
                 newLines += 3;
             }
-            if (newLines > totalStatusLines) {
-                for (int i = 0; i < newLines - totalStatusLines; ++i) {
-                    buffer.append("\n");
-                }
-            }
             this.statusMessage = statusMessage;
-            this.totalStatusLines = newLines;
-            printStatusAndPrompt(buffer);
-            writeQueue.add(buffer.toString());
+            updatePromptOnChange(buffer, newLines);
         }
         deadlockSafeWrite();
         return this;
+    }
+
+    private void updatePromptOnChange(StringBuilder buffer, int newLines) {
+        if (newLines > totalStatusLines) {
+            StringBuilder nb = new StringBuilder();
+            for (int i = 0; i < newLines - totalStatusLines; ++i) {
+                if (bottomBlankSpace > 0) {
+                    bottomBlankSpace--;
+                } else {
+                    nb.append("\n");
+                }
+            }
+            writeQueue.add(nb.toString());
+            deadlockSafeWrite();
+        } else if (newLines < totalStatusLines) {
+            bottomBlankSpace = bottomBlankSpace + (totalStatusLines - newLines);
+        }
+        this.totalStatusLines = newLines;
+        printStatusAndPrompt(buffer);
+        writeQueue.add(buffer.toString());
     }
 
     public AeshInputHolder createHolder(InputHandler inputHandler) {
@@ -103,15 +122,8 @@ public class AeshConsole extends QuarkusConsole {
             } else {
                 newLines += 3;
             }
-            if (newLines > totalStatusLines) {
-                for (int i = 0; i < newLines - totalStatusLines; ++i) {
-                    buffer.append("\n");
-                }
-            }
             this.promptMessage = promptMessage;
-            this.totalStatusLines = newLines;
-            printStatusAndPrompt(buffer);
-            writeQueue.add(buffer.toString());
+            updatePromptOnChange(buffer, newLines);
         }
         deadlockSafeWrite();
         return this;
@@ -207,10 +219,13 @@ public class AeshConsole extends QuarkusConsole {
     private void printStatusAndPrompt(StringBuilder buffer) {
         if (totalStatusLines == 0) {
             return;
+        } else if (totalStatusLines < size.getHeight()) {
+            //if the console is tiny we don't do this
+            clearStatusMessages(buffer);
+            gotoLine(buffer, size.getHeight() - totalStatusLines);
+        } else {
+            bottomBlankSpace = 0;
         }
-
-        clearStatusMessages(buffer);
-        gotoLine(buffer, size.getHeight() - totalStatusLines);
         buffer.append("\n--\n");
         if (statusMessage != null) {
             buffer.append(statusMessage);
@@ -267,11 +282,11 @@ public class AeshConsole extends QuarkusConsole {
                 }
             }
             if (totalStatusLines == 0) {
+                bottomBlankSpace = 0; //just to be safe, will only happen if status is added then removed, which is not really likely
                 writeQueue.add(s);
             } else {
                 clearStatusMessages(buffer);
                 int cursorPos = lastWriteCursorX;
-                gotoLine(buffer, size.getHeight());
                 String stripped = stripAnsiCodes(s);
                 int lines = countLines(s, cursorPos);
                 int trailing = 0;
@@ -288,29 +303,38 @@ public class AeshConsole extends QuarkusConsole {
                 } else {
                     newCursorPos = trailing;
                 }
-
+                int usedBlankSpace = 0;
+                gotoLine(buffer, size.getHeight());
                 if (cursorPos > 1 && lines == 0) {
+                    gotoLine(buffer, size.getHeight() - bottomBlankSpace);
                     buffer.append(s);
                     lastWriteCursorX = newCursorPos;
                     //partial line, just write it
-                    connection.write(buffer.toString());
-                    return;
+                    writeQueue.add(buffer.toString());
+                } else {
+                    if (lines == 0) {
+                        lines++;
+                    }
+                    int originalBlank = bottomBlankSpace;
+                    if (bottomBlankSpace > 0) {
+                        usedBlankSpace = Math.min(bottomBlankSpace, lines);
+                        bottomBlankSpace -= usedBlankSpace;
+                    }
+                    //move the existing content up by the number of lines
+                    int appendLines = Math.max(Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines), 1);
+                    appendLines -= usedBlankSpace;
+                    clearStatusMessages(buffer);
+                    buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank).append(";").append(0)
+                            .append("H");
+                    buffer.append(s);
+                    buffer.append("\033[").append(size.getHeight()).append(";").append(0).append("H");
+                    for (int i = 0; i < appendLines; ++i) {
+                        buffer.append("\n");
+                    }
+                    lastWriteCursorX = newCursorPos;
+                    printStatusAndPrompt(buffer);
+                    writeQueue.add(buffer.toString());
                 }
-                if (lines == 0) {
-                    lines++;
-                }
-                //move the existing content up by the number of lines
-                int appendLines = Math.max(Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines), 1);
-                clearStatusMessages(buffer);
-                buffer.append("\033[").append(size.getHeight() - totalStatusLines).append(";").append(0).append("H");
-                buffer.append(s);
-                buffer.append("\033[").append(size.getHeight()).append(";").append(0).append("H");
-                for (int i = 0; i < appendLines; ++i) {
-                    buffer.append("\n");
-                }
-                lastWriteCursorX = newCursorPos;
-                printStatusAndPrompt(buffer);
-                writeQueue.add(buffer.toString());
             }
         }
         deadlockSafeWrite();

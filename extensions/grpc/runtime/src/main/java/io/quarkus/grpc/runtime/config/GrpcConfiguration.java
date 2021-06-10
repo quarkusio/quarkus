@@ -15,7 +15,7 @@ public class GrpcConfiguration {
      */
     @ConfigItem
     @ConfigDocSection
-    @ConfigDocMapKey("service-name")
+    @ConfigDocMapKey("client-name")
     public Map<String, GrpcClientConfiguration> clients;
 
     /**

@@ -18,6 +18,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
+import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
 import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingDynamicFeature;
 import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingStandaloneContainerResponseFilter;
 import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingStandaloneVertxDynamicFeature;
@@ -45,6 +46,7 @@ public class SmallRyeOpenTracingProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<CustomContainerResponseFilterBuildItem> customResponseFilters,
             BuildProducer<DynamicFeatureBuildItem> dynamicFeatures,
+            BuildProducer<WriterInterceptorBuildItem> writerInterceptors,
             Capabilities capabilities) {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENTRACING));
@@ -69,6 +71,9 @@ public class SmallRyeOpenTracingProcessor {
             customResponseFilters.produce(new CustomContainerResponseFilterBuildItem(
                     QuarkusSmallRyeTracingStandaloneContainerResponseFilter.class.getName()));
             dynamicFeatures.produce(new DynamicFeatureBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));
+            writerInterceptors.produce(
+                    new WriterInterceptorBuildItem.Builder(
+                            QuarkusSmallRyeTracingStandaloneContainerResponseFilter.class.getName()).build());
         }
     }
 }

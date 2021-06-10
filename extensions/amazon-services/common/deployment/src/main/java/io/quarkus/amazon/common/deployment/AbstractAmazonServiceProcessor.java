@@ -7,6 +7,7 @@ import java.util.function.Function;
 import javax.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.quarkus.amazon.common.runtime.AmazonClientApacheTransportRecorder;
@@ -22,6 +23,7 @@ import io.quarkus.amazon.common.runtime.SyncHttpClientConfig;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -61,12 +63,12 @@ abstract public class AbstractAmazonServiceProcessor {
 
         //Discover all clients injections in order to determine if async or sync client is required
         for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
-            Type requiredType = injectionPoint.getRequiredType();
+            Type injectedType = getInjectedType(injectionPoint);
 
-            if (syncClientName().equals(requiredType.name())) {
+            if (syncClientName().equals(injectedType.name())) {
                 syncClassName = Optional.of(syncClientName());
             }
-            if (asyncClientName().equals(requiredType.name())) {
+            if (asyncClientName().equals(injectedType.name())) {
                 asyncClassName = Optional.of(asyncClientName());
             }
         }
@@ -202,5 +204,16 @@ abstract public class AbstractAmazonServiceProcessor {
                     .runtimeValue(asyncClientBuilder)
                     .done());
         }
+    }
+
+    private Type getInjectedType(InjectionPointInfo injectionPoint) {
+        Type requiredType = injectionPoint.getRequiredType();
+        Type injectedType = requiredType;
+
+        if (DotNames.INSTANCE.equals(requiredType.name()) && requiredType instanceof ParameterizedType) {
+            injectedType = requiredType.asParameterizedType().arguments().get(0);
+        }
+
+        return injectedType;
     }
 }

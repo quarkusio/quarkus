@@ -22,11 +22,18 @@ class HandlerChain {
     private final ClientRestHandler clientResponseCompleteRestHandler;
     private final ClientRestHandler clientErrorHandler;
 
+    private ClientRestHandler preClientSendHandler = null;
+
     public HandlerChain(boolean followRedirects) {
         this.clientSendHandler = new ClientSendRequestHandler(followRedirects);
         this.clientSetResponseEntityRestHandler = new ClientSetResponseEntityRestHandler();
         this.clientResponseCompleteRestHandler = new ClientResponseCompleteRestHandler();
         this.clientErrorHandler = new ClientErrorHandler();
+    }
+
+    HandlerChain setPreClientSendHandler(ClientRestHandler preClientSendHandler) {
+        this.preClientSendHandler = preClientSendHandler;
+        return this;
     }
 
     ClientRestHandler[] createHandlerChain(ConfigurationImpl configuration) {
@@ -36,9 +43,13 @@ class HandlerChain {
             return new ClientRestHandler[] { clientSendHandler, clientSetResponseEntityRestHandler,
                     clientResponseCompleteRestHandler };
         }
-        List<ClientRestHandler> result = new ArrayList<>(3 + requestFilters.size() + responseFilters.size());
+        List<ClientRestHandler> result = new ArrayList<>(
+                (preClientSendHandler != null ? 4 : 3) + requestFilters.size() + responseFilters.size());
         for (int i = 0; i < requestFilters.size(); i++) {
             result.add(new ClientRequestFilterRestHandler(requestFilters.get(i)));
+        }
+        if (preClientSendHandler != null) {
+            result.add(preClientSendHandler);
         }
         result.add(clientSendHandler);
         result.add(clientSetResponseEntityRestHandler);

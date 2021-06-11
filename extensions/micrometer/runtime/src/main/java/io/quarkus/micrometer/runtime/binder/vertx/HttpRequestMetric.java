@@ -39,9 +39,10 @@ public class HttpRequestMetric extends RequestMetricInfo {
     }
 
     public String applyTemplateMatching(String path) {
-        // JAX-RS or Servlet container filter
-        if (templatePath != null) {
-            return normalizePath(templatePath);
+        // JAX-RS: UrlPathTemplate set in the
+        String urlTemplatePath = getUrlTemplatePath();
+        if (urlTemplatePath != null) {
+            return normalizePath(urlTemplatePath);
         }
 
         // vertx-web or reactive route: is it templated?
@@ -78,6 +79,15 @@ public class HttpRequestMetric extends RequestMetricInfo {
     public static HttpRequestMetric getRequestMetric(RoutingContext context) {
         HttpServerRequestInternal internalRequest = (HttpServerRequestInternal) context.request();
         return (HttpRequestMetric) internalRequest.metric();
+    }
+
+    String getUrlTemplatePath() {
+        String urlTemplatePath = null;
+        if (request != null) {
+            urlTemplatePath = request.context().getLocal("UrlPathTemplate");
+        }
+        // Fall back to Servlet container filter set templatePath if a path was not set in the request context
+        return (urlTemplatePath == null ? templatePath : urlTemplatePath);
     }
 
     @Override

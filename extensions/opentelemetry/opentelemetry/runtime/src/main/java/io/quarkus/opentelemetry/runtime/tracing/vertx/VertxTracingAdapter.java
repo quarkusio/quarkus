@@ -5,6 +5,7 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_FLAVOR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_HOST;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_METHOD;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_SCHEME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
@@ -140,6 +141,13 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
 
         if (span == null) {
             return;
+        }
+
+        // Update Span name if parameterized path present
+        String pathTemplate = context.getLocal("UrlPathTemplate");
+        if (pathTemplate != null && !pathTemplate.isEmpty()) {
+            span.updateName(pathTemplate.substring(1));
+            span.setAttribute(HTTP_ROUTE, pathTemplate);
         }
 
         ((ContextInternal) context).dispatch(() -> {

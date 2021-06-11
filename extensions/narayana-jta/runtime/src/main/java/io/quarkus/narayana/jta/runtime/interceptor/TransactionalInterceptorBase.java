@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
@@ -14,7 +13,11 @@ import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.interceptor.InvocationContext;
-import javax.transaction.*;
+import javax.transaction.Status;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+import javax.transaction.Transactional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -30,15 +33,11 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
 
-/**
- * @author paul.robinson@redhat.com 02/05/2013
- */
-
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
-    private final Map<Method, Integer> timeoutForMethodCache = new ConcurrentHashMap<>();
+    private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
     TransactionManager transactionManager;
@@ -108,11 +107,11 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     protected Object invokeInOurTx(InvocationContext ic, TransactionManager tm, RunnableWithException afterEndTransaction)
             throws Exception {
 
-        Integer timeoutConfiguredForMethod = getTransactionConfigurationTimeoutFromCache(ic);
+        int timeoutConfiguredForMethod = getTransactionTimeoutFromAnnotation(ic);
 
         int currentTmTimeout = ((CDIDelegatingTransactionManager) transactionManager).getTransactionTimeout();
 
-        if (timeoutConfiguredForMethod != null) {
+        if (timeoutConfiguredForMethod > 0) {
             tm.setTransactionTimeout(timeoutConfiguredForMethod);
         }
 
@@ -121,7 +120,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             tm.begin();
             tx = tm.getTransaction();
         } finally {
-            if (timeoutConfiguredForMethod != null) {
+            if (timeoutConfiguredForMethod > 0) {
                 tm.setTransactionTimeout(currentTmTimeout);
             }
         }
@@ -173,44 +172,49 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         return ret;
     }
 
-    private Integer getTransactionConfigurationTimeoutFromCache(InvocationContext ic) {
-        Integer timeoutForMethod = timeoutForMethodCache.get(ic.getMethod());
-        if (Objects.nonNull(timeoutForMethod)) {
-            return timeoutForMethod;
-        } else {
-            return timeoutForMethodCache.computeIfAbsent(ic.getMethod(),
-                    new Function<Method, Integer>() {
-                        @Override
-                        public Integer apply(Method m) {
-                            return TransactionalInterceptorBase.this.extractTransactionConfigurationTimeoutFromAnnotation(ic);
-                        }
-                    });
-        }
-    }
-
-    private Integer extractTransactionConfigurationTimeoutFromAnnotation(InvocationContext ic) {
+    private int getTransactionTimeoutFromAnnotation(InvocationContext ic) {
         TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
 
         if (configAnnotation == null) {
-            return null;
+            return -1;
         }
 
+        int transactionTimeout = -1;
+
         if (!configAnnotation.timeoutFromConfigProperty().equals(TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY)) {
-            Optional<Integer> configTimeout = ConfigProvider.getConfig()
-                    .getOptionalValue(configAnnotation.timeoutFromConfigProperty(), Integer.class);
-            if (configTimeout.isPresent()) {
-                return configTimeout.get();
-            } else if (log.isDebugEnabled()) {
-                log.debug("Configuration property '" + configAnnotation.timeoutFromConfigProperty()
-                        + "' was not provided, so it will not affect the transaction's timeout.");
+            Integer timeoutForMethod = methodTransactionTimeoutDefinedByPropertyCache.get(ic.getMethod());
+            if (timeoutForMethod != null) {
+                transactionTimeout = timeoutForMethod;
+            } else {
+                transactionTimeout = methodTransactionTimeoutDefinedByPropertyCache.computeIfAbsent(ic.getMethod(),
+                        new Function<Method, Integer>() {
+                            @Override
+                            public Integer apply(Method m) {
+                                return TransactionalInterceptorBase.this.getTransactionTimeoutPropertyValue(configAnnotation);
+                            }
+                        });
             }
         }
 
-        if ((configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)) {
-            return configAnnotation.timeout();
+        if (transactionTimeout == -1 && (configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)) {
+            transactionTimeout = configAnnotation.timeout();
         }
 
-        return null;
+        return transactionTimeout;
+    }
+
+    private Integer getTransactionTimeoutPropertyValue(TransactionConfiguration configAnnotation) {
+        Optional<Integer> configTimeout = ConfigProvider.getConfig()
+                .getOptionalValue(configAnnotation.timeoutFromConfigProperty(), Integer.class);
+        if (configTimeout.isEmpty()) {
+            if (log.isDebugEnabled()) {
+                log.debugf("Configuration property '%s' was not provided, so it will not affect the transaction's timeout.",
+                        configAnnotation.timeoutFromConfigProperty());
+            }
+            return -1;
+        }
+
+        return configTimeout.get();
     }
 
     protected Object handleAsync(TransactionManager tm, Transaction tx, InvocationContext ic, Object ret,

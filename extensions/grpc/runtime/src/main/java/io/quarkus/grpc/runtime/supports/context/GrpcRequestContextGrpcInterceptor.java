@@ -40,6 +40,7 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor {
                             super.close(status, trailers);
                             if (contextHolder.state != null) {
                                 reqContext.destroy(contextHolder.state);
+                                reqContext.deactivate();
                             }
                         }
                     }, headers);
@@ -51,26 +52,46 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor {
 
                 @Override
                 public void onMessage(ReqT message) {
-                    activateContext();
-                    super.onMessage(message);
+                    boolean activated = activateContext();
+                    try {
+                        super.onMessage(message);
+                    } finally {
+                        if (activated) {
+                            reqContext.deactivate();
+                        }
+                    }
                 }
 
                 @Override
                 public void onReady() {
-                    activateContext();
-                    super.onReady();
+                    boolean activated = activateContext();
+                    try {
+                        super.onReady();
+                    } finally {
+                        if (activated) {
+                            reqContext.deactivate();
+                        }
+                    }
                 }
 
                 @Override
                 public void onComplete() {
-                    activateContext();
-                    super.onComplete();
+                    boolean activated = activateContext();
+                    try {
+                        super.onComplete();
+                    } finally {
+                        if (activated) {
+                            reqContext.deactivate();
+                        }
+                    }
                 }
 
-                private void activateContext() {
+                private boolean activateContext() {
                     if (contextHolder.state != null && !reqContext.isActive()) {
                         reqContext.activate(contextHolder.state);
+                        return true;
                     }
+                    return false;
                 }
             };
         } else {

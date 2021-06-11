@@ -268,6 +268,7 @@ public class JunitTestRunner {
                                 }
                             }
                         }
+                        touchedClasses.push(Collections.synchronizedSet(new HashSet<>()));
                     }
 
                     @Override

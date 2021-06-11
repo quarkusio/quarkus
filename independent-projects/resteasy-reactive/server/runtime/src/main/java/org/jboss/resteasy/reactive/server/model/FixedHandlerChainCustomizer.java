@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.model;
 
 import java.util.Collections;
 import java.util.List;
+import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class FixedHandlerChainCustomizer implements HandlerChainCustomizer {
@@ -18,7 +19,8 @@ public class FixedHandlerChainCustomizer implements HandlerChainCustomizer {
     }
 
     @Override
-    public List<ServerRestHandler> handlers(Phase phase) {
+    public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+            ServerResourceMethod serverResourceMethod) {
         if (this.phase == phase) {
             return Collections.singletonList(handler);
         }

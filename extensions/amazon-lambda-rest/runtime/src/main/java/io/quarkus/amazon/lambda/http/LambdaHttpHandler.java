@@ -1,19 +1,5 @@
 package io.quarkus.amazon.lambda.http;
 
-import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.RequestHandler;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.*;
-import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
-import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
-import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
-import io.quarkus.amazon.lambda.http.model.Headers;
-import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
-import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
-import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
-import org.jboss.logging.Logger;
-
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URLEncoder;
@@ -21,6 +7,30 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+
+import org.jboss.logging.Logger;
+
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.DefaultLastHttpContent;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
+import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
+import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
+import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
+import io.quarkus.amazon.lambda.http.model.Headers;
+import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
+import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
+import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 
 @SuppressWarnings("unused")
 public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsProxyResponse> {

@@ -1,7 +1,15 @@
 package io.quarkus.amazon.lambda.http;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.concurrent.CompletableFuture;
+
 import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.serverless.proxy.model.ContainerConfig;
+
 import io.netty.channel.FileRegion;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpResponse;
@@ -11,12 +19,6 @@ import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
-import java.io.ByteArrayOutputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.concurrent.CompletableFuture;
 
 class NettyResponseHandler implements VirtualResponseHandler {
     private static final int BUFFER_SIZE = 8096;

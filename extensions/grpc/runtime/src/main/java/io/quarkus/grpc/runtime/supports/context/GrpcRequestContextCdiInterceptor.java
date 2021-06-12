@@ -16,7 +16,7 @@ import io.vertx.core.Vertx;
 public class GrpcRequestContextCdiInterceptor {
 
     @AroundInvoke
-    public Object cleanUpContext(InvocationContext invocationContext) throws Exception {
+    public Object setUpContext(InvocationContext invocationContext) throws Exception {
         boolean cleanUp = false;
         ManagedContext requestContext = Arc.container().requestContext();
         if (!requestContext.isActive()) {

@@ -75,6 +75,30 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor {
                 }
 
                 @Override
+                public void onHalfClose() {
+                    boolean activated = activateContext();
+                    try {
+                        super.onHalfClose();
+                    } finally {
+                        if (activated) {
+                            reqContext.deactivate();
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancel() {
+                    boolean activated = activateContext();
+                    try {
+                        super.onHalfClose();
+                    } finally {
+                        if (activated) {
+                            reqContext.deactivate();
+                        }
+                    }
+                }
+
+                @Override
                 public void onComplete() {
                     boolean activated = activateContext();
                     try {

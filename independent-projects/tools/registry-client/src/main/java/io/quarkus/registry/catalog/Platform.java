@@ -1,7 +1,6 @@
 package io.quarkus.registry.catalog;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
 public interface Platform {
@@ -10,16 +9,17 @@ public interface Platform {
 
     String getName();
 
-    List<PlatformStream> getStreams();
+    Collection<PlatformStream> getStreams();
 
     Map<String, Object> getMetadata();
 
-    @JsonIgnore
+    PlatformStream getStream(String id);
+
     default PlatformStream getRecommendedStream() {
-        final List<PlatformStream> streams = getStreams();
+        final Collection<PlatformStream> streams = getStreams();
         if (streams.isEmpty()) {
             throw new RuntimeException("Platform " + getPlatformKey() + " does not include any stream");
         }
-        return streams.get(0);
+        return streams.iterator().next();
     }
 }

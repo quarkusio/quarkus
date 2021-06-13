@@ -1,18 +1,18 @@
 package io.quarkus.registry.catalog;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
 public interface PlatformCatalog {
 
-    List<Platform> getPlatforms();
+    Collection<Platform> getPlatforms();
 
     Map<String, Object> getMetadata();
 
-    @JsonIgnore
+    Platform getPlatform(String platformId);
+
     default Platform getRecommendedPlatform() {
-        final List<Platform> platforms = getPlatforms();
-        return platforms.isEmpty() ? null : platforms.get(0);
+        final Collection<Platform> platforms = getPlatforms();
+        return platforms.isEmpty() ? null : platforms.iterator().next();
     }
 }

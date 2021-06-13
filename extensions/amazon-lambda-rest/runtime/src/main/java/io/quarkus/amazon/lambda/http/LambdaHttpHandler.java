@@ -84,9 +84,9 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
     private HttpRequest createHttpRequestHead(AwsProxyRequest request, QuarkusHttpHeaders quarkusHeaders)
             throws UnsupportedEncodingException {
-        String path = getPathFromRequest(request);
+        String pathWithQueryString = getPathWithQueryStringFromRequest(request);
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getHttpMethod()), path, quarkusHeaders);
+                HttpMethod.valueOf(request.getHttpMethod()), pathWithQueryString, quarkusHeaders);
 
         HttpHeaders nettyRequestHeaders = nettyRequest.headers();
         if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent
@@ -114,24 +114,20 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         return LastHttpContent.EMPTY_LAST_CONTENT;
     }
 
-    private String getPathFromRequest(AwsProxyRequest request) throws UnsupportedEncodingException {
-        String path;
+    private String getPathWithQueryStringFromRequest(AwsProxyRequest request) throws UnsupportedEncodingException {
         if (hasQueryParameters(request)) {
-            path = getPathWithQueryParameters(request.getPath(), request);
+            return getPathWithQueryParameters(request);
         } else {
-            path = request.getPath();
+            return request.getPath();
         }
-        return path;
     }
 
     private boolean hasQueryParameters(AwsProxyRequest request) {
-        return request.getMultiValueQueryStringParameters() != null && !request.getMultiValueQueryStringParameters()
-                .isEmpty();
+        return request.getMultiValueQueryStringParameters() != null && !request.getMultiValueQueryStringParameters().isEmpty();
     }
 
-    private String getPathWithQueryParameters(String path,
-            AwsProxyRequest request) throws UnsupportedEncodingException {
-        StringBuilder sb = new StringBuilder(path);
+    private String getPathWithQueryParameters(AwsProxyRequest request) throws UnsupportedEncodingException {
+        StringBuilder sb = new StringBuilder(request.getPath());
         sb.append("?");
         boolean first = true;
         for (Map.Entry<String, List<String>> e : request.getMultiValueQueryStringParameters().entrySet()) {
@@ -146,12 +142,16 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                     sb.append("=");
                     sb.append(v);
                 } else {
-                    sb.append(URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8.name()));
+                    sb.append(urlEncode(e.getKey()));
                     sb.append("=");
-                    sb.append(URLEncoder.encode(v, StandardCharsets.UTF_8.name()));
+                    sb.append(urlEncode(v));
                 }
             }
         }
         return sb.toString();
+    }
+
+    private String urlEncode(String key) throws UnsupportedEncodingException {
+        return URLEncoder.encode(key, StandardCharsets.UTF_8.name());
     }
 }

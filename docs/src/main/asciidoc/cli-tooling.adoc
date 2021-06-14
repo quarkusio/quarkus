@@ -70,7 +70,7 @@ Commands:
   build            Build the current project.
   dev              Run the current project in dev (live coding) mode.
   extension, ext   List, add, and remove extensions of an existing project.
-    add            Extension(s) to add to this project.
+    add            Add extension(s) to this project.
     list, ls       List platforms and extensions for this project.
     remove, rm     Remove extension(s) from this project.
   completion       bash/zsh completion:  source <(quarkus completion)

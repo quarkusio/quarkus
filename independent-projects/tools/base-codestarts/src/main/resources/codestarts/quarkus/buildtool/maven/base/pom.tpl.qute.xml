@@ -13,6 +13,7 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <quarkus.platform.group-id>{quarkus.platform.group-id}</quarkus.platform.group-id>
+        <quarkus.platform.artifact-id>{quarkus.platform.artifact-id}</quarkus.platform.artifact-id>
         <quarkus.platform.version>{quarkus.platform.version}</quarkus.platform.version>
         {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
         <quarkus-plugin.version>{quarkus.maven-plugin.version}</quarkus-plugin.version>
@@ -33,7 +34,11 @@
             {#else}
                 <groupId>{it.groupId}</groupId>
             {/if}
+            {#if it.artifactId == quarkus.platform.artifact-id}
+                <artifactId>$\{quarkus.platform.artifact-id}</artifactId>
+            {#else}
                 <artifactId>{it.artifactId}</artifactId>
+            {/if}
             {#if it.groupId == quarkus.platform.group-id && it.version == quarkus.platform.version}
                 <version>$\{quarkus.platform.version}</version>
             {#else}

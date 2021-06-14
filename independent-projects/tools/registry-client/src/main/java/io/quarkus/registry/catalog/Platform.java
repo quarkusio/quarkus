@@ -1,5 +1,6 @@
 package io.quarkus.registry.catalog;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collection;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ public interface Platform {
 
     PlatformStream getStream(String id);
 
+    @JsonIgnore
     default PlatformStream getRecommendedStream() {
         final Collection<PlatformStream> streams = getStreams();
         if (streams.isEmpty()) {

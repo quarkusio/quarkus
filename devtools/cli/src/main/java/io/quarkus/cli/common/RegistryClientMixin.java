@@ -22,26 +22,29 @@ public class RegistryClientMixin {
         log.debug("Resolving Quarkus extension catalog for " + targetVersion);
         QuarkusProjectHelper.setMessageWriter(log);
 
+        if (targetVersion.isPlatformSpecified()) {
+            ArtifactCoords coords = targetVersion.getPlatformBom();
+            return ToolsUtils.resolvePlatformDescriptorDirectly(coords.getGroupId(), coords.getArtifactId(),
+                    coords.getVersion(), QuarkusProjectHelper.artifactResolver(), log);
+        }
+
         ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver(enableRegistryClient, log);
 
         try {
             if (!catalogResolver.hasRegistries()) {
                 log.debug("Falling back to direct resolution of the platform bom");
-
                 // Fall back to previous methods of finding registries (e.g. client has been disabled)
-                if (targetVersion.isPlatformSpecified()) {
-                    ArtifactCoords coords = targetVersion.getPlatformBom();
-                    return ToolsUtils.resolvePlatformDescriptorDirectly(coords.getGroupId(), coords.getArtifactId(),
-                            coords.getVersion(), QuarkusProjectHelper.artifactResolver(), log);
-                } else {
-                    return ToolsUtils.resolvePlatformDescriptorDirectly(null, null, Version.clientVersion(),
-                            QuarkusProjectHelper.artifactResolver(), log);
-                }
+                return ToolsUtils.resolvePlatformDescriptorDirectly(null, null, Version.clientVersion(),
+                        QuarkusProjectHelper.artifactResolver(), log);
             }
 
-            // if (targetVersion.isPlatformSpecified()) {
-            // } else {
-            // }
+            if (targetVersion.isStream()) {
+                final String stream = targetVersion.getStream();
+                final int colon = stream.indexOf(':');
+                final String platformKey = colon <= 0 ? null : stream.substring(0, colon);
+                final String streamId = colon < 0 ? stream : stream.substring(colon + 1);
+                return catalogResolver.resolveExtensionCatalog(platformKey, streamId);
+            }
 
             return catalogResolver.resolveExtensionCatalog();
         } catch (Exception e) {

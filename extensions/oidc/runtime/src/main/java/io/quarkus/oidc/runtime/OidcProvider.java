@@ -21,6 +21,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
@@ -144,17 +145,17 @@ public class OidcProvider {
 
     public Uni<TokenVerificationResult> introspectToken(String token) {
         return client.introspectToken(token).onItemOrFailure()
-                .transform(new BiFunction<JsonObject, Throwable, TokenVerificationResult>() {
+                .transform(new BiFunction<TokenIntrospection, Throwable, TokenVerificationResult>() {
 
                     @Override
-                    public TokenVerificationResult apply(JsonObject jsonObject, Throwable t) {
+                    public TokenVerificationResult apply(TokenIntrospection introspectionResult, Throwable t) {
                         if (t != null) {
                             throw new AuthenticationFailedException(t);
                         }
-                        if (!Boolean.TRUE.equals(jsonObject.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
+                        if (!Boolean.TRUE.equals(introspectionResult.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
                             throw new AuthenticationFailedException();
                         }
-                        Long exp = jsonObject.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
+                        Long exp = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
                         if (exp != null) {
                             final int lifespanGrace = client.getOidcConfig().token.lifespanGrace.isPresent()
                                     ? client.getOidcConfig().token.lifespanGrace.getAsInt()
@@ -164,7 +165,7 @@ public class OidcProvider {
                             }
                         }
 
-                        return new TokenVerificationResult(null, jsonObject);
+                        return new TokenVerificationResult(null, introspectionResult);
                     }
 
                 });

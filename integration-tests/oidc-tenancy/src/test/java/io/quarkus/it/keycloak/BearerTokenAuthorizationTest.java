@@ -297,7 +297,7 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/tenant-opaque/tenant-oidc/api/user")
                 .then()
                 .statusCode(200)
-                .body(equalTo("tenant-oidc-opaque:alice"));
+                .body(equalTo("tenant-oidc-opaque:alice:user:user@gmail.com"));
 
         // OIDC JWK endpoint must've been called only twice, once as part of the Quarkus OIDC initialization
         // and once during the 1st request with a token kid '2', follow up requests must've been blocked due to the interval

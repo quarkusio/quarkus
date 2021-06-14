@@ -28,11 +28,13 @@ import io.vertx.ext.web.RoutingContext;
 @Singleton
 public class KeycloakPolicyEnforcerAuthorizer
         implements HttpSecurityPolicy, BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> {
-    private static final String TENANT_ID_ATTRIBUTE = "tenant-id";
     private static final String PERMISSIONS_ATTRIBUTE = "permissions";
 
     @Inject
-    PolicyEnforcerResolver resolver;
+    DefaultPolicyEnforcerConfigResolver resolver;
+
+    @Inject
+    KeycloakPolicyEnforcerConfigBean config;
 
     @Override
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
@@ -44,8 +46,15 @@ public class KeycloakPolicyEnforcerAuthorizer
     public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
 
         if (identity.isAnonymous()) {
-            PathConfig pathConfig = resolver.getPolicyEnforcer(null).getPathMatcher().matches(routingContext.request().path());
-            if (pathConfig != null && pathConfig.getEnforcementMode() == EnforcementMode.ENFORCING) {
+            KeycloakPolicyEnforcerContext defaultEnforcerContext = resolver.resolveContext(null).await().indefinitely();
+            if (defaultEnforcerContext != null) {
+                PathConfig pathConfig = defaultEnforcerContext.enforcer.getPathMatcher()
+                        .matches(routingContext.request().path());
+                if (pathConfig != null && pathConfig.getEnforcementMode() == EnforcementMode.ENFORCING) {
+                    return CheckResult.DENY;
+                }
+            } else {
+                // No default tenant was specified
                 return CheckResult.DENY;
             }
         }
@@ -57,10 +66,12 @@ public class KeycloakPolicyEnforcerAuthorizer
             return CheckResult.PERMIT;
         }
 
-        VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, credential.getToken(), resolver.getReadTimeout());
+        VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, credential.getToken(), config.getReadTimeout());
+
+        KeycloakPolicyEnforcerContext context = resolver.resolveContext(routingContext).await().indefinitely();
 
         KeycloakAdapterPolicyEnforcer adapterPolicyEnforcer = new KeycloakAdapterPolicyEnforcer(
-                resolver.getPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE)));
+                context.enforcer);
         AuthorizationContext result = adapterPolicyEnforcer.authorize(httpFacade);
 
         if (result.isGranted()) {
@@ -75,7 +86,7 @@ public class KeycloakPolicyEnforcerAuthorizer
     @RequestScoped
     public AuthzClient getAuthzClient() {
         SecurityIdentity identity = (SecurityIdentity) Arc.container().instance(SecurityIdentity.class).get();
-        return resolver.getPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE)).getClient();
+        return resolver.resolveIdentityContext(identity).enforcer.getClient();
     }
 
     private SecurityIdentity enhanceSecurityIdentity(SecurityIdentity current,

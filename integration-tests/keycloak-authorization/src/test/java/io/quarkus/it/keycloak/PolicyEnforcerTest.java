@@ -232,6 +232,24 @@ public class PolicyEnforcerTest {
                 .statusCode(404);
     }
 
+    @Test
+    public void testDynamicConfigurationResolution() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))
+                .when().get("/api-permission-dynamic")
+                .then()
+                .statusCode(403);
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api-permission-dynamic")
+                .then()
+                .statusCode(403);
+        RestAssured.given().auth().oauth2(getAccessToken("admin"))
+                .when().get("/api-permission-dynamic")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("Permission Resource Dynamic Tenant"));
+
+    }
+
     private String getAccessToken(String userName) {
         return RestAssured
                 .given()

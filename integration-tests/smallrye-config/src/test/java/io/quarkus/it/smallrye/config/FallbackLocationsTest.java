@@ -14,35 +14,34 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
 @QuarkusTest
-@TestProfile(QuarkusTestProfileTest.TestProfile.class)
-public class QuarkusTestProfileTest {
+@TestProfile(FallbackLocationsTest.TestProfile.class)
+public class FallbackLocationsTest {
     @Test
-    void testProfile() {
+    void fallback() {
         given()
-                .get("/config/{name}", "test.profile.main")
+                .get("/config/{name}", "quarkus.config.locations")
                 .then()
                 .statusCode(OK.getStatusCode())
-                .body("value", equalTo("main"));
+                .body("value", equalTo("fallback.properties"));
 
         given()
-                .get("/config/{name}", "test.profile.custom")
+                .get("/config/{name}", "locations.fallback")
                 .then()
                 .statusCode(OK.getStatusCode())
-                .body("value", equalTo("custom"));
+                .body("value", equalTo("1234"));
     }
 
     public static class TestProfile implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
             Map<String, String> configs = new HashMap<>();
-            configs.put("quarkus.config.locations", "test-profile.properties");
-            configs.put("smallrye.config.locations", "relocate.properties");
+            configs.put("smallrye.config.locations", "fallback.properties");
             return configs;
         }
 
         @Override
         public String getConfigProfile() {
-            return "custom";
+            return "fallback";
         }
     }
 }

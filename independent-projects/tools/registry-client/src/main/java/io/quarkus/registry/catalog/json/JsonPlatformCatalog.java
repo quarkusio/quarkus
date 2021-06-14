@@ -1,7 +1,6 @@
 package io.quarkus.registry.catalog.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.quarkus.registry.catalog.Platform;
@@ -13,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-@JsonIgnoreProperties(value = { "recommendedPlatform" })
 public class JsonPlatformCatalog extends JsonEntityWithAnySupport implements PlatformCatalog {
 
     private Map<String, Platform> platforms;

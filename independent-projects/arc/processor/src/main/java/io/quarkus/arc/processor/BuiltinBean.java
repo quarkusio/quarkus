@@ -36,7 +36,7 @@ enum BuiltinBean {
         ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(ctx.classOutput, ctx.clazzCreator,
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
-        ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getRequiredType());
+        ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
         ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(ctx.classOutput, ctx.clazzCreator,
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
@@ -149,7 +149,7 @@ enum BuiltinBean {
                 }
             }
         }
-        ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getRequiredType());
+        ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
         ResultHandle eventProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
                         Set.class),
@@ -175,7 +175,7 @@ enum BuiltinBean {
                                 Types.getPackageName(ctx.clazzCreator.getClassName())));
             }
         }
-        ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getRequiredType());
+        ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
         ResultHandle resourceProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(ResourceProvider.class, java.lang.reflect.Type.class,
                         Set.class),
@@ -283,7 +283,7 @@ enum BuiltinBean {
             return false;
         }
         for (DotName rawTypeDotName : rawTypeDotNames) {
-            if (rawTypeDotName.equals(injectionPoint.getRequiredType().name())) {
+            if (rawTypeDotName.equals(injectionPoint.getType().name())) {
                 return true;
             }
         }

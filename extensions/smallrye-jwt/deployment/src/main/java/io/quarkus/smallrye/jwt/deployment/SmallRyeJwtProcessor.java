@@ -138,9 +138,9 @@ class SmallRyeJwtProcessor {
                 continue;
             }
             AnnotationInstance claimQualifier = injectionPoint.getRequiredQualifier(CLAIM_NAME);
-            if (claimQualifier != null && injectionPoint.getRequiredType().name().equals(DotNames.PROVIDER)) {
+            if (claimQualifier != null && injectionPoint.getType().name().equals(DotNames.PROVIDER)) {
                 // Classes from javax.json are handled specially
-                Type actualType = injectionPoint.getRequiredType().asParameterizedType().arguments().get(0);
+                Type actualType = injectionPoint.getRequiredType();
                 if (actualType.name().equals(DotNames.OPTIONAL) && !actualType.name().toString()
                         .startsWith("javax.json")) {
                     additionalTypes.add(actualType);

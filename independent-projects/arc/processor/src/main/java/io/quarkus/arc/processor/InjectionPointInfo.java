@@ -121,8 +121,36 @@ public class InjectionPointInfo {
         return kind;
     }
 
+    /**
+     * Note that for programmatic lookup, the required type is the type parameter specified at the injection point. For example,
+     * the required type for an injection point of type {@code Instance<org.acme.Foo>} is {@code org.acme.Foo}.
+     * 
+     * @return the required type of this injection point
+     */
     public Type getRequiredType() {
+        Type requiredType = typeAndQualifiers.type;
+        if (isProgrammaticLookup() && requiredType.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE) {
+            requiredType = requiredType.asParameterizedType().arguments().get(0);
+        }
+        return requiredType;
+    }
+
+    /**
+     * This method always returns the original type declared on the injection point, unlike {@link #getRequiredType()}.
+     * 
+     * @return the type specified at the injection point
+     */
+    public Type getType() {
         return typeAndQualifiers.type;
+    }
+
+    /**
+     * @return <code>true</code> if this injection represents a dynamically obtained instance, <code>false</code> otherwise
+     */
+    public boolean isProgrammaticLookup() {
+        DotName requiredTypeName = typeAndQualifiers.type.name();
+        return DotNames.INSTANCE.equals(requiredTypeName) || DotNames.INJECTABLE_INSTANCE.equals(requiredTypeName)
+                || DotNames.PROVIDER.equals(requiredTypeName);
     }
 
     public Set<AnnotationInstance> getRequiredQualifiers() {

@@ -282,21 +282,8 @@ public class MessageBundleProcessor {
                 Set<String> paramNames = IntStream.range(0, messageBundleMethod.getMethod().parameters().size())
                         .mapToObj(idx -> getParameterName(messageBundleMethod.getMethod(), idx)).collect(Collectors.toSet());
                 for (Expression expression : analysis.expressions) {
-                    if (expression.isLiteral() || expression.hasNamespace()) {
-                        continue;
-                    }
-                    String name = expression.getParts().get(0).getName();
-                    if (!paramNames.contains(name)) {
-                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                name + " is not a parameter of the message bundle method "
-                                        + messageBundleMethod.getMethod().declaringClass().name() + "#"
-                                        + messageBundleMethod.getMethod().name() + "()",
-                                expression.getOrigin()));
-                    } else {
-                        usedParamNames.add(name);
-                    }
+                    validateExpression(incorrectExpressions, messageBundleMethod, expression, paramNames, usedParamNames);
                 }
-
                 // Log a warning if a parameter is not used in the template
                 for (String paramName : paramNames) {
                     if (!usedParamNames.contains(paramName)) {
@@ -304,6 +291,34 @@ public class MessageBundleProcessor {
                                 messageBundleMethod.getMethod().declaringClass().name() + "#"
                                         + messageBundleMethod.getMethod().name() + "()");
                     }
+                }
+            }
+        }
+    }
+
+    private void validateExpression(BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
+            MessageBundleMethodBuildItem messageBundleMethod, Expression expression, Set<String> paramNames,
+            Set<String> usedParamNames) {
+        if (expression.isLiteral()) {
+            return;
+        }
+        if (!expression.hasNamespace()) {
+            String name = expression.getParts().get(0).getName();
+            if (!paramNames.contains(name)) {
+                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                        name + " is not a parameter of the message bundle method "
+                                + messageBundleMethod.getMethod().declaringClass().name() + "#"
+                                + messageBundleMethod.getMethod().name() + "()",
+                        expression.getOrigin()));
+            } else {
+                usedParamNames.add(name);
+            }
+        }
+        // Inspect method params too
+        for (Part part : expression.getParts()) {
+            if (part.isVirtualMethod()) {
+                for (Expression param : part.asVirtualMethod().getParameters()) {
+                    validateExpression(incorrectExpressions, messageBundleMethod, param, paramNames, usedParamNames);
                 }
             }
         }

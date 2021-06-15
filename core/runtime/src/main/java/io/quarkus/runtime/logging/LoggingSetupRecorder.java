@@ -253,16 +253,28 @@ public class LoggingSetupRecorder {
             List<LogCleanupFilterElement> filterElements) {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers.entrySet()) {
-            final Handler consoleHandler = configureConsoleHandler(consoleConfigEntry.getValue(), errorManager, filterElements,
+            ConsoleConfig namedConsoleConfig = consoleConfigEntry.getValue();
+            if (!namedConsoleConfig.enable) {
+                continue;
+            }
+            final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, errorManager, filterElements,
                     possibleFormatters, null);
             addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers.entrySet()) {
-            final Handler fileHandler = configureFileHandler(fileConfigEntry.getValue(), errorManager, filterElements);
+            FileConfig namedFileConfig = fileConfigEntry.getValue();
+            if (!namedFileConfig.enable) {
+                continue;
+            }
+            final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, filterElements);
             addToNamedHandlers(namedHandlers, fileHandler, fileConfigEntry.getKey());
         }
         for (Entry<String, SyslogConfig> sysLogConfigEntry : config.syslogHandlers.entrySet()) {
-            final Handler syslogHandler = configureSyslogHandler(sysLogConfigEntry.getValue(), errorManager, filterElements);
+            SyslogConfig namedSyslogConfig = sysLogConfigEntry.getValue();
+            if (!namedSyslogConfig.enable) {
+                continue;
+            }
+            final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, filterElements);
             if (syslogHandler != null) {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
             }

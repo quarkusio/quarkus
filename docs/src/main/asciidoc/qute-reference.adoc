@@ -1722,8 +1722,10 @@ But in fact, the suffix could be anything.
 ----
 hello_name=Hallo {name}! <1> <2>
 ----
-<1> Each line in a localized file represents a message template. 
+<1> Each line in a localized file represents a key/value pair. The key must correspond to a method declared on the message bundle interface. The value is the message template.
 <2> Keys and values are separated by the equals sign.
+
+TIP: An example properties file is generated into the target directory for each message bundle interface automatically. For example, by default if no name is specified for `@MessageBundle` the file `target/qute-i18n-examples/msg.properties` is generated when the application is build via `mvn clean package`. You can use this file as a base for a specific locale. Just rename the file - e.g. `msg_fr.properties`, change the message templates and move it in the `src/main/resources/messages` directory.
 
 Once we have the localized bundles defined we need a way to _select_ a correct bundle.
 If you use a message bundle expression in a template you'll have to specify the `locale` attribute of a template instance.

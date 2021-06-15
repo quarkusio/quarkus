@@ -390,7 +390,7 @@ public class ExtensionCatalogResolver {
         return appendNonPlatformExtensions(registriesByQuarkusCore, extensionCatalogs);
     }
 
-    public ExtensionCatalog resolveExtensionCatalog(List<ArtifactCoords> platforms)
+    public ExtensionCatalog resolveExtensionCatalog(Collection<ArtifactCoords> platforms)
             throws RegistryResolutionException {
         if (platforms.isEmpty()) {
             return resolveExtensionCatalog();

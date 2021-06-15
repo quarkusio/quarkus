@@ -37,6 +37,8 @@ import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCredential;
 import com.mongodb.MongoException;
+import com.mongodb.ReadConcern;
+import com.mongodb.ReadConcernLevel;
 import com.mongodb.ReadPreference;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
@@ -290,6 +292,9 @@ public class MongoClients {
 
         if (config.readPreference.isPresent()) {
             settings.readPreference(ReadPreference.valueOf(config.readPreference.get()));
+        }
+        if(config.readConcern.isPresent()) {
+            settings.readConcern(new ReadConcern(ReadConcernLevel.fromString(config.readConcern.get())));
         }
 
         return settings.build();

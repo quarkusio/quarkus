@@ -42,6 +42,7 @@ public class OidcClientImpl implements OidcClient {
     private final String clientSecretBasicAuthScheme;
     private final Key clientJwtKey;
     private final OidcClientConfig oidcConfig;
+    private volatile boolean closed;
 
     public OidcClientImpl(WebClient client, String tokenRequestUri, String grantType,
             MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig) {
@@ -57,6 +58,7 @@ public class OidcClientImpl implements OidcClient {
 
     @Override
     public Uni<Tokens> getTokens(Map<String, String> additionalGrantParameters) {
+        checkClosed();
         if (tokenGrantParams == null) {
             throw new OidcClientException(
                     "Only 'refresh_token' grant is supported, please call OidcClient#refreshTokens method instead");
@@ -66,6 +68,7 @@ public class OidcClientImpl implements OidcClient {
 
     @Override
     public Uni<Tokens> refreshTokens(String refreshToken) {
+        checkClosed();
         if (refreshToken == null) {
             throw new OidcClientException("Refresh token is null");
         }
@@ -169,6 +172,15 @@ public class OidcClientImpl implements OidcClient {
 
     @Override
     public void close() throws IOException {
-        client.close();
+        if (!closed) {
+            client.close();
+            closed = true;
+        }
+    }
+
+    private void checkClosed() {
+        if (closed) {
+            throw new IllegalStateException("OidcClient " + oidcConfig.getId().get() + " is closed");
+        }
     }
 }

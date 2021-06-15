@@ -148,8 +148,6 @@ public class HibernateSearchElasticsearchRecorder {
                     ElasticsearchBackendSettings.TYPE_NAME);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
                     elasticsearchBackendConfig.version);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
-                    elasticsearchBackendConfig.versionCheck);
             addBackendConfig(propertyCollector, backendName,
                     ElasticsearchBackendSettings.LAYOUT_STRATEGY,
                     elasticsearchBackendConfig.layout.strategy);
@@ -234,6 +232,8 @@ public class HibernateSearchElasticsearchRecorder {
                     elasticsearchBackendConfig.maxConnectionsPerRoute);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.THREAD_POOL_SIZE,
                     elasticsearchBackendConfig.threadPool.size);
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
+                    elasticsearchBackendConfig.versionCheck);
 
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_ENABLED,
                     elasticsearchBackendConfig.discovery.enabled);

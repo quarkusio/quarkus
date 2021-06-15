@@ -60,6 +60,8 @@ If you want to use DevServices then all you need to do is include the relevant e
 JDBC, or both), and don't configure a database URL, username and password, Quarkus will provide the database and you can just start
 coding without worrying about config.
 
+In case you need access Postgresql container based database from external tools, the database name is "default", username is quarkus and password is quarkus. To find out the connecting port number, you may need to run "docker port" to get the locally mapped port number. Alternatively "docker inspect <container_name>" to find the container ip in which case you can just use the standard postgresql port of 5432. Beware that port number/ip is likely to change on each restart.
+
 If you are using a proprietary database such as DB2 or MSSQL you will need to accept the license agreement. To do this
 create a `src/main/resources/container-license-acceptance.txt` files in your project and add a line with the image
 name and tag of the database. By default Quarkus uses the default image for the current version of Testcontainers, if

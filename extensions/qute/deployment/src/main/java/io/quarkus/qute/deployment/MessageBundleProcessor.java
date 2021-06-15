@@ -49,12 +49,15 @@ import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -485,6 +488,32 @@ public class MessageBundleProcessor {
         }
     }
 
+    @BuildStep(onlyIf = IsNormal.class)
+    void generateExamplePropertiesFiles(List<MessageBundleMethodBuildItem> messageBundleMethods,
+            BuildSystemTargetBuildItem target, BuildProducer<GeneratedResourceBuildItem> dummy) throws IOException {
+        Map<String, List<MessageBundleMethodBuildItem>> bundles = new HashMap<>();
+        for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
+            if (messageBundleMethod.isDefaultBundle()) {
+                List<MessageBundleMethodBuildItem> methods = bundles.get(messageBundleMethod.getBundleName());
+                if (methods == null) {
+                    methods = new ArrayList<>();
+                    bundles.put(messageBundleMethod.getBundleName(), methods);
+                }
+                methods.add(messageBundleMethod);
+            }
+        }
+        Path generatedExamplesDir = target.getOutputDirectory()
+                .resolve("qute-i18n-examples");
+        Files.createDirectories(generatedExamplesDir);
+        for (Entry<String, List<MessageBundleMethodBuildItem>> entry : bundles.entrySet()) {
+            List<MessageBundleMethodBuildItem> messages = entry.getValue();
+            messages.sort(Comparator.comparing(MessageBundleMethodBuildItem::getKey));
+            Path exampleProperfies = generatedExamplesDir.resolve(entry.getKey() + ".properties");
+            Files.write(exampleProperfies,
+                    messages.stream().map(m -> m.getMethod().name() + "=" + m.getTemplate()).collect(Collectors.toList()));
+        }
+    }
+
     private Map<String, String> generateImplementations(List<MessageBundleBuildItem> bundles,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -659,7 +688,7 @@ public class MessageBundleProcessor {
             }
 
             MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, key, templateId,
-                    method, messageTemplate);
+                    method, messageTemplate, defaultBundleInterface == null);
             messageTemplateMethods
                     .produce(messageBundleMethod);
 

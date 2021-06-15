@@ -102,6 +102,7 @@ public @interface TemplateExtension {
      * extension methods declared on different classes cannot share the same namespace.
      * 
      * @return the namespace
+     * @see NamespaceResolver#getNamespace()
      */
     String namespace() default "";
 

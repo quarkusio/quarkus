@@ -16,6 +16,7 @@ public interface Expression {
     /**
      * 
      * @return the namespace, may be {@code null}
+     * @see NamespaceResolver
      */
     String getNamespace();
 

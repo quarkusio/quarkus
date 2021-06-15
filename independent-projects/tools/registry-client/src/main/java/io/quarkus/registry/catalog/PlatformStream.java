@@ -1,5 +1,6 @@
 package io.quarkus.registry.catalog;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collection;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ public interface PlatformStream {
 
     PlatformRelease getRelease(PlatformReleaseVersion version);
 
+    @JsonIgnore
     default PlatformRelease getRecommendedRelease() {
         final Collection<PlatformRelease> releases = getReleases();
         if (releases.isEmpty()) {

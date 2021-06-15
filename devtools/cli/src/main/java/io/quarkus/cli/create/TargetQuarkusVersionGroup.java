@@ -11,7 +11,7 @@ public class TargetQuarkusVersionGroup {
     CommandSpec spec;
 
     @CommandLine.Option(paramLabel = "STREAM", names = { "-S",
-            "--stream" }, description = "A target stream, e.g. default, snapshot", defaultValue = "default", hidden = true)
+            "--stream" }, description = "A target stream, e.g. default, snapshot", hidden = true)
     String stream;
 
     @CommandLine.Option(paramLabel = "groupId:artifactId:version", names = { "-p",
@@ -38,7 +38,7 @@ public class TargetQuarkusVersionGroup {
     }
 
     public boolean isStream() {
-        return platformBom == null;
+        return stream != null;
     }
 
     public String getStream() {

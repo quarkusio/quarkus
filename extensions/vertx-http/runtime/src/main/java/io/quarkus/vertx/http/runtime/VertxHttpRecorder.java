@@ -615,22 +615,12 @@ public class VertxHttpRecorder {
         if (!certificates.isEmpty() && !keys.isEmpty()) {
             createPemKeyCertOptions(certificates, keys, serverOptions);
         } else if (keyStoreFile.isPresent()) {
-            final Path keyStorePath = keyStoreFile.get();
-            final Optional<String> keyStoreFileType = sslConfig.certificate.keyStoreFileType;
-            final String type;
-            if (keyStoreFileType.isPresent()) {
-                type = keyStoreFileType.get().toLowerCase();
-            } else {
-                type = findKeystoreFileType(keyStorePath);
-            }
-
-            byte[] data = getFileContent(keyStorePath);
-            final Optional<String> keyStoreProvider = sslConfig.certificate.keyStoreProvider;
-            KeyStoreOptions options = new KeyStoreOptions()
-                    .setPassword(keystorePassword)
-                    .setValue(Buffer.buffer(data))
-                    .setType(type.toUpperCase())
-                    .setProvider(keyStoreProvider.orElse(null));
+            KeyStoreOptions options = createKeyStoreOptions(
+                    keyStoreFile.get(),
+                    keystorePassword,
+                    sslConfig.certificate.keyStoreFileType,
+                    sslConfig.certificate.keyStoreProvider,
+                    sslConfig.certificate.keyStoreKeyAlias);
             serverOptions.setKeyCertOptions(options);
         } else {
             return null;
@@ -640,16 +630,13 @@ public class VertxHttpRecorder {
             if (!trustStorePassword.isPresent()) {
                 throw new IllegalArgumentException("No trust store password provided");
             }
-            final String type;
-            final Optional<String> trustStoreFileType = sslConfig.certificate.trustStoreFileType;
-            final Path trustStoreFilePath = trustStoreFile.get();
-            if (trustStoreFileType.isPresent()) {
-                type = trustStoreFileType.get().toLowerCase();
-            } else {
-                type = findKeystoreFileType(trustStoreFilePath);
-            }
-            createTrustStoreOptions(trustStoreFilePath, trustStorePassword.get(), type,
-                    sslConfig.certificate.trustStoreProvider.orElse(null), serverOptions);
+            KeyStoreOptions options = createKeyStoreOptions(
+                    trustStoreFile.get(),
+                    trustStorePassword.get(),
+                    sslConfig.certificate.trustStoreFileType,
+                    sslConfig.certificate.trustStoreProvider,
+                    sslConfig.certificate.trustStoreCertAlias);
+            serverOptions.setTrustOptions(options);
         }
 
         for (String cipher : sslConfig.cipherSuites.orElse(Collections.emptyList())) {
@@ -673,6 +660,25 @@ public class VertxHttpRecorder {
         serverOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
 
         return serverOptions;
+    }
+
+    private static KeyStoreOptions createKeyStoreOptions(Path keyStorePath, String password, Optional<String> keyStoreFileType,
+            Optional<String> keyStoreProvider, Optional<String> keyStoreAlias) throws IOException {
+        final String type;
+        if (keyStoreFileType.isPresent()) {
+            type = keyStoreFileType.get().toLowerCase();
+        } else {
+            type = findKeystoreFileType(keyStorePath);
+        }
+
+        byte[] data = getFileContent(keyStorePath);
+        KeyStoreOptions options = new KeyStoreOptions()
+                .setPassword(password)
+                .setValue(Buffer.buffer(data))
+                .setType(type.toUpperCase())
+                .setProvider(keyStoreProvider.orElse(null))
+                .setAlias(keyStoreAlias.orElse(null));
+        return options;
     }
 
     private static byte[] getFileContent(Path path) throws IOException {
@@ -715,17 +721,6 @@ public class VertxHttpRecorder {
                 .setCertValues(certificates)
                 .setKeyValues(keys);
         serverOptions.setPemKeyCertOptions(pemKeyCertOptions);
-    }
-
-    private static void createTrustStoreOptions(Path trustStoreFile, String trustStorePassword,
-            String trustStoreFileType, String trustStoreProvider, HttpServerOptions serverOptions) throws IOException {
-        byte[] data = getFileContent(trustStoreFile);
-        KeyStoreOptions options = new KeyStoreOptions()
-                .setPassword(trustStorePassword)
-                .setValue(Buffer.buffer(data))
-                .setType(trustStoreFileType.toUpperCase())
-                .setProvider(trustStoreProvider);
-        serverOptions.setTrustOptions(options);
     }
 
     private static String findKeystoreFileType(Path storePath) {

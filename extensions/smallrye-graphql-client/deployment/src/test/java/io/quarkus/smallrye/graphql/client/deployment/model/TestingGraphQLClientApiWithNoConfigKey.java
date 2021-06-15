@@ -6,8 +6,8 @@ import org.eclipse.microprofile.graphql.Query;
 
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
-@GraphQLClientApi(configKey = "typesafeclient")
-public interface TestingGraphQLClientApi {
+@GraphQLClientApi
+public interface TestingGraphQLClientApiWithNoConfigKey {
 
     @Query
     public List<Person> people();

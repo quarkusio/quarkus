@@ -18,7 +18,7 @@ import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApi;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class TypesafeGraphQLClientInjectionTest {
+public class TypesafeGraphQLClientInjectionWithQuarkusConfigTest {
 
     static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":" +
             System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
@@ -27,10 +27,10 @@ public class TypesafeGraphQLClientInjectionTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class)
-                    .addAsResource(new StringAsset("typesafeclient/mp-graphql/url=" + url),
+                    .addAsResource(new StringAsset("quarkus.smallrye-graphql-client.typesafeclient.url=" + url),
                             // TODO: adding headers via config is not supported by typesafe client yet
                             //                            + "\n" +
-                            //                            "typesafeclient/mp-graphql/header/My-Header=My-Value"),
+                            //                            "quarkus.smallrye-graphql-client.typesafeclient.header.My-Header=My-Value"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

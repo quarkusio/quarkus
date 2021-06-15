@@ -3,7 +3,7 @@ package io.quarkus.smallrye.graphql.client.deployment;
 import static io.smallrye.graphql.client.core.Argument.arg;
 import static io.smallrye.graphql.client.core.Document.document;
 import static io.smallrye.graphql.client.core.Field.field;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.util.List;
@@ -26,7 +26,7 @@ import io.smallrye.graphql.client.core.Document;
 import io.smallrye.graphql.client.core.Operation;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
-public class DynamicGraphQLClientInjectionTest {
+public class DynamicGraphQLClientInjectionWithQuarkusConfigTest {
 
     static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":" +
             System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
@@ -35,8 +35,8 @@ public class DynamicGraphQLClientInjectionTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestingGraphQLApi.class, Person.class)
-                    .addAsResource(new StringAsset("people/mp-graphql/url=" + url + "\n" +
-                            "people/mp-graphql/header/My-Header=My-Value"),
+                    .addAsResource(new StringAsset("quarkus.smallrye-graphql-client.people.url=" + url + "\n" +
+                            "quarkus.smallrye-graphql-client.people.header.My-Header=My-Value"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

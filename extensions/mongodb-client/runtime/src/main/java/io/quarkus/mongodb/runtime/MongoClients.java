@@ -276,7 +276,13 @@ public class MongoClients {
 
             Optional<String> maybeW = wc.w;
             if (maybeW.isPresent()) {
-                concern = concern.withW(maybeW.get());
+                String w = maybeW.get();
+                if ("majority".equalsIgnoreCase(w)) {
+                    concern = concern.withW(w);
+                } else {
+                    int wInt = Integer.parseInt(w);
+                    concern = concern.withW(wInt);
+                }
             }
             settings.writeConcern(concern);
             settings.retryWrites(wc.retryWrites);
@@ -293,7 +299,7 @@ public class MongoClients {
         if (config.readPreference.isPresent()) {
             settings.readPreference(ReadPreference.valueOf(config.readPreference.get()));
         }
-        if(config.readConcern.isPresent()) {
+        if (config.readConcern.isPresent()) {
             settings.readConcern(new ReadConcern(ReadConcernLevel.fromString(config.readConcern.get())));
         }
 

@@ -72,6 +72,7 @@ import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.deployment.QuteProcessor.Match;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
@@ -129,6 +130,12 @@ public class MessageBundleProcessor {
                 if (Modifier.isInterface(bundleClass.flags())) {
                     AnnotationValue nameValue = bundleAnnotation.value();
                     String name = nameValue != null ? nameValue.asString() : MessageBundle.DEFAULT_NAME;
+                    if (!Namespaces.isValidNamespace(name)) {
+                        throw new MessageBundleException(
+                                String.format(
+                                        "Message bundle name [%s] declared on %s must be a valid namespace - the value can only consist of alphanumeric characters and underscores",
+                                        name, bundleClass));
+                    }
 
                     if (found.containsKey(name)) {
                         throw new MessageBundleException(

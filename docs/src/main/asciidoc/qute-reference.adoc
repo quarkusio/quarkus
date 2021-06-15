@@ -215,6 +215,7 @@ It consists of one or more parts separated by dot (dot notation) or square brack
 In the `object.property` (dot notation) syntax, the `property` must be a <<identifiers,valid identifier>>.
 In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals, literal>> value. 
 An expression could start with an optional namespace followed by a colon (`:`).
+A valid namespace consist of alphanumeric characters and underscores.
 
 .Expressions Example
 [source]

@@ -7,6 +7,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.TemplateExtension;
 
 /**
@@ -31,7 +32,7 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
         this.matchRegex = matchRegex;
         this.matchType = matchType;
         this.priority = priority;
-        this.namespace = namespace;
+        this.namespace = (namespace != null && !namespace.isEmpty()) ? Namespaces.requireValid(namespace) : namespace;
         this.matchPattern = (matchRegex == null || matchRegex.isEmpty()) ? null : Pattern.compile(matchRegex);
     }
 

@@ -81,6 +81,11 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
+    public void testFilterWithCollections() {
+        RestAssured.when().get("/test/testFilterWithCollections").then().body(is("OK"));
+    }
+
+    @Test
     public void testJaxbAnnotationTransfer() {
         RestAssured.when()
                 .get("/test/testJaxbAnnotationTransfer")

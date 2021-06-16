@@ -17,12 +17,14 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -30,6 +32,7 @@ import io.vertx.ext.web.RoutingContext;
 public final class OidcUtils {
     public static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
     public static final String USER_INFO_ATTRIBUTE = "userinfo";
+    public static final String INTROSPECTION_ATTRIBUTE = "introspection";
     public static final String TENANT_ID_ATTRIBUTE = "tenant-id";
     /**
      * This pattern uses a positive lookahead to split an expression around the forward slashes
@@ -187,6 +190,10 @@ public final class OidcUtils {
         if (userInfo != null) {
             builder.addAttribute(USER_INFO_ATTRIBUTE, new UserInfo(userInfo.encode()));
         }
+    }
+
+    public static void setSecurityIdentityIntrospecton(Builder builder, TokenIntrospection introspectionResult) {
+        builder.addAttribute(INTROSPECTION_ATTRIBUTE, introspectionResult);
     }
 
     public static void setSecurityIdentityConfigMetadata(QuarkusSecurityIdentity.Builder builder,

@@ -219,7 +219,8 @@ public class QuarkusDev extends QuarkusTask {
                 .debug(System.getProperty("debug"))
                 .debugHost(System.getProperty("debugHost", "localhost"))
                 .suspend(System.getProperty("suspend"))
-                .jvmArgs("-Dquarkus.test.basic-console=true"); //TODO: figure out how to fix the console
+                .jvmArgs("-Dquarkus.test.basic-console=true")
+                .jvmArgs("-Dio.quarkus.launched-from-ide=true");
 
         if (getJvmArgs() != null) {
             builder.jvmArgs(getJvmArgs());

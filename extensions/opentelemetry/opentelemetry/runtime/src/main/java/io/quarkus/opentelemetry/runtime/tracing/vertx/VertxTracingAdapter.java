@@ -11,6 +11,7 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_URL;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_USER_AGENT;
+import static io.quarkus.opentelemetry.runtime.tracing.vertx.VertxUtil.extractClientIP;
 import static io.vertx.core.http.HttpHeaders.CONTENT_LENGTH;
 import static io.vertx.core.http.HttpHeaders.USER_AGENT;
 
@@ -103,7 +104,7 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
                 builder.setAttribute(HTTP_TARGET, httpServerRequest.path());
                 builder.setAttribute(HTTP_SCHEME, httpServerRequest.scheme());
                 builder.setAttribute(HTTP_HOST, httpServerRequest.host());
-                builder.setAttribute(HTTP_CLIENT_IP, httpServerRequest.remoteAddress().host());
+                builder.setAttribute(HTTP_CLIENT_IP, extractClientIP(httpServerRequest));
                 builder.setAttribute(HTTP_USER_AGENT, httpServerRequest.getHeader(USER_AGENT));
 
                 String contentLength = httpServerRequest.getHeader(CONTENT_LENGTH);

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package example;
+
+option java_package = "com.example.reactive";
+
+service ReactiveTest {
+  rpc watch(Empty) returns (stream Item);
+  rpc add(Item) returns (Empty);
+}
+
+message Empty {
+
+}
+
+message Item {
+  string text = 1;
+}

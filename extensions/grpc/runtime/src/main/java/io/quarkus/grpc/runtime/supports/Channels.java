@@ -59,6 +59,9 @@ public class Channels {
         GrpcClientConfiguration config = configProvider.getConfiguration(name);
 
         if (config == null && LaunchMode.current() == LaunchMode.TEST) {
+            LOGGER.infof(
+                    "gRPC client %s created without configuration. We are assuming that it's created to test your gRPC services.",
+                    name);
             config = testConfig(configProvider.getServerConfiguration());
         }
 
@@ -164,7 +167,6 @@ public class Channels {
     }
 
     private static GrpcClientConfiguration testConfig(GrpcServerConfiguration serverConfiguration) {
-        LOGGER.info("gRPC client created without configuration. We are assuming that it's created to test your gRPC services.");
         GrpcClientConfiguration config = new GrpcClientConfiguration();
         config.port = serverConfiguration.testPort;
         config.host = serverConfiguration.host;

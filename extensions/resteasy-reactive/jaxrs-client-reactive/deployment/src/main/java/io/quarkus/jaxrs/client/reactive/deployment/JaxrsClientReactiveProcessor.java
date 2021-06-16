@@ -51,10 +51,12 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
@@ -78,6 +80,8 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.MethodDescriptors;
 import io.quarkus.arc.processor.Types;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -90,6 +94,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -121,6 +126,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.multipart.MultipartForm;
@@ -171,6 +177,7 @@ public class JaxrsClientReactiveProcessor {
             List<JaxrsClientReactiveEnricherBuildItem> enricherBuildItems,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
             ResteasyReactiveConfig config,
             RecorderContext recorderContext,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
@@ -215,6 +222,10 @@ public class JaxrsClientReactiveProcessor {
                 .setSmartDefaultProduces(disableSmartDefaultProduces.isEmpty())
                 .build();
 
+        boolean observabilityIntegrationNeeded = (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
+                (metricsCapability.isPresent()
+                        && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
+
         Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations = new HashMap<>();
         Map<String, String> failures = new HashMap<>();
         for (Map.Entry<DotName, String> i : result.getClientInterfaces().entrySet()) {
@@ -228,7 +239,7 @@ public class JaxrsClientReactiveProcessor {
                 try {
                     RuntimeValue<Function<WebTarget, ?>> proxyProvider = generateClientInvoker(recorderContext, clientProxy,
                             enricherBuildItems, generatedClassBuildItemBuildProducer, clazz, index, defaultConsumesType,
-                            result.getHttpAnnotationToMethod());
+                            result.getHttpAnnotationToMethod(), observabilityIntegrationNeeded);
                     if (proxyProvider != null) {
                         clientImplementations.put(clientProxy.getClassName(), proxyProvider);
                     }
@@ -419,7 +430,8 @@ public class JaxrsClientReactiveProcessor {
     private RuntimeValue<Function<WebTarget, ?>> generateClientInvoker(RecorderContext recorderContext,
             RestClientInterface restClientInterface, List<JaxrsClientReactiveEnricherBuildItem> enrichers,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo interfaceClass,
-            IndexView index, String defaultMediaType, Map<DotName, String> httpAnnotationToMethod) {
+            IndexView index, String defaultMediaType, Map<DotName, String> httpAnnotationToMethod,
+            boolean observabilityIntegrationNeeded) {
 
         String name = restClientInterface.getClassName() + "$$QuarkusRestClientInterface";
         MethodDescriptor ctorDesc = MethodDescriptor.ofConstructor(name, WebTarget.class.getName());
@@ -763,12 +775,22 @@ public class JaxrsClientReactiveProcessor {
                 } else {
 
                     // constructor: initializing the immutable part of the method-specific web target
-                    FieldDescriptor webTargetForMethod = FieldDescriptor.of(name, "target" + methodIndex, WebTarget.class);
+                    FieldDescriptor webTargetForMethod = FieldDescriptor.of(name, "target" + methodIndex, WebTargetImpl.class);
                     c.getFieldCreator(webTargetForMethod).setModifiers(Modifier.FINAL);
                     webTargets.add(webTargetForMethod);
 
                     AssignableResultHandle constructorTarget = createWebTargetForMethod(constructor, baseTarget, method);
                     constructor.writeInstanceField(webTargetForMethod, constructor.getThis(), constructorTarget);
+                    if (observabilityIntegrationNeeded) {
+                        String templatePath = restClientInterface.getPath() + method.getPath();
+                        constructor.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(WebTargetImpl.class, "setPreClientSendHandler", void.class,
+                                        ClientRestHandler.class),
+                                constructor.readInstanceField(webTargetForMethod, constructor.getThis()),
+                                constructor.newInstance(
+                                        MethodDescriptor.ofConstructor(ClientObservabilityHandler.class, String.class),
+                                        constructor.load(templatePath)));
+                    }
 
                     // generate implementation for a method from jaxrs interface:
                     MethodCreator methodCreator = c.getMethodCreator(method.getName(), method.getSimpleReturnType(),

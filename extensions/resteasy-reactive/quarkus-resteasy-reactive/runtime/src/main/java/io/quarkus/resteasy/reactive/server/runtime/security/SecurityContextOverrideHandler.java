@@ -10,8 +10,10 @@ import java.util.function.Function;
 
 import javax.ws.rs.core.SecurityContext;
 
+import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
+import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 import io.quarkus.arc.Arc;
@@ -118,7 +120,8 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
 
     public static class Customizer implements HandlerChainCustomizer {
         @Override
-        public List<ServerRestHandler> handlers(Phase phase) {
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+                ServerResourceMethod serverResourceMethod) {
             return Collections.singletonList(new SecurityContextOverrideHandler());
         }
     }

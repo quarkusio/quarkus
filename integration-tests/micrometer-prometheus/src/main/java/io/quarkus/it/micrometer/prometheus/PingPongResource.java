@@ -1,6 +1,4 @@
-package io.quarkus.micrometer.test;
-
-import java.util.concurrent.CompletionStage;
+package io.quarkus.it.micrometer.prometheus;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -11,18 +9,22 @@ import javax.ws.rs.PathParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-@Path("/")
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Uni;
+
 @Singleton
+@Path("/client")
 public class PingPongResource {
     @RegisterRestClient(configKey = "pingpong")
     public interface PingPongRestClient {
+
+        @Path("/client/pong/{message}")
         @GET
-        @Path("pong/{message}")
         String pingpong(@PathParam("message") String message);
 
         @GET
-        @Path("pong/{message}")
-        CompletionStage<String> asyncPingPong(@PathParam("message") String message);
+        @Path("/client/pong/{message}")
+        Uni<String> asyncPingpong(@PathParam("message") String message);
     }
 
     @Inject
@@ -36,6 +38,7 @@ public class PingPongResource {
     }
 
     @GET
+    @Blocking
     @Path("ping/{message}")
     public String ping(@PathParam("message") String message) {
         return pingRestClient.pingpong(message);
@@ -43,19 +46,7 @@ public class PingPongResource {
 
     @GET
     @Path("async-ping/{message}")
-    public CompletionStage<String> asyncPing(@PathParam("message") String message) {
-        return pingRestClient.asyncPingPong(message);
-    }
-
-    @GET
-    @Path("one")
-    public String one() {
-        return "OK";
-    }
-
-    @GET
-    @Path("two")
-    public String two() {
-        return "OK";
+    public Uni<String> asyncPing(@PathParam("message") String message) {
+        return pingRestClient.asyncPingpong(message);
     }
 }

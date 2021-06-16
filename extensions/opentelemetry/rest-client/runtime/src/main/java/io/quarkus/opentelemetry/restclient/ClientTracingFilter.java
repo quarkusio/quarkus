@@ -44,7 +44,6 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
         // Add attributes
         builder.setAttribute(SemanticAttributes.HTTP_METHOD,
                 ((ClientRequestContextImpl) requestContext).getInvocation().getMethod());
-        //        builder.setAttribute(SemanticAttributes.HTTP_URL, ((ClientRequestContextImpl) requestContext).getInvocation().getActualTarget().getUri().)
         builder.setAttribute(SemanticAttributes.HTTP_URL, requestContext.getUri().toString());
 
         clientSpan = builder.startSpan();
@@ -54,6 +53,11 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
         if (clientSpan != null) {
+            String pathTemplate = (String) requestContext.getProperty("UrlPathTemplate");
+            if (pathTemplate != null && !pathTemplate.isEmpty()) {
+                clientSpan.updateName(pathTemplate.substring(1));
+            }
+
             clientSpan.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, responseContext.getStatus());
 
             if (!responseContext.getStatusInfo().getFamily().equals(Response.Status.Family.SUCCESSFUL)) {

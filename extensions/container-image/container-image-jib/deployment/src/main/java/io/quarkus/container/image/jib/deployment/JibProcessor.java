@@ -405,7 +405,7 @@ public class JibProcessor {
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)), workDirInContainer)
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
-                    .setEnvironment(jibConfig.environmentVariables)
+                    .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
             for (int port : jibConfig.ports) {
@@ -480,7 +480,7 @@ public class JibProcessor {
             }
 
             JibContainerBuilder jibContainerBuilder = javaContainerBuilder.toContainerBuilder()
-                    .setEnvironment(jibConfig.environmentVariables)
+                    .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
 
@@ -519,7 +519,7 @@ public class JibProcessor {
                             .build())
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
-                    .setEnvironment(jibConfig.environmentVariables)
+                    .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
             for (int port : jibConfig.ports) {
@@ -529,6 +529,18 @@ public class JibProcessor {
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Map<String, String> getEnvironmentVariables(JibConfig jibConfig) {
+        Map<String, String> original = jibConfig.environmentVariables;
+        if (original.isEmpty()) {
+            return original;
+        }
+        Map<String, String> converted = new HashMap<>();
+        for (Map.Entry<String, String> entry : original.entrySet()) {
+            converted.put(entry.getKey().toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_'), entry.getValue());
+        }
+        return converted;
     }
 
     /**

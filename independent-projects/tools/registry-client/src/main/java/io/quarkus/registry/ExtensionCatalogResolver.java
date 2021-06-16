@@ -4,6 +4,7 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.StreamCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
@@ -388,7 +389,7 @@ public class ExtensionCatalogResolver {
         return JsonCatalogMerger.merge(extensionCatalogs);
     }
 
-    public ExtensionCatalog resolveExtensionCatalog(String platformKey, String streamId) throws RegistryResolutionException {
+    public ExtensionCatalog resolveExtensionCatalog(StreamCoords streamCoords) throws RegistryResolutionException {
 
         final int registriesTotal = registries.size();
         if (registriesTotal == 0) {
@@ -397,6 +398,9 @@ public class ExtensionCatalogResolver {
 
         final List<ExtensionCatalog> catalogs = new ArrayList<>();
         final ElementCatalogBuilder<ExtensionCatalog> catalogBuilder = ElementCatalogBuilder.newInstance();
+
+        String platformKey = streamCoords.getPlatformKey();
+        String streamId = streamCoords.getStreamId();
 
         PlatformStream stream = null;
         RegistryExtensionResolver registry = null;

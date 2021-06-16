@@ -1,7 +1,11 @@
 package io.quarkus.cli.common;
 
+import java.nio.file.Path;
+
 import io.quarkus.cli.Version;
 import io.quarkus.cli.create.TargetQuarkusVersionGroup;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -18,7 +22,13 @@ public class RegistryClientMixin {
         return enableRegistryClient;
     }
 
-    public ExtensionCatalog getExtensionCatalog(TargetQuarkusVersionGroup targetVersion, OutputOptionMixin log) {
+    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusVersionGroup targetVersion, BuildTool buildTool,
+            OutputOptionMixin log) {
+        ExtensionCatalog catalog = getExtensionCatalog(targetVersion, log);
+        return QuarkusProjectHelper.getProject(projectRoot, catalog, buildTool, log);
+    }
+
+    ExtensionCatalog getExtensionCatalog(TargetQuarkusVersionGroup targetVersion, OutputOptionMixin log) {
         log.debug("Resolving Quarkus extension catalog for " + targetVersion);
         QuarkusProjectHelper.setMessageWriter(log);
 
@@ -38,12 +48,8 @@ public class RegistryClientMixin {
                         QuarkusProjectHelper.artifactResolver(), log);
             }
 
-            if (targetVersion.isStream()) {
-                final String stream = targetVersion.getStream();
-                final int colon = stream.indexOf(':');
-                final String platformKey = colon <= 0 ? null : stream.substring(0, colon);
-                final String streamId = colon < 0 ? stream : stream.substring(colon + 1);
-                return catalogResolver.resolveExtensionCatalog(platformKey, streamId);
+            if (targetVersion.isStreamSpecified()) {
+                return catalogResolver.resolveExtensionCatalog(targetVersion.getStream());
             }
 
             return catalogResolver.resolveExtensionCatalog();

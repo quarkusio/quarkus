@@ -90,7 +90,7 @@ Quarkus uses the JBoss Log Manager backend, so you will need to include the `log
     </dependency>
 ----
 
-<1> This is the library needed for Log2J version 2; if you use the legacy Log4J version 1 you need to use `log4j-jboss-logmanager` instead.
+<1> This is the library needed for Log4J version 2; if you use the legacy Log4J version 1 you need to use `log4j-jboss-logmanager` instead.
 
 You can then use the Log4J API inside your application.
 

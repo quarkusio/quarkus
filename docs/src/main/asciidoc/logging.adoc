@@ -329,7 +329,7 @@ NOTE: As we don't change the root logger, console log will only contain `INFO` o
 .Named handlers attached to a category
 [source, properties]
 ----
-# Send output to the console
+# Send output to a trace.log file under the /tmp directory
 quarkus.log.file.path=/tmp/trace.log
 quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 # Configure a named handler that logs to console

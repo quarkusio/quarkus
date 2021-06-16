@@ -112,6 +112,8 @@ class LiquibaseProcessor {
                 liquibase.change.AbstractSQLChange.class.getName(),
                 liquibase.database.jvm.JdbcConnection.class.getName()));
 
+        reflective.produce(new ReflectiveClassBuildItem(true, false, false, "liquibase.command.LiquibaseCommandFactory"));
+
         reflective.produce(new ReflectiveClassBuildItem(true, true, true,
                 liquibase.parser.ChangeLogParserCofiguration.class.getName(),
                 liquibase.hub.HubServiceFactory.class.getName(),

@@ -14,7 +14,6 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 
 public class JBangRunner implements BuildSystemRunner {
     static final String[] windowsWrapper = { "jbang.cmd", "jbang.ps1" };
@@ -72,7 +71,6 @@ public class JBangRunner implements BuildSystemRunner {
             args.add("--native");
         }
         args.add("build");
-        setJbangProperties(args, false);
         args.addAll(params);
         args.add(getMainPath());
         return prependExecutable(args);
@@ -125,11 +123,5 @@ public class JBangRunner implements BuildSystemRunner {
             throw new IllegalStateException("Unable to find a source file for use with JBang");
         }
         return mainPath;
-    }
-
-    void setJbangProperties(ArrayDeque<String> args, boolean batchMode) {
-        ExecuteUtil.propagatePropertyIfSet("maven.repo.local", args);
-        ExecuteUtil.propagatePropertyIfSet(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, args);
-        ExecuteUtil.propagatePropertyIfSet("io.quarkus.maven.secondary-local-repo", args);
     }
 }

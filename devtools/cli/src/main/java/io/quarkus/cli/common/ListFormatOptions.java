@@ -17,6 +17,17 @@ public class ListFormatOptions {
             "--origins" }, order = 7, description = "Display extensions including their platform origins.")
     boolean origins = false;
 
+    /**
+     * If a value was not specified via options (all false),
+     * make origins true. Used with specific platform list.
+     */
+    public void useOriginsUnlessSpecified() {
+        if (name || concise || full || origins) {
+            return;
+        }
+        origins = true;
+    }
+
     public String getFormatString() {
         String formatString = "name";
         if (concise)

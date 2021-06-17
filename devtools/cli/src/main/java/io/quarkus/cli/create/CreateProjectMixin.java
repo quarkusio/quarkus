@@ -14,12 +14,10 @@ import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.devtools.project.codegen.ProjectGenerator;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import picocli.CommandLine.Help;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
@@ -105,8 +103,7 @@ public class CreateProjectMixin {
             buildTool = BuildTool.MAVEN;
         }
 
-        ExtensionCatalog catalog = registryClient.getExtensionCatalog(targetVersion, log);
-        QuarkusProject qp = QuarkusProjectHelper.getProject(projectRoot(), catalog, buildTool, log);
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, log);
         return new QuarkusCommandInvocation(qp, values);
     }
 

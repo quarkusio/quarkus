@@ -494,11 +494,13 @@
                                             <exclude>io.quarkus:quarkus-test-*</exclude>
                                             <exclude>io.rest-assured:*</exclude>
                                             <exclude>org.assertj:*</exclude>
+                                            <exclude>junit:junit</exclude>
                                         </excludes>
                                         <includes>
                                             <include>io.quarkus:quarkus-test-*:*:*:test</include>
                                             <include>io.rest-assured:*:*:*:test</include>
                                             <include>org.assertj:*:*:*:test</include>
+                                            <include>junit:junit:*:*:test</include>
                                         </includes>
                                         <message>Found test dependencies with wrong scope:</message>
                                     </bannedDependencies>

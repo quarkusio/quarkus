@@ -12,6 +12,7 @@ import static org.objectweb.asm.Type.SHORT_TYPE;
 import static org.objectweb.asm.Type.VOID_TYPE;
 import static org.objectweb.asm.Type.getType;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.jboss.jandex.ArrayType;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
@@ -26,6 +28,8 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.UnresolvedTypeVariable;
+import org.jboss.jandex.WildcardType;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -69,46 +73,165 @@ public class AsmUtil {
     }
 
     /**
+     * Returns the Java bytecode signature of a given Jandex MethodInfo.
+     * If the Java compiler doesn't have to emit a signature for the method, {@code null} is returned instead.
+     *
+     * @param method the method you want the signature for
+     * @return a bytecode signature for that method, or {@code null} if signature is not required
+     */
+    public static String getSignatureIfRequired(MethodInfo method) {
+        return getSignatureIfRequired(method, ignored -> null);
+    }
+
+    /**
+     * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
+     * If the Java compiler doesn't have to emit a signature for the method, {@code null} is returned instead.
+     *
+     * @param method the method you want the signature for
+     * @param typeArgMapper a mapping between type argument names and their bytecode signatures
+     * @return a bytecode signature for that method, or {@code null} if signature is not required
+     */
+    public static String getSignatureIfRequired(MethodInfo method, Function<String, String> typeArgMapper) {
+        if (!hasSignature(method)) {
+            return null;
+        }
+
+        return getSignature(method, typeArgMapper);
+    }
+
+    private static boolean hasSignature(MethodInfo method) {
+        // JVMS 16, chapter 4.7.9.1. Signatures:
+        //
+        // Java compiler must emit ...
+        //
+        // A method signature for any method or constructor declaration which is either generic,
+        // or has a type variable or parameterized type as the return type or a formal parameter type,
+        // or has a type variable in a throws clause, or any combination thereof.
+
+        if (!method.typeParameters().isEmpty()) {
+            return true;
+        }
+
+        {
+            Type type = method.returnType();
+            if (type.kind() == Kind.TYPE_VARIABLE
+                    || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE
+                    || type.kind() == Kind.PARAMETERIZED_TYPE) {
+                return true;
+            }
+        }
+
+        for (Type type : method.parameters()) {
+            if (type.kind() == Kind.TYPE_VARIABLE
+                    || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE
+                    || type.kind() == Kind.PARAMETERIZED_TYPE) {
+                return true;
+            }
+        }
+
+        if (hasThrowsSignature(method)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static boolean hasThrowsSignature(MethodInfo method) {
+        // JVMS 16, chapter 4.7.9.1. Signatures:
+        //
+        // If the throws clause of a method or constructor declaration does not involve type variables,
+        // then a compiler may treat the declaration as having no throws clause for the purpose of
+        // emitting a method signature.
+
+        // also, no need to check if an exception type is of kind PARAMETERIZED_TYPE, because
+        //
+        // JLS 16, chapter 8.1.2. Generic Classes and Type Parameters:
+        //
+        // It is a compile-time error if a generic class is a direct or indirect subclass of Throwable.
+
+        for (Type type : method.exceptions()) {
+            if (type.kind() == Kind.TYPE_VARIABLE
+                    || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
      * For example, given this method:
-     * 
+     *
      * <pre>
      * {@code
      * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...} 
+     *  public <R> List<R> method(int a, T t){...}
      * }
      * }
      * </pre>
-     * 
+     *
      * This will return <tt>&lt;R:Ljava/lang/Object;>(ILjava/lang/Integer;)Ljava/util/List&lt;TR;>;</tt> if
      * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
+     *
      * @param method the method you want the signature for.
      * @param typeArgMapper a mapping between type argument names and their bytecode signature.
      * @return a bytecode signature for that method.
      */
     public static String getSignature(MethodInfo method, Function<String, String> typeArgMapper) {
-        List<Type> parameters = method.parameters();
+        // for grammar, see JVMS 16, chapter 4.7.9.1. Signatures
 
-        StringBuilder signature = new StringBuilder("");
-        for (TypeVariable typeVariable : method.typeParameters()) {
-            if (signature.length() == 0)
-                signature.append("<");
-            else
-                signature.append(",");
-            signature.append(typeVariable.identifier()).append(":");
-            // FIXME: only use the first bound
-            toSignature(signature, typeVariable.bounds().get(0), typeArgMapper, false);
+        StringBuilder signature = new StringBuilder();
+
+        if (!method.typeParameters().isEmpty()) {
+            signature.append('<');
+            for (TypeVariable typeParameter : method.typeParameters()) {
+                typeParameter(typeParameter, signature, typeArgMapper);
+            }
+            signature.append('>');
         }
-        if (signature.length() > 0)
-            signature.append(">");
-        signature.append("(");
-        for (Type type : parameters) {
+
+        signature.append('(');
+        for (Type type : method.parameters()) {
             toSignature(signature, type, typeArgMapper, false);
         }
-        signature.append(")");
+        signature.append(')');
+
         toSignature(signature, method.returnType(), typeArgMapper, false);
+
+        if (hasThrowsSignature(method)) {
+            for (Type exception : method.exceptions()) {
+                signature.append('^');
+                toSignature(signature, exception, typeArgMapper, false);
+            }
+        }
+
         return signature.toString();
+    }
+
+    private static void typeParameter(TypeVariable typeParameter, StringBuilder result,
+            Function<String, String> typeArgMapper) {
+        result.append(typeParameter.identifier());
+
+        if (hasImplicitObjectBound(typeParameter)) {
+            result.append(':');
+        }
+        for (Type bound : typeParameter.bounds()) {
+            result.append(':');
+            toSignature(result, bound, typeArgMapper, false);
+        }
+    }
+
+    private static boolean hasImplicitObjectBound(TypeVariable typeParameter) {
+        // TODO is there a better way? :-/
+        boolean result = false;
+        try {
+            Method method = TypeVariable.class.getDeclaredMethod("hasImplicitObjectBound");
+            method.setAccessible(true);
+            result = (Boolean) method.invoke(typeParameter);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
     }
 
     /**
@@ -176,30 +299,35 @@ public class AsmUtil {
         switch (type.kind()) {
             case ARRAY:
                 ArrayType arrayType = type.asArrayType();
-                for (int i = 0; i < arrayType.dimensions(); i++)
-                    sb.append("[");
+                for (int i = 0; i < arrayType.dimensions(); i++) {
+                    sb.append('[');
+                }
                 toSignature(sb, arrayType.component(), typeArgMapper, erased);
                 break;
             case CLASS:
-                sb.append("L");
-                sb.append(type.asClassType().name().toString().replace('.', '/'));
-                sb.append(";");
+                sb.append('L').append(type.asClassType().name().toString('/')).append(';');
                 break;
             case PARAMETERIZED_TYPE:
                 ParameterizedType parameterizedType = type.asParameterizedType();
-                sb.append("L");
-                // FIXME: support owner type
-                sb.append(parameterizedType.name().toString().replace('.', '/'));
-                if (!erased && !parameterizedType.arguments().isEmpty()) {
-                    sb.append("<");
-                    List<Type> arguments = parameterizedType.arguments();
-                    for (int i = 0; i < arguments.size(); i++) {
-                        Type argType = arguments.get(i);
-                        toSignature(sb, argType, typeArgMapper, erased);
-                    }
-                    sb.append(">");
+                Type owner = parameterizedType.owner();
+                if (owner != null && owner.kind() == Kind.PARAMETERIZED_TYPE) {
+                    toSignature(sb, owner, typeArgMapper, erased);
+                    // the typeSignature call on previous line always takes the PARAMETERIZED_TYPE branch,
+                    // so at this point, result ends with a ';', which we just replace with '.'
+                    assert sb.charAt(sb.length() - 1) == ';';
+                    sb.setCharAt(sb.length() - 1, '.');
+                    sb.append(parameterizedType.name().local());
+                } else {
+                    sb.append('L').append(parameterizedType.name().toString('/'));
                 }
-                sb.append(";");
+                if (!erased && !parameterizedType.arguments().isEmpty()) {
+                    sb.append('<');
+                    for (Type argument : parameterizedType.arguments()) {
+                        toSignature(sb, argument, typeArgMapper, erased);
+                    }
+                    sb.append('>');
+                }
+                sb.append(';');
                 break;
             case PRIMITIVE:
                 Primitive primitive = type.asPrimitiveType().primitive();
@@ -233,22 +361,40 @@ public class AsmUtil {
             case TYPE_VARIABLE:
                 TypeVariable typeVariable = type.asTypeVariable();
                 String mappedSignature = typeArgMapper.apply(typeVariable.identifier());
-                if (mappedSignature != null)
+                if (mappedSignature != null) {
                     sb.append(mappedSignature);
-                else if (erased)
+                } else if (erased) {
                     toSignature(sb, typeVariable.bounds().get(0), typeArgMapper, erased);
-                else
-                    sb.append("T").append(typeVariable.identifier()).append(";");
+                } else {
+                    sb.append('T').append(typeVariable.identifier()).append(';');
+                }
                 break;
             case UNRESOLVED_TYPE_VARIABLE:
-                // FIXME: ??
+                UnresolvedTypeVariable unresolvedTypeVariable = type.asUnresolvedTypeVariable();
+                String mappedSignature2 = typeArgMapper.apply(unresolvedTypeVariable.identifier());
+                if (mappedSignature2 != null) {
+                    sb.append(mappedSignature2);
+                } else if (erased) {
+                    // TODO ???
+                } else {
+                    sb.append("T").append(unresolvedTypeVariable.identifier()).append(";");
+                }
                 break;
             case VOID:
-                sb.append("V");
+                sb.append('V');
                 break;
             case WILDCARD_TYPE:
                 if (!erased) {
-                    sb.append("*");
+                    WildcardType wildcardType = type.asWildcardType();
+                    if (wildcardType.superBound() != null) {
+                        sb.append('-');
+                        toSignature(sb, wildcardType.superBound(), typeArgMapper, erased);
+                    } else if (ClassType.OBJECT_TYPE.equals(wildcardType.extendsBound())) {
+                        sb.append('*');
+                    } else {
+                        sb.append('+');
+                        toSignature(sb, wildcardType.extendsBound(), typeArgMapper, erased);
+                    }
                 }
                 break;
             default:

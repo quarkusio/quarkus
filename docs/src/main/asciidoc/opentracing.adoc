@@ -93,11 +93,13 @@ public class TracedResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        LOG.info("hello");
+        LOG.info("hello"); // <1>
         return "hello";
     }
 }
 ----
+
+<1> The log event carries OpenTracing information as well. In order to print OpenTracing information to the console output, the console log handler with the required OpenTracing event's keys needs to be defined in the `application.properties` file.
 
 Notice that there is no tracing specific code included in the application. By default, requests sent to this
 endpoint will be traced without any code changes being required. It is also possible to enhance the tracing information.

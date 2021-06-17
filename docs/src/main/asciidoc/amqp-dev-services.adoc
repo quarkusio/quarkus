@@ -23,6 +23,20 @@ Dev Services for AMQP relies on Docker to start the broker.
 If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
 You can configure the broker access using the `amqp-host`, `amqp-port`, `amqp-user` and `amqp-password` properties.
 
+== Shared broker
+
+Most of the time you need to share the broker between applications.
+Dev Services for AMQP implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single broker.
+
+NOTE: Dev Services for AMQP starts the container with the `quarkus-dev-service-amqp` label which is used to identify the container.
+
+If you need multiple (shared) brokers, you can configure the `quarkus.amqp.devservices.service-name` attribute and indicate the broker name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `amqp`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.amqp.devservices.shared=false`.
+
 == Setting the port
 
 By default, Dev Services for AMQP picks a random port and configures the application.

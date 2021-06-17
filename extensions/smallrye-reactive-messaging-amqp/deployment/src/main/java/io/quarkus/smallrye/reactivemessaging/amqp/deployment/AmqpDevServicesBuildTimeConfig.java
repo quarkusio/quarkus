@@ -40,4 +40,31 @@ public class AmqpDevServicesBuildTimeConfig {
     @ConfigItem(defaultValue = "--no-autotune --mapped --no-fsync")
     public String extraArgs;
 
+    /**
+     * Indicates if the AMQP broker managed by Quarkus Dev Services is shared.
+     * When shared, Quarkus looks for running containers using label-based service discovery.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services for AMQP starts a new container.
+     * <p>
+     * The discovery uses the {@code quarkus-dev-service-amqp} label.
+     * The value is configured using the {@code service-name} property.
+     * <p>
+     * Container sharing is only used in dev mode.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean shared;
+
+    /**
+     * The value of the {@code quarkus-dev-service-aqmp} label attached to the started container.
+     * This property is used when {@code shared} is set to {@code true}.
+     * In this case, before starting a container, Dev Services for AMQP looks for a container with the
+     * {@code quarkus-dev-service-amqp} label
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * starts a new container with the {@code quarkus-dev-service-amqp} label set to the specified value.
+     * <p>
+     * This property is used when you need multiple shared AMQP brokers.
+     */
+    @ConfigItem(defaultValue = "amqp")
+    public String serviceName;
+
 }

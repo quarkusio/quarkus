@@ -106,6 +106,8 @@ To build a container image for your project, `quarkus.container-image.build=true
 ./mvnw clean package -Dquarkus.container-image.build=true
 ----
 
+NOTE: If you ever want to build a native container image and already have an existing native image you can set `-Dquarkus.native.reuse-existing=true` and the native image build will not be re-run.
+
 == Pushing
 
 To push a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.

@@ -149,6 +149,8 @@ public class NativeImageBuildStep {
 
         String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
         String resultingExecutableName = getResultingExecutableName(nativeImageName, isContainerBuild);
+        Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
+        Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
 
         NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir,
                 nativeImageName, resultingExecutableName);
@@ -159,6 +161,14 @@ public class NativeImageBuildStep {
             checkGraalVMVersion(graalVMVersion);
         } else {
             log.error("Unable to get GraalVM version from the native-image binary.");
+        }
+        if (nativeConfig.reuseExisting) {
+            if (Files.exists(finalExecutablePath)) {
+                return new NativeImageBuildItem(finalExecutablePath,
+                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion, graalVMVersion.major,
+                                graalVMVersion.minor,
+                                graalVMVersion.distribution.name()));
+            }
         }
 
         try {
@@ -189,8 +199,6 @@ public class NativeImageBuildStep {
             if (exitCode != 0) {
                 throw imageGenerationFailed(exitCode, nativeImageArgs);
             }
-            Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
-            Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
             if (nativeConfig.debug.enabled) {

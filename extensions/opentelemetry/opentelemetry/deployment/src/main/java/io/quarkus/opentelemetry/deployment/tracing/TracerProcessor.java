@@ -14,8 +14,11 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.trace.IdGenerator;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -32,10 +35,14 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
+import io.quarkus.opentelemetry.runtime.tracing.TracerRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 
 public class TracerProcessor {
+    private static final DotName ID_GENERATOR = DotName.createSimple(IdGenerator.class.getName());
+    private static final DotName RESOURCE = DotName.createSimple(Resource.class.getName());
+    private static final DotName SAMPLER = DotName.createSimple(Sampler.class.getName());
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
 
@@ -69,6 +76,15 @@ public class TracerProcessor {
 
         // Find all known SpanExporters and SpanProcessors
         Collection<String> knownClasses = new HashSet<>();
+        knownClasses.add(ID_GENERATOR.toString());
+        index.getAllKnownImplementors(ID_GENERATOR)
+                .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
+        knownClasses.add(RESOURCE.toString());
+        index.getAllKnownImplementors(RESOURCE)
+                .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
+        knownClasses.add(SAMPLER.toString());
+        index.getAllKnownImplementors(SAMPLER)
+                .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(SPAN_EXPORTER.toString());
         index.getAllKnownImplementors(SPAN_EXPORTER)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
@@ -111,18 +127,23 @@ public class TracerProcessor {
 
     @BuildStep(onlyIf = TracerEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
-    TracerProviderBuildItem createTracerProvider(TracerRecorder recorder,
+    TracerProviderBuildItem createTracerProvider(OpenTelemetryConfig config,
+            TracerRecorder recorder,
             ApplicationInfoBuildItem appInfo,
             ShutdownContextBuildItem shutdownContext,
             BeanContainerBuildItem beanContainerBuildItem) {
         String serviceName = appInfo.getName();
         String serviceVersion = appInfo.getVersion();
-        return new TracerProviderBuildItem(recorder.createTracerProvider(serviceName, serviceVersion, shutdownContext));
+        return new TracerProviderBuildItem(
+                recorder.createTracerProvider(config.tracer, serviceName, serviceVersion, shutdownContext));
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupVertxTracer(TracerRecorder recorder) {
+    void setupTracer(TracerRuntimeConfig runtimeConfig,
+            TracerRecorder recorder) {
+        recorder.setupResources(runtimeConfig);
+        recorder.setupSampler(runtimeConfig);
         recorder.setupVertxTracer();
     }
 }

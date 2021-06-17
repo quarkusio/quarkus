@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -546,25 +547,34 @@ public class MessageBundleProcessor {
             for (Entry<String, Path> entry : bundle.getLocalizedFiles().entrySet()) {
                 Path localizedFile = entry.getValue();
                 Map<String, String> keyToTemplate = new HashMap<>();
-                int linesProcessed = 0;
-                for (String line : Files.readAllLines(localizedFile)) {
-                    linesProcessed++;
-                    if (!line.startsWith("#")) {
-                        int eqIndex = line.indexOf('=');
-                        if (eqIndex == -1) {
-                            throw new MessageBundleException(
-                                    "Missing key/value separator\n\t- file: " + localizedFile + "\n\t- line " + linesProcessed);
-                        }
-                        String key = line.substring(0, eqIndex).trim();
-                        if (!hasMessageBundleMethod(bundleInterface, key)) {
-                            throw new MessageBundleException(
-                                    "Message bundle method " + key + "() not found on: " + bundleInterface + "\n\t- file: "
-                                            + localizedFile + "\n\t- line " + linesProcessed);
-                        }
-                        String value = line.substring(eqIndex + 1, line.length()).trim();
+                for (ListIterator<String> it = Files.readAllLines(localizedFile).listIterator(); it.hasNext();) {
+                    String line = it.next();
+                    if (line.startsWith("#") || line.isBlank()) {
+                        // Comments and blank lines are skipped
+                        continue;
+                    }
+                    int eqIdx = line.indexOf('=');
+                    if (eqIdx == -1) {
+                        throw new MessageBundleException(
+                                "Missing key/value separator\n\t- file: " + localizedFile + "\n\t- line " + it.previousIndex());
+                    }
+                    String key = line.substring(0, eqIdx).strip();
+                    if (!hasMessageBundleMethod(bundleInterface, key)) {
+                        throw new MessageBundleException(
+                                "Message bundle method " + key + "() not found on: " + bundleInterface + "\n\t- file: "
+                                        + localizedFile + "\n\t- line " + it.previousIndex());
+                    }
+                    String value = adaptLine(line.substring(eqIdx + 1, line.length()));
+                    if (value.endsWith("\\")) {
+                        // The logical line is spread out across several normal lines
+                        StringBuilder builder = new StringBuilder(value.substring(0, value.length() - 1));
+                        constructLine(builder, it);
+                        keyToTemplate.put(key, builder.toString());
+                    } else {
                         keyToTemplate.put(key, value);
                     }
                 }
+
                 String locale = entry.getKey();
                 ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmoAdaptor(generatedClasses,
                         new AppClassPredicate(applicationArchivesBuildItem,
@@ -585,6 +595,22 @@ public class MessageBundleProcessor {
             }
         }
         return generatedTypes;
+    }
+
+    private void constructLine(StringBuilder builder, Iterator<String> it) {
+        if (it.hasNext()) {
+            String nextLine = adaptLine(it.next());
+            if (nextLine.endsWith("\\")) {
+                builder.append(nextLine.substring(0, nextLine.length() - 1));
+                constructLine(builder, it);
+            } else {
+                builder.append(nextLine);
+            }
+        }
+    }
+
+    private String adaptLine(String line) {
+        return line.stripLeading().replace("\\n", "\n");
     }
 
     private boolean hasMessageBundleMethod(ClassInfo bundleInterface, String name) {

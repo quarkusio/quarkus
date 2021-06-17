@@ -1,4 +1,4 @@
-package io.quarkus.jaxrs.client.reactive.deployment;
+package org.jboss.resteasy.reactive.client.processor.scanning;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
@@ -11,15 +11,16 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.client.processor.beanparam.BeanParamParser;
+import org.jboss.resteasy.reactive.client.processor.beanparam.ClientBeanParamInfo;
+import org.jboss.resteasy.reactive.client.processor.beanparam.Item;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
 import org.jboss.resteasy.reactive.common.model.MaybeRestClientInterface;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
@@ -36,12 +37,9 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObject
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonStructureHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueHandler;
 
-import io.quarkus.jaxrs.client.reactive.deployment.beanparam.BeanParamParser;
-import io.quarkus.jaxrs.client.reactive.deployment.beanparam.ClientBeanParamInfo;
-import io.quarkus.jaxrs.client.reactive.deployment.beanparam.Item;
-
 public class ClientEndpointIndexer
         extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam, ResourceMethod> {
+    static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
 
     private final String[] defaultProduces;
     private final String[] defaultProducesNegotiated;
@@ -130,7 +128,7 @@ public class ClientEndpointIndexer
     @Override
     protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ClientIndexedParam builder, Type paramType,
             boolean field, Map<String, Object> methodContext) {
-        if (paramType.name().equals(JaxrsClientReactiveProcessor.CONTINUATION)) {
+        if (paramType.name().equals(CONTINUATION)) {
             builder.setType(ParameterType.CUSTOM);
             return true;
         }

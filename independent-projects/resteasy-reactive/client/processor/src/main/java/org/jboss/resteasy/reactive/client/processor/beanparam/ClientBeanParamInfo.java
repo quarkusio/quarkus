@@ -1,7 +1,6 @@
-package io.quarkus.jaxrs.client.reactive.deployment.beanparam;
+package org.jboss.resteasy.reactive.client.processor.beanparam;
 
 import java.util.List;
-
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 

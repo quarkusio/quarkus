@@ -1,4 +1,4 @@
-package io.quarkus.jaxrs.client.reactive.deployment.beanparam;
+package org.jboss.resteasy.reactive.client.processor.beanparam;
 
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BEAN_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
@@ -8,7 +8,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;

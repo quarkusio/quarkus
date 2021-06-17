@@ -1,4 +1,4 @@
-package io.quarkus.jaxrs.client.reactive.deployment.beanparam;
+package org.jboss.resteasy.reactive.client.processor.beanparam;
 
 public class HeaderParamItem extends Item {
     private final String headerName;

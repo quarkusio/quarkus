@@ -233,6 +233,12 @@ public class OidcCommonConfig {
             public String keyPassword;
 
             /**
+             * Key identifier of the signing key added as a JWT 'kid' header
+             */
+            @ConfigItem
+            public Optional<String> tokenKeyId = Optional.empty();
+
+            /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
              */
             @ConfigItem(defaultValue = "10")

@@ -1,4 +1,4 @@
-package io.quarkus.jaxrs.client.reactive.runtime;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.lang.reflect.Field;
 

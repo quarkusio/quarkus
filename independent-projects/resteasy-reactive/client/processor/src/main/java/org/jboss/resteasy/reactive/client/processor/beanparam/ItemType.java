@@ -1,4 +1,4 @@
-package io.quarkus.jaxrs.client.reactive.deployment.beanparam;
+package org.jboss.resteasy.reactive.client.processor.beanparam;
 
 public enum ItemType {
     BEAN_PARAM,

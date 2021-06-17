@@ -1,9 +1,8 @@
-package io.quarkus.jaxrs.client.reactive.deployment.beanparam;
-
-import org.jboss.jandex.MethodInfo;
+package org.jboss.resteasy.reactive.client.processor.beanparam;
 
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
+import org.jboss.jandex.MethodInfo;
 
 public class GetterExtractor extends ValueExtractor {
 

@@ -1,5 +1,6 @@
 package io.quarkus.registry.union;
 
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -367,4 +368,21 @@ public class ElementCatalogBuilder<M> {
         return Collections.emptyList();
     }
 
+    public static void addUnionMember(final UnionBuilder<ExtensionCatalog> union, final ExtensionCatalog ec) {
+        final MemberBuilder<ExtensionCatalog> builder = union.getOrCreateMember(
+                ec.getId(), ec.getBom().getVersion(), ec);
+        ec.getExtensions()
+                .forEach(e -> builder
+                        .addElement(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId()));
+    }
+
+    public static void setElementCatalog(ExtensionCatalog extCatalog, ElementCatalog<?> elemCatalog) {
+        if (!elemCatalog.isEmpty()) {
+            extCatalog.getMetadata().put("element-catalog", elemCatalog);
+        }
+    }
+
+    public static <T> ElementCatalog<T> getElementCatalog(ExtensionCatalog extCatalog, Class<T> t) {
+        return (ElementCatalog<T>) extCatalog.getMetadata().get("element-catalog");
+    }
 }

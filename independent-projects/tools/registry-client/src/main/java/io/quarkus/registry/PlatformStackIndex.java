@@ -2,9 +2,9 @@ package io.quarkus.registry;
 
 import io.quarkus.registry.union.UnionVersion;
 
-class PlatformStackIndex implements UnionVersion {
+public class PlatformStackIndex implements UnionVersion {
 
-    static PlatformStackIndex initial() {
+    public static PlatformStackIndex initial() {
         return new PlatformStackIndex(0, 0, 0);
     }
 

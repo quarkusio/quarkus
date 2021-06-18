@@ -24,6 +24,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageIcons;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.codegen.ProjectGenerator;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.ArtifactCoords;
@@ -31,6 +32,7 @@ import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
+import io.quarkus.registry.catalog.json.JsonCatalogMerger;
 import io.quarkus.registry.union.ElementCatalog;
 import io.quarkus.registry.union.ElementCatalogBuilder;
 import java.io.IOException;
@@ -70,21 +72,27 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             }
         }
 
-        final List<Extension> extensionsToAdd = computeExtensionsFromQuery(invocation, extensionsQuery);
-        if (extensionsToAdd == null) {
-            throw new QuarkusCommandException("Failed to create project because of invalid extensions");
-        }
+        List<Extension> extensionsToAdd = computeRequiredExtensions(invocation.getExtensionsCatalog(), extensionsQuery,
+                invocation.log());
 
         ExtensionCatalog mainPlatform = invocation.getExtensionsCatalog(); // legacy platform initialization
-        final List<ExtensionCatalog> platformsToImport = getPlatformsToImport(mainPlatform, extensionsToAdd);
-        final List<ArtifactCoords> platformBoms = new ArrayList<>(Math.max(platformsToImport.size(), 1));
-        if (platformsToImport.size() > 0) {
-            mainPlatform = platformsToImport.get(0);
-            for (ExtensionCatalog platform : platformsToImport) {
-                if (platform.getBom().getArtifactId().equals("quarkus-bom")) {
-                    mainPlatform = platform;
+        final List<ExtensionCatalog> extensionOrigins = getExtensionOrigins(mainPlatform, extensionsToAdd);
+        final List<ArtifactCoords> platformBoms = new ArrayList<>(Math.max(extensionOrigins.size(), 1));
+        if (extensionOrigins.size() > 0) {
+            // necessary to set the versions from the selected origins
+            extensionsToAdd = computeRequiredExtensions(JsonCatalogMerger.merge(extensionOrigins), extensionsQuery,
+                    invocation.log());
+            // collect platform BOMs to import
+            boolean sawFirstPlatform = false;
+            for (ExtensionCatalog c : extensionOrigins) {
+                if (!c.isPlatform()) {
+                    continue;
                 }
-                platformBoms.add(platform.getBom());
+                if (c.getBom().getArtifactId().equals("quarkus-bom") || !sawFirstPlatform) {
+                    mainPlatform = c;
+                    sawFirstPlatform = true;
+                }
+                platformBoms.add(c.getBom());
             }
         } else {
             platformBoms.add(mainPlatform.getBom());
@@ -94,7 +102,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         for (Extension e : extensionsToAdd) {
             ArtifactCoords coords = e.getArtifact();
             for (ExtensionOrigin origin : e.getOrigins()) {
-                if (origin.getBom() != null && platformBoms.contains(origin.getBom())) {
+                if (origin.isPlatform() && origin.getBom() != null && platformBoms.contains(origin.getBom())) {
                     coords = Extensions.stripVersion(coords);
                     break;
                 }
@@ -162,8 +170,17 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         return QuarkusCommandOutcome.success();
     }
 
+    private List<Extension> computeRequiredExtensions(ExtensionCatalog catalog,
+            final Set<String> extensionsQuery, MessageWriter log) throws QuarkusCommandException {
+        final List<Extension> extensionsToAdd = computeExtensionsFromQuery(catalog, extensionsQuery, log);
+        if (extensionsToAdd == null) {
+            throw new QuarkusCommandException("Failed to create project because of invalid extensions");
+        }
+        return extensionsToAdd;
+    }
+
     @SuppressWarnings("unchecked")
-    private List<ExtensionCatalog> getPlatformsToImport(ExtensionCatalog extensionCatalog, List<Extension> extensionsToAdd)
+    private List<ExtensionCatalog> getExtensionOrigins(ExtensionCatalog extensionCatalog, List<Extension> extensionsToAdd)
             throws QuarkusCommandException {
         final ElementCatalog<ExtensionCatalog> ec = (ElementCatalog<ExtensionCatalog>) extensionCatalog.getMetadata()
                 .get("element-catalog");
@@ -186,21 +203,6 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .collect(Collectors.toList());
             eKeys.add(quarkusCore.getArtifact().getGroupId() + ":" + quarkusCore.getArtifact().getArtifactId());
         }
-        List<ExtensionCatalog> catalogs = ElementCatalogBuilder.getMembersForElements(ec, eKeys);
-        List<ExtensionCatalog> filtered = null;
-        for (int i = 0; i < catalogs.size(); ++i) {
-            final ExtensionCatalog c = catalogs.get(i);
-            if (c.isPlatform()) {
-                if (filtered != null) {
-                    filtered.add(c);
-                }
-            } else if (filtered == null) {
-                filtered = new ArrayList<>(catalogs.size());
-                for (int j = 0; j < i; ++j) {
-                    filtered.add(catalogs.get(j));
-                }
-            }
-        }
-        return filtered == null ? catalogs : filtered;
+        return ElementCatalogBuilder.getMembersForElements(ec, eKeys);
     }
 }

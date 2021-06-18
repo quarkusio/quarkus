@@ -7,10 +7,12 @@ import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnliste
 
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
 import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.json.JsonExtension;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,10 +31,10 @@ final class QuarkusCommandHandlers {
     private QuarkusCommandHandlers() {
     }
 
-    static List<Extension> computeExtensionsFromQuery(final QuarkusCommandInvocation invocation,
-            final Set<String> extensionsQuery) {
-        final Collection<Extension> extensionCatalog = invocation.getExtensionsCatalog().getExtensions();
+    static List<Extension> computeExtensionsFromQuery(ExtensionCatalog catalog,
+            final Set<String> extensionsQuery, MessageWriter log) {
         final ArrayList<Extension> builder = new ArrayList<>();
+        final Collection<Extension> extensionCatalog = catalog.getExtensions();
         for (String query : extensionsQuery) {
             final int countColons = StringUtils.countMatches(query, ":");
             if (countColons > 1) {
@@ -67,7 +69,7 @@ final class QuarkusCommandHandlers {
                 final Collection<Extension> candidates = result.getExtensions();
                 if (candidates.isEmpty()) {
                     // No matches at all.
-                    invocation.log().error("Cannot find a dependency matching '" + query + "', maybe a typo?");
+                    log.error("Cannot find a dependency matching '" + query + "', maybe a typo?");
                     return null;
                 }
                 sb.append(ERROR_ICON + " Multiple extensions matching '").append(query).append("'");
@@ -75,7 +77,7 @@ final class QuarkusCommandHandlers {
                         .append(extension.managementKey()));
                 sb.append(System.lineSeparator())
                         .append("     try using the exact name or the full GAV (group id, artifact id, and version).");
-                invocation.log().info(sb.toString());
+                log.info(sb.toString());
                 return null;
             }
 
@@ -85,7 +87,8 @@ final class QuarkusCommandHandlers {
 
     static List<ArtifactCoords> computeCoordsFromQuery(final QuarkusCommandInvocation invocation,
             final Set<String> extensionsQuery) {
-        final List<Extension> extensions = computeExtensionsFromQuery(invocation, extensionsQuery);
+        final List<Extension> extensions = computeExtensionsFromQuery(invocation.getExtensionsCatalog(), extensionsQuery,
+                invocation.log());
         return extensions == null ? null
                 : extensions.stream().map(e -> Extensions.stripVersion(e.getArtifact())).collect(Collectors.toList());
     }

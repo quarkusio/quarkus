@@ -3,7 +3,6 @@ package io.quarkus.cli.common;
 import java.nio.file.Path;
 
 import io.quarkus.cli.Version;
-import io.quarkus.cli.create.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
@@ -31,6 +30,12 @@ public class RegistryClientMixin {
     ExtensionCatalog getExtensionCatalog(TargetQuarkusVersionGroup targetVersion, OutputOptionMixin log) {
         log.debug("Resolving Quarkus extension catalog for " + targetVersion);
         QuarkusProjectHelper.setMessageWriter(log);
+
+        if (targetVersion.isStreamSpecified() && !enableRegistryClient) {
+            throw new UnsupportedOperationException(
+                    "Specifying a stream (--stream) requires the registry client to resolve resources. " +
+                            "Please try again with the registry client enabled (--registry-client)");
+        }
 
         if (targetVersion.isPlatformSpecified()) {
             ArtifactCoords coords = targetVersion.getPlatformBom();

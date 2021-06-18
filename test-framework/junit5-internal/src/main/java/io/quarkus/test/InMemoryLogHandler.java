@@ -40,6 +40,10 @@ public class InMemoryLogHandler extends Handler {
         this.records.clear();
     }
 
+    public List<LogRecord> getRecords() {
+        return records;
+    }
+
     void clearRecords() {
         this.records.clear();
     }

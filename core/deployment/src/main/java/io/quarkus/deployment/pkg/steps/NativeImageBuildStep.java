@@ -553,7 +553,6 @@ public class NativeImageBuildStep {
                 }
 
                 handleAdditionalProperties(nativeConfig, nativeImageArgs, isContainerBuild, outputDir);
-                nativeImageArgs.add("--initialize-at-build-time=");
                 nativeImageArgs.add(
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");

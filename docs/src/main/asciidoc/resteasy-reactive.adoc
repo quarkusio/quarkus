@@ -1169,6 +1169,8 @@ Request filters can be declared with the `@ServerRequestFilter` annotation:
 
 [source,java]
 ----
+import java.util.Optional;
+
 class Filters {
     
     @ServerRequestFilter(preMatching = true)
@@ -1180,11 +1182,12 @@ class Filters {
     }
     
     @ServerRequestFilter
-    public void getFilter(ContainerRequestContext ctx) {
+    public Optional<Response> getFilter(ContainerRequestContext ctx) {
         // only allow GET methods for now
         if(ctx.getMethod().equals(HttpMethod.GET)) {
-            ctx.abortWith(Response.status(Response.Status.METHOD_NOT_ALLOWED).build());
+            return Optional.of(Response.status(Response.Status.METHOD_NOT_ALLOWED).build());
         }
+        return Optional.empty();
     }
 }
 ----

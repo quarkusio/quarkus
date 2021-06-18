@@ -4,13 +4,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import io.quarkus.cli.common.PropertiesOptions;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
 import io.quarkus.cli.create.CodeGenerationGroup;
 import io.quarkus.cli.create.CreateProjectMixin;
 import io.quarkus.cli.create.TargetBuildToolGroup;
 import io.quarkus.cli.create.TargetGAVGroup;
 import io.quarkus.cli.create.TargetLanguageGroup;
-import io.quarkus.cli.create.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
 import io.quarkus.devtools.commands.handlers.CreateProjectCommandHandler;

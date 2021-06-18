@@ -10,6 +10,7 @@ import java.util.TreeMap;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RegistryClientMixin;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;

@@ -417,6 +417,7 @@ The current tenant's discovered link:https://openid.net/specs/openid-connect-dis
 
 The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is public.
 
+[[token-claims-roles]]
 == Token Claims And SecurityIdentity Roles
 
 The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the link:security-openid-connect#token-claims-and-securityidentity-roles[bearer tokens] with the only difference being is that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.
@@ -428,6 +429,13 @@ If only the access token contains the roles and this access token is not meant t
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
+
+[[token-verification-introspection]]
+== Token Verification And Introspection
+
+Please see link:security-openid-connect#token-verification-introspection for details about how the tokens are verified and introspected.
+
+Note that in case of `web-app` applications only `IdToken` is verified by default since the access token is not used by default to access the current Quarkus `web-app` endpoint and instead meant to be propagated to the services expecting this access token, for example, to the OpenId Connect Provider's UserInfo endpoint, etc. However if you expect the access token to contain the roles required to access the current Quarkus endpoint (`quarkus.oidc.roles.source=accesstoken`) then it will also be verified.
 
 [[session-management]]
 == Session Management

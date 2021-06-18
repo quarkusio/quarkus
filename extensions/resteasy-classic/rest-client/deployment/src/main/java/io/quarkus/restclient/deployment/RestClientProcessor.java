@@ -50,7 +50,6 @@ import org.jboss.resteasy.spi.ResteasyConfiguration;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -117,12 +116,6 @@ class RestClientProcessor {
     @BuildStep
     void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources) {
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
-    }
-
-    @Record(ExecutionTime.STATIC_INIT)
-    @BuildStep
-    BeanContainerListenerBuildItem fixExtension(RestClientRecorder restClientRecorder) {
-        return new BeanContainerListenerBuildItem(restClientRecorder.hackAroundExtension());
     }
 
     @BuildStep

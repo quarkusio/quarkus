@@ -350,7 +350,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
 
         T proxy = (T) Proxy.newProxyInstance(classLoader, interfaces,
                 new ProxyInvocationHandler(aClass, actualClient, getLocalProviderInstances(), client, getBeanManager()));
-        ClientHeaderProviders.registerForClass(aClass, proxy);
+        ClientHeaderProviders.registerForClass(aClass, proxy, getBeanManager());
         return proxy;
     }
 

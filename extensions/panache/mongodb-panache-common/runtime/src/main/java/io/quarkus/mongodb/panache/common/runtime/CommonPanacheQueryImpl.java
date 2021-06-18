@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.bson.BsonDocument;
-import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.ReadPreference;
@@ -16,6 +15,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.Projections;
 
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -60,10 +60,7 @@ public class CommonPanacheQueryImpl<Entity> {
         Set<String> fieldNames = MongoPropertyUtil.collectFields(type);
 
         // create the projection document
-        Document projections = new Document();
-        for (String fieldName : fieldNames) {
-            projections.append(fieldName, 1);
-        }
+        Bson projections = Projections.fields(Projections.include(new ArrayList<>(fieldNames)));
 
         return new CommonPanacheQueryImpl<>(this, projections, type);
     }
@@ -172,6 +169,7 @@ public class CommonPanacheQueryImpl<Entity> {
         Bson query = getQuery();
         FindIterable find = clientSession == null ? collection.find(query) : collection.find(clientSession, query);
         if (this.projections != null) {
+            System.out.println("Projection => " + this.projections);
             find.projection(projections);
         }
         if (this.collation != null) {

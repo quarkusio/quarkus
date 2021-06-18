@@ -667,6 +667,9 @@ The field names, or getters, of the projection class will be used to restrict wh
 
 Projection can be done for both PanacheQL and native queries.
 
+If in the DTO projection object you have a field from a sub-document, you can use the `@ProjectedFieldName` annotation to provide the path for it.
+
+
 [source,java]
 ----
 import io.quarkus.mongodb.panache.common.ProjectionFor;
@@ -676,12 +679,16 @@ import org.bson.codecs.pojo.annotations.BsonProperty;
 @ProjectionFor(Person.class)
 public class PersonName {
     public String name;
+
+    @ProjectedFieldName
+    public String country;
 }
 
 // using getters
 @ProjectionFor(Person.class)
 public class PersonNameWithGetter {
     private String name;
+    private String country;
 
     public String getName(){
         return name;
@@ -689,6 +696,14 @@ public class PersonNameWithGetter {
 
     public void setName(String name){
         this.name = name;
+    }
+
+    public String getCountry(){
+        return country;
+    }
+
+    public void setCountry(String country){
+        this.country = country;
     }
 }
 
@@ -710,7 +725,7 @@ This can be achieved by setting to DEBUG the following log category inside your 
 
 [source,properties]
 ----
-quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
+quarkus.log.category."io.quarkus.mongodb.panache.common.runtime".level=DEBUG
 ----
 
 == The PojoCodecProvider: easy object to BSON document conversion.

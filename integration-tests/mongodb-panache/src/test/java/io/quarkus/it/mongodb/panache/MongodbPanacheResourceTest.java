@@ -139,11 +139,12 @@ class MongodbPanacheResourceTest {
         Assertions.assertEquals(4, list.size());
 
         // magic query find("author", author)
-        list = get(endpoint + "/search/Victor Hugo").as(LIST_OF_BOOK_TYPE_REF);
+        list = get(endpoint + "/search/Victor Hugo").peek().as(LIST_OF_BOOK_TYPE_REF);
         Assertions.assertEquals(2, list.size());
         // we have a projection so we should not have the details field but we should have the title thanks to @BsonProperty
         Assertions.assertNotNull(list.get(0).getTitle());
         Assertions.assertNull(list.get(0).getDetails());
+        Assertions.assertNotNull((list.get(0).getRating())); //rating should also exist
 
         // magic query find("author", author)
         list = get(endpoint + "/legacy-search/Victor Hugo").as(LIST_OF_BOOK_TYPE_REF);

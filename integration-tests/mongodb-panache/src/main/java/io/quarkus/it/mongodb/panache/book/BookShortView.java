@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 
+import org.bson.codecs.pojo.annotations.BsonProperty;
+
 import io.quarkus.mongodb.panache.common.ProjectionFor;
 
 @ProjectionFor(Book.class)
@@ -12,6 +14,8 @@ public class BookShortView {
     private String author;
     @JsonbDateFormat("yyyy-MM-dd")
     private LocalDate creationDate;
+    @BsonProperty("details.rating")
+    private Integer rating;
 
     public String getTitle() {
         return title;
@@ -35,5 +39,25 @@ public class BookShortView {
 
     public void setCreationDate(LocalDate creationDate) {
         this.creationDate = creationDate;
+    }
+
+    @BsonProperty("details.rating")
+    public Integer getRating() {
+        return rating;
+    }
+
+    @BsonProperty("details.rating")
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    @Override
+    public String toString() {
+        return "BookShortView{" +
+                "title='" + title + '\'' +
+                ", author='" + author + '\'' +
+                ", creationDate=" + creationDate +
+                ", rating=" + rating +
+                '}';
     }
 }

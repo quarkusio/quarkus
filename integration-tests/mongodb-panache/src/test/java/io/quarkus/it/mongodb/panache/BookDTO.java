@@ -23,12 +23,23 @@ public class BookDTO {
 
     private BookDetail details;
 
+    // will only be used in case of projection
+    private Integer rating;
+
     public String getId() {
         return id;
     }
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
     }
 
     public String getTitle() {

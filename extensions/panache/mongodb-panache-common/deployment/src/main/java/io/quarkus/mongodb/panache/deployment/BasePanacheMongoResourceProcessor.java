@@ -123,8 +123,13 @@ public abstract class BasePanacheMongoResourceProcessor {
                 Map<String, String> classReplacementMap = replacementMap.computeIfAbsent(classToMap.getClassName(),
                         className -> computeReplacement(classInfo));
                 if (classToMap.getAliasClassName() != null) {
-                    // also register the replacement map for the projection classes
-                    replacementMap.put(classToMap.getAliasClassName(), classReplacementMap);
+                    // projection classes should have the same replacement map (to obey @BsonProperty from the original class)
+                    // enhanced with the one from itself to allow using @BsonProperty inside it.
+                    Map<String, String> projectionReplacementMap = new HashMap<>(classReplacementMap);
+                    DotName projectionDotName = createSimple(classToMap.getAliasClassName());
+                    ClassInfo projectionClassInfo = index.getIndex().getClassByName(projectionDotName);
+                    projectionReplacementMap.putAll(computeReplacement(projectionClassInfo));
+                    replacementMap.put(classToMap.getAliasClassName(), projectionReplacementMap);
                 }
             }
         }

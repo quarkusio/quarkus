@@ -77,7 +77,9 @@ public class BookEntityResource {
     @GET
     @Path("/search/{author}")
     public List<BookShortView> getBooksByAuthor(@PathParam("author") String author) {
-        return BookEntity.find("author", author).project(BookShortView.class).list();
+        List<BookShortView> list = BookEntity.find("author", author).project(BookShortView.class).list();
+        list.forEach(b -> System.out.println(b));
+        return list;
     }
 
     @GET

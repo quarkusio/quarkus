@@ -11,6 +11,7 @@ import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
@@ -58,7 +59,8 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, PropertiesOptions propertiesOptions, RunModeOption runMode,
+            List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
 
         if (buildOptions.offline) {
@@ -77,7 +79,8 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareDevMode(DevOptions devOptions, DebugOptions debugOptions, List<String> params) {
+    public BuildCommandArgs prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
+            DebugOptions debugOptions, List<String> params) {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }
 

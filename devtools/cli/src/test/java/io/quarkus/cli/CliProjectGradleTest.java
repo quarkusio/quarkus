@@ -7,10 +7,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -25,27 +23,15 @@ import picocli.CommandLine;
  */
 @Tag("failsOnJDK16")
 public class CliProjectGradleTest {
-    static String startingDir;
-    static Path workspaceRoot;
+    static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
+            .resolve("target/test-project/CliProjectGradleTest");
     Path project;
     File gradle;
 
-    @BeforeAll
-    public static void initial() throws Exception {
-        startingDir = System.getProperty("user.dir");
-        workspaceRoot = Paths.get(startingDir).toAbsolutePath().resolve("target/test-project/CliProjectGradleTest");
-    }
-
     @BeforeEach
     public void setupTestDirectories() throws Exception {
-        System.setProperty("user.dir", workspaceRoot.toFile().getAbsolutePath());
         CliDriver.deleteDir(workspaceRoot);
         project = workspaceRoot.resolve("code-with-quarkus");
-    }
-
-    @AfterAll
-    public static void allDone() {
-        System.setProperty("user.dir", startingDir);
     }
 
     void startGradleDaemon(boolean useWrapper) throws Exception {
@@ -66,7 +52,7 @@ public class CliProjectGradleTest {
             args.add("-Dmaven.repo.local=" + localMavenRepo);
         }
 
-        CliDriver.Result result = CliDriver.executeArbitraryCommand(args.toArray(new String[0]));
+        CliDriver.Result result = CliDriver.executeArbitraryCommand(project, args.toArray(new String[0]));
         Assertions.assertEquals(0, result.exitCode, "Gradle daemon should start properly");
     }
 
@@ -84,14 +70,14 @@ public class CliProjectGradleTest {
                 args.add("-Dmaven.repo.local=" + localMavenRepo);
             }
 
-            CliDriver.Result result = CliDriver.executeArbitraryCommand(args.toArray(new String[0]));
+            CliDriver.Result result = CliDriver.executeArbitraryCommand(project, args.toArray(new String[0]));
             Assertions.assertEquals(0, result.exitCode, "Gradle daemon should stop properly");
         }
     }
 
     @Test
     public void testCreateAppDefaults() throws Exception {
-        CliDriver.Result result = CliDriver.execute("create", "app", "--gradle", "--verbose", "-e", "-B");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
@@ -106,21 +92,21 @@ public class CliProjectGradleTest {
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
-        System.setProperty("user.dir", project.toFile().getAbsolutePath());
         startGradleDaemon(true);
         CliDriver.invokeValidateBuild(project);
     }
 
     @Test
     public void testCreateAppOverrides() throws Exception {
-        project = workspaceRoot.resolve("nested/my-project");
+        Path nested = workspaceRoot.resolve("cli-nested");
+        project = nested.resolve("my-project");
 
         List<String> configs = Arrays.asList("custom.app.config1=val1",
                 "custom.app.config2=val2", "lib.config=val3");
 
-        CliDriver.Result result = CliDriver.execute("create", "app", "--gradle", "--verbose", "-e", "-B",
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
                 "--package-name=custom.pkg",
-                "--output-directory=nested",
+                "--output-directory=" + nested,
                 "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0",
                 "--app-config=" + String.join(",", configs),
                 "resteasy-reactive");
@@ -140,7 +126,6 @@ public class CliProjectGradleTest {
         CliDriver.valdiateGeneratedSourcePackage(project, "custom/pkg");
         CliDriver.validateApplicationProperties(project, configs);
 
-        System.setProperty("user.dir", project.toFile().getAbsolutePath());
         startGradleDaemon(true);
 
         result = CliDriver.invokeValidateDryRunBuild(project);
@@ -152,39 +137,41 @@ public class CliProjectGradleTest {
 
     @Test
     public void testExtensionList() throws Exception {
-        CliDriver.Result result = CliDriver.execute("create", "app", "--gradle", "--verbose", "-e", "-B");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         startGradleDaemon(true);
-        System.setProperty("user.dir", project.toFile().getAbsolutePath());
 
         Path buildGradle = project.resolve("build.gradle");
-        String buildGradleContent = CliDriver.readFileAsString(buildGradle);
+        String buildGradleContent = CliDriver.readFileAsString(project, buildGradle);
         Assertions.assertFalse(buildGradleContent.contains("quarkus-qute"),
                 "Dependencies should not contain qute extension by default. Found:\n" + buildGradleContent);
 
-        CliDriver.invokeExtensionAddQute(buildGradle);
-        CliDriver.invokeExtensionAddRedundantQute();
-        CliDriver.invokeExtensionListInstallable();
-        CliDriver.invokeExtensionAddMultiple(buildGradle);
-        CliDriver.invokeExtensionRemoveQute(buildGradle);
-        CliDriver.invokeExtensionRemoveMultiple(buildGradle);
+        CliDriver.invokeExtensionAddQute(project, buildGradle);
+        CliDriver.invokeExtensionAddRedundantQute(project);
+        CliDriver.invokeExtensionListInstallable(project);
+        CliDriver.invokeExtensionAddMultiple(project, buildGradle);
+        CliDriver.invokeExtensionRemoveQute(project, buildGradle);
+        CliDriver.invokeExtensionRemoveMultiple(project, buildGradle);
 
-        CliDriver.invokeExtensionListInstallableSearch();
-        CliDriver.invokeExtensionListFormatting();
+        CliDriver.invokeExtensionListInstallableSearch(project);
+        CliDriver.invokeExtensionListFormatting(project);
 
         // TODO: Maven and Gradle give different return codes
-        result = CliDriver.invokeExtensionRemoveNonexistent();
+        result = CliDriver.invokeExtensionRemoveNonexistent(project);
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
     }
 
     @Test
     public void testCreateArgPassthrough() throws Exception {
-        CliDriver.Result result = CliDriver.execute("create", "--gradle",
+        Path nested = workspaceRoot.resolve("cli-nested");
+        project = nested.resolve("my-project");
+
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "--gradle",
                 "--verbose", "-e", "-B",
                 "--dryrun", "--no-wrapper", "--package-name=custom.pkg",
-                "--output-directory=nested",
+                "--output-directory=" + nested,
                 "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0");
 
         // We don't need to retest this, just need to make sure all of the arguments were passed through
@@ -211,7 +198,7 @@ public class CliProjectGradleTest {
         Assertions.assertTrue(buildGradle.toFile().exists(),
                 "build.gradle should exist: " + buildGradle.toAbsolutePath().toString());
 
-        String buildContent = CliDriver.readFileAsString(buildGradle);
+        String buildContent = CliDriver.readFileAsString(project, buildGradle);
         Assertions.assertTrue(buildContent.contains("group '" + group + "'"),
                 "build.gradle should include the group id:\n" + buildContent);
         Assertions.assertTrue(buildContent.contains("version '" + version + "'"),
@@ -220,7 +207,7 @@ public class CliProjectGradleTest {
         Path settings = project.resolve("settings.gradle");
         Assertions.assertTrue(settings.toFile().exists(),
                 "settings.gradle should exist: " + settings.toAbsolutePath().toString());
-        String settingsContent = CliDriver.readFileAsString(settings);
+        String settingsContent = CliDriver.readFileAsString(project, settings);
         Assertions.assertTrue(settingsContent.contains(artifact),
                 "settings.gradle should include the artifact id:\n" + settingsContent);
 

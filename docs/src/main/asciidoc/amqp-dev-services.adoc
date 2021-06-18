@@ -1,0 +1,53 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for AMQP
+
+include::./attributes.adoc[]
+
+Dev Services for AMQP automatically starts an AMQP 1.0 broker in dev mode and when running tests.
+So, you don't have to start a broker manually.
+The application is configured automatically.
+
+== Enabling / Disabling Dev Services for AMQP
+
+Dev Services for AMQP is automatically enabled unless:
+
+- `quarkus.amqp.devservices.enabled` is set to `false`
+- the `amqp-host` or `amqp-port` is configured
+- all the Reactive Messaging AMQP channels have the `host` or `port` attributes set
+
+Dev Services for AMQP relies on Docker to start the broker.
+If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
+You can configure the broker access using the `amqp-host`, `amqp-port`, `amqp-user` and `amqp-password` properties.
+
+== Shared broker
+
+Most of the time you need to share the broker between applications.
+Dev Services for AMQP implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single broker.
+
+NOTE: Dev Services for AMQP starts the container with the `quarkus-dev-service-amqp` label which is used to identify the container.
+
+If you need multiple (shared) brokers, you can configure the `quarkus.amqp.devservices.service-name` attribute and indicate the broker name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `amqp`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.amqp.devservices.shared=false`.
+
+== Setting the port
+
+By default, Dev Services for AMQP picks a random port and configures the application.
+You can set the port by configuring the `quarkus.amqp.devservices.port` property.
+
+== Configuring the image
+
+Dev Services for AMQP uses https://quay.io/repository/artemiscloud/activemq-artemis-broker[activemq-artemis-broker] images.
+You can configure the image and version using the `quarkus.amqp.devservices.image-name` property:
+
+[source, properties]
+----
+quarkus.amqp.devservices.image-name=quay.io/artemiscloud/activemq-artemis-broker:latest
+----

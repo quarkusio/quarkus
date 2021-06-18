@@ -1,21 +1,20 @@
 package io.quarkus.deployment.builditem;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Allows extensions to add classes to the index available via {@link CombinedIndexBuildItem}
+ * The classes are loaded by the Deployment ClassLoader
+ */
 public final class AdditionalIndexedClassesBuildItem extends MultiBuildItem {
 
     private final Set<String> classesToIndex;
 
     public AdditionalIndexedClassesBuildItem(String... classesToIndex) {
-        Set<String> toIndex = new HashSet<>(classesToIndex.length);
-        for (String s : classesToIndex) {
-            toIndex.add(s);
-        }
-        this.classesToIndex = toIndex;
+        this.classesToIndex = Set.of(classesToIndex);
     }
 
     public AdditionalIndexedClassesBuildItem(String classToIndex) {

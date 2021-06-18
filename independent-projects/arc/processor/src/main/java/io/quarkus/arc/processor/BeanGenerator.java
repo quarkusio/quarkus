@@ -1007,7 +1007,7 @@ public class BeanGenerator extends AbstractGenerator {
 
             // 1. constructor injection points
             for (int i = 0; i < injectionPoints.size(); i++) {
-                paramTypes.add(injectionPoints.get(i).getRequiredType().name().toString());
+                paramTypes.add(injectionPoints.get(i).getType().name().toString());
                 paramHandles.add(providerHandles.get(i));
             }
             // 2. ctx
@@ -1038,7 +1038,7 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle argsArray = creator.newArray(Object.class, creator.load(providerHandles.size()));
                 for (int i = 0; i < injectionPoints.size(); i++) {
                     creator.writeArrayValue(paramTypesArray, i,
-                            creator.loadClass(injectionPoints.get(i).getRequiredType().name().toString()));
+                            creator.loadClass(injectionPoints.get(i).getType().name().toString()));
                     creator.writeArrayValue(argsArray, i, providerHandles.get(i));
                 }
                 registration.registerMethod(constructor);
@@ -1050,7 +1050,7 @@ public class BeanGenerator extends AbstractGenerator {
                 String[] paramTypes = new String[injectionPoints.size()];
                 for (ListIterator<InjectionPointInfo> iterator = injectionPoints.listIterator(); iterator.hasNext();) {
                     InjectionPointInfo injectionPoint = iterator.next();
-                    paramTypes[iterator.previousIndex()] = DescriptorUtils.typeToString(injectionPoint.getRequiredType());
+                    paramTypes[iterator.previousIndex()] = DescriptorUtils.typeToString(injectionPoint.getType());
                 }
                 return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName, paramTypes),
                         providerHandles.toArray(new ResultHandle[0]));
@@ -1350,7 +1350,7 @@ public class BeanGenerator extends AbstractGenerator {
             if (constructorInjection.isPresent()) {
                 List<String> paramTypes = new ArrayList<>();
                 for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
-                    paramTypes.add(injectionPoint.getRequiredType().name().toString());
+                    paramTypes.add(injectionPoint.getType().name().toString());
                 }
                 ResultHandle[] paramsHandles = new ResultHandle[2];
                 paramsHandles[0] = create.loadClass(providerType.className());
@@ -1794,7 +1794,7 @@ public class BeanGenerator extends AbstractGenerator {
                         Supplier.class, java.lang.reflect.Type.class,
                         Set.class, Set.class, Member.class, int.class),
                 constructor.getThis(), constructor.getMethodParam(paramIdx),
-                Types.getTypeHandle(constructor, injectionPoint.getRequiredType(), tccl),
+                Types.getTypeHandle(constructor, injectionPoint.getType(), tccl),
                 requiredQualifiersHandle, annotationsHandle, javaMemberHandle, constructor.load(injectionPoint.getPosition()));
     }
 

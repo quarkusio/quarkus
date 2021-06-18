@@ -76,6 +76,14 @@ public class MessageBundleTest {
         assertEquals("Dot test!", engine.parse("{msg:['dot.test']}").render());
         assertEquals("Hello world! Hello Malachi Constant!",
                 engine.getTemplate("dynamic").data("key", "hello_fullname").data("surname", "Constant").render());
+
+        assertEquals("There are no files on C.",
+                engine.parse("{msg:files(0,'C')}").render());
+        assertEquals("There is one file on D.",
+                engine.parse("{msg:files(1,'D')}").render());
+        assertEquals("There are 100 files on E.",
+                engine.parse("{msg:files(100,'E')}").render());
+
     }
 
 }

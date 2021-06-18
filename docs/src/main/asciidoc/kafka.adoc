@@ -50,7 +50,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=kafka-quickstart \
     -DclassName="org.acme.kafka.PriceResource" \
     -Dpath="/prices" \
-    -Dextensions="resteasy,smallrye-reactive-messaging-kafka"
+    -Dextensions="resteasy-reactive,smallrye-reactive-messaging-kafka"
 cd kafka-quickstart
 ----
 
@@ -130,8 +130,6 @@ Create the `src/main/java/org/acme/kafka/PriceConverter.java` file with the foll
 ----
 package org.acme.kafka;
 
-import io.smallrye.reactive.messaging.annotations.Broadcast;
-import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
@@ -148,8 +146,6 @@ public class PriceConverter {
 
     @Incoming("prices")                                     // <1>
     @Outgoing("my-data-stream")                             // <2>
-    @Broadcast                                              // <3>
-    @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING) // <4>
     public double process(int priceInUsd) {
         return priceInUsd * CONVERSION_RATE;
     }
@@ -158,8 +154,6 @@ public class PriceConverter {
 ----
 <1> Indicates that the method consumes the items from the `prices` topic
 <2> Indicates that the objects returned by the method are sent to the `my-data-stream` stream
-<3> Indicates that the item are dispatched to all _subscribers_
-<4> Make sure to acknowledge the incoming message
 
 The `process` method is called for every Kafka _record_ from the `prices` topic (configured in the application configuration).
 Every result is sent to the `my-data-stream` in-memory stream.
@@ -190,7 +184,8 @@ import org.jboss.resteasy.annotations.SseElementType;
 public class PriceResource {
 
     @Inject
-    @Channel("my-data-stream") Publisher<Double> prices; // <1>
+    @Channel("my-data-stream")
+    Publisher<Double> prices; // <1>
 
     @GET
     @Path("/stream")
@@ -228,24 +223,11 @@ mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.s
 # Configure the Kafka source (we read from it)
 mp.messaging.incoming.prices.connector=smallrye-kafka
 mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
-mp.messaging.incoming.prices.health-readiness-enabled=false
 ----
 
 More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`.
 
 NOTE: What about `my-data-stream`? This is an in-memory stream, not connected to a message broker.
-
-[TIP]
-.What is "mp.messaging.incoming.prices.health-readiness-enabled=false"?
-====
-The `health-readiness-enabled` disables the readiness health check.
-By default, it verifies that there is an active connection with the broker.
-In our case, the connection only happens when we get the first consumer.
-This is because the stream is consumed as an SSE, waiting lazily for the first connection to trigger the whole stream.
-So, if you are running in an environment only routing traffic to containers that are _ready_ (such as Kubernetes), it would not send traffic to your application, which, as a consequence, will never connect to Kafka and pass the readiness check.
-
-More details about health reporting is given in <<kafka-health-check>>.
-====
 
 The previous configuration does not set the Kafka _bootstrap.servers_.
 Quarkus starts a Kafka broker automatically and configures the application.
@@ -314,7 +296,7 @@ version: '2'
 services:
 
   zookeeper:
-    image: strimzi/kafka:0.19.0-kafka-2.5.0
+    image: quay.io/strimzi/kafka:0.23.0-kafka-2.8.0
     command: [
       "sh", "-c",
       "bin/zookeeper-server-start.sh config/zookeeper.properties"
@@ -325,7 +307,7 @@ services:
       LOG_DIR: /tmp/logs
 
   kafka:
-    image: strimzi/kafka:0.19.0-kafka-2.5.0
+    image: quay.io/strimzi/kafka:0.23.0-kafka-2.8.0
     command: [
       "sh", "-c",
       "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"

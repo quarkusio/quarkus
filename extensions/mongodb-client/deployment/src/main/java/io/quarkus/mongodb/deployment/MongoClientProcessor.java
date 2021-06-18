@@ -45,6 +45,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -67,6 +68,23 @@ public class MongoClientProcessor {
 
     private static final DotName MONGO_CLIENT = DotName.createSimple(MongoClient.class.getName());
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
+
+    @BuildStep
+    AdditionalIndexedClassesBuildItem includeBsonTypesToIndex() {
+        return new AdditionalIndexedClassesBuildItem(
+                "org.bson.types.BasicBSONList",
+                "org.bson.types.Binary",
+                "org.bson.types.BSONTimestamp",
+                "org.bson.types.Code",
+                "org.bson.types.CodeWithScope",
+                "org.bson.types.CodeWScope",
+                "org.bson.types.Decimal128",
+                "org.bson.types.MaxKey",
+                "org.bson.types.MinKey",
+                "org.bson.types.ObjectId",
+                "org.bson.types.StringRangeSet",
+                "org.bson.types.Symbol");
+    }
 
     @BuildStep
     CodecProviderBuildItem collectCodecProviders(CombinedIndexBuildItem indexBuildItem) {

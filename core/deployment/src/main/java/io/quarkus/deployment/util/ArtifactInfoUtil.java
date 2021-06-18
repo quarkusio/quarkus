@@ -42,9 +42,9 @@ public final class ArtifactInfoUtil {
     public static Map.Entry<String, String> groupIdAndArtifactId(Class<?> clazz,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         try {
-            URL jarLocation = clazz.getProtectionDomain().getCodeSource().getLocation();
-            if (jarLocation.toString().endsWith(".jar")) {
-                try (FileSystem fs = FileSystems.newFileSystem(Paths.get(jarLocation.toURI()),
+            URL codeLocation = clazz.getProtectionDomain().getCodeSource().getLocation();
+            if (codeLocation.toString().endsWith(".jar")) {
+                try (FileSystem fs = FileSystems.newFileSystem(Paths.get(codeLocation.toURI()),
                         Thread.currentThread().getContextClassLoader())) {
                     Entry<String, String> ret = groupIdAndArtifactId(fs);
                     if (ret == null) {
@@ -55,7 +55,7 @@ public final class ArtifactInfoUtil {
                 }
             } else if (curateOutcomeBuildItem != null) {
                 // this is needed only for QuarkusDevModeTest inside Quarkus where the class is read from the corresponding directory
-                Path path = Paths.get(jarLocation.toURI());
+                Path path = Paths.get(codeLocation.toURI());
                 for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
                     for (Path p : i.getArtifact().getPaths()) {
                         if (path.equals(p)) {
@@ -69,6 +69,30 @@ public final class ArtifactInfoUtil {
                     }
                 }
                 return new AbstractMap.SimpleEntry<>("unspecified", "unspecified");
+            } else if ("file".equals(codeLocation.getProtocol())) {
+                // E.g. /quarkus/extensions/arc/deployment/target/classes/io/quarkus/arc/deployment/devconsole
+                // This can happen if you run an example app in dev mode 
+                // and this app is part of a multi-module project which also declares the extension
+                // Just try to locate the pom.properties file in the target/maven-archiver directory
+                // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overriden
+                Path location = Paths.get(codeLocation.toURI());
+                while (!isDeploymentTargetClasses(location) && location.getParent() != null) {
+                    location = location.getParent();
+                }
+                if (location != null) {
+                    Path mavenArchiver = location.getParent().resolve("maven-archiver");
+                    if (mavenArchiver.toFile().canRead()) {
+                        Entry<String, String> ret = groupIdAndArtifactId(mavenArchiver);
+                        if (ret == null) {
+                            throw new RuntimeException(
+                                    "Unable to determine groupId and artifactId of the extension that contains "
+                                            + clazz.getName()
+                                            + " because the directory doesn't contain the necessary metadata");
+                        }
+                        return ret;
+                    }
+                }
+                return new AbstractMap.SimpleEntry<>("unspecified", "unspecified");
             } else {
                 return new AbstractMap.SimpleEntry<>("unspecified", "unspecified");
             }
@@ -76,6 +100,21 @@ public final class ArtifactInfoUtil {
             throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains " + clazz.getName(),
                     e);
         }
+    }
+
+    static boolean isDeploymentTargetClasses(Path location) {
+        if (!location.getFileName().toString().equals("classes")) {
+            return false;
+        }
+        Path target = location.getParent();
+        if (target == null || !target.getFileName().toString().equals("target")) {
+            return false;
+        }
+        Path deployment = location.getParent().getParent();
+        if (deployment == null || !deployment.getFileName().toString().equals("deployment")) {
+            return false;
+        }
+        return true;
     }
 
     /**

@@ -9,6 +9,7 @@ import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.util.Collection;
@@ -20,6 +21,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.jboss.jandex.DotName;
@@ -56,6 +58,11 @@ public class BeanDeploymentValidatorTest {
 
         @Override
         public void validate(ValidationContext context) {
+            assertTrue(context.getInjectionPoints().stream().filter(InjectionPointInfo::isProgrammaticLookup)
+                    .filter(ip -> ip.getTarget().kind() == org.jboss.jandex.AnnotationTarget.Kind.FIELD
+                            && ip.getTarget().asField().name().equals("foo"))
+                    .findFirst().isPresent());
+
             assertFalse(context.removedBeans().withBeanClass(UselessBean.class).isEmpty());
 
             assertFalse(context.beans().classBeans().withBeanClass(Alpha.class).isEmpty());
@@ -87,6 +94,9 @@ public class BeanDeploymentValidatorTest {
 
         @Inject
         List<String> strings;
+
+        @Inject
+        Instance<String> foo;
 
         void observeAppContextInit(@Observes @Initialized(ApplicationScoped.class) Object event) {
         }

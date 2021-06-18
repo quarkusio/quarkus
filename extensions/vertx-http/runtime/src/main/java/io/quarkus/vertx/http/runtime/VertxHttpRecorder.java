@@ -79,6 +79,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
@@ -477,11 +478,12 @@ public class VertxHttpRecorder {
             ioThreads = eventLoopCount;
         }
         CompletableFuture<String> futureResult = new CompletableFuture<>();
+        AtomicInteger connectionCount = new AtomicInteger();
         vertx.deployVerticle(new Supplier<Verticle>() {
             @Override
             public Verticle get() {
                 return new WebDeploymentVerticle(httpServerOptions, sslConfig, domainSocketOptions, launchMode,
-                        httpConfiguration.insecureRequests);
+                        httpConfiguration.insecureRequests, httpConfiguration, connectionCount);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<AsyncResult<String>>() {
             @Override
@@ -615,22 +617,12 @@ public class VertxHttpRecorder {
         if (!certificates.isEmpty() && !keys.isEmpty()) {
             createPemKeyCertOptions(certificates, keys, serverOptions);
         } else if (keyStoreFile.isPresent()) {
-            final Path keyStorePath = keyStoreFile.get();
-            final Optional<String> keyStoreFileType = sslConfig.certificate.keyStoreFileType;
-            final String type;
-            if (keyStoreFileType.isPresent()) {
-                type = keyStoreFileType.get().toLowerCase();
-            } else {
-                type = findKeystoreFileType(keyStorePath);
-            }
-
-            byte[] data = getFileContent(keyStorePath);
-            final Optional<String> keyStoreProvider = sslConfig.certificate.keyStoreProvider;
-            KeyStoreOptions options = new KeyStoreOptions()
-                    .setPassword(keystorePassword)
-                    .setValue(Buffer.buffer(data))
-                    .setType(type.toUpperCase())
-                    .setProvider(keyStoreProvider.orElse(null));
+            KeyStoreOptions options = createKeyStoreOptions(
+                    keyStoreFile.get(),
+                    keystorePassword,
+                    sslConfig.certificate.keyStoreFileType,
+                    sslConfig.certificate.keyStoreProvider,
+                    sslConfig.certificate.keyStoreKeyAlias);
             serverOptions.setKeyCertOptions(options);
         } else {
             return null;
@@ -640,16 +632,13 @@ public class VertxHttpRecorder {
             if (!trustStorePassword.isPresent()) {
                 throw new IllegalArgumentException("No trust store password provided");
             }
-            final String type;
-            final Optional<String> trustStoreFileType = sslConfig.certificate.trustStoreFileType;
-            final Path trustStoreFilePath = trustStoreFile.get();
-            if (trustStoreFileType.isPresent()) {
-                type = trustStoreFileType.get().toLowerCase();
-            } else {
-                type = findKeystoreFileType(trustStoreFilePath);
-            }
-            createTrustStoreOptions(trustStoreFilePath, trustStorePassword.get(), type,
-                    sslConfig.certificate.trustStoreProvider.orElse(null), serverOptions);
+            KeyStoreOptions options = createKeyStoreOptions(
+                    trustStoreFile.get(),
+                    trustStorePassword.get(),
+                    sslConfig.certificate.trustStoreFileType,
+                    sslConfig.certificate.trustStoreProvider,
+                    sslConfig.certificate.trustStoreCertAlias);
+            serverOptions.setTrustOptions(options);
         }
 
         for (String cipher : sslConfig.cipherSuites.orElse(Collections.emptyList())) {
@@ -673,6 +662,25 @@ public class VertxHttpRecorder {
         serverOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
 
         return serverOptions;
+    }
+
+    private static KeyStoreOptions createKeyStoreOptions(Path keyStorePath, String password, Optional<String> keyStoreFileType,
+            Optional<String> keyStoreProvider, Optional<String> keyStoreAlias) throws IOException {
+        final String type;
+        if (keyStoreFileType.isPresent()) {
+            type = keyStoreFileType.get().toLowerCase();
+        } else {
+            type = findKeystoreFileType(keyStorePath);
+        }
+
+        byte[] data = getFileContent(keyStorePath);
+        KeyStoreOptions options = new KeyStoreOptions()
+                .setPassword(password)
+                .setValue(Buffer.buffer(data))
+                .setType(type.toUpperCase())
+                .setProvider(keyStoreProvider.orElse(null))
+                .setAlias(keyStoreAlias.orElse(null));
+        return options;
     }
 
     private static byte[] getFileContent(Path path) throws IOException {
@@ -715,17 +723,6 @@ public class VertxHttpRecorder {
                 .setCertValues(certificates)
                 .setKeyValues(keys);
         serverOptions.setPemKeyCertOptions(pemKeyCertOptions);
-    }
-
-    private static void createTrustStoreOptions(Path trustStoreFile, String trustStorePassword,
-            String trustStoreFileType, String trustStoreProvider, HttpServerOptions serverOptions) throws IOException {
-        byte[] data = getFileContent(trustStoreFile);
-        KeyStoreOptions options = new KeyStoreOptions()
-                .setPassword(trustStorePassword)
-                .setValue(Buffer.buffer(data))
-                .setType(trustStoreFileType.toUpperCase())
-                .setProvider(trustStoreProvider);
-        serverOptions.setTrustOptions(options);
     }
 
     private static String findKeystoreFileType(Path storePath) {
@@ -857,15 +854,19 @@ public class VertxHttpRecorder {
         private volatile boolean clearHttpsProperty = false;
         private volatile Map<String, String> portPropertiesToRestore;
         private final HttpConfiguration.InsecureRequests insecureRequests;
+        private final HttpConfiguration quarkusConfig;
+        private final AtomicInteger connectionCount;
 
         public WebDeploymentVerticle(HttpServerOptions httpOptions, HttpServerOptions httpsOptions,
                 HttpServerOptions domainSocketOptions, LaunchMode launchMode,
-                HttpConfiguration.InsecureRequests insecureRequests) {
+                InsecureRequests insecureRequests, HttpConfiguration quarkusConfig, AtomicInteger connectionCount) {
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
             this.launchMode = launchMode;
             this.domainSocketOptions = domainSocketOptions;
             this.insecureRequests = insecureRequests;
+            this.quarkusConfig = quarkusConfig;
+            this.connectionCount = connectionCount;
         }
 
         @Override
@@ -917,7 +918,7 @@ public class VertxHttpRecorder {
                         }
                     });
                 }
-                setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount);
+                setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount, connectionCount);
             }
 
             if (domainSocketOptions != null) {
@@ -929,7 +930,7 @@ public class VertxHttpRecorder {
             if (httpsOptions != null) {
                 httpsServer = vertx.createHttpServer(httpsOptions);
                 httpsServer.requestHandler(ACTUAL_ROOT);
-                setupTcpHttpServer(httpsServer, httpsOptions, true, startFuture, remainingCount);
+                setupTcpHttpServer(httpsServer, httpsOptions, true, startFuture, remainingCount, connectionCount);
             }
         }
 
@@ -948,7 +949,33 @@ public class VertxHttpRecorder {
         }
 
         private void setupTcpHttpServer(HttpServer httpServer, HttpServerOptions options, boolean https,
-                Promise<Void> startFuture, AtomicInteger remainingCount) {
+                Promise<Void> startFuture, AtomicInteger remainingCount, AtomicInteger currentConnectionCount) {
+            if (quarkusConfig.limits.maxConnections.isPresent() && quarkusConfig.limits.maxConnections.getAsInt() > 0) {
+                final int maxConnections = quarkusConfig.limits.maxConnections.getAsInt();
+                httpServer.connectionHandler(new Handler<HttpConnection>() {
+
+                    @Override
+                    public void handle(HttpConnection event) {
+                        int current;
+                        do {
+                            current = currentConnectionCount.get();
+                            if (current == maxConnections) {
+                                //just close the connection
+                                LOGGER.debug("Rejecting connection as there are too many active connections");
+                                event.close();
+                                return;
+                            }
+                        } while (!currentConnectionCount.compareAndSet(current, current + 1));
+                        event.closeHandler(new Handler<Void>() {
+                            @Override
+                            public void handle(Void event) {
+                                LOGGER.debug("Connection closed");
+                                connectionCount.decrementAndGet();
+                            }
+                        });
+                    }
+                });
+            }
             httpServer.listen(options.getPort(), options.getHost(), event -> {
                 if (event.cause() != null) {
                     startFuture.fail(event.cause());

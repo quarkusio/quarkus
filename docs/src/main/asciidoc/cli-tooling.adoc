@@ -70,7 +70,7 @@ Commands:
   build            Build the current project.
   dev              Run the current project in dev (live coding) mode.
   extension, ext   List, add, and remove extensions of an existing project.
-    add            Extension(s) to add to this project.
+    add            Add extension(s) to this project.
     list, ls       List platforms and extensions for this project.
     remove, rm     Remove extension(s) from this project.
   completion       bash/zsh completion:  source <(quarkus completion)
@@ -89,22 +89,23 @@ $ quarkus create
 -----------
 
 applying codestarts...
-🔠 java
-🧰 maven
-🗃 quarkus
-📜 config-properties
-🛠 dockerfiles
-🛠 maven-wrapper
-🐒 resteasy-codestart
+📚  java
+🔨  maven
+📦  quarkus
+📝  config-properties
+🔧  dockerfiles
+🔧  maven-wrapper
+📄  resteasy-codestart
 
 -----------
 [SUCCESS] ✅ quarkus project has been successfully generated in:
 --> /<output-dir>/code-with-quarkus
 ----
 
-This will create a folder called 'code-with-quarkus' in your current working directory
-using default groupId, artifactId and version values
+This will create a folder called 'code-with-quarkus' in your current working directory using default groupId, artifactId and version values
 (groupId='org.acme', artifactId='code-with-quarkus' and version='1.0.0-SNAPSHOT').
+
+Note: the emoji shown above may not match precisely. The appearance of emoji can vary by font, and terminal/environment. IntelliJ IDEA, for example, has several long-running issues open regarding the behavior/rendering of emoji in the terminal.
 
 To specify the groupId, artifactId and version values, 
 use the '--group-id', '--artifact-id' and '--version' options:

@@ -312,20 +312,7 @@ public class QuarkusProdModeTest
         originalHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
 
-        timeoutTask = new TimerTask() {
-            @Override
-            public void run() {
-                System.err.println("Test has been running for more than 5 minutes, thread dump is:");
-                for (Map.Entry<Thread, StackTraceElement[]> i : Thread.getAllStackTraces().entrySet()) {
-                    System.err.println("\n");
-                    System.err.println(i.toString());
-                    System.err.println("\n");
-                    for (StackTraceElement j : i.getValue()) {
-                        System.err.println(j);
-                    }
-                }
-            }
-        };
+        timeoutTask = new PrintStackTraceTimerTask();
         timeoutTimer.schedule(timeoutTask, 1000 * 60 * 5);
 
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
@@ -638,6 +625,7 @@ public class QuarkusProdModeTest
         try {
             if (curatedApplication != null) {
                 curatedApplication.close();
+                curatedApplication = null;
             }
         } finally {
             timeoutTask.cancel();
@@ -699,4 +687,18 @@ public class QuarkusProdModeTest
         return this;
     }
 
+    private static class PrintStackTraceTimerTask extends TimerTask {
+        @Override
+        public void run() {
+            System.err.println("Test has been running for more than 5 minutes, thread dump is:");
+            for (Map.Entry<Thread, StackTraceElement[]> i : Thread.getAllStackTraces().entrySet()) {
+                System.err.println("\n");
+                System.err.println(i.toString());
+                System.err.println("\n");
+                for (StackTraceElement j : i.getValue()) {
+                    System.err.println(j);
+                }
+            }
+        }
+    }
 }

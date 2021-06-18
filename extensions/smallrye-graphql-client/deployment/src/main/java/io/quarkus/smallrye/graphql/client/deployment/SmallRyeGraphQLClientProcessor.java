@@ -29,7 +29,7 @@ public class SmallRyeGraphQLClientProcessor {
 
     private static final DotName GRAPHQL_CLIENT_API = DotName
             .createSimple("io.smallrye.graphql.client.typesafe.api.GraphQLClientApi");
-    private static final DotName NAMED_CLIENT = DotName.createSimple("io.smallrye.graphql.client.NamedClient");
+    private static final DotName GRAPHQL_CLIENT = DotName.createSimple("io.smallrye.graphql.client.GraphQLClient");
     private static final String NAMED_DYNAMIC_CLIENTS = "io.smallrye.graphql.client.dynamic.cdi.NamedDynamicClients";
 
     @BuildStep
@@ -59,7 +59,7 @@ public class SmallRyeGraphQLClientProcessor {
     void dynamicClientInjection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<AutoInjectAnnotationBuildItem> autoInject) {
         additionalBeans.produce(new AdditionalBeanBuildItem(NAMED_DYNAMIC_CLIENTS));
-        autoInject.produce(new AutoInjectAnnotationBuildItem(NAMED_CLIENT));
+        autoInject.produce(new AutoInjectAnnotationBuildItem(GRAPHQL_CLIENT));
     }
 
     @BuildStep

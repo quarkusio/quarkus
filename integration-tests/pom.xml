@@ -50,6 +50,7 @@
         <module>jpa-db2</module>
         <module>jpa-derby</module>
         <module>jpa-postgresql</module>
+        <module>jpa-postgresql-withxml</module>
         <module>vault</module>
         <module>vault-agroal</module>
         <module>vault-app</module>

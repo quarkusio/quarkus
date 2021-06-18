@@ -71,7 +71,7 @@
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
         <microprofile-jwt-api.version>1.2</microprofile-jwt-api.version>
-        <microprofile-graphql-api.version>1.0.3</microprofile-graphql-api.version>
+        <microprofile-graphql-api.version>1.1.0</microprofile-graphql-api.version>
 
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.7.2</antlr.version>

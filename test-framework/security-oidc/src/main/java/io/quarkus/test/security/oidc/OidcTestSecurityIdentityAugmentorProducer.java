@@ -2,6 +2,7 @@ package io.quarkus.test.security.oidc;
 
 import java.lang.annotation.Annotation;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -19,6 +20,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcConfigurationMetadata;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcJwtCallerPrincipal;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -48,23 +50,44 @@ public class OidcTestSecurityIdentityAugmentorProducer {
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
 
             final OidcSecurity oidcSecurity = findOidcSecurity(annotations);
-            // JsonWebToken
-            JwtClaims claims = new JwtClaims();
-            claims.setClaim(Claims.preferred_username.name(), identity.getPrincipal().getName());
-            claims.setClaim(Claims.groups.name(), identity.getRoles().stream().collect(Collectors.toList()));
-            if (oidcSecurity != null && oidcSecurity.claims() != null) {
-                for (Claim claim : oidcSecurity.claims()) {
-                    claims.setClaim(claim.key(), claim.value());
-                }
-            }
-            String jwt = generateToken(claims);
-            IdTokenCredential idToken = new IdTokenCredential(jwt, null);
-            AccessTokenCredential accessToken = new AccessTokenCredential(jwt, null);
 
-            JsonWebToken principal = new OidcJwtCallerPrincipal(claims, idToken);
-            builder.setPrincipal(principal);
-            builder.addCredential(idToken);
-            builder.addCredential(accessToken);
+            final boolean introspectionRequired = oidcSecurity != null && oidcSecurity.introspectionRequired();
+
+            if (!introspectionRequired) {
+                // JsonWebToken
+                JwtClaims claims = new JwtClaims();
+                claims.setClaim(Claims.preferred_username.name(), identity.getPrincipal().getName());
+                claims.setClaim(Claims.groups.name(), identity.getRoles().stream().collect(Collectors.toList()));
+                if (oidcSecurity != null && oidcSecurity.claims() != null) {
+                    for (Claim claim : oidcSecurity.claims()) {
+                        claims.setClaim(claim.key(), claim.value());
+                    }
+                }
+                String jwt = generateToken(claims);
+                IdTokenCredential idToken = new IdTokenCredential(jwt, null);
+                AccessTokenCredential accessToken = new AccessTokenCredential(jwt, null);
+
+                JsonWebToken principal = new OidcJwtCallerPrincipal(claims, idToken);
+                builder.setPrincipal(principal);
+                builder.addCredential(idToken);
+                builder.addCredential(accessToken);
+            } else {
+                JsonObjectBuilder introspectionBuilder = Json.createObjectBuilder();
+                introspectionBuilder.add(OidcConstants.INTROSPECTION_TOKEN_ACTIVE, true);
+                introspectionBuilder.add(OidcConstants.INTROSPECTION_TOKEN_USERNAME, identity.getPrincipal().getName());
+                introspectionBuilder.add(OidcConstants.TOKEN_SCOPE,
+                        identity.getRoles().stream().collect(Collectors.joining(" ")));
+
+                if (oidcSecurity != null && oidcSecurity.introspection() != null) {
+                    for (TokenIntrospection introspection : oidcSecurity.introspection()) {
+                        introspectionBuilder.add(introspection.key(), introspection.value());
+                    }
+                }
+
+                builder.addAttribute(OidcUtils.INTROSPECTION_ATTRIBUTE,
+                        new io.quarkus.oidc.TokenIntrospection(introspectionBuilder.build()));
+                builder.addCredential(new AccessTokenCredential(UUID.randomUUID().toString(), null));
+            }
 
             // UserInfo
             if (oidcSecurity != null && oidcSecurity.userinfo() != null) {

@@ -113,11 +113,14 @@ public class HibernateOrmConfigPersistenceUnit {
     public Optional<String> implicitNamingStrategy;
 
     /**
-     * Class name of a custom {@link org.hibernate.boot.spi.MetadataBuilderContributor} implementation.
+     * Class name of a custom
+     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/boot/spi/MetadataBuilderContributor.html[`org.hibernate.boot.spi.MetadataBuilderContributor`]
+     * implementation.
      *
      * [NOTE]
      * ====
-     * Not all customization options exposed by {@link org.hibernate.boot.MetadataBuilder}
+     * Not all customization options exposed by
+     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/boot/MetadataBuilder.html[`org.hibernate.boot.MetadataBuilder`]
      * will work correctly. Stay clear of options related to classpath scanning in particular.
      *
      * This setting is exposed mainly to allow registration of types, converters and SQL functions.

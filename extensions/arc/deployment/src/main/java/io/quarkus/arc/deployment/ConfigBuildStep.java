@@ -120,19 +120,19 @@ public class ConfigBuildStep {
                 }
 
                 // Register a custom bean for injection points that are not handled by ConfigProducer
-                Type requiredType = injectionPoint.getRequiredType();
-                if (!isHandledByProducers(requiredType)) {
-                    customBeanTypes.add(requiredType);
+                Type injectedType = injectionPoint.getType();
+                if (!isHandledByProducers(injectedType)) {
+                    customBeanTypes.add(injectedType);
                 }
 
-                if (DotNames.OPTIONAL.equals(requiredType.name())
-                        || DotNames.OPTIONAL_INT.equals(requiredType.name())
-                        || DotNames.OPTIONAL_LONG.equals(requiredType.name())
-                        || DotNames.OPTIONAL_DOUBLE.equals(requiredType.name())
-                        || DotNames.PROVIDER.equals(requiredType.name())
-                        || SUPPLIER_NAME.equals(requiredType.name())
-                        || CONFIG_VALUE_NAME.equals(requiredType.name())
-                        || MP_CONFIG_VALUE_NAME.equals(requiredType.name())) {
+                if (DotNames.OPTIONAL.equals(injectedType.name())
+                        || DotNames.OPTIONAL_INT.equals(injectedType.name())
+                        || DotNames.OPTIONAL_LONG.equals(injectedType.name())
+                        || DotNames.OPTIONAL_DOUBLE.equals(injectedType.name())
+                        || DotNames.PROVIDER.equals(injectedType.name())
+                        || SUPPLIER_NAME.equals(injectedType.name())
+                        || CONFIG_VALUE_NAME.equals(injectedType.name())
+                        || MP_CONFIG_VALUE_NAME.equals(injectedType.name())) {
                     // Never validate container objects
                     continue;
                 }
@@ -143,7 +143,7 @@ public class ConfigBuildStep {
                     propertyDefaultValue = defaultValue.asString();
                 }
 
-                configProperties.produce(new ConfigPropertyBuildItem(propertyName, requiredType, propertyDefaultValue));
+                configProperties.produce(new ConfigPropertyBuildItem(propertyName, injectedType, propertyDefaultValue));
             }
         }
 

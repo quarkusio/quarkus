@@ -1,24 +1,23 @@
 package io.quarkus.devtools.testing.codestarts;
 
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.*;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.JAVA_VERSION;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.KOTLIN_VERSION;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.MAVEN_COMPILER_PLUGIN_VERSION;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.MAVEN_SUREFIRE_PLUGIN_VERSION;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.QUARKUS_GRADLE_PLUGIN_ID;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.QUARKUS_GRADLE_PLUGIN_VERSION;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.SCALA_MAVEN_PLUGIN_VERSION;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.SCALA_VERSION;
 
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 public class QuarkusCodestartTesting {
+
+    public static Collection<String> getPlatformBoms() {
+        return Collections.singletonList("io.quarkus:quarkus-mock-bom:999-MOCK");
+    }
 
     public static Map<String, Object> getMockedTestInputData(final Map<String, Object> override) {
         final HashMap<String, Object> data = new HashMap<>();
@@ -72,6 +71,23 @@ public class QuarkusCodestartTesting {
         if (override != null)
             data.putAll(override);
         return data;
+    }
+
+    public static Collection<String> getBoms(Map<String, Object> inputData) {
+        return Collections.singletonList(getBom(inputData));
+    }
+
+    private static String getBom(Map<String, Object> inputData) {
+        return getRequiredValue(inputData, BOM_GROUP_ID) + ":"
+                + getRequiredValue(inputData, BOM_ARTIFACT_ID) + ":" + getRequiredValue(inputData, BOM_VERSION);
+    }
+
+    private static Object getRequiredValue(Map<String, Object> inputData, QuarkusDataKey key) {
+        final Object o = inputData.get(key.key());
+        if (o == null) {
+            throw new IllegalArgumentException("Required key " + key.key() + " is missing among " + inputData.keySet());
+        }
+        return o;
     }
 
     private static Properties getQuarkusProperties(ExtensionCatalog catalog) {

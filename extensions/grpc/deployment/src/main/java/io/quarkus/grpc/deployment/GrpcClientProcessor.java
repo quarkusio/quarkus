@@ -143,12 +143,6 @@ public class GrpcClientProcessor {
             }
 
             Type injectionType = injectionPoint.getRequiredType();
-
-            // Programmatic lookup - take the param type
-            if (DotNames.INSTANCE.equals(injectionType.name()) || DotNames.INJECTABLE_INSTANCE.equals(injectionType.name())) {
-                injectionType = injectionType.asParameterizedType().arguments().get(0);
-            }
-
             if (injectionType.name().equals(GrpcDotNames.CHANNEL)) {
                 // No need to add the stub class for Channel
                 continue;

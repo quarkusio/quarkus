@@ -31,7 +31,7 @@ import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 
 public class TestRunner {
 
-    private static final Logger log = Logger.getLogger(TestRunner.class);
+    private static final Logger log = Logger.getLogger("io.quarkus.test");
     private static final AtomicLong COUNTER = new AtomicLong();
 
     private final TestSupport testSupport;
@@ -354,9 +354,14 @@ public class TestRunner {
         }
     }
 
-    public synchronized void testCompileFailed(Throwable e) {
-        compileProblem = e;
-        log.error("Test compile failed", e);
+    public void testCompileFailed(Throwable e) {
+        synchronized (this) {
+            compileProblem = e;
+        }
+
+        for (TestListener i : testSupport.testListeners) {
+            i.testCompileFailed(e.getMessage());
+        }
     }
 
     public synchronized void testCompileSucceeded() {

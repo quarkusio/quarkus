@@ -463,7 +463,7 @@ final class Beans {
                 errors.add(new DefinitionException("EventMetadata can be only injected into an observer method: "
                         + injectionPoint.getTargetInfo()));
             } else if (BuiltinBean.INSTANCE == builtinBean
-                    && injectionPoint.getRequiredType().kind() != Kind.PARAMETERIZED_TYPE) {
+                    && injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
                 errors.add(
                         new DefinitionException("An injection point of raw type javax.enterprise.inject.Instance is defined: "
                                 + injectionPoint.getTargetInfo()));
@@ -510,7 +510,7 @@ final class Beans {
 
     private static void addStandardErroneousDependencyMessage(InjectionTargetInfo target, InjectionPointInfo injectionPoint,
             StringBuilder message) {
-        message.append(injectionPoint.getRequiredType());
+        message.append(injectionPoint.getType());
         message.append(" and qualifiers ");
         message.append(injectionPoint.getRequiredQualifiers());
         message.append("\n\t- java member: ");

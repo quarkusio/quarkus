@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.qute.Results.Result;
+import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 
 public class NamespaceResolversTest {
@@ -44,6 +45,36 @@ public class NamespaceResolversTest {
                     return Result.NOT_FOUND;
                 }).build()).build();
         assertEquals("FOO1", engine.parse("{foo:baz.toUpperCase}").render());
+    }
+
+    @Test
+    public void testInvalidNamespace() {
+        try {
+            Engine.builder().addNamespaceResolver(NamespaceResolver.builder("foo:").resolve(ec -> "foo").build());
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage()
+                    .contains("[foo:] is not a valid namespace"));
+        }
+        try {
+            Engine.builder().addNamespaceResolver(new NamespaceResolver() {
+
+                @Override
+                public CompletionStage<Object> resolve(EvalContext context) {
+                    return null;
+                }
+
+                @Override
+                public String getNamespace() {
+                    return "$#%$%#$%";
+                }
+
+            });
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage()
+                    .contains("[$#%$%#$%] is not a valid namespace"));
+        }
     }
 
 }

@@ -19,6 +19,7 @@ public enum Feature {
     AMAZON_SES,
     AMAZON_KMS,
     AMAZON_SSM,
+    APICURIO_REGISTRY_AVRO,
     ARTEMIS_CORE,
     ARTEMIS_JMS,
     CACHE,

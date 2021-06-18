@@ -117,13 +117,13 @@ version 1.0
 -----------
 
 applying codestarts...
-🔠 java
-🧰 maven
-🗃 quarkus
-📜 config-properties
-🛠 dockerfiles
-🛠 maven-wrapper
-🐒 resteasy-codestart
+📚  java
+🔨  maven
+📦  quarkus
+📝  config-properties
+🔧  dockerfiles
+🔧  maven-wrapper
+📄  resteasy-codestart
 
 -----------
 [SUCCESS] ✅ quarkus project has been successfully generated in:

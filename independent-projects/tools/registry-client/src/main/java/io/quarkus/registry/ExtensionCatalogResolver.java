@@ -256,10 +256,7 @@ public class ExtensionCatalogResolver {
 
     public ExtensionCatalog resolveExtensionCatalog() throws RegistryResolutionException {
 
-        final int registriesTotal = registries.size();
-        if (registriesTotal == 0) {
-            throw new RegistryResolutionException("No registries configured");
-        }
+        ensureRegistriesConfigured();
 
         final List<ExtensionCatalog> catalogs = new ArrayList<>();
         final ElementCatalogBuilder<ExtensionCatalog> catalogBuilder = ElementCatalogBuilder.newInstance();
@@ -285,6 +282,16 @@ public class ExtensionCatalogResolver {
                             catalogs.add(ec);
                             addUnion(union, ec);
                         }
+
+                        final Map<String, List<RegistryExtensionResolver>> registriesByQuarkusCore = new HashMap<>(2);
+                        registriesByQuarkusCore.put(release.getQuarkusCoreVersion(),
+                                getRegistriesForQuarkusVersion(release.getQuarkusCoreVersion()));
+                        final String upstreamQuarkusVersion = release.getUpstreamQuarkusCoreVersion();
+                        if (upstreamQuarkusVersion != null && !registriesByQuarkusCore.containsKey(upstreamQuarkusVersion)) {
+                            registriesByQuarkusCore.put(upstreamQuarkusVersion,
+                                    getRegistriesForQuarkusVersion(upstreamQuarkusVersion));
+                        }
+                        appendNonPlatformExtensions(registriesByQuarkusCore, union, catalogs);
                     }
                 }
             }
@@ -391,16 +398,13 @@ public class ExtensionCatalogResolver {
 
     public ExtensionCatalog resolveExtensionCatalog(StreamCoords streamCoords) throws RegistryResolutionException {
 
-        final int registriesTotal = registries.size();
-        if (registriesTotal == 0) {
-            throw new RegistryResolutionException("No registries configured");
-        }
+        ensureRegistriesConfigured();
 
         final List<ExtensionCatalog> catalogs = new ArrayList<>();
         final ElementCatalogBuilder<ExtensionCatalog> catalogBuilder = ElementCatalogBuilder.newInstance();
 
-        String platformKey = streamCoords.getPlatformKey();
-        String streamId = streamCoords.getStreamId();
+        final String platformKey = streamCoords.getPlatformKey();
+        final String streamId = streamCoords.getStreamId();
 
         PlatformStream stream = null;
         RegistryExtensionResolver registry = null;
@@ -494,9 +498,16 @@ public class ExtensionCatalogResolver {
         return catalog;
     }
 
+    private void ensureRegistriesConfigured() throws RegistryResolutionException {
+        final int registriesTotal = registries.size();
+        if (registriesTotal == 0) {
+            throw new RegistryResolutionException("No registries configured");
+        }
+    }
+
     private void addUnion(final UnionBuilder<ExtensionCatalog> union, final ExtensionCatalog ec) {
         final MemberBuilder<ExtensionCatalog> builder = union.getOrCreateMember(
-                ec.getBom().getGroupId() + ":" + ec.getBom().getArtifactId(), ec.getBom().getVersion(), ec);
+                ec.getId(), ec.getBom().getVersion(), ec);
         ec.getExtensions()
                 .forEach(e -> builder
                         .addElement(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId()));

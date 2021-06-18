@@ -7,13 +7,17 @@ import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.registry.PlatformStackIndex;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonCatalogMerger;
 import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
+import io.quarkus.registry.union.ElementCatalogBuilder;
+import io.quarkus.registry.union.ElementCatalogBuilder.UnionBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -115,11 +119,54 @@ public class ToolsUtils {
                 throw new RuntimeException("Failed to resolve the default platform JSON descriptor", e);
             }
         }
+        ExtensionCatalog catalog;
         try {
-            return JsonCatalogMapperHelper.deserialize(platformJson, JsonExtensionCatalog.class);
+            catalog = JsonCatalogMapperHelper.deserialize(platformJson, JsonExtensionCatalog.class);
         } catch (IOException e) {
             throw new RuntimeException("Failed to deserialize extension catalog " + platformJson, e);
         }
+        Map<String, Object> md = catalog.getMetadata();
+        if (md != null) {
+            Object o = md.get("platform-release");
+            if (o instanceof Map) {
+                Object members = ((Map<?, ?>) o).get("members");
+                if (members instanceof Collection) {
+                    final Collection<?> memberList = (Collection<?>) members;
+                    final List<ExtensionCatalog> catalogs = new ArrayList<>(memberList.size());
+                    final ElementCatalogBuilder<ExtensionCatalog> elementsBuilder = ElementCatalogBuilder.newInstance();
+                    final UnionBuilder<ExtensionCatalog> union = elementsBuilder
+                            .getOrCreateUnion(PlatformStackIndex.initial());
+
+                    for (Object m : memberList) {
+                        if (!(m instanceof String)) {
+                            continue;
+                        }
+                        final ExtensionCatalog memberCatalog;
+                        if (catalog.getId().equals(m)) {
+                            memberCatalog = catalog;
+                        } else {
+                            try {
+                                final ArtifactCoords coords = ArtifactCoords.fromString((String) m);
+                                catalogCoords = new DefaultArtifact(coords.getGroupId(), coords.getArtifactId(),
+                                        coords.getClassifier(), coords.getType(), coords.getVersion());
+                                log.debug("Resolving platform descriptor %s", catalogCoords);
+                                final Path jsonPath = artifactResolver.resolve(catalogCoords).getArtifact().getFile().toPath();
+                                memberCatalog = JsonCatalogMapperHelper.deserialize(jsonPath,
+                                        JsonExtensionCatalog.class);
+                            } catch (Exception e) {
+                                log.warn("Failed to resolve member catalog " + m, e);
+                                continue;
+                            }
+                        }
+                        catalogs.add(memberCatalog);
+                        ElementCatalogBuilder.addUnionMember(union, memberCatalog);
+                    }
+                    catalog = JsonCatalogMerger.merge(catalogs);
+                    ElementCatalogBuilder.setElementCatalog(catalog, elementsBuilder.build());
+                }
+            }
+        }
+        return catalog;
     }
 
     public static ExtensionCatalog mergePlatforms(List<ArtifactCoords> platforms, MavenArtifactResolver artifactResolver) {

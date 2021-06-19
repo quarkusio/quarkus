@@ -196,7 +196,7 @@ public class ElementCatalogBuilder<M> {
             final Union<T> u = new Union<T>() {
 
                 @Override
-                public UnionVersion verion() {
+                public UnionVersion version() {
                     return version;
                 }
 

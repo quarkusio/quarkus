@@ -22,7 +22,7 @@ public class WebJarLocatorTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "/index.html")
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"))
-            .setForcedDependencies(Arrays.asList(new AppArtifact("org.webjars", "jquery", "3.4.1"),
+            .setForcedDependencies(Arrays.asList(new AppArtifact("org.webjars", "jquery", "3.5.1"),
                     new AppArtifact("org.webjars", "momentjs", "2.24.0")));
 
     @Test
@@ -47,7 +47,7 @@ public class WebJarLocatorTest {
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/3.4.1/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery/3.5.1/jquery.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/2.24.0/min/moment.min.js").then()
                 .statusCode(200);

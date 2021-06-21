@@ -37,7 +37,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <version.junit>5.7.2</version.junit>
-        <version.gizmo>1.0.8.Final</version.gizmo>
+        <version.gizmo>1.0.9.Final</version.gizmo>
         <version.jboss-logging>3.4.2.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>

@@ -20,7 +20,6 @@ import org.junit.platform.engine.FilterResult;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.launcher.PostDiscoveryFilter;
-import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.deployment.dev.ClassScanResult;
@@ -348,9 +347,6 @@ public class TestRunner {
                     throw new RuntimeException(e);
                 }
             }
-            if (disabled) {
-                throw new TestAbortedException("Tests are disabled");
-            }
         }
     }
 
@@ -366,6 +362,9 @@ public class TestRunner {
 
     public synchronized void testCompileSucceeded() {
         compileProblem = null;
+        for (TestListener i : testSupport.testListeners) {
+            i.testCompileSucceeded();
+        }
     }
 
     public boolean isRunning() {

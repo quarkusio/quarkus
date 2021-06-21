@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.jsoup.helper.StringUtil;
 
 import io.dekorate.DekorateException;
 
@@ -57,7 +56,7 @@ public class PackageUtil {
                             return FileVisitResult.CONTINUE;
                         }
                         final Path relativePath = root.relativize(file);
-                        final boolean hasBasePath = !StringUtil.isBlank(base);
+                        final boolean hasBasePath = base != null && !base.isBlank();
                         final TarArchiveEntry entry = hasBasePath
                                 ? new TarArchiveEntry(base + File.separator + file.toFile())
                                 : new TarArchiveEntry(file.toFile());
@@ -106,7 +105,7 @@ public class PackageUtil {
                             return FileVisitResult.CONTINUE;
                         }
                         final Path relativePath = root.relativize(file);
-                        final boolean hasBasePath = !StringUtil.isBlank(base);
+                        final boolean hasBasePath = base != null && !base.isBlank();
                         final TarArchiveEntry entry = hasBasePath
                                 ? new TarArchiveEntry(base + File.separator + file.toFile())
                                 : new TarArchiveEntry(file.toFile());

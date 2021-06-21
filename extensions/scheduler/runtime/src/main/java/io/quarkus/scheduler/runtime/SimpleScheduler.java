@@ -19,6 +19,7 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Typed;
 import javax.inject.Singleton;
 import javax.interceptor.Interceptor;
@@ -32,6 +33,7 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
@@ -90,6 +92,11 @@ public class SimpleScheduler implements Scheduler {
                         ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
                         if (scheduled.concurrentExecution() == ConcurrentExecution.SKIP) {
                             invoker = new SkipConcurrentExecutionInvoker(invoker, skippedExecutionEvent);
+                        }
+                        if (!scheduled.skipExecutionIf().equals(Scheduled.Never.class)) {
+                            invoker = new SkipPredicateInvoker(invoker,
+                                    Arc.container().select(scheduled.skipExecutionIf(), Any.Literal.INSTANCE).get(),
+                                    skippedExecutionEvent);
                         }
                         scheduledTasks.add(new ScheduledTask(trigger.get(), invoker));
                     }
@@ -270,7 +277,7 @@ public class SimpleScheduler implements Scheduler {
         protected final ZonedDateTime start;
         protected volatile ZonedDateTime lastFireTime;
 
-        public SimpleTrigger(String id, ZonedDateTime start) {
+        SimpleTrigger(String id, ZonedDateTime start) {
             this.id = id;
             this.start = start;
             this.running = true;
@@ -302,7 +309,7 @@ public class SimpleScheduler implements Scheduler {
         // milliseconds
         private final long interval;
 
-        public IntervalTrigger(String id, ZonedDateTime start, long interval) {
+        IntervalTrigger(String id, ZonedDateTime start, long interval) {
             super(id, start);
             this.interval = interval;
         }
@@ -351,7 +358,7 @@ public class SimpleScheduler implements Scheduler {
         private final Cron cron;
         private final ExecutionTime executionTime;
 
-        public CronTrigger(String id, ZonedDateTime start, Cron cron) {
+        CronTrigger(String id, ZonedDateTime start, Cron cron) {
             super(id, start);
             this.cron = cron;
             this.executionTime = ExecutionTime.forCron(cron);

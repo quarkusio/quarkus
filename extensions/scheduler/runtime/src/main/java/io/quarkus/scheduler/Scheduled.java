@@ -10,6 +10,8 @@ import java.lang.annotation.Target;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import javax.enterprise.context.Dependent;
+
 import io.quarkus.scheduler.Scheduled.Schedules;
 
 /**
@@ -34,7 +36,6 @@ import io.quarkus.scheduler.Scheduled.Schedules;
  * The annotated method must return {@code void} and either declare no parameters or one parameter of type
  * {@link ScheduledExecution}.
  *
- * @author Martin Kouba
  * @see ScheduledExecution
  */
 @Target(METHOD)
@@ -119,6 +120,17 @@ public @interface Scheduled {
      */
     ConcurrentExecution concurrentExecution() default PROCEED;
 
+    /**
+     * Specify the bean class that can be used to skip any execution of a scheduled method.
+     * <p>
+     * There must be exactly one bean that has the specified class in its set of bean types, otherwise the build
+     * fails. Furthermore, the scope of the bean must be active during execution. If the scope is {@link Dependent} then the
+     * bean instance belongs exclusively to the specific scheduled method and is destroyed when the application is shut down.
+     * 
+     * @return the bean class
+     */
+    Class<? extends SkipPredicate> skipExecutionIf() default Never.class;
+
     @Retention(RUNTIME)
     @Target(METHOD)
     @interface Schedules {
@@ -142,6 +154,33 @@ public @interface Scheduled {
          * invocation completes.
          */
         SKIP,
+
+    }
+
+    /**
+     * 
+     * @see Scheduled#skipExecutionIf()
+     */
+    interface SkipPredicate {
+
+        /**
+         * 
+         * @param execution
+         * @return {@code true} if the given execution should be skipped, {@code false} otherwise
+         */
+        boolean test(ScheduledExecution execution);
+
+    }
+
+    /**
+     * Execution is never skipped.
+     */
+    class Never implements SkipPredicate {
+
+        @Override
+        public boolean test(ScheduledExecution execution) {
+            return false;
+        }
 
     }
 

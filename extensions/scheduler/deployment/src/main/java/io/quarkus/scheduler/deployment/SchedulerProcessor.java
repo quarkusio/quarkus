@@ -40,6 +40,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -85,6 +86,7 @@ public class SchedulerProcessor {
 
     static final DotName SCHEDULED_NAME = DotName.createSimple(Scheduled.class.getName());
     static final DotName SCHEDULES_NAME = DotName.createSimple(Scheduled.Schedules.class.getName());
+    static final DotName SKIP_NEVER_NAME = DotName.createSimple(Scheduled.Never.class.getName());
 
     static final Type SCHEDULED_EXECUTION_TYPE = Type.create(DotName.createSimple(ScheduledExecution.class.getName()),
             Kind.CLASS);
@@ -184,7 +186,7 @@ public class SchedulerProcessor {
             // Validate cron() and every() expressions
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
-                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities);
+                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext());
                 if (error != null) {
                     errors.add(error);
                 }
@@ -325,7 +327,8 @@ public class SchedulerProcessor {
     }
 
     private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
-            Map<String, AnnotationInstance> encounteredIdentities) {
+            Map<String, AnnotationInstance> encounteredIdentities,
+            BeanDeploymentValidator.ValidationContext validationContext) {
         MethodInfo method = schedule.target().asMethod();
         AnnotationValue cronValue = schedule.value("cron");
         AnnotationValue everyValue = schedule.value("every");
@@ -345,6 +348,7 @@ public class SchedulerProcessor {
                         "%s declared on %s#%s() defines both cron() and every() - the cron expression takes precedence",
                         schedule, method.declaringClass().name(), method.name());
             }
+
         } else {
             if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                 String every = everyValue.asString().trim();
@@ -379,6 +383,7 @@ public class SchedulerProcessor {
                 } catch (Exception e) {
                     return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
                 }
+
             }
         } else {
             if (delayedValue != null && !delayedValue.asString().trim().isEmpty()) {
@@ -399,8 +404,19 @@ public class SchedulerProcessor {
             } else {
                 encounteredIdentities.put(identity, schedule);
             }
-
         }
+
+        AnnotationValue skipExecutionIfValue = schedule.value("skipExecutionIf");
+        if (skipExecutionIfValue != null) {
+            DotName skipPredicate = skipExecutionIfValue.asClass().name();
+            if (!SKIP_NEVER_NAME.equals(skipPredicate)
+                    && validationContext.beans().withBeanType(skipPredicate).collect().size() != 1) {
+                String message = String.format("There must be exactly one bean that matches the skip predicate: \"%s\" on: %s",
+                        skipPredicate, schedule);
+                return new IllegalStateException(message);
+            }
+        }
+
         return null;
     }
 

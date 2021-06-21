@@ -36,6 +36,7 @@ import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.Expressions;
+import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -131,6 +132,21 @@ public final class ConfigUtils {
             @Override
             public OptionalInt getPriority() {
                 return OptionalInt.of(Priorities.LIBRARY + 600 - 5);
+            }
+        });
+
+        final Map<String, String> fallbacks = new HashMap<>();
+        fallbacks.put("quarkus.config.locations", SMALLRYE_CONFIG_LOCATIONS);
+        fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
+        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                return new FallbackConfigSourceInterceptor(fallbacks);
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 400 - 5);
             }
         });
 

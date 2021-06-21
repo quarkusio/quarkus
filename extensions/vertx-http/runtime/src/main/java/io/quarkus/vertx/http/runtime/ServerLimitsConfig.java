@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -37,5 +38,12 @@ public class ServerLimitsConfig {
      */
     @ConfigItem(defaultValue = "2048")
     public MemorySize maxFormAttributeSize;
+
+    /**
+     * The maximum number of connections that are allowed at any one time. If this is set
+     * it is recommended to set a short idle timeout.
+     */
+    @ConfigItem
+    public OptionalInt maxConnections;
 
 }

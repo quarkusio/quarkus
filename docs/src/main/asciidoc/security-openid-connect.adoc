@@ -359,6 +359,35 @@ If UserInfo is the source of the roles then set `quarkus.oidc.authentication.use
 
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
 
+[[token-verification-introspection]]
+== Token Verification And Introspection 
+
+If the token is a JWT token then, by default, it will be verified with a `JsonWebKey` (JWK) key from a local `JsonWebKeySet` retrieved from the OpenId Connect Provider's JWK endpoint. The token's key identifier `kid` header value will be used to find the matching JWK key.
+If no matching `JWK` is available locally then `JsonWebKeySet` will be refreshed by fetching the current key set from the JWK endpoint. The `JsonWebKeySet` refresh can be repeated again only after the `quarkus.oidc.token.forced-jwk-refresh-interval` (default is 10 minutes) expires.
+If no matching `JWK` is available after the refresh then the JWT token will be sent to the OpenId Connect Provider's token introspection endpoint.
+
+If the token is opaque (it can be a binary token or an encrypted JWT token) then it will always be sent to the OpenId Connect Provider's token introspection endpoint.
+
+If you work with JWT tokens only and expect that a matching `JsonWebKey` will always be available (possibly after a key set refresh) then you should disable the token introspection:
+
+[source, properties]
+----
+quarkus.oidc.token.allow-jwt-introspection=false
+quarkus.oidc.token.allow-opaque-token-introspection=false
+----
+
+However, there could be cases where JWT tokens must be verified via the introspection only. It can be forced by configuring an introspection endpoint address only, for example, in case of Keycloak you can do it like this:
+
+[source, properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.discovery-enabled=false
+# Token Introspection endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
+----
+
+Note that `io.quarkus.oidc.TokenIntrospection` (a simple `javax.json.JsonObject` wrapper) object will be created and can be either injected or accessed as a SecurityIdentity `introspection` attribute if either JWT or opaque token has been successfully introspected.
+
 [[single-page-applications]]
 == Single Page Applications
 

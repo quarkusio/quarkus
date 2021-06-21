@@ -525,6 +525,7 @@ public class ResteasyReactiveProcessor {
             }
 
             String deploymentPath = sanitizeApplicationPath(applicationPath);
+
             // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
             // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
             Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
@@ -711,5 +712,4 @@ public class ResteasyReactiveProcessor {
         reader.setConstraint(constraint);
         recorder.registerReader(serialisers, entityClass.getName(), reader);
     }
-
 }

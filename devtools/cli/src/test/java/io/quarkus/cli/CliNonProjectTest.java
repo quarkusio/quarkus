@@ -44,9 +44,22 @@ public class CliNonProjectTest {
     @Test
     public void testListOutsideOfProject() throws Exception {
         CliDriver.Result result = CliDriver.execute("ext", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
-                "'quarkus ext list' should fail outside of a quarkus project directory:\n" + result);
-        System.out.println(result);
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("Jackson"),
+                "Should contain 'Jackson' in the list of extensions, found: " + result.stdout);
+    }
+
+    @Test
+    public void testListPlatformExtensions() throws Exception {
+        // List extensions of a specified platform version
+        CliDriver.Result result = CliDriver.execute("ext", "list", "-p=io.quarkus:quarkus-bom:2.0.0.CR3", "-e");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("Jackson"),
+                "Should contain 'Jackson' in the list of extensions, found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("2.0.0.CR3"),
+                "Should contain '2.0.0.CR3' in the list of extensions (origin), found: " + result.stdout);
     }
 
     @Test
@@ -68,28 +81,14 @@ public class CliNonProjectTest {
     @Test
     public void testCreateAppDryRun() throws Exception {
         // A dry run of create should not create any files or directories
-        CliDriver.Result result = CliDriver.execute("create", "--dryrun", "-e");
+        CliDriver.Result result = CliDriver.execute("create", "--dry-run", "-e");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("project would have been created"),
                 "Should contain 'project would have been created', found: " + result.stdout);
-    }
 
-    @Test
-    public void testCreateAppDryRunMistype() throws Exception {
-        // A dry run of create should not create any files or directories
-        CliDriver.Result result = CliDriver.execute("create", "--dry-run", "-e", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
-                "Expected OK return code." + result);
-    }
-
-    @Test
-    public void testCreateCliDryRun() throws Exception {
-        // A dry run of create should not create any files or directories
-        CliDriver.Result result = CliDriver.execute("create", "cli", "--dryrun", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
-                "Expected OK return code." + result);
-        Assertions.assertTrue(result.stdout.contains("project would have been created"),
-                "Should contain 'project would have been created', found: " + result.stdout);
+        CliDriver.Result result2 = CliDriver.execute("create", "--dryrun", "-e");
+        Assertions.assertEquals(result.stdout, result2.stdout,
+                "Invoking the command with --dryrun should produce the same result");
     }
 }

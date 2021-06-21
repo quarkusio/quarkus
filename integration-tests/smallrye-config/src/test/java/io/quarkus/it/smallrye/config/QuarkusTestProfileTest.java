@@ -36,6 +36,7 @@ public class QuarkusTestProfileTest {
         public Map<String, String> getConfigOverrides() {
             Map<String, String> configs = new HashMap<>();
             configs.put("quarkus.config.locations", "test-profile.properties");
+            configs.put("smallrye.config.locations", "relocate.properties");
             return configs;
         }
 

@@ -1,5 +1,6 @@
 package io.quarkus.registry.union;
 
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -172,6 +173,10 @@ public class ElementCatalogBuilder<M> {
             this.catalogBuilder = catalogBuilder;
         }
 
+        public UnionVersion version() {
+            return version;
+        }
+
         public MemberBuilder<T> getOrCreateMember(Object memberKey, Object memberVersion) {
             return getOrCreateMember(memberKey, memberVersion, null);
         }
@@ -191,7 +196,7 @@ public class ElementCatalogBuilder<M> {
             final Union<T> u = new Union<T>() {
 
                 @Override
-                public UnionVersion verion() {
+                public UnionVersion version() {
                     return version;
                 }
 
@@ -336,7 +341,6 @@ public class ElementCatalogBuilder<M> {
     }
 
     public static <T> List<T> getMembersForElements(ElementCatalog<T> elementCatalog, Collection<String> elementKeys) {
-
         final Map<UnionVersion, Map<Object, Member<T>>> unionVersions = new TreeMap<>(UnionVersion::compareTo);
         for (Object elementKey : elementKeys) {
             final Element<T> e = elementCatalog.get(elementKey);
@@ -364,4 +368,21 @@ public class ElementCatalogBuilder<M> {
         return Collections.emptyList();
     }
 
+    public static void addUnionMember(final UnionBuilder<ExtensionCatalog> union, final ExtensionCatalog ec) {
+        final MemberBuilder<ExtensionCatalog> builder = union.getOrCreateMember(
+                ec.getId(), ec.getBom().getVersion(), ec);
+        ec.getExtensions()
+                .forEach(e -> builder
+                        .addElement(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId()));
+    }
+
+    public static void setElementCatalog(ExtensionCatalog extCatalog, ElementCatalog<?> elemCatalog) {
+        if (!elemCatalog.isEmpty()) {
+            extCatalog.getMetadata().put("element-catalog", elemCatalog);
+        }
+    }
+
+    public static <T> ElementCatalog<T> getElementCatalog(ExtensionCatalog extCatalog, Class<T> t) {
+        return (ElementCatalog<T>) extCatalog.getMetadata().get("element-catalog");
+    }
 }

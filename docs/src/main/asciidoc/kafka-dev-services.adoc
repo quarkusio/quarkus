@@ -7,11 +7,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Dev Services for Kafka automatically starts a Kafka broker in dev mode and when running tests.
+If any Kafka-related extension is present (e.g. `quarkus-smallrye-reactive-messaging-kafka`), Dev Services for Kafka automatically starts a Kafka broker in dev mode and when running tests.
 So, you don't have to start a broker manually.
 The application is configured automatically.
 
-IMPORTANT: Because starting a Kafka broker can be long, Dev Services for Kafka uses https://vectorized.io/redpanda[Red Panda], a Kafka compatible broker which starts in ~1 second.
+IMPORTANT: Because starting a Kafka broker can be long, Dev Services for Kafka uses https://vectorized.io/redpanda[Redpanda], a Kafka compatible broker which starts in ~1 second.
 
 == Enabling / Disabling Dev Services for Kafka
 
@@ -37,4 +37,4 @@ Note that the Kafka advertised address is automatically configured with the chos
 By default, Dev Services for Kafka uses: `vectorized/redpanda:latest`.
 You can select any version from https://hub.docker.com/r/vectorized/redpanda.
 
-IMPORTANT: Dev Services for Kafka only support Red Panda.
+IMPORTANT: Dev Services for Kafka only support Redpanda.

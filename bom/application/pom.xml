@@ -18,7 +18,7 @@
         <bouncycastle.fips.version>1.0.2.1</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.11.4</bouncycastle.tls.fips.version>
         <jandex.version>2.3.0.Final</jandex.version>
-        <resteasy.version>4.6.0.Final</resteasy.version>
+        <resteasy.version>4.6.1.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
         <opentracing-jaxrs.version>1.0.0</opentracing-jaxrs.version>
         <opentracing-web-servlet-filter.version>0.4.0</opentracing-web-servlet-filter.version>
@@ -27,8 +27,8 @@
         <opentracing-jdbc.version>0.2.12</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.2.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.2.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.3.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.3.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.4.0</jaeger.version>
         <quarkus-http.version>4.1.1</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
@@ -45,15 +45,15 @@
         <smallrye-config.version>2.3.0</smallrye-config.version>
         <smallrye-health.version>3.0.2</smallrye-health.version>
         <smallrye-metrics.version>3.0.1</smallrye-metrics.version>
-        <smallrye-open-api.version>2.1.5</smallrye-open-api.version>
-        <smallrye-graphql.version>1.2.4</smallrye-graphql.version>
+        <smallrye-open-api.version>2.1.6</smallrye-open-api.version>
+        <smallrye-graphql.version>1.2.5</smallrye-graphql.version>
         <smallrye-opentracing.version>2.0.0</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.1.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.2.0</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-utils.version>2.6.0</smallrye-reactive-utils.version>
-        <smallrye-reactive-messaging.version>3.4.0</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>3.5.0</smallrye-reactive-messaging.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
         <jakarta.el-impl.version>3.0.3</jakarta.el-impl.version>
@@ -93,10 +93,10 @@
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <hibernate-orm.version>5.5.0.Final</hibernate-orm.version>
-        <hibernate-reactive.version>1.0.0.CR6</hibernate-reactive.version>
+        <hibernate-orm.version>5.5.2.Final</hibernate-orm.version>
+        <hibernate-reactive.version>1.0.0.CR7</hibernate-reactive.version>
         <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
-        <hibernate-search.version>6.0.3.Final</hibernate-search.version>
+        <hibernate-search.version>6.0.4.Final</hibernate-search.version>
         <narayana.version>5.11.2.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.11</agroal.version>
@@ -120,7 +120,7 @@
         <cronutils.version>9.1.5</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
-        <postgresql-jdbc.version>42.2.20</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.2.22</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.7.3</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.25</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
@@ -133,8 +133,8 @@
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.19.0</assertj.version>
         <json-smart.version>2.3</json-smart.version>
-        <infinispan.version>12.1.1.Final</infinispan.version>
-        <infinispan.protostream.version>4.4.0.Final</infinispan.protostream.version>
+        <infinispan.version>12.1.4.Final</infinispan.version>
+        <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
         <caffeine.version>2.9.1</caffeine.version>
         <netty.version>4.1.65.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
@@ -210,6 +210,7 @@
         <log4j2-jboss-logmanager.version>1.0.0.Final</log4j2-jboss-logmanager.version>
         <log4j-jboss-logmanager.version>1.2.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.10.2</avro.version>
+        <apicurio-registry.version>2.0.1.Final</apicurio-registry.version>
         <jacoco.version>0.8.7</jacoco.version>
         <testcontainers.version>1.15.3</testcontainers.version>
         <docker-java.version>3.2.8</docker-java.version> <!-- must be the version Testcontainers use -->
@@ -1105,6 +1106,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-avro-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-apicurio-registry-avro</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-apicurio-registry-avro-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2834,6 +2845,11 @@
                 <groupId>io.agroal</groupId>
                 <artifactId>agroal-pool</artifactId>
                 <version>${agroal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+                <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

@@ -13,7 +13,7 @@ public class TargetBuildToolGroup {
     @CommandLine.Option(names = { "--gradle" }, description = "Use Gradle")
     boolean gradle = false;
 
-    @CommandLine.Option(names = { "--grade-kotlin-dsl" }, description = "Use Gradle with Kotlin DSL")
+    @CommandLine.Option(names = { "--gradle-kotlin-dsl" }, description = "Use Gradle with Kotlin DSL")
     boolean gradleKotlinDsl = false;
 
     public boolean isBuildless() {

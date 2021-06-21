@@ -25,17 +25,21 @@ import org.junit.platform.launcher.TestIdentifier;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
+import io.quarkus.deployment.dev.console.AeshConsole;
 import io.quarkus.dev.console.InputHandler;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.spi.DevModeType;
 
 public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final String PAUSED_PROMPT = YELLOW + "Tests paused, press [r] to resume" + RESET;
+    public static final String PAUSED_PROMPT = YELLOW + "Tests paused, press [r] to resume, [h] for more options>" + RESET;
     public static final String FIRST_RUN_PROMPT = YELLOW + "Running Tests for the first time" + RESET;
     public static final String RUNNING_PROMPT = "Press [r] to re-run, [v] to view full results, [p] to pause, [h] for more options>";
     public static final String ABORTED_PROMPT = "Test run aborted.";
+
+    final DevModeType devModeType;
 
     boolean firstRun = true;
     boolean disabled = true;
@@ -43,6 +47,10 @@ public class TestConsoleHandler implements TestListener {
     volatile InputHandler.ConsoleStatus promptHandler;
     volatile TestController testController;
     private String lastStatus;
+
+    public TestConsoleHandler(DevModeType devModeType) {
+        this.devModeType = devModeType;
+    }
 
     public void install() {
         QuarkusConsole.INSTANCE.pushInputHandler(inputHandler);
@@ -59,39 +67,49 @@ public class TestConsoleHandler implements TestListener {
 
         @Override
         public void handleInput(int[] keys) {
-            if (disabled) {
-                for (int i : keys) {
-                    if (i == 'r') {
-                        promptHandler.setStatus(YELLOW + "Starting tests" + RESET);
-                        TestSupport.instance().get().start();
+            //common commands, work every time
+            for (int k : keys) {
+                if (k == 'h') {
+                    printUsage();
+                } else if (k == 'i' && devModeType != DevModeType.TEST_ONLY) {
+                    testController.toggleInstrumentation();
+                } else if (k == 'l' && devModeType != DevModeType.TEST_ONLY) {
+                    RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
+                } else if (k == 's' && devModeType != DevModeType.TEST_ONLY) {
+                    try {
+                        RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+                    } catch (IOException e) {
+                        log.error("Live reload scan failed", e);
                     }
-                }
-            } else if (!firstRun) {
-                //TODO: some of this is a bit yuck, this needs some work
-                for (int k : keys) {
-                    if (k == 'r') {
-                        testController.runAllTests();
-                    } else if (k == 'f') {
-                        testController.runFailedTests();
-                    } else if (k == 'v') {
-                        testController.printFullResults();
-                    } else if (k == 'i') {
-                        testController.toggleInstrumentation();
-                    } else if (k == 'o') {
-                        testController.toggleTestOutput();
-                    } else if (k == 'p') {
-                        TestSupport.instance().get().stop();
-                    } else if (k == 'h') {
-                        printUsage();
-                    } else if (k == 'b') {
-                        testController.toggleBrokenOnlyMode();
-                    } else if (k == 'l') {
-                        RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
-                    } else if (k == 's') {
-                        try {
-                            RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
-                        } catch (IOException e) {
-                            log.error("Live reload scan failed", e);
+                } else if (k == 'q') {
+                    //we don't call Quarkus.exit() here as that would just result
+                    //in a 'press any key to restart' prompt
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.exit(0);
+                        }
+                    }, "Quarkus exit thread").run();
+                } else {
+                    if (disabled) {
+                        if (k == 'r') {
+                            promptHandler.setStatus(YELLOW + "Starting tests" + RESET);
+                            TestSupport.instance().get().start();
+                        }
+                    } else if (!firstRun) {
+                        //TODO: some of this is a bit yuck, this needs some work
+                        if (k == 'r') {
+                            testController.runAllTests();
+                        } else if (k == 'f') {
+                            testController.runFailedTests();
+                        } else if (k == 'v') {
+                            testController.printFullResults();
+                        } else if (k == 'o' && devModeType != DevModeType.TEST_ONLY) {
+                            testController.toggleTestOutput();
+                        } else if (k == 'p') {
+                            TestSupport.instance().get().stop();
+                        } else if (k == 'b') {
+                            testController.toggleBrokenOnlyMode();
                         }
                     }
                 }
@@ -112,17 +130,27 @@ public class TestConsoleHandler implements TestListener {
 
     public void printUsage() {
         System.out.println(RESET + "\nThe following commands are available:");
-        System.out.println(helpOption("r", "Re-run all tests"));
-        System.out.println(helpOption("f", "Re-run failed tests"));
-        System.out.println(helpOption("b", "Toggle 'broken only' mode, where only failing tests are run",
-                testController.isBrokenOnlyMode()));
-        System.out.println(helpOption("v", "Print failures from the last test run"));
-        System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
-        System.out.println(helpOption("p", "Pause tests"));
-        System.out.println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
-        System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
-        System.out.println(helpOption("s", "Force live reload scan"));
+        if (disabled) {
+            System.out.println(helpOption("r", "Resume testing"));
+        } else {
+            System.out.println(helpOption("r", "Re-run all tests"));
+            System.out.println(helpOption("f", "Re-run failed tests"));
+            System.out.println(helpOption("b", "Toggle 'broken only' mode, where only failing tests are run",
+                    testController.isBrokenOnlyMode()));
+            System.out.println(helpOption("v", "Print failures from the last test run"));
+            if (devModeType != DevModeType.TEST_ONLY) {
+                System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
+            }
+            System.out.println(helpOption("p", "Pause tests"));
+        }
+        if (devModeType != DevModeType.TEST_ONLY) {
+            System.out
+                    .println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
+            System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
+            System.out.println(helpOption("s", "Force live reload scan"));
+        }
         System.out.println(helpOption("h", "Display this help"));
+        System.out.println(helpOption("q", "Quit"));
     }
 
     @Override
@@ -142,6 +170,11 @@ public class TestConsoleHandler implements TestListener {
         disabled = true;
         promptHandler.setPrompt(PAUSED_PROMPT);
         promptHandler.setStatus(null);
+    }
+
+    @Override
+    public void testCompileFailed(String message) {
+        promptHandler.setStatus(message);
     }
 
     @Override
@@ -244,11 +277,16 @@ public class TestConsoleHandler implements TestListener {
 
             @Override
             public void testStarted(TestIdentifier testIdentifier, String className) {
-                promptHandler.setStatus("Running " + methodCount.get() + "/" + totalNoTests
+                String status = "Running " + methodCount.get() + "/" + totalNoTests
                         + (failureCount.get() == 0 ? "."
                                 : ". " + failureCount + " failures so far.")
                         + " Running: "
-                        + className + "#" + testIdentifier.getDisplayName());
+                        + className + "#" + testIdentifier.getDisplayName();
+                if (TestSupport.instance().get().isDisplayTestOutput() &&
+                        QuarkusConsole.INSTANCE instanceof AeshConsole) {
+                    log.info(status);
+                }
+                promptHandler.setStatus(status);
             }
         });
 

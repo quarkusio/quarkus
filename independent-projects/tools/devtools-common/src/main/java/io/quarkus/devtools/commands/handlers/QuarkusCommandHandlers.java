@@ -1,19 +1,22 @@
 package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
-import static io.quarkus.devtools.project.extensions.Extensions.toCoords;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getExtendedKeywords;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
 import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.json.JsonExtension;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,46 +31,66 @@ final class QuarkusCommandHandlers {
     private QuarkusCommandHandlers() {
     }
 
-    static List<ArtifactCoords> computeCoordsFromQuery(final QuarkusCommandInvocation invocation,
-            final Set<String> extensionsQuery) {
-        final ArrayList<ArtifactCoords> builder = new ArrayList<>();
+    static List<Extension> computeExtensionsFromQuery(ExtensionCatalog catalog,
+            final Set<String> extensionsQuery, MessageWriter log) {
+        final ArrayList<Extension> builder = new ArrayList<>();
+        final Collection<Extension> extensionCatalog = catalog.getExtensions();
         for (String query : extensionsQuery) {
             final int countColons = StringUtils.countMatches(query, ":");
+            if (countColons > 1) {
+                final JsonExtension ext = new JsonExtension();
+                ext.setArtifact(ArtifactCoords.fromString(query));
+                ext.setName(ext.getArtifact().getArtifactId());
+                builder.add(ext);
+                continue;
+            }
+
+            SelectionResult result = null;
             if (countColons == 1) {
-                builder.add(toCoords(ArtifactKey.fromString(query), null));
-            } else if (countColons > 1) {
-                builder.add(ArtifactCoords.fromString(query));
-            } else {
-                Collection<Extension> extensions = invocation.getExtensionsCatalog().getExtensions();
-                SelectionResult result = select(query, extensions, false);
-                if (result.matches()) {
-                    final Set<ArtifactCoords> withStrippedVersion = result.getExtensions().stream().map(Extensions::toCoords)
-                            .map(Extensions::stripVersion).collect(Collectors.toSet());
-                    // We strip the version because those extensions are managed
-                    builder.addAll(withStrippedVersion);
-                } else {
-                    StringBuilder sb = new StringBuilder();
-                    // We have 3 cases, we can still have a single candidate, but the match is on label
-                    // or we have several candidates, or none
-                    Collection<Extension> candidates = result.getExtensions();
-                    if (candidates.isEmpty()) {
-                        // No matches at all.
-                        invocation.log().error("Cannot find a dependency matching '" + query + "', maybe a typo?");
-                        return null;
-                    } else {
-                        sb.append(ERROR_ICON + " Multiple extensions matching '").append(query).append("'");
-                        result.getExtensions()
-                                .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
-                                        .append(extension.managementKey()));
-                        sb.append(System.lineSeparator())
-                                .append("     try using the exact name or the full GAV (group id, artifact id, and version).");
-                        invocation.log().info(sb.toString());
-                        return null;
+                final ArtifactKey key = ArtifactKey.fromString(query);
+                for (Extension ext : extensionCatalog) {
+                    if (ext.getArtifact().getKey().equals(key)) {
+                        result = new SelectionResult(Collections.singletonList(ext), true);
+                        break;
                     }
                 }
+                if (result == null) {
+                    result = new SelectionResult(Collections.emptyList(), false);
+                }
+            } else {
+                result = select(query, extensionCatalog, false);
             }
+            if (result.matches()) {
+                builder.addAll(result.getExtensions());
+            } else {
+                StringBuilder sb = new StringBuilder();
+                // We have 3 cases, we can still have a single candidate, but the match is on label
+                // or we have several candidates, or none
+                final Collection<Extension> candidates = result.getExtensions();
+                if (candidates.isEmpty()) {
+                    // No matches at all.
+                    log.error("Cannot find a dependency matching '" + query + "', maybe a typo?");
+                    return null;
+                }
+                sb.append(ERROR_ICON + " Multiple extensions matching '").append(query).append("'");
+                candidates.forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
+                        .append(extension.managementKey()));
+                sb.append(System.lineSeparator())
+                        .append("     try using the exact name or the full GAV (group id, artifact id, and version).");
+                log.info(sb.toString());
+                return null;
+            }
+
         }
         return builder;
+    }
+
+    static List<ArtifactCoords> computeCoordsFromQuery(final QuarkusCommandInvocation invocation,
+            final Set<String> extensionsQuery) {
+        final List<Extension> extensions = computeExtensionsFromQuery(invocation.getExtensionsCatalog(), extensionsQuery,
+                invocation.log());
+        return extensions == null ? null
+                : extensions.stream().map(e -> Extensions.stripVersion(e.getArtifact())).collect(Collectors.toList());
     }
 
     /**

@@ -1,5 +1,7 @@
 package io.quarkus.micrometer.test;
 
+import java.util.concurrent.CompletionStage;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.GET;
@@ -14,10 +16,13 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 public class PingPongResource {
     @RegisterRestClient(configKey = "pingpong")
     public interface PingPongRestClient {
-
-        @Path("pong/{message}")
         @GET
+        @Path("pong/{message}")
         String pingpong(@PathParam("message") String message);
+
+        @GET
+        @Path("pong/{message}")
+        CompletionStage<String> asyncPingPong(@PathParam("message") String message);
     }
 
     @Inject
@@ -34,6 +39,12 @@ public class PingPongResource {
     @Path("ping/{message}")
     public String ping(@PathParam("message") String message) {
         return pingRestClient.pingpong(message);
+    }
+
+    @GET
+    @Path("async-ping/{message}")
+    public CompletionStage<String> asyncPing(@PathParam("message") String message) {
+        return pingRestClient.asyncPingPong(message);
     }
 
     @GET

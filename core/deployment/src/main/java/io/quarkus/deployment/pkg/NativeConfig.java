@@ -230,6 +230,17 @@ public class NativeConfig {
     public boolean reportErrorsAtRuntime;
 
     /**
+     * Don't build a native image if it already exists.
+     *
+     * This is useful if you have already built an image and you want to use Quarkus to deploy it somewhere.
+     *
+     * Note that this is not able to detect if the existing image is outdated, if you have modified source
+     * or config and want a new image you must not use this flag.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean reuseExisting;
+
+    /**
      * Build time configuration options for resources inclusion in the native executable.
      */
     @ConfigItem

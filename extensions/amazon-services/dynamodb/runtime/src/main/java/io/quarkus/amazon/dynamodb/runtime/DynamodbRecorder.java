@@ -4,9 +4,7 @@ import io.quarkus.amazon.common.runtime.AwsConfig;
 import io.quarkus.amazon.common.runtime.NettyHttpClientConfig;
 import io.quarkus.amazon.common.runtime.SdkConfig;
 import io.quarkus.amazon.common.runtime.SyncHttpClientConfig;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.http.SdkHttpClient;
@@ -55,23 +53,5 @@ public class DynamodbRecorder {
             builder.httpClientBuilder(transport.getValue());
         }
         return new RuntimeValue<>(builder);
-    }
-
-    public RuntimeValue<DynamoDbClient> buildClient(RuntimeValue<? extends AwsClientBuilder> builder,
-            BeanContainer beanContainer,
-            ShutdownContext shutdown) {
-        DynamodbClientProducer producer = beanContainer.instance(DynamodbClientProducer.class);
-        producer.setSyncConfiguredBuilder((DynamoDbClientBuilder) builder.getValue());
-        shutdown.addShutdownTask(producer::destroy);
-        return new RuntimeValue<>(producer.client());
-    }
-
-    public RuntimeValue<DynamoDbAsyncClient> buildAsyncClient(RuntimeValue<? extends AwsClientBuilder> builder,
-            BeanContainer beanContainer,
-            ShutdownContext shutdown) {
-        DynamodbClientProducer producer = beanContainer.instance(DynamodbClientProducer.class);
-        producer.setAsyncConfiguredBuilder((DynamoDbAsyncClientBuilder) builder.getValue());
-        shutdown.addShutdownTask(producer::destroy);
-        return new RuntimeValue<>(producer.asyncClient());
     }
 }

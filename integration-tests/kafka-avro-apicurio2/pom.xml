@@ -22,7 +22,7 @@
       -->
 
     <properties>
-        <apicurio.version>2.0.0.Final</apicurio.version>
+        <apicurio.version>2.0.1.Final</apicurio.version>
     </properties>
 
     <dependencies>
@@ -75,13 +75,8 @@
         </dependency>
         <!-- Apicurio -->
         <dependency>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
-            <version>${apicurio.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient</artifactId>
+            <artifactId>quarkus-apicurio-registry-avro</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -199,7 +194,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient-deployment</artifactId>
+            <artifactId>quarkus-apicurio-registry-avro-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

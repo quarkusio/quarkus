@@ -8,7 +8,13 @@ import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.create.TargetQuarkusVersionGroup;
+import io.quarkus.devtools.commands.ListExtensions;
+import io.quarkus.devtools.commands.data.QuarkusCommandException;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
@@ -18,12 +24,15 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
     @Mixin
     RunModeOption runMode;
 
+    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version%n")
+    TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
+
     @CommandLine.Option(names = { "-i",
             "--installable" }, defaultValue = "false", order = 2, description = "Display installable extensions.")
     boolean installable = false;
 
     @CommandLine.Option(names = { "-s",
-            "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3, description = "Search filter on extension list. The format is based on Java Pattern.")
+            "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3, description = "Search filter on extension list (Java Pattern syntax).")
     String searchPattern;
 
     @CommandLine.ArgGroup(heading = "%nOutput format%n")
@@ -35,33 +44,70 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
             output.debug("List extensions with initial parameters: %s", this);
             output.throwIfUnmatchedArguments(spec.commandLine());
 
-            BuildSystemRunner runner = getRunner();
-            if (runMode.isDryRun()) {
-                dryRunList(spec.commandLine().getHelp(), runner.getBuildTool());
-                return CommandLine.ExitCode.OK;
-            }
+            // Test for an existing project
+            BuildTool buildTool = QuarkusProjectHelper.detectExistingBuildTool(projectRoot()); // nullable
 
-            return runner.listExtensions(runMode, format, installable, searchPattern);
+            if (buildTool == null || targetQuarkusVersion.isPlatformSpecified() || targetQuarkusVersion.isStreamSpecified()) {
+                // do not evaluate installables for list of arbitrary version (project-agnostic)
+                installable = false;
+                // show origins by default
+                format.useOriginsUnlessSpecified();
+
+                if (runMode.isDryRun()) {
+                    return dryRunList(spec.commandLine().getHelp(), null);
+                }
+                return listPlatformExtensions();
+            } else {
+                BuildSystemRunner runner = getRunner();
+
+                if (runMode.isDryRun()) {
+                    return dryRunList(spec.commandLine().getHelp(), runner.getBuildTool());
+                }
+                return runner.listExtensions(runMode, format, installable, searchPattern);
+            }
         } catch (Exception e) {
             return output.handleCommandException(e,
                     "Unable to list extensions: " + e.getMessage());
         }
     }
 
-    void dryRunList(CommandLine.Help help, BuildTool buildTool) {
-        output.printText(new String[] {
-                "\nList extensions for current project\n",
-                "\t" + projectRoot().toString()
-        });
+    Integer dryRunList(CommandLine.Help help, BuildTool buildTool) {
         Map<String, String> dryRunOutput = new TreeMap<>();
 
-        dryRunOutput.put("Build tool", buildTool.name());
+        if (buildTool == null) {
+            output.printText(new String[] {
+                    "\nList extensions for specified platform\n",
+                    "\t" + targetQuarkusVersion.dryRun()
+            });
+        } else {
+            output.printText(new String[] {
+                    "\nList extensions for current project\n",
+                    "\t" + projectRoot().toString()
+            });
+            dryRunOutput.put("Build tool", buildTool.name());
+        }
+
         dryRunOutput.put("Batch (non-interactive mode)", Boolean.toString(runMode.isBatchMode()));
         dryRunOutput.put("List format", format.getFormatString());
         dryRunOutput.put("List installable extensions", Boolean.toString(installable));
         dryRunOutput.put("Search pattern", searchPattern);
 
         output.info(help.createTextTable(dryRunOutput).toString());
+        return CommandLine.ExitCode.OK;
+    }
+
+    Integer listPlatformExtensions() throws QuarkusCommandException {
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion,
+                BuildTool.MAVEN, output);
+
+        QuarkusCommandOutcome outcome = new ListExtensions(qp, output)
+                .fromCli(true)
+                .all(true)
+                .format(format.getFormatString())
+                .search(searchPattern)
+                .execute();
+
+        return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
     }
 
     @Override

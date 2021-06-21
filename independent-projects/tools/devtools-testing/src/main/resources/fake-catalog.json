@@ -302,7 +302,7 @@
         "rest-assured-version": "4.3.2",
         "compiler-plugin-version": "3.8.1",
         "surefire-plugin-version": "3.0.0-M5",
-        "kotlin-version": "1.4.31",
+        "kotlin-version": "1.5.10",
         "scala-version": "2.12.13",
         "scala-plugin-version": "4.4.0",
         "quarkus-core-version": "999-FAKE",

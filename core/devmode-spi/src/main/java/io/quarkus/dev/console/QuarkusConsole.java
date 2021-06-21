@@ -119,6 +119,8 @@ public abstract class QuarkusConsole {
         volatile boolean enabled;
         String prompt;
         String status;
+        String results;
+        String compileError;
 
         protected InputHolder(InputHandler handler) {
             this.handler = handler;
@@ -129,6 +131,8 @@ public abstract class QuarkusConsole {
             if (enabled) {
                 setStatus(status);
                 setPrompt(prompt);
+                setResults(results);
+                setCompileError(compileError);
             }
             return this;
         }
@@ -141,8 +145,6 @@ public abstract class QuarkusConsole {
             }
         }
 
-        protected abstract void setPromptMessage(String prompt);
-
         @Override
         public void setStatus(String status) {
             this.status = status;
@@ -151,6 +153,28 @@ public abstract class QuarkusConsole {
             }
         }
 
+        @Override
+        public void setResults(String results) {
+            this.results = results;
+            if (enabled) {
+                setResultsMessage(results);
+            }
+        }
+
+        @Override
+        public void setCompileError(String compileError) {
+            this.compileError = compileError;
+            if (enabled) {
+                setCompileErrorMessage(compileError);
+            }
+        }
+
         protected abstract void setStatusMessage(String status);
+
+        protected abstract void setPromptMessage(String prompt);
+
+        protected abstract void setResultsMessage(String results);
+
+        protected abstract void setCompileErrorMessage(String results);
     }
 }

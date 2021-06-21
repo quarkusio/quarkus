@@ -1,6 +1,7 @@
 package io.quarkus.rest.client.reactive.runtime;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyStore;
@@ -43,13 +44,17 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             .withConfig(new ConfigurationImpl(RuntimeType.CLIENT));
     private final List<ResponseExceptionMapper<?>> exceptionMappers = new ArrayList<>();
 
-    private URL url;
+    private URI uri;
     private boolean followRedirects;
     private QueryParamStyle queryParamStyle;
 
     @Override
     public RestClientBuilder baseUrl(URL url) {
-        this.url = url;
+        try {
+            this.uri = url.toURI();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Failed to convert REST client URL to URI", e);
+        }
         return this;
     }
 
@@ -206,6 +211,12 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         return this;
     }
 
+    @Override
+    public RestClientBuilder baseUri(URI uri) {
+        this.uri = uri;
+        return this;
+    }
+
     private void registerMpSpecificProvider(Class<?> componentClass) {
         if (ResponseExceptionMapper.class.isAssignableFrom(componentClass)) {
             try {
@@ -231,7 +242,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     @Override
     public <T> T build(Class<T> aClass) throws IllegalStateException, RestClientDefinitionException {
-        if (url == null) {
+        if (uri == null) {
             // mandated by the spec
             throw new IllegalStateException("No URL specified. Cannot build a rest client without URL");
         }
@@ -263,12 +274,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         clientBuilder.trustAll(trustAll);
 
         ClientImpl client = clientBuilder.build();
-        WebTargetImpl target;
-        try {
-            target = (WebTargetImpl) client.target(url.toURI());
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Invalid Rest Client URL: " + url, e);
-        }
+        WebTargetImpl target = (WebTargetImpl) client.target(uri);
         try {
             return target.proxy(aClass);
         } catch (InvalidRestClientDefinitionException e) {

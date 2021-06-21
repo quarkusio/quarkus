@@ -6,8 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -298,7 +298,9 @@ public class RestClientCDIDelegateBuilder<T> {
     private void configureBaseUrl(RestClientBuilder builder) {
         Optional<String> propertyOptional = oneOf(clientConfigByClassName().uri,
                 clientConfigByConfigKey().uri);
+
         if (propertyOptional.isEmpty()) {
+            // mstodo is the url there string?
             propertyOptional = oneOf(clientConfigByClassName().url,
                     clientConfigByConfigKey().url);
         }
@@ -316,15 +318,9 @@ public class RestClientCDIDelegateBuilder<T> {
         String baseUrl = propertyOptional.orElse(baseUriFromAnnotation);
 
         try {
-            builder.baseUrl(new URL(baseUrl));
-        } catch (MalformedURLException e) {
+            builder.baseUri(new URI(baseUrl));
+        } catch (URISyntaxException e) {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
-        } catch (Exception e) {
-            if ("com.oracle.svm.core.jdk.UnsupportedFeatureError".equals(e.getClass().getCanonicalName())) {
-                throw new IllegalArgumentException(baseUrl
-                        + " requires SSL support but it is disabled. You probably have set quarkus.ssl.native to false.");
-            }
-            throw e;
         }
     }
 

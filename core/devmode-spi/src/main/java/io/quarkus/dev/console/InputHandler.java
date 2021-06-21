@@ -10,5 +10,9 @@ public interface InputHandler {
         void setPrompt(String prompt);
 
         void setStatus(String status);
+
+        void setResults(String results);
+
+        void setCompileError(String compileError);
     }
 }

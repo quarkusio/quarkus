@@ -98,10 +98,10 @@ public class TestSupport implements TestController {
                         if (context.getApplicationRoot().getTest().isPresent()) {
                             started = true;
                             init();
+                            testRunner.enable();
                             for (TestListener i : testListeners) {
                                 i.testsEnabled();
                             }
-                            testRunner.enable();
                         }
                     } catch (Exception e) {
                         log.error("Failed to create compiler, runtime compilation will be unavailable", e);

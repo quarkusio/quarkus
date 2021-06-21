@@ -15,10 +15,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
-import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApi;
+import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApiWithNoConfigKey;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class TypesafeGraphQLClientInjectionTest {
+/**
+ * Verify that it's possible to configure a typesafe client using the fully qualified class name.
+ */
+public class TypesafeGraphQLClientFQNameTest {
 
     static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":" +
             System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
@@ -26,16 +29,17 @@ public class TypesafeGraphQLClientInjectionTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class)
-                    .addAsResource(new StringAsset("typesafeclient/mp-graphql/url=" + url),
-                            // TODO: adding headers via config is not supported by typesafe client yet
-                            //                            + "\n" +
-                            //                            "typesafeclient/mp-graphql/header/My-Header=My-Value"),
+                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApiWithNoConfigKey.class, Person.class)
+                    .addAsResource(
+                            new StringAsset(
+                                    "quarkus.smallrye-graphql-client.\"io.quarkus.smallrye.graphql." +
+                                            "client.deployment.model.TestingGraphQLClientApiWithNoConfigKey\".url="
+                                            + url),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
-    TestingGraphQLClientApi client;
+    TestingGraphQLClientApiWithNoConfigKey client;
 
     @Test
     public void performQuery() {
@@ -43,11 +47,5 @@ public class TypesafeGraphQLClientInjectionTest {
         assertEquals("John", people.get(0).getFirstName());
         assertEquals("Arthur", people.get(1).getFirstName());
     }
-
-    // TODO: adding headers via config is not supported by typesafe client yet
-    //    @Test
-    //    public void checkHeaders() throws ExecutionException, InterruptedException {
-    //        assertEquals("My-Value", client.returnHeader("My-Header"));
-    //    }
 
 }

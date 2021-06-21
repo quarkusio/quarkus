@@ -106,7 +106,13 @@ public class PreconfiguredServiceRegistryBuilder {
         final Map settingsCopy = new HashMap();
         settingsCopy.putAll(configurationValues);
 
-        destroyedRegistry.resetAndReactivate(bootstrapServiceRegistry, initiators, providedServices, settingsCopy);
+        // FIXME: resetAndReactivate() throws "IllegalStateException: Can't reactivate an active registry!"
+        //  during persistenceProvider.generateSchema() execution (a new PersistenceProvider instance is constructed
+        //  during this call).
+        //  Is it OK to skip the resetAndReactivate() call when the registry is already active?
+        if (!destroyedRegistry.isActive()) {
+            destroyedRegistry.resetAndReactivate(bootstrapServiceRegistry, initiators, providedServices, settingsCopy);
+        }
         return destroyedRegistry;
 
         //		return new StandardServiceRegistryImpl(

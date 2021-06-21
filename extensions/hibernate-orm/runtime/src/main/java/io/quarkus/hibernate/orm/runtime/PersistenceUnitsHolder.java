@@ -14,6 +14,7 @@ import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.runtime.LaunchMode;
 
 public final class PersistenceUnitsHolder {
 
@@ -54,7 +55,13 @@ public final class PersistenceUnitsHolder {
         if (persistenceUnitName == null) {
             key = NO_NAME_TOKEN;
         }
-        return persistenceUnits.recordedStates.remove(key);
+        // Do not remove the PU metadata in dev-mode, we need them to generate information for DevUI pages.
+        // In normal mode, we want to remove these metadata as the associated memory cost is large.
+        if (LaunchMode.DEVELOPMENT == LaunchMode.current()) {
+            return persistenceUnits.recordedStates.get(key);
+        } else {
+            return persistenceUnits.recordedStates.remove(key);
+        }
     }
 
     private static List<PersistenceUnitDescriptor> convertPersistenceUnits(

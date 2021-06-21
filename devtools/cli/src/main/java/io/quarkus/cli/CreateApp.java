@@ -3,13 +3,14 @@ package io.quarkus.cli;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.quarkus.cli.common.PropertiesOptions;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
 import io.quarkus.cli.create.CodeGenerationGroup;
 import io.quarkus.cli.create.CreateProjectMixin;
 import io.quarkus.cli.create.TargetBuildToolGroup;
 import io.quarkus.cli.create.TargetGAVGroup;
 import io.quarkus.cli.create.TargetLanguageGroup;
-import io.quarkus.cli.create.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
 import io.quarkus.devtools.commands.handlers.CreateProjectCommandHandler;
@@ -41,6 +42,9 @@ public class CreateApp extends BaseCreateCommand {
     @CommandLine.ArgGroup(order = 5, exclusive = false, heading = "%nCode Generation%n")
     CodeGenerationGroup codeGeneration = new CodeGenerationGroup();
 
+    @CommandLine.ArgGroup(order = 6, exclusive = false, validate = false)
+    PropertiesOptions propertiesOptions = new PropertiesOptions();
+
     @CommandLine.Parameters(arity = "0..1", paramLabel = "EXTENSION", description = "Extension(s) to add to the project.")
     Set<String> extensions = new HashSet<>();
 
@@ -51,6 +55,7 @@ public class CreateApp extends BaseCreateCommand {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             createProject.setSingleProjectGAV(gav);
+            createProject.setTestOutputDirectory(output.getTestDirectory());
             createProject.projectRoot(); // verify project directories early
 
             BuildTool buildTool = targetBuildTool.getBuildTool(BuildTool.MAVEN);
@@ -58,7 +63,9 @@ public class CreateApp extends BaseCreateCommand {
             createProject.setSourceTypeExtensions(extensions, sourceType);
             createProject.setCodegenOptions(codeGeneration);
 
-            QuarkusCommandInvocation invocation = createProject.build(buildTool, targetQuarkusVersion, output);
+            QuarkusCommandInvocation invocation = createProject.build(buildTool, targetQuarkusVersion,
+                    output, propertiesOptions.properties);
+
             boolean success = true;
 
             if (runMode.isDryRun()) {
@@ -85,6 +92,7 @@ public class CreateApp extends BaseCreateCommand {
                 + ", codeGeneration=" + codeGeneration
                 + ", extensions=" + extensions
                 + ", project=" + createProject
+                + ", properties=" + propertiesOptions.properties
                 + '}';
     }
 }

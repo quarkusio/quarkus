@@ -8,7 +8,7 @@ import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.RunModeOption;
-import io.quarkus.cli.create.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;

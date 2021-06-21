@@ -27,7 +27,10 @@ public class BaseBuildCommand {
 
     public Path projectRoot() {
         if (projectRoot == null) {
-            projectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+            projectRoot = output.getTestDirectory();
+            if (projectRoot == null) {
+                projectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+            }
         }
         return projectRoot;
     }

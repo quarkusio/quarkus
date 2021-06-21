@@ -9,6 +9,7 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
@@ -23,6 +24,9 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
     @CommandLine.ArgGroup(order = 1, exclusive = false, validate = false, heading = "%nBuild options%n")
     BuildOptions buildOptions = new BuildOptions();
 
+    @CommandLine.ArgGroup(order = 2, exclusive = false, validate = false)
+    PropertiesOptions propertiesOptions = new PropertiesOptions();
+
     @Parameters(description = "Additional parameters passed to the build system")
     List<String> params = new ArrayList<>();
 
@@ -33,7 +37,8 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
-            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, runMode, params);
+            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, propertiesOptions, runMode,
+                    params);
 
             if (runMode.isDryRun()) {
                 dryRunBuild(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs);
@@ -68,7 +73,7 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
                 + ", buildNative=" + buildOptions.buildNative
                 + ", offline=" + buildOptions.offline
                 + ", runTests=" + buildOptions.runTests
-                + ", properties=" + buildOptions.properties
+                + ", properties=" + propertiesOptions.properties
                 + ", output=" + output
                 + ", params=" + params + "]";
     }

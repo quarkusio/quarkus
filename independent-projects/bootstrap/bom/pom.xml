@@ -19,6 +19,7 @@
         <sisu.version>0.3.4</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
         <maven-resolver.version>1.6.2</maven-resolver.version>
+        <maven-shared-utils.version>3.3.3</maven-shared-utils.version> <!-- changed from the original version due to https://snyk.io/vuln/maven:org.apache.maven.shared:maven-shared-utils@3.2.1 -->
         <maven-wagon.version>3.4.3</maven-wagon.version>
         <httpcore.version>4.4.14</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.4.3 brings in 4.4.13 and 4.4.14) -->
         <plexus-cypher.version>1.7</plexus-cypher.version>
@@ -194,6 +195,11 @@
                         <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven.shared</groupId>
+                <artifactId>maven-shared-utils</artifactId>
+                <version>${maven-shared-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.annotation</groupId>

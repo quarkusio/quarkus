@@ -3,7 +3,7 @@ package io.quarkus.cli.common;
 import picocli.CommandLine;
 
 public class ListFormatOptions {
-    @CommandLine.Option(names = { "--name" }, order = 4, description = "Display extension name only. (default)")
+    @CommandLine.Option(names = { "--name" }, order = 4, description = "Display extension name only.")
     boolean name = false;
 
     @CommandLine.Option(names = { "--concise" }, order = 5, description = "Display extension name and description.")

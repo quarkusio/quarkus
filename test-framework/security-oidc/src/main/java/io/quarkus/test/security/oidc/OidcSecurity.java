@@ -11,6 +11,10 @@ public @interface OidcSecurity {
 
     Claim[] claims() default {};
 
+    boolean introspectionRequired() default false;
+
+    TokenIntrospection[] introspection() default {};
+
     UserInfo[] userinfo() default {};
 
     ConfigMetadata[] config() default {};

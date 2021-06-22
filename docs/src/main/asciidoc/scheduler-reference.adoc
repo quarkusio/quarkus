@@ -199,6 +199,61 @@ void nonConcurrent() {
 ----
 <1> Concurrent executions are skipped.
 
+TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
+
+[[conditional_execution]]
+=== Conditional Execution
+
+You can define the logic to skip any execution of a scheduled method via `@Scheduled#skipExecutionIf()`.
+The specified bean class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
+
+[source,java]
+----
+class Jobs {
+  
+   @Scheduled(every = "1s", skipExecutionIf = MyPredicate.class) <1>
+   void everySecond() {
+     // do something every second...
+   }
+}
+
+@Singleton <2>
+class MyPredicate implements SkipPredicate {
+
+   @Inject
+   MyService service;
+
+   boolean test(ScheduledExecution execution) {
+       return !service.isStarted(); <3>
+   }
+}
+----
+<1> A bean instance of `MyPredicate.class` is used to evaluate whether an execution should be skipped. There must be exactly one bean that has the specified class in its set of bean types, otherwise the build fails.
+<2> The scope of the bean must be active during execution.
+<3> `Jobs.everySecond()` is skipped until `MyService.isStarted()` returns `true`.
+
+Note that this is an equivalent of the following code:
+
+[source,java]
+----
+class Jobs {
+
+   @Inject
+   MyService service;
+  
+   @Scheduled(every = "1s")
+   void everySecond() {
+     if (service.isStarted()) {
+        // do something every second...
+     }
+   }
+}
+----
+
+The main idea is to keep the the logic to skip the execution outside the scheduled business methods so that it can be reused and refactored easily.
+
+TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
+
 == Scheduler
 
 Quarkus provides a built-in bean of type `io.quarkus.scheduler.Scheduler` that can be injected and used to pause/resume the scheduler and individual scheduled methods identified by a specific `Scheduled#identity()`.

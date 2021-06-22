@@ -16,13 +16,16 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     private final String templateId;
     private final MethodInfo method;
     private final String template;
+    private final boolean isDefaultBundle;
 
-    public MessageBundleMethodBuildItem(String bundleName, String key, String templateId, MethodInfo method, String template) {
+    MessageBundleMethodBuildItem(String bundleName, String key, String templateId, MethodInfo method, String template,
+            boolean isDefaultBundle) {
         this.bundleName = bundleName;
         this.key = key;
         this.templateId = templateId;
         this.method = method;
         this.template = template;
+        this.isDefaultBundle = isDefaultBundle;
     }
 
     public String getBundleName() {
@@ -52,6 +55,14 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
      */
     public boolean isValidatable() {
         return templateId != null;
+    }
+
+    /**
+     * 
+     * @return {@code true} if the message comes from the default bundle
+     */
+    public boolean isDefaultBundle() {
+        return isDefaultBundle;
     }
 
 }

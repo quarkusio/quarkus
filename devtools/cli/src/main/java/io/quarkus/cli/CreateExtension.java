@@ -1,11 +1,11 @@
 package io.quarkus.cli;
 
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
 import io.quarkus.cli.create.CreateProjectMixin;
 import io.quarkus.cli.create.ExtensionNameGenerationGroup;
 import io.quarkus.cli.create.ExtensionTargetGVGroup;
 import io.quarkus.cli.create.ExtensionTestGenerationGroup;
-import io.quarkus.cli.create.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.codegen.SourceType;
 import picocli.CommandLine;

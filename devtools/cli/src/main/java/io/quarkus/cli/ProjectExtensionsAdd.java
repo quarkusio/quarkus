@@ -12,7 +12,7 @@ import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, description = "Extension(s) to add to this project.")
+@CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, description = "Add extension(s) to this project.")
 public class ProjectExtensionsAdd extends BaseBuildCommand implements Callable<Integer> {
 
     @Mixin

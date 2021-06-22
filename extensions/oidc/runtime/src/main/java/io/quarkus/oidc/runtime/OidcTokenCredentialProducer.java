@@ -9,8 +9,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
-import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.identity.SecurityIdentity;
 
@@ -69,8 +69,25 @@ public class OidcTokenCredentialProducer {
     UserInfo currentUserInfo() {
         UserInfo userInfo = (UserInfo) identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE);
         if (userInfo == null) {
-            throw new OIDCException("UserInfo can not be injected");
+            LOG.trace("UserInfo is null");
+            userInfo = new UserInfo();
         }
         return userInfo;
+    }
+
+    /**
+     * The producer method for the current UserInfo
+     *
+     * @return the user info
+     */
+    @Produces
+    @RequestScoped
+    TokenIntrospection currentTokenIntrospection() {
+        TokenIntrospection introspection = (TokenIntrospection) identity.getAttribute(OidcUtils.INTROSPECTION_ATTRIBUTE);
+        if (introspection == null) {
+            LOG.trace("TokenIntrospection is null");
+            introspection = new TokenIntrospection();
+        }
+        return introspection;
     }
 }

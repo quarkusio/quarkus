@@ -31,6 +31,64 @@ public class AmazonLambdaSimpleTestCase {
     }
 
     @Test
+    public void testJaxrsCognitoJWTSecurityContext() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/username");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setJwt(new APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT());
+        request.getRequestContext().getAuthorizer().getJwt().setClaims(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:username", "Bill");
+        APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertEquals(body(out), "Bill");
+    }
+
+    @Test
+    public void testJaxrsIAMSecurityContext() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/username");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setIam(new APIGatewayV2HTTPEvent.RequestContext.IAM());
+        request.getRequestContext().getAuthorizer().getIam().setUserId("Bill");
+        APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertEquals(body(out), "Bill");
+    }
+
+    @Test
+    public void testJaxrsCustomLambdaSecurityContext() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/username");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setLambda(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getLambda().put("principalId", "Bill");
+        APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertEquals(body(out), "Bill");
+    }
+
+    @Test
+    public void testServletCognitoJWTSecurityContext() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/servlet/security");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setJwt(new APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT());
+        request.getRequestContext().getAuthorizer().getJwt().setClaims(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:username", "Bill");
+        APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertEquals(body(out), "Bill");
+    }
+
+    @Test
+    public void testVertxCognitoJWTSecurityContext() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/vertx/security");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setJwt(new APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT());
+        request.getRequestContext().getAuthorizer().getJwt().setClaims(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:username", "Bill");
+        APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertEquals(body(out), "Bill");
+    }
+
+    @Test
     public void testGetText() throws Exception {
         testGetText("/vertx/hello");
         testGetText("/servlet/hello");

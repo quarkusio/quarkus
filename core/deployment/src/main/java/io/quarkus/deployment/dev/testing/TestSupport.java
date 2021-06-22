@@ -98,10 +98,10 @@ public class TestSupport implements TestController {
                         if (context.getApplicationRoot().getTest().isPresent()) {
                             started = true;
                             init();
+                            testRunner.enable();
                             for (TestListener i : testListeners) {
                                 i.testsEnabled();
                             }
-                            testRunner.enable();
                         }
                     } catch (Exception e) {
                         log.error("Failed to create compiler, runtime compilation will be unavailable", e);
@@ -194,15 +194,17 @@ public class TestSupport implements TestController {
         return testRunResults;
     }
 
-    public synchronized void pause() {
-        if (started) {
-            testRunner.pause();
+    public void pause() {
+        TestRunner tr = this.testRunner;
+        if (tr != null) {
+            tr.pause();
         }
     }
 
-    public synchronized void resume() {
-        if (started) {
-            testRunner.resume();
+    public void resume() {
+        TestRunner tr = this.testRunner;
+        if (tr != null) {
+            tr.resume();
         }
     }
 

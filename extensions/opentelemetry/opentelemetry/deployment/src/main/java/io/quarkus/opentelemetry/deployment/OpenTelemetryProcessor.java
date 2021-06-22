@@ -58,7 +58,9 @@ public class OpenTelemetryProcessor {
 
     @BuildStep(onlyIf = OpenTelemetryEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
-    void createOpenTelemetry(OpenTelemetryRecorder recorder, Optional<TracerProviderBuildItem> tracerProviderBuildItem,
+    void createOpenTelemetry(OpenTelemetryConfig openTelemetryConfig,
+            OpenTelemetryRecorder recorder,
+            Optional<TracerProviderBuildItem> tracerProviderBuildItem,
             LaunchModeBuildItem launchMode) {
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             recorder.resetGlobalOpenTelemetryForDevMode();
@@ -66,7 +68,7 @@ public class OpenTelemetryProcessor {
 
         RuntimeValue<SdkTracerProvider> tracerProvider = tracerProviderBuildItem.map(TracerProviderBuildItem::getTracerProvider)
                 .orElse(null);
-        recorder.createOpenTelemetry(tracerProvider);
+        recorder.createOpenTelemetry(tracerProvider, openTelemetryConfig);
         recorder.eagerlyCreateContextStorage();
     }
 

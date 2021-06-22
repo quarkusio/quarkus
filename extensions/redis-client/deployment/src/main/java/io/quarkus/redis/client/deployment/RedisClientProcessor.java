@@ -67,7 +67,7 @@ public class RedisClientProcessor {
         return Arrays.asList(
                 AdditionalBeanBuildItem
                         .builder()
-                        .addBeanClass("io.quarkus.redis.client.runtime.RedisAPIProducer")
+                        .addBeanClass("io.quarkus.redis.client.runtime.RedisClientsProducer")
                         .setDefaultScope(SINGLETON.getName())
                         .setUnremovable()
                         .build(),

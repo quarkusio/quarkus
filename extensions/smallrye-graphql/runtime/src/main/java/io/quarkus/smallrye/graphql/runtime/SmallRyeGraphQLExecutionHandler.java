@@ -118,7 +118,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private JsonObject getJsonObjectFromQueryParameters(RoutingContext ctx) throws UnsupportedEncodingException {
         JsonObjectBuilder input = Json.createObjectBuilder();
         // Query
-        String query = readQueryParameter(ctx, QUERY);
+        String query = stripNewlinesAndTabs(readQueryParameter(ctx, QUERY));
         if (query != null && !query.isEmpty()) {
             input.add(QUERY, URLDecoder.decode(query, "UTF8"));
         }
@@ -129,14 +129,14 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         }
 
         // Variables
-        String variables = readQueryParameter(ctx, VARIABLES);
+        String variables = stripNewlinesAndTabs(readQueryParameter(ctx, VARIABLES));
         if (variables != null && !variables.isEmpty()) {
             JsonObject jsonObject = toJsonObject(URLDecoder.decode(variables, "UTF8"));
             input.add(VARIABLES, jsonObject);
         }
 
         // Extensions
-        String extensions = readQueryParameter(ctx, EXTENSIONS);
+        String extensions = stripNewlinesAndTabs(readQueryParameter(ctx, EXTENSIONS));
         if (extensions != null && !extensions.isEmpty()) {
             JsonObject jsonObject = toJsonObject(URLDecoder.decode(extensions, "UTF8"));
             input.add(EXTENSIONS, jsonObject);
@@ -148,7 +148,8 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private JsonObject getJsonObjectFromBody(RoutingContext ctx) throws IOException {
 
         String contentType = readContentType(ctx);
-        String body = readBody(ctx);
+        String body = stripNewlinesAndTabs(readBody(ctx));
+
         // If the content type is application/graphql, the query is in the body
         if (contentType != null && contentType.startsWith(APPLICATION_GRAPHQL)) {
             JsonObjectBuilder input = Json.createObjectBuilder();
@@ -186,6 +187,22 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
             return all.get(0);
         }
         return null;
+    }
+
+    /**
+     * Strip away unescaped tabs and line breaks from the incoming JSON document so that it can be
+     * successfully parsed by a JSON parser.
+     * This does NOT remove properly escaped \n and \t inside the document, just the raw characters (ASCII
+     * values 9 and 10). Technically, this is not compliant with the JSON spec,
+     * but we want to seamlessly support queries from Java text blocks, for example,
+     * which preserve line breaks and tab characters.
+     */
+    private String stripNewlinesAndTabs(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        return input.replaceAll("\\n", " ")
+                .replaceAll("\\t", " ");
     }
 
     private boolean hasQueryParameters(RoutingContext ctx) {

@@ -20,7 +20,7 @@ import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.OutputDirectories;
+import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 
@@ -78,10 +78,10 @@ public class QuarkusGenerateCode extends QuarkusTask {
         return inputDirectories;
     }
 
-    @OutputDirectories
-    public FileCollection getGeneratedOutputDirectory() {
+    @OutputDirectory
+    public File getGeneratedOutputDirectory() {
         final String generatedSourceSetName = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
-        return QuarkusGradleUtils.getSourceSet(getProject(), generatedSourceSetName).getOutput().getDirs();
+        return QuarkusGradleUtils.getSourceSet(getProject(), generatedSourceSetName).getJava().getOutputDir();
     }
 
     @TaskAction

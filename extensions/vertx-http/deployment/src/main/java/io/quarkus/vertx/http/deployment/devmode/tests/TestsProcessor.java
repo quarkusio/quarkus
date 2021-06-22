@@ -47,7 +47,8 @@ public class TestsProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer) throws IOException {
-        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
+        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
             return;
         }
 

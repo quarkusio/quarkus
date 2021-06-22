@@ -69,8 +69,8 @@ final class Methods {
 
     static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<MethodKey, MethodInfo> methods,
             Set<NameAndDescriptor> methodsFromWhichToRemoveFinal, boolean transformUnproxyableClasses) {
-        // TODO support interfaces default methods
         if (classInfo != null) {
+            // First methods declared on the class
             for (MethodInfo method : classInfo.methods()) {
                 if (skipForClientProxy(method, transformUnproxyableClasses, methodsFromWhichToRemoveFinal)) {
                     continue;
@@ -88,18 +88,20 @@ final class Methods {
                             key.method.exceptions().toArray(Type.EMPTY_ARRAY));
                 });
             }
-            // Interfaces
-            for (Type interfaceType : classInfo.interfaceTypes()) {
-                ClassInfo interfaceClassInfo = getClassByName(index, interfaceType.name());
-                if (interfaceClassInfo != null) {
-                    addDelegatingMethods(index, interfaceClassInfo, methods, methodsFromWhichToRemoveFinal,
-                            transformUnproxyableClasses);
-                }
-            }
+            // Methods declared on superclasses
             if (classInfo.superClassType() != null) {
                 ClassInfo superClassInfo = getClassByName(index, classInfo.superName());
                 if (superClassInfo != null) {
                     addDelegatingMethods(index, superClassInfo, methods, methodsFromWhichToRemoveFinal,
+                            transformUnproxyableClasses);
+                }
+            }
+            // Methods declared on implemented interfaces
+            // TODO support interfaces default methods
+            for (DotName interfaceName : classInfo.interfaceNames()) {
+                ClassInfo interfaceClassInfo = getClassByName(index, interfaceName);
+                if (interfaceClassInfo != null) {
+                    addDelegatingMethods(index, interfaceClassInfo, methods, methodsFromWhichToRemoveFinal,
                             transformUnproxyableClasses);
                 }
             }

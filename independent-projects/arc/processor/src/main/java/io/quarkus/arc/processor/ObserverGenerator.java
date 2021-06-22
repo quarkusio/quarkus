@@ -517,7 +517,7 @@ public class ObserverGenerator extends AbstractGenerator {
                                         Supplier.class, java.lang.reflect.Type.class,
                                         Set.class, Set.class, Member.class, int.class),
                                 constructor.loadNull(), delegateSupplier,
-                                Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
+                                Types.getTypeHandle(constructor, injectionPoint.getType()),
                                 requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
                                 constructor.load(injectionPoint.getPosition()));
                         ResultHandle wrapSupplierHandle = constructor.newInstance(

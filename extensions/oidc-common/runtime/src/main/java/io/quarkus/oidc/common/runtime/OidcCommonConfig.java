@@ -2,6 +2,7 @@ package io.quarkus.oidc.common.runtime;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -68,6 +69,12 @@ public class OidcCommonConfig {
      */
     @ConfigItem(defaultValue = "10s")
     public Duration connectionTimeout = Duration.ofSeconds(10);
+
+    /**
+     * The maximum size of the connection pool used by the WebClient
+     */
+    @ConfigItem
+    public OptionalInt maxPoolSize = OptionalInt.empty();
 
     /**
      * Credentials which the OIDC adapter will use to authenticate to the OIDC server.
@@ -226,6 +233,12 @@ public class OidcCommonConfig {
             public String keyPassword;
 
             /**
+             * Key identifier of the signing key added as a JWT 'kid' header
+             */
+            @ConfigItem
+            public Optional<String> tokenKeyId = Optional.empty();
+
+            /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
              */
             @ConfigItem(defaultValue = "10")
@@ -372,5 +385,13 @@ public class OidcCommonConfig {
 
     public void setConnectionTimeout(Duration connectionTimeout) {
         this.connectionTimeout = connectionTimeout;
+    }
+
+    public OptionalInt getMaxPoolSize() {
+        return maxPoolSize;
+    }
+
+    public void setMaxPoolSize(int maxPoolSize) {
+        this.maxPoolSize = OptionalInt.of(maxPoolSize);
     }
 }

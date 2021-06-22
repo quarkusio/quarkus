@@ -49,8 +49,8 @@ class MyBean {
 
 }
 ----
-<1> A gRPC client injection point must be annotated with the `@GrpcClient` qualifier. This qualifier can be used to specify the service name that is used to configure the underlying gRPC client. For example, if you set it to `hello-service`, configuring the host of the service is done using the `quarkus.grpc.clients.**hello-service**.host`.
-<2> If the service name is not specified via the `GrpcClient#value()` then the field name is used instead, e.g. `helloService` in this particular case.
+<1> A gRPC client injection point must be annotated with the `@GrpcClient` qualifier. This qualifier can be used to specify the name that is used to configure the underlying gRPC client. For example, if you set it to `hello-service`, configuring the host of the service is done using the `quarkus.grpc.clients.**hello-service**.host`.
+<2> If the name is not specified via the `GrpcClient#value()` then the field name is used instead, e.g. `helloService` in this particular case.
 
 The stub class names are derived from the service name used in your `proto` file.
 For example, if you use `Greeter` as a service name as in:
@@ -205,9 +205,9 @@ For each gRPC service you inject in your application, you can configure the foll
 
 include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-client-configuration.adoc[opts=optional, leveloffset=+1]
 
-The `service-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
+The `client-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 
-The following examples uses _hello_ as service name.
+The following examples uses _hello_ as the client name.
 Don't forget to replace it with the name you used in in the `@GrpcClient` annotation.
 
 === Enabling TLS

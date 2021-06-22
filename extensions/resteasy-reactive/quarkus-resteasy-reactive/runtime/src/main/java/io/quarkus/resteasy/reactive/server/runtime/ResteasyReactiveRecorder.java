@@ -70,7 +70,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
             BeanContainer beanContainer,
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
-            BeanFactory<ResteasyReactiveInitialiser> initClassFactory) {
+            BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
+            LaunchMode launchMode) {
 
         CurrentRequestManager
                 .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.instance(CurrentVertxRequest.class)));
@@ -90,6 +91,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
         };
         CurrentIdentityAssociation currentIdentityAssociation = Arc.container().instance(CurrentIdentityAssociation.class)
                 .get();
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         if (contextFactory == null) {
             contextFactory = new RequestContextFactory() {
                 @Override
@@ -99,14 +101,14 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
                     return new QuarkusResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
                             requestContext,
                             handlerChain,
-                            abortHandlerChain, currentIdentityAssociation);
+                            abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation);
                 }
 
             };
         }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
-                new CustomServerRestHandlers(new BlockingInputHandlerSupplier(), new MultipartHandlerSupplier()),
+                new CustomServerRestHandlers(new BlockingInputHandlerSupplier()),
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
                 vertxConfig.rootPath);
         Deployment deployment = runtimeDeploymentManager.deploy();
@@ -208,14 +210,6 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
         @Override
         public ServerRestHandler get() {
             return new BlockingInputHandler();
-        }
-    }
-
-    private static class MultipartHandlerSupplier implements Supplier<ServerRestHandler> {
-
-        @Override
-        public ServerRestHandler get() {
-            return new MultipartFormHandler();
         }
     }
 

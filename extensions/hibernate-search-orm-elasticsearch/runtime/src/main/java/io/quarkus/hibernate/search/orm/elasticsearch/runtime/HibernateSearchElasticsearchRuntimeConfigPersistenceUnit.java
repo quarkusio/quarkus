@@ -139,6 +139,14 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         ThreadPoolConfig threadPool;
 
         /**
+         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
+         * <p>
+         * Set to {@code false} if the Elasticsearch cluster may not be available on startup.
+         */
+        @ConfigItem(name = "version-check.enabled", defaultValue = "true")
+        public boolean versionCheck;
+
+        /**
          * The default configuration for the Elasticsearch indexes.
          */
         @ConfigItem(name = ConfigItem.PARENT)

@@ -50,7 +50,7 @@ You can verify which JDK Maven uses by running `mvn --version`.
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
 dependency injection, this endpoint uses a `greeting` bean.
 
-image::getting-started-architecture.png[alt=Architecture]
+image::getting-started-architecture.png[alt=Architecture, align=center]
 
 This guide also covers the testing of the endpoint.
 

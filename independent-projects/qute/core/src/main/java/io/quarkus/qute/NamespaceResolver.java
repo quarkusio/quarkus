@@ -24,9 +24,10 @@ public interface NamespaceResolver extends Resolver, WithPriority {
     }
 
     /**
+     * A valid namespace consists of alphanumeric characters and underscores.
      * 
      * @return the namespace
-     * @see ExpressionImpl#namespace
+     * @see Expression#getNamespace()
      */
     String getNamespace();
 
@@ -40,7 +41,7 @@ public interface NamespaceResolver extends Resolver, WithPriority {
         private int priority = WithPriority.DEFAULT_PRIORITY;
 
         Builder(String namespace) {
-            this.namespace = namespace;
+            this.namespace = Namespaces.requireValid(namespace);
         }
 
         public Builder resolve(Function<EvalContext, Object> func) {

@@ -1,6 +1,6 @@
 package io.quarkus.it.micrometer.prometheus;
 
-import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 
@@ -23,100 +23,64 @@ class PrometheusMetricsRegistryTest {
     @Test
     @Order(1)
     void testRegistryInjection() {
-        given()
-                .when().get("/message")
-                .then()
-                .statusCode(200)
+        when().get("/message").then().statusCode(200)
                 .body(containsString("io.micrometer.core.instrument.composite.CompositeMeterRegistry"));
     }
 
     @Test
     @Order(2)
     void testUnknownUrl() {
-        given()
-                .when().get("/messsage/notfound")
-                .then()
-                .statusCode(404);
+        when().get("/messsage/notfound").then().statusCode(404);
     }
 
     @Test
     @Order(3)
     void testServerError() {
-        given()
-                .when().get("/message/fail")
-                .then()
-                .statusCode(500);
+        when().get("/message/fail").then().statusCode(500);
     }
 
     @Test
     @Order(4)
     void testPathParameter() {
-        given()
-                .when().get("/message/item/123")
-                .then()
-                .statusCode(200);
+        when().get("/message/item/123").then().statusCode(200);
     }
 
     @Test
     @Order(5)
     void testMultipleParameters() {
-        given()
-                .when().get("/message/match/123/1")
-                .then()
-                .statusCode(200);
+        when().get("/message/match/123/1").then().statusCode(200);
 
-        given()
-                .when().get("/message/match/1/123")
-                .then()
-                .statusCode(200);
+        when().get("/message/match/1/123").then().statusCode(200);
 
-        given()
-                .when().get("/message/match/baloney")
-                .then()
-                .statusCode(200);
+        when().get("/message/match/baloney").then().statusCode(200);
     }
 
     @Test
     @Order(6)
     void testPanacheCalls() {
-        given()
-                .when().get("/fruit/create")
-                .then()
-                .statusCode(204);
+        when().get("/fruit/create").then().statusCode(204);
 
-        given()
-                .when().get("/fruit/all")
-                .then()
-                .statusCode(204);
+        when().get("/fruit/all").then().statusCode(204);
     }
 
     @Test
     @Order(7)
     void testPrimeEndpointCalls() {
-        given()
-                .when().get("/prime/7")
-                .then()
-                .statusCode(200)
+        when().get("/prime/7").then().statusCode(200)
                 .body(containsString("is prime"));
     }
 
     @Test
     @Order(8)
     void testAllTheThings() {
-        given()
-                .when().get("/all-the-things")
-                .then()
-                .statusCode(200)
+        when().get("/all-the-things").then().statusCode(200)
                 .body(containsString("OK"));
     }
 
     @Test
     @Order(10)
     void testPrometheusScrapeEndpoint() {
-        given()
-                .when().get("/q/metrics")
-                .then()
-                .statusCode(200)
+        when().get("/q/metrics").then().statusCode(200)
 
                 // Prometheus body has ALL THE THINGS in no particular order
 

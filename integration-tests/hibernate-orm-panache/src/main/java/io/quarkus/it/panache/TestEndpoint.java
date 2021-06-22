@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1367,6 +1368,55 @@ public class TestEndpoint {
         // these should be unaffected
         assertEquals(3, Person.count());
         assertEquals(3, Person.listAll().size());
+
+        Person.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("testFilterWithCollections")
+    @Transactional
+    public String testFilterWithCollections() {
+        Person.deleteAll();
+
+        Person stefPerson = new Person();
+        stefPerson.name = "Stef";
+        stefPerson.persist();
+
+        Person josePerson = new Person();
+        josePerson.name = "Jose";
+        josePerson.persist();
+
+        Person victorPerson = new Person();
+        victorPerson.name = "Victor";
+        victorPerson.persist();
+
+        assertEquals(3, Person.count());
+
+        List<String> namesParameter = Arrays.asList("Jose", "Victor");
+
+        // Try with different collection types
+        List<Object> collectionsValues = Arrays.asList(
+                // Using directly a list:
+                namesParameter,
+                // Using another collection,
+                new HashSet<>(namesParameter),
+                // Using array
+                namesParameter.toArray(new String[namesParameter.size()]));
+
+        for (Object collectionValue : collectionsValues) {
+            // should be filtered
+            List<Person> found = Person.findAll(Sort.by("id")).filter("Person.name.in",
+                    Parameters.with("names", collectionValue))
+                    .list();
+            assertEquals(2, found.size(),
+                    "Expected 2 entries when using parameter " + collectionValue.getClass());
+            assertTrue(found.stream().anyMatch(p -> p.name.contains("Jose")),
+                    "Jose was not found when using parameter " + collectionValue.getClass());
+            assertTrue(found.stream().anyMatch(p -> p.name.contains("Victor")),
+                    "Victor was not found when using parameter " + collectionValue.getClass());
+        }
 
         Person.deleteAll();
 

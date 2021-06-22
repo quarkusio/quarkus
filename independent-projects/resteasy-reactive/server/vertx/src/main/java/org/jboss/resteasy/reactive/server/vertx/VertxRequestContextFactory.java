@@ -14,6 +14,6 @@ public class VertxRequestContextFactory implements RequestContextFactory {
             ProvidersImpl providers, Object context, ThreadSetupAction requestContext,
             ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         return new VertxResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
-                requestContext, handlerChain, abortHandlerChain);
+                requestContext, handlerChain, abortHandlerChain, null);
     }
 }

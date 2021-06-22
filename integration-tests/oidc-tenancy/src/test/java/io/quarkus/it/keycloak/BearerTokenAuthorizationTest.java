@@ -297,7 +297,7 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/tenant-opaque/tenant-oidc/api/user")
                 .then()
                 .statusCode(200)
-                .body(equalTo("tenant-oidc-opaque:alice"));
+                .body(equalTo("tenant-oidc-opaque:alice:user:user@gmail.com"));
 
         // OIDC JWK endpoint must've been called only twice, once as part of the Quarkus OIDC initialization
         // and once during the 1st request with a token kid '2', follow up requests must've been blocked due to the interval
@@ -338,6 +338,23 @@ public class BearerTokenAuthorizationTest {
         // JWT introspection is disallowed
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/disable-rotate").then().body(equalTo("false"));
+    }
+
+    @Test
+    public void testJwtTokenIntrospectionOnly() {
+        RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+
+        // JWK is available now in Quarkus OIDC, confirm that no timeout is needed 
+        RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("2"))
+                .when().get("/tenant/tenant-oidc-introspection-only/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("tenant-oidc-introspection-only:alice"));
+
+        RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));
     }
 
     @Test

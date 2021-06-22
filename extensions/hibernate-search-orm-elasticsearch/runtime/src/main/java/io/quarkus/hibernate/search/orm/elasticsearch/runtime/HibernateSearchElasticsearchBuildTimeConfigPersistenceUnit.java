@@ -67,15 +67,6 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
         @ConfigItem
         public Optional<ElasticsearchVersion> version;
 
-        // TODO This should be a runtime property, but we need https://hibernate.atlassian.net/browse/HSEARCH-4214 fixed
-        /**
-         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
-         * <p>
-         * Set to {@code false} if the Elasticsearch cluster may not be available on startup.
-         */
-        @ConfigItem(name = "version-check.enabled", defaultValue = "true")
-        public boolean versionCheck;
-
         /**
          * Configuration for the index layout.
          */

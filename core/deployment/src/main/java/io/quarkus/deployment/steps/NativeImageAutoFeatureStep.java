@@ -51,6 +51,9 @@ public class NativeImageAutoFeatureStep {
     private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
+    private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(
+            "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
+            "initializeAtBuildTime", void.class, String.class, String.class);
     private static final MethodDescriptor INITIALIZE_CLASSES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class[].class);
     private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
@@ -117,6 +120,13 @@ public class NativeImageAutoFeatureStep {
             cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
         }
 
+        ResultHandle imageSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                overallCatch.loadClass("org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport"));
+        overallCatch.invokeInterfaceMethod(BUILD_TIME_INITIALIZATION,
+                imageSingleton,
+                overallCatch.load(""), // empty string means everything
+                overallCatch.load("Quarkus build time init default"));
+
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
             ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
@@ -153,15 +163,13 @@ public class NativeImageAutoFeatureStep {
             ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
-            ResultHandle initSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                    overallCatch.loadClass("org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport"));
             ResultHandle quarkus = overallCatch.load("Quarkus");
             for (RuntimeReinitializedClassBuildItem runtimeReinitializedClass : runtimeReinitializedClassBuildItems) {
                 TryBlock tc = overallCatch.tryBlock();
                 ResultHandle clazz = tc.invokeStaticMethod(
                         ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
                         tc.load(runtimeReinitializedClass.getClassName()), tc.load(false), cl);
-                tc.invokeInterfaceMethod(RERUN_INITIALIZATION, initSingleton, clazz, quarkus);
+                tc.invokeInterfaceMethod(RERUN_INITIALIZATION, imageSingleton, clazz, quarkus);
 
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());

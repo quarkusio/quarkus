@@ -414,6 +414,65 @@ NOTE: The rest of the documentation show usages based on the active record patte
 but keep in mind that they can be performed with the repository pattern as well.
 The repository pattern examples have been omitted for brevity.
 
+== Writing a JAX-RS resource
+
+First, include one of the RESTEasy extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-jackson` dependency for JAX-RS and JSON support.
+
+Then, you can create the following resource to create/read/update/delete your Person entity:
+
+[source,java]
+----
+@Path("/persons")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public class PersonResource {
+
+    @GET
+    public List<Person> list() {
+        return Person.listAll();
+    }
+
+    @GET
+    @Path("/{id}")
+    public Person get(@PathParam("id") String id) {
+        return Person.findById(new ObjectId(id));
+    }
+
+    @POST
+    public Response create(Person person) {
+        person.persist();
+        return Response.created(URI.create("/persons/" + person.id)).build();
+    }
+
+    @PUT
+    @Path("/{id}")
+    public void update(@PathParam("id") String id, Person person) {
+        person.update();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public void delete(@PathParam("id") String id) {
+        Person person = Person.findById(new ObjectId(id));
+        if(person == null) {
+            throw new NotFoundException();
+        }
+        person.delete();
+    }
+
+    @GET
+    @Path("/search/{name}")
+    public Person search(@PathParam("name") String name) {
+        return Person.findByName(name);
+    }
+
+    @GET
+    @Path("/count")
+    public Long count() {
+        return Person.count();
+    }
+}
+----
 
 == Advanced Query
 

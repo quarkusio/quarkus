@@ -407,6 +407,80 @@ NOTE: The rest of the documentation show usages based on the active record patte
 but keep in mind that they can be performed with the repository pattern as well.
 The repository pattern examples have been omitted for brevity.
 
+== Writing a JAX-RS resource
+
+First, include one of the RESTEasy extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-jackson` dependency for JAX-RS and JSON support.
+
+Then, you can create the following resource to create/read/update/delete your Person entity:
+
+[source,java]
+----
+@Path("/persons")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class PersonResource {
+
+    @GET
+    public List<Person> list() {
+        return Person.listAll();
+    }
+
+    @GET
+    @Path("/{id}")
+    public Person get(@PathParam("id") Long id) {
+        return Person.findById(id);
+    }
+
+    @POST
+    @Transactional
+    public Response create(Person person) {
+        person.persist();
+        return Response.created(URI.create("/persons/" + person.id)).build();
+    }
+
+    @PUT
+    @Path("/{id}")
+    @Transactional
+    public Person update(@PathParam("id") Long id, Person person) {
+        Person entity = Person.findById(id);
+        if(entity == null) {
+            throw new NotFoundException();
+        }
+
+        // map all fields from the person parameter to the existing entity
+        entity.name = person.name;
+
+        return entity;
+    }
+
+    @DELETE
+    @Path("/{id}")
+    @Transactional
+    public void delete(@PathParam("id") Long id) {
+        Person entity = Person.findById(id);
+        if(entity == null) {
+            throw new NotFoundException();
+        }
+        entity.delete();
+    }
+
+    @GET
+    @Path("/search/{name}")
+    public Person search(@PathParam("name") String name) {
+        return Person.findByName(name);
+    }
+
+    @GET
+    @Path("/count")
+    public Long count() {
+        return Person.count();
+    }
+}
+----
+
+NOTE: Be careful to use the `@Transactional` annotation on the operations that modify the database,
+you can add the annotation at the class level for simplicity purpose.
+
 == Advanced Query
 
 === Paging

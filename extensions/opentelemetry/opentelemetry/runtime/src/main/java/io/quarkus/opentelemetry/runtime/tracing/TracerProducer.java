@@ -11,6 +11,18 @@ import io.quarkus.arc.DefaultBean;
 public class TracerProducer {
     @Produces
     @Singleton
+    public DelayedAttributes getDelayedAttributes() {
+        return new DelayedAttributes();
+    }
+
+    @Produces
+    @Singleton
+    public LateBoundSampler getLateBoundSampler() {
+        return new LateBoundSampler();
+    }
+
+    @Produces
+    @Singleton
     @DefaultBean
     public Tracer getTracer() {
         return GlobalOpenTelemetry.getTracer("io.quarkus.opentelemetry");

@@ -3,11 +3,23 @@ package org.jboss.resteasy.reactive.server.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
+import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public interface HandlerChainCustomizer {
 
+    /**
+     *
+     * @param phase The phase
+     * @param serverResourceMethod The method, will be null if this has not been matched yet
+     * @return
+     */
+    default List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
+        return handlers(phase);
+    }
+
+    @Deprecated
     default List<ServerRestHandler> handlers(Phase phase) {
         return Collections.emptyList();
     }

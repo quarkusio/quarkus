@@ -41,7 +41,7 @@ public class VertxProducerResourceTest {
         RequestSpecification spec = new RequestSpecBuilder()
                 .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))
                 .setPort(url.getPort())
-                .setKeyStore("client-keystore.jks", "password")
+                .setKeyStore("client-keystore-1.jks", "password")
                 .setTrustStore("client-truststore.jks", "password")
                 .build();
         given().spec(spec).get("/my-path").then().body(containsString("OK"));

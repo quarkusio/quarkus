@@ -20,5 +20,7 @@ public interface RuntimeConfiguration {
 
     interface Limits {
         Optional<Long> maxBodySize();
+
+        long maxFormAttributeSize();
     }
 }

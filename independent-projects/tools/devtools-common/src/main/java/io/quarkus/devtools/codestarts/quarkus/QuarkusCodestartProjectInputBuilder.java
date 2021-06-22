@@ -75,6 +75,12 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     }
 
     @Override
+    public QuarkusCodestartProjectInputBuilder addBoms(Collection<String> boms) {
+        super.addBoms(boms);
+        return this;
+    }
+
+    @Override
     public QuarkusCodestartProjectInputBuilder putData(String key, Object value) {
         super.putData(key, value);
         return this;

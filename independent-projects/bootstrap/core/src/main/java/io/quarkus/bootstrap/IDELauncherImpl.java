@@ -26,7 +26,11 @@ import java.util.Map;
  */
 public class IDELauncherImpl implements Closeable {
 
+    public static final String LAUNCHED_FROM_IDE = "io.quarkus.launched-from-ide";
+
     public static Closeable launch(Path classesDir, Map<String, Object> context) {
+        System.setProperty(LAUNCHED_FROM_IDE, "true");
+        System.setProperty("quarkus.test.basic-console", "true"); //IDE's don't support raw mode
         final Path projectDir = BuildToolHelper.getProjectDir(classesDir);
         if (projectDir == null) {
             throw new IllegalStateException("Failed to locate project dir for " + classesDir);

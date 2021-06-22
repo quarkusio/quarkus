@@ -361,4 +361,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public boolean isMultipart() {
         return entity != null && entity.getEntity() instanceof MultipartForm;
     }
+
+    public Map<String, Object> getClientFilterProperties() {
+        return properties;
+    }
 }

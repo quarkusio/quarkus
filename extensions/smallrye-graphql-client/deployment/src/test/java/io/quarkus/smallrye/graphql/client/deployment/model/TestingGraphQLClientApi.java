@@ -12,4 +12,7 @@ public interface TestingGraphQLClientApi {
     @Query
     public List<Person> people();
 
+    @Query
+    public String returnHeader(String key);
+
 }

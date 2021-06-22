@@ -6,6 +6,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedTestModeMain;
 
@@ -19,6 +20,7 @@ public class TestMojo extends DevMojo {
         builder.entryPointCustomizer(new Consumer<DevModeContext>() {
             @Override
             public void accept(DevModeContext devModeContext) {
+                devModeContext.setMode(QuarkusBootstrap.Mode.CONTINUOUS_TEST);
                 devModeContext.setAlternateEntryPoint(IsolatedTestModeMain.class.getName());
             }
         });

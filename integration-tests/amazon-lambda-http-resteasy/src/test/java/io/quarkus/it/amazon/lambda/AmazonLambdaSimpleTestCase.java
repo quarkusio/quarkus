@@ -18,6 +18,18 @@ import io.quarkus.test.junit.QuarkusTest;
 public class AmazonLambdaSimpleTestCase {
 
     @Test
+    public void testCustomIDPSecurityContext() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/username");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setLambda(new HashMap<String, Object>());
+        request.getRequestContext().getAuthorizer().getLambda().put("test", "test");
+        request.getHeaders().put("x-user", "John");
+        APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertEquals(body(out), "John");
+    }
+
+    @Test
     public void testContext() throws Exception {
         APIGatewayV2HTTPEvent request = new APIGatewayV2HTTPEvent();
         request.setRawPath("/hello/context");
@@ -49,6 +61,7 @@ public class AmazonLambdaSimpleTestCase {
 
     private APIGatewayV2HTTPEvent request(String path) {
         APIGatewayV2HTTPEvent request = new APIGatewayV2HTTPEvent();
+        request.setHeaders(new HashMap<>());
         request.setRawPath(path);
         request.setRequestContext(new APIGatewayV2HTTPEvent.RequestContext());
         request.getRequestContext().setHttp(new APIGatewayV2HTTPEvent.RequestContext.Http());

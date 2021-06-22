@@ -168,11 +168,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
                             builder.addCredential(tokenCred);
                             OidcUtils.setSecurityIdentityUserInfo(builder, userInfo);
+                            OidcUtils.setSecurityIdentityIntrospecton(builder, result.introspectionResult);
                             OidcUtils.setSecurityIdentityConfigMetadata(builder, resolvedContext);
                             String principalMember = "";
-                            if (result.introspectionResult.containsKey(OidcConstants.INTROSPECTION_TOKEN_USERNAME)) {
+                            if (result.introspectionResult.contains(OidcConstants.INTROSPECTION_TOKEN_USERNAME)) {
                                 principalMember = OidcConstants.INTROSPECTION_TOKEN_USERNAME;
-                            } else if (result.introspectionResult.containsKey(OidcConstants.INTROSPECTION_TOKEN_SUB)) {
+                            } else if (result.introspectionResult.contains(OidcConstants.INTROSPECTION_TOKEN_SUB)) {
                                 // fallback to "sub", if "username" is not present
                                 principalMember = OidcConstants.INTROSPECTION_TOKEN_SUB;
                             }
@@ -184,7 +185,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     return userName;
                                 }
                             });
-                            if (result.introspectionResult.containsKey(OidcConstants.TOKEN_SCOPE)) {
+                            if (result.introspectionResult.contains(OidcConstants.TOKEN_SCOPE)) {
                                 for (String role : result.introspectionResult.getString(OidcConstants.TOKEN_SCOPE).split(" ")) {
                                     builder.addRole(role.trim());
                                 }

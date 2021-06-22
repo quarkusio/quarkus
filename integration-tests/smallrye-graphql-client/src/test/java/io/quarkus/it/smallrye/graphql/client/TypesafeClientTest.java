@@ -1,6 +1,5 @@
 package io.quarkus.it.smallrye.graphql.client;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
@@ -20,7 +19,6 @@ public class TypesafeClientTest {
 
     @Test
     public void testTypesafeClient() throws Exception {
-
         LuckyNumbersClientApi client = TypesafeGraphQLClientBuilder.newBuilder()
                 .endpoint(url.toString() + "/graphql")
                 .build(LuckyNumbersClientApi.class);

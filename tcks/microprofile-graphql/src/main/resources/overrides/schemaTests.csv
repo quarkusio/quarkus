@@ -1,2 +1,0 @@
-# testJsonDefault
-59|type Mutation       |   provisionHero(hero: String, item: ItemInput = {dateCreated : "19 February 1900 at 12:00 in Africa/Johannesburg", dateLastUsed : "29 Jan 2020 at 09:45 in zone +0200", height : 1.2, id : 1000, name : "Cape", powerLevel : 3, supernatural : false, weight : 0.3}): SuperHero | Expecting a default value for item for provisionHero

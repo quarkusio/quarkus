@@ -90,7 +90,7 @@ Quarkus uses the JBoss Log Manager backend, so you will need to include the `log
     </dependency>
 ----
 
-<1> This is the library needed for Log2J version 2; if you use the legacy Log4J version 1 you need to use `log4j-jboss-logmanager` instead.
+<1> This is the library needed for Log4J version 2; if you use the legacy Log4J version 1 you need to use `log4j-jboss-logmanager` instead.
 
 You can then use the Log4J API inside your application.
 
@@ -329,7 +329,7 @@ NOTE: As we don't change the root logger, console log will only contain `INFO` o
 .Named handlers attached to a category
 [source, properties]
 ----
-# Send output to the console
+# Send output to a trace.log file under the /tmp directory
 quarkus.log.file.path=/tmp/trace.log
 quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 # Configure a named handler that logs to console

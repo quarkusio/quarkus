@@ -17,6 +17,7 @@ public class TestState {
 
     final Map<String, Map<UniqueId, TestResult>> resultsByClass = new HashMap<>();
     final Set<UniqueId> failing = new HashSet<>();
+    final Set<UniqueId> dynamicIds = new HashSet<>();
 
     public List<String> getClassNames() {
         return new ArrayList<>(resultsByClass.keySet()).stream().sorted().collect(Collectors.toList());
@@ -132,10 +133,25 @@ public class TestState {
         return failing.contains(testDescriptor.getUniqueId());
     }
 
-    public void pruneDeletedTests(Set<UniqueId> allDiscoveredIds) {
-        failing.removeIf(i -> !allDiscoveredIds.contains(i));
+    public void pruneDeletedTests(Set<UniqueId> allDiscoveredIds, Set<UniqueId> dynamicIds) {
+        Set<UniqueId> dynamicParents = dynamicIds.stream().map(UniqueId::removeLastSegment).collect(Collectors.toSet());
+        this.dynamicIds.removeIf(s -> {
+            //was actually run, don't remove
+            if (dynamicIds.contains(s)) {
+                return false;
+            }
+            UniqueId parent = s.removeLastSegment();
+            //parent was run, but not this test, so it has been removed
+            if (dynamicParents.contains(parent)) {
+                return true;
+            }
+            return !allDiscoveredIds.contains(parent);
+        });
+        this.dynamicIds.addAll(dynamicIds);
+        failing.removeIf(i -> (!allDiscoveredIds.contains(i) && !this.dynamicIds.contains(i)));
         for (Map.Entry<String, Map<UniqueId, TestResult>> cr : resultsByClass.entrySet()) {
-            cr.getValue().entrySet().removeIf(s -> !allDiscoveredIds.contains(s.getKey()));
+            cr.getValue().entrySet()
+                    .removeIf(s -> (!allDiscoveredIds.contains(s.getKey()) && !this.dynamicIds.contains(s.getKey())));
         }
         resultsByClass.entrySet().removeIf(s -> s.getValue().isEmpty());
     }

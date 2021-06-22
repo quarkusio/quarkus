@@ -126,6 +126,7 @@ public class URLUtils {
                         buffer = new StringBuilder();
                     }
                     buffer.append(s, 0, i);
+                    needToChange = true;
                 }
                 /*
                  * Starting with this instance of a character

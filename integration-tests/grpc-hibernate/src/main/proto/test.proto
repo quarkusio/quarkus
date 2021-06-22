@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package test;
+
+option java_package = "com.example.test";
+
+service Test {
+  rpc Add(Item) returns (Empty);
+  rpc getAll(Empty) returns (stream Item);
+  rpc clear(Empty) returns (Empty);
+  rpc bidi(stream Item) returns (stream Item);
+}
+
+service TestRaw {
+  rpc Add(Item) returns (Empty);
+  rpc getAll(Empty) returns (stream Item);
+  rpc clear(Empty) returns (Empty);
+  rpc bidi(stream Item) returns (stream Item);
+}
+
+message Empty {
+}
+message Item {
+  string text = 1;
+}

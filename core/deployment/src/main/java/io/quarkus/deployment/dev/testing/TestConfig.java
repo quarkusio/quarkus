@@ -134,6 +134,12 @@ public class TestConfig {
     Profile profile;
 
     /**
+     * JVM parameters that are used to launch jar based integration tests.
+     */
+    @ConfigItem
+    Optional<String> integrationJvmArgLine;
+
+    /**
      * Configures the hang detection in @QuarkusTest. If no activity happens (i.e. no test callbacks are called) over
      * this period then QuarkusTest will dump all threads stack traces, to help diagnose a potential hang.
      *

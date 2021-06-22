@@ -149,6 +149,8 @@ public class NativeImageBuildStep {
 
         String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
         String resultingExecutableName = getResultingExecutableName(nativeImageName, isContainerBuild);
+        Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
+        Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
 
         NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir,
                 nativeImageName, resultingExecutableName);
@@ -159,6 +161,14 @@ public class NativeImageBuildStep {
             checkGraalVMVersion(graalVMVersion);
         } else {
             log.error("Unable to get GraalVM version from the native-image binary.");
+        }
+        if (nativeConfig.reuseExisting) {
+            if (Files.exists(finalExecutablePath)) {
+                return new NativeImageBuildItem(finalExecutablePath,
+                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion, graalVMVersion.major,
+                                graalVMVersion.minor,
+                                graalVMVersion.distribution.name()));
+            }
         }
 
         try {
@@ -189,8 +199,6 @@ public class NativeImageBuildStep {
             if (exitCode != 0) {
                 throw imageGenerationFailed(exitCode, nativeImageArgs);
             }
-            Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
-            Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
             if (nativeConfig.debug.enabled) {
@@ -553,7 +561,6 @@ public class NativeImageBuildStep {
                 }
 
                 handleAdditionalProperties(nativeConfig, nativeImageArgs, isContainerBuild, outputDir);
-                nativeImageArgs.add("--initialize-at-build-time=");
                 nativeImageArgs.add(
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");
@@ -660,6 +667,11 @@ public class NativeImageBuildStep {
                 if (nativeConfig.enableDashboardDump) {
                     nativeImageArgs.add("-H:DashboardDump=" + outputTargetBuildItem.getBaseName() + "_dashboard.dump");
                     nativeImageArgs.add("-H:+DashboardAll");
+                }
+
+                // Disable single parsing of compiler graphs till https://github.com/oracle/graal/issues/3435 gets fixed
+                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_21_1)) {
+                    nativeImageArgs.add("-H:-ParseOnce");
                 }
 
                 nativeImageArgs.add(nativeImageName);

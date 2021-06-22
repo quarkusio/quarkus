@@ -1088,6 +1088,12 @@ Finally, if a container image was created during the build (by using including t
 
 As is the case with `@NativeImageTest`, this is a black box test that supports the same set features and has the same limitations.
 
+[NOTE]
+====
+As the `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e., via the `maven-failsafe-plugin` if using Maven or an additional task if using Gradle.
+These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
+====
+
 [[test-from-ide]]
 == Running `@QuarkusTest` from an IDE
 

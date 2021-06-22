@@ -10,6 +10,7 @@ import java.security.PrivateKey;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import javax.crypto.SecretKey;
 
@@ -19,7 +20,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.jwt.build.Jwt;
-import io.smallrye.jwt.build.JwtClaimsBuilder;
+import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.vertx.core.http.HttpClientOptions;
@@ -108,6 +109,12 @@ public class OidcCommonUtils {
         if (proxyOpt.isPresent()) {
             options.setProxyOptions(proxyOpt.get());
         }
+
+        OptionalInt maxPoolSize = oidcConfig.maxPoolSize;
+        if (maxPoolSize.isPresent()) {
+            options.setMaxPoolSize(maxPoolSize.getAsInt());
+        }
+
         options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
     }
 
@@ -213,11 +220,15 @@ public class OidcCommonUtils {
 
     public static String signJwtWithKey(OidcCommonConfig oidcConfig, Key key) {
         // 'jti' and 'iat' claim is created by default, iat - is set to the current time
-        JwtClaimsBuilder builder = Jwt
+        JwtSignatureBuilder builder = Jwt
                 .issuer(oidcConfig.clientId.get())
                 .subject(oidcConfig.clientId.get())
                 .audience(getAuthServerUrl(oidcConfig))
-                .expiresIn(oidcConfig.credentials.jwt.lifespan);
+                .expiresIn(oidcConfig.credentials.jwt.lifespan)
+                .jws();
+        if (oidcConfig.credentials.jwt.tokenKeyId.isPresent()) {
+            builder.keyId(oidcConfig.credentials.jwt.tokenKeyId.get());
+        }
         if (key instanceof SecretKey) {
             return builder.sign((SecretKey) key);
         } else {

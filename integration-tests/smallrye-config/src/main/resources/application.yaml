@@ -1,5 +1,7 @@
 http:
   server:
+    name: server
+    alias: server
     host: localhost
     port: 8080
     timeout: 60s

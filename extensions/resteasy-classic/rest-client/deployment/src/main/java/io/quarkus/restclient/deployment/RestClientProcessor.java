@@ -50,7 +50,6 @@ import org.jboss.resteasy.spi.ResteasyConfiguration;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -70,16 +69,21 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
+import io.quarkus.restclient.runtime.PathFeatureHandler;
+import io.quarkus.restclient.runtime.PathTemplateInjectionFilter;
 import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.RestClientBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.runtime.metrics.MetricsFactory;
 
 class RestClientProcessor {
     private static final Logger log = Logger.getLogger(RestClientProcessor.class);
@@ -114,12 +118,6 @@ class RestClientProcessor {
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
-    @BuildStep
-    BeanContainerListenerBuildItem fixExtension(RestClientRecorder restClientRecorder) {
-        return new BeanContainerListenerBuildItem(restClientRecorder.hackAroundExtension());
-    }
-
     @BuildStep
     NativeImageProxyDefinitionBuildItem addProxy() {
         return new NativeImageProxyDefinitionBuildItem(ResteasyConfiguration.class.getName());
@@ -135,12 +133,6 @@ class RestClientProcessor {
                     "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, true, "io.smallrye.opentracing.SmallRyeRestClientListener"));
-        } else if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
-            resource.produce(new NativeImageResourceBuildItem(
-                    "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
-            reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, true,
-                            "io.quarkus.opentelemetry.runtime.tracing.client.QuarkusRestClientListener"));
         }
     }
 
@@ -175,6 +167,7 @@ class RestClientProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
             PackageConfig packageConfig,
             List<RestClientAnnotationProviderBuildItem> restClientAnnotationProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
@@ -269,6 +262,22 @@ class RestClientProcessor {
 
             syntheticBeans.produce(configurator.done());
         }
+    }
+
+    @BuildStep
+    void clientTracingFeature(Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability, BuildProducer<ResteasyJaxrsProviderBuildItem> producer) {
+        if (isRequired(capabilities, metricsCapability)) {
+            producer.produce(new ResteasyJaxrsProviderBuildItem(PathFeatureHandler.class.getName()));
+            producer.produce(new ResteasyJaxrsProviderBuildItem(PathTemplateInjectionFilter.class.getName()));
+        }
+    }
+
+    private boolean isRequired(Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability) {
+        return (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
+                (metricsCapability.isPresent()
+                        && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
     }
 
     private static List<Class<?>> checkAnnotationProviders(ClassInfo classInfo,

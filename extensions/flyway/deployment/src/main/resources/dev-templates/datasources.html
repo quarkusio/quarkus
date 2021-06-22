@@ -19,7 +19,7 @@
                 <form method="post"  enctype="application/x-www-form-urlencoded">
                     <input type="hidden" name="datasource" value="{container.dataSourceName}">
                     <input type="hidden" name="operation" value="clean">
-                    <input id="clear" type="submit" class="btn btn-primary btn-sm" value="Clean" >
+                    <input id="clear" type="submit" class="btn btn-primary btn-sm" value="Clean" onclick="return confirm('This will drop all objects (tables, views, procedures, triggers, ...) in the configured schema. Do you want to continue?')" >
                 </form>
                 &nbsp;
                 <form method="post"  enctype="application/x-www-form-urlencoded">

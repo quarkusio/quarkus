@@ -12,6 +12,7 @@ public interface Trigger {
     /**
      * 
      * @return the identifier
+     * @see Scheduled#identity()
      */
     String getId();
 

@@ -42,9 +42,7 @@ Quarkus provides Mutual TLS authentication so that you can authenticate users ba
 
 Please see link:security-built-in-authentication#mutual-tls[Mutual TLS Authentication] for more information.
 
-=== OpenId Connect, JWT, OAuth2
-
-==== OpenId Connect
+=== OpenId Connect
 
 `quarkus-oidc` extension provides a reactive, interoperable, multi-tenant enabled OpenId Connect adapter which supports `Bearer Token` and `Authorization Code Flow` authentication mechanisms.
 
@@ -77,7 +75,7 @@ If you use Keycloak and Bearer tokens then also see the link:security-keycloak-a
 If you need to configure Keycloak programmatically then consider using https://www.keycloak.org/docs/latest/server_development/#admin-rest-api[Keycloak Admin REST API] with the help of the `quarkus-keycloak-admin-client` extension.
 ====
 
-==== OpenId Connect Client and Filters
+=== OpenId Connect Client and Filters
 
 `quarkus-oidc-client` extension provides `OidcClient` for acquiring and refreshing access tokens from OpenId Connect and OAuth2 providers which support `client-credentials`, `password` and `refresh_token` token grants.
 
@@ -88,7 +86,7 @@ If you need to configure Keycloak programmatically then consider using https://w
 See the link:security-openid-connect-client[Using OpenID Connect and OAuth2 Client] guide for more information.
 
 [[smallrye-jwt]]
-==== SmallRye JWT
+=== SmallRye JWT
 
 `quarkus-smallrye-jwt` provides Microprofile JWT 1.1.1 implementation and many more options to verify signed and encrypted `JWT` tokens and represent them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 
@@ -98,13 +96,13 @@ Additionally it provides `JWT Generation API` for creating `signed`, `inner-sign
 
 See the link:security-jwt[Using SmallRye JWT] guide for more information.
 
-==== OAuth2
+=== OAuth2
 
 `quarkus-elytron-security-oauth2` provides an alternative to `quarkus-oidc` Bearer Token Authentication Mechanism. It is based on `Elytron` and is primarily meant for introspecting the opaque tokens remotely.
 
 See the link:security-oauth2[Using OAuth2] guide for more information.
 
-==== Choosing between OpenId Connect, SmallRye JWT and OAuth2 extensions
+=== Choosing between OpenId Connect, SmallRye JWT and OAuth2 extensions
 
 `quarkus-oidc` extension requires an OpenId Connect provider such as Keycloak which can be used to verify the Bearer tokens or authenticate the end users with the Authorization Code flow. In both cases `quarkus-oidc` requires a connection to this OpenId Connect provider.
 
@@ -270,4 +268,6 @@ All registered Quarkus CPE names can be found using link:https://nvd.nist.gov/pr
 If a Quarkus tag represented by the given CPE name entry is affected by some CVE then you'll be able to follow a provided link to that CVE.
 
 We will be asking the NVD CPE team to update the list as well as link Quarkus CPE name entries with the related CVEs on a regular basis.
-If you work with a plugin like OWASP plugin which is using NVD feeds to detect the vulnerabilities at the application build time and you see a false positive reported then please re-open link:https://github.com/quarkusio/quarkus/issues/2611[this issue] and provide the details.
+If you work with the link:https://jeremylong.github.io/DependencyCheck/dependency-check-maven/[OWASP Dependency Check Plugin] which is using NVD feeds to detect the vulnerabilities at the application build time and see a false positive reported then please re-open link:https://github.com/quarkusio/quarkus/issues/2611[this issue] and provide the details.
+
+Note link:https://jeremylong.github.io/DependencyCheck/dependency-check-maven/[OWASP Dependency Check Plugin] `6.2.0` or later should be used with Quarkus.

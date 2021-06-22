@@ -57,7 +57,7 @@ import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnno
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.spring.web.runtime.ResponseStatusExceptionMapper;
-import io.quarkus.undertow.deployment.BlacklistedServletContainerInitializerBuildItem;
+import io.quarkus.undertow.deployment.IgnoredServletContainerInitializerBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 
 public class SpringWebProcessor {
@@ -107,8 +107,8 @@ public class SpringWebProcessor {
     }
 
     @BuildStep
-    public BlacklistedServletContainerInitializerBuildItem blacklistSpringServlet() {
-        return new BlacklistedServletContainerInitializerBuildItem("org.springframework.web.SpringServletContainerInitializer");
+    public IgnoredServletContainerInitializerBuildItem ignoreSpringServlet() {
+        return new IgnoredServletContainerInitializerBuildItem("org.springframework.web.SpringServletContainerInitializer");
     }
 
     @BuildStep

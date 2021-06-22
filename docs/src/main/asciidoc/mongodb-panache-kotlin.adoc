@@ -1,0 +1,193 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus - Simplified MongoDB with Panache and Kotlin
+
+include::./attributes.adoc[]
+:config-file: application.properties
+
+MongoDB is a well known NoSQL Database that is widely used. MongoDB with Panache offers a
+new layer atop this familiar framework.  This guide will not dive in to the specifics of either as those are already
+covered in the link:mongodb-panache[MongoDB with Panache guide].  In this guide, we'll cover the Kotlin specific changes
+needed to use MongoDB with Panache in your Kotlin-based Quarkus applications.
+
+== First: an example
+
+As we saw in the MongoDB with Panache guide, it allows us to extend the functionality in our entities and repositories (also known as DAOs) with some automatically
+provided functionality.  When using Kotlin, the approach is very similar to what we see in the Java version with a slight
+change or two.  To Panache-enable your entity, you would define it something like:
+
+[source,kotlin]
+----
+class Person: PanacheMongoEntity {
+    lateinit var name: String
+    lateinit var birth: LocalDate
+    lateinit var status: Status
+}
+----
+
+As you can see our entities remain simple.  There is, however, a slight difference from the Java version.  The Kotlin
+language doesn't support the notion of static methods in quite the same way as Java does.  Instead, we must use a
+https://kotlinlang.org/docs/tutorials/kotlin-for-py/objects-and-companion-objects.html#companion-objects[companion object]:
+
+[source,kotlin]
+----
+class Person : PanacheMongoEntity() {
+    companion object: PanacheCompanion<Person> {  // <1>
+        fun findByName(name: String) = find("name", name).firstResult()
+        fun findAlive() = list("status", Status.Alive)
+        fun deleteStefs() = delete("name", "Stef")
+    }
+
+    lateinit var name: String  // <2>
+    lateinit var birth: LocalDate
+    lateinit var status: Status
+}
+----
+<1> The companion object holds all the methods not related to a specific instance allowing for general management and
+querying bound to a specific type.
+<2> Here there are options, but we've chosen the `lateinit` approach.  This allows us to declare these fields as non-null
+knowing they will be properly assigned either by the constructor (not shown) or by the MongoDB POJO codec loading data from the
+database.
+
+NOTE: These types differ from the Java types mentioned in those tutorials.  For Kotlin support, all the Panache
+types will be found in the `io.quarkus.mongodb.panache.kotlin` package.  This subpackage allows for the distinction
+between the Java and Kotlin variants and allows for both to be used unambiguously in a single project.
+
+In the Kotlin version, we've simply moved the bulk of the link:https://www.martinfowler.com/eaaCatalog/activeRecord.html[`active record pattern`]
+functionality to the `companion object`.  Apart from this slight change, we can then work with our types in ways that map easily
+from the Java side of world.
+
+
+== Using the repository pattern
+
+
+=== Defining your entity
+
+When using the repository pattern, you can define your entities as regular POJO.
+[source,kotlin]
+----
+class Person {
+    var id: ObjectId? = null; // used by MongoDB for the _id field
+    lateinit var name: String
+    lateinit var birth: LocalDate
+    lateinit var status: Status
+}
+----
+
+=== Defining your repository
+
+When using Repositories, you get the exact same convenient methods as with the active record pattern, injected in your Repository,
+by making them implement `PanacheMongoRepository`:
+
+[source,kotlin]
+----
+@ApplicationScoped
+class PersonRepository: PanacheMongoRepository<Person> {
+     fun findByName(name: String) = find("name", name).firstResult()
+     fun findAlive() = list("status", Status.Alive)
+     fun deleteStefs() = delete("name", "Stef")
+}
+----
+
+All the operations that are defined on `PanacheMongoEntityBase` are available on your repository, so using it
+is exactly the same as using the active record pattern, except you need to inject it:
+
+[source,kotlin]
+----
+@Inject
+lateinit var personRepository: PersonRepository
+
+@GET
+fun count() = personRepository.count()
+----
+
+=== Most useful operations
+
+Once you have written your repository, here are the most common operations you will be able to perform:
+
+[source,kotlin]
+----
+// creating a person
+var person = Person()
+person.name = "Stef"
+person.birth = LocalDate.of(1910, Month.FEBRUARY, 1)
+person.status = Status.Alive
+
+// persist it: if you keep the default ObjectId ID field, it will be populated by the MongoDB driver
+personRepository.persist(person)
+
+person.status = Status.Dead;
+
+// Your must call update() in order to send your entity modifications to MongoDB
+personRepository.update(person);
+
+
+// delete it
+personRepository.delete(person);
+
+// getting a list of all Person entities
+val allPersons = personRepository.listAll()
+
+// finding a specific person by ID
+// here we build a new ObjectId but you can also retrieve it from the existing entity after being persisted
+ObjectId personId = new ObjectId(idAsString);
+person = personRepository.findById(personId) ?: throw Exception("No person with that ID")
+
+// finding all living persons
+val livingPersons = personRepository.list("status", Status.Alive)
+
+// counting all persons
+val countAll = personRepository.count()
+
+// counting all living persons
+val countAlive = personRepository.count("status", Status.Alive)
+
+// delete all living persons
+personRepository.delete("status", Status.Alive)
+
+// delete all persons
+personRepository.deleteAll()
+
+// delete by id
+val deleted = personRepository.deleteById(personId)
+
+// set the name of all living persons to 'Mortal'
+personRepository.update("name = 'Mortal' where status = ?1", Status.Alive)
+
+----
+
+All `list` methods have equivalent `stream` versions.
+
+[source,kotlin]
+----
+val persons = personRepository.streamAll();
+val namesButEmmanuels = persons
+    .map { it.name.toLowerCase() }
+    .filter { it != "emmanuel" }
+----
+
+For more examples, please consult the link:mongodb-panache[Java version] for complete details.  Both APIs
+are the same and work identically except for some Kotlin-specific tweaks to make things feel more natural to
+Kotlin developers.  These tweaks include things like better use of nullability and the lack of `Optional` on API
+methods.
+
+== Setting up and configuring MongoDB with Panache
+
+To get started using MongoDB with Panache with Kotlin, you can, generally, follow the steps laid out in the Java tutorial.  The biggest
+change to configuring your project is the Quarkus artifact to include.  You can, of course, keep the Java version if you
+need but if all you need are the Kotlin APIs then include the following dependency instead:
+
+[source,xml]
+----
+<dependencies>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-mongodb-panache-kotlin</artifactId>  // <1>
+    </dependency>
+</dependencies>
+----
+<1>  Note the addition of `-kotlin` on the end.  Generally you'll only need this version but if your project will be using
+both Java and Kotlin code, you can safely include both artifacts.

@@ -62,7 +62,7 @@ public class ServletTestCase {
     @Test
     public void testWebjars() {
         RestAssured
-                .when().get("webjars/bootstrap/3.1.0/css/bootstrap.min.css").then()
+                .when().get("webjars/bootstrap/4.6.0/css/bootstrap.min.css").then()
                 .statusCode(200);
     }
 }

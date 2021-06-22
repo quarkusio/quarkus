@@ -46,7 +46,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.logging.CategoryBuildTimeConfig;
@@ -151,25 +150,23 @@ public final class LoggingResourceProcessor {
             recorder.initializeLogging(log, buildLog, handlers, namedHandlers,
                     consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
                     possibleSupplier);
-            if (launchModeBuildItem.getLaunchMode() != LaunchMode.NORMAL) {
-                LogConfig logConfig = new LogConfig();
-                ConfigInstantiator.handleObject(logConfig);
-                for (LogCleanupFilterBuildItem i : logCleanupFilters) {
-                    CleanupFilterConfig value = new CleanupFilterConfig();
-                    LogCleanupFilterElement filterElement = i.getFilterElement();
-                    value.ifStartsWith = filterElement.getMessageStarts();
-                    value.targetLevel = filterElement.getTargetLevel() == null ? org.jboss.logmanager.Level.DEBUG
-                            : filterElement.getTargetLevel();
-                    logConfig.filters.put(filterElement.getLoggerName(), value);
-                }
-                LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog);
-                ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
-                    }
-                });
+            LogConfig logConfig = new LogConfig();
+            ConfigInstantiator.handleObject(logConfig);
+            for (LogCleanupFilterBuildItem i : logCleanupFilters) {
+                CleanupFilterConfig value = new CleanupFilterConfig();
+                LogCleanupFilterElement filterElement = i.getFilterElement();
+                value.ifStartsWith = filterElement.getMessageStarts();
+                value.targetLevel = filterElement.getTargetLevel() == null ? org.jboss.logmanager.Level.DEBUG
+                        : filterElement.getTargetLevel();
+                logConfig.filters.put(filterElement.getLoggerName(), value);
             }
+            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog);
+            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
+                @Override
+                public void run() {
+                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+                }
+            });
         }
         return new LoggingSetupBuildItem();
     }

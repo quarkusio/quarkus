@@ -7,6 +7,7 @@ metadata:
   - "panache"
   - "mongodb"
   - "kotlin"
+  guide: "https://quarkus.io/guides/mongodb-panache-kotlin"
   categories:
   - "data"
   status: "stable"

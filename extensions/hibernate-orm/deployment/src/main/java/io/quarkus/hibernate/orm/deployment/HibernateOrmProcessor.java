@@ -45,6 +45,7 @@ import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
+import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
@@ -939,6 +940,10 @@ public final class HibernateOrmProcessor {
         descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
                 persistenceUnitConfig.query.defaultNullOrdering.name().toLowerCase(Locale.ROOT));
 
+        // Disable sequence validations: they are reportedly slow, and people already get the same validation from normal schema validation
+        descriptor.getProperties().put(AvailableSettings.SEQUENCE_INCREMENT_SIZE_MISMATCH_STRATEGY,
+                SequenceMismatchStrategy.NONE);
+
         // JDBC
         persistenceUnitConfig.jdbc.timezone.ifPresent(
                 timezone -> descriptor.getProperties().setProperty(AvailableSettings.JDBC_TIME_ZONE, timezone));
@@ -1012,6 +1017,10 @@ public final class HibernateOrmProcessor {
         if (isMySQLOrMariaDB(dialect.get()) && persistenceUnitConfig.dialect.storageEngine.isPresent()) {
             storageEngineCollector.add(persistenceUnitConfig.dialect.storageEngine.get());
         }
+
+        // Discriminator Column
+        descriptor.getProperties().setProperty(AvailableSettings.IGNORE_EXPLICIT_DISCRIMINATOR_COLUMNS_FOR_JOINED_SUBCLASS,
+                String.valueOf(persistenceUnitConfig.discriminator.ignoreExplicitForJoined));
 
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor, dataSource,

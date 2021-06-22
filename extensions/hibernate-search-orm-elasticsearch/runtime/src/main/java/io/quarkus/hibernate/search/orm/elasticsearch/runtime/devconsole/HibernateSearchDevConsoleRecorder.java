@@ -25,7 +25,7 @@ public class HibernateSearchDevConsoleRecorder {
                 }
                 SearchMapping mapping = HibernateSearchSupplier.searchMapping();
                 if (mapping == null) {
-                    flashMessage(event, "There aren't any indexed entity types!", FlashScopeUtil.FlashMessageStatus.ERROR);
+                    flashMessage(event, "There are no indexed entity types.", FlashScopeUtil.FlashMessageStatus.ERROR);
                     return;
                 }
                 mapping.scope(Object.class,

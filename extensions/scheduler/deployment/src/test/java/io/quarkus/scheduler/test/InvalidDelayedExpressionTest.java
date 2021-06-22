@@ -16,7 +16,7 @@ public class InvalidDelayedExpressionTest {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setExpectedException(DeploymentException.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(InvalidDelayedExpressionTest.InvalidBean.class));
+                    .addClasses(InvalidBean.class));
 
     @Test
     public void test() throws InterruptedException {
@@ -24,7 +24,7 @@ public class InvalidDelayedExpressionTest {
 
     static class InvalidBean {
 
-        @Scheduled(delayed = "for 10 seconds")
+        @Scheduled(every = "${my.every.expr:off}", delayed = "for 10 seconds")
         void wrong() {
         }
 

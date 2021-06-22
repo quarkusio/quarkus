@@ -32,8 +32,11 @@ import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 @NamedQuery(name = "Person.getByName", query = "from Person2 where name = :name")
 @FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = "string"))
 @FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
+@FilterDef(name = "Person.name.in", defaultCondition = "name in (:names)", parameters = {
+        @ParamDef(name = "names", type = "string") })
 @Filter(name = "Person.isAlive")
 @Filter(name = "Person.hasName")
+@Filter(name = "Person.name.in")
 public class Person extends PanacheEntity {
 
     public String name;

@@ -128,6 +128,11 @@ public class AugmentActionImpl implements AugmentAction {
                 launchMode = LaunchMode.NORMAL;
                 devModeType = DevModeType.REMOTE_LOCAL_SIDE;
                 break;
+            case CONTINUOUS_TEST:
+                //the process that actually launches the tests is a dev mode process
+                launchMode = LaunchMode.DEVELOPMENT;
+                devModeType = DevModeType.TEST_ONLY;
+                break;
             case REMOTE_DEV_SERVER:
                 launchMode = LaunchMode.DEVELOPMENT;
                 devModeType = DevModeType.REMOTE_SERVER_SIDE;

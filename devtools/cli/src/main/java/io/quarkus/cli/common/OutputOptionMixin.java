@@ -4,6 +4,8 @@ import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
 import static io.quarkus.devtools.messagewriter.MessageIcons.WARN_ICON;
 
 import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -25,6 +27,14 @@ public class OutputOptionMixin implements MessageWriter {
     @CommandLine.Option(names = {
             "--cli-test" }, hidden = true, description = "Manually set output streams for unit test purposes.")
     boolean cliTestMode;
+
+    Path testProjectRoot;
+
+    @CommandLine.Option(names = { "--cli-test-dir" }, hidden = true)
+    void setTestProjectRoot(String path) {
+        // Allow the starting/project directory to be specified. Used during test.
+        testProjectRoot = Paths.get(path).toAbsolutePath();
+    }
 
     @Spec(Spec.Target.MIXEE)
     CommandSpec mixee;
@@ -89,6 +99,13 @@ public class OutputOptionMixin implements MessageWriter {
         if (isShowErrors()) {
             err().println(colorScheme().stackTraceText(ex));
         }
+    }
+
+    public Path getTestDirectory() {
+        if (isCliTest()) {
+            return testProjectRoot;
+        }
+        return null;
     }
 
     @Override

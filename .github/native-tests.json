@@ -33,7 +33,7 @@
         {
             "category": "Data5",
             "timeout": 65,
-            "test-modules": "jpa-postgresql, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql",
+            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql",
             "os-name": "ubuntu-latest"
         },
         {

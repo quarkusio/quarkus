@@ -31,4 +31,14 @@ public interface AppMessages {
     @Message(key = "dot.test", value = "Dot test!")
     String dotTest();
 
+    @Message("There {msg:fileStrings(numberOfFiles)} on {disk}.")
+    String files(int numberOfFiles, String disk);
+
+    @Message("{#when numberOfFiles}"
+            + "{#is 0}are no files"
+            + "{#is 1}is one file"
+            + "{#else}are {numberOfFiles} files"
+            + "{/when}")
+    String fileStrings(int numberOfFiles);
+
 }

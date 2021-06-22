@@ -10,11 +10,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 public final class GrpcClientBuildItem extends MultiBuildItem {
 
-    private final String serviceName;
+    private final String clientName;
     private final Set<ClientInfo> clients;
 
     public GrpcClientBuildItem(String name) {
-        this.serviceName = name;
+        this.clientName = name;
         this.clients = new HashSet<>();
     }
 
@@ -26,8 +26,8 @@ public final class GrpcClientBuildItem extends MultiBuildItem {
         clients.add(client);
     }
 
-    public String getServiceName() {
-        return serviceName;
+    public String getClientName() {
+        return clientName;
     }
 
     public static final class ClientInfo {

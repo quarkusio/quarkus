@@ -8,14 +8,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :config-file: application.properties
 
-Hibernate ORM is the de facto standard JPA implementation and is well-known in the Java ecosystem.  Panache offers a
+Hibernate ORM is the de facto standard JPA implementation and is well-known in the Java ecosystem. Hibernate ORM with Panache offers a
 new layer atop this familiar framework.  This guide will not dive in to the specifics of either as those are already
-covered in the link:hibernate-orm-panache[Panache guide].  In this guide, we'll cover the Kotlin specific changes
-needed to use Panache in your Kotlin-based Quarkus applications.
+covered in the link:hibernate-orm-panache[Hibernate ORM with Panache guide].  In this guide, we'll cover the Kotlin specific changes
+needed to use Hibernate ORM with Panache in your Kotlin-based Quarkus applications.
 
 == First: an example
 
-As we saw in the Panache guide, Panache allows us to extend the functionality in our entities and repositories (also known as DAOs) with some automatically
+As we saw in the Hibernate with Panache guide, it allows us to extend the functionality in our entities and repositories (also known as DAOs) with some automatically
 provided functionality.  When using Kotlin, the approach is very similar to what we see in the Java version with a slight
 change or two.  To Panache-enable your entity, you would define it something like:
 
@@ -174,10 +174,6 @@ val namesButEmmanuels = persons
 
 NOTE: The `stream` methods require a transaction to work.
 
-NOTE: The rest of the documentation show usages based on the active record pattern only,
-but keep in mind that they can be performed with the repository pattern as well.
-The repository pattern examples have been omitted for brevity.
-
 For more examples, please consult the link:hibernate-orm-panache[Java version] for complete details.  Both APIs
 are the same and work identically except for some Kotlin-specific tweaks to make things feel more natural to
 Kotlin developers.  These tweaks include things like better use of nullability and the lack of `Optional` on API
@@ -185,7 +181,7 @@ methods.
 
 == Setting up and configuring Hibernate ORM with Panache
 
-To get started using Panache with Kotlin, you can, generally, follow the steps laid out in the Java tutorial.  The biggest
+To get started using Hibernate ORM with Panache with Kotlin, you can, generally, follow the steps laid out in the Java tutorial.  The biggest
 change to configuring your project is the Quarkus artifact to include.  You can, of course, keep the Java version if you
 need but if all you need are the Kotlin APIs then include the following dependency instead:
 

@@ -2,6 +2,7 @@ package io.quarkus.amazon.kms.runtime;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
@@ -11,42 +12,40 @@ import software.amazon.awssdk.services.kms.KmsClientBuilder;
 
 @ApplicationScoped
 public class KmsClientProducer {
+    private final KmsClient syncClient;
+    private final KmsAsyncClient asyncClient;
 
-    private volatile KmsClientBuilder syncConfiguredBuilder;
-    private volatile KmsAsyncClientBuilder asyncConfiguredBuilder;
-
-    private KmsClient client;
-    private KmsAsyncClient asyncClient;
+    KmsClientProducer(Instance<KmsClientBuilder> syncClientBuilderInstance,
+            Instance<KmsAsyncClientBuilder> asyncClientBuilderInstance) {
+        this.syncClient = syncClientBuilderInstance.isResolvable() ? syncClientBuilderInstance.get().build() : null;
+        this.asyncClient = asyncClientBuilderInstance.isResolvable() ? asyncClientBuilderInstance.get().build() : null;
+    }
 
     @Produces
     @ApplicationScoped
     public KmsClient client() {
-        client = syncConfiguredBuilder.build();
-        return client;
+        if (syncClient == null) {
+            throw new IllegalStateException("The KmsClient is required but has not been detected/configured.");
+        }
+        return syncClient;
     }
 
     @Produces
     @ApplicationScoped
     public KmsAsyncClient asyncClient() {
-        asyncClient = asyncConfiguredBuilder.build();
+        if (asyncClient == null) {
+            throw new IllegalStateException("The KmsAsyncClient is required but has not been detected/configured.");
+        }
         return asyncClient;
     }
 
     @PreDestroy
     public void destroy() {
-        if (client != null) {
-            client.close();
+        if (syncClient != null) {
+            syncClient.close();
         }
         if (asyncClient != null) {
             asyncClient.close();
         }
-    }
-
-    public void setSyncConfiguredBuilder(KmsClientBuilder syncConfiguredBuilder) {
-        this.syncConfiguredBuilder = syncConfiguredBuilder;
-    }
-
-    public void setAsyncConfiguredBuilder(KmsAsyncClientBuilder asyncConfiguredBuilder) {
-        this.asyncConfiguredBuilder = asyncConfiguredBuilder;
     }
 }

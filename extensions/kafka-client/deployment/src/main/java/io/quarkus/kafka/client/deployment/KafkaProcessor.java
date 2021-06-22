@@ -53,8 +53,10 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
@@ -62,6 +64,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -227,6 +230,15 @@ public class KafkaProcessor {
     void loadSnappyIfEnabled(KafkaRecorder recorder, KafkaBuildTimeConfig config) {
         if (config.snappyEnabled) {
             recorder.loadSnappy();
+        }
+    }
+
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @BuildStep(onlyIf = IsNormal.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void checkBoostrapServers(KafkaRecorder recorder, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
+            recorder.checkBoostrapServers();
         }
     }
 

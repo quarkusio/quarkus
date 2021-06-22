@@ -10,6 +10,7 @@ import java.util.TreeMap;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RegistryClientMixin;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
@@ -25,7 +26,6 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
 public class CreateProjectMixin {
-
     Map<String, Object> values = new HashMap<>();
     Path outputPath;
     Path projectRootPath;
@@ -40,6 +40,12 @@ public class CreateProjectMixin {
 
     @Mixin
     RegistryClientMixin registryClient;
+
+    public void setTestOutputDirectory(Path testOutputDirectory) {
+        if (testOutputDirectory != null && targetDirectory == null) {
+            outputPath = testOutputDirectory;
+        }
+    }
 
     public Path outputDirectory() {
         if (outputPath == null) {
@@ -88,7 +94,7 @@ public class CreateProjectMixin {
     }
 
     public QuarkusCommandInvocation build(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion,
-            OutputOptionMixin log)
+            OutputOptionMixin log, Map<String, String> properties)
             throws RegistryResolutionException {
 
         // TODO: Allow this to be configured? infer from active Java version?
@@ -104,6 +110,16 @@ public class CreateProjectMixin {
         }
 
         QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, log);
+
+        properties.entrySet().forEach(x -> {
+            if (x.getValue().length() > 0) {
+                System.setProperty(x.getKey(), x.getValue());
+                log.info("property: %s=%s", x.getKey(), x.getValue());
+            } else {
+                System.setProperty(x.getKey(), "");
+                log.info("property: %s", x.getKey());
+            }
+        });
         return new QuarkusCommandInvocation(qp, values);
     }
 

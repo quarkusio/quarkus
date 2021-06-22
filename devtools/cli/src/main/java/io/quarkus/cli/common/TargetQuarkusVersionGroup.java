@@ -1,4 +1,4 @@
-package io.quarkus.cli.create;
+package io.quarkus.cli.common;
 
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.StreamCoords;
@@ -31,7 +31,7 @@ public class TargetQuarkusVersionGroup {
         }
     }
 
-    @CommandLine.Option(paramLabel = "groupId:artifactId:version", names = { "-p",
+    @CommandLine.Option(paramLabel = "groupId:artifactId:version", names = { "-P",
             "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n  io.quarkus:quarkus-bom:1.13.4.Final")
     void setPlatformBom(String bom) {
         bom = bom.trim();

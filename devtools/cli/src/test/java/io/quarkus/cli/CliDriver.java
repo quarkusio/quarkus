@@ -20,7 +20,7 @@ public class CliDriver {
     static final PrintStream stdout = System.out;
     static final PrintStream stderr = System.err;
 
-    public static Result executeArbitraryCommand(String... args) throws Exception {
+    public static Result executeArbitraryCommand(Path startingDir, String... args) throws Exception {
         System.out.println("$ " + String.join(" ", args));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -34,6 +34,7 @@ public class CliDriver {
         Result result = new Result();
         try {
             ProcessBuilder pb = new ProcessBuilder(args);
+            pb.directory(startingDir.toFile());
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
@@ -50,9 +51,11 @@ public class CliDriver {
         return result;
     }
 
-    public static Result execute(String... args) throws Exception {
-        String newArgs[] = Arrays.copyOf(args, args.length + 1);
+    public static Result execute(Path startingDir, String... args) throws Exception {
+        String newArgs[] = Arrays.copyOf(args, args.length + 3);
         newArgs[args.length] = "--cli-test";
+        newArgs[args.length + 1] = "--cli-test-dir";
+        newArgs[args.length + 2] = startingDir.toString();
 
         System.out.println("$ quarkus " + String.join(" ", newArgs));
 
@@ -125,70 +128,70 @@ public class CliDriver {
         Assertions.assertFalse(path.toFile().exists());
     }
 
-    public static String readFileAsString(Path path) throws Exception {
+    public static String readFileAsString(Path projectRoot, Path path) throws Exception {
         return new String(Files.readAllBytes(path));
     }
 
-    public static void valdiateGeneratedSourcePackage(Path project, String name) {
-        Path packagePath = project.resolve("src/main/java/" + name);
+    public static void valdiateGeneratedSourcePackage(Path projectRoot, String name) {
+        Path packagePath = projectRoot.resolve("src/main/java/" + name);
         Assertions.assertTrue(packagePath.toFile().exists(),
                 "Package directory should exist: " + packagePath.toAbsolutePath().toString());
         Assertions.assertTrue(packagePath.toFile().isDirectory(),
                 "Package directory should be a directory: " + packagePath.toAbsolutePath().toString());
     }
 
-    public static Result invokeValidateExtensionList() throws Exception {
-        Result result = execute("extension", "list", "-e", "-B", "--verbose");
+    public static Result invokeValidateExtensionList(Path projectRoot) throws Exception {
+        Result result = execute(projectRoot, "extension", "list", "-e", "-B", "--verbose");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         return result;
     }
 
-    public static Result invokeExtensionAddQute(Path file) throws Exception {
+    public static Result invokeExtensionAddQute(Path projectRoot, Path file) throws Exception {
         // add the qute extension
-        Result result = execute("extension", "add", "qute", "-e", "-B", "--verbose");
+        Result result = execute(projectRoot, "extension", "add", "qute", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         // list all extensions, make sure qute is present
-        result = invokeValidateExtensionList();
+        result = invokeValidateExtensionList(projectRoot);
         Assertions.assertTrue(result.stdout.contains("quarkus-qute"),
                 "Expected quarkus-qute to be in the list of extensions. Result:\n" + result);
 
-        String content = readFileAsString(file);
+        String content = readFileAsString(projectRoot, file);
         Assertions.assertTrue(content.contains("quarkus-qute"),
                 "quarkus-qute should be listed as a dependency. Result:\n" + content);
 
         return result;
     }
 
-    public static Result invokeExtensionRemoveQute(Path file) throws Exception {
+    public static Result invokeExtensionRemoveQute(Path projectRoot, Path file) throws Exception {
         // remove the qute extension
-        Result result = execute("extension", "remove", "qute", "-e", "-B", "--verbose");
+        Result result = execute(projectRoot, "extension", "remove", "qute", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         // list all extensions, make sure qute is present
-        result = invokeValidateExtensionList();
+        result = invokeValidateExtensionList(projectRoot);
         Assertions.assertFalse(result.stdout.contains("quarkus-qute"),
                 "Expected quarkus-qute to be missing from the list of extensions. Result:\n" + result);
 
-        String content = readFileAsString(file);
+        String content = readFileAsString(projectRoot, file);
         Assertions.assertFalse(content.contains("quarkus-qute"),
                 "quarkus-qute should not be listed as a dependency. Result:\n" + content);
 
         return result;
     }
 
-    public static Result invokeExtensionAddMultiple(Path file) throws Exception {
+    public static Result invokeExtensionAddMultiple(Path projectRoot, Path file) throws Exception {
         // add the qute extension
-        Result result = execute("extension", "add", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
+        Result result = execute(projectRoot, "extension", "add", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         // list all extensions, make sure all are present
-        result = invokeValidateExtensionList();
+        result = invokeValidateExtensionList(projectRoot);
         Assertions.assertTrue(result.stdout.contains("quarkus-qute"),
                 "Expected quarkus-qute to be in the list of extensions. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-amazon-lambda-http"),
@@ -196,7 +199,7 @@ public class CliDriver {
         Assertions.assertTrue(result.stdout.contains("quarkus-jackson"),
                 "Expected quarkus-jackson to be in the list of extensions. Result:\n" + result);
 
-        String content = CliDriver.readFileAsString(file);
+        String content = CliDriver.readFileAsString(projectRoot, file);
         Assertions.assertTrue(content.contains("quarkus-qute"),
                 "quarkus-qute should still be listed as a dependency. Result:\n" + content);
         Assertions.assertTrue(content.contains("quarkus-amazon-lambda-http"),
@@ -207,14 +210,14 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionRemoveMultiple(Path file) throws Exception {
+    public static Result invokeExtensionRemoveMultiple(Path projectRoot, Path file) throws Exception {
         // add the qute extension
-        Result result = execute("extension", "remove", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
+        Result result = execute(projectRoot, "extension", "remove", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         // list all extensions, make sure all are present
-        result = invokeValidateExtensionList();
+        result = invokeValidateExtensionList(projectRoot);
         Assertions.assertFalse(result.stdout.contains("quarkus-qute"),
                 "quarkus-qute should not be in the list of extensions. Result:\n" + result);
         Assertions.assertFalse(result.stdout.contains("quarkus-amazon-lambda-http"),
@@ -222,7 +225,7 @@ public class CliDriver {
         Assertions.assertFalse(result.stdout.contains("quarkus-jackson"),
                 "quarkus-jackson should not be in the list of extensions. Result:\n" + result);
 
-        String content = CliDriver.readFileAsString(file);
+        String content = CliDriver.readFileAsString(projectRoot, file);
         Assertions.assertFalse(content.contains("quarkus-qute"),
                 "quarkus-qute should not be listed as a dependency. Result:\n" + content);
         Assertions.assertFalse(content.contains("quarkus-amazon-lambda-http"),
@@ -233,8 +236,8 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionListInstallable() throws Exception {
-        Result result = CliDriver.execute("extension", "list", "-e", "-B", "--verbose", "-i");
+    public static Result invokeExtensionListInstallable(Path projectRoot) throws Exception {
+        Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-hibernate-orm"),
@@ -245,8 +248,8 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionListInstallableSearch() throws Exception {
-        Result result = CliDriver.execute("extension", "list", "-e", "-B", "--verbose", "-i", "--search=vertx-*");
+    public static Result invokeExtensionListInstallableSearch(Path projectRoot) throws Exception {
+        Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--search=vertx-*");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
@@ -258,8 +261,8 @@ public class CliDriver {
         return result;
     }
 
-    public static void invokeExtensionListFormatting() throws Exception {
-        Result result = CliDriver.execute("extension", "list", "-e", "-B", "--verbose", "-i", "--concise");
+    public static void invokeExtensionListFormatting(Path projectRoot) throws Exception {
+        Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--concise");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-vertx-web"),
@@ -267,38 +270,38 @@ public class CliDriver {
         Assertions.assertTrue(result.stdout.contains("Reactive Routes"),
                 "'Reactive Routes' descriptive name should be returned in results. Found:\n" + result);
 
-        result = CliDriver.execute("extension", "list", "-e", "-B", "--verbose", "-i", "--full");
+        result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--full");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         // TODO
 
-        result = CliDriver.execute("extension", "list", "-e", "-B", "--verbose", "-i", "--origins");
+        result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--origins");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         // TODO
 
         // Two different output options can not be specified together
-        result = CliDriver.execute("extension", "list", "-e", "-B", "--verbose", "-i", "--origins", "--name");
+        result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--origins", "--name");
         Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         // TODO
     }
 
-    public static Result invokeExtensionAddRedundantQute() throws Exception {
-        Result result = execute("extension", "add", "-e", "-B", "--verbose", "qute");
+    public static Result invokeExtensionAddRedundantQute(Path projectRoot) throws Exception {
+        Result result = execute(projectRoot, "extension", "add", "-e", "-B", "--verbose", "qute");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         return result;
     }
 
-    public static Result invokeExtensionRemoveNonexistent() throws Exception {
-        Result result = execute("extension", "remove", "-e", "-B", "--verbose", "nonexistent");
+    public static Result invokeExtensionRemoveNonexistent(Path projectRoot) throws Exception {
+        Result result = execute(projectRoot, "extension", "remove", "-e", "-B", "--verbose", "nonexistent");
         System.out.println(result);
         return result;
     }
 
-    public static Result invokeValidateDryRunBuild(Path project) throws Exception {
-        Result result = execute("build", "-e", "-B", "--clean", "--dryrun",
+    public static Result invokeValidateDryRunBuild(Path projectRoot) throws Exception {
+        Result result = execute(projectRoot, "build", "-e", "-B", "--clean", "--dryrun",
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
@@ -306,19 +309,19 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeValidateBuild(Path project) throws Exception {
-        Result result = execute("build", "-e", "-B", "--clean",
+    public static Result invokeValidateBuild(Path projectRoot) throws Exception {
+        Result result = execute(projectRoot, "build", "-e", "-B", "--clean",
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         return result;
     }
 
-    public static void validateApplicationProperties(Path project, List<String> configs) throws Exception {
-        Path properties = project.resolve("src/main/resources/application.properties");
+    public static void validateApplicationProperties(Path projectRoot, List<String> configs) throws Exception {
+        Path properties = projectRoot.resolve("src/main/resources/application.properties");
         Assertions.assertTrue(properties.toFile().exists(),
                 "application.properties should exist: " + properties.toAbsolutePath().toString());
-        String propertiesFile = CliDriver.readFileAsString(properties);
+        String propertiesFile = CliDriver.readFileAsString(projectRoot, properties);
         configs.forEach(conf -> Assertions.assertTrue(propertiesFile.contains(conf),
                 "Properties file should contain " + conf + ". Found:\n" + propertiesFile));
     }

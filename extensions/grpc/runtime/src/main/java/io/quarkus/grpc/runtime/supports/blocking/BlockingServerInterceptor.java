@@ -1,8 +1,7 @@
-package io.quarkus.grpc.runtime.supports;
+package io.quarkus.grpc.runtime.supports.blocking;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -13,12 +12,15 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableContext.ContextState;
+import io.quarkus.arc.ManagedContext;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 /**
- * gRPC Server interceptor offloading the execution of the gRPC method on a wroker thread if the method is annotated
+ * gRPC Server interceptor offloading the execution of the gRPC method on a worker thread if the method is annotated
  * with {@link io.smallrye.common.annotation.Blocking}.
  *
  * For non-annotated methods, the interceptor acts as a pass-through.
@@ -62,13 +64,23 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         boolean isBlocking = cache.computeIfAbsent(fullMethodName, this);
 
         if (isBlocking) {
-            ReplayListener<ReqT> replay = new ReplayListener<>();
-
+            final ManagedContext requestContext = getRequestContext();
+            // context should always be active here
+            // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
+            // that should always be called before this interceptor
+            ContextState state = requestContext.getState();
+            ReplayListener<ReqT> replay = new ReplayListener<>(state);
             vertx.executeBlocking(new Handler<Promise<Object>>() {
                 @Override
                 public void handle(Promise<Object> f) {
-                    ServerCall.Listener<ReqT> listener = next.startCall(call, headers);
-                    replay.setDelegate(listener);
+                    ServerCall.Listener<ReqT> listener;
+                    try {
+                        requestContext.activate(state);
+                        listener = next.startCall(call, headers);
+                    } finally {
+                        requestContext.deactivate();
+                    }
+                    replay.setDelegate(listener, requestContext);
                     f.complete(null);
                 }
             }, null);
@@ -87,28 +99,44 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
      */
     private class ReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private ServerCall.Listener<ReqT> delegate;
-        private final List<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new LinkedList<>();
+        private final List<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new ArrayList<>();
+        private final ContextState requestContextState;
 
-        synchronized void setDelegate(ServerCall.Listener<ReqT> delegate) {
+        private ReplayListener(ContextState requestContextState) {
+            this.requestContextState = requestContextState;
+        }
+
+        synchronized void setDelegate(ServerCall.Listener<ReqT> delegate,
+                ManagedContext requestContext) {
             this.delegate = delegate;
-            for (Consumer<ServerCall.Listener<ReqT>> event : incomingEvents) {
-                event.accept(delegate);
+            requestContext.activate(requestContextState);
+            try {
+                for (Consumer<ServerCall.Listener<ReqT>> event : incomingEvents) {
+                    event.accept(delegate);
+                }
+            } finally {
+                requestContext.deactivate();
             }
             incomingEvents.clear();
         }
 
         private synchronized void executeOnContextOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
             if (this.delegate != null) {
-                final Context grpcContext = Context.current();
-                Handler<Promise<Object>> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate);
-                if (devMode) {
-                    blockingHandler = new DevModeBlockingExecutionHandler<ReqT>(Thread.currentThread().getContextClassLoader(),
-                            blockingHandler);
-                }
-                vertx.executeBlocking(blockingHandler, true, null);
+                executeBlockingWithRequestContext(consumer);
             } else {
                 incomingEvents.add(consumer);
             }
+        }
+
+        private void executeBlockingWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
+            final Context grpcContext = Context.current();
+            Handler<Promise<Object>> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
+                    requestContextState, getRequestContext());
+            if (devMode) {
+                blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
+                        blockingHandler);
+            }
+            vertx.executeBlocking(blockingHandler, true, null);
         }
 
         @Override
@@ -142,50 +170,8 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         }
     }
 
-    private static class DevModeBlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
-
-        final ClassLoader tccl;
-        final Handler<Promise<Object>> delegate;
-
-        public DevModeBlockingExecutionHandler(ClassLoader tccl, Handler<Promise<Object>> delegate) {
-            this.tccl = tccl;
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void handle(Promise<Object> event) {
-            ClassLoader originalTccl = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(tccl);
-            try {
-                delegate.handle(event);
-            } finally {
-                Thread.currentThread().setContextClassLoader(originalTccl);
-            }
-        }
-    }
-
-    private static class BlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
-        private final ServerCall.Listener<ReqT> delegate;
-        private final Context grpcContext;
-        private final Consumer<ServerCall.Listener<ReqT>> consumer;
-
-        public BlockingExecutionHandler(Consumer<ServerCall.Listener<ReqT>> consumer, Context grpcContext,
-                ServerCall.Listener<ReqT> delegate) {
-            this.consumer = consumer;
-            this.grpcContext = grpcContext;
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void handle(Promise<Object> event) {
-            final Context previous = Context.current();
-            grpcContext.attach();
-            try {
-                consumer.accept(delegate);
-                event.complete();
-            } finally {
-                grpcContext.detach(previous);
-            }
-        }
+    // protected for tests
+    protected ManagedContext getRequestContext() {
+        return Arc.container().requestContext();
     }
 }

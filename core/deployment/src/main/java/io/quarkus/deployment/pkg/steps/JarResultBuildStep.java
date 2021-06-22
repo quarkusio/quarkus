@@ -129,13 +129,9 @@ public class JarResultBuildStep {
             "META-INF/build.metadata", // present in the Red Hat Build of Quarkus
             "LICENSE");
 
-    private static final Predicate<String> CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
-        @Override
-        public boolean test(String path) {
-            return "META-INF/io.netty.versions.properties".equals(path) ||
-                    (path.startsWith("META-INF/services/") && path.length() > 18);
-        }
-    };
+    private static final Predicate<String> CONCATENATED_ENTRIES_PREDICATE = path -> "META-INF/io.netty.versions.properties"
+            .equals(path)
+            || (path.startsWith("META-INF/services/") && path.length() > 18);
 
     private static final Logger log = Logger.getLogger(JarResultBuildStep.class);
 

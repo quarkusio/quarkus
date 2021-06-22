@@ -38,12 +38,7 @@ public class AeshConsole extends QuarkusConsole {
      */
     private final LinkedBlockingDeque<String> writeQueue = new LinkedBlockingDeque<>();
     private final Lock connectionLock = new ReentrantLock();
-    private static final ThreadLocal<Boolean> IN_WRITE = new ThreadLocal<>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
+    private static final ThreadLocal<Boolean> IN_WRITE = ThreadLocal.withInitial(() -> false);
 
     public AeshConsole(Connection connection, boolean inputSupport) {
         this.inputSupport = inputSupport;

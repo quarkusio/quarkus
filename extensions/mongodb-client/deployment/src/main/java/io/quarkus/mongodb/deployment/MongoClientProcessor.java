@@ -241,27 +241,36 @@ public class MongoClientProcessor {
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             MongodbConfig mongodbConfig,
             List<MongoUnremovableClientsBuildItem> mongoUnremovableClientsBuildItem,
+            List<MongoUnremovableSyncClientsBuildItem> mongoUnremovableSyncClientsBuildItems,
+            List<MongoUnremovableReactiveClientsBuildItem> mongoUnremovableReactiveClientsBuildItems,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        boolean makeUnremovable = !mongoUnremovableClientsBuildItem.isEmpty();
+        boolean makeUnremovableSyncClient = !mongoUnremovableSyncClientsBuildItems.isEmpty()
+                || !mongoUnremovableClientsBuildItem.isEmpty();
+        boolean makeUnremovableReactiveClient = !mongoUnremovableReactiveClientsBuildItems.isEmpty()
+                || !mongoUnremovableClientsBuildItem.isEmpty();
+        boolean createDefaultBlockingMongoClient = mongoClientBuildTimeConfig.forceDefaultSyncClient
+                || mongoClientBuildTimeConfig.forceDefaultClients || makeUnremovableSyncClient;
+        boolean createDefaultReactiveMongoClient = mongoClientBuildTimeConfig.forceDefaultReactiveClient
+                || mongoClientBuildTimeConfig.forceDefaultClients || makeUnremovableReactiveClient;
 
-        boolean createDefaultBlockingMongoClient = false;
-        boolean createDefaultReactiveMongoClient = false;
-        if (makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients) {
-            // all clients are expected to exist in this case
-            createDefaultBlockingMongoClient = true;
-            createDefaultReactiveMongoClient = true;
-        } else {
-            // we only create the default client if they are actually used by injection points
+        if (!createDefaultBlockingMongoClient) {
+            // we only create the default sync client if it is actually used by injection points
             for (InjectionPointInfo injectionPoint : registrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
                 DotName injectionPointType = injectionPoint.getRequiredType().name();
                 if (injectionPointType.equals(MONGO_CLIENT) && injectionPoint.hasDefaultedQualifier()) {
                     createDefaultBlockingMongoClient = true;
-                } else if (injectionPointType.equals(REACTIVE_MONGO_CLIENT) && injectionPoint.hasDefaultedQualifier()) {
-                    createDefaultReactiveMongoClient = true;
+                    break;
                 }
+            }
+        }
 
-                if (createDefaultBlockingMongoClient && createDefaultReactiveMongoClient) {
+        if (!createDefaultReactiveMongoClient) {
+            // we only create the default reactive client if it is actually used by injection points
+            for (InjectionPointInfo injectionPoint : registrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+                DotName injectionPointType = injectionPoint.getRequiredType().name();
+                if (injectionPointType.equals(REACTIVE_MONGO_CLIENT) && injectionPoint.hasDefaultedQualifier()) {
+                    createDefaultReactiveMongoClient = true;
                     break;
                 }
             }
@@ -269,23 +278,27 @@ public class MongoClientProcessor {
 
         if (createDefaultBlockingMongoClient) {
             syntheticBeanBuildItemBuildProducer.produce(createBlockingSyntheticBean(recorder, mongodbConfig,
-                    makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients,
+                    makeUnremovableSyncClient || mongoClientBuildTimeConfig.forceDefaultSyncClient
+                            || mongoClientBuildTimeConfig.forceDefaultClients,
                     MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
         }
         if (createDefaultReactiveMongoClient) {
             syntheticBeanBuildItemBuildProducer.produce(createReactiveSyntheticBean(recorder, mongodbConfig,
-                    makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients,
+                    makeUnremovableReactiveClient || mongoClientBuildTimeConfig.forceDefaultReactiveClient
+                            || mongoClientBuildTimeConfig.forceDefaultClients,
                     MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
         }
 
         for (MongoClientNameBuildItem mongoClientName : mongoClientNames) {
             // named blocking client
             syntheticBeanBuildItemBuildProducer
-                    .produce(createBlockingSyntheticBean(recorder, mongodbConfig, makeUnremovable, mongoClientName.getName(),
+                    .produce(createBlockingSyntheticBean(recorder, mongodbConfig, makeUnremovableSyncClient,
+                            mongoClientName.getName(),
                             mongoClientName.isAddQualifier()));
             // named reactive client
             syntheticBeanBuildItemBuildProducer
-                    .produce(createReactiveSyntheticBean(recorder, mongodbConfig, makeUnremovable, mongoClientName.getName(),
+                    .produce(createReactiveSyntheticBean(recorder, mongodbConfig, makeUnremovableReactiveClient,
+                            mongoClientName.getName(),
                             mongoClientName.isAddQualifier()));
         }
     }

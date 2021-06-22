@@ -23,6 +23,15 @@ link:https://github.com/eclipse/microprofile-context-propagation[MicroProfile Co
 make those Quarkus extensions work properly in reactive/async settings. It works by capturing those contextual
 values that used to be in thread-locals, and restoring them when your code is called.
 
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `context-propagation-quickstart` {quickstarts-tree-url}/context-propagation-quickstart[directory].
+
 == Setting it up
 
 If you are using link:http://smallrye.io/smallrye-mutiny[Mutiny] (the `quarkus-mutiny` extension), you just need to add the

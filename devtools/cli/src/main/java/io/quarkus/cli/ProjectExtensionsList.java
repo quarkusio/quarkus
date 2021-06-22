@@ -18,17 +18,24 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, description = "List platforms and extensions for this project.")
+@CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, description = "%n"
+        + "List platforms and extensions for this project. ", footer = { "%nList modes:%n",
+                "relative: Active when invoked within a project unless an explicit release is specified. " +
+                        "The current project configuration will determine what extensions are listed, " +
+                        "with installed (available) extensions listed by default.%n",
+                "absolute: Active when invoked outside of a project or when an explicit release is specified. " +
+                        "All extensions for the specified release will be listed. " +
+                        "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" })
 public class ProjectExtensionsList extends BaseBuildCommand implements Callable<Integer> {
 
     @Mixin
     RunModeOption runMode;
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version%n")
+    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute)%n")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
 
     @CommandLine.Option(names = { "-i",
-            "--installable" }, defaultValue = "false", order = 2, description = "Display installable extensions.")
+            "--installable" }, defaultValue = "false", order = 2, description = "List extensions that can be installed (relative)")
     boolean installable = false;
 
     @CommandLine.Option(names = { "-s",

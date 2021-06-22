@@ -146,7 +146,32 @@ $ quarkus create app --help
 $ quarkus create cli --help
 ----
 
-Note: Use `--platform-bom=groupId:artifactId:version` to target a specific version of quarkus
+[NOTE]
+.Specifying the Quarkus version
+====
+Both `quarkus create` and `quarkus extension list` allow you to explicitly specify a version of Quarkus in one of two ways:
+
+1. Specify a specific Platform Release BOM
++
+A https://quarkus.io/guides/platform#quarkus-platform-bom[Quarkus Platform release BOM] is identified by `groupId:artifactId:version` (GAV) coordinates. When specifying a platform release BOM, you may use empty segments to fallback to default values (groupId: `io.quarkus`, artifactId: `quarkus-bom`, version: cli version). If you specify only one segment (no `:`), it is assumed to be a version.
++
+For example:
++
+- Given the `2.0.0.Final` version of the CLI, specifying `-P :quarkus-universe-bom:` is equivalent to `-P io.quarkus:quarkus-universe-bom:2.0.0.Final`.
+- Specifying `-P 999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`
++
+Note: default values are subject to change. Using the `--dryRun` option will show you the computed value.
+
+2. Specify a Platform Stream
++
+Platform streams are new in Quarkus 2.0. 
++
+A platform stream operates against the concept of a "registry". Each registry defines one or more platform streams, and each stream defines one or more platform release BOM files that define how projects using that stream should be configured.
++
+Streams are identified using `platformKey:streamId` syntax. A specific stream can be specified using `-S platformKey:streamId`. When specifying a stream, empty segments will be replaced with _discovered_ defaults, based on stream resource resolution rules.
++
+For `2.0.0.Final`, you must enable the registry client (`--registry-client`) explicitly to specify a stream. This will not be required in later releases.
+====
 
 == Dealing with extensions
 
@@ -155,21 +180,43 @@ Note: Use `--platform-bom=groupId:artifactId:version` to target a specific versi
 $ quarkus ext --help
 ----
 
-The Quarkus CLI can obtain a list of the extensions in the project:
+=== Listing extensions
+
+The Quarkus CLI can be used to list Quarkus extensions.
 
 [source,shell]
 ----
 $ quarkus ext ls
 ----
 
-To get a list of available extensions to install use `--installable` or `-i`.
+The format of the result can be controlled with one of four options: 
 
-You can combine that with a search (`--search` or `-s`) and get a concise
-list including description with `--concise`.
+- `--name`    Display the name (artifactId) only
+- `--concise` Display the name (artifactId) and description
+- `--full`    Display concise format and version/status-related columns.
+- `--origins` Display concise information along with the Quarkus platform release origin of the extension.
+
+The behavior of `quarkus ext ls` will vary depending on context.
+
+==== Listing Extensions for a Quarkus release
+
+If you invoke the Quarkus CLI from outside of a project, Quarkus will list all of the extensions available for the Quarkus release used by the CLI itself.
+
+You can also list extensions for a specific release of Quarkus using `-P` or `-S`, as described in <<Specifying the Quarkus version>>.
+
+This mode uses the `--origins` format by default.
+
+==== Listing Extensions for a Quarkus project
+
+When working with a Quarkus project, the CLI will list the extensions the current project has installed, using the `--name` format by default.
+
+Use the `--installable` or `-i` option to list extensions that can be installed from the Quarkus platform the project is using.
+
+You can narrow or filter the list using search (`--search` or `-s`).
 
 [source,shell]
 ----
-$ quarkus ext list -i --concise -s jdbc
+$ quarkus ext list --concise -i -s jdbc
 JDBC Driver - DB2                                  quarkus-jdbc-db2
 JDBC Driver - PostgreSQL                           quarkus-jdbc-postgresql
 JDBC Driver - H2                                   quarkus-jdbc-h2
@@ -182,7 +229,8 @@ Elytron Security JDBC                              quarkus-elytron-security-jdbc
 Agroal - Database connection pool                  quarkus-agroal
 ----
 
-== Adding extension(s)
+
+=== Adding extension(s)
 
 The Quarkus CLI can add Quarkus one or more extensions to your project with the 'add'
 command:
@@ -194,9 +242,9 @@ $ quarkus ext add kubernetes health
 [SUCCESS] ✅ Extension io.quarkus:quarkus-smallrye-health has been installed
 ----
 
-== Removing extension(s)
+=== Removing extension(s)
 
-The Quarkus CLI can add Quarkus one or more extensions to your project with the 'add'
+The Quarkus CLI can remove one or more extensions from your project with the 'remove'
 command:
 
 [source,shell]

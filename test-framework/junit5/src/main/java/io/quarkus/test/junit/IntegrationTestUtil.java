@@ -232,8 +232,22 @@ final class IntegrationTestUtil {
         Path buildOutputDirectory = determineBuildOutputDirectory(context);
         Path artifactProperties = buildOutputDirectory.resolve("quarkus-artifact.properties");
         if (!Files.exists(artifactProperties)) {
-            throw new IllegalStateException(
-                    "Unable to locate the artifact metadata file created that must be created by Quarkus in order to run integration tests.");
+            TestLauncher testLauncher = determineTestLauncher();
+            String errorMessage = "Unable to locate the artifact metadata file created that must be created by Quarkus in order to run integration tests. ";
+            if (testLauncher == TestLauncher.MAVEN) {
+                errorMessage += "Make sure this test is run after 'mvn package'. ";
+                if (context.getTestClass().isPresent()) {
+                    String testClassName = context.getTestClass().get().getName();
+                    if (testClassName.endsWith("Test")) {
+                        errorMessage += "The easiest way to ensure this is by having the 'maven-failsafe-plugin' run the test instead of the 'maven-surefire-plugin'.";
+                    }
+                }
+            } else if (testLauncher == TestLauncher.GRADLE) {
+                errorMessage += "Make sure this test is run after the 'quarkusBuild' Gradle task.";
+            } else {
+                errorMessage += "Make sure this test is run after the Quarkus artifact is built from your build tool.";
+            }
+            throw new IllegalStateException(errorMessage);
         }
         try {
             Properties properties = new Properties();
@@ -244,6 +258,33 @@ final class IntegrationTestUtil {
                     "Unable to read artifact metadata file created that must be created by Quarkus in order to run integration tests.",
                     e);
         }
+    }
+
+    private static TestLauncher determineTestLauncher() {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        int i = stackTrace.length - 1;
+        TestLauncher testLauncher = TestLauncher.UNKNOWN;
+        while (true) {
+            StackTraceElement element = stackTrace[i--];
+            String className = element.getClassName();
+            if (className.startsWith("org.apache.maven")) {
+                testLauncher = TestLauncher.MAVEN;
+                break;
+            }
+            if (className.startsWith("org.gradle")) {
+                testLauncher = TestLauncher.GRADLE;
+            }
+            if (i == 0) {
+                break;
+            }
+        }
+        return testLauncher;
+    }
+
+    private enum TestLauncher {
+        MAVEN,
+        GRADLE,
+        UNKNOWN
     }
 
     static Path determineBuildOutputDirectory(ExtensionContext context) {

@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -27,7 +26,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.graal.InetRunTime;
-import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.ConfigValidator;
@@ -82,22 +80,15 @@ class ConfigBuildSteps {
         providerProducer.produce(new ServiceProviderBuildItem(ConfigProviderResolver.class.getName(),
                 SmallRyeConfigProviderResolver.class.getName()));
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        classLoader.getResources(SERVICES_PREFIX + ConfigSourceProvider.class.getName());
         for (Class<?> serviceClass : Arrays.asList(
-                ConfigSource.class,
-                ConfigSourceProvider.class,
                 Converter.class,
                 ConfigSourceInterceptor.class,
                 ConfigSourceInterceptorFactory.class,
-                ConfigSourceFactory.class,
                 ConfigValidator.class)) {
             final String serviceName = serviceClass.getName();
             final Set<String> names = ServiceUtil.classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceName);
-            final List<String> list = names.stream()
-                    // todo: see https://github.com/quarkusio/quarkus/issues/5492
-                    .filter(s -> !s.startsWith("org.jboss.resteasy.microprofile.config.")).collect(Collectors.toList());
-            if (!list.isEmpty()) {
-                providerProducer.produce(new ServiceProviderBuildItem(serviceName, list));
+            if (!names.isEmpty()) {
+                providerProducer.produce(new ServiceProviderBuildItem(serviceName, names));
             }
         }
     }

@@ -32,6 +32,9 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
+import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
+import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
+import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
@@ -50,8 +53,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
@@ -122,9 +125,22 @@ public class ResteasyCommonProcessor {
     }
 
     @BuildStep
-    void initConfigSourceProvider(BuildProducer<AdditionalStaticInitConfigSourceProviderBuildItem> initConfigSourceProvider) {
+    void addStaticInitConfigSourceProvider(
+            Capabilities capabilities,
+            BuildProducer<StaticInitConfigSourceProviderBuildItem> initConfigSourceProvider,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+
+        if (!capabilities.isCapabilityWithPrefixPresent(Capability.SERVLET)) {
+            return;
+        }
+
         initConfigSourceProvider.produce(
-                new AdditionalStaticInitConfigSourceProviderBuildItem(ResteasyConfigSourceProvider.class.getName()));
+                new StaticInitConfigSourceProviderBuildItem(ResteasyConfigSourceProvider.class.getName()));
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                ServletConfigSourceImpl.class,
+                ServletContextConfigSourceImpl.class,
+                FilterConfigSourceImpl.class));
     }
 
     @BuildStep

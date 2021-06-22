@@ -71,7 +71,7 @@ But many properties like enable caching or setting the JDBC driver can safely re
 
 ==== Static Init Config
 
-If the extension provides additional Config Sources and if these are required during Static Init, these must be registered with `AdditionalStaticInitConfigSourceProviderBuildItem`. Configuration in Static Init does not scan for additional sources to avoid double initialization at application startup time.
+If the extension provides additional Config Sources and if these are required during Static Init, these must be registered with `StaticInitConfigSourceProviderBuildItem`. Configuration in Static Init does not scan for additional sources to avoid double initialization at application startup time.
 
 ////
 === API

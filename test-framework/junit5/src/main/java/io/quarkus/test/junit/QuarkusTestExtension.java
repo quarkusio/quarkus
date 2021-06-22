@@ -2,6 +2,7 @@ package io.quarkus.test.junit;
 
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -19,7 +20,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -423,38 +423,6 @@ public class QuarkusTestExtension
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
-        }
-    }
-
-    /**
-     * Since {@link TestResourceManager} is loaded from the ClassLoader passed in as an argument,
-     * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
-     * {@link TestResourceManager.TestResourceClassEntry}
-     * that are loaded from that ClassLoader
-     */
-    private List<Object> getAdditionalTestResources(
-            QuarkusTestProfile profileInstance, ClassLoader classLoader) {
-        if ((profileInstance == null) || profileInstance.testResources().isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        try {
-            Constructor<?> testResourceClassEntryConstructor = Class
-                    .forName(TestResourceManager.TestResourceClassEntry.class.getName(), true, classLoader)
-                    .getConstructor(Class.class, Map.class, Annotation.class, boolean.class);
-
-            List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
-            List<Object> result = new ArrayList<>(testResources.size());
-            for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
-                Object instance = testResourceClassEntryConstructor.newInstance(
-                        Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
-                        null, testResource.isParallel());
-                result.add(instance);
-            }
-
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass(), e);
         }
     }
 

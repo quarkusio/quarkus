@@ -186,6 +186,8 @@
         <module>grpc-interceptors</module>
         <module>grpc-proto-v2</module>
         <module>grpc-health</module>
+        <module>grpc-hibernate</module>
+        <module>grpc-hibernate-reactive</module>
         <module>google-cloud-functions-http</module>
         <module>google-cloud-functions</module>
     </modules>

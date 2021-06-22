@@ -48,7 +48,7 @@ public class MavenRegistryArtifactResolverWithCleanup implements MavenRegistryAr
      */
     protected static ArtifactResult resolveAndCleanupOldTimestampedVersions(MavenArtifactResolver resolver, Artifact artifact,
             boolean cleanupOldTimestampedVersions) throws BootstrapMavenException {
-        if (!cleanupOldTimestampedVersions) {
+        if (!artifact.isSnapshot() || !cleanupOldTimestampedVersions) {
             return resolver.resolve(artifact);
         }
 
@@ -63,7 +63,9 @@ public class MavenRegistryArtifactResolverWithCleanup implements MavenRegistryAr
         if (jsonDirContent != null && jsonDirContent.length > existingFiles.size()) {
             final String fileName = result.getArtifact().getFile().getName();
             for (File c : jsonDirContent) {
-                if (c.getName().length() > fileName.length() && c.getName().startsWith(artifact.getArtifactId())
+                if (c.getName().length() > fileName.length()
+                        && c.getName().startsWith(artifact.getArtifactId())
+                        && c.getName().endsWith(artifact.getClassifier())
                         && existingFiles.contains(c.getName())) {
                     c.deleteOnExit();
                 }

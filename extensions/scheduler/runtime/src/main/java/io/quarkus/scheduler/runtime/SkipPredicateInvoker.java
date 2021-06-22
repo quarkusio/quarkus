@@ -1,7 +1,5 @@
 package io.quarkus.scheduler.runtime;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.enterprise.event.Event;
 
 import org.jboss.logging.Logger;
@@ -11,39 +9,35 @@ import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.SkippedExecution;
 
 /**
- * A scheduled invoker wrapper that skips concurrent executions.
+ * A scheduled invoker wrapper that skips the execution if the predicate evaluates to true.
  * 
- * @see Scheduled#concurrentExecution()
- * @see io.quarkus.scheduler.Scheduled.ConcurrentExecution#SKIP
+ * @see Scheduled#skipExecutionIf()
  */
-public final class SkipConcurrentExecutionInvoker implements ScheduledInvoker {
+public final class SkipPredicateInvoker implements ScheduledInvoker {
 
-    private static final Logger LOGGER = Logger.getLogger(SkipConcurrentExecutionInvoker.class);
+    private static final Logger LOGGER = Logger.getLogger(SkipPredicateInvoker.class);
 
-    private final AtomicBoolean running;
     private final ScheduledInvoker delegate;
+    private final Scheduled.SkipPredicate predicate;
     private final Event<SkippedExecution> event;
 
-    public SkipConcurrentExecutionInvoker(ScheduledInvoker delegate, Event<SkippedExecution> event) {
-        this.running = new AtomicBoolean(false);
+    public SkipPredicateInvoker(ScheduledInvoker delegate, Scheduled.SkipPredicate predicate,
+            Event<SkippedExecution> event) {
         this.delegate = delegate;
+        this.predicate = predicate;
         this.event = event;
     }
 
     @Override
     public void invoke(ScheduledExecution execution) throws Exception {
-        if (running.compareAndSet(false, true)) {
-            try {
-                delegate.invoke(execution);
-            } finally {
-                running.set(false);
-            }
-        } else {
+        if (predicate.test(execution)) {
             LOGGER.debugf("Skipped scheduled invoker execution: %s", delegate.getClass().getName());
             SkippedExecution payload = new SkippedExecution(execution,
-                    "The scheduled method should not be executed concurrently");
+                    predicate.getClass().getName());
             event.fire(payload);
             event.fireAsync(payload);
+        } else {
+            delegate.invoke(execution);
         }
     }
 

@@ -331,33 +331,30 @@ public class SchedulerProcessor {
         AnnotationValue everyValue = schedule.value("every");
         if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
             String cron = cronValue.asString().trim();
-            if (SchedulerUtils.isConfigValue(cron)) {
-                // Don't validate config property
-                return null;
-            }
-            try {
-                parser.parse(cron).validate();
-            } catch (IllegalArgumentException e) {
-                return new IllegalStateException("Invalid cron() expression on: " + schedule, e);
-            }
-            if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
-                LOGGER.warnf(
-                        "%s declared on %s#%s() defines both cron() and every() - the cron expression takes precedence",
-                        schedule, method.declaringClass().name(), method.name());
+            if (!SchedulerUtils.isConfigValue(cron)) {
+                try {
+                    parser.parse(cron).validate();
+                } catch (IllegalArgumentException e) {
+                    return new IllegalStateException("Invalid cron() expression on: " + schedule, e);
+                }
+                if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
+                    LOGGER.warnf(
+                            "%s declared on %s#%s() defines both cron() and every() - the cron expression takes precedence",
+                            schedule, method.declaringClass().name(), method.name());
+                }
             }
         } else {
             if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                 String every = everyValue.asString().trim();
-                if (SchedulerUtils.isConfigValue(every)) {
-                    return null;
-                }
-                if (Character.isDigit(every.charAt(0))) {
-                    every = "PT" + every;
-                }
-                try {
-                    Duration.parse(every);
-                } catch (Exception e) {
-                    return new IllegalStateException("Invalid every() expression on: " + schedule, e);
+                if (!SchedulerUtils.isConfigValue(every)) {
+                    if (Character.isDigit(every.charAt(0))) {
+                        every = "PT" + every;
+                    }
+                    try {
+                        Duration.parse(every);
+                    } catch (Exception e) {
+                        return new IllegalStateException("Invalid every() expression on: " + schedule, e);
+                    }
                 }
             } else {
                 return new IllegalStateException("@Scheduled must declare either cron() or every(): " + schedule);
@@ -368,16 +365,15 @@ public class SchedulerProcessor {
         if (delay == null || delay.asLong() <= 0) {
             if (delayedValue != null && !delayedValue.asString().trim().isEmpty()) {
                 String delayed = delayedValue.asString().trim();
-                if (SchedulerUtils.isConfigValue(delayed)) {
-                    return null;
-                }
-                if (Character.isDigit(delayed.charAt(0))) {
-                    delayed = "PT" + delayed;
-                }
-                try {
-                    Duration.parse(delayed);
-                } catch (Exception e) {
-                    return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
+                if (!SchedulerUtils.isConfigValue(delayed)) {
+                    if (Character.isDigit(delayed.charAt(0))) {
+                        delayed = "PT" + delayed;
+                    }
+                    try {
+                        Duration.parse(delayed);
+                    } catch (Exception e) {
+                        return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
+                    }
                 }
             }
         } else {

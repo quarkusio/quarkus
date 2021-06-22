@@ -404,6 +404,28 @@ quarkus.log.syslog.hostname=quarkus-test
 
 Launch your application, you should see your logs arriving inside EFK: you can use Kibana available at http://localhost:5601/ to access them.
 
+== Elasticsearch indexing consideration
+
+Be careful that, by default, Elasticsearch will automatically map unknown fields (if not disabled in the index settings) by detecting their type.
+This can become tricky if you use log parameters (which are included by default), or if you enable MDC inclusion (disabled by default),
+as the first log will define the type of the message parameter (or MDC parameter) field inside the index.
+
+Imagine the following case:
+
+[source, java]
+----
+LOG.info("some {} message {} with {} param", 1, 2, 3);
+LOG.info("other {} message {} with {} param", true, true, true);
+----
+
+With log message parameters enabled, the first log message sent to Elasticsearch will have a `MessageParam0` parameter with an `int` type;
+this will configure the index with a field of type `integer`.
+When the second message will arrive to Elasticsearch, it will have a `MessageParam0` parameter with the boolean value `true`, and this will generate an indexing error.
+
+To work around this limitation, you can disable sending log message parameters via `logging-gelf` by configuring `quarkus.log.handler.gelf.include-log-message-parameters=false`,
+or you can configure your Elasticsearch index to store those fields as text or keyword, Elasticsearch will then automatically make the translation from int/boolean to a String.
+
+See the following documentation for Graylog (but the same issue exists for the other central logging stacks): link:https://docs.graylog.org/en/3.2/pages/configuration/elasticsearch.html#custom-index-mappings[Custom Index Mappings].
 
 [[configuration-reference]]
 == Configuration Reference

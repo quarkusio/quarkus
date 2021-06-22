@@ -17,7 +17,6 @@ To complete this guide, you need:
 * an IDE
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
-* A running Kafka cluster, or Docker Compose to start a development cluster
 * GraalVM installed if you want to run in native mode.
 
 == Architecture
@@ -25,7 +24,7 @@ To complete this guide, you need:
 In this guide, we are going to generate (random) prices in one component.
 These prices are written in a Kafka topic (`prices`).
 A second component reads from the `prices` Kafka topic and apply some magic conversion to the price.
-The result is sent to an in-memory stream consumed by a JAX-RS resource.
+The result is sent to an in-memory channel consumed by a JAX-RS resource.
 The data is sent to a browser using server-sent events.
 
 image::kafka-guide-architecture.png[alt=Architecture, align=center]
@@ -69,7 +68,6 @@ This will add the following to your `pom.xml`:
 
 [source,xml]
 ----
-
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
@@ -216,14 +214,14 @@ import org.reactivestreams.Publisher;
 /**
  * A simple resource retrieving the prices topic and sending the items to a server sent event.
  */
-@Path("/prices")
+@Path("/")
 public class PriceResource {
 
     @Inject
     @Channel("my-data-stream") Publisher<Price> prices; // <1>
 
     @GET
-    @Path("/stream")
+    @Path("/prices")
     @Produces(MediaType.SERVER_SENT_EVENTS) // <2>
     public Publisher<Price> stream() { // <3>
         return prices;
@@ -238,7 +236,7 @@ public class PriceResource {
 
 Finally, we will configure JSON serialization for messages using Jackson.
 Quarkus provides default implementations for Kafka serializer/deserializer pairs using Jackson `ObjectMapper`.
-`ObjectMapperSerializer` can be used to serialize all pojos via Jackson.
+`ObjectMapperSerializer` can be used to serialize all objects via Jackson.
 For the corresponding deserializer class, we need to create a subclass of `ObjectMapperDeserializer`.
 
 So, let's create `src/main/java/org/acme/kafka/PriceDeserializer.java`
@@ -277,18 +275,18 @@ The keys are structured as follows:
 
 The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
 
-* `generated-price` -> sink in which we write the prices
-* `prices` -> source in which we read the prices
+* `generated-price` -> Kafka topic in which we write the prices
+* `prices` -> Kafka topic from which we read the prices
 
 [source,properties]
 ----
 
-# Configure the Kafka sink (we write to it)
+# Configure the outgoing Kafka topic (we write to it)
 mp.messaging.outgoing.generated-price.connector=smallrye-kafka
 mp.messaging.outgoing.generated-price.topic=prices
 mp.messaging.outgoing.generated-price.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
 
-# Configure the Kafka source (we read from it)
+# Configure the incoming Kafka topic (we read from it)
 mp.messaging.incoming.prices.connector=smallrye-kafka
 mp.messaging.incoming.prices.topic=prices
 mp.messaging.incoming.prices.value.deserializer=org.acme.kafka.PriceDeserializer
@@ -328,9 +326,9 @@ Create the `src/main/resources/META-INF/resources/prices.html` file, with the fo
     </div>
 </div>
 </body>
-<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    var source = new EventSource("/prices/stream");
+    var source = new EventSource("/prices");
     source.onmessage = function (event) {
         var json = JSON.parse(event.data);
         document.getElementById("value").innerHTML = json.value;

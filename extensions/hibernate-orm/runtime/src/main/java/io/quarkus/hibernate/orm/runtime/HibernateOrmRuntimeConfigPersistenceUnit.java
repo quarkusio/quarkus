@@ -72,7 +72,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          *
          * `drop-and-create` is awesome in development mode.
          *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`.
+         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
         public String generation = "none";
@@ -102,7 +102,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
         /**
          * Select whether the database schema DDL files are generated or not.
          *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`.
+         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
         public String generation = "none";

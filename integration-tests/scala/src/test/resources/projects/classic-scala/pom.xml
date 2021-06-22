@@ -102,7 +102,7 @@
                         <arg>-deprecation</arg>
                         <arg>-feature</arg>
                         <arg>-explaintypes</arg>
-                        <arg>-target:jvm-11</arg>
+                        <arg>-target:jvm-1.8</arg>
                         <arg>-Ypartial-unification</arg>
                     </args>
                 </configuration>

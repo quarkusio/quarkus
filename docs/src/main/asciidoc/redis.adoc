@@ -89,6 +89,20 @@ docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name red
 If you use <<dev-services,DevServices>>, launching the container manually is not necessary!
 ====
 
+== Shared server
+
+Most of the time you need to share the server between applications.
+Dev Services for Redis implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single server.
+
+NOTE: Dev Services for Redis starts the container with the `quarkus-dev-service-redis` label which is used to identify the container.
+
+If you need multiple (shared) servers, you can configure the `quarkus.redis.devservices.service-name` attribute and indicate the server name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `redis`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.redis.devservices.shared=false`.
+
 == Configuring Redis properties
 
 Once we have the Redis server running, we need to configure the Redis connection properties.

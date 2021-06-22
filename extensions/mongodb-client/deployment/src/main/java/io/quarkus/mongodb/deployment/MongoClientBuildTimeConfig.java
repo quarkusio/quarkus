@@ -26,9 +26,24 @@ public class MongoClientBuildTimeConfig {
 
     /**
      * If set to true, the default clients will always be created even if there are no injection points that use them
+     * 
+     * @deprecated use forceDefaultSyncClient and/or forceDefaultReactiveClient instead
      */
     @ConfigItem(name = "force-default-clients")
+    @Deprecated
     public boolean forceDefaultClients;
+
+    /**
+     * If set to true, the default sync client will always be created even if there are no injection points that use it
+     */
+    @ConfigItem
+    public boolean forceDefaultSyncClient;
+
+    /**
+     * If set to true, the default reactive client will always be created even if there are no injection points that use it
+     */
+    @ConfigItem
+    public boolean forceDefaultReactiveClient;
 
     /**
      * Configuration for DevServices. DevServices allows Quarkus to automatically start MongoDB in dev and test mode.

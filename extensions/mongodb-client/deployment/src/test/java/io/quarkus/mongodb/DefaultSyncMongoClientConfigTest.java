@@ -18,10 +18,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.mongodb.client.MongoClient;
 
 import io.quarkus.mongodb.health.MongoHealthCheck;
-import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
+public class DefaultSyncMongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -32,17 +31,11 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
     MongoClient client;
 
     @Inject
-    ReactiveMongoClient reactiveClient;
-
-    @Inject
     @Any
     MongoHealthCheck health;
 
     @AfterEach
     void cleanup() {
-        if (reactiveClient != null) {
-            reactiveClient.close();
-        }
         if (client != null) {
             client.close();
         }
@@ -51,13 +44,11 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
     @Test
     public void testClientInjection() {
         assertThat(client.listDatabaseNames().first()).isNotEmpty();
-        assertThat(reactiveClient.listDatabases().collect().first().await().indefinitely()).isNotEmpty();
 
-        org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
+        HealthCheckResponse response = health.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
         assertThat(response.getData()).isNotEmpty();
-        assertThat(response.getData().get()).hasSize(2).contains(entry("<default-reactive>", "OK"),
-                entry("<default>", "OK"));
+        assertThat(response.getData().get()).hasSize(1).contains(entry("<default>", "OK"));
 
         // Stop the database and recheck the health
         stopMongoDatabase();
@@ -65,7 +56,7 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
         response = health.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
         assertThat(response.getData()).isNotEmpty();
-        assertThat(response.getData().get()).hasSize(2)
+        assertThat(response.getData().get()).hasSize(1)
                 .allSatisfy(new BiConsumer<String, Object>() {
                     @Override
                     public void accept(String s, Object o) {

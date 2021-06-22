@@ -33,11 +33,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.transfer.TransferCancelledException;
+import org.eclipse.aether.transfer.TransferEvent;
+import org.eclipse.aether.transfer.TransferListener;
 
 public class MavenRegistryClientFactory implements RegistryClientFactory {
 
@@ -70,7 +75,9 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
                     Collections.emptyList(), singleRegistryRepos, true);
             aggregatedRepos = resolver.getRemoteRepositoryManager().aggregateRepositories(resolver.getSession(),
                     aggregatedRepos, resolver.getRepositories(), false);
-            resolver = newResolver(resolver, aggregatedRepos);
+            resolver = newResolver(resolver, aggregatedRepos, config, log);
+        } else {
+            resolver = newResolver(resolver, resolver.getRepositories(), config, log);
         }
 
         final boolean cleanupTimestampedArtifacts = isCleanupTimestampedArtifacts(config);
@@ -326,12 +333,13 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         return true;
     }
 
-    private static MavenArtifactResolver newResolver(MavenArtifactResolver resolver, List<RemoteRepository> aggregatedRepos) {
+    private static MavenArtifactResolver newResolver(MavenArtifactResolver resolver, List<RemoteRepository> aggregatedRepos,
+            RegistryConfig config, MessageWriter log) {
         try {
             final BootstrapMavenContext mvnCtx = new BootstrapMavenContext(
                     BootstrapMavenContext.config()
                             .setRepositorySystem(resolver.getSystem())
-                            .setRepositorySystemSession(resolver.getSession())
+                            .setRepositorySystemSession(setRegistryTransferListener(config, log, resolver.getSession()))
                             .setRemoteRepositoryManager(resolver.getRemoteRepositoryManager())
                             .setRemoteRepositories(aggregatedRepos)
                             .setLocalRepository(resolver.getMavenContext().getLocalRepo())
@@ -340,6 +348,63 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         } catch (BootstrapMavenException e) {
             throw new IllegalStateException("Failed to initialize maven context", e);
         }
+    }
+
+    private static DefaultRepositorySystemSession setRegistryTransferListener(RegistryConfig config, MessageWriter log,
+            RepositorySystemSession session) {
+        final DefaultRepositorySystemSession newSession = new DefaultRepositorySystemSession(session);
+        final TransferListener tl = newSession.getTransferListener();
+        newSession.setTransferListener(new TransferListener() {
+
+            boolean refreshingLocalCache;
+
+            @Override
+            public void transferInitiated(TransferEvent event) throws TransferCancelledException {
+                if (!refreshingLocalCache) {
+                    refreshingLocalCache = true;
+                    log.info("Refreshing the local extension catalog cache of " + config.getId());
+                }
+                if (tl != null) {
+                    tl.transferInitiated(event);
+                }
+            }
+
+            @Override
+            public void transferStarted(TransferEvent event) throws TransferCancelledException {
+                if (tl != null) {
+                    tl.transferStarted(event);
+                }
+            }
+
+            @Override
+            public void transferProgressed(TransferEvent event) throws TransferCancelledException {
+                if (tl != null) {
+                    tl.transferProgressed(event);
+                }
+            }
+
+            @Override
+            public void transferCorrupted(TransferEvent event) throws TransferCancelledException {
+                if (tl != null) {
+                    tl.transferCorrupted(event);
+                }
+            }
+
+            @Override
+            public void transferSucceeded(TransferEvent event) {
+                if (tl != null) {
+                    tl.transferSucceeded(event);
+                }
+            }
+
+            @Override
+            public void transferFailed(TransferEvent event) {
+                if (tl != null) {
+                    tl.transferFailed(event);
+                }
+            }
+        });
+        return newSession;
     }
 
     private void determineExtraRepos(RegistryConfig config,

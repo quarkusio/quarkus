@@ -35,6 +35,13 @@ public class DevServicesProcessor {
     private static final String REDIS_6_ALPINE = "redis:6-alpine";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
+
+    /**
+     * Label to add to shared Dev Service for Kafka running in containers.
+     * This allows other applications to discover the running service and use it instead of starting a new instance.
+     */
+    private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
+
     private static final String QUARKUS = "quarkus.";
     private static final String DOT = ".";
     private static volatile List<Closeable> closeables;

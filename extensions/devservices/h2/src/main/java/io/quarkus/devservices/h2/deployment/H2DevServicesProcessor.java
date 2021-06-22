@@ -51,17 +51,28 @@ public class H2DevServicesProcessor {
                             new Closeable() {
                                 @Override
                                 public void close() throws IOException {
-                                    //make sure the DB is removed on close
-                                    try (Connection connection = DriverManager.getConnection(connectionUrl, "sa", "sa")) {
-                                        try (Statement statement = connection.createStatement()) {
-                                            statement.execute("SET DB_CLOSE_DELAY 0");
+                                    //Test first, to not make too much noise if the Server is dead already
+                                    //(perhaps we failed to start?)
+                                    if (tcpServer.isRunning(false)) {
+                                        //make sure the DB is removed on close
+                                        try (Connection connection = DriverManager.getConnection(
+                                                connectionUrl,
+                                                "sa",
+                                                "sa")) {
+                                            try (Statement statement = connection.createStatement()) {
+                                                statement.execute("SET DB_CLOSE_DELAY 0");
+                                            }
+                                        } catch (SQLException t) {
+                                            t.printStackTrace();
                                         }
-                                    } catch (SQLException t) {
-                                        t.printStackTrace();
+                                        tcpServer.stop();
+                                        System.out.println(
+                                                "[INFO] H2 database was shut down; server status: " + tcpServer.getStatus());
+                                    } else {
+                                        System.out.println(
+                                                "[INFO] H2 database was NOT shut down as it appears it was down already; server status: "
+                                                        + tcpServer.getStatus());
                                     }
-                                    tcpServer.stop();
-                                    System.out.println(
-                                            "[INFO] H2 database was shut down; server status: " + tcpServer.getStatus());
                                 }
                             });
                 } catch (SQLException throwables) {

@@ -29,6 +29,7 @@ public class TestState {
             List<TestResult> passing = new ArrayList<>();
             List<TestResult> failing = new ArrayList<>();
             List<TestResult> skipped = new ArrayList<>();
+            long time = 0;
             for (TestResult j : i.getValue().values()) {
                 if (j.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED) {
                     failing.add(j);
@@ -37,9 +38,12 @@ public class TestState {
                 } else {
                     passing.add(j);
                 }
+                if (j.getUniqueId().getLastSegment().getType().equals("class")) {
+                    time = j.getTime();
+                }
             }
             if (failing.isEmpty()) {
-                TestClassResult p = new TestClassResult(i.getKey(), passing, failing, skipped);
+                TestClassResult p = new TestClassResult(i.getKey(), passing, failing, skipped, time);
                 ret.add(p);
             }
         }
@@ -51,6 +55,7 @@ public class TestState {
     public List<TestClassResult> getFailingClasses() {
         List<TestClassResult> ret = new ArrayList<>();
         for (Map.Entry<String, Map<UniqueId, TestResult>> i : resultsByClass.entrySet()) {
+            long time = 0;
             List<TestResult> passing = new ArrayList<>();
             List<TestResult> failing = new ArrayList<>();
             List<TestResult> skipped = new ArrayList<>();
@@ -62,9 +67,12 @@ public class TestState {
                 } else {
                     passing.add(j);
                 }
+                if (j.getUniqueId().getLastSegment().getType().equals("class")) {
+                    time = j.getTime();
+                }
             }
             if (!failing.isEmpty()) {
-                TestClassResult p = new TestClassResult(i.getKey(), passing, failing, skipped);
+                TestClassResult p = new TestClassResult(i.getKey(), passing, failing, skipped, time);
                 ret.add(p);
             }
         }

@@ -41,6 +41,7 @@ import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
 import io.quarkus.gradle.tasks.QuarkusGenerateCode;
 import io.quarkus.gradle.tasks.QuarkusGenerateConfig;
+import io.quarkus.gradle.tasks.QuarkusListCategories;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusListPlatforms;
 import io.quarkus.gradle.tasks.QuarkusRemoteDev;
@@ -56,6 +57,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     public static final String EXTENSION_NAME = "quarkus";
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
+    public static final String LIST_CATEGORIES_TASK_NAME = "listCategories";
     public static final String LIST_PLATFORMS_TASK_NAME = "listPlatforms";
     public static final String ADD_EXTENSION_TASK_NAME = "addExtension";
     public static final String REMOVE_EXTENSION_TASK_NAME = "removeExtension";
@@ -106,6 +108,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     private void registerTasks(Project project, QuarkusPluginExtension quarkusExt) {
         TaskContainer tasks = project.getTasks();
         tasks.create(LIST_EXTENSIONS_TASK_NAME, QuarkusListExtensions.class);
+        tasks.create(LIST_CATEGORIES_TASK_NAME, QuarkusListCategories.class);
         tasks.create(LIST_PLATFORMS_TASK_NAME, QuarkusListPlatforms.class);
         tasks.create(ADD_EXTENSION_TASK_NAME, QuarkusAddExtension.class);
         tasks.create(REMOVE_EXTENSION_TASK_NAME, QuarkusRemoveExtension.class);

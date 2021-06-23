@@ -81,7 +81,9 @@ triage:
       notify: [gsmet, yrodiere]
       directories:
         - extensions/hibernate-search-orm-elasticsearch/
+        - extensions/hibernate-search-orm-elasticsearch-aws/
         - integration-tests/hibernate-search-orm-elasticsearch/
+        - integration-tests/hibernate-search-orm-elasticsearch-aws/
         - extensions/elasticsearch-rest-client/
         - extensions/elasticsearch-rest-client-common/
     - labels: [area/elasticsearch]

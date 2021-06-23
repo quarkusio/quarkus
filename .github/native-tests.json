@@ -39,7 +39,7 @@
         {
             "category": "Data6",
             "timeout": 50,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-reactive-panache",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-aws, hibernate-reactive-panache",
             "os-name": "ubuntu-latest"
         },
         {

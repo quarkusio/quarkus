@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.TestMethodInvoker;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Handler;
@@ -36,14 +37,24 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
     @Override
     public boolean supportsMethod(Class<?> originalTestClass, Method originalTestMethod) {
         return hasAnnotation(RunOnVertxContext.class, originalTestMethod.getAnnotations())
-                || hasAnnotation(RunOnVertxContext.class, originalTestClass.getAnnotations());
+                || hasAnnotation(RunOnVertxContext.class, originalTestClass.getAnnotations())
+                || hasAnnotation("io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional",
+                        originalTestMethod.getAnnotations())
+                || hasAnnotation("io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional",
+                        originalTestClass.getAnnotations())
+                || hasAnnotation(TestReactiveTransaction.class, originalTestMethod.getAnnotations())
+                || hasAnnotation(TestReactiveTransaction.class, originalTestClass.getAnnotations());
     }
 
     // we need to use the class name to avoid ClassLoader issues
     private boolean hasAnnotation(Class<? extends Annotation> annotation, Annotation[] annotations) {
+        return hasAnnotation(annotation.getName(), annotations);
+    }
+
+    private boolean hasAnnotation(String annotationName, Annotation[] annotations) {
         if (annotations != null) {
             for (Annotation methodAnnotation : annotations) {
-                if (annotation.getName().equals(methodAnnotation.annotationType().getName())) {
+                if (annotationName.equals(methodAnnotation.annotationType().getName())) {
                     return true;
                 }
             }
@@ -76,6 +87,12 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
     }
 
     public static class RunTestMethodOnContextHandler implements Handler<Void> {
+        private static final Runnable DO_NOTHING = new Runnable() {
+            @Override
+            public void run() {
+            }
+        };
+
         private final Object testInstance;
         private final Method targetMethod;
         private final List<Object> methodArgs;
@@ -95,31 +112,41 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         public void handle(Void event) {
             ManagedContext requestContext = Arc.container().requestContext();
             if (requestContext.isActive()) {
-                doRun();
+                doRun(DO_NOTHING);
             } else {
-                try {
-                    requestContext.activate();
-                    doRun();
-                } finally {
-                    requestContext.terminate();
-                }
+                requestContext.activate();
+                doRun(new Runnable() {
+                    @Override
+                    public void run() {
+                        requestContext.terminate();
+                    }
+                });
             }
         }
 
-        private void doRun() {
+        private void doRun(Runnable onTerminate) {
             try {
                 Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
                 if (uniAsserter != null) {
                     uniAsserter.execution.subscribe().with(new Consumer<Object>() {
                         @Override
                         public void accept(Object o) {
+                            onTerminate.run();
                             future.complete(testMethodResult);
                         }
-                    }, future::completeExceptionally);
+                    }, new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable t) {
+                            onTerminate.run();
+                            future.completeExceptionally(t);
+                        }
+                    });
                 } else {
+                    onTerminate.run();
                     future.complete(testMethodResult);
                 }
             } catch (Throwable t) {
+                onTerminate.run();
                 future.completeExceptionally(t.getCause());
             }
         }

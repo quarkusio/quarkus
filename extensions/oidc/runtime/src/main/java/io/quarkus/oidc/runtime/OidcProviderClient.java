@@ -13,6 +13,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcEndpointAccessException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.http.HttpHeaders;
@@ -48,9 +49,9 @@ public class OidcProviderClient {
         return metadata;
     }
 
-    public Uni<JsonWebKeyCache> getJsonWebKeySet() {
+    public Uni<JsonWebKeySet> getJsonWebKeySet() {
         return client.getAbs(metadata.getJsonWebKeySetUri()).send().onItem()
-                .transform(resp -> getJsonWebKeyCache(resp));
+                .transform(resp -> getJsonWebKeySet(resp));
     }
 
     public Uni<JsonObject> getUserInfo(String token) {
@@ -67,11 +68,11 @@ public class OidcProviderClient {
                 .transform(resp -> getTokenIntrospection(resp));
     }
 
-    private JsonWebKeyCache getJsonWebKeyCache(HttpResponse<Buffer> resp) {
+    private JsonWebKeySet getJsonWebKeySet(HttpResponse<Buffer> resp) {
         if (resp.statusCode() == 200) {
-            return new JsonWebKeyCache(resp.bodyAsString(StandardCharsets.UTF_8.name()));
+            return new JsonWebKeySet(resp.bodyAsString(StandardCharsets.UTF_8.name()));
         } else {
-            throw new OIDCException();
+            throw new OidcEndpointAccessException(resp.statusCode());
         }
     }
 

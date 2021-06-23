@@ -6,25 +6,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.lang.JoseException;
 
 import io.quarkus.oidc.OIDCException;
 
-public class JsonWebKeyCache {
+public class JsonWebKeySet {
     private static final String RSA_KEY_TYPE = "RSA";
     private static final String EC_KEY_TYPE = "EC";
     private static final String SIGNATURE_USE = "sig";
 
     private Map<String, Key> keys = new HashMap<>();
 
-    public JsonWebKeyCache(String json) {
+    public JsonWebKeySet(String json) {
         initKeys(json);
     }
 
     private void initKeys(String json) {
         try {
-            JsonWebKeySet jwkSet = new JsonWebKeySet(json);
+            org.jose4j.jwk.JsonWebKeySet jwkSet = new org.jose4j.jwk.JsonWebKeySet(json);
             for (JsonWebKey jwkKey : jwkSet.getJsonWebKeys()) {
                 if ((RSA_KEY_TYPE.equals(jwkKey.getKeyType()) || EC_KEY_TYPE.equals(jwkKey.getKeyType())
                         || jwkKey.getKeyType() == null)

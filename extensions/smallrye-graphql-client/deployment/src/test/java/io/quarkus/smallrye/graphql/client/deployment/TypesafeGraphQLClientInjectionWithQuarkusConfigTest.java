@@ -27,10 +27,8 @@ public class TypesafeGraphQLClientInjectionWithQuarkusConfigTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql-client.typesafeclient.url=" + url),
-                            // TODO: adding headers via config is not supported by typesafe client yet
-                            //                            + "\n" +
-                            //                            "quarkus.smallrye-graphql-client.typesafeclient.header.My-Header=My-Value"),
+                    .addAsResource(new StringAsset("quarkus.smallrye-graphql-client.typesafeclient.url=" + url + "\n" +
+                            "quarkus.smallrye-graphql-client.typesafeclient.header.My-Header=My-Value"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -44,10 +42,14 @@ public class TypesafeGraphQLClientInjectionWithQuarkusConfigTest {
         assertEquals("Arthur", people.get(1).getFirstName());
     }
 
-    // TODO: adding headers via config is not supported by typesafe client yet
-    //    @Test
-    //    public void checkHeaders() throws ExecutionException, InterruptedException {
-    //        assertEquals("My-Value", client.returnHeader("My-Header"));
-    //    }
+    /**
+     * Verify that configured HTTP headers are applied by the client.
+     * We do this by asking the server side to read the header received from the client and send
+     * its value back to the client.
+     */
+    @Test
+    public void checkHeaders() {
+        assertEquals("My-Value", client.returnHeader("My-Header"));
+    }
 
 }

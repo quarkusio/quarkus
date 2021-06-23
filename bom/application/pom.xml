@@ -53,7 +53,7 @@
         <smallrye-context-propagation.version>1.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
-        <smallrye-reactive-utils.version>2.7.0</smallrye-reactive-utils.version>
+        <smallrye-mutiny-vertx-binding.version>2.7.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>3.5.0</smallrye-reactive-messaging.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
@@ -351,6 +351,22 @@
                 <version>${opentelemetry-alpha.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- Mutiny and Vert.x Mutiny Binding BOMs -->
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>mutiny-bom</artifactId>
+                <version>${mutiny.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>vertx-mutiny-clients-bom</artifactId>
+                <version>${smallrye-mutiny-vertx-binding.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
 
             <!-- Quarkus core -->
@@ -2866,41 +2882,7 @@
                 <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny</artifactId>
-                <version>${mutiny.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-reactive-streams-operators</artifactId>
-                <version>${mutiny.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-smallrye-context-propagation</artifactId>
-                <version>${mutiny.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-rxjava</artifactId>
-                <version>${mutiny.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-reactor</artifactId>
-                <version>${mutiny.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-kotlin</artifactId>
-                <version>${mutiny.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-test-utils</artifactId>
-                <version>${mutiny.version}</version>
-            </dependency>
+
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-mutiny</artifactId>
@@ -4547,7 +4529,7 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-core</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
+                <version>${smallrye-mutiny-vertx-binding.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
@@ -4560,45 +4542,10 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-vertx-sql-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-vertx-db2-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
-            </dependency>
-            <dependency>
                 <!-- Used by the Reactive PG Client -->
                 <groupId>com.ongres.scram</groupId>
                 <artifactId>client</artifactId>
                 <version>${scram-client.version}</version>
-            </dependency>
-           <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
-               <version>${smallrye-reactive-utils.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-vertx-redis-client</artifactId>
-                <version>${smallrye-reactive-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>

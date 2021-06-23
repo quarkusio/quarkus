@@ -283,7 +283,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 testRunner.testCompileFailed(compileProblem);
                 compileProblem = null; //we don't want to block the app over a test problem
             } else {
-                testRunner.testCompileSucceeded();
+                if (changedTestClassResult.isChanged()) {
+                    testRunner.testCompileSucceeded();
+                }
             }
         } catch (Throwable e) {
             testRunner.testCompileFailed(e);
@@ -558,7 +560,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
      * This is useful in two ways.
      * - To make sure that source time stamps have been recorded at least once
      * - To avoid re-compiling on first run by ignoring all first time changes detected by
-     * {@link RuntimeUpdatesProcessor#checkIfFileModified(Path, Map, boolean)} during the first scan.
+     * {@link RuntimeUpdatesProcessor#checkIfFileModified(Path, Map, boolean, boolean)} during the first scan.
      */
     ClassScanResult checkForChangedClasses(QuarkusCompiler compiler,
             Function<DevModeContext.ModuleInfo, DevModeContext.CompilationUnit> cuf, boolean firstScan,
@@ -579,7 +581,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     changedSourceFiles = sourcesStream
                             .parallel()
                             .filter(p -> matchingHandledExtension(p).isPresent()
-                                    && sourceFileWasRecentModified(p, ignoreFirstScanChanges))
+                                    && sourceFileWasRecentModified(p, ignoreFirstScanChanges, firstScan))
                             .map(Path::toFile)
                             //Needing a concurrent Set, not many standard options:
                             .collect(Collectors.toCollection(ConcurrentSkipListSet::new));
@@ -643,6 +645,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     //now we re-update the underlying timestamps, to the values we just compiled
                     //if the file has changed in the meantime it will be picked up in the next
                     //scan
+                    //note that if compile failed these are not updated, so failing files will always be re-compiled
                     for (Map.Entry<File, Long> entry : compileTimestamps.entrySet()) {
                         sourceFileTimestamps.put(entry.getKey().toPath(), entry.getValue());
                     }
@@ -881,13 +884,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return ret;
     }
 
-    private boolean sourceFileWasRecentModified(final Path sourcePath, boolean ignoreFirstScanChanges) {
-        return checkIfFileModified(sourcePath, sourceFileTimestamps, ignoreFirstScanChanges);
+    private boolean sourceFileWasRecentModified(final Path sourcePath, boolean ignoreFirstScanChanges, boolean firstScan) {
+        return checkIfFileModified(sourcePath, sourceFileTimestamps, ignoreFirstScanChanges, firstScan);
     }
 
     private boolean classFileWasRecentModified(final Path classFilePath, boolean ignoreFirstScanChanges,
             TimestampSet timestampSet) {
-        return checkIfFileModified(classFilePath, timestampSet.classFileChangeTimeStamps, ignoreFirstScanChanges);
+        return checkIfFileModified(classFilePath, timestampSet.classFileChangeTimeStamps, ignoreFirstScanChanges, true);
     }
 
     private boolean classFileWasAdded(final Path classFilePath, boolean ignoreFirstScanChanges, TimestampSet timestampSet) {
@@ -902,18 +905,23 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return lastRecordedChange == null && !ignoreFirstScanChanges;
     }
 
-    private boolean checkIfFileModified(Path path, Map<Path, Long> pathModificationTimes, boolean ignoreFirstScanChanges) {
+    private boolean checkIfFileModified(Path path, Map<Path, Long> pathModificationTimes, boolean ignoreFirstScanChanges,
+            boolean updateTimestamp) {
         try {
             final long lastModificationTime = Files.getLastModifiedTime(path).toMillis();
             final Long lastRecordedChange = pathModificationTimes.get(path);
 
             if (lastRecordedChange == null) {
-                pathModificationTimes.put(path, lastModificationTime);
+                if (updateTimestamp) {
+                    pathModificationTimes.put(path, lastModificationTime);
+                }
                 return !ignoreFirstScanChanges;
             }
 
             if (lastRecordedChange != lastModificationTime) {
-                pathModificationTimes.put(path, lastModificationTime);
+                if (updateTimestamp) {
+                    pathModificationTimes.put(path, lastModificationTime);
+                }
                 return true;
             }
 

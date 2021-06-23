@@ -3,7 +3,9 @@ package io.quarkus.smallrye.graphql.client.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Singleton;
@@ -17,6 +19,7 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -27,6 +30,9 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientConfigurationMergerBean;
+import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientsConfig;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
 
@@ -109,21 +115,67 @@ public class SmallRyeGraphQLClientProcessor {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.Collection").methods(true).build());
     }
 
+    /**
+     * io.smallrye.graphql.client.GraphQLClientsConfiguration bean requires knowledge of all interfaces annotated
+     * with `@GraphQLClientApi`
+     */
+    @BuildStep
+    @Record(STATIC_INIT)
+    void setTypesafeApiClasses(BeanArchiveIndexBuildItem index,
+            BeanContainerBuildItem beanContainerBuildItem,
+            SmallRyeGraphQLClientRecorder recorder) {
+        List<String> apiClassNames = new ArrayList<>();
+        for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT_API)) {
+            ClassInfo apiClassInfo = annotation.target().asClass();
+            apiClassNames.add(apiClassInfo.name().toString());
+        }
+        recorder.setTypesafeApiClasses(apiClassNames);
+    }
+
+    /**
+     * Allows the optional usage of short class names in GraphQL client configuration rather than
+     * fully qualified names. This method computes a mapping between short names and qualified names,
+     * and the configuration merger bean will take it into account when merging Quarkus configuration
+     * with SmallRye-side configuration.
+     */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void translateClientConfiguration(BeanArchiveIndexBuildItem index,
+    void shortNamesToQualifiedNames(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SmallRyeGraphQLClientRecorder recorder,
-            GraphQLClientsConfig config) {
-        // Map with all classes annotated with @GraphQLApi, the key is its short name,
-        // value is the fully qualified name. The reason is being able to match short name
-        // used in the configuration to a class
+            GraphQLClientsConfig quarkusConfig,
+            BeanArchiveIndexBuildItem index) {
         Map<String, String> shortNamesToQualifiedNames = new HashMap<>();
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT_API)) {
             ClassInfo clazz = annotation.target().asClass();
             shortNamesToQualifiedNames.put(clazz.name().withoutPackagePrefix(), clazz.name().toString());
         }
 
-        recorder.translateClientConfiguration(config, shortNamesToQualifiedNames);
+        RuntimeValue<GraphQLClientSupport> support = recorder.clientSupport(shortNamesToQualifiedNames);
+
+        DotName supportClassName = DotName.createSimple(GraphQLClientSupport.class.getName());
+        SyntheticBeanBuildItem bean = SyntheticBeanBuildItem
+                .configure(supportClassName)
+                .addType(supportClassName)
+                .scope(Singleton.class)
+                .runtimeValue(support)
+                .setRuntimeInit()
+                .unremovable()
+                .done();
+        syntheticBeans.produce(bean);
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem configurationMergerBean() {
+        return AdditionalBeanBuildItem.unremovableOf(GraphQLClientConfigurationMergerBean.class);
+    }
+
+    // FIXME: this seems unnecessary, but is needed to make sure that the GraphQLClientConfigurationMergerBean
+    // gets initialized, can this be done differently?
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void initializeConfigMergerBean(BeanContainerBuildItem containerBuildItem,
+            SmallRyeGraphQLClientRecorder recorder) {
+        recorder.initializeConfigurationMergerBean();
     }
 
 }

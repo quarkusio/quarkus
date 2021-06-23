@@ -46,7 +46,7 @@ public class MultiMapValueResolver implements ValueResolver {
             default:
                 return multiMap.contains(context.getName())
                         ? CompletableFuture.completedFuture(multiMap.get(context.getName()))
-                        : Results.NOT_FOUND;
+                        : Results.notFound(context);
         }
     }
 

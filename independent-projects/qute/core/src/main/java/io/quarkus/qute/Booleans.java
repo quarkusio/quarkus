@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -14,14 +13,14 @@ public final class Booleans {
     }
 
     /**
-     * A value is considered falsy if it's null, {@link Result#NOT_FOUND}, {code false}, an empty collection, an empty map, an
-     * empty array, an empty string/char sequence or a number equal to zero.
+     * A value is considered falsy if it's null, "not found" as defined by {@link Results#isNotFound(Object)}, {code false}, an
+     * empty collection, an empty map, an empty array, an empty string/char sequence or a number equal to zero.
      * 
      * @param value
      * @return {@code true} if the value is falsy
      */
     public static boolean isFalsy(Object value) {
-        if (value == null || Results.Result.NOT_FOUND.equals(value)) {
+        if (value == null || Results.isNotFound(value)) {
             return true;
         } else if (value instanceof Boolean) {
             return !(Boolean) value;

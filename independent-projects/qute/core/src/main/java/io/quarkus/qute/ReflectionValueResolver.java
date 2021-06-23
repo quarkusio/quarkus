@@ -53,11 +53,11 @@ public class ReflectionValueResolver implements ValueResolver {
         // At this point the candidate for the given key should be already computed
         AccessorCandidate candidate = candidates.get(key).orElse(null);
         if (candidate == null) {
-            return Results.NOT_FOUND;
+            return Results.notFound(context);
         }
         ValueAccessor accessor = candidate.getAccessor(context);
         if (accessor == null) {
-            return Results.NOT_FOUND;
+            return Results.notFound(context);
         }
         return accessor.getValue(base);
     }

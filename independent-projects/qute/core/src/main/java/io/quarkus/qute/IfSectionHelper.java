@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Booleans.isFalsy;
 
-import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.math.BigDecimal;
@@ -280,11 +279,11 @@ public class IfSectionHelper implements SectionHelper {
             } else {
                 // Binary operator
                 try {
-                    if (Result.NOT_FOUND.equals(conditionValue)) {
+                    if (Results.isNotFound(conditionValue)) {
                         conditionValue = null;
                     }
                     Object localValue = previousValue;
-                    if (Result.NOT_FOUND.equals(localValue)) {
+                    if (Results.isNotFound(localValue)) {
                         localValue = null;
                     }
                     val = operator.evaluate(localValue, conditionValue);

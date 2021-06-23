@@ -23,7 +23,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
-import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
+import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
 
@@ -70,7 +70,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     protected int status = -1;
     protected String reasonPhrase;
     protected Object entity;
-    protected MultivaluedMap<String, Object> metadata = new CaseInsensitiveMap<>();
+    protected MultivaluedTreeMap<String, Object> metadata = new CaseInsensitiveMap<>();
     protected Annotation[] entityAnnotations;
 
     public static SimpleDateFormat getDateFormatRFC822() {
@@ -185,7 +185,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         responseBuilder.status = status;
         responseBuilder.reasonPhrase = reasonPhrase;
         responseBuilder.entity = entity;
-        responseBuilder.metadata = new QuarkusMultivaluedHashMap<>();
+        responseBuilder.metadata = new CaseInsensitiveMap<>();
         responseBuilder.metadata.putAll(metadata);
         return responseBuilder;
     }

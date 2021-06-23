@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.EntityTag;
@@ -29,6 +28,7 @@ import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.headers.LinkHeaders;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 /**
  * This is the Response class for user-created responses. The client response
@@ -40,7 +40,7 @@ public class ResponseImpl extends Response {
     int status;
     String reasonPhrase;
     protected Object entity;
-    MultivaluedMap<String, Object> headers;
+    MultivaluedTreeMap<String, Object> headers;
     InputStream entityStream;
     private StatusTypeImpl statusType;
     private MultivaluedMap<String, String> stringHeaders;
@@ -283,20 +283,20 @@ public class ResponseImpl extends Response {
 
     @Override
     public MultivaluedMap<String, String> getStringHeaders() {
-        // FIXME: is this mutable?
         if (stringHeaders == null) {
             // let's keep this map case-insensitive
             stringHeaders = new CaseInsensitiveMap<>();
-            for (Entry<String, List<Object>> entry : headers.entrySet()) {
-                List<String> stringValues = new ArrayList<>(entry.getValue().size());
-                for (Object value : entry.getValue()) {
-                    stringValues.add(HeaderUtil.headerToString(value));
-                }
-                stringHeaders.put(entry.getKey(), stringValues);
-            }
+            headers.forEach(this::populateStringHeaders);
         }
-
         return stringHeaders;
+    }
+
+    public void populateStringHeaders(String headerName, List<Object> values) {
+        List<String> stringValues = new ArrayList<>(values.size());
+        for (int i = 0; i < values.size(); i++) {
+            stringValues.add(HeaderUtil.headerToString(values.get(i)));
+        }
+        stringHeaders.put(headerName, stringValues);
     }
 
     @Override

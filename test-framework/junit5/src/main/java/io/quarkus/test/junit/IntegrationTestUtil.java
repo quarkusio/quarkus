@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,7 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -41,6 +46,7 @@ import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
+import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 final class IntegrationTestUtil {
@@ -123,6 +129,38 @@ final class IntegrationTestUtil {
             }
         }
         return new TestProfileAndProperties(testProfile, properties);
+    }
+
+    /**
+     * Since {@link TestResourceManager} is loaded from the ClassLoader passed in as an argument,
+     * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
+     * {@link TestResourceManager.TestResourceClassEntry}
+     * that are loaded from that ClassLoader
+     */
+    static <T> List<T> getAdditionalTestResources(
+            QuarkusTestProfile profileInstance, ClassLoader classLoader) {
+        if ((profileInstance == null) || profileInstance.testResources().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            Constructor<?> testResourceClassEntryConstructor = Class
+                    .forName(TestResourceManager.TestResourceClassEntry.class.getName(), true, classLoader)
+                    .getConstructor(Class.class, Map.class, Annotation.class, boolean.class);
+
+            List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
+            List<T> result = new ArrayList<>(testResources.size());
+            for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
+                T instance = (T) testResourceClassEntryConstructor.newInstance(
+                        Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
+                        null, testResource.isParallel());
+                result.add(instance);
+            }
+
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass(), e);
+        }
     }
 
     static void startLauncher(ArtifactLauncher launcher, Map<String, String> additionalProperties, Runnable sslSetter)
@@ -232,8 +270,22 @@ final class IntegrationTestUtil {
         Path buildOutputDirectory = determineBuildOutputDirectory(context);
         Path artifactProperties = buildOutputDirectory.resolve("quarkus-artifact.properties");
         if (!Files.exists(artifactProperties)) {
-            throw new IllegalStateException(
-                    "Unable to locate the artifact metadata file created that must be created by Quarkus in order to run integration tests.");
+            TestLauncher testLauncher = determineTestLauncher();
+            String errorMessage = "Unable to locate the artifact metadata file created that must be created by Quarkus in order to run integration tests. ";
+            if (testLauncher == TestLauncher.MAVEN) {
+                errorMessage += "Make sure this test is run after 'mvn package'. ";
+                if (context.getTestClass().isPresent()) {
+                    String testClassName = context.getTestClass().get().getName();
+                    if (testClassName.endsWith("Test")) {
+                        errorMessage += "The easiest way to ensure this is by having the 'maven-failsafe-plugin' run the test instead of the 'maven-surefire-plugin'.";
+                    }
+                }
+            } else if (testLauncher == TestLauncher.GRADLE) {
+                errorMessage += "Make sure this test is run after the 'quarkusBuild' Gradle task.";
+            } else {
+                errorMessage += "Make sure this test is run after the Quarkus artifact is built from your build tool.";
+            }
+            throw new IllegalStateException(errorMessage);
         }
         try {
             Properties properties = new Properties();
@@ -244,6 +296,33 @@ final class IntegrationTestUtil {
                     "Unable to read artifact metadata file created that must be created by Quarkus in order to run integration tests.",
                     e);
         }
+    }
+
+    private static TestLauncher determineTestLauncher() {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        int i = stackTrace.length - 1;
+        TestLauncher testLauncher = TestLauncher.UNKNOWN;
+        while (true) {
+            StackTraceElement element = stackTrace[i--];
+            String className = element.getClassName();
+            if (className.startsWith("org.apache.maven")) {
+                testLauncher = TestLauncher.MAVEN;
+                break;
+            }
+            if (className.startsWith("org.gradle")) {
+                testLauncher = TestLauncher.GRADLE;
+            }
+            if (i == 0) {
+                break;
+            }
+        }
+        return testLauncher;
+    }
+
+    private enum TestLauncher {
+        MAVEN,
+        GRADLE,
+        UNKNOWN
     }
 
     static Path determineBuildOutputDirectory(ExtensionContext context) {

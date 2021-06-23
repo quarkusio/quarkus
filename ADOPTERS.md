@@ -12,6 +12,7 @@ If any organization would like get added or removed please make a pull request b
 
 | Organization          | Reference                                                                        |
 |-----------------------|----------------------------------------------------------------------------------|
+|Abraxas Informatik AG  | https://quarkus.io/blog/abraxas-customer-story/                                  |
 |Artes                  | https://horvie.github.io/adopt-quarkus/                                          |
 |B<>com                 | https://5g.labs.b-com.com/                                                       |
 |Carrefour              | https://horizons.carrefour.com/efficient-java-in-the-cloud-with-quarkus          |

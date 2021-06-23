@@ -25,7 +25,7 @@ public class TracerRuntimeConfig {
     @ConfigGroup
     public static class SamplerConfig {
         /**
-         * The sampler to use for tracing
+         * The sampler to use for tracing.
          * <p>
          * Valid values are {@code off, on, ratio}.
          * <p>
@@ -35,14 +35,14 @@ public class TracerRuntimeConfig {
         public String samplerName;
 
         /**
-         * The sampler ratio to use for tracing
+         * The sampler ratio to use for tracing.
          * <p>
          * Only supported by the {@code ratio} sampler.
          */
         public Optional<Double> ratio;
 
         /**
-         * If the sampler to use for tracing is parent based
+         * If the sampler to use for tracing is parent based.
          * <p>
          * Valid values are {@code true, false}.
          * <p>

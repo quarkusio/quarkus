@@ -22,7 +22,7 @@ public final class OpenTelemetryConfig {
      * <p>
      * Valid values are {@code b3, b3multi, baggage, jaeger, ottrace, tracecontext, xray}.
      * <p>
-     * Default value is {@code traceContext,baggage}
+     * Default value is {@code traceContext,baggage}.
      */
     @ConfigItem(defaultValue = "tracecontext,baggage")
     public List<String> propagators;

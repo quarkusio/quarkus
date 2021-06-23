@@ -122,6 +122,9 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
+                    <lesserPriorityArtifacts>
+                        <artifact>io.quarkus:quarkus-junit4-mock</artifact>
+                    </lesserPriorityArtifacts>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-io</parentFirstArtifact>

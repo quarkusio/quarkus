@@ -3,6 +3,7 @@ package io.quarkus.cli.common;
 import picocli.CommandLine;
 
 public class ListFormatOptions {
+
     @CommandLine.Option(names = { "--id" }, order = 4, description = "Display extension artifactId only. (default)")
     boolean id = false;
 

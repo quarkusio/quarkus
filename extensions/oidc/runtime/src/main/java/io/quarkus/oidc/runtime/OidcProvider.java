@@ -49,7 +49,7 @@ public class OidcProvider {
     final String issuer;
     final String[] audience;
 
-    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeyCache jwks) {
+    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks) {
         this.client = client;
         this.oidcConfig = oidcConfig;
         this.keyResolver = jwks == null ? null : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
@@ -189,11 +189,11 @@ public class OidcProvider {
     }
 
     private class JsonWebKeyResolver implements RefreshableVerificationKeyResolver {
-        volatile JsonWebKeyCache jwks;
+        volatile JsonWebKeySet jwks;
         volatile long lastForcedRefreshTime;
         volatile long forcedJwksRefreshIntervalMilliSecs;
 
-        JsonWebKeyResolver(JsonWebKeyCache jwks, Duration forcedJwksRefreshInterval) {
+        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval) {
             this.jwks = jwks;
             this.forcedJwksRefreshIntervalMilliSecs = forcedJwksRefreshInterval.toMillis();
         }
@@ -216,10 +216,10 @@ public class OidcProvider {
             final long now = System.currentTimeMillis();
             if (now > lastForcedRefreshTime + forcedJwksRefreshIntervalMilliSecs) {
                 lastForcedRefreshTime = now;
-                return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeyCache, Uni<? extends Void>>() {
+                return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeySet, Uni<? extends Void>>() {
 
                     @Override
-                    public Uni<? extends Void> apply(JsonWebKeyCache t) {
+                    public Uni<? extends Void> apply(JsonWebKeySet t) {
                         jwks = t;
                         return Uni.createFrom().voidItem();
                     }

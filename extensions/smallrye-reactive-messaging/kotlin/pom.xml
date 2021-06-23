@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-smallrye-reactive-messaging-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>2.0.0.Final</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

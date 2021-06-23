@@ -126,6 +126,19 @@ public class QuarkusBootstrapProvider implements Closeable {
                 return quarkusBootstrap;
             }
 
+            File projectFile = new File(mojo.mavenProject().getBuild().getOutputDirectory());
+            if (!projectFile.exists()) {
+                /*
+                 * TODO GenerateCodeMojo would fail
+                 * if (hasSources(project)) {
+                 * throw new MojoExecutionException("Project " + project.getArtifact() + " has not been compiled yet");
+                 * }
+                 */
+                if (!projectFile.mkdirs()) {
+                    throw new MojoExecutionException("Failed to create the output dir " + projectFile);
+                }
+            }
+
             final Properties projectProperties = mojo.mavenProject().getProperties();
             final Properties effectiveProperties = new Properties();
             // quarkus. properties > ignoredEntries in pom.xml
@@ -219,17 +232,6 @@ public class QuarkusBootstrapProvider implements Closeable {
                 File projectFile = projectArtifact.getFile();
                 if (projectFile == null) {
                     projectFile = new File(mojo.mavenProject().getBuild().getOutputDirectory());
-                    if (!projectFile.exists()) {
-                        /*
-                         * TODO GenerateCodeMojo would fail
-                         * if (hasSources(project)) {
-                         * throw new MojoExecutionException("Project " + project.getArtifact() + " has not been compiled yet");
-                         * }
-                         */
-                        if (!projectFile.mkdirs()) {
-                            throw new MojoExecutionException("Failed to create the output dir " + projectFile);
-                        }
-                    }
                 }
                 appArtifact.setPaths(PathsCollection.of(projectFile.toPath()));
                 return appArtifact;

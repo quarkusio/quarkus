@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.CategoryListFormatOptions;
@@ -86,7 +87,7 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
+    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
             DebugOptions debugOptions, List<String> params) {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }

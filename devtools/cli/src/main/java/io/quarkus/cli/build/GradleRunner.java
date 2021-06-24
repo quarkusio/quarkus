@@ -1,10 +1,15 @@
 package io.quarkus.cli.build;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.CategoryListFormatOptions;
@@ -142,7 +147,7 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
+    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
             DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, false);
@@ -162,7 +167,33 @@ public class GradleRunner implements BuildSystemRunner {
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
         // Add any other unmatched arguments
         args.addAll(params);
-        return prependExecutable(args);
+        try {
+            Path outputFile = Files.createTempFile("quarkus-dev", ".txt");
+            args.add("-Dio.quarkus.devmode-args=" + outputFile.toAbsolutePath().toString());
+            BuildCommandArgs buildCommandArgs = prependExecutable(args);
+            return Arrays.asList(new Supplier<BuildCommandArgs>() {
+                @Override
+                public BuildCommandArgs get() {
+                    return buildCommandArgs;
+                }
+            }, new Supplier<BuildCommandArgs>() {
+                @Override
+                public BuildCommandArgs get() {
+                    try {
+                        List<String> lines = Files.readAllLines(outputFile).stream().filter(s -> !s.isBlank())
+                                .collect(Collectors.toList());
+                        BuildCommandArgs cmd = new BuildCommandArgs();
+                        cmd.arguments = lines.toArray(new String[0]);
+                        cmd.targetDirectory = buildCommandArgs.targetDirectory;
+                        return cmd;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     void setSkipTests(ArrayDeque<String> args) {

@@ -220,7 +220,7 @@ public class QuartzScheduler implements Scheduler {
     org.quartz.Scheduler produceQuartzScheduler() {
         if (scheduler == null) {
             throw new IllegalStateException(
-                    "Quartz scheduler is either explicitly disabled through quarkus.scheduler.enabled=false or no @Scheduled methods were found. If you only need to schedule a job programmatically you can force the start of the scheduler via quarkus.quartz.force-start=true");
+                    "Quartz scheduler is either explicitly disabled through quarkus.scheduler.enabled=false or no @Scheduled methods were found. If you only need to schedule a job programmatically you can force the start of the scheduler by setting 'quarkus.quartz.start-mode=forced'.");
         }
         return scheduler;
     }

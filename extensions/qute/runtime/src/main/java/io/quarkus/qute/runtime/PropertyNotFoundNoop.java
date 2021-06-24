@@ -2,7 +2,7 @@ package io.quarkus.qute.runtime;
 
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.ResultMapper;
-import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.Results;
 import io.quarkus.qute.TemplateNode.Origin;
 
 class PropertyNotFoundNoop implements ResultMapper {
@@ -14,7 +14,7 @@ class PropertyNotFoundNoop implements ResultMapper {
 
     @Override
     public boolean appliesTo(Origin origin, Object result) {
-        return result.equals(Result.NOT_FOUND);
+        return Results.isNotFound(result);
     }
 
     @Override

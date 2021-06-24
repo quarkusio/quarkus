@@ -6,7 +6,7 @@ import java.util.ListIterator;
 
 import javax.enterprise.inject.Vetoed;
 
-import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.Results;
 import io.quarkus.qute.TemplateExtension;
 
 @Vetoed // Make sure no bean is created from this class
@@ -23,7 +23,7 @@ public class CollectionTemplateExtensions {
         int idx = Integer.parseInt(index);
         if (idx >= list.size()) {
             // Be consistent with property resolvers
-            return (T) Result.NOT_FOUND;
+            return (T) Results.NotFound.from(index);
         }
         return list.get(idx);
     }

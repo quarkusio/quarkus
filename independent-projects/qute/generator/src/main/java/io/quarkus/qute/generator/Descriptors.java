@@ -6,7 +6,7 @@ import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Results;
-import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.Results.NotFound;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -86,11 +86,11 @@ public final class Descriptors {
             CharSequence.class);
     public static final MethodDescriptor MATCHER_MATCHES = MethodDescriptor.ofMethod(Matcher.class, "matches", boolean.class);
     public static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
+    public static final MethodDescriptor RESULTS_NOT_FOUND_EC = MethodDescriptor.ofMethod(Results.class, "notFound",
+            CompletionStage.class, EvalContext.class);
+    public static final MethodDescriptor NOT_FOUND_FROM_EC = MethodDescriptor.ofMethod(NotFound.class, "from",
+            NotFound.class, EvalContext.class);
 
-    public static final FieldDescriptor RESULTS_NOT_FOUND = FieldDescriptor.of(Results.class, "NOT_FOUND",
-            CompletionStage.class);
-    public static final FieldDescriptor RESULT_NOT_FOUND = FieldDescriptor.of(Result.class, "NOT_FOUND",
-            Result.class);
     public static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);
 

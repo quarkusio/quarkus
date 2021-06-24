@@ -374,7 +374,7 @@ public class ValueResolverGenerator {
                         paramsCount, evalContext);
             }
         }
-        resolve.returnValue(resolve.readStaticField(Descriptors.RESULTS_NOT_FOUND));
+        resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
     }
 
     private void matchMethod(MethodInfo method, ClassInfo clazz, MethodCreator resolve, ResultHandle base, ResultHandle name,
@@ -413,6 +413,8 @@ public class ValueResolverGenerator {
         whenComplete.assign(whenRet, ret);
         AssignableResultHandle whenEvaluatedParams = whenComplete.createVariable(EvaluatedParams.class);
         whenComplete.assign(whenEvaluatedParams, evaluatedParams);
+        AssignableResultHandle whenEvalContext = whenComplete.createVariable(EvalContext.class);
+        whenComplete.assign(whenEvalContext, evalContext);
 
         BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
 
@@ -432,7 +434,7 @@ public class ValueResolverGenerator {
                         whenEvaluatedParams, success.load(isVarArgs(method)), paramTypesHandle))
                 .falseBranch();
         typeMatchFailed.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                typeMatchFailed.readStaticField(Descriptors.RESULT_NOT_FOUND));
+                typeMatchFailed.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
         typeMatchFailed.returnValue(null);
 
         ResultHandle[] paramsHandle = new ResultHandle[methodParams.size()];
@@ -524,6 +526,8 @@ public class ValueResolverGenerator {
         whenComplete.assign(whenRet, ret);
         AssignableResultHandle whenEvaluatedParams = whenComplete.createVariable(EvaluatedParams.class);
         whenComplete.assign(whenEvaluatedParams, evaluatedParams);
+        AssignableResultHandle whenEvalContext = whenComplete.createVariable(EvalContext.class);
+        whenComplete.assign(whenEvalContext, evalContext);
 
         BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
         // complete
@@ -631,9 +635,9 @@ public class ValueResolverGenerator {
         failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
                 whenComplete.getMethodParam(1));
 
-        // No method matches - return Result.NOT_FOUND
+        // No method matches - result not found
         whenComplete.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                whenComplete.readStaticField(Descriptors.RESULT_NOT_FOUND));
+                whenComplete.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
         whenComplete.returnValue(null);
 
         matchScope.returnValue(ret);

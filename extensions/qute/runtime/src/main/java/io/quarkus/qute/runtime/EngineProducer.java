@@ -25,13 +25,14 @@ import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
-import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.Results;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Startup;
 
 @Startup(Interceptor.Priority.PLATFORM_BEFORE)
@@ -52,7 +53,7 @@ public class EngineProducer {
     private final String tagPath;
 
     public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
-            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes) {
+            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes, LaunchMode launchMode) {
         this.contentTypes = contentTypes;
         this.suffixes = config.suffixes;
         this.basePath = "templates/";
@@ -82,19 +83,26 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.arrayResolver());
 
         // If needed use a specific result mapper for the selected strategy  
-        switch (runtimeConfig.propertyNotFoundStrategy) {
-            case THROW_EXCEPTION:
+        if (runtimeConfig.propertyNotFoundStrategy.isPresent()) {
+            switch (runtimeConfig.propertyNotFoundStrategy.get()) {
+                case THROW_EXCEPTION:
+                    builder.addResultMapper(new PropertyNotFoundThrowException());
+                    break;
+                case NOOP:
+                    builder.addResultMapper(new PropertyNotFoundNoop());
+                    break;
+                case OUTPUT_ORIGINAL:
+                    builder.addResultMapper(new PropertyNotFoundOutputOriginal());
+                    break;
+                default:
+                    // Use the default strategy
+                    break;
+            }
+        } else {
+            // Throw an expection in the development mode
+            if (launchMode == LaunchMode.DEVELOPMENT) {
                 builder.addResultMapper(new PropertyNotFoundThrowException());
-                break;
-            case NOOP:
-                builder.addResultMapper(new PropertyNotFoundNoop());
-                break;
-            case OUTPUT_ORIGINAL:
-                builder.addResultMapper(new PropertyNotFoundOutputOriginal());
-                break;
-            default:
-                // Use the default strategy
-                break;
+            }
         }
 
         // Escape some characters for HTML templates
@@ -112,7 +120,7 @@ public class EngineProducer {
         // Resolve @Named beans
         builder.addNamespaceResolver(NamespaceResolver.builder(INJECT_NAMESPACE).resolve(ctx -> {
             InstanceHandle<Object> bean = Arc.container().instance(ctx.getName());
-            return bean.isAvailable() ? bean.get() : Result.NOT_FOUND;
+            return bean.isAvailable() ? bean.get() : Results.NotFound.from(ctx);
         }).build());
 
         // Add generated resolvers

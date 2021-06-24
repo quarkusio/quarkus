@@ -78,7 +78,6 @@ import io.quarkus.qute.RawString;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.ResultMapper;
 import io.quarkus.qute.Results;
-import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.TemplateNode.Origin;
@@ -428,14 +427,14 @@ public class DevConsoleProcessor {
                 .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
                     String ext = DevConsole.currentExtension.get();
                     if (ext == null) {
-                        return Results.Result.NOT_FOUND;
+                        return Results.NotFound.from(ctx);
                     }
                     Map<String, Object> map = DevConsoleManager.getTemplateInfo().get(ext);
                     if (map == null) {
-                        return Results.Result.NOT_FOUND;
+                        return Results.NotFound.from(ctx);
                     }
                     Object result = map.get(ctx.getName());
-                    return result == null ? Results.Result.NOT_FOUND : result;
+                    return result == null ? Results.NotFound.from(ctx) : result;
                 }).build());
 
         // Create map of resolved paths
@@ -454,17 +453,17 @@ public class DevConsoleProcessor {
         builder.addNamespaceResolver(NamespaceResolver.builder("config").resolveAsync(ctx -> {
             List<Expression> params = ctx.getParams();
             if (params.size() != 1 || (!ctx.getName().equals("property") && !ctx.getName().equals("http-path"))) {
-                return Results.NOT_FOUND;
+                return Results.notFound(ctx);
             }
             if (ctx.getName().equals("http-path")) {
                 return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
                     String value = resolvedPaths.get(propertyName.toString());
-                    return CompletableFuture.completedFuture(value != null ? value : Result.NOT_FOUND);
+                    return CompletableFuture.completedFuture(value != null ? value : Results.NotFound.from(ctx));
                 });
             } else {
                 return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
                     Optional<String> val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class);
-                    return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Result.NOT_FOUND);
+                    return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Results.NotFound.from(ctx));
                 });
             }
         }).build());
@@ -493,7 +492,7 @@ public class DevConsoleProcessor {
 
             @Override
             public boolean appliesTo(Origin origin, Object result) {
-                return result.equals(Result.NOT_FOUND);
+                return Results.isNotFound(result);
             }
 
             @Override
@@ -790,7 +789,7 @@ public class DevConsoleProcessor {
                     }
                     return "/io.quarkus.quarkus-vertx-http/openInIDE";
             }
-            return Results.Result.NOT_FOUND;
+            return Results.notFound(ctx);
         }
 
         /**

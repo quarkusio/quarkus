@@ -818,7 +818,7 @@ public class MessageBundleProcessor {
         BytecodeCreator success = throwableIsNull.trueBranch();
 
         // Return if the name is null or NOT_FOUND
-        ResultHandle resultNotFound = success.readStaticField(Descriptors.RESULT_NOT_FOUND);
+        ResultHandle resultNotFound = success.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext);
         BytecodeCreator nameIsNull = success.ifNull(whenComplete.getMethodParam(0)).trueBranch();
         nameIsNull.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
                 resultNotFound);
@@ -893,7 +893,7 @@ public class MessageBundleProcessor {
                     MethodDescriptor.ofMethod(defaultBundleImpl, "resolve", CompletionStage.class, EvalContext.class),
                     resolve.getThis(), evalContext));
         } else {
-            resolve.returnValue(resolve.readStaticField(Descriptors.RESULTS_NOT_FOUND));
+            resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
         }
     }
 

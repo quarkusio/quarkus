@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
@@ -16,13 +15,13 @@ class LiteralSupport {
     /**
      * 
      * @param literal
-     * @return {@link Result#NOT_FOUND} if no literal was found, otherwise the literal value
+     * @return {@link Results.NotFound.EMPTY} if no literal was found, otherwise the literal value
      */
     static Object getLiteralValue(String literal) {
+        Object value = Results.NotFound.EMPTY;
         if (literal == null || literal.isEmpty()) {
-            return Result.NOT_FOUND;
+            return value;
         }
-        Object value = Result.NOT_FOUND;
         if (isStringLiteralSeparator(literal.charAt(0))) {
             value = literal.substring(1, literal.length() - 1);
         } else if (literal.equals("true")) {

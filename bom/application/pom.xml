@@ -24,7 +24,7 @@
         <opentracing-web-servlet-filter.version>0.4.0</opentracing-web-servlet-filter.version>
         <opentracing-tracerresolver.version>0.1.8</opentracing-tracerresolver.version>
         <opentracing-concurrent.version>0.4.0</opentracing-concurrent.version>
-        <opentracing-jdbc.version>0.2.12</opentracing-jdbc.version>
+        <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.3.0</opentelemetry.version>

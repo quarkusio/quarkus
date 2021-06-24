@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.Iterator;
@@ -60,7 +59,7 @@ final class ExpressionImpl implements Expression {
         this.id = id;
         this.namespace = namespace;
         this.parts = parts;
-        this.literal = literal != Result.NOT_FOUND ? CompletableFuture.completedFuture(literal) : null;
+        this.literal = literal != Results.NotFound.EMPTY ? CompletableFuture.completedFuture(literal) : null;
         this.origin = origin;
     }
 

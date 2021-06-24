@@ -297,7 +297,7 @@ import static io.smallrye.graphql.client.core.Operation.operation;
 // ....
 
 @Inject
-@NamedClient("star-wars-dynamic")    // <1>
+@GraphQLClient("star-wars-dynamic")    // <1>
 DynamicGraphQLClient dynamicClient;
 
 @GET

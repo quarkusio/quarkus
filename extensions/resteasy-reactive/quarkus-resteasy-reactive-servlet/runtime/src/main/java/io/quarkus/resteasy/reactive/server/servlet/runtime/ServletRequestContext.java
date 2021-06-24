@@ -18,6 +18,8 @@ import java.util.function.Consumer;
 
 import javax.enterprise.event.Event;
 import javax.servlet.AsyncContext;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
@@ -58,6 +60,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     final HttpServletResponse response;
     AsyncContext asyncContext;
     ServletWriteListener writeListener;
+    ServletReadListener readListener;
     byte[] asyncWriteData;
     boolean closed;
     Consumer<Throwable> asyncWriteHandler;
@@ -203,7 +206,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public String getRequestAbsoluteUri() {
-        return request.getRequestURL().toString();
+        if (request.getQueryString() == null) {
+            return request.getRequestURL().toString();
+        } else {
+            return request.getRequestURL().append("?").append(request.getQueryString()).toString();
+        }
     }
 
     @Override
@@ -276,20 +283,17 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public ServerHttpResponse resumeRequestInput() {
-        //TODO
         return this;
     }
 
     @Override
     public ServerHttpResponse setReadListener(ReadCallback callback) {
-        byte[] buf = new byte[1024];
-        int r;
         try {
-            InputStream in = request.getInputStream();
-            while ((r = in.read(buf)) > 0) {
-                callback.data(ByteBuffer.wrap(buf, 0, r));
+            ServletInputStream in = request.getInputStream();
+            if (!request.isAsyncStarted()) {
+                request.startAsync();
             }
-            callback.done();
+            in.setReadListener(new ServletReadListener(in, callback));
         } catch (IOException e) {
             resume(e);
         }
@@ -518,6 +522,88 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
                     close();
                 }
             }
+        }
+    }
+
+    class ServletReadListener implements ReadListener {
+
+        final ServletInputStream inputStream;
+        final ReadCallback readCallback;
+        boolean paused;
+        boolean allDone;
+        Throwable problem;
+
+        ServletReadListener(ServletInputStream inputStream, ReadCallback readCallback) {
+            this.inputStream = inputStream;
+            this.readCallback = readCallback;
+        }
+
+        @Override
+        public void onDataAvailable() throws IOException {
+            synchronized (this) {
+                if (paused) {
+                    return;
+                }
+            }
+            doRead();
+
+        }
+
+        private void doRead() {
+            if (inputStream.isReady()) {
+                byte[] buf = new byte[1024];
+                try {
+                    int r = inputStream.read(buf);
+                    readCallback.data(ByteBuffer.wrap(buf, 0, r));
+                } catch (IOException e) {
+                    ServletRequestContext.this.resume(problem);
+                }
+            }
+        }
+
+        synchronized void pause() {
+            paused = true;
+        }
+
+        void resume() {
+            boolean allDone;
+            Throwable problem;
+            synchronized (this) {
+                paused = false;
+                allDone = this.allDone;
+                this.allDone = false;
+                problem = this.problem;
+                this.problem = null;
+            }
+            if (problem != null) {
+                ServletRequestContext.this.resume(problem);
+            } else if (allDone) {
+                readCallback.done();
+            } else {
+                doRead();
+            }
+        }
+
+        @Override
+        public void onAllDataRead() throws IOException {
+            synchronized (this) {
+                if (paused) {
+                    allDone = true;
+                    return;
+                }
+            }
+            readCallback.done();
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            synchronized (this) {
+                if (paused) {
+                    problem = t;
+                    return;
+                }
+            }
+            ServletRequestContext.this.resume(t);
         }
     }
 

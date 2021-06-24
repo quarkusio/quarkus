@@ -41,7 +41,7 @@ public class JsonObjectValueResolver implements ValueResolver {
             default:
                 return jsonObject.containsKey(context.getName())
                         ? CompletableFuture.completedFuture(jsonObject.getValue(context.getName()))
-                        : Results.NOT_FOUND;
+                        : Results.notFound(context);
         }
     }
 

@@ -16,10 +16,11 @@ public final class ExtensionProcessor {
     public enum CodestartKind {
         CORE,
         EXTENSION_CODESTART,
-        EXAMPLE;
+        EXAMPLE,
+        SINGLETON_EXAMPLE;
 
         public boolean providesCode() {
-            return this == EXTENSION_CODESTART || this == EXAMPLE;
+            return this == EXTENSION_CODESTART || this == EXAMPLE || this == SINGLETON_EXAMPLE;
         }
     }
 

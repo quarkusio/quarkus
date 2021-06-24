@@ -78,12 +78,6 @@ public class SpringDIProcessor {
     private static final DotName CDI_PRODUCES_ANNOTATION = DotNames.PRODUCES;
     private static final DotName MP_CONFIG_PROPERTY_ANNOTATION = DotName.createSimple(ConfigProperty.class.getName());
 
-    static final int ANNOTATION = 0x00002000;
-
-    static boolean isAnnotation(final int mod) {
-        return (mod & ANNOTATION) != 0;
-    }
-
     @BuildStep
     FeatureBuildItem registerFeature() {
         return new FeatureBuildItem(Feature.SPRING_DI);
@@ -131,7 +125,7 @@ public class SpringDIProcessor {
             instances.put(name, index.getAnnotations(name)
                     .stream()
                     .filter(it -> it.target().kind() == AnnotationTarget.Kind.CLASS
-                            && isAnnotation(it.target().asClass().flags()))
+                            && it.target().asClass().isAnnotation())
                     .collect(Collectors.toSet()));
         }
         additionalStereotypeBuildItemBuildProducer.produce(new AdditionalStereotypeBuildItem(instances));
@@ -248,7 +242,7 @@ public class SpringDIProcessor {
     private List<ClassInfo> getOrderedAnnotations(final IndexView index) {
         final Map<DotName, Set<DotName>> deps = new HashMap<>();
         for (final ClassInfo clazz : index.getKnownClasses()) {
-            if (isAnnotation(clazz.flags())) {
+            if (clazz.isAnnotation()) {
                 deps.put(clazz.name(), clazz.annotations().keySet());
             }
         }
@@ -318,7 +312,7 @@ public class SpringDIProcessor {
                     if (scopeNames != null) {
                         scopes.addAll(scopeNames);
                     }
-                    if (SPRING_STEREOTYPE_ANNOTATIONS.contains(clazzAnnotation) && !isAnnotation(classInfo.flags())) {
+                    if (SPRING_STEREOTYPE_ANNOTATIONS.contains(clazzAnnotation) && !classInfo.isAnnotation()) {
                         names.add(getBeanNameFromStereotypeInstance(classInfo.classAnnotation(clazzAnnotation)));
                     }
                 }
@@ -328,7 +322,7 @@ public class SpringDIProcessor {
             if (declaredScope == null && classInfo.classAnnotation(CDI_NAMED_ANNOTATION) != null) {
                 declaredScope = CDI_SINGLETON_ANNOTATION; // implicit default scope in spring
             }
-            final boolean isAnnotation = isAnnotation(classInfo.flags());
+            final boolean isAnnotation = classInfo.isAnnotation();
             if (declaredScope != null) {
                 annotationsToAdd.add(create(
                         declaredScope,

@@ -10,16 +10,15 @@ import java.util.TreeMap;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RegistryClientMixin;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.devtools.project.codegen.ProjectGenerator;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import picocli.CommandLine.Help;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
@@ -27,7 +26,6 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
 public class CreateProjectMixin {
-
     Map<String, Object> values = new HashMap<>();
     Path outputPath;
     Path projectRootPath;
@@ -42,6 +40,12 @@ public class CreateProjectMixin {
 
     @Mixin
     RegistryClientMixin registryClient;
+
+    public void setTestOutputDirectory(Path testOutputDirectory) {
+        if (testOutputDirectory != null && targetDirectory == null) {
+            outputPath = testOutputDirectory;
+        }
+    }
 
     public Path outputDirectory() {
         if (outputPath == null) {
@@ -90,7 +94,7 @@ public class CreateProjectMixin {
     }
 
     public QuarkusCommandInvocation build(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion,
-            OutputOptionMixin log)
+            OutputOptionMixin log, Map<String, String> properties)
             throws RegistryResolutionException {
 
         // TODO: Allow this to be configured? infer from active Java version?
@@ -105,8 +109,17 @@ public class CreateProjectMixin {
             buildTool = BuildTool.MAVEN;
         }
 
-        ExtensionCatalog catalog = registryClient.getExtensionCatalog(targetVersion, log);
-        QuarkusProject qp = QuarkusProjectHelper.getProject(projectRoot(), catalog, buildTool, log);
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, log);
+
+        properties.entrySet().forEach(x -> {
+            if (x.getValue().length() > 0) {
+                System.setProperty(x.getKey(), x.getValue());
+                log.info("property: %s=%s", x.getKey(), x.getValue());
+            } else {
+                System.setProperty(x.getKey(), "");
+                log.info("property: %s", x.getKey());
+            }
+        });
         return new QuarkusCommandInvocation(qp, values);
     }
 

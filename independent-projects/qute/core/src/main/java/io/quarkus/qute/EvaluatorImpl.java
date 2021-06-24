@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.ExpressionImpl.PartImpl;
-import io.quarkus.qute.Results.Result;
 import io.smallrye.mutiny.Uni;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,11 +87,11 @@ class EvaluatorImpl implements Evaluator {
             Iterator<Part> parts, Iterator<NamespaceResolver> resolvers) {
         NamespaceResolver resolver = resolvers.next();
         return resolver.resolve(context).thenCompose(r -> {
-            if (Result.NOT_FOUND.equals(r)) {
+            if (Results.isNotFound(r)) {
                 if (resolvers.hasNext()) {
                     return resolveNamespace(context, resolutionContext, parts, resolvers);
                 } else {
-                    return Results.NOT_FOUND;
+                    return Results.notFound(context);
                 }
             } else if (parts.hasNext()) {
                 return resolveReference(false, r, parts, resolutionContext);
@@ -124,7 +123,7 @@ class EvaluatorImpl implements Evaluator {
             ValueResolver cachedResolver = evalContext.getCachedResolver();
             if (cachedResolver != null && cachedResolver.appliesTo(evalContext)) {
                 return cachedResolver.resolve(evalContext).thenCompose(r -> {
-                    if (Result.NOT_FOUND.equals(r)) {
+                    if (Results.isNotFound(r)) {
                         return resolve(evalContext, null, false);
                     } else {
                         return toCompletionStage(r);
@@ -155,13 +154,17 @@ class EvaluatorImpl implements Evaluator {
                         null, false);
             }
             LOGGER.tracef("Unable to resolve %s", evalContext);
-            return Results.NOT_FOUND;
+            if (Results.isNotFound(evalContext.getBase())) {
+                // If the base is "not found" then just return it
+                return CompletableFuture.completedFuture(evalContext.getBase());
+            }
+            return Results.notFound(evalContext);
         }
 
         final Iterator<ValueResolver> remainingResolvers = resolvers;
         final ValueResolver foundResolver = applicableResolver;
         return applicableResolver.resolve(evalContext).thenCompose(r -> {
-            if (Result.NOT_FOUND.equals(r)) {
+            if (Results.isNotFound(r)) {
                 // Result not found - try the next resolver
                 return resolve(evalContext, remainingResolvers, false);
             } else {

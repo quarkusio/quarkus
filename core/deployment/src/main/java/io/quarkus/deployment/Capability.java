@@ -102,4 +102,7 @@ public interface Capability {
 
     String VERTX = QUARKUS_PREFIX + "vertx";
     String VERTX_CORE = VERTX + ".core";
+
+    String APICURIO_REGISTRY = QUARKUS_PREFIX + "apicurio.registry";
+    String APICURIO_REGISTRY_AVRO = APICURIO_REGISTRY + ".avro";
 }

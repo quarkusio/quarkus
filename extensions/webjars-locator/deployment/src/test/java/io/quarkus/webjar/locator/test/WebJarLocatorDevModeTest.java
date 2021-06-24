@@ -50,7 +50,7 @@ public class WebJarLocatorDevModeTest {
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/3.4.1/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery/3.5.1/jquery.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/2.24.0/min/moment.min.js").then()
                 .statusCode(200);
@@ -97,7 +97,7 @@ public class WebJarLocatorDevModeTest {
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/3.4.1/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery/3.5.1/jquery.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/2.24.0/min/moment.min.js").then()
                 .statusCode(200);

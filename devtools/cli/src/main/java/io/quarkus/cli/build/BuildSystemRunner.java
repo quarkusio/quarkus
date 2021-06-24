@@ -11,10 +11,12 @@ import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
@@ -81,16 +83,22 @@ public interface BuildSystemRunner {
         return getProjectRoot().relativize(absolutePath).toString();
     }
 
-    Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern)
+    Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format)
+            throws Exception;
+
+    Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
+            String category)
             throws Exception;
 
     Integer addExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
     Integer removeExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
-    BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
+    BuildCommandArgs prepareBuild(BuildOptions buildOptions, PropertiesOptions propertiesOptions, RunModeOption runMode,
+            List<String> params);
 
-    BuildCommandArgs prepareDevMode(DevOptions devOptions, DebugOptions debugOptions, List<String> params);
+    BuildCommandArgs prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions, DebugOptions debugOptions,
+            List<String> params);
 
     Path getProjectRoot();
 

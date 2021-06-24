@@ -269,9 +269,8 @@ public class BuildTimeEnabledProcessor {
                 // Veto the class
                 transform.add(DotNames.VETOED);
             } else {
-                // Add @Alternative to the producer
-                transform.add(DotNames.ALTERNATIVE);
-                transform.remove(s -> s.name().equals(DotNames.ALTERNATIVE_PRIORITY));
+                // Veto the producer
+                transform.add(DotNames.VETOED_PRODUCER);
             }
             transform.done();
         }

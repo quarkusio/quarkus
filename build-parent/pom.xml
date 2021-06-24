@@ -71,10 +71,10 @@
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
         <microprofile-jwt-api.version>1.2</microprofile-jwt-api.version>
-        <microprofile-graphql-api.version>1.0.3</microprofile-graphql-api.version>
+        <microprofile-graphql-api.version>1.1.0</microprofile-graphql-api.version>
 
         <!-- Antlr is used by the PanacheQL parser-->
-        <antlr.version>4.7.2</antlr.version>
+        <antlr.version>4.8</antlr.version>
 
         <!-- Defaults for integration tests -->
         <elasticsearch-server.version>7.10.0</elasticsearch-server.version>
@@ -83,12 +83,12 @@
 
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
-        <jsoup.version>1.11.3</jsoup.version>
+        <jsoup.version>1.12.1</jsoup.version>
         <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:12.0.3</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:14.0.0</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 
@@ -494,11 +494,13 @@
                                             <exclude>io.quarkus:quarkus-test-*</exclude>
                                             <exclude>io.rest-assured:*</exclude>
                                             <exclude>org.assertj:*</exclude>
+                                            <exclude>junit:junit</exclude>
                                         </excludes>
                                         <includes>
                                             <include>io.quarkus:quarkus-test-*:*:*:test</include>
                                             <include>io.rest-assured:*:*:*:test</include>
                                             <include>org.assertj:*:*:*:test</include>
+                                            <include>junit:junit:*:*:test</include>
                                         </includes>
                                         <message>Found test dependencies with wrong scope:</message>
                                     </bannedDependencies>

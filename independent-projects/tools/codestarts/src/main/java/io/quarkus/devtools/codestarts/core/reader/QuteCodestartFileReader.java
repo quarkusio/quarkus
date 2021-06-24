@@ -112,7 +112,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
     static class MissingValueMapper implements ResultMapper {
 
         public boolean appliesTo(TemplateNode.Origin origin, Object result) {
-            return Results.Result.NOT_FOUND.equals(result);
+            return Results.isNotFound(result);
         }
 
         public String map(Object result, Expression expression) {

@@ -210,6 +210,118 @@ Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
 
 Hit `CTRL+C` to stop the application.
 
+== Additional configuration
+Some use cases will require custom configuration of OpenTelemetry.
+These sections will outline what is necessary to properly configure it.
+
+=== ID Generator
+The OpenTelemetry extension will use by default a random https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#id-generators[ID Generator]
+when creating the trace and span identifier.
+
+Some vendor-specific protocols need a custom ID Generator, you can override the default one by creating a producer.
+The OpenTelemetry extension will detect the `IdGenerator` CDI bean and will use it when configuring the tracer producer.
+
+[source,java]
+----
+@Singleton
+public class CustomConfiguration {
+
+    /** Creates a custom IdGenerator for OpenTelemetry */
+    @Produces
+    @Singleton
+    public IdGenerator idGenerator() {
+        return AwsXrayIdGenerator.getInstance();
+    }
+}
+----
+
+=== Propagators
+OpenTelemetry propagates cross-cutting concerns through https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md[propagators] that will share an underlying `Context` for storing state and accesing
+data across the lifespan of a distributed transaction.
+
+By default, the OpenTelemetry extension enables the https://www.w3.org/TR/trace-context/[W3C Trace Context] and the https://www.w3.org/TR/baggage/[W3C Baggage]
+propagators, you can however choose any of the supported OpenTelemetry propagators by setting the `propagators` config that is described in the <<configuration-reference>>.
+
+[NOTE]
+====
+The `b3`, `b3multi`, `jaeger` and `ottrace` propagators will need the https://github.com/open-telemetry/opentelemetry-java/tree/main/extensions/trace-propagators[trace-propagators]
+extension to be added as a dependency to your project.
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-extension-trace-propagators</artifactId>
+</dependency>
+----
+
+The `xray` propagator will need the https://github.com/open-telemetry/opentelemetry-java/tree/main/extensions/aws[aws] extension to be added as a dependency to your project.
+[source,xml]
+----
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-extension-aws</artifactId>
+</dependency>
+----
+====
+
+=== Resource
+A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/overview.md#resources[resource] is a representation
+of the entity that is producing telemetry, it adds attributes to the exported trace to characterize who is producing the trace.
+
+You can add attributes by setting the `resource-attributes` tracer config that is described in the <<configuration-reference>>.
+Since this property can be overridden at runtime, the OpenTelemetry extension will pick up its value following the order of precedence that
+is described in the xref:config-reference.adoc#configuration_sources[Quarkus Configuration Reference].
+
+If by any means you need to use a custom resource or one that is provided by one of the https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions[OpenTelemetry SDK Extensions]
+you can create multiple resource producers. The OpenTelemetry extension will detect the `Resource` CDI beans and will merge them when configuring the tracer producer.
+
+[source,java]
+----
+@ApplicationScoped
+public class CustomConfiguration {
+
+    @Produces
+    @ApplicationScoped
+    public Resource osResource() {
+        return OsResource.get();
+    }
+
+    @Produces
+    @ApplicationScoped
+    public Resource ecsResource() {
+        return EcsResource.get();
+    }
+}
+----
+
+=== Sampler
+A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampling[sampler] decides whether
+a trace should be sampled and exported, controlling noise and overhead by reducing the number of sample of traces collected and sent
+to the collector.
+
+You can set a https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#built-in-samplers[built-in sampler]
+simply by setting the desired sampler config described in the <<configuration-reference>>.
+
+If you need to use a custom sampler or to use one that is provided by one of the https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions[OpenTelemetry SDK Extensions]
+you can create a sampler producer. The OpenTelemetry extension will detect the `Sampler` CDI bean and will use it when configuring the tracer producer.
+
+[source,java]
+----
+@Singleton
+public class CustomConfiguration {
+
+    /** Creates a custom sampler for OpenTelemetry */
+    @Produces
+    @Singleton
+    public Sampler sampler() {
+        return JaegerRemoteSampler.builder()
+        .setServiceName("my-service")
+        .build();
+    }
+}
+----
+
 == Additional instrumentation
 
 Some Quarkus extensions will require additional code to ensure traces are propagated to subsequent execution.

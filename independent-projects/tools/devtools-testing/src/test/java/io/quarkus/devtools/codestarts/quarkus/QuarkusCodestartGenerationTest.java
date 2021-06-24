@@ -41,6 +41,7 @@ class QuarkusCodestartGenerationTest {
                 .noDockerfiles()
                 .noBuildToolWrapper()
                 .addData(getGenerationTestInputData())
+                .addBoms(QuarkusCodestartTesting.getPlatformBoms())
                 .build();
         final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
@@ -83,6 +84,7 @@ class QuarkusCodestartGenerationTest {
     void generateMavenWithCustomDep(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getGenerationTestInputData())
+                .addBoms(QuarkusCodestartTesting.getPlatformBoms())
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(ArtifactCoords.fromString("commons-io:commons-io:2.5"))
 

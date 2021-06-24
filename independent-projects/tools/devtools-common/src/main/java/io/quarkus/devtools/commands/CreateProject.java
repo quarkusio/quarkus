@@ -21,7 +21,6 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.devtools.project.codegen.SourceType;
-import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,13 +36,11 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class CreateProject {
 
-    public static final String NAME = "create-project";
-
-    public static final String NO_DOCKERFILES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-dockerfiles");
-    public static final String NO_BUILDTOOL_WRAPPER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-buildtool-wrapper");
-    public static final String NO_CODE = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-code");
-    public static final String EXAMPLE = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "example");
-    public static final String EXTRA_CODESTARTS = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "extra-codestarts");
+    public static final String NO_DOCKERFILES = "quarkus.create-project.no-dockerfiles";
+    public static final String NO_BUILDTOOL_WRAPPER = "quarkus.create-project.no-buildtool-wrapper";
+    public static final String NO_CODE = "quarkus.create-project.no-code";
+    public static final String EXAMPLE = "quarkus.create-project.example";
+    public static final String EXTRA_CODESTARTS = "quarkus.create-project.extra-codestarts";
 
     private QuarkusProject quarkusProject;
     private String javaTarget;

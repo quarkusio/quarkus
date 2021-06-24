@@ -314,7 +314,7 @@ Or, if you packaged your application as native executable, use:
 ----
 
 The parameters passed to the application are described in the datasource guide.
-There are other ways to configure the application - please check the xref:configuration-sources[configuration guide] to have an overview of the possibilities (such as env variable, .env files and so on).
+There are other ways to configure the application - please check the link:config-reference#configuration_sources[configuration guide] to have an overview of the possibilities (such as env variable, .env files and so on).
 
 == Going further
 

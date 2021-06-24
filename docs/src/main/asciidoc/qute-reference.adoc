@@ -215,6 +215,7 @@ It consists of one or more parts separated by dot (dot notation) or square brack
 In the `object.property` (dot notation) syntax, the `property` must be a <<identifiers,valid identifier>>.
 In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals, literal>> value. 
 An expression could start with an optional namespace followed by a colon (`:`).
+A valid namespace consist of alphanumeric characters and underscores.
 
 .Expressions Example
 [source]
@@ -1712,20 +1713,36 @@ public interface GermanAppMessages extends AppMessages {
 Message bundle files must be encoded in UTF-8.
 The file name consists of the relevant bundle name (e.g. `msg`) and underscore followed by the locate tag (IETF).
 The file format is very simple: each line represents either a key/value pair with the equals sign used as a separator or a comment (line starts with `#`).
-Keys are mapped to method names from the corresponding message bundle interface.
+Blank lines are ignored.
+Keys are _mapped to method names_ from the corresponding message bundle interface.
 Values represent the templates normally defined by `io.quarkus.qute.i18n.Message#value()`.
-We use `.properties` suffix in our example because most IDEs and text editors support syntax highlighting of `.properties` files.
-But in fact, the suffix could be anything.
+A value may be spread out across several adjacent normal lines.
+In such case, the line terminator must be escaped with a backslash character `\`.
+The behavior is very similar to the behavior of the `java.util.Properties.load(Reader)` method.
 
 .Localized File Example - `msg_de.properties`
 [source,properties]
 ----
+# This comment is ignored
 hello_name=Hallo {name}! <1> <2>
 ----
-<1> Each line in a localized file represents a message template. 
+<1> Each line in a localized file represents a key/value pair. The key must correspond to a method declared on the message bundle interface. The value is the message template.
 <2> Keys and values are separated by the equals sign.
 
-Once we have the localized bundles defined we need a way to _select_ a correct bundle.
+NOTE: We use the `.properties` suffix in our example because most IDEs and text editors support syntax highlighting of `.properties` files. But in fact, the suffix could be anything - it is just ignored.
+
+TIP: An example properties file is generated into the target directory for each message bundle interface automatically. For example, by default if no name is specified for `@MessageBundle` the file `target/qute-i18n-examples/msg.properties` is generated when the application is build via `mvn clean package`. You can use this file as a base for a specific locale. Just rename the file - e.g. `msg_fr.properties`, change the message templates and move it in the `src/main/resources/messages` directory.
+
+.Value Spread Out Across Several Adjacent Lines
+[source,properties]
+----
+hello=Hello \
+   {name} and \
+   good morning!
+----
+Note that the line terminator is escaped with a backslash character `\` and white space at the start of the following line is ignored. I.e. `{msg:hello('Edgar')}` would be rendered as `Hello Edgar and good morning!`.
+
+Once we have the localized bundles defined we need a way to _select_ the correct bundle.
 If you use a message bundle expression in a template you'll have to specify the `locale` attribute of a template instance.
 
 .`locale` Attribute Example

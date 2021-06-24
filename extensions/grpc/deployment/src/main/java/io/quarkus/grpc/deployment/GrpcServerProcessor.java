@@ -34,7 +34,6 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -60,8 +59,6 @@ import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
-import io.quarkus.grpc.runtime.supports.context.GrpcEnableRequestContext;
-import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextCdiInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -240,14 +237,11 @@ public class GrpcServerProcessor {
                     @Override
                     public void transform(TransformationContext context) {
                         ClassInfo clazz = context.getTarget().asClass();
-                        if (userDefinedServices.contains(clazz.name())) {
-                            // Add @GrpcEnableRequestContext to activate the request context during each call
-                            Transformation transform = context.transform().add(GrpcDotNames.GRPC_ENABLE_REQUEST_CONTEXT);
-                            if (!customScopes.isScopeDeclaredOn(clazz)) {
-                                // Add @Singleton to make it a bean
-                                transform.add(BuiltinScope.SINGLETON.getName());
-                            }
-                            transform.done();
+                        if (userDefinedServices.contains(clazz.name()) && !customScopes.isScopeDeclaredOn(clazz)) {
+                            // Add @Singleton to make it a bean
+                            context.transform()
+                                    .add(BuiltinScope.SINGLETON.getName())
+                                    .done();
                         }
                     }
                 });
@@ -303,8 +297,6 @@ public class GrpcServerProcessor {
             List<BindableServiceBuildItem> bindables, BuildProducer<FeatureBuildItem> features) {
         // @GrpcService is a CDI qualifier
         beans.produce(new AdditionalBeanBuildItem(GrpcService.class));
-        beans.produce(new AdditionalBeanBuildItem(GrpcRequestContextCdiInterceptor.class));
-        beans.produce(new AdditionalBeanBuildItem(GrpcEnableRequestContext.class));
 
         if (!bindables.isEmpty() || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcContainer.class));

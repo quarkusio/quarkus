@@ -7,10 +7,12 @@ import java.util.List;
 import java.util.Set;
 
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.registry.config.RegistriesConfigLocator;
@@ -58,13 +60,28 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern) {
+    public Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format) {
+        ArrayDeque<String> args = new ArrayDeque<>();
+        setGradleProperties(args, runMode.isBatchMode());
+
+        args.add("listCategories");
+        args.add("--fromCli");
+        args.add("--format=" + format.getFormatString());
+        return run(prependExecutable(args));
+    }
+
+    @Override
+    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
+            String category) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, runMode.isBatchMode());
 
         args.add("listExtensions");
         args.add("--fromCli");
         args.add("--format=" + format.getFormatString());
+        if (category != null && !category.isBlank()) {
+            args.add("--category=" + category);
+        }
         if (!installable) {
             args.add("--installed");
         }
@@ -97,7 +114,8 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, PropertiesOptions propertiesOptions, RunModeOption runMode,
+            List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, runMode.isBatchMode());
 
@@ -116,7 +134,7 @@ public class GradleRunner implements BuildSystemRunner {
         }
 
         // add any other discovered properties
-        args.addAll(flattenMappedProperties(buildOptions.properties));
+        args.addAll(flattenMappedProperties(propertiesOptions.properties));
         // Add any other unmatched arguments
         args.addAll(params);
 
@@ -124,7 +142,8 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareDevMode(DevOptions devOptions, DebugOptions debugOptions, List<String> params) {
+    public BuildCommandArgs prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
+            DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, false);
 
@@ -140,7 +159,7 @@ public class GradleRunner implements BuildSystemRunner {
         //TODO: addDebugArguments(args, debugOptions);
 
         // add any other discovered properties
-        args.addAll(flattenMappedProperties(devOptions.properties));
+        args.addAll(flattenMappedProperties(propertiesOptions.properties));
         // Add any other unmatched arguments
         args.addAll(params);
         return prependExecutable(args);

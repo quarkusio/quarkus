@@ -8,7 +8,11 @@ public class RunModeOption {
             "--batch-mode" }, description = "Run in non-interactive (batch) mode.")
     boolean batchMode;
 
-    @CommandLine.Option(names = { "--dryrun" }, description = "Show actions that would be taken.")
+    // Allow the option variant, but don't crowd help
+    @CommandLine.Option(names = { "--dryrun" }, hidden = true)
+    boolean dryRun2 = false;
+
+    @CommandLine.Option(names = { "--dry-run" }, description = "Show actions that would be taken.")
     boolean dryRun = false;
 
     public boolean isBatchMode() {
@@ -16,12 +20,12 @@ public class RunModeOption {
     }
 
     public boolean isDryRun() {
-        return dryRun;
+        return dryRun || dryRun2;
     }
 
     @Override
     public String toString() {
-        return "RunModeOption [batchMode=" + batchMode + ", dryRun=" + dryRun + "]";
+        return "RunModeOption [batchMode=" + batchMode + ", dryRun=" + isDryRun() + "]";
     }
 
 }

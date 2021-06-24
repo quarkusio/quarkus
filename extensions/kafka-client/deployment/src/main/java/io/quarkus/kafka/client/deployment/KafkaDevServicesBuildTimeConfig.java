@@ -27,10 +27,37 @@ public class KafkaDevServicesBuildTimeConfig {
 
     /**
      * The Kafka image to use.
-     * Note that only Red Panda images are supported.
+     * Note that only Redpanda images are supported.
      * See https://vectorized.io/docs/quick-start-docker/ and https://hub.docker.com/r/vectorized/redpanda
      */
     @ConfigItem(defaultValue = "vectorized/redpanda:v21.5.5")
     public String imageName;
+
+    /**
+     * Indicates if the Kafka broker managed by Quarkus Dev Services is shared.
+     * When shared, Quarkus looks for running containers using label-based service discovery.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services for Kafka starts a new container.
+     * <p>
+     * The discovery uses the {@code quarkus-dev-service-kafka} label.
+     * The value is configured using the {@code service-name} property.
+     * <p>
+     * Container sharing is only used in dev mode.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean shared;
+
+    /**
+     * The value of the {@code quarkus-dev-service-kafka} label attached to the started container.
+     * This property is used when {@code shared} is set to {@code true}.
+     * In this case, before starting a container, Dev Services for Kafka looks for a container with the
+     * {@code quarkus-dev-service-kafka} label
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * starts a new container with the {@code quarkus-dev-service-kafka} label set to the specified value.
+     * <p>
+     * This property is used when you need multiple shared Kafka brokers.
+     */
+    @ConfigItem(defaultValue = "kafka")
+    public String serviceName;
 
 }

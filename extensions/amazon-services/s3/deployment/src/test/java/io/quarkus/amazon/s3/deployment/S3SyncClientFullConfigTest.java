@@ -1,5 +1,8 @@
 package io.quarkus.amazon.s3.deployment;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -13,7 +16,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class S3SyncClientFullConfigTest {
 
     @Inject
-    S3Client client;
+    Instance<S3Client> client;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -22,6 +25,7 @@ public class S3SyncClientFullConfigTest {
 
     @Test
     public void test() {
+        assertNotNull(client.get());
         // should finish with success
     }
 }

@@ -72,6 +72,7 @@ triage:
         - integration-tests/jpa-mssql/
         - integration-tests/jpa-mysql/
         - integration-tests/jpa-postgresql/
+        - integration-tests/jpa-postgresql-withxml/
         - integration-tests/jpa-without-entity/
         - integration-tests/jpa/
         - integration-tests/infinispan-cache-jpa/

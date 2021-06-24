@@ -1,12 +1,10 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
-
 /**
  * Value resolvers are used when evaluating expressions.
  * <p>
  * First the resolvers that apply to the given {@link EvalContext} are filtered. Then the resolver with highest priority is used
- * to resolve the data. If {@link Result#NOT_FOUND} is returned the next available resolver is tried.
+ * to resolve the data. If {@link Results#isNotFound(Object)} is returned the next available resolver is tried.
  * 
  * @see EvalContext
  */

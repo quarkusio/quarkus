@@ -2,6 +2,7 @@ package io.quarkus.micrometer.runtime.binder;
 
 import java.io.IOException;
 
+import javax.ws.rs.Priorities;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseContext;
@@ -35,8 +36,10 @@ public class RestClientMetricsListener implements RestClientListener {
     @Override
     public void onNewClient(Class<?> serviceInterface, RestClientBuilder builder) {
         if (prepClientMetrics()) {
-            builder.register(this.clientRequestFilter);
-            builder.register(this.clientResponseFilter);
+            // This must run AFTER the OpenTelmetry client request filter
+            builder.register(this.clientRequestFilter, Priorities.HEADER_DECORATOR + 1);
+            // This must run Before the OpenTelmetry client response filter
+            builder.register(this.clientResponseFilter, Priorities.HEADER_DECORATOR + 1);
         }
     }
 
@@ -75,10 +78,13 @@ public class RestClientMetricsListener implements RestClientListener {
         public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
             RequestMetricInfo requestMetric = getRequestMetric(requestContext);
             if (requestMetric != null) {
+                String templatePath = (String) requestContext.getProperty("UrlPathTemplate");
+
                 String requestPath = requestMetric.getNormalizedUriPath(
                         httpMetricsConfig.getClientMatchPatterns(),
                         httpMetricsConfig.getClientIgnorePatterns(),
-                        requestContext.getUri().getPath());
+                        templatePath == null ? requestContext.getUri().getPath() : templatePath);
+
                 if (requestPath != null) {
                     Timer.Sample sample = requestMetric.getSample();
                     int statusCode = responseContext.getStatus();

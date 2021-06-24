@@ -1,9 +1,13 @@
 package io.quarkus.qute;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public abstract class TemplateInstanceBase implements TemplateInstance {
+
+    static final String DATA_MAP_KEY = "io.quarkus.qute.dataMap";
+    static final Map<String, Object> EMPTY_DATA_MAP = Collections.singletonMap(DATA_MAP_KEY, true);
 
     protected Object data;
     protected Map<String, Object> dataMap;
@@ -25,6 +29,7 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
         this.data = null;
         if (dataMap == null) {
             dataMap = new HashMap<String, Object>();
+            dataMap.put(DATA_MAP_KEY, true);
         }
         dataMap.put(key, data);
         return this;
@@ -42,7 +47,13 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
     }
 
     protected Object data() {
-        return data != null ? data : dataMap;
+        if (data != null) {
+            return data;
+        }
+        if (dataMap != null) {
+            return dataMap;
+        }
+        return EMPTY_DATA_MAP;
     }
 
 }

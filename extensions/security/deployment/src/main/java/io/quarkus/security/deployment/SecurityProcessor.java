@@ -40,6 +40,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -200,6 +201,25 @@ public class SecurityProcessor {
             }
         } else if (bouncyCastleProvider.isPresent()) {
             recorder.addBouncyCastleProvider(bouncyCastleProvider.get().isInFipsMode());
+        }
+    }
+
+    @BuildStep
+    void addBouncyCastleProvidersToNativeImage(BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders,
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
+            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
+        if (bouncyCastleJsseProvider.isPresent()) {
+            additionalProviders.produce(
+                    new NativeImageSecurityProviderBuildItem(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
+            final String providerName = bouncyCastleJsseProvider.get().isInFipsMode()
+                    ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                    : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
+            additionalProviders.produce(new NativeImageSecurityProviderBuildItem(providerName));
+        } else if (bouncyCastleProvider.isPresent()) {
+            final String providerName = bouncyCastleProvider.get().isInFipsMode()
+                    ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                    : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
+            additionalProviders.produce(new NativeImageSecurityProviderBuildItem(providerName));
         }
     }
 

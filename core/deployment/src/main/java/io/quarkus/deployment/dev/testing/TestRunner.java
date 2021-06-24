@@ -20,7 +20,6 @@ import org.junit.platform.engine.FilterResult;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.launcher.PostDiscoveryFilter;
-import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.deployment.dev.ClassScanResult;
@@ -31,7 +30,7 @@ import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 
 public class TestRunner {
 
-    private static final Logger log = Logger.getLogger(TestRunner.class);
+    private static final Logger log = Logger.getLogger("io.quarkus.test");
     private static final AtomicLong COUNTER = new AtomicLong();
 
     private final TestSupport testSupport;
@@ -348,19 +347,24 @@ public class TestRunner {
                     throw new RuntimeException(e);
                 }
             }
-            if (disabled) {
-                throw new TestAbortedException("Tests are disabled");
-            }
         }
     }
 
-    public synchronized void testCompileFailed(Throwable e) {
-        compileProblem = e;
-        log.error("Test compile failed", e);
+    public void testCompileFailed(Throwable e) {
+        synchronized (this) {
+            compileProblem = e;
+        }
+
+        for (TestListener i : testSupport.testListeners) {
+            i.testCompileFailed(e.getMessage());
+        }
     }
 
     public synchronized void testCompileSucceeded() {
         compileProblem = null;
+        for (TestListener i : testSupport.testListeners) {
+            i.testCompileSucceeded();
+        }
     }
 
     public boolean isRunning() {

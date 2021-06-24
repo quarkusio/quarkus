@@ -9,7 +9,7 @@ public interface Union<M> {
      *
      * @return union version
      */
-    UnionVersion verion();
+    UnionVersion version();
 
     /**
      * Members of the union.

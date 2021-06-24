@@ -2,6 +2,7 @@ package io.quarkus.amazon.dynamodb.runtime;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
@@ -12,41 +13,40 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
 @ApplicationScoped
 public class DynamodbClientProducer {
 
-    private volatile DynamoDbClientBuilder syncConfiguredBuilder;
-    private volatile DynamoDbAsyncClientBuilder asyncConfiguredBuilder;
+    private final DynamoDbClient syncClient;
+    private final DynamoDbAsyncClient asyncClient;
 
-    private DynamoDbClient client;
-    private DynamoDbAsyncClient asyncClient;
+    DynamodbClientProducer(Instance<DynamoDbClientBuilder> syncClientBuilderInstance,
+            Instance<DynamoDbAsyncClientBuilder> asyncClientBuilderInstance) {
+        this.syncClient = syncClientBuilderInstance.isResolvable() ? syncClientBuilderInstance.get().build() : null;
+        this.asyncClient = asyncClientBuilderInstance.isResolvable() ? asyncClientBuilderInstance.get().build() : null;
+    }
 
     @Produces
     @ApplicationScoped
     public DynamoDbClient client() {
-        client = syncConfiguredBuilder.build();
-        return client;
+        if (syncClient == null) {
+            throw new IllegalStateException("The DynamoDbClient is required but has not been detected/configured.");
+        }
+        return syncClient;
     }
 
     @Produces
     @ApplicationScoped
     public DynamoDbAsyncClient asyncClient() {
-        asyncClient = asyncConfiguredBuilder.build();
+        if (asyncClient == null) {
+            throw new IllegalStateException("The DynamoDbAsyncClient is required but has not been detected/configured.");
+        }
         return asyncClient;
     }
 
     @PreDestroy
     public void destroy() {
-        if (client != null) {
-            client.close();
+        if (syncClient != null) {
+            syncClient.close();
         }
         if (asyncClient != null) {
             asyncClient.close();
         }
-    }
-
-    public void setSyncConfiguredBuilder(DynamoDbClientBuilder syncConfiguredBuilder) {
-        this.syncConfiguredBuilder = syncConfiguredBuilder;
-    }
-
-    public void setAsyncConfiguredBuilder(DynamoDbAsyncClientBuilder asyncConfiguredBuilder) {
-        this.asyncConfiguredBuilder = asyncConfiguredBuilder;
     }
 }

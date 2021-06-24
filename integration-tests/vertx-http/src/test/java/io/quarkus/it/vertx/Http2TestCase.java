@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutionException;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,21 @@ public class Http2TestCase {
 
     @Test
     public void testHttp2EnabledSsl() throws ExecutionException, InterruptedException {
+        runHttp2EnabledSsl("client-keystore-1.jks");
+    }
+
+    @Test
+    public void testHttp2EnabledSslWithNotSelectedClientCert() throws ExecutionException, InterruptedException {
+        // client-keystore-2.jks contains the key pair matching mykey-2 in server-truststore.jks,
+        // but only mykey-1 is "selected" via its alias in application.properties
+        ExecutionException exc = Assertions.assertThrows(ExecutionException.class,
+                () -> runHttp2EnabledSsl("client-keystore-2.jks"));
+
+        Assertions.assertEquals("SSLHandshakeException: Received fatal alert: bad_certificate",
+                ExceptionUtils.getRootCauseMessage(exc));
+    }
+
+    private void runHttp2EnabledSsl(String keystoreName) throws InterruptedException, ExecutionException {
         Assumptions.assumeTrue(JdkSSLEngineOptions.isAlpnAvailable()); //don't run on JDK8
         Vertx vertx = Vertx.vertx();
         try {
@@ -46,7 +62,7 @@ public class Http2TestCase {
                     .setProtocolVersion(HttpVersion.HTTP_2)
                     .setSsl(true)
                     .setKeyStoreOptions(
-                            new JksOptions().setPath("src/test/resources/client-keystore.jks").setPassword("password"))
+                            new JksOptions().setPath("src/test/resources/" + keystoreName).setPassword("password"))
                     .setTrustStoreOptions(
                             new JksOptions().setPath("src/test/resources/client-truststore.jks").setPassword("password"));
 

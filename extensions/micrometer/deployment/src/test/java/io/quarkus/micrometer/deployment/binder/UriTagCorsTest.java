@@ -86,8 +86,11 @@ public class UriTagCorsTest {
                 .when().options("/hello/world").then()
                 .statusCode(200);
 
-        // Make sure other threads have time to finish
-        Thread.sleep(3);
+        int i = 0;
+        do {
+            i++;
+            Thread.sleep(3); // Try to let updates to SimpleMeterRegistry settle
+        } while (registry.find("http.server.requests").timers().size() < 3 && i < 10);
 
         // CORS pre-flight
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/cors-preflight").timers().size(),

@@ -30,12 +30,18 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
  */
 public class HeaderUtil {
 
+    private static final ClassValue<RuntimeDelegate.HeaderDelegate> HEADER_DELEGATE_CACHE = new ClassValue() {
+        @Override
+        protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
+            return RuntimeDelegate.getInstance().createHeaderDelegate(type);
+        }
+    };
+
     public static String headerToString(Object obj) {
         if (obj instanceof String) {
             return (String) obj;
         } else {
-            // TODO: we probably want a more direct way to get the delegate instead of going through all the indirection
-            return RuntimeDelegate.getInstance().createHeaderDelegate((Class<Object>) obj.getClass()).toString(obj);
+            return HEADER_DELEGATE_CACHE.get(obj.getClass()).toString(obj);
         }
     }
 

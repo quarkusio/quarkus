@@ -18,12 +18,12 @@ public class CheckedTemplateArrayParamTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Templates.class)
-                    .addAsResource(new StringAsset("Hello {myArray[1]}!"),
+                    .addAsResource(new StringAsset("Hello {myArray[1]}! ::{myArray.take(1).size}"),
                             "templates/CheckedTemplateArrayParamTest/arrays.txt"));
 
     @Test
     public void testBasePath() {
-        assertEquals("Hello 1!",
+        assertEquals("Hello 1! ::1",
                 Templates.arrays(new int[] { 0, 1 }).render());
     }
 

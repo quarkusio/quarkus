@@ -375,7 +375,9 @@ NOTE: In fact, the operators are implemented as "virtual methods" that consume o
 
 ==== Arrays
 
-You can iterate over elements of an array with the <<loop_section>>. Moreover, it's also possible to get the length of the specified array and access the elements directly via an index value.
+You can iterate over elements of an array with the <<loop_section>>. 
+Moreover, it's also possible to get the length of the specified array and access the elements directly via an index value.
+Additionaly, you can access the first/last `n` elements via the `take(n)/takeLast(n)` methods.
 
 .Array Examples
 [source,html]
@@ -391,11 +393,13 @@ You can iterate over elements of an array with the <<loop_section>>. Moreover, i
  <li>{element}</li>
  {/for}
 </ol>
+First two elements: {#each myArray.take(2)}{it}{/each} <5>
 ----
 <1> Outputs the length of the array.
 <2> Outputs the first element of the array.
 <3> Outputs the second element of the array using the bracket notation.
 <4> Outputs the third element of the array via the virtual method `get()`.
+<5> Outputs the first two elements of the array.
 
 ==== Character Escapes
 
@@ -1410,6 +1414,12 @@ TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket n
 
 * `reversed`: Returns a reversed iterator over a list
 ** `{#for r in recordsList.reversed}`
+
+* `take`: Returns the first `n` elements from the given list; throws an `IndexOutOfBoundsException` if `n` is out of range
+** `{#for r in recordsList.take(3)}`
+
+* `takeLast`: Returns the last `n` elements from the given list; throws an `IndexOutOfBoundsException` if `n` is out of range
+** `{#for r in recordsList.takeLast(3)}`
 
 TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 

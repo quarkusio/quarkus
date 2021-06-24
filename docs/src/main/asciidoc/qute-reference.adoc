@@ -518,9 +518,9 @@ A section helper that defines the logic of a section can "execute" any of the bl
 [[loop_section]]
 ==== Loop Section
 
-The loop section makes it possible to iterate over an instance of `Iterable`, `Map` 's entry set, `Stream` and an `Integer`.
+The loop section makes it possible to iterate over an instance of `Iterable`, `Iterator`, array, `Map` 's entry set, `Stream` and an `Integer`.
 It has two flavors.
-The first one is using the `each` name alias.
+The first one is using the `each` name and `it` is an implicit alias for the iteration element.
 
 [source]
 ----
@@ -528,9 +528,9 @@ The first one is using the `each` name alias.
   {it.name} <1>
 {/each}
 ----
-<1> `it` is an implicit alias. `name` is resolved against the current iteration element.
+<1> `name` is resolved against the current iteration element.
 
-The other form is using the `for` name alias and can specify the alias used to reference the iteration element:
+The other form is using the `for` name and can specify the alias used to reference the iteration element:
 
 [source]
 ----
@@ -547,7 +547,9 @@ It's also possible to access the iteration metadata inside the loop:
   {count}. {it.name} <1>
 {/each}
 ----
-<1> `count` represents one-based index. Metadata also include zero-based `index`, `hasNext`, `odd` and `even`.
+<1> `count` represents one-based index. 
+
+TIP: The iteration metadata also include zero-based `index`, `hasNext`, `odd` and `even` properties.
 
 The `for` statement also works with integers, starting from 1. In the example below, considering that `total = 3`:
 
@@ -558,11 +560,22 @@ The `for` statement also works with integers, starting from 1. In the example be
 {/for}
 ----
 
-The output will be:
+And the output will be:
 
 [source]
 ----
 1:2:3:
+----
+
+A loop section may define the `{#else}` block that is executed when there are no items to iterate:
+
+[source]
+----
+{#for item in items}
+  {item.name}
+{#else}
+  No items.
+{/for}
 ----
 
 [[if_section]]

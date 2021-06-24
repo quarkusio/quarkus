@@ -21,13 +21,13 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
-import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.ConfigSourceInterceptor;
@@ -47,8 +47,6 @@ import io.smallrye.config.common.utils.ConfigSourceUtil;
  *
  */
 public final class ConfigUtils {
-    private static final Logger log = Logger.getLogger("io.quarkus.config");
-
     private ConfigUtils() {
     }
 
@@ -252,18 +250,25 @@ public final class ConfigUtils {
      */
     static class BuildTimeSysPropConfigSource extends SysPropConfigSource {
         public Map<String, String> getProperties() {
-            Map<String, String> output = new TreeMap<>();
-            for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
-                String key = (String) entry.getKey();
-                if (key.startsWith("quarkus.")) {
-                    output.put(key, entry.getValue().toString());
-                }
-            }
-            return output;
+            BuildTimeSysPropMapProducer buildTimeSysPropMapProducer = new BuildTimeSysPropMapProducer();
+            System.getProperties().forEach(buildTimeSysPropMapProducer);
+            return buildTimeSysPropMapProducer.output;
         }
 
         public String getName() {
             return "System properties";
+        }
+    }
+
+    private static class BuildTimeSysPropMapProducer implements BiConsumer<Object, Object> {
+        final Map<String, String> output = new TreeMap<>();
+
+        @Override
+        public void accept(Object k, Object v) {
+            String key = (String) k;
+            if (key.startsWith("quarkus.")) {
+                output.put(key, v.toString());
+            }
         }
     }
 }

@@ -1,9 +1,11 @@
 package io.quarkus.kafka.client.deployment;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.security.auth.spi.LoginModule;
 
@@ -67,6 +69,7 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -108,10 +111,22 @@ public class KafkaProcessor {
     };
 
     static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
+    private static final Set<String> SASL_PROVIDERS = Arrays.stream(new String[] {
+            "com.sun.security.sasl.Provider",
+            "org.apache.kafka.common.security.scram.internals.ScramSaslClientProvider",
+            "org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClientProvider"
+    }).collect(Collectors.toSet());
 
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.KAFKA_CLIENT);
+    }
+
+    @BuildStep
+    void addSaslProvidersToNativeImage(BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) {
+        for (String provider : SASL_PROVIDERS) {
+            additionalProviders.produce(new NativeImageSecurityProviderBuildItem(provider));
+        }
     }
 
     @BuildStep

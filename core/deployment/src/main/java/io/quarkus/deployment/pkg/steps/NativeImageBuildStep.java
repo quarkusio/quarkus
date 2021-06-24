@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.SystemUtils;
@@ -25,6 +26,7 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -128,6 +130,7 @@ public class NativeImageBuildStep {
             PackageConfig packageConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
+            List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
@@ -184,6 +187,7 @@ public class NativeImageBuildStep {
                     .setNativeConfig(nativeConfig)
                     .setOutputTargetBuildItem(outputTargetBuildItem)
                     .setNativeImageProperties(nativeImageProperties)
+                    .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
                     .setNativeImageName(nativeImageName)
@@ -465,6 +469,7 @@ public class NativeImageBuildStep {
             private NativeConfig nativeConfig;
             private OutputTargetBuildItem outputTargetBuildItem;
             private List<NativeImageSystemPropertyBuildItem> nativeImageProperties;
+            private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
             private Path outputDir;
             private String runnerJarName;
             private String noPIE = "";
@@ -484,6 +489,12 @@ public class NativeImageBuildStep {
 
             public Builder setNativeImageProperties(List<NativeImageSystemPropertyBuildItem> nativeImageProperties) {
                 this.nativeImageProperties = nativeImageProperties;
+                return this;
+            }
+
+            public Builder setNativeImageSecurityProviders(
+                    List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders) {
+                this.nativeImageSecurityProviders = nativeImageSecurityProviders;
                 return this;
             }
 
@@ -669,9 +680,18 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:+DashboardAll");
                 }
 
-                // Disable single parsing of compiler graphs till https://github.com/oracle/graal/issues/3435 gets fixed
                 if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_21_1)) {
+
+                    // Disable single parsing of compiler graphs till https://github.com/oracle/graal/issues/3435 gets fixed
                     nativeImageArgs.add("-H:-ParseOnce");
+
+                    // AdditionalSecurityProviders
+                    if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
+                        String additionalSecurityProviders = nativeImageSecurityProviders.stream()
+                                .map(p -> p.getSecurityProvider())
+                                .collect(Collectors.joining(","));
+                        nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
+                    }
                 }
 
                 nativeImageArgs.add(nativeImageName);

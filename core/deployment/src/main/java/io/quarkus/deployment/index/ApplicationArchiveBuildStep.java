@@ -38,6 +38,7 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
+import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -80,7 +81,8 @@ public class ApplicationArchiveBuildStep {
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItem,
             List<IndexDependencyBuildItem> indexDependencyBuildItems,
             LiveReloadBuildItem liveReloadContext,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) throws IOException {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            ClassLoadingConfig classLoadingConfig) throws IOException {
 
         Set<String> markerFiles = new HashSet<>();
         for (AdditionalApplicationArchiveMarkerBuildItem i : appMarkers) {
@@ -93,10 +95,15 @@ public class ApplicationArchiveBuildStep {
             liveReloadContext.setContextObject(IndexCache.class, indexCache);
         }
 
+        Map<AppArtifactKey, Set<String>> removedResources = new HashMap<>();
+        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources.entrySet()) {
+            removedResources.put(new AppArtifactKey(entry.getKey().split(":")), entry.getValue());
+        }
+
         List<ApplicationArchive> applicationArchives = scanForOtherIndexes(buildCloseables,
                 Thread.currentThread().getContextClassLoader(),
                 markerFiles, root, additionalApplicationArchiveBuildItem, indexDependencyBuildItems, indexCache,
-                curateOutcomeBuildItem);
+                curateOutcomeBuildItem, removedResources);
         return new ApplicationArchivesBuildItem(
                 new ApplicationArchiveImpl(appindex.getIndex(), root.getRootDirs(), root.getPaths(), null),
                 applicationArchives);
@@ -106,7 +113,7 @@ public class ApplicationArchiveBuildStep {
             ClassLoader classLoader, Set<String> applicationArchiveFiles,
             ArchiveRootBuildItem root, List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives,
             List<IndexDependencyBuildItem> indexDependencyBuildItem, IndexCache indexCache,
-            CurateOutcomeBuildItem curateOutcomeBuildItem)
+            CurateOutcomeBuildItem curateOutcomeBuildItem, Map<AppArtifactKey, Set<String>> removedResources)
             throws IOException {
 
         List<ApplicationArchive> appArchives = new ArrayList<>();
@@ -116,16 +123,17 @@ public class ApplicationArchiveBuildStep {
         Set<String> markers = new HashSet<>(applicationArchiveFiles);
         markers.add(IndexingUtil.JANDEX_INDEX);
         addMarkerFilePaths(markers, root, curateOutcomeBuildItem, indexedPaths, appArchives, buildCloseables, classLoader,
-                indexCache);
+                indexCache, removedResources);
 
         //get paths that are included via index-dependencies
         addIndexDependencyPaths(indexDependencyBuildItem, classLoader, root, indexedPaths, appArchives, buildCloseables,
-                indexCache, curateOutcomeBuildItem);
+                indexCache, curateOutcomeBuildItem, removedResources);
 
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
             for (Path apPath : i.getPaths()) {
                 if (!root.getPaths().contains(apPath) && indexedPaths.add(apPath)) {
-                    appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, apPath, null));
+                    appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, apPath, null,
+                            removedResources));
                 }
             }
         }
@@ -136,7 +144,8 @@ public class ApplicationArchiveBuildStep {
     public void addIndexDependencyPaths(List<IndexDependencyBuildItem> indexDependencyBuildItems,
             ClassLoader classLoader, ArchiveRootBuildItem root, Set<Path> indexedDeps, List<ApplicationArchive> appArchives,
             QuarkusBuildCloseablesBuildItem buildCloseables, IndexCache indexCache,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            Map<AppArtifactKey, Set<String>> removedResources) {
         if (indexDependencyBuildItems.isEmpty()) {
             return;
         }
@@ -158,7 +167,8 @@ public class ApplicationArchiveBuildStep {
                 }
                 for (Path path : artifact.getPaths()) {
                     if (!root.isExcludedFromIndexing(path) && !root.getPaths().contains(path) && indexedDeps.add(path)) {
-                        appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, path, key));
+                        appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, path, key,
+                                removedResources));
                     }
                 }
             }
@@ -169,21 +179,23 @@ public class ApplicationArchiveBuildStep {
 
     private static ApplicationArchive createApplicationArchive(QuarkusBuildCloseablesBuildItem buildCloseables,
             ClassLoader classLoader,
-            IndexCache indexCache, Path dep, AppArtifactKey artifactKey) throws IOException {
+            IndexCache indexCache, Path dep, AppArtifactKey artifactKey, Map<AppArtifactKey, Set<String>> removedResources)
+            throws IOException {
         final FileSystem fs = Files.isDirectory(dep) ? null : buildCloseables.add(FileSystems.newFileSystem(dep, classLoader));
-        return new ApplicationArchiveImpl(indexPath(indexCache, dep),
+        Set<String> removed = removedResources.get(artifactKey);
+        return new ApplicationArchiveImpl(indexPath(indexCache, dep, removed),
                 fs == null ? dep : fs.getRootDirectories().iterator().next(), fs, fs != null, dep, artifactKey);
     }
 
-    private static IndexView indexPath(IndexCache indexCache, Path dep) throws IOException {
+    private static IndexView indexPath(IndexCache indexCache, Path dep, Set<String> removed) throws IOException {
         LOGGER.debugf("Indexing dependency: %s", dep);
-        return Files.isDirectory(dep) ? handleFilePath(dep) : handleJarPath(dep, indexCache);
+        return Files.isDirectory(dep) ? handleFilePath(dep, removed) : handleJarPath(dep, indexCache, removed);
     }
 
     private static void addMarkerFilePaths(Set<String> applicationArchiveFiles,
             ArchiveRootBuildItem root, CurateOutcomeBuildItem curateOutcomeBuildItem, Set<Path> indexedPaths,
             List<ApplicationArchive> appArchives, QuarkusBuildCloseablesBuildItem buildCloseables, ClassLoader classLoader,
-            IndexCache indexCache)
+            IndexCache indexCache, Map<AppArtifactKey, Set<String>> removed)
             throws IOException {
         for (AppDependency dep : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
             final PathsCollection artifactPaths = dep.getArtifact().getPaths();
@@ -220,7 +232,8 @@ public class ApplicationArchiveBuildStep {
                         final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(p, classLoader));
                         fs.getRootDirectories().forEach(rootDirs::add);
                     }
-                    indexes.add(indexPath(indexCache, p));
+                    indexes.add(
+                            indexPath(indexCache, p, removed.get(dep.getArtifact().getKey())));
 
                     indexedPaths.add(p);
                 }
@@ -240,14 +253,20 @@ public class ApplicationArchiveBuildStep {
         return false;
     }
 
-    private static Index handleFilePath(Path path) throws IOException {
-        return indexFilePath(path);
+    private static Index handleFilePath(Path path, Set<String> removed) throws IOException {
+        return indexFilePath(path, removed);
     }
 
-    private static Index indexFilePath(Path path) throws IOException {
+    private static Index indexFilePath(Path path, Set<String> removed) throws IOException {
         Indexer indexer = new Indexer();
         try (Stream<Path> stream = Files.walk(path)) {
             stream.forEach(path1 -> {
+                if (removed != null) {
+                    String relative = path.relativize(path1).toString().replace("\\", "/");
+                    if (removed.contains(relative)) {
+                        return;
+                    }
+                }
                 if (path1.toString().endsWith(".class")) {
                     try (FileInputStream in = new FileInputStream(path1.toFile())) {
                         indexer.index(in);
@@ -260,12 +279,12 @@ public class ApplicationArchiveBuildStep {
         return indexer.complete();
     }
 
-    private static Index handleJarPath(Path path, IndexCache indexCache) {
+    private static Index handleJarPath(Path path, IndexCache indexCache, Set<String> removed) {
         return indexCache.cache.computeIfAbsent(path, new Function<Path, Index>() {
             @Override
             public Index apply(Path path) {
                 try {
-                    return IndexingUtil.indexJar(path);
+                    return IndexingUtil.indexJar(path, removed);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to process " + path, e);
                 }

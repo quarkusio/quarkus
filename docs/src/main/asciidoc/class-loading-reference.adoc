@@ -182,6 +182,18 @@ Note that class loading config is different to normal config, in that it does no
 
 include::{generated-dir}/config/quarkus-class-loading-configuration-class-loading-config.adoc[opts=optional, leveloffset=+1]
 
+== Hiding/Removing classes and resources from dependencies
+
+It is possible to hide/remove classes and resources from dependencies. This is an advanced option, but it can be useful
+at times. This is done via the `quarkus.class-loading.removed-resources` config key, for example:
+
+`quarkus.class-loading.removed-resources."io.quarkus\:quarkus-integration-test-shared-library"=io/quarkus/it/shared/RemovedResource.class`
+
+This will remove the `RemovedResource.class` file from the `io.quarkus:quarkus-integration-test-shared-library` artifact.
+
+Even though this option is a class loading option it will also affect the generated application, so when the application
+is created removed resources will not be accessible.
+
 == Reading Class Bytecode
 
 It is important to use the correct `ClassLoader`. The recommended approach is to get it by calling the

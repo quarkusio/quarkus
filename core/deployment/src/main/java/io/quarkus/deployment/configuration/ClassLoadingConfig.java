@@ -1,6 +1,8 @@
 package io.quarkus.deployment.configuration;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -44,5 +46,23 @@ public class ClassLoadingConfig {
      */
     @ConfigItem(defaultValue = "")
     public Optional<String> reloadableArtifacts;
+
+    /**
+     * Resources that should be removed/hidden from dependencies.
+     * <p>
+     * This allows for classes and other resources to be removed from dependencies, so they
+     * are not accessible to the application. This is a map of artifact id (in the form group:artifact)
+     * to a list of resources to be removed.
+     * <p>
+     * When running in dev and test mode these resources are hidden from the ClassLoader, when running
+     * in production mode these files are removed from the jars that contain them.
+     * <p>
+     * Note that if you want to remove a class you need to specify the class file name. e.g. to
+     * remove <code>com.acme.Foo</code> you would specify <code>com/acme/Foo.class</code>.
+     * <p>
+     * Note that for technical reasons this is not supported when running with JBang.
+     */
+    @ConfigItem
+    public Map<String, Set<String>> removedResources;
 
 }

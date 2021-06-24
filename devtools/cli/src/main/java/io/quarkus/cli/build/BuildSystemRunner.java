@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.DebugOptions;
@@ -92,7 +93,8 @@ public interface BuildSystemRunner {
     BuildCommandArgs prepareBuild(BuildOptions buildOptions, PropertiesOptions propertiesOptions, RunModeOption runMode,
             List<String> params);
 
-    BuildCommandArgs prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions, DebugOptions debugOptions,
+    List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
+            DebugOptions debugOptions,
             List<String> params);
 
     Path getProjectRoot();

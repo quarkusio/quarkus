@@ -3,8 +3,10 @@ package io.quarkus.cli.build;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import io.quarkus.cli.Version;
 import io.quarkus.cli.common.BuildOptions;
@@ -132,7 +134,7 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
+    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
             DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, false);
@@ -151,7 +153,13 @@ public class MavenRunner implements BuildSystemRunner {
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
         // Add any other unmatched arguments
         args.addAll(params);
-        return prependExecutable(args);
+        BuildCommandArgs buildCommandArgs = prependExecutable(args);
+        return Collections.singletonList(new Supplier<BuildCommandArgs>() {
+            @Override
+            public BuildCommandArgs get() {
+                return buildCommandArgs;
+            }
+        });
     }
 
     void setSkipTests(ArrayDeque<String> args) {

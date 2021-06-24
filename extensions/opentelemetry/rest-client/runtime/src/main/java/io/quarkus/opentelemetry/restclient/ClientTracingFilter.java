@@ -38,7 +38,7 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         // Create new span
-        SpanBuilder builder = tracer.spanBuilder(requestContext.getUri().getPath().substring(1))
+        SpanBuilder builder = tracer.spanBuilder(requestContext.getUri().getPath())
                 .setSpanKind(SpanKind.CLIENT);
 
         // Add attributes

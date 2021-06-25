@@ -11,10 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.OptionalInt;
 
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.ContainerPort;
 import org.jboss.logging.Logger;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -45,6 +42,8 @@ public class DevServicesProcessor {
      * This allows other applications to discover the running service and use it instead of starting a new instance.
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
+
+    private static final ContainerLocator redisContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, REDIS_EXPOSED_PORT);
 
     private static final String QUARKUS = "quarkus.";
     private static final String DOT = ".";
@@ -123,28 +122,6 @@ public class DevServicesProcessor {
         }
     }
 
-    private static Container lookup(String expectedLabelValue) {
-        List<Container> containers = DockerClientFactory.lazyClient().listContainersCmd().exec();
-        for (Container container : containers) {
-            String s = container.getLabels().get(DEV_SERVICE_LABEL);
-            if (expectedLabelValue.equalsIgnoreCase(s)) {
-                return container;
-            }
-        }
-        return null;
-    }
-
-    private static ContainerPort getMappedPort(Container container, int port) {
-        for (ContainerPort p : container.getPorts()) {
-            Integer mapped = p.getPrivatePort();
-            Integer publicPort = p.getPublicPort();
-            if (mapped != null && mapped == port && publicPort != null) {
-                return p;
-            }
-        }
-        return null;
-    }
-
     private StartResult startContainer(String connectionName, DevServicesConfig devServicesConfig, LaunchMode launchMode) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
@@ -166,18 +143,8 @@ public class DevServicesProcessor {
                 .asCompatibleSubstituteFor(REDIS_6_ALPINE);
 
         if (devServicesConfig.shared && launchMode == DEVELOPMENT) {
-            Container container = lookup(devServicesConfig.serviceName);
-            if (container != null) {
-                ContainerPort port = getMappedPort(container, REDIS_EXPOSED_PORT);
-                if (port != null) {
-                    String url = port.getIp() + ":" + port.getPublicPort();
-                    log.infof("Dev Services for Redis container found: %s (%s). "
-                                    + "Connecting to: %s.",
-                            container.getId(),
-                            container.getImage(), url);
-                    return new StartResult(url, null);
-                }
-            }
+            final String url = redisContainerLocator.locateContainer(devServicesConfig.serviceName);
+            return new StartResult(url, null);
         }
 
         FixedPortRedisContainer redisContainer = new FixedPortRedisContainer(dockerImageName, devServicesConfig.port, launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null);

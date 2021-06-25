@@ -7,16 +7,15 @@ import org.hamcrest.CoreMatchers
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-class ReactiveClientTest {
+class GreetingResourceTest {
 
     @Test
-    fun testGetCountryByName() {
+    fun testDataClass() {
         RestAssured.given()
-                .`when`()["/country/name/foo"]
+                .`when`()["/greeting"]
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("$.size()", CoreMatchers.`is`(1),
-                        "[0].capital", CoreMatchers.`is`("foo-capital"))
+                .body("message", CoreMatchers.`is`("hello"))
     }
 }

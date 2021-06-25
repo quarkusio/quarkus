@@ -507,6 +507,11 @@ Note it is also recommended to use `quarkus.oidc.token.audience` property to ver
 
 Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
+[[oidc-provider-authentication]]
+=== Oidc Provider Client Authentication
+
+`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenId Connect Provider has to be done. If the bearer token has to be introspected then `OidcProviderClient` has to authenticate to the OpenId Connect Provider. Please see link:security-openid-connect-web-authentication#oidc-provider-client-authentication[OidcProviderClient Authentication] for more information about all the supported authentication options.
+
 [[integration-testing]]
 == Testing
 
@@ -865,6 +870,14 @@ Please enable `io.quarkus.oidc.runtime.OidcProvider` `TRACE` level logging to se
 ----
 quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=TRACE
 quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".min-level=TRACE
+----
+
+Please enable `io.quarkus.oidc.runtime.OidcRecorder` `TRACE` level logging to see more details about the OidcProvider client initialization errors:
+
+[source, properties]
+----
+quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".level=TRACE
+quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".min-level=TRACE
 ----
 
 == External and Internal Access to OpenId Connect Provider

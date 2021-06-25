@@ -31,6 +31,10 @@
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-credentials</artifactId>
+        </dependency>
+        <dependency>
           <groupId>io.smallrye.reactive</groupId>
           <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
         </dependency>

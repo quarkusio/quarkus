@@ -52,7 +52,7 @@ public class JarClassPathElement implements ClassPathElement {
         //been loaded
         //this is just a convenience for quarkus devs that means exit
         //should work properly if you recompile while quarkus is running
-        new ZipFileMayHaveChangedException(null);
+        throw new ZipFileMayHaveChangedException(null);
     }
 
     private static final Logger log = Logger.getLogger(JarClassPathElement.class);

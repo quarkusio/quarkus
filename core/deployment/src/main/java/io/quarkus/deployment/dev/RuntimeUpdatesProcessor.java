@@ -352,8 +352,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return doScan(userInitiated, false);
     }
 
-    public boolean doScan(boolean userInitiated, boolean force) throws IOException {
-        if (!liveReloadEnabled && !force) {
+    public boolean doScan(boolean userInitiated, boolean forceRestart) throws IOException {
+        if (!liveReloadEnabled && !forceRestart) {
             return false;
         }
         scanLock.lock();
@@ -374,7 +374,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     main);
             Set<String> filesChanged = checkForFileChange(DevModeContext.ModuleInfo::getMain, main);
 
-            boolean configFileRestartNeeded = filesChanged.stream().map(main.watchedFilePaths::get)
+            boolean configFileRestartNeeded = forceRestart || filesChanged.stream().map(main.watchedFilePaths::get)
                     .anyMatch(Boolean.TRUE::equals);
             boolean instrumentationChange = false;
 

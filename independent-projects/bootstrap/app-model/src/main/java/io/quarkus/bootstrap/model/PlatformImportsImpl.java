@@ -43,8 +43,18 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     private final Map<AppArtifactCoords, PlatformImport> platformImports = new HashMap<>();
 
     final Map<String, String> collectedProps = new HashMap<String, String>();
+    private final Collection<AppArtifactCoords> platformBoms = new ArrayList<>();
+    private final Collection<PlatformReleaseInfo> platformReleaseInfo = new ArrayList<>();
 
     public PlatformImportsImpl() {
+    }
+
+    public Collection<PlatformReleaseInfo> getPlatformReleaseInfo() {
+        return platformReleaseInfo;
+    }
+
+    public Collection<AppArtifactCoords> getImportedPlatformBoms() {
+        return platformBoms;
     }
 
     void addPlatformRelease(String propertyName, String propertyValue) {
@@ -56,7 +66,11 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
         final String version = propertyName.substring(streamVersionSep + 1);
         allPlatformInfo.computeIfAbsent(platformKey, k -> new PlatformInfo(k)).getOrCreateStream(streamId).addIfNotPresent(
                 version,
-                () -> new PlatformReleaseInfo(platformKey, streamId, version, propertyValue));
+                () -> {
+                    final PlatformReleaseInfo ri = new PlatformReleaseInfo(platformKey, streamId, version, propertyValue);
+                    platformReleaseInfo.add(ri);
+                    return ri;
+                });
     }
 
     public void addPlatformDescriptor(String groupId, String artifactId, String classifier, String type, String version) {
@@ -66,6 +80,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
                 null, "pom",
                 version);
         platformImports.computeIfAbsent(bomCoords, c -> new PlatformImport()).descriptorFound = true;
+        platformBoms.add(bomCoords);
     }
 
     public void addPlatformProperties(String groupId, String artifactId, String classifier, String type, String version,

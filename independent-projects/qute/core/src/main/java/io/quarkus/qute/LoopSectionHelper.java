@@ -2,9 +2,11 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Parameter.EMPTY;
 
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -20,13 +22,18 @@ import java.util.stream.Stream;
 public class LoopSectionHelper implements SectionHelper {
 
     private static final String DEFAULT_ALIAS = "it";
+    private static final String ELSE = "else";
+    private static final String ALIAS = "alias";
+    private static final String ITERABLE = "iterable";
 
     private final String alias;
     private final Expression iterable;
+    private final SectionBlock elseBlock;
 
-    LoopSectionHelper(String alias, Expression iterable) {
-        this.alias = Parameter.EMPTY.equals(alias) ? DEFAULT_ALIAS : alias;
-        this.iterable = Objects.requireNonNull(iterable);
+    LoopSectionHelper(SectionInitContext context) {
+        this.alias = context.getParameterOrDefault(ALIAS, DEFAULT_ALIAS);
+        this.iterable = Objects.requireNonNull(context.getExpression(ITERABLE));
+        this.elseBlock = context.getBlock(ELSE);
     }
 
     @SuppressWarnings("unchecked")
@@ -47,7 +54,12 @@ public class LoopSectionHelper implements SectionHelper {
                 results.add(nextElement(iterator.next(), idx++, iterator.hasNext(), context));
             }
             if (results.isEmpty()) {
-                return ResultNode.NOOP;
+                // Execute the {#else} block if present
+                if (elseBlock != null) {
+                    return context.execute(elseBlock, context.resolutionContext());
+                } else {
+                    return ResultNode.NOOP;
+                }
             }
             if (results.size() == 1) {
                 return results.get(0);
@@ -129,9 +141,7 @@ public class LoopSectionHelper implements SectionHelper {
 
         public static final String HINT_ELEMENT = "<loop-element>";
         public static final String HINT_PREFIX = "<loop#";
-        private static final String ALIAS = "alias";
         private static final String IN = "in";
-        private static final String ITERABLE = "iterable";
 
         @Override
         public List<String> getDefaultAliases() {
@@ -147,9 +157,13 @@ public class LoopSectionHelper implements SectionHelper {
                     .build();
         }
 
+        public List<String> getBlockLabels() {
+            return Collections.singletonList(ELSE);
+        }
+
         @Override
         public LoopSectionHelper initialize(SectionInitContext context) {
-            return new LoopSectionHelper(context.getParameter(ALIAS), context.getExpression(ITERABLE));
+            return new LoopSectionHelper(context);
         }
 
         @Override

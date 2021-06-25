@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,6 +183,13 @@ public class LoopSectionTest {
         result = engine.parse("{#each dependencies}{#if it.version}<version>{version}</version>{/if}{/each}")
                 .render(data);
         assertTrue(result.contains("hellllllo"), result);
+    }
+
+    @Test
+    public void testElseBlock() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("No items.",
+                engine.parse("{#for i in items}{item}{#else}No items.{/for}").data("items", Collections.emptyList()).render());
     }
 
 }

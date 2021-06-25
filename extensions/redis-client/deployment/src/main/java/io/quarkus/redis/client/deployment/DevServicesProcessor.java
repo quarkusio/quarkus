@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.client.runtime.RedisClientUtil;
 import io.quarkus.redis.client.runtime.RedisConfig;
@@ -147,7 +148,8 @@ public class DevServicesProcessor {
             return new StartResult(url, null);
         }
 
-        FixedPortRedisContainer redisContainer = new FixedPortRedisContainer(dockerImageName, devServicesConfig.port, launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null);
+        FixedPortRedisContainer redisContainer = new FixedPortRedisContainer(dockerImageName, devServicesConfig.port,
+                launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null);
         redisContainer.start();
         String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
         return new StartResult(redisHost,

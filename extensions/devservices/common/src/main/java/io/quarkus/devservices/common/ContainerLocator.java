@@ -1,16 +1,16 @@
-package io.quarkus.redis.client.deployment;
-
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.ContainerPort;
-import io.smallrye.common.constraint.Nullable;
-import org.jboss.logging.Logger;
-import org.testcontainers.DockerClientFactory;
+package io.quarkus.devservices.common;
 
 import java.util.List;
 
+import org.jboss.logging.Logger;
+import org.testcontainers.DockerClientFactory;
+
+import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.ContainerPort;
+
 public class ContainerLocator {
 
-    private static final Logger log = Logger.getLogger(DevServicesProcessor.class);
+    private static final Logger log = Logger.getLogger(ContainerLocator.class);
 
     private final String devServiceLabel;
     private final int port;
@@ -20,7 +20,6 @@ public class ContainerLocator {
         this.port = port;
     }
 
-    @Nullable
     private Container lookup(String expectedLabelValue) {
         List<Container> containers = DockerClientFactory.lazyClient().listContainersCmd().exec();
         for (Container container : containers) {
@@ -32,7 +31,6 @@ public class ContainerLocator {
         return null;
     }
 
-    @Nullable
     private ContainerPort getMappedPort(Container container, int port) {
         for (ContainerPort p : container.getPorts()) {
             Integer mapped = p.getPrivatePort();
@@ -44,7 +42,6 @@ public class ContainerLocator {
         return null;
     }
 
-    @Nullable
     public String locateContainer(String serviceName) {
         Container container = lookup(serviceName);
         if (container != null) {
@@ -52,7 +49,7 @@ public class ContainerLocator {
             if (containerPort != null) {
                 String url = containerPort.getIp() + ":" + containerPort.getPublicPort();
                 log.infof("Dev Services container locator found: %s (%s). "
-                                + "Connecting to: %s.",
+                        + "Connecting to: %s.",
                         container.getId(),
                         container.getImage(), url);
                 return url;

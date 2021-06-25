@@ -77,12 +77,13 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 jsonResponse(event);
-                TestSupport.RunStatus status = ts.get().getStatus();
+                TestSupport testSupport = ts.get();
+                TestSupport.RunStatus status = testSupport.getStatus();
                 TestStatus testStatus = new TestStatus();
-                testStatus.setLastRun(status.getLastRun());
-                testStatus.setRunning(status.getRunning());
-                if (status.getLastRun() > 0) {
-                    TestRunResults result = ts.get().getResults();
+                long lastRun = status.getLastRun();
+                testStatus.setLastRun(lastRun);
+                if (lastRun > 0) {
+                    TestRunResults result = testSupport.getResults();
                     testStatus.setTestsFailed(result.getCurrentFailedCount());
                     testStatus.setTestsPassed(result.getCurrentPassedCount());
                     testStatus.setTestsSkipped(result.getCurrentSkippedCount());
@@ -91,6 +92,9 @@ public class TestsProcessor {
                     testStatus.setTotalTestsPassed(result.getPassedCount());
                     testStatus.setTotalTestsSkipped(result.getSkippedCount());
                 }
+                //get running last, as otherwise if the test completes in the meantime you could see
+                //both running and last run being the same number
+                testStatus.setRunning(status.getRunning());
                 event.response().end(JsonObject.mapFrom(testStatus).encode());
             }
         });

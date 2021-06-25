@@ -1,0 +1,6 @@
+{#if p.pattern} @Pattern(regexp="{p.pattern}"){/if}
+{#if p.minLength || p.minItems} @Size(min={p.minLength}{p.minItems}){/if}
+{#if p.maxLength || p.maxItems} @Size(max={p.minLength}{p.minItems}){/if}
+{#if p.isInteger}{#if p.minimum} @Min({p.minimum}){/if}{#if p.maximum} @Max({p.maximum}){/if}{/if}
+{#if p.isLong}{#if p.minimum} @Min({p.minimum}L){/if}{#if p.maximum} @Max({p.maximum}L){/if}{/if}
+{#if !p.isInteger && !p.isLong}{#if p.minimum} @DecimalMin("{minimum}"){/if}{#if p.maximum} @DecimalMax("{maximum}"){/if}{/if}

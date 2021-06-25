@@ -1,0 +1,1 @@
+{#if param.isQueryParam}@QueryParam("{param.baseName}"){#if param.useBeanValidation}{#include beanValidationCore.qute p=param/}{/if} {#if param.isContainer}{#if param.defaultValue}@DefaultValue("\{{param.defaultValue}\}"){/if}{/if}{param.dataType} {param.paramName}{/if}

@@ -1,0 +1,3 @@
+io.quarkus.openapi.generator.deployment.OpenApiGeneratorJsonCodeGen
+io.quarkus.openapi.generator.deployment.OpenApiGeneratorYamlCodeGen
+io.quarkus.openapi.generator.deployment.OpenApiGeneratorYmlCodeGen

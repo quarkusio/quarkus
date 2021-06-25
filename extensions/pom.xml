@@ -53,6 +53,7 @@
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
         <module>swagger-ui</module>
+        <module>openapi-generator</module>
 
         <!-- Reactive -->
         <module>mutiny</module>

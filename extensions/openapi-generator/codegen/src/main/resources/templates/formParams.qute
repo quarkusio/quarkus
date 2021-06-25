@@ -1,0 +1,1 @@
+{#if param.isFormParam}{#insert param.isFile}@Multipart(value = "{param.baseName}"{#if param.required}, required = false{/if}) {param.dataType} {param.paramName}{/}{#if param.isFile}@Multipart(value = "{param.baseName}"{#if param.required}, required = false{/if}) Attachment {param.paramName}Detail{/if}{/if}

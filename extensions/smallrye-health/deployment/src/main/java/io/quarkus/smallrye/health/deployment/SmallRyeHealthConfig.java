@@ -43,6 +43,13 @@ public class SmallRyeHealthConfig {
     String wellnessPath;
 
     /**
+     * The relative path of the startup health-checking endpoint.
+     * By default, this value will be resolved as a path relative to `${quarkus.smallrye-health.rootPath}`.
+     */
+    @ConfigItem(defaultValue = "started")
+    String startupPath;
+
+    /**
      * Whether the context should be propagated to each health check invocation.
      */
     @ConfigItem(defaultValue = "false")

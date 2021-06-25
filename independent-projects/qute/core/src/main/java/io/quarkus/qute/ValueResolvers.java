@@ -276,8 +276,57 @@ public final class ValueResolvers {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 String name = context.getName();
-                if (name.equals("length")) {
+                if (name.equals("length") || name.equals("size")) {
                     return CompletableFuture.completedFuture(Array.getLength(context.getBase()));
+                } else if (name.equals("take")) {
+                    if (context.getParams().isEmpty()) {
+                        throw new IllegalArgumentException("n-th parameter is missing");
+                    }
+                    Expression indexExpr = context.getParams().get(0);
+                    if (indexExpr.isLiteral()) {
+                        Object literalValue;
+                        try {
+                            literalValue = indexExpr.getLiteralValue().get();
+                            if (literalValue instanceof Integer) {
+                                return CompletableFuture.completedFuture(takeArray((Integer) literalValue, context.getBase()));
+                            }
+                            return Results.notFound(context);
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        return context.evaluate(indexExpr).thenCompose(n -> {
+                            if (n instanceof Integer) {
+                                return CompletableFuture.completedFuture(takeArray((Integer) n, context.getBase()));
+                            }
+                            return Results.notFound(context);
+                        });
+                    }
+                } else if (name.equals("takeLast")) {
+                    if (context.getParams().isEmpty()) {
+                        throw new IllegalArgumentException("n-th parameter is missing");
+                    }
+                    Expression indexExpr = context.getParams().get(0);
+                    if (indexExpr.isLiteral()) {
+                        Object literalValue;
+                        try {
+                            literalValue = indexExpr.getLiteralValue().get();
+                            if (literalValue instanceof Integer) {
+                                return CompletableFuture
+                                        .completedFuture(takeLastArray((Integer) literalValue, context.getBase()));
+                            }
+                            return Results.notFound(context);
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        return context.evaluate(indexExpr).thenCompose(n -> {
+                            if (n instanceof Integer) {
+                                return CompletableFuture.completedFuture(takeLastArray((Integer) n, context.getBase()));
+                            }
+                            return Results.notFound(context);
+                        });
+                    }
                 } else if (name.equals("get")) {
                     if (context.getParams().isEmpty()) {
                         throw new IllegalArgumentException("Index parameter is missing");
@@ -316,6 +365,26 @@ public final class ValueResolvers {
         };
     }
 
+    private static Object takeArray(int n, Object sourceArray) {
+        int size = Array.getLength(sourceArray);
+        if (n < 1 || n > size) {
+            throw new IndexOutOfBoundsException(n);
+        }
+        Object targetArray = Array.newInstance(sourceArray.getClass().getComponentType(), n);
+        System.arraycopy(sourceArray, 0, targetArray, 0, n);
+        return targetArray;
+    }
+
+    private static Object takeLastArray(int n, Object sourceArray) {
+        int size = Array.getLength(sourceArray);
+        if (n < 1 || n > size) {
+            throw new IndexOutOfBoundsException(n);
+        }
+        Object targetArray = Array.newInstance(sourceArray.getClass().getComponentType(), n);
+        System.arraycopy(sourceArray, size - n, targetArray, 0, n);
+        return targetArray;
+    }
+
     // helper methods
 
     private static CompletionStage<Object> collectionResolveAsync(EvalContext context) {
@@ -351,6 +420,36 @@ public final class ValueResolvers {
                                         return Results.NotFound.from(context);
                                     }
                                     return list.get(idx);
+                                } catch (NumberFormatException e) {
+                                    return Results.NotFound.from(context);
+                                }
+                            });
+                }
+            case "take":
+                if (context.getParams().size() == 1) {
+                    return context.evaluate(context.getParams().get(0))
+                            .thenApply(r -> {
+                                try {
+                                    int n = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
+                                    if (n < 1 || n > list.size()) {
+                                        throw new IndexOutOfBoundsException(n);
+                                    }
+                                    return list.subList(0, n);
+                                } catch (NumberFormatException e) {
+                                    return Results.NotFound.from(context);
+                                }
+                            });
+                }
+            case "takeLast":
+                if (context.getParams().size() == 1) {
+                    return context.evaluate(context.getParams().get(0))
+                            .thenApply(r -> {
+                                try {
+                                    int n = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
+                                    if (n < 1 || n > list.size()) {
+                                        throw new IndexOutOfBoundsException(n);
+                                    }
+                                    return list.subList(list.size() - n, list.size());
                                 } catch (NumberFormatException e) {
                                     return Results.NotFound.from(context);
                                 }

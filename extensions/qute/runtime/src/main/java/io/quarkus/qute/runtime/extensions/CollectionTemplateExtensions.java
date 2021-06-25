@@ -44,4 +44,24 @@ public class CollectionTemplateExtensions {
         };
     }
 
+    static <T> List<T> take(List<T> list, int n) {
+        if (n < 1 || n > list.size()) {
+            throw new IndexOutOfBoundsException(n);
+        }
+        if (list.isEmpty()) {
+            return list;
+        }
+        return list.subList(0, n);
+    }
+
+    static <T> List<T> takeLast(List<T> list, int n) {
+        if (n < 1 || n > list.size()) {
+            throw new IndexOutOfBoundsException(n);
+        }
+        if (list.isEmpty()) {
+            return list;
+        }
+        return list.subList(list.size() - n, list.size());
+    }
+
 }

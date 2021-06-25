@@ -44,4 +44,28 @@ public class ArrayResolverTest {
         }
     }
 
+    @Test
+    public void testTake() {
+        String[] array = new String[] { "Lu", "Roman", "Matej" };
+
+        Engine engine = Engine.builder().addDefaults().build();
+
+        assertEquals("Lu,",
+                engine.parse("{#each array.take(1)}{it},{/each}").data("array", array).render());
+        assertEquals("Roman,Matej,",
+                engine.parse("{#each array.takeLast(2)}{it},{/each}").data("array", array).render());
+        try {
+            assertEquals("3",
+                    engine.parse("{array.take(12).size}").data("array", array).render());
+            fail();
+        } catch (IndexOutOfBoundsException expected) {
+        }
+        try {
+            assertEquals("3",
+                    engine.parse("{array.take(-1).size}").data("array", array).render());
+            fail();
+        } catch (IndexOutOfBoundsException expected) {
+        }
+    }
+
 }

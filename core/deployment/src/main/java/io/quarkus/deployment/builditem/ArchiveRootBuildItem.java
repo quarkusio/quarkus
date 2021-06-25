@@ -81,20 +81,25 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
     private ArchiveRootBuildItem(Builder builder, QuarkusBuildCloseablesBuildItem buildCloseables) throws IOException {
         this.excludedFromIndexing = builder.excludedFromIndexing;
-        final PathsCollection.Builder rootDirs = PathsCollection.builder();
-        final PathsCollection.Builder paths = PathsCollection.builder();
-        for (Path root : builder.archiveRoots) {
-            paths.add(root);
-            if (Files.isDirectory(root)) {
-                rootDirs.add(root);
-            } else {
-                final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(root, null));
-                fs.getRootDirectories().forEach(rootDirs::add);
+        if (!builder.archiveRoots.isEmpty()) {
+            final PathsCollection.Builder rootDirs = PathsCollection.builder();
+            final PathsCollection.Builder paths = PathsCollection.builder();
+            for (Path root : builder.archiveRoots) {
+                paths.add(root);
+                if (Files.isDirectory(root)) {
+                    rootDirs.add(root);
+                } else {
+                    final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(root, null));
+                    fs.getRootDirectories().forEach(rootDirs::add);
+                }
             }
+            this.rootDirs = rootDirs.build();
+            this.paths = paths.build();
+            this.archiveRoot = this.rootDirs.iterator().next();
+        } else {
+            this.paths = this.rootDirs = PathsCollection.of();
+            this.archiveRoot = null;
         }
-        this.rootDirs = rootDirs.build();
-        this.paths = paths.build();
-        this.archiveRoot = this.rootDirs.iterator().next();
     }
 
     /**

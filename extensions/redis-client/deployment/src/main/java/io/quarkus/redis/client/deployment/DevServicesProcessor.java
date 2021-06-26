@@ -10,11 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.OptionalInt;
+import java.util.function.Supplier;
 
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.ContainerPort;
 import org.jboss.logging.Logger;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -28,6 +26,7 @@ import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.client.runtime.RedisClientUtil;
 import io.quarkus.redis.client.runtime.RedisConfig;
@@ -45,6 +44,8 @@ public class DevServicesProcessor {
      * This allows other applications to discover the running service and use it instead of starting a new instance.
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
+
+    private static final ContainerLocator redisContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, REDIS_EXPOSED_PORT);
 
     private static final String QUARKUS = "quarkus.";
     private static final String DOT = ".";
@@ -101,56 +102,26 @@ public class DevServicesProcessor {
 
         if (first) {
             first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (closeables != null) {
-                        for (Closeable closeable : closeables) {
-                            try {
-                                closeable.close();
-                            } catch (Throwable t) {
-                                log.error("Failed to stop database", t);
-                            }
+            Runnable closeTask = () -> {
+                if (closeables != null) {
+                    for (Closeable closeable : closeables) {
+                        try {
+                            closeable.close();
+                        } catch (Throwable t) {
+                            log.error("Failed to stop database", t);
                         }
                     }
-                    first = true;
-                    closeables = null;
-                    capturedDevServicesConfiguration = null;
                 }
+                first = true;
+                closeables = null;
+                capturedDevServicesConfiguration = null;
             };
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
             Thread closeHookThread = new Thread(closeTask, "Redis container shutdown thread");
             Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                }
-            });
+            ((QuarkusClassLoader) cl.parent()).addCloseTask(() -> Runtime.getRuntime().removeShutdownHook(closeHookThread));
         }
-    }
-
-    private static Container lookup(String expectedLabelValue) {
-        List<Container> containers = DockerClientFactory.lazyClient().listContainersCmd().exec();
-        for (Container container : containers) {
-            String s = container.getLabels().get(DEV_SERVICE_LABEL);
-            if (expectedLabelValue.equalsIgnoreCase(s)) {
-                return container;
-            }
-        }
-        return null;
-    }
-
-    private static ContainerPort getMappedPort(Container container, int port) {
-        for (ContainerPort p : container.getPorts()) {
-            Integer mapped = p.getPrivatePort();
-            Integer publicPort = p.getPublicPort();
-            if (mapped != null && mapped == port && publicPort != null) {
-                return p;
-            }
-        }
-        return null;
     }
 
     private StartResult startContainer(String connectionName, DevServicesConfig devServicesConfig, LaunchMode launchMode) {
@@ -173,31 +144,19 @@ public class DevServicesProcessor {
         DockerImageName dockerImageName = DockerImageName.parse(devServicesConfig.imageName.orElse(REDIS_6_ALPINE))
                 .asCompatibleSubstituteFor(REDIS_6_ALPINE);
 
-        if (devServicesConfig.shared && launchMode == DEVELOPMENT) {
-            Container container = lookup(devServicesConfig.serviceName);
-            if (container != null) {
-                ContainerPort port = getMappedPort(container, REDIS_EXPOSED_PORT);
-                if (port != null) {
-                    String url = port.getIp() + ":" + port.getPublicPort();
-                    log.infof("Dev Services for Redis container found: %s (%s). "
-                                    + "Connecting to: %s.",
-                            container.getId(),
-                            container.getImage(), url);
-                    return new StartResult(url, null);
-                }
-            }
-        }
+        Supplier<StartResult> defaultRedisServerSupplier = () -> {
+            FixedPortRedisContainer redisContainer = new FixedPortRedisContainer(dockerImageName, devServicesConfig.port,
+                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null);
+            redisContainer.start();
+            String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
+            return new StartResult(redisHost,
+                    redisContainer::close);
+        };
 
-        FixedPortRedisContainer redisContainer = new FixedPortRedisContainer(dockerImageName, devServicesConfig.port, launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null);
-        redisContainer.start();
-        String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
-        return new StartResult(redisHost,
-                new Closeable() {
-                    @Override
-                    public void close() {
-                        redisContainer.close();
-                    }
-                });
+        return redisContainerLocator.locateContainer(devServicesConfig.serviceName, devServicesConfig.shared, launchMode)
+                .map(containerAddress -> new StartResult(containerAddress.getUrl(), null))
+                .orElseGet(defaultRedisServerSupplier);
+
     }
 
     private String getConfigPrefix(String connectionName) {

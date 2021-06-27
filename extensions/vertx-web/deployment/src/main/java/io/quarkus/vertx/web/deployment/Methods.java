@@ -26,12 +26,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.vertx.web.runtime.MultiJsonArraySupport;
-import io.quarkus.vertx.web.runtime.MultiSseSupport;
-import io.quarkus.vertx.web.runtime.MultiSupport;
-import io.quarkus.vertx.web.runtime.RouteHandler;
-import io.quarkus.vertx.web.runtime.RouteHandlers;
-import io.quarkus.vertx.web.runtime.ValidationSupport;
+import io.quarkus.vertx.web.runtime.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniSubscribe;
@@ -111,6 +106,15 @@ class Methods {
     static final MethodDescriptor MULTI_SSE_SUBSCRIBE_MUTINY_BUFFER = MethodDescriptor.ofMethod(MultiSseSupport.class,
             "subscribeMutinyBuffer", Void.TYPE, Multi.class, RoutingContext.class);
     static final MethodDescriptor MULTI_SSE_SUBSCRIBE_OBJECT = MethodDescriptor.ofMethod(MultiSseSupport.class,
+            "subscribeObject",
+            Void.TYPE, Multi.class, RoutingContext.class);
+
+    static final MethodDescriptor IS_NDJSON = MethodDescriptor.ofMethod(MultiNdjsonSupport.class, "isNdjson", Boolean.TYPE,
+            Multi.class);
+    static final MethodDescriptor MULTI_NDJSON_SUBSCRIBE_STRING = MethodDescriptor.ofMethod(MultiNdjsonSupport.class,
+            "subscribeString",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_NDJSON_SUBSCRIBE_OBJECT = MethodDescriptor.ofMethod(MultiNdjsonSupport.class,
             "subscribeObject",
             Void.TYPE, Multi.class, RoutingContext.class);
 

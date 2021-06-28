@@ -13,6 +13,9 @@ public class SecondPrometheusProvider {
     @Produces
     @Singleton
     public PrometheusMeterRegistry registry(CollectorRegistry collectorRegistry, Clock clock) {
-        return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, collectorRegistry, clock);
+        PrometheusMeterRegistry customRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, collectorRegistry,
+                clock);
+        customRegistry.config().commonTags("customKey", "customValue");
+        return customRegistry;
     }
 }

@@ -141,7 +141,7 @@ public class Neo4jConfiguration {
         /**
          * Flag, if metrics are enabled.
          */
-        @ConfigItem
+        @ConfigItem(name = "metrics.enabled")
         public boolean metricsEnabled;
 
         /**

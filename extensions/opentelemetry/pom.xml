@@ -16,5 +16,7 @@
     <modules>
         <module>opentelemetry</module>
         <module>opentelemetry-exporter-jaeger</module>
+        <module>opentelemetry-exporter-otlp</module>
+        <module>rest-client</module>
     </modules>
 </project>

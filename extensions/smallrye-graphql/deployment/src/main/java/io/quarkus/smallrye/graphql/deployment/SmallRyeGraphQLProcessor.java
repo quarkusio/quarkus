@@ -66,7 +66,6 @@ import io.smallrye.graphql.schema.model.Argument;
 import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.Group;
 import io.smallrye.graphql.schema.model.InputType;
-import io.smallrye.graphql.schema.model.InterfaceType;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Reference;
 import io.smallrye.graphql.schema.model.Schema;
@@ -333,9 +332,9 @@ public class SmallRyeGraphQLProcessor {
         return classes;
     }
 
-    private Set<String> getInterfaceClassNames(Collection<InterfaceType> complexGraphQLTypes) {
+    private Set<String> getInterfaceClassNames(Collection<Type> complexGraphQLTypes) {
         Set<String> classes = new HashSet<>();
-        for (InterfaceType complexGraphQLType : complexGraphQLTypes) {
+        for (Type complexGraphQLType : complexGraphQLTypes) {
             classes.add(complexGraphQLType.getClassName());
             classes.addAll(getFieldClassNames(complexGraphQLType.getFields()));
         }
@@ -363,6 +362,34 @@ public class SmallRyeGraphQLProcessor {
         return classes;
     }
 
+    // Other Config Mappings
+
+    @BuildStep
+    void configMapping(SmallRyeGraphQLConfig graphQLConfig,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+
+        if (graphQLConfig.errorExtensionFields.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ERROR_EXTENSION_FIELDS,
+                    graphQLConfig.errorExtensionFields.get().stream().collect(Collectors.joining(", "))));
+        }
+
+        if (graphQLConfig.showRuntimeExceptionMessage.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem("mp.graphql.showErrorMessage",
+                    graphQLConfig.showRuntimeExceptionMessage.get().stream().collect(Collectors.joining(", "))));
+        }
+
+        if (graphQLConfig.hideCheckedExceptionMessage.isPresent()) {
+            systemProperties.produce(new SystemPropertyBuildItem("mp.graphql.hideErrorMessage",
+                    graphQLConfig.hideCheckedExceptionMessage.get().stream().collect(Collectors.joining(", "))));
+        }
+
+        if (graphQLConfig.defaultErrorMessage.isPresent()) {
+            systemProperties.produce(
+                    new SystemPropertyBuildItem(ConfigKey.DEFAULT_ERROR_MESSAGE, graphQLConfig.defaultErrorMessage.get()));
+        }
+
+    }
+
     // Services Integrations
 
     @BuildStep
@@ -377,7 +404,8 @@ public class SmallRyeGraphQLProcessor {
                 metricsCapability.isPresent(),
                 "quarkus-smallrye-metrics",
                 "metrics",
-                "quarkus.smallrye-graphql.metrics.enabled");
+                "quarkus.smallrye-graphql.metrics.enabled",
+                false);
         if (activate) {
             if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
                 unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames("io.smallrye.metrics.MetricRegistries"));
@@ -397,7 +425,8 @@ public class SmallRyeGraphQLProcessor {
                 graphQLConfig.tracingEnabled,
                 "quarkus-smallrye-opentracing",
                 Capability.OPENTRACING,
-                "quarkus.smallrye-graphql.tracing.enabled");
+                "quarkus.smallrye-graphql.tracing.enabled",
+                true);
         if (activate) {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_TRACING, TRUE));
         } else {
@@ -414,7 +443,8 @@ public class SmallRyeGraphQLProcessor {
                 graphQLConfig.validationEnabled,
                 "quarkus-hibernate-validator",
                 Capability.HIBERNATE_VALIDATOR,
-                "quarkus.smallrye-graphql.validation.enabled");
+                "quarkus.smallrye-graphql.validation.enabled",
+                true);
         if (activate) {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_VALIDATION, TRUE));
         } else {
@@ -435,10 +465,11 @@ public class SmallRyeGraphQLProcessor {
             Optional<Boolean> serviceEnabled,
             String linkedExtensionName,
             String linkedCapability,
-            String configKey) {
+            String configKey,
+            boolean activateByDefaultIfCapabilityIsPresent) {
 
         return shouldActivateService(capabilities, serviceEnabled, capabilities.isPresent(linkedCapability),
-                linkedExtensionName, linkedCapability, configKey);
+                linkedExtensionName, linkedCapability, configKey, activateByDefaultIfCapabilityIsPresent);
     }
 
     private boolean shouldActivateService(Capabilities capabilities,
@@ -446,7 +477,8 @@ public class SmallRyeGraphQLProcessor {
             boolean linkedCapabilityIsPresent,
             String linkedExtensionName,
             String linkedCapabilityName,
-            String configKey) {
+            String configKey,
+            boolean activateByDefaultIfCapabilityIsPresent) {
 
         if (serviceEnabled.isPresent()) {
             // The user explicitly asked from something
@@ -458,7 +490,7 @@ public class SmallRyeGraphQLProcessor {
             return (isEnabled && linkedCapabilityIsPresent);
         } else {
             // Auto dis/enable
-            return linkedCapabilityIsPresent;
+            return linkedCapabilityIsPresent && activateByDefaultIfCapabilityIsPresent;
         }
     }
 

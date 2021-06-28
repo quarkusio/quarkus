@@ -414,6 +414,65 @@ NOTE: The rest of the documentation show usages based on the active record patte
 but keep in mind that they can be performed with the repository pattern as well.
 The repository pattern examples have been omitted for brevity.
 
+== Writing a JAX-RS resource
+
+First, include one of the RESTEasy extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-jackson` dependency for JAX-RS and JSON support.
+
+Then, you can create the following resource to create/read/update/delete your Person entity:
+
+[source,java]
+----
+@Path("/persons")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public class PersonResource {
+
+    @GET
+    public List<Person> list() {
+        return Person.listAll();
+    }
+
+    @GET
+    @Path("/{id}")
+    public Person get(@PathParam("id") String id) {
+        return Person.findById(new ObjectId(id));
+    }
+
+    @POST
+    public Response create(Person person) {
+        person.persist();
+        return Response.created(URI.create("/persons/" + person.id)).build();
+    }
+
+    @PUT
+    @Path("/{id}")
+    public void update(@PathParam("id") String id, Person person) {
+        person.update();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public void delete(@PathParam("id") String id) {
+        Person person = Person.findById(new ObjectId(id));
+        if(person == null) {
+            throw new NotFoundException();
+        }
+        person.delete();
+    }
+
+    @GET
+    @Path("/search/{name}")
+    public Person search(@PathParam("name") String name) {
+        return Person.findByName(name);
+    }
+
+    @GET
+    @Path("/count")
+    public Long count() {
+        return Person.count();
+    }
+}
+----
 
 == Advanced Query
 
@@ -786,7 +845,8 @@ and when defining your repositories: `ReactivePanacheMongoRepository` or `Reacti
 [TIP]
 .Mutiny
 ====
-The reactive API of the MongoDB with Panache uses Mutiny reactive types, if you're not familiar with them, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+The reactive API of the MongoDB with Panache uses Mutiny reactive types.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 ====
 
 The reactive variant of the `Person` class will be:
@@ -825,12 +885,12 @@ person.status = Status.Alive;
 
 // persist it: if you keep the default ObjectId ID field, it will be populated by the MongoDB driver,
 // and accessible when uni1 will be resolved
-Uni<Void> uni1 = person.persist();
+Uni<ReactivePerson> uni1 = person.persist();
 
 person.status = Status.Dead;
 
 // Your must call update() in order to send your entity modifications to MongoDB
-Uni<Void> uni2 = person.update();
+Uni<ReactivePerson> uni2 = person.update();
 
 // delete it
 Uni<Void> uni3 = person.delete();

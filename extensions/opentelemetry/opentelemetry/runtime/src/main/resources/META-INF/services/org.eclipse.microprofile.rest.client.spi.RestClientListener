@@ -1,1 +1,0 @@
-io.quarkus.opentelemetry.runtime.tracing.client.QuarkusRestClientListener

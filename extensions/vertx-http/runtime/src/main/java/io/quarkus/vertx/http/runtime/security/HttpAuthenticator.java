@@ -44,21 +44,21 @@ public class HttpAuthenticator {
             Instance<IdentityProvider<?>> providers) {
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
         for (HttpAuthenticationMechanism mechanism : instance) {
-            boolean notFound = false;
+            boolean found = false;
             for (Class<? extends AuthenticationRequest> mechType : mechanism.getCredentialTypes()) {
-                boolean found = false;
                 for (IdentityProvider<?> i : providers) {
                     if (i.getRequestType().equals(mechType)) {
                         found = true;
                         break;
                     }
                 }
-                if (!found) {
-                    notFound = true;
+                if (found == true) {
                     break;
                 }
             }
-            if (!notFound) {
+            // Add mechanism if there is a provider with matching credential type
+            // If the mechanism has no credential types, just add it anyways
+            if (found || mechanism.getCredentialTypes().isEmpty()) {
                 mechanisms.add(mechanism);
             }
         }

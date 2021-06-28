@@ -163,13 +163,23 @@ You can install all extensions which match a globbing pattern:
 [[dev-mode]]
 == Development mode
 
-Quarkus comes with a built-in development mode.
+Quarkus comes with a built-in development mode. The best way to run this is via the link:cli-tooling.adoc[Quarkus CLI]
 Run your application with:
 
 [source,bash]
 ----
-./gradlew quarkusDev
+quarkus dev
 ----
+
+If you don't want to install the Quarkus CLI you can run development mode directly from gradle:
+
+[source,bash]
+----
+./gradlew --console=plain quarkusDev
+----
+
+Note that if you run it this way the continuous testing experience will not be as nice, as gradle runs as a daemon
+Quarkus can't draw the 'pretty' test output so falls back to just logging the output.
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.

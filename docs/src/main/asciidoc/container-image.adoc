@@ -41,6 +41,32 @@ To support these cases, Quarkus copies any file under `src/main/jib` into the bu
 idea that the Jib Maven and Gradle plugins support).
 For example, the presence of `src/main/jib/foo/bar` would result in  `/foo/bar` being added into the container filesystem.
 
+==== JVM Debugging
+
+There are cases where the built container image may need to have Java debugging conditionally enabled at runtime.
+There are a few ways to achieve this, but they all rely on the fact that in the `container-image-jib` you can control the entrypoint to use for the container image.
+By default, the container-image is created with a minimal `java -jar ...` style entrypoint, but that can be changed using the `quarkus.jib.jvm-entrypoint` configuration option.
+
+If the base image has not been changed (and therefore `fabric8/java-alpine-openjdk11-jre` is used) then you leverage that image's built-in `run-java.sh` script (more details about it can be found link:https://hub.docker.com/r/fabric8/java-alpine-openjdk11-jre#startup-script-run-javash[here]])
+by adding the following entries to `application.properties`:
+
+[source,properties]
+----
+quarkus.jib.jvm-entrypoint=/deployments/run-java.sh #this is the location of the script in the container image
+quarkus.jib.environment-variables."JAVA_APP_DIR"=/work #this is needed so the script knows where the Quarkus jar is
+----
+
+When running the container, the `JAVA_DEBUG` environment variable can then be used to control whether or not the application will be listening on the debug port.
+
+An example launch command is:
+
+[source,bash]
+----
+docker run --rm -p 8080:8080 -p 5005:5005 -e JAVA_DEBUG=true quarkus/getting-started:1.0.0-SNAPSHOT
+----
+
+If you are using a different base image or would like to use a custom launch script, then see the previous section on how to add the script to the container image and set the `quarkus.jib.jvm-entrypoint` in `application.properties` to the location of that script.
+
 [#docker]
 === Docker
 
@@ -79,6 +105,8 @@ To build a container image for your project, `quarkus.container-image.build=true
 ----
 ./mvnw clean package -Dquarkus.container-image.build=true
 ----
+
+NOTE: If you ever want to build a native container image and already have an existing native image you can set `-Dquarkus.native.reuse-existing=true` and the native image build will not be re-run.
 
 == Pushing
 

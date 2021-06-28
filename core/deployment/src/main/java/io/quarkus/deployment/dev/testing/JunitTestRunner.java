@@ -140,6 +140,7 @@ public class JunitTestRunner {
             currentTestAppConsumer.accept(testApplication);
 
             Set<UniqueId> allDiscoveredIds = new HashSet<>();
+            Set<UniqueId> dynamicIds = new HashSet<>();
             try (DiscoveryResult quarkusTestClasses = discoverTestClasses(devModeContext)) {
 
                 Launcher launcher = LauncherFactory.create(LauncherConfig.builder().build());
@@ -177,7 +178,7 @@ public class JunitTestRunner {
                         .build();
                 TestPlan testPlan = launcher.discover(request);
                 if (!testPlan.containsTests()) {
-                    testState.pruneDeletedTests(allDiscoveredIds);
+                    testState.pruneDeletedTests(allDiscoveredIds, dynamicIds);
                     //nothing to see here
                     for (TestRunListener i : listeners) {
                         i.noTests(new TestRunResults(runId, classScanResult, classScanResult == null, start,
@@ -268,6 +269,12 @@ public class JunitTestRunner {
                                 }
                             }
                         }
+                        touchedClasses.push(Collections.synchronizedSet(new HashSet<>()));
+                    }
+
+                    @Override
+                    public void dynamicTestRegistered(TestIdentifier testIdentifier) {
+                        dynamicIds.add(UniqueId.parse(testIdentifier.getUniqueId()));
                     }
 
                     @Override
@@ -325,29 +332,33 @@ public class JunitTestRunner {
                             Throwable throwable = testExecutionResult.getThrowable().get();
                             if (testClass != null) {
                                 //first we cut all the platform stuff out of the stack trace
-                                StackTraceElement[] st = throwable.getStackTrace();
-                                for (int i = st.length - 1; i >= 0; --i) {
-                                    StackTraceElement elem = st[i];
-                                    if (elem.getClassName().equals(testClass.getName())) {
-                                        StackTraceElement[] newst = new StackTraceElement[i + 1];
-                                        System.arraycopy(st, 0, newst, 0, i + 1);
-                                        st = newst;
-                                        break;
+                                Throwable cause = throwable;
+                                while (cause != null) {
+                                    StackTraceElement[] st = cause.getStackTrace();
+                                    for (int i = st.length - 1; i >= 0; --i) {
+                                        StackTraceElement elem = st[i];
+                                        if (elem.getClassName().equals(testClass.getName())) {
+                                            StackTraceElement[] newst = new StackTraceElement[i + 1];
+                                            System.arraycopy(st, 0, newst, 0, i + 1);
+                                            st = newst;
+                                            break;
+                                        }
                                     }
-                                }
 
-                                //now cut out all the restassured internals
-                                //TODO: this should be pluggable
-                                for (int i = st.length - 1; i >= 0; --i) {
-                                    StackTraceElement elem = st[i];
-                                    if (elem.getClassName().startsWith("io.restassured")) {
-                                        StackTraceElement[] newst = new StackTraceElement[st.length - i];
-                                        System.arraycopy(st, i, newst, 0, st.length - i);
-                                        st = newst;
-                                        break;
+                                    //now cut out all the restassured internals
+                                    //TODO: this should be pluggable
+                                    for (int i = st.length - 1; i >= 0; --i) {
+                                        StackTraceElement elem = st[i];
+                                        if (elem.getClassName().startsWith("io.restassured")) {
+                                            StackTraceElement[] newst = new StackTraceElement[st.length - i];
+                                            System.arraycopy(st, i, newst, 0, st.length - i);
+                                            st = newst;
+                                            break;
+                                        }
                                     }
+                                    cause.setStackTrace(st);
+                                    cause = cause.getCause();
                                 }
-                                throwable.setStackTrace(st);
                             }
                         }
                     }
@@ -361,7 +372,7 @@ public class JunitTestRunner {
                     return;
                 }
                 testState.updateResults(resultsByClass);
-                testState.pruneDeletedTests(allDiscoveredIds);
+                testState.pruneDeletedTests(allDiscoveredIds, dynamicIds);
                 if (classScanResult != null) {
                     testState.classesRemoved(classScanResult.getDeletedClassNames());
                 }
@@ -545,7 +556,7 @@ public class JunitTestRunner {
                     ClassWriter writer = new QuarkusClassWriter(cr,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                     cr.accept(new TestTracingProcessor.TracingClassVisitor(writer, i), 0);
-                    transformedClasses.put(i, writer.toByteArray());
+                    transformedClasses.put(i.replace(".", "/") + ".class", writer.toByteArray());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

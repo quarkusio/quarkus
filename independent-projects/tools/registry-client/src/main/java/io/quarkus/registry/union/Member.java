@@ -2,7 +2,7 @@ package io.quarkus.registry.union;
 
 import java.util.Collection;
 
-public interface Member extends ElementCatalog {
+public interface Member<T> extends ElementCatalog<T> {
 
     /**
      * Member key
@@ -19,11 +19,18 @@ public interface Member extends ElementCatalog {
     Object version();
 
     /**
+     * Actual member instance.
+     *
+     * @return member instance or null
+     */
+    T getInstance();
+
+    /**
      * The very first union the member joined.
      *
      * @return the very first union the member joined the union
      */
-    Union initialUnion();
+    Union<T> initialUnion();
 
     /**
      * Unions this member belongs to.

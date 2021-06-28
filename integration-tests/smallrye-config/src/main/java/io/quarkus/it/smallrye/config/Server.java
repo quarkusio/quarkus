@@ -22,7 +22,7 @@ import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "http.server")
-public interface Server {
+public interface Server extends Alias {
     @JsonProperty
     String host();
 
@@ -69,18 +69,6 @@ public interface Server {
 
         @JsonProperty
         Optional<String> cookie();
-    }
-
-    interface Ssl {
-        @JsonProperty
-        int port();
-
-        @JsonProperty
-        String certificate();
-
-        @JsonProperty
-        @WithDefault("TLSv1.3,TLSv1.2")
-        List<String> protocols();
     }
 
     interface Proxy {

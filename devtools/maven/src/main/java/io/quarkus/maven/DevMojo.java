@@ -86,6 +86,7 @@ import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.utilities.OS;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
@@ -104,7 +105,7 @@ public class DevMojo extends AbstractMojo {
      * running any one of these phases means the compile phase will have been run, if these have
      * not been run we manually run compile
      */
-    private static final Set<String> POST_COMPILE_PHASES = new HashSet<>(Arrays.asList(
+    private static final Set<String> POST_COMPILE_PHASES = Set.of(
             "compile",
             "process-classes",
             "generate-test-sources",
@@ -121,13 +122,13 @@ public class DevMojo extends AbstractMojo {
             "post-integration-test",
             "verify",
             "install",
-            "deploy"));
+            "deploy");
 
     /**
      * running any one of these phases means the test-compile phase will have been run, if these have
      * not been run we manually run test-compile
      */
-    private static final Set<String> POST_TEST_COMPILE_PHASES = new HashSet<>(Arrays.asList(
+    private static final Set<String> POST_TEST_COMPILE_PHASES = Set.of(
             "test-compile",
             "process-test-classes",
             "test",
@@ -138,7 +139,7 @@ public class DevMojo extends AbstractMojo {
             "post-integration-test",
             "verify",
             "install",
-            "deploy"));
+            "deploy");
     private static final String QUARKUS_PLUGIN_GROUPID = "io.quarkus";
     private static final String QUARKUS_PLUGIN_ARTIFACTID = "quarkus-maven-plugin";
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
@@ -401,6 +402,12 @@ public class DevMojo extends AbstractMojo {
      * messes everything up. This attempts to fix that by saving the state so it can be restored
      */
     private void saveTerminalState() {
+        if (OS.determineOS() == OS.WINDOWS) {
+            //this does not work on windows
+            //jansi creates an input pump thread, that will steal
+            //input from the dev mode process
+            return;
+        }
         try {
             new TerminalConnection(new Consumer<Connection>() {
                 @Override
@@ -697,7 +704,7 @@ public class DevMojo extends AbstractMojo {
         }
 
         boolean alive() {
-            return process == null ? false : process.isAlive();
+            return process != null && process.isAlive();
         }
 
         int exitValue() {
@@ -730,8 +737,8 @@ public class DevMojo extends AbstractMojo {
                     process.destroy();
                     try {
                         process.waitFor();
-                    } catch (InterruptedException ignored) {
-                        getLog().warn("Unable to properly wait for dev-mode end", ignored);
+                    } catch (InterruptedException e) {
+                        getLog().warn("Unable to properly wait for dev-mode end", e);
                     }
                 }
             }, "Development Mode Shutdown Hook"));

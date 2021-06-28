@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.common.headers;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -28,12 +30,18 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
  */
 public class HeaderUtil {
 
+    private static final ClassValue<RuntimeDelegate.HeaderDelegate> HEADER_DELEGATE_CACHE = new ClassValue() {
+        @Override
+        protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
+            return RuntimeDelegate.getInstance().createHeaderDelegate(type);
+        }
+    };
+
     public static String headerToString(Object obj) {
         if (obj instanceof String) {
             return (String) obj;
         } else {
-            // TODO: we probably want a more direct way to get the delegate instead of going through all the indirection
-            return RuntimeDelegate.getInstance().createHeaderDelegate((Class<Object>) obj.getClass()).toString(obj);
+            return HEADER_DELEGATE_CACHE.get(obj.getClass()).toString(obj);
         }
     }
 
@@ -304,5 +312,111 @@ public class HeaderUtil {
         for (WeightedLanguage language : languages)
             list.add(language.getLocale());
         return list;
+    }
+
+    /**
+     * Extracts a quoted value from a header that has a given key. For instance if the header is
+     * <p>
+     * content-disposition=form-data; name="my field"
+     * and the key is name then "my field" will be returned without the quotes.
+     *
+     *
+     * @param header The header
+     * @param key The key that identifies the token to extract
+     * @return The token, or null if it was not found
+     */
+    public static String extractQuotedValueFromHeader(final String header, final String key) {
+
+        int keypos = 0;
+        int pos = -1;
+        boolean whiteSpace = true;
+        boolean inQuotes = false;
+        for (int i = 0; i < header.length() - 1; ++i) { //-1 because we need room for the = at the end
+            //TODO: a more efficient matching algorithm
+            char c = header.charAt(i);
+            if (inQuotes) {
+                if (c == '"') {
+                    inQuotes = false;
+                }
+            } else {
+                if (key.charAt(keypos) == c && (whiteSpace || keypos > 0)) {
+                    keypos++;
+                    whiteSpace = false;
+                } else if (c == '"') {
+                    keypos = 0;
+                    inQuotes = true;
+                    whiteSpace = false;
+                } else {
+                    keypos = 0;
+                    whiteSpace = c == ' ' || c == ';' || c == '\t';
+                }
+                if (keypos == key.length()) {
+                    if (header.charAt(i + 1) == '=') {
+                        pos = i + 2;
+                        break;
+                    } else {
+                        keypos = 0;
+                    }
+                }
+            }
+
+        }
+        if (pos == -1) {
+            return null;
+        }
+
+        int end;
+        int start = pos;
+        if (header.charAt(start) == '"') {
+            start++;
+            for (end = start; end < header.length(); ++end) {
+                char c = header.charAt(end);
+                if (c == '"') {
+                    break;
+                }
+            }
+            return header.substring(start, end);
+
+        } else {
+            //no quotes
+            for (end = start; end < header.length(); ++end) {
+                char c = header.charAt(end);
+                if (c == ' ' || c == '\t' || c == ';') {
+                    break;
+                }
+            }
+            return header.substring(start, end);
+        }
+    }
+
+    /**
+     * Extracts a quoted value from a header that has a given key. For instance if the header is
+     * <p>
+     * content-disposition=form-data; filename*="utf-8''test.txt"
+     * and the key is filename* then "test.txt" will be returned after extracting character set and language
+     * (following RFC 2231) and performing URL decoding to the value using the specified encoding
+     *
+     * @param header The header
+     * @param key The key that identifies the token to extract
+     * @return The token, or null if it was not found
+     */
+    public static String extractQuotedValueFromHeaderWithEncoding(final String header, final String key) {
+        String value = extractQuotedValueFromHeader(header, key);
+        if (value != null) {
+            return value;
+        }
+        value = extractQuotedValueFromHeader(header, key + "*");
+        if (value != null) {
+            int characterSetDelimiter = value.indexOf('\'');
+            int languageDelimiter = value.lastIndexOf('\'', characterSetDelimiter + 1);
+            String characterSet = value.substring(0, characterSetDelimiter);
+            try {
+                String fileNameURLEncoded = value.substring(languageDelimiter + 1);
+                return URLDecoder.decode(fileNameURLEncoded, characterSet);
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return null;
     }
 }

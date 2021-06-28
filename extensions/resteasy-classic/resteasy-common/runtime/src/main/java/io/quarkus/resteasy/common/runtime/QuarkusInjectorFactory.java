@@ -18,13 +18,12 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.metadata.ResourceClass;
 import org.jboss.resteasy.spi.metadata.ResourceConstructor;
 
-import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.ClientProxyUnwrapper;
 
 public class QuarkusInjectorFactory extends InjectorFactoryImpl {
 
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy.runtime");
-    static volatile BeanContainer CONTAINER = null;
-    static volatile Function<Object, Object> PROXY_UNWRAPPER;
+    static final Function<Object, Object> PROXY_UNWRAPPER = new ClientProxyUnwrapper();
 
     @SuppressWarnings("rawtypes")
     @Override

@@ -194,6 +194,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
                 .addCodestarts(codestarts)
                 .addData(inputData)
                 .addData(data)
+                .addBoms(QuarkusCodestartTesting.getBoms(inputData))
                 .addExtensions(extensions)
                 .putData(PROJECT_PACKAGE_NAME, DEFAULT_PACKAGE_FOR_TESTING)
                 .build();

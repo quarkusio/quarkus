@@ -3,23 +3,29 @@ package io.quarkus.cli.build;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import io.quarkus.cli.Version;
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.commands.AddExtensions;
+import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.commands.RemoveExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
+import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 public class MavenRunner implements BuildSystemRunner {
@@ -67,7 +73,20 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern)
+    public Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format)
+            throws Exception {
+        QuarkusCommandOutcome outcome = new ListCategories(quarkusProject(), output)
+                .fromCli(true)
+                .format(format.getFormatString())
+                .batchMode(runMode.isBatchMode())
+                .execute();
+
+        return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+    }
+
+    @Override
+    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
+            String category)
             throws Exception {
         // we do not have to spawn to list extensions for maven
         QuarkusCommandOutcome outcome = new ListExtensions(quarkusProject(), output)
@@ -76,6 +95,8 @@ public class MavenRunner implements BuildSystemRunner {
                 .installed(!installable)
                 .format(format.getFormatString())
                 .search(searchPattern)
+                .category(category)
+                .batchMode(runMode.isBatchMode())
                 .execute();
 
         return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
@@ -96,7 +117,8 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, PropertiesOptions propertiesOptions, RunModeOption runMode,
+            List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, runMode.isBatchMode());
 
@@ -121,7 +143,7 @@ public class MavenRunner implements BuildSystemRunner {
         }
 
         // add any other discovered properties
-        args.addAll(flattenMappedProperties(buildOptions.properties));
+        args.addAll(flattenMappedProperties(propertiesOptions.properties));
         // Add any other unmatched arguments
         args.addAll(params);
 
@@ -129,7 +151,8 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareDevMode(DevOptions devOptions, DebugOptions debugOptions, List<String> params) {
+    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
+            DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, false);
 
@@ -144,10 +167,16 @@ public class MavenRunner implements BuildSystemRunner {
 
         //TODO: addDebugArguments(args, debugOptions);
 
-        args.addAll(flattenMappedProperties(devOptions.properties));
+        args.addAll(flattenMappedProperties(propertiesOptions.properties));
         // Add any other unmatched arguments
         args.addAll(params);
-        return prependExecutable(args);
+        BuildCommandArgs buildCommandArgs = prependExecutable(args);
+        return Collections.singletonList(new Supplier<BuildCommandArgs>() {
+            @Override
+            public BuildCommandArgs get() {
+                return buildCommandArgs;
+            }
+        });
     }
 
     void setSkipTests(ArrayDeque<String> args) {
@@ -163,6 +192,9 @@ public class MavenRunner implements BuildSystemRunner {
         if (output.isAnsiEnabled() && !batchMode) {
             args.addFirst("-Dstyle.color=always");
         }
+        ExecuteUtil.propagatePropertyIfSet("maven.repo.local", args);
+        ExecuteUtil.propagatePropertyIfSet(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, args);
+        ExecuteUtil.propagatePropertyIfSet("io.quarkus.maven.secondary-local-repo", args);
     }
 
     void verifyBuildFile() {

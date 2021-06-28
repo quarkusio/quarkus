@@ -105,7 +105,7 @@ public class LateBoundBatchSpanProcessor implements SpanProcessor {
      */
     private void logDelegateNotFound() {
         if (!warningLogged) {
-            log.warn("No delegate specified, no action taken.");
+            log.warn("No BatchSpanProcessor delegate specified, no action taken.");
             warningLogged = true;
         }
     }

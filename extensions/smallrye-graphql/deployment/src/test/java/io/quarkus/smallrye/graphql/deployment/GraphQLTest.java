@@ -152,6 +152,28 @@ public class GraphQLTest extends AbstractGraphQLTest {
                         "{\"data\":{\"generics\":{\"message\":\"I know it\"}}}"));
     }
 
+    /**
+     * Send a query in JSON that contains raw unescaped line breaks and tabs inside the "query" string,
+     * which technically is forbidden by the JSON spec, but we want to seamlessly support
+     * queries from Java text blocks, for example, which preserve line breaks and tab characters.
+     */
+    @Test
+    public void testQueryWithNewlinesAndTabs() {
+        String foosRequest = "{\"query\": \"query myquery { \n generics { \n \t message } } \"}";
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(foosRequest)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body(CoreMatchers.containsString(
+                        "{\"data\":{\"generics\":{\"message\":\"I know it\"}}}"));
+    }
+
     @Test
     public void testContext() {
         String query = getPayload("{context}");

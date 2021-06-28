@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,10 +48,6 @@ import org.jboss.logging.Logger.Level;
 public class BeanDeployment {
 
     private static final Logger LOGGER = Logger.getLogger(BeanDeployment.class);
-
-    private static final int ANNOTATION = 0x00002000;
-
-    static final EnumSet<Type.Kind> CLASS_TYPES = EnumSet.of(Type.Kind.CLASS, Type.Kind.PARAMETERIZED_TYPE);
 
     private final BuildContextImpl buildContext;
 
@@ -173,7 +168,7 @@ public class BeanDeployment {
                 builder.additionalStereotypes, annotationStore);
         buildContextPut(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
 
-        this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(),
+        this.transitiveInterceptorBindings = findTransitiveInterceptorBindings(interceptorBindings.keySet(),
                 this.beanArchiveIndex,
                 new HashMap<>(), interceptorBindings, annotationStore);
 
@@ -307,7 +302,7 @@ public class BeanDeployment {
                 // Instance<Foo>
                 for (InjectionPointInfo injectionPoint : instanceInjectionPoints) {
                     if (Beans.hasQualifiers(bean, injectionPoint.getRequiredQualifiers()) && Beans.matchesType(bean,
-                            injectionPoint.getRequiredType().asParameterizedType().arguments().get(0))) {
+                            injectionPoint.getType().asParameterizedType().arguments().get(0))) {
                         continue test;
                     }
                 }
@@ -586,7 +581,7 @@ public class BeanDeployment {
         return bindings;
     }
 
-    private static Map<DotName, Set<AnnotationInstance>> findTransitiveInterceptorBindigs(Collection<DotName> initialBindings,
+    private static Map<DotName, Set<AnnotationInstance>> findTransitiveInterceptorBindings(Collection<DotName> initialBindings,
             IndexView index,
             Map<DotName, Set<AnnotationInstance>> result, Map<DotName, ClassInfo> interceptorBindings,
             AnnotationStore annotationStore) {
@@ -738,9 +733,7 @@ public class BeanDeployment {
         for (ClassInfo beanClass : beanArchiveIndex.getKnownClasses()) {
 
             if (Modifier.isInterface(beanClass.flags()) || Modifier.isAbstract(beanClass.flags())
-            // Replace with ClassInfo#isAnnotation() and ClassInfo#isEnum() when using Jandex 2.1.4+
-                    || (beanClass.flags() & ANNOTATION) != 0
-                    || DotNames.ENUM.equals(beanClass.superName())) {
+                    || beanClass.isAnnotation() || beanClass.isEnum()) {
                 // Skip interfaces, abstract classes, annotations and enums
                 continue;
             }
@@ -804,7 +797,8 @@ public class BeanDeployment {
                 if (annotationStore.getAnnotations(method).isEmpty()) {
                     continue;
                 }
-                if (annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
+                if (annotationStore.hasAnnotation(method, DotNames.PRODUCES)
+                        && !annotationStore.hasAnnotation(method, DotNames.VETOED_PRODUCER)) {
                     // Producers are not inherited
                     producerMethods.add(method);
                     if (!hasBeanDefiningAnnotation) {
@@ -874,7 +868,8 @@ public class BeanDeployment {
                         : null;
             }
             for (FieldInfo field : beanClass.fields()) {
-                if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
+                if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)
+                        && !annotationStore.hasAnnotation(field, DotNames.VETOED_PRODUCER)) {
                     if (annotationStore.hasAnnotation(field, DotNames.INJECT)) {
                         throw new DefinitionException("Injected field cannot be annotated with @Produces: " + field);
                     }

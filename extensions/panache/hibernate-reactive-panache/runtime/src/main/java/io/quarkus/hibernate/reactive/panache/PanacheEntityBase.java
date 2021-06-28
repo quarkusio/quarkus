@@ -52,8 +52,8 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public Uni<Void> persist() {
-        return INSTANCE.persist(this);
+    public <T extends PanacheEntityBase> Uni<T> persist() {
+        return INSTANCE.persist(this).map(v -> (T) this);
     }
 
     /**
@@ -67,10 +67,10 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public Uni<Void> persistAndFlush() {
+    public <T extends PanacheEntityBase> Uni<T> persistAndFlush() {
         return INSTANCE.persist(this)
                 .flatMap(v -> INSTANCE.flush())
-                .map(v -> null);
+                .map(v -> (T) this);
     }
 
     /**

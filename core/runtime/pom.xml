@@ -122,6 +122,9 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
+                    <lesserPriorityArtifacts>
+                        <artifact>io.quarkus:quarkus-junit4-mock</artifact>
+                    </lesserPriorityArtifacts>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-io</parentFirstArtifact>
@@ -138,6 +141,7 @@
                         <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
                         <parentFirstArtifact>org.apache.maven:maven-model</parentFirstArtifact>
                         <parentFirstArtifact>org.apache.maven.resolver:maven-resolver-api</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.maven.resolver:maven-resolver-impl</parentFirstArtifact>
                         <parentFirstArtifact>org.codehaus.plexus:plexus-utils</parentFirstArtifact>
                         <parentFirstArtifact>xml-apis:xml-apis</parentFirstArtifact>
                         <!--
@@ -170,7 +174,7 @@
                         <parentFirstArtifact>org.opentest4j:opentest4j</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
 
-                        <!-- Pact support. It would be great if there was somewhere better to put this-->
+                        <!-- Pact[<4.1.0] support. It would be great if there was somewhere better to put this-->
                         <parentFirstArtifact>au.com.dius:pact-jvm-provider-junit5</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius:pact-jvm-provider</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius:pact-jvm-core-support</parentFirstArtifact>
@@ -180,6 +184,15 @@
                         <parentFirstArtifact>au.com.dius:pact-jvm-junit5</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius:pact-jvm-consumer-java8</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius:pact-jvm-consumer</parentFirstArtifact>
+                        <!-- Pact[>=4.1.0] support.-->
+                        <parentFirstArtifact>au.com.dius.pact.provider:junit5</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact:provider</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:support</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:pactbroker</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:model</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.core:matcher</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact.consumer:junit5</parentFirstArtifact>
+                        <parentFirstArtifact>au.com.dius.pact:consumer</parentFirstArtifact>
 
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>

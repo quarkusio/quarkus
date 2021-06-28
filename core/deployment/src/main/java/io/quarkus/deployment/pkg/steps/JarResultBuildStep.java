@@ -650,7 +650,7 @@ public class JarResultBuildStep {
             if (rebuild) {
                 jars.addAll(appDep.getArtifact().getPaths().toList());
             } else {
-                copyDependency(curateOutcomeBuildItem, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
+                copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
                         classPath, appDep);
             }
             if (parentFirstKeys.contains(appDep.getArtifact().getKey())) {
@@ -706,7 +706,7 @@ public class JarResultBuildStep {
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
                 Files.createDirectories(deploymentLib);
                 for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
-                    copyDependency(curateOutcomeBuildItem, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
+                    copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
                             false, classPath,
                             appDep);
                 }
@@ -846,7 +846,7 @@ public class JarResultBuildStep {
         return true;
     }
 
-    private void copyDependency(CurateOutcomeBuildItem curateOutcomeBuildItem, OutputTargetBuildItem outputTargetBuildItem,
+    private void copyDependency(Set<AppArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
             Map<AppArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, List<Path> jars,
             boolean allowParentFirst, StringBuilder classPath, AppDependency appDep)
             throws IOException {
@@ -864,8 +864,7 @@ public class JarResultBuildStep {
             final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
             final Path targetPath;
 
-            if (allowParentFirst && curateOutcomeBuildItem.getEffectiveModel().getRunnerParentFirstArtifacts()
-                    .contains(depArtifact.getKey())) {
+            if (allowParentFirst && parentFirstArtifacts.contains(depArtifact.getKey())) {
                 targetPath = baseLib.resolve(fileName);
                 classPath.append(" ").append(LIB).append("/").append(BOOT_LIB).append("/").append(fileName);
             } else {

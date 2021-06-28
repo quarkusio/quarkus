@@ -16,6 +16,7 @@ import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.internal.engine.resolver.JPATraversableResolver;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
+import org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
 import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
 
@@ -121,6 +122,12 @@ public class HibernateValidatorRecorder {
                         .instance(GetterPropertySelectionStrategy.class);
                 if (configuredGetterPropertySelectionStrategy.isAvailable()) {
                     configuration.getterPropertySelectionStrategy(configuredGetterPropertySelectionStrategy.get());
+                }
+
+                InstanceHandle<PropertyNodeNameProvider> configuredPropertyNodeNameProvider = Arc.container()
+                        .instance(PropertyNodeNameProvider.class);
+                if (configuredPropertyNodeNameProvider.isAvailable()) {
+                    configuration.propertyNodeNameProvider(configuredPropertyNodeNameProvider.get());
                 }
 
                 // Automatically add all the values extractors declared as beans

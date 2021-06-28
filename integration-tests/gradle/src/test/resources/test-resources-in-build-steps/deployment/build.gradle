@@ -13,7 +13,7 @@ publishing {
     publications {
         mavenJave(MavenPublication) {
             groupId = 'org.acme'
-            artifactId = 'acme-ext-deployment'
+            artifactId = 'runtime-deployment'
             version = '1.0-SNAPSHOT'
 
             from components.java

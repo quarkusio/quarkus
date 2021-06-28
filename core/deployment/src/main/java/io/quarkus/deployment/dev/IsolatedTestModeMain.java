@@ -17,6 +17,7 @@ import java.util.function.BiFunction;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.dev.testing.TestHandler;
 import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
 import io.quarkus.deployment.dev.testing.TestSupport;
@@ -25,7 +26,7 @@ import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
-import io.quarkus.runtime.logging.LoggingSetupRecorder;
+import io.quarkus.runtime.Quarkus;
 
 /**
  * The main entry point of quarkus:test
@@ -41,6 +42,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
 
     private RuntimeUpdatesProcessor setupRuntimeCompilation(DevModeContext context, Path applicationRoot)
             throws Exception {
+        System.setProperty("quarkus.test.display-test-output", "true");
         if (!context.getAllModules().isEmpty()) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
             List<CompilationProvider> compilationProviders = new ArrayList<>();
@@ -115,7 +117,6 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                 oo.writeObject(potentialContext);
                 context = (DevModeContext) new ObjectInputStream(new ByteArrayInputStream(out.toByteArray())).readObject();
             }
-
             augmentAction = new AugmentActionImpl(curatedApplication);
             RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT));
 
@@ -125,16 +126,13 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
             }
             try {
                 augmentAction.performCustomBuild(TestHandler.class.getName(), null, TestSetupBuildItem.class.getName(),
-                        LoggingSetupBuildItem.class.getName());
+                        LoggingSetupBuildItem.class.getName(), ConsoleFormatterBannerBuildItem.class.getName());
             } catch (Throwable t) {
                 //logging may not have been started, this is more reliable
                 System.err.println("Failed to start quarkus test mode");
                 t.printStackTrace();
                 System.exit(1);
             }
-            //we don't actually start the app
-            //so logging would not be enabled
-            LoggingSetupRecorder.handleFailedStart();
 
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
@@ -148,6 +146,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                     }
                 }
             }, "Quarkus Shutdown Thread"));
+            Quarkus.waitForExit();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

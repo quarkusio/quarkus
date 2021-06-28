@@ -102,7 +102,7 @@ Reactive REST endpoints in your application that return Uni or Multi need `Mutin
 [TIP]
 ====
 In this guide, we will use the Mutiny API of the Reactive PostgreSQL Client.
-If you're not familiar with Mutiny reactive types, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 ====
 
 === JSON Binding
@@ -290,7 +290,8 @@ The Reactive PostgreSQL Client can also prepare queries and take parameters that
 client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1").execute(Tuple.of(id))
 ----
 
-TIP: The SQL string can refer to parameters by position, using $1, $2, ...etc.
+TIP: For PostgreSQL, the SQL string can refer to parameters by position, using `$1`, `$2`, ...etc.
+Please refer to the <<Database Clients details>> section for other databases.
 
 Similar to the simple `query` method, `preparedQuery` returns an instance of `PreparedQuery<RowSet<Row>>`.
 Equipped with this tooling, we are able to safely use an `id` provided by the user to get the details of a particular fruit:
@@ -467,21 +468,24 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 
 == Database Clients details
 
-[cols="15,35,50"]
+[cols="10,40,40,10"]
 |===
-|Database |Extension name |Pool class name
+|Database |Extension name |Pool class name |Placeholders
 
 |DB2
 |`quarkus-reactive-db2-client`
 |`io.vertx.mutiny.db2client.DB2Pool`
+|`?`
 
 |MariaDB/MySQL
 |`quarkus-reactive-mysql-client`
 |`io.vertx.mutiny.mysqlclient.MySQLPool`
+|`?`
 
 |PostgreSQL
 |`quarkus-reactive-pg-client`
 |`io.vertx.mutiny.pgclient.PgPool`
+|`$1`, `$2`, etc.
 |===
 
 == Transactions

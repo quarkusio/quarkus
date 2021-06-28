@@ -40,6 +40,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -62,7 +63,7 @@ import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
-import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
+import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 
 public class SecurityProcessor {
@@ -203,6 +204,25 @@ public class SecurityProcessor {
         }
     }
 
+    @BuildStep
+    void addBouncyCastleProvidersToNativeImage(BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders,
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
+            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
+        if (bouncyCastleJsseProvider.isPresent()) {
+            additionalProviders.produce(
+                    new NativeImageSecurityProviderBuildItem(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
+            final String providerName = bouncyCastleJsseProvider.get().isInFipsMode()
+                    ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                    : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
+            additionalProviders.produce(new NativeImageSecurityProviderBuildItem(providerName));
+        } else if (bouncyCastleProvider.isPresent()) {
+            final String providerName = bouncyCastleProvider.get().isInFipsMode()
+                    ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                    : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
+            additionalProviders.produce(new NativeImageSecurityProviderBuildItem(providerName));
+        }
+    }
+
     /**
      * Determine the classes that make up the provider and its services
      *
@@ -243,14 +263,14 @@ public class SecurityProcessor {
      */
     @BuildStep
     void transformSecurityAnnotations(BuildProducer<AnnotationsTransformerBuildItem> transformers,
-            List<AdditionalSecuredClassesBuildIem> additionalSecuredClasses,
+            List<AdditionalSecuredClassesBuildItem> additionalSecuredClasses,
             SecurityBuildTimeConfig config) {
         if (config.denyUnannotated) {
             transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
         }
         if (!additionalSecuredClasses.isEmpty()) {
             Set<String> additionalSecured = new HashSet<>();
-            for (AdditionalSecuredClassesBuildIem securedClasses : additionalSecuredClasses) {
+            for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
                 for (ClassInfo additionalSecuredClass : securedClasses.additionalSecuredClasses) {
                     additionalSecured.add(additionalSecuredClass.name().toString());
                 }
@@ -265,13 +285,13 @@ public class SecurityProcessor {
     void gatherSecurityChecks(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BeanArchiveIndexBuildItem beanArchiveBuildItem,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
-            List<AdditionalSecuredClassesBuildIem> additionalSecuredClasses,
+            List<AdditionalSecuredClassesBuildItem> additionalSecuredClasses,
             SecurityCheckRecorder recorder,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
 
         final Map<DotName, ClassInfo> additionalSecured = new HashMap<>();
-        for (AdditionalSecuredClassesBuildIem securedClasses : additionalSecuredClasses) {
+        for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
             securedClasses.additionalSecuredClasses.forEach(c -> {
                 if (!additionalSecured.containsKey(c.name())) {
                     additionalSecured.put(c.name(), c);

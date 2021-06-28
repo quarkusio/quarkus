@@ -91,13 +91,14 @@ public final class EngineBuilder {
     }
 
     public EngineBuilder addNamespaceResolver(NamespaceResolver resolver) {
+        String namespace = Namespaces.requireValid(resolver.getNamespace());
         for (NamespaceResolver nsResolver : namespaceResolvers) {
-            if (nsResolver.getNamespace().equals(resolver.getNamespace())
+            if (nsResolver.getNamespace().equals(namespace)
                     && resolver.getPriority() == nsResolver.getPriority()) {
                 throw new IllegalArgumentException(
                         String.format(
                                 "Namespace [%s] may not be handled by multiple resolvers of the same priority [%s]: %s and %s",
-                                resolver.getNamespace(), resolver.getPriority(), nsResolver, resolver));
+                                namespace, resolver.getPriority(), nsResolver, resolver));
             }
         }
         this.namespaceResolvers.add(resolver);

@@ -6,8 +6,11 @@ import static io.smallrye.graphql.client.core.Document.document;
 import static io.smallrye.graphql.client.core.Field.field;
 import static io.smallrye.graphql.client.core.Operation.operation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.net.URL;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,4 +47,23 @@ public class DynamicClientTest {
             assertEquals(15, response.getData().getInt("get"), response.toString());
         }
     }
+
+    @Test
+    public void testDynamicClientSubscription() throws Exception {
+        try (DynamicGraphQLClient client = DynamicGraphQLClientBuilder.newBuilder().url(url.toString() + "/graphql").build()) {
+            Document op = document(
+                    operation(OperationType.SUBSCRIPTION,
+                            field("primeNumbers")));
+            List<Integer> expectedNumbers = List.of(2, 3, 5, 7, 11, 13);
+            List<Response> responses = client.subscription(op)
+                    .subscribe()
+                    .asStream()
+                    .collect(Collectors.toList());
+            for (int i = 0; i < expectedNumbers.size(); i++) {
+                assertEquals(expectedNumbers.get(i), responses.get(i).getData().getInt("primeNumbers"));
+                assertFalse(responses.get(i).hasError());
+            }
+        }
+    }
+
 }

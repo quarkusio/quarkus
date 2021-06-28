@@ -14,9 +14,9 @@ import io.grpc.ClientInterceptor;
 
 @ApplicationScoped
 public class GrpcClientInterceptorContainer {
-    // Cannot be empty, as we have the IO Thread client interceptor
-    @Any
+
     @Inject
+    @Any
     Instance<ClientInterceptor> interceptors;
 
     public List<ClientInterceptor> getSortedInterceptors() {

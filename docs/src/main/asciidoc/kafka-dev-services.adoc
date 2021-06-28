@@ -1,0 +1,59 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Kafka
+
+include::./attributes.adoc[]
+
+If any Kafka-related extension is present (e.g. `quarkus-smallrye-reactive-messaging-kafka`), Dev Services for Kafka automatically starts a Kafka broker in dev mode and when running tests.
+So, you don't have to start a broker manually.
+The application is configured automatically.
+
+IMPORTANT: Because starting a Kafka broker can be long, Dev Services for Kafka uses https://vectorized.io/redpanda[Redpanda], a Kafka compatible broker which starts in ~1 second.
+
+== Enabling / Disabling Dev Services for Kafka
+
+Dev Services for Kafka is automatically enabled unless:
+
+- `quarkus.kafka.devservices.enabled` is set to `false`
+- the `kafka.bootstrap.servers` is configured
+- all the Reactive Messaging Kafka channels have the `bootstrap.servers` attribute set
+
+Dev Services for Kafka relies on Docker to start the broker.
+If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
+You can configure the broker address using `kafka.bootstrap.servers`.
+
+== Shared broker
+
+Most of the time you need to share the broker between applications.
+Dev Services for Kafka implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single broker.
+
+NOTE: Dev Services for Kafka starts the container with the `quarkus-dev-service-kafka` label which is used to identify the container.
+
+If you need multiple (shared) brokers, you can configure the `quarkus.kafka.devservices.service-name` attribute and indicate the broker name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `kafka`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.kafka.devservices.shared=false`.
+
+== Setting the port
+
+By default, Dev Services for Kafka picks a random port and configures the application.
+You can set the port by configuring the `quarkus.kafka.devservices.port` property.
+
+Note that the Kafka advertised address is automatically configured with the chosen port.
+
+== Configuring the image
+
+Dev Services for Kafka uses: `vectorized/redpanda` images.
+You can select any version from https://hub.docker.com/r/vectorized/redpanda:
+
+[source, properties]
+----
+quarkus.kafka.devservices.image-name=vectorized/redpanda:latest
+----
+
+IMPORTANT: Dev Services for Kafka only support Redpanda.

@@ -20,7 +20,6 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 
 import io.quarkus.resteasy.reactive.server.runtime.filters.PreventAbortResteasyReactiveContainerRequestContext;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -39,12 +38,10 @@ public class AssertContainerFilter {
     @ServerRequestFilter
     public void whatever(Request request, HttpServerRequest httpServerRequest, SimpleResourceInfo simplifiedResourceInfo,
             ResourceInfo resourceInfo, ResteasyReactiveContainerRequestContext resteasyReactiveContainerRequestContext,
-            ContainerRequestContext containerRequestContext, RoutingContext routingContext,
-            HttpServerResponse httpServerResponse) {
+            ContainerRequestContext containerRequestContext, RoutingContext routingContext) {
         assertNotNull(someBean);
         assertTrue(RequestImpl.class.isAssignableFrom(request.getClass()));
         assertNotNull(httpServerRequest);
-        assertNotNull(httpServerResponse);
         assertTrue(ResteasyReactiveSimplifiedResourceInfo.class.isAssignableFrom(simplifiedResourceInfo.getClass()));
         assertTrue(ResteasyReactiveResourceInfo.class.isAssignableFrom(resourceInfo.getClass()));
         assertNotNull(resteasyReactiveContainerRequestContext);
@@ -62,14 +59,10 @@ public class AssertContainerFilter {
 
     @ServerResponseFilter
     public void response(ResteasyReactiveContainerRequestContext resteasyReactiveContainerRequestContext,
-            ContainerResponseContext containerResponseContext,
-            HttpServerRequest httpServerRequest,
-            HttpServerResponse httpServerResponse) {
+            ContainerResponseContext containerResponseContext) {
         assertNotNull(someBean);
         assertNotNull(resteasyReactiveContainerRequestContext);
         assertNotNull(containerResponseContext);
-        assertNotNull(httpServerRequest);
-        assertNotNull(httpServerResponse);
         COUNT.incrementAndGet();
     }
 }

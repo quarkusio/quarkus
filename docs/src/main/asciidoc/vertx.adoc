@@ -16,6 +16,14 @@ While lots of reactive features from Quarkus don't _show_ Vert.x, it's used unde
 Quarkus also integrates smoothly with the Vert.x event bus (to enable asynchronous messaging passing between application components) and some reactive clients.
 You can also use various Vert.x APIs in your Quarkus application, such as deploying _verticles_, instantiating clients...
 
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `vertx-quickstart` {quickstarts-tree-url}/vertx-quickstart[directory].
 
 == Installing
 
@@ -184,7 +192,7 @@ vertx.fileSystem().readFile("lorem-ipsum.txt")
 [TIP]
 .Mutiny
 ====
-If you're not familiar with Mutiny, we recommend to read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 ====
 
 == Using Vert.x in Reactive JAX-RS resources

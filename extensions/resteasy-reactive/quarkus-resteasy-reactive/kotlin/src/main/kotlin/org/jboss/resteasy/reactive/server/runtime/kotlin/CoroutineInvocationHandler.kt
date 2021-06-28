@@ -4,7 +4,6 @@ import io.vertx.core.Vertx
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.eclipse.microprofile.context.ManagedExecutor
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler
@@ -14,6 +13,9 @@ private val logger = LoggerFactory.getLogger(CoroutineInvocationHandler::class.j
 
 class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
                                  private val coroutineScope: CoroutineScope) : ServerRestHandler {
+
+    private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader
+
 
     override fun handle(requestContext: ResteasyReactiveRequestContext) {
         if (requestContext.result != null) {
@@ -32,6 +34,8 @@ class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
 
         requestContext.suspend()
         coroutineScope.launch(context = dispatcher) {
+            // ensure the proper CL is not lost in dev-mode
+            Thread.currentThread().contextClassLoader = originalTCCL
             try {
                 requestContext.result = invoker.invokeCoroutine(requestContext.endpointInstance, requestContext.parameters)
             } catch (t: Throwable) {

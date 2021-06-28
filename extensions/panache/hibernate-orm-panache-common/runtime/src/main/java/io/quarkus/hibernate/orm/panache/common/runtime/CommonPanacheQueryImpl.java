@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -356,7 +357,13 @@ public class CommonPanacheQueryImpl<Entity> {
         for (Entry<String, Map<String, Object>> entry : filters.entrySet()) {
             Filter filter = session.enableFilter(entry.getKey());
             for (Entry<String, Object> paramEntry : entry.getValue().entrySet()) {
-                filter.setParameter(paramEntry.getKey(), paramEntry.getValue());
+                if (paramEntry.getValue() instanceof Collection<?>) {
+                    filter.setParameterList(paramEntry.getKey(), (Collection<?>) paramEntry.getValue());
+                } else if (paramEntry.getValue() instanceof Object[]) {
+                    filter.setParameterList(paramEntry.getKey(), (Object[]) paramEntry.getValue());
+                } else {
+                    filter.setParameter(paramEntry.getKey(), paramEntry.getValue());
+                }
             }
             filter.validate();
         }

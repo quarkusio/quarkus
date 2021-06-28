@@ -37,6 +37,7 @@ public class KubernetesClientProcessor {
             .createSimple("io.fabric8.kubernetes.client.informers.ResourceEventHandler");
     private static final DotName KUBERNETES_RESOURCE = DotName
             .createSimple("io.fabric8.kubernetes.api.model.KubernetesResource");
+    private static final DotName CUSTOM_RESOURCE = DotName.createSimple("io.fabric8.kubernetes.client.CustomResource");
 
     private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
 
@@ -66,10 +67,11 @@ public class KubernetesClientProcessor {
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
         roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
 
-        // make sure the watchers fully (and not weakly) register Kubernetes classes for reflection
+        // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();
-        findWatchedClasses(WATCHER, applicationIndex, combinedIndexBuildItem, watchedClasses);
-        findWatchedClasses(RESOURCE_EVENT_HANDLER, applicationIndex, combinedIndexBuildItem, watchedClasses);
+        findWatchedClasses(WATCHER, applicationIndex, combinedIndexBuildItem, watchedClasses, 1);
+        findWatchedClasses(RESOURCE_EVENT_HANDLER, applicationIndex, combinedIndexBuildItem, watchedClasses, 1);
+        findWatchedClasses(CUSTOM_RESOURCE, applicationIndex, combinedIndexBuildItem, watchedClasses, 2);
 
         Predicate<DotName> reflectionIgnorePredicate = ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
                 .or(IS_OKHTTP_CLASS);
@@ -149,23 +151,24 @@ public class KubernetesClientProcessor {
     }
 
     private void findWatchedClasses(final DotName implementor, final ApplicationIndexBuildItem applicationIndex,
-            final CombinedIndexBuildItem combinedIndexBuildItem, final Set<DotName> watchedClasses) {
+            final CombinedIndexBuildItem combinedIndexBuildItem, final Set<DotName> watchedClasses,
+            final int expectedGenericTypeCardinality) {
         applicationIndex.getIndex().getAllKnownImplementors(implementor)
                 .forEach(c -> {
                     try {
                         final List<Type> watcherGenericTypes = JandexUtil.resolveTypeParameters(c.name(),
                                 implementor, combinedIndexBuildItem.getIndex());
-                        if (watcherGenericTypes.size() == 1) {
-                            watchedClasses.add(watcherGenericTypes.get(0).name());
+                        if (watcherGenericTypes.size() == expectedGenericTypeCardinality) {
+                            watcherGenericTypes.forEach(t -> watchedClasses.add(t.name()));
                         }
                     } catch (IllegalArgumentException ignored) {
-                        // when the class has no subclasses and we were not able to determine the generic types, it's likely that
-                        // the watcher will fail due to not being able to deserialize the class
+                        // when the class has no subclasses and we were not able to determine the generic types,
+                        // it's likely that the class might be able to get deserialized
                         if (applicationIndex.getIndex().getAllKnownSubclasses(c.name()).isEmpty()) {
                             log.warnv("{0} '{1}' will most likely not work correctly in native mode. " +
                                     "Consider specifying the generic type of '{2}' that this class handles. "
                                     +
-                                    "See https://quarkus.io/guides/kubernetes-client#note-on-implementing-the-watcher-interface for more details",
+                                    "See https://quarkus.io/guides/kubernetes-client#note-on-generic-types for more details",
                                     implementor.local(), c.name(), implementor);
                         }
                     }

@@ -16,7 +16,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
@@ -42,6 +44,7 @@ import io.quarkus.kubernetes.deployment.ApplyServiceTypeDecorator;
 import io.quarkus.kubernetes.deployment.EnvConverter;
 import io.quarkus.kubernetes.deployment.KubernetesCommonHelper;
 import io.quarkus.kubernetes.deployment.KubernetesConfig;
+import io.quarkus.kubernetes.deployment.PortConfig;
 import io.quarkus.kubernetes.deployment.ResourceNameUtil;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
@@ -139,8 +142,18 @@ public class MinikubeProcessor {
 
         //Service handling
         result.add(new DecoratorBuildItem(MINIKUBE, new ApplyServiceTypeDecorator(name, ServiceType.NodePort.name())));
-        result.add(new DecoratorBuildItem(MINIKUBE, new AddNodePortDecorator(name, config.getNodePort()
-                .orElseGet(() -> getStablePortNumberInRange(name, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)))));
+        List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.getPorts().entrySet().stream()
+                .filter(e -> e.getValue().nodePort.isPresent())
+                .collect(Collectors.toList());
+        if (!nodeConfigPorts.isEmpty()) {
+            for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
+                result.add(new DecoratorBuildItem(KUBERNETES,
+                        new AddNodePortDecorator(name, entry.getValue().nodePort.getAsInt(), Optional.of(entry.getKey()))));
+            }
+        } else {
+            result.add(new DecoratorBuildItem(MINIKUBE, new AddNodePortDecorator(name, config.getNodePort()
+                    .orElseGet(() -> getStablePortNumberInRange(name, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)))));
+        }
 
         //Probe port handling
         Integer port = ports.stream().filter(p -> HTTP_PORT.equals(p.getName())).map(KubernetesPortBuildItem::getPort)

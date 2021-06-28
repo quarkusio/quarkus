@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server;
 
-import io.smallrye.safer.annotations.TargetMethod;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -10,7 +9,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 /**
@@ -36,9 +34,6 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@link Request}
  * <li>{@link ResourceInfo}
  * <li>{@link SimpleResourceInfo}
- * <li><tt>io.vertx.ext.web.RoutingContext</tt>
- * <li><tt>io.vertx.core.http.HttpServerRequest</tt>
- * <li><tt>io.vertx.core.http.HttpServerResponse</tt>
  * </ul>
  *
  * When {@code value} is not set, then the handled Exception type is deduced by the Exception type used in the method parameters
@@ -48,9 +43,6 @@ import javax.ws.rs.core.UriInfo;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@TargetMethod(returnTypes = { Response.class, UniResponse.class }, parameterTypes = {
-        ContainerRequestContext.class, UriInfo.class, HttpHeaders.class, Request.class,
-        ResourceInfo.class, SimpleResourceInfo.class, ThrowableSubtype.class })
 public @interface ServerExceptionMapper {
 
     Class<? extends Throwable>[] value() default {};
@@ -59,7 +51,4 @@ public @interface ServerExceptionMapper {
      * The priority with which the exception mapper will be executed
      */
     int priority() default Priorities.USER;
-}
-
-class ThrowableSubtype extends TargetMethod.Subtype<Throwable> {
 }

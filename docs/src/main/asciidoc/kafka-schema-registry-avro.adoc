@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 This guide shows how your Quarkus application can use Apache Kafka, http://avro.apache.org/docs/current/[Avro] serialized
-records, and connect to Schema Registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Schema Registry].
+records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry].
 
 If you are not familiar with Kafka and Kafka in Quarkus in particular, consider
 first going through the link:kafka.adoc[Using Apache Kafka with Reactive Messaging] guide.
@@ -39,6 +39,7 @@ The schema, describing the _Movie_, is stored in Apicurio Registry.
 The same concept applies if you are using the Confluent Avro _serde_ and Confluent Schema Registry.
 
 == Solution
+
 We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
@@ -57,31 +58,16 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=kafka-avro-schema-quickstart \
     -DclassName="org.acme.kafka.MovieResource" \
     -Dpath="/movies" \
-    -Dextensions="resteasy-reactive,resteasy-reactive-jackson,smallrye-reactive-messaging-kafka,avro"
+    -Dextensions="resteasy-reactive,resteasy-reactive-jackson,smallrye-reactive-messaging-kafka,apicurio-registry-avro"
 cd kafka-avro-schema-quickstart
-----
-
-Additionally, we need a serializer and deserializer for Avro.
-In this guide, we will use the ones provided by Apicurio.
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.apicurio</groupId>
-    <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
-    <version>2.0.0.Final</version>
-</dependency>
-<!-- Apicurio Registry libraries use Keycloak client, which requires Apache HTTP Client -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-apache-httpclient</artifactId>
-</dependency>
 ----
 
 [TIP]
 ====
-If you use Confluent Schema Registry, you need the following dependencies and the Confluent Maven repository added
+If you use Confluent Schema Registry, you don't need the `quarkus-apicurio-registry-avro` extension.
+Instead, you need the following dependencies and the Confluent Maven repository added
 to your `pom.xml`:
+
 [source,xml]
 ----
 <dependencies>
@@ -117,6 +103,7 @@ to your `pom.xml`:
 ====
 
 == Avro schema
+
 Apache Avro is a data serialization system. Data structures are described using schemas.
 The first thing we need to do is to create a schema describing the `Movie` structure.
 Create a file called `src/main/avro/movie.avsc` with the schema for our record (Kafka message):
@@ -147,11 +134,11 @@ the Avro syntax and supported types.
 
 TIP: With Quarkus, there's no need to use a specific Maven plugin to process the Avro schema, this is all done for you!
 
-If you run the project with `mvn compile quarkus:dev`, the changes you do to the schema file will be
+If you run the project with `mvn quarkus:dev`, the changes you do to the schema file will be
 automatically applied to the generated Java files.
 
-
 == The `Movie` producer
+
 Having defined the schema, we can now jump to implementing the `MovieResource`.
 
 Let's open the `MovieResource`, inject an https://quarkus.io/blog/reactive-messaging-emitter/[`Emitter`] of `Movie` DTO and implement a `@POST` method
@@ -189,25 +176,25 @@ public class MovieResource {
 
 Now, we need to _map_ the `movies` channel (the `Emitter` emits to this channel) to a Kafka topic.
 To achieve this, edit the `application.properties` file, and add the following content:
+
 [source,properties]
 ----
-# set the URL of the Apicurio Schema Registry, a global setting shared between all Kafka producers and consumers
-mp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2
-
 # set the connector to use for the `movies` channel to smallrye-kafka
 mp.messaging.outgoing.movies.connector=smallrye-kafka
 
 # the name of the corresponding Kafka topic to `movies`
 mp.messaging.outgoing.movies.topic=movies
 
-# set the serializer for the `movies` channel to the Apicurio Avro Serializer
-mp.messaging.outgoing.movies.value.serializer=io.apicurio.registry.serde.avro.AvroKafkaSerializer
-
 # automatically register the schema with the registry, if not present
 mp.messaging.outgoing.movies.apicurio.registry.auto-register=true
 ----
 
+TIP: You might have noticed that we didn't define the `value.serializer`.
+That's because Quarkus can xref:kafka.adoc#serialization-autodetection[autodetect] that `io.apicurio.registry.serde.avro.AvroKafkaSerializer` is appropriate here, based on the `@Channel` declaration, structure of the `Movie` type, and presence of the Apicurio Registry libraries.
+We still have to define the `apicurio.registry.auto-register` property.
+
 == The `Movie` consumer
+
 So, we can write records into Kafka containing our `Movie` data.
 That data is serialized using Avro.
 Now, it's time to implement a consumer for them.
@@ -249,6 +236,7 @@ public class ConsumedMovieResource {
 
 The last bit of the application's code is the configuration of the `movies-from-kafka` channel in
 `application.properties`:
+
 [source,properties]
 ----
 # set the connector for the incoming channel to `smallrye-kafka`
@@ -257,9 +245,6 @@ mp.messaging.incoming.movies-from-kafka.connector=smallrye-kafka
 # set the topic name for the channel to `movies`
 mp.messaging.incoming.movies-from-kafka.topic=movies
 
-# set the deserializer for the `movies-from-kafka` channel to the Apicurio Avro Deserializer
-mp.messaging.incoming.movies-from-kafka.value.deserializer=io.apicurio.registry.serde.avro.AvroKafkaDeserializer
-
 # disable auto-commit, Reactive Messaging handles it itself
 mp.messaging.incoming.movies-from-kafka.enable.auto.commit=false
 
@@ -267,9 +252,73 @@ mp.messaging.incoming.movies-from-kafka.auto.offset.reset=earliest
 mp.messaging.incoming.movies-from-kafka.apicurio.registry.use-specific-avro-reader=true
 ----
 
+TIP: You might have noticed that we didn't define the `value.deserializer`.
+That's because Quarkus can xref:kafka.adoc#serialization-autodetection[autodetect] that `io.apicurio.registry.serde.avro.AvroKafkaDeserializer` is appropriate here, based on the `@Channel` declaration, structure of the `Movie` type, and presence of the Apicurio Registry libraries.
+We still have to define the `apicurio.registry.use-specific-avro-reader` property.
 
-== The infrastructure
-To use our application, we need Kafka and Apicurio Schema Registry.
+== Running the application
+
+Start the application in dev mode:
+
+[source,bash]
+----
+mvn quarkus:dev
+----
+
+Kafka broker and Apicurio Registry instance are started automatically thanks to Dev Services.
+See xref:kafka-dev-services.adoc[Dev Services for Kafka] and xref:apicurio-registry-dev-services.adoc[Dev Services for Apicurio Registry] for more details.
+
+TIP: You might have noticed that we didn't configure the schema registry URL anywhere.
+This is because Dev Services for Apicurio Registry configures all Kafka channels in SmallRye Reactive Messaging to use the automatically started registry instance.
+
+In the second terminal, query the `ConsumedMovieResource` resource with `curl`:
+
+[source,bash]
+----
+curl -N http://localhost:8080/consumed-movies
+----
+
+In the third one, post a few movies:
+
+[source,bash]
+----
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"title":"The Shawshank Redemption","year":1994}' \
+  http://localhost:8080/movies
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"title":"The Godfather","year":1972}' \
+  http://localhost:8080/movies
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"title":"The Dark Knight","year":2008}' \
+  http://localhost:8080/movies
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"title":"12 Angry Men","year":1957}' \
+  http://localhost:8080/movies
+----
+
+Observe what is printed in the second terminal. You should see something along the lines of:
+
+[source]
+----
+data:'The Shawshank Redemption' from 1994
+
+data:'The Godfather' from 1972
+
+data:'The Dark Knight' from 2008
+
+data:'12 Angry Men' from 1957
+----
+
+== Running in JVM or Native mode
+
+When not running in dev or test mode, you will need to start your own Kafka broker and Apicurio Registry.
 The easiest way to get them running is to use `docker-compose` to start the appropriate containers.
 
 Create a `docker-compose.yaml` file at the root of the project with the following content:
@@ -308,7 +357,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
   schema-registry:
-    image: apicurio/apicurio-registry-mem:2.0.0.Final
+    image: apicurio/apicurio-registry-mem:2.0.1.Final
     ports:
       - 8081:8080
     depends_on:
@@ -317,77 +366,50 @@ services:
       QUARKUS_PROFILE: prod
 ----
 
-== Running the application
-Let's first start the Schema Registry and Kafka containers:
-[source,shell script]
+Before starting the application, let's first start the Kafka broker and Apicurio Registry:
+
+[source,bash]
 ----
 docker-compose up
 ----
+
 NOTE: To stop the containers, use `docker-compose down`. You can also clean up
 the containers with `docker-compose rm`
 
-Then, start the application:
-[source,shell script]
-----
-mvn compile quarkus:dev
-----
+You can build and run the application in JVM mode with:
 
-
-In the second terminal, query the `ConsumedMovieResource` resource with `curl`:
-[source,shell script]
+[source, bash]
 ----
-curl -N http://localhost:8080/consumed-movies
+mvn package
+java -Dmp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2 -jar target/quarkus-app/quarkus-run.jar
 ----
 
-In the third one, post a few movies:
-[source,shell script]
+NOTE: By default, the application tries to connect to a Kafka broker listening at `localhost:9092`.
+You can configure the bootstrap server using: `java -Dkafka.bootstrap.servers=... -jar target/quarkus-app/quarkus-run.jar`
+
+Specifying the registry URL on the command line is not very convenient, so you can add a configuration property only for the `prod` profile:
+
+[source,properties]
 ----
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{"title":"The Shawshank Redemption","year":1994}' \
-  http://localhost:8080/movies
-
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{"title":"The Godfather","year":1972}' \
-  http://localhost:8080/movies
-
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{"title":"The Dark Knight","year":2008}' \
-  http://localhost:8080/movies
-
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{"title":"12 Angry Men","year":1957}' \
-  http://localhost:8080/movies
+%prod.mp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2
 ----
 
-Observe what is printed in the second terminal. You should see something along the lines of:
-[source]
+You can build and run the native executable with:
+
+[source,bash]
 ----
-data:'The Shawshank Redemption' from 1994
-
-data:'The Godfather' from 1972
-
-data:'The Dark Knight' from 2008
-
-data:'12 Angry Men' from 1957
+mvn package -Dnative
+./target/kafka-avro-schema-quickstart-1.0.0-SNAPSHOT-runner -Dkafka.bootstrap.servers=localhost:9092
 ----
-
-== Building a native executable
-Building a native executable
-You can build a native executable with the usual command `./mvnw package -Dnative`.
-
-Running it is as simple as executing `./target/kafka-avro-schema-quickstart-1.0.0-SNAPSHOT-runner`.
 
 == Testing the application
 
-=== Infrastructure for tests
-We will now use Testcontainers to set up Kafka and Apicurio Schema Registry for tests.
+As mentioned above, Dev Services for Kafka and Apicurio Registry automatically start and configure a Kafka broker and Apicurio Registry instance in dev mode and for tests.
+Hence, we don't have to set up Kafka and Apicurio Registry ourselves.
+We can just focus on writing the test.
 
-First, let's add test dependencies on REST Client, Awaitility and Strimzi to `pom.xml`. Testcontainers will be pulled
-in transitively by `strimzi-test-container`:
+First, let's add test dependencies on REST Client and Awaitility to `pom.xml`:
+
 [source,xml]
 ----
 <dependencies>
@@ -399,18 +421,6 @@ in transitively by `strimzi-test-container`:
         <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>io.strimzi</groupId>
-        <artifactId>strimzi-test-container</artifactId>
-        <version>0.22.1</version>
-        <scope>test</scope>
-        <exclusions>
-            <exclusion>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-            </exclusion>
-        </exclusions>
-    </dependency>
-    <dependency>
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
         <scope>test</scope>
@@ -418,49 +428,6 @@ in transitively by `strimzi-test-container`:
 </dependencies>
 ----
 
-Now, let's define a link:getting-started-testing.adoc#quarkus-test-resource[QuarkusTestResourceLifecycleManager] that will create the appropriate
-containers:
-[source,java]
-----
-package org.acme.kafka;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.testcontainers.containers.GenericContainer;
-
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.StrimziKafkaContainer;
-
-public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLifecycleManager {
-
-    private final StrimziKafkaContainer kafka = new StrimziKafkaContainer();
-
-    private GenericContainer<?> registry;
-
-    @Override
-    public Map<String, String> start() {
-        kafka.start();
-        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.0.0.Final")
-                .withExposedPorts(8080)
-                .withEnv("QUARKUS_PROFILE", "prod");
-        registry.start();
-        Map<String, String> properties = new HashMap<>();
-        properties.put("mp.messaging.connector.smallrye-kafka.apicurio.registry.url",
-                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/apis/registry/v2");
-        properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());
-        return properties;
-    }
-
-    @Override
-    public void stop() {
-        registry.stop();
-        kafka.stop();
-    }
-}
-----
-
-=== The test
 In the test, we will send movies in a loop and check if the `ConsumedMovieResource` returns
 what we send.
 
@@ -492,8 +459,6 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @QuarkusTest
-// register the class that sets up Testcontainers:
-@QuarkusTestResource(KafkaAndSchemaRegistryTestResource.class)
 public class MovieResourceTest {
 
     @TestHTTPResource("/consumed-movies")
@@ -563,8 +528,80 @@ NOTE: We modified the `MovieResourceTest` that was generated together with the p
 subclass, `NativeMovieResourceIT`, that runs the same test against the native executable.
 To run it, execute `mvn verify -Dnative`, or `mvn clean install -Dnative`
 
+=== Manual setup
+
+If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio Registry instance manually, we would define a link:getting-started-testing.adoc#quarkus-test-resource[QuarkusTestResourceLifecycleManager].
+
+[source,xml]
+----
+<dependencies>
+    ...
+   <dependency>
+        <groupId>io.strimzi</groupId>
+        <artifactId>strimzi-test-container</artifactId>
+        <version>0.22.1</version>
+        <scope>test</scope>
+        <exclusions>
+            <exclusion>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+</dependencies>
+----
+
+[source,java]
+----
+package org.acme.kafka;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.testcontainers.containers.GenericContainer;
+
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.strimzi.StrimziKafkaContainer;
+
+public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLifecycleManager {
+
+    private final StrimziKafkaContainer kafka = new StrimziKafkaContainer();
+
+    private GenericContainer<?> registry;
+
+    @Override
+    public Map<String, String> start() {
+        kafka.start();
+        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.0.1.Final")
+                .withExposedPorts(8080)
+                .withEnv("QUARKUS_PROFILE", "prod");
+        registry.start();
+        Map<String, String> properties = new HashMap<>();
+        properties.put("mp.messaging.connector.smallrye-kafka.apicurio.registry.url",
+                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/apis/registry/v2");
+        properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());
+        return properties;
+    }
+
+    @Override
+    public void stop() {
+        registry.stop();
+        kafka.stop();
+    }
+}
+----
+
+[source,java]
+----
+@QuarkusTest
+@QuarkusTestResource(KafkaAndSchemaRegistryTestResource.class)
+public class MovieResourceTest {
+    ...
+}
+----
 
 == Avro code generation details
+
 In this guide we used the Quarkus code generation mechanism to generate Java files
 from Avro schema.
 
@@ -592,4 +629,4 @@ regular getter will be generated. Defaults to `false`
 
 * link:https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/2.9/kafka/kafka.html[SmallRye Reactive Messaging Kafka] documentation
 * link:https://quarkus.io/blog/kafka-avro/[How to Use Kafka, Schema Registry and Avro with Quarkus] - a blog post on which
-the guide is based. It gives a good introduction to Avro and the concept of Schema Registry
+the guide is based. It gives a good introduction to Avro and the concept of schema registry

@@ -656,7 +656,7 @@ public class QuteProcessor {
                 if (match.isArray()) {
                     if (info.isProperty()) {
                         String name = info.asProperty().name;
-                        if (name.equals("length")) {
+                        if (name.equals("length") || name.equals("size")) {
                             // myArray.length
                             match.setValues(null, PrimitiveType.INT);
                             continue;
@@ -670,10 +670,11 @@ public class QuteProcessor {
                                 // not an integer index
                             }
                         }
-                    } else if (info.isVirtualMethod() && info.asVirtualMethod().name.equals("get")) {
-                        // array.get(84)
+                    } else if (info.isVirtualMethod()) {
                         List<Expression> params = info.asVirtualMethod().part.asVirtualMethod().getParameters();
-                        if (params.size() == 1) {
+                        String name = info.asVirtualMethod().name;
+                        if (name.equals("get") && params.size() == 1) {
+                            // array.get(84)
                             Expression param = params.get(0);
                             Object literalValue;
                             try {
@@ -685,6 +686,9 @@ public class QuteProcessor {
                                 match.setValues(null, match.type().asArrayType().component());
                                 continue;
                             }
+                        } else if (name.equals("take") || name.equals("takeLast")) {
+                            // The returned array has the same component type
+                            continue;
                         }
                     }
                 }

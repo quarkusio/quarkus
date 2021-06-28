@@ -14,7 +14,7 @@ public class HibernateSearchElasticsearchDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("entityTypes", new HibernateSearchSupplier());
+        return new DevConsoleRuntimeTemplateInfoBuildItem("indexedEntityTypes", new HibernateSearchSupplier());
     }
 
     @BuildStep

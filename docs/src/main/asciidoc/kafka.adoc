@@ -28,7 +28,7 @@ A second component reads from the `prices` Kafka topic and apply some magic conv
 The result is sent to an in-memory stream consumed by a JAX-RS resource.
 The data is sent to a browser using server-sent events.
 
-image::kafka-guide-architecture.png[alt=Architecture]
+image::kafka-guide-architecture.png[alt=Architecture, align=center]
 
 == Solution
 
@@ -50,7 +50,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=kafka-quickstart \
     -DclassName="org.acme.kafka.PriceResource" \
     -Dpath="/prices" \
-    -Dextensions="resteasy,smallrye-reactive-messaging-kafka"
+    -Dextensions="resteasy-reactive,smallrye-reactive-messaging-kafka"
 cd kafka-quickstart
 ----
 
@@ -74,48 +74,12 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
-== Starting Kafka
-
-Then, we need a Kafka cluster.
-You can follow the instructions from the https://kafka.apache.org/quickstart[Apache Kafka web site] or create a `docker-compose.yaml` file with the following content:
-
-[source, yaml]
-----
-version: '2'
-
-services:
-
-  zookeeper:
-    image: strimzi/kafka:0.19.0-kafka-2.5.0
-    command: [
-      "sh", "-c",
-      "bin/zookeeper-server-start.sh config/zookeeper.properties"
-    ]
-    ports:
-      - "2181:2181"
-    environment:
-      LOG_DIR: /tmp/logs
-
-  kafka:
-    image: strimzi/kafka:0.19.0-kafka-2.5.0
-    command: [
-      "sh", "-c",
-      "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
-    ]
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      LOG_DIR: "/tmp/logs"
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-----
-
-Once created, run `docker-compose up`.
-
-NOTE: This is a development cluster, do not use in production.
+[TIP]
+.Dev Services
+====
+No need to start a Kafka broker when using the dev mode or for tests. Quarkus starts a broker for you automatically.
+See xref:kafka-dev-services.adoc[Dev Services for Kafka] for details.
+====
 
 == The price generator
 
@@ -166,8 +130,6 @@ Create the `src/main/java/org/acme/kafka/PriceConverter.java` file with the foll
 ----
 package org.acme.kafka;
 
-import io.smallrye.reactive.messaging.annotations.Broadcast;
-import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
@@ -184,8 +146,6 @@ public class PriceConverter {
 
     @Incoming("prices")                                     // <1>
     @Outgoing("my-data-stream")                             // <2>
-    @Broadcast                                              // <3>
-    @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING) // <4>
     public double process(int priceInUsd) {
         return priceInUsd * CONVERSION_RATE;
     }
@@ -194,8 +154,6 @@ public class PriceConverter {
 ----
 <1> Indicates that the method consumes the items from the `prices` topic
 <2> Indicates that the objects returned by the method are sent to the `my-data-stream` stream
-<3> Indicates that the item are dispatched to all _subscribers_
-<4> Make sure to acknowledge the incoming message
 
 The `process` method is called for every Kafka _record_ from the `prices` topic (configured in the application configuration).
 Every result is sent to the `my-data-stream` in-memory stream.
@@ -226,7 +184,8 @@ import org.jboss.resteasy.annotations.SseElementType;
 public class PriceResource {
 
     @Inject
-    @Channel("my-data-stream") Publisher<Double> prices; // <1>
+    @Channel("my-data-stream")
+    Publisher<Double> prices; // <1>
 
     @GET
     @Path("/stream")
@@ -256,9 +215,6 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 
 [source,properties]
 ----
-# Configure the SmallRye Kafka connector
-kafka.bootstrap.servers=localhost:9092
-
 # Configure the Kafka sink (we write to it)
 mp.messaging.outgoing.generated-price.connector=smallrye-kafka
 mp.messaging.outgoing.generated-price.topic=prices
@@ -267,24 +223,15 @@ mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.s
 # Configure the Kafka source (we read from it)
 mp.messaging.incoming.prices.connector=smallrye-kafka
 mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
-mp.messaging.incoming.prices.health-readiness-enabled=false
 ----
 
 More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`.
 
 NOTE: What about `my-data-stream`? This is an in-memory stream, not connected to a message broker.
 
-[TIP]
-.What is "mp.messaging.incoming.prices.health-readiness-enabled=false"?
-====
-The `health-readiness-enabled` disables the readiness health check.
-By default, it verifies that there is an active connection with the broker.
-In our case, the connection only happens when we get the first consumer.
-This is because the stream is consumed as an SSE, waiting lazily for the first connection to trigger the whole stream.
-So, if you are running in an environment only routing traffic to containers that are _ready_ (such as Kubernetes), it would not send traffic to your application, which, as a consequence, will never connect to Kafka and pass the readiness check.
-
-More details about health reporting is given in <<kafka-health-check>>.
-====
+The previous configuration does not set the Kafka _bootstrap.servers_.
+Quarkus starts a Kafka broker automatically and configures the application.
+See xref:kafka-dev-services.adoc[Dev Services for Kafka] for more details.
 
 == The HTML page
 
@@ -328,8 +275,7 @@ Nothing spectacular here. On each received price, it updates the page.
 
 == Get it running
 
-If you followed the instructions, you should have Kafka running.
-Then, you just need to run the application using:
+You just need to run the application using:
 
 [source,bash]
 ----
@@ -338,15 +284,66 @@ Then, you just need to run the application using:
 
 Open `http://localhost:8080/prices.html` in your browser.
 
-NOTE: If you started the Kafka broker with docker compose, stop it using `CTRL+C` followed by `docker-compose down`.
+== Running in JVM or Native mode
 
-== Running Native
+When not running in dev or test mode, you will need to start your Kafka broker.
+You can follow the instructions from the https://kafka.apache.org/quickstart[Apache Kafka web site] or create a `docker-compose.yaml` file with the following content:
 
-You can build the native executable with:
+[source, yaml]
+----
+version: '2'
+
+services:
+
+  zookeeper:
+    image: quay.io/strimzi/kafka:0.23.0-kafka-2.8.0
+    command: [
+      "sh", "-c",
+      "bin/zookeeper-server-start.sh config/zookeeper.properties"
+    ]
+    ports:
+      - "2181:2181"
+    environment:
+      LOG_DIR: /tmp/logs
+
+  kafka:
+    image: quay.io/strimzi/kafka:0.23.0-kafka-2.8.0
+    command: [
+      "sh", "-c",
+      "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
+    ]
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      LOG_DIR: "/tmp/logs"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+----
+
+Once created, run `docker-compose up`.
+
+NOTE: This is a development cluster, do not use in production.
+
+You can build and run the application in JVM mode with:
+
+[source, bash]
+----
+./mvnw package
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+NOTE: By default, the application tries to connect to a Kafka broker listening at `localhost:9092`.
+You can configure the bootstrap server using: `java -Dkafka.bootstrap.servers=... -jar target/quarkus-app/quarkus-run.jar`
+
+You can build and run the native executable with:
 
 [source,bash]
 ----
 ./mvnw package -Pnative
+./target/kafka-quickstart-1.0.0-SNAPSHOT-runner -Dkafka.bootstrap.servers=localhost:9092
 ----
 
 == Imperative usage

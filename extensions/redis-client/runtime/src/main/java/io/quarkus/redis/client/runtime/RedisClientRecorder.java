@@ -73,7 +73,7 @@ public class RedisClientRecorder {
     }
 
     private RedisAPIContainer getRedisAPIContainer(String clientName) {
-        RedisAPIProducer redisAPIProducer = Arc.container().instance(RedisAPIProducer.class).get();
-        return redisAPIProducer.getRedisAPIContainer(clientName);
+        RedisClientsProducer redisClientsProducer = Arc.container().instance(RedisClientsProducer.class).get();
+        return redisClientsProducer.getRedisAPIContainer(clientName);
     }
 }

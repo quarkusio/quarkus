@@ -34,6 +34,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     public void main() throws Exception {
 
         projectDir = getProjectDir();
+        beforeQuarkusDev();
         ExecutorService executor = null;
         final BuildResult[] buildResult = new BuildResult[1];
         try {
@@ -119,6 +120,9 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
 
     protected String[] buildArguments() {
         return new String[] { "clean", "quarkusDev", "-s" };
+    }
+
+    protected void beforeQuarkusDev() throws Exception {
     }
 
     protected abstract void testDevMode() throws Exception;

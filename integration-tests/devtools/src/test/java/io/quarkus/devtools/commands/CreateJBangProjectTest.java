@@ -29,7 +29,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
 
         assertThat(projectDir.resolve("jbang")).exists();
 
-        assertThat(projectDir.resolve("src/GreetingResource.java"))
+        assertThat(projectDir.resolve("src/main.java"))
                 .exists()
                 .satisfies(checkContains("//usr/bin/env jbang \"$0\" \"$@\" ; exit $?"))
                 .satisfies(checkContains("//DEPS io.quarkus:quarkus-resteasy"));
@@ -45,7 +45,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
 
         assertThat(projectDir.resolve("jbang")).doesNotExist();
 
-        assertThat(projectDir.resolve("src/GreetingResource.java"))
+        assertThat(projectDir.resolve("src/main.java"))
                 .exists()
                 .satisfies(checkContains("//usr/bin/env jbang \"$0\" \"$@\" ; exit $?"))
                 .satisfies(checkContains("//DEPS io.quarkus:quarkus-resteasy"));
@@ -65,7 +65,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
 
         assertThat(projectDir.resolve("jbang")).exists();
 
-        assertThat(projectDir.resolve("src/GreetingResource.java"))
+        assertThat(projectDir.resolve("src/main.java"))
                 .exists()
                 .satisfies(checkContains("//usr/bin/env jbang \"$0\" \"$@\" ; exit $?"))
                 .satisfies(checkContains("//DEPS io.quarkus:quarkus-resteasy"))

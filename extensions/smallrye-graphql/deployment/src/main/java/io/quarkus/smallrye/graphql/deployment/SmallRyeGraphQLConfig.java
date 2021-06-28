@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -18,7 +19,7 @@ public class SmallRyeGraphQLConfig {
     String rootPath;
 
     /**
-     * Enable metrics. By default this will be enabled if the metrics extension is added.
+     * Enable metrics. By default this is false. If set to true, a metrics extension is required.
      */
     @ConfigItem(name = "metrics.enabled")
     Optional<Boolean> metricsEnabled;
@@ -58,6 +59,35 @@ public class SmallRyeGraphQLConfig {
      */
     @ConfigItem(defaultValue = "Default")
     TypeAutoNameStrategy autoNameStrategy;
+
+    /**
+     * List of extension fields that should be included in the error response.
+     * By default none will be included. Examples of valid values include
+     * [exception,classification,code,description,validationErrorType,queryPath]
+     */
+    @ConfigItem
+    Optional<List<String>> errorExtensionFields;
+
+    /**
+     * List of Runtime Exceptions class names that should show the error message.
+     * By default Runtime Exception messages will be hidden and a generic `Server Error` message will be returned.
+     */
+    @ConfigItem
+    Optional<List<String>> showRuntimeExceptionMessage;
+
+    /**
+     * List of Checked Exceptions class names that should hide the error message.
+     * By default Checked Exception messages will show the exception message.
+     */
+    @ConfigItem
+    Optional<List<String>> hideCheckedExceptionMessage;
+
+    /**
+     * The default error message that will be used for hidden exception messages.
+     * Defaults to "Server Error"
+     */
+    @ConfigItem
+    Optional<String> defaultErrorMessage;
 
     /**
      * SmallRye GraphQL UI configuration

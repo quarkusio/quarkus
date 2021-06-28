@@ -72,6 +72,7 @@ triage:
         - integration-tests/jpa-mssql/
         - integration-tests/jpa-mysql/
         - integration-tests/jpa-postgresql/
+        - integration-tests/jpa-postgresql-withxml/
         - integration-tests/jpa-without-entity/
         - integration-tests/jpa/
         - integration-tests/infinispan-cache-jpa/
@@ -155,7 +156,7 @@ triage:
         - extensions/smallrye-metrics
     - labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient, phillip-kruger]
+      notify: [ebullient, kenfinnigan]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer
@@ -461,6 +462,9 @@ triage:
     - labels: [area/continuous-testing]
       title: "continuous.testing"
       notify: [stuartwdouglas]
+    - labels: [area/testing]
+      title: "quarkusintegrationtest"
+      notify: [geoand]
     - labels: [area/devservices]
       title: "dev.?services"
       notify: [stuartwdouglas]

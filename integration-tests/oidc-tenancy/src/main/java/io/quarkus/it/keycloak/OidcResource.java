@@ -96,6 +96,7 @@ public class OidcResource {
         return "{" +
                 "   \"active\": " + introspection + "," +
                 "   \"scope\": \"user\"," +
+                "   \"email\": \"user@gmail.com\"," +
                 "   \"username\": \"alice\"" +
                 "  }";
     }

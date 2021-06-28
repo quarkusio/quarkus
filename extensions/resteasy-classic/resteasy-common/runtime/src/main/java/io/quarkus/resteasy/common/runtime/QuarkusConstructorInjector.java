@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.common.runtime;
 
 import java.lang.reflect.Constructor;
+import java.util.function.Supplier;
 
 import javax.ws.rs.WebApplicationException;
 
@@ -10,11 +11,12 @@ import org.jboss.resteasy.spi.Failure;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
 
-import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 
 public class QuarkusConstructorInjector implements ConstructorInjector {
 
-    private volatile BeanContainer.Factory<?> factory;
+    private volatile Supplier<? extends InstanceHandle<?>> factory;
 
     private final ConstructorInjector delegate;
 
@@ -27,31 +29,27 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
 
     @Override
     public Object construct(boolean unwrapAsync) {
-        if (QuarkusInjectorFactory.CONTAINER == null) {
-            return this.delegate.construct(unwrapAsync);
+        if (factory != null) {
+            return factory.get().get();
         }
-        if (factory == null) {
-            factory = QuarkusInjectorFactory.CONTAINER.instanceFactory(this.ctor.getDeclaringClass());
-        }
+        factory = Arc.container().instanceSupplier(this.ctor.getDeclaringClass());
         if (factory == null) {
             return delegate.construct(unwrapAsync);
         }
-        return factory.create().get();
+        return factory.get().get();
     }
 
     @Override
     public Object construct(HttpRequest request, HttpResponse response, boolean unwrapAsync)
             throws Failure, WebApplicationException, ApplicationException {
-        if (QuarkusInjectorFactory.CONTAINER == null) {
-            return delegate.construct(request, response, unwrapAsync);
+        if (factory != null) {
+            return factory.get().get();
         }
-        if (factory == null) {
-            factory = QuarkusInjectorFactory.CONTAINER.instanceFactory(this.ctor.getDeclaringClass());
-        }
+        factory = Arc.container().instanceSupplier(this.ctor.getDeclaringClass());
         if (factory == null) {
             return delegate.construct(request, response, unwrapAsync);
         }
-        return factory.create().get();
+        return factory.get().get();
     }
 
     @Override

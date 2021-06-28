@@ -4,7 +4,7 @@
 [![GitHub Actions Status](<https://img.shields.io/github/workflow/status/QuarkusIO/quarkus/Quarkus CI?logo=GitHub&style=for-the-badge>)](https://github.com/quarkusio/quarkus/actions?query=workflow%3A%22Quarkus+CI%22)
 [![License](https://img.shields.io/github/license/quarkusio/quarkus?style=for-the-badge&logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?style=for-the-badge&logo=zulip)](https://quarkusio.zulipchat.com/)
-[![Supported JVM Versions](https://img.shields.io/badge/JVM-8--11--16-brightgreen.svg?style=for-the-badge&logo=Java)](https://github.com/quarkusio/quarkus/actions/runs/113853915/)
+[![Supported JVM Versions](https://img.shields.io/badge/JVM-11--16-brightgreen.svg?style=for-the-badge&logo=Java)](https://github.com/quarkusio/quarkus/actions/runs/113853915/)
 
 # Quarkus - Supersonic Subatomic Java
 

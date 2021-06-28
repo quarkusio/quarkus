@@ -177,8 +177,10 @@ public class QuarkusIntegrationTestExtension
                 case "jar-container":
                 case "native-container":
                     String containerImage = quarkusArtifactProperties.getProperty("metadata.container-image");
+                    boolean pullRequired = Boolean
+                            .parseBoolean(quarkusArtifactProperties.getProperty("metadata.pull-required", "false"));
                     if ((containerImage != null) && !containerImage.isEmpty()) {
-                        launcher = new DockerContainerLauncher(containerImage);
+                        launcher = new DockerContainerLauncher(containerImage, pullRequired);
                     } else {
                         throw new IllegalStateException("The container image to be launched could not be determined");
                     }

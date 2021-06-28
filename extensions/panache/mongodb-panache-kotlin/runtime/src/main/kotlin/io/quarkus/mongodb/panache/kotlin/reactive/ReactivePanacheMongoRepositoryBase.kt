@@ -32,7 +32,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entity the entity to insert.
      * @see [persist]
      */
-    fun persist(entity: Entity): Uni<Void> = INSTANCE.persist(entity)
+    fun persist(entity: Entity): Uni<Entity> = INSTANCE.persist(entity).map { entity }
 
     /**
      * Update the given entity in the database.
@@ -40,7 +40,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entity the entity to update.
      * @see [update]
      */
-    fun update(entity: Entity): Uni<Void> = INSTANCE.update(entity)
+    fun update(entity: Entity): Uni<Entity> = INSTANCE.update(entity).map { entity }
 
     /**
      * Persist the given entity in the database or update it if it already exist.
@@ -48,7 +48,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entity the entity to update.
      * @see [persistOrUpdate]
      */
-    fun persistOrUpdate(entity: Entity): Uni<Void> = INSTANCE.persistOrUpdate(entity)
+    fun persistOrUpdate(entity: Entity): Uni<Entity> = INSTANCE.persistOrUpdate(entity).map { entity }
 
     /**
      * Delete the given entity from the database, if it is already persisted.

@@ -98,7 +98,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         for (AnnotationInstance annotation : discovery.findAnnotationsOnInjectionPoints(DotNames.CHANNEL)) {
             String channelName = annotation.value().asString();
-            if (!discovery.isKafkaConnector(false, channelName)) {
+            if (!discovery.isKafkaConnector(false, channelName)
+                    && !discovery.isKafkaConnector(true, channelName)) {
                 continue;
             }
 

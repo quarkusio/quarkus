@@ -9,8 +9,8 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotSupportedException;
@@ -21,11 +21,10 @@ import javax.ws.rs.ext.MessageBodyReader;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.core.multipart.DefaultFileUpload;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
-
-import io.vertx.ext.web.FileUpload;
-import io.vertx.ext.web.RoutingContext;
 
 /**
  * This class isn't used directly, it is however used by generated code meant to deal with multipart forms.
@@ -87,21 +86,22 @@ public final class MultipartSupport {
         throw new NotSupportedException("Media type '" + mediaType + "' in multipart request is not supported");
     }
 
-    public static QuarkusFileUpload getFileUpload(String formName, ResteasyReactiveRequestContext context) {
-        List<QuarkusFileUpload> uploads = getFileUploads(formName, context);
+    public static DefaultFileUpload getFileUpload(String formName, ResteasyReactiveRequestContext context) {
+        List<DefaultFileUpload> uploads = getFileUploads(formName, context);
         if (!uploads.isEmpty()) {
             return uploads.get(0);
         }
         return null;
     }
 
-    public static List<QuarkusFileUpload> getFileUploads(String formName, ResteasyReactiveRequestContext context) {
-        List<QuarkusFileUpload> result = new ArrayList<>();
-        RoutingContext routingContext = context.unwrap(RoutingContext.class);
-        Set<FileUpload> fileUploads = routingContext.fileUploads();
-        for (FileUpload fileUpload : fileUploads) {
-            if (fileUpload.name().equals(formName)) {
-                result.add(new QuarkusFileUpload(fileUpload));
+    public static List<DefaultFileUpload> getFileUploads(String formName, ResteasyReactiveRequestContext context) {
+        List<DefaultFileUpload> result = new ArrayList<>();
+        FormData fileUploads = context.getFormData();
+        if (fileUploads != null) {
+            for (FormData.FormValue fileUpload : fileUploads.get(formName)) {
+                if (fileUpload.isFileItem()) {
+                    result.add(new DefaultFileUpload(formName, fileUpload));
+                }
             }
         }
         return result;
@@ -109,8 +109,8 @@ public final class MultipartSupport {
 
     public static List<File> getJavaIOFileUploads(String formName, ResteasyReactiveRequestContext context) {
         List<File> result = new ArrayList<>();
-        List<QuarkusFileUpload> uploads = getFileUploads(formName, context);
-        for (QuarkusFileUpload upload : uploads) {
+        List<DefaultFileUpload> uploads = getFileUploads(formName, context);
+        for (DefaultFileUpload upload : uploads) {
             result.add(upload.uploadedFile().toFile());
         }
         return result;
@@ -118,19 +118,25 @@ public final class MultipartSupport {
 
     public static List<Path> getJavaPathFileUploads(String formName, ResteasyReactiveRequestContext context) {
         List<Path> result = new ArrayList<>();
-        List<QuarkusFileUpload> uploads = getFileUploads(formName, context);
-        for (QuarkusFileUpload upload : uploads) {
+        List<DefaultFileUpload> uploads = getFileUploads(formName, context);
+        for (DefaultFileUpload upload : uploads) {
             result.add(upload.uploadedFile());
         }
         return result;
     }
 
-    public static List<QuarkusFileUpload> getFileUploads(ResteasyReactiveRequestContext context) {
-        RoutingContext routingContext = context.unwrap(RoutingContext.class);
-        Set<FileUpload> fileUploads = routingContext.fileUploads();
-        List<QuarkusFileUpload> result = new ArrayList<>(fileUploads.size());
-        for (FileUpload fileUpload : fileUploads) {
-            result.add(new QuarkusFileUpload(fileUpload));
+    public static List<DefaultFileUpload> getFileUploads(ResteasyReactiveRequestContext context) {
+        FormData formData = context.getFormData();
+        if (formData == null) {
+            return Collections.emptyList();
+        }
+        List<DefaultFileUpload> result = new ArrayList<>();
+        for (String name : formData) {
+            for (FormData.FormValue fileUpload : formData.get(name)) {
+                if (fileUpload.isFileItem()) {
+                    result.add(new DefaultFileUpload(name, fileUpload));
+                }
+            }
         }
         return result;
     }

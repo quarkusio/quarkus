@@ -11,6 +11,12 @@ public class BasicConsole extends QuarkusConsole {
     private static final Logger log = Logger.getLogger(BasicConsole.class.getName());
     private static final Logger statusLogger = Logger.getLogger("quarkus");
 
+    private static final ThreadLocal<Boolean> DISABLE_FILTER = new ThreadLocal<>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
     final PrintStream printStream;
     final boolean inputSupport;
     final boolean noColor;
@@ -57,7 +63,32 @@ public class BasicConsole extends QuarkusConsole {
                 if (prompt == null) {
                     return;
                 }
-                statusLogger.info(prompt);
+                DISABLE_FILTER.set(true);
+                try {
+                    statusLogger.info(prompt);
+                } finally {
+                    DISABLE_FILTER.set(false);
+                }
+            }
+
+            @Override
+            protected void setResultsMessage(String results) {
+                DISABLE_FILTER.set(true);
+                try {
+                    statusLogger.info(results);
+                } finally {
+                    DISABLE_FILTER.set(false);
+                }
+            }
+
+            @Override
+            protected void setCompileErrorMessage(String results) {
+                DISABLE_FILTER.set(true);
+                try {
+                    statusLogger.info(results);
+                } finally {
+                    DISABLE_FILTER.set(false);
+                }
             }
 
             @Override
@@ -65,7 +96,12 @@ public class BasicConsole extends QuarkusConsole {
                 if (status == null) {
                     return;
                 }
-                statusLogger.info(status);
+                DISABLE_FILTER.set(true);
+                try {
+                    statusLogger.info(status);
+                } finally {
+                    DISABLE_FILTER.set(false);
+                }
             }
         };
     }
@@ -74,7 +110,10 @@ public class BasicConsole extends QuarkusConsole {
     public void write(String s) {
         if (outputFilter != null) {
             if (!outputFilter.test(s)) {
-                return;
+                //we still test, the output filter may be recording output
+                if (!DISABLE_FILTER.get()) {
+                    return;
+                }
             }
         }
         if (noColor || !hasColorSupport()) {

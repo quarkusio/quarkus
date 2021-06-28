@@ -5,9 +5,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,31 +16,19 @@ import picocli.CommandLine;
  * Similar to CliProjectGradleTest ..
  */
 public class CliProjectMavenTest {
-    static String startingDir;
-    static Path workspaceRoot;
+    static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
+            .resolve("target/test-project/CliProjectMavenTest");
     Path project;
-
-    @BeforeAll
-    public static void initial() throws Exception {
-        startingDir = System.getProperty("user.dir");
-        workspaceRoot = Paths.get(startingDir).toAbsolutePath().resolve("target/test-project/CliProjectMavenTest");
-    }
 
     @BeforeEach
     public void setupTestDirectories() throws Exception {
-        System.setProperty("user.dir", workspaceRoot.toFile().getAbsolutePath());
         CliDriver.deleteDir(workspaceRoot);
         project = workspaceRoot.resolve("code-with-quarkus");
     }
 
-    @AfterAll
-    public static void allDone() {
-        System.setProperty("user.dir", startingDir);
-    }
-
     @Test
     public void testCreateAppDefaults() throws Exception {
-        CliDriver.Result result = CliDriver.execute("create", "app", "-e", "-B", "--verbose");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
@@ -57,22 +43,22 @@ public class CliProjectMavenTest {
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
-        System.setProperty("user.dir", project.toFile().getAbsolutePath());
         result = CliDriver.invokeValidateDryRunBuild(project);
 
         CliDriver.invokeValidateBuild(project);
     }
 
     @Test
-    public void testCreateAppGAVNoWrapper() throws Exception {
-        project = workspaceRoot.resolve("nested/my-project");
+    public void testCreateAppOverrides() throws Exception {
+        Path nested = workspaceRoot.resolve("cli-nested");
+        project = nested.resolve("my-project");
 
         List<String> configs = Arrays.asList("custom.app.config1=val1",
                 "custom.app.config2=val2", "lib.config=val3");
 
-        CliDriver.Result result = CliDriver.execute("create", "app", "--verbose", "-e", "-B",
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--verbose", "-e", "-B",
                 "--no-wrapper", "--package-name=custom.pkg",
-                "--output-directory=nested",
+                "--output-directory=" + nested,
                 "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0",
                 "--app-config=" + String.join(",", configs),
                 "resteasy-reactive");
@@ -90,48 +76,48 @@ public class CliProjectMavenTest {
         CliDriver.valdiateGeneratedSourcePackage(project, "custom/pkg");
         CliDriver.validateApplicationProperties(project, configs);
 
-        System.setProperty("user.dir", project.toFile().getAbsolutePath());
         result = CliDriver.invokeValidateDryRunBuild(project);
-        Assertions.assertTrue(result.stdout.contains(" -e -B clean install -Dproperty=value1 -Dproperty2=value2"),
-                "result should contain ' -e -B clean install -Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("-Dproperty=value1 -Dproperty2=value2"),
+                "result should contain '-Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
 
         CliDriver.invokeValidateBuild(project);
     }
 
     @Test
     public void testExtensionList() throws Exception {
-        CliDriver.Result result = CliDriver.execute("create", "app", "-e", "-B", "--verbose");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        System.setProperty("user.dir", project.toFile().getAbsolutePath());
-
         Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(pom);
+        String pomContent = CliDriver.readFileAsString(project, pom);
         Assertions.assertFalse(pomContent.contains("quarkus-qute"),
                 "Dependencies should not contain qute extension by default. Found:\n" + pomContent);
 
-        CliDriver.invokeExtensionAddQute(pom);
-        CliDriver.invokeExtensionAddRedundantQute();
-        CliDriver.invokeExtensionListInstallable();
-        CliDriver.invokeExtensionAddMultiple(pom);
-        CliDriver.invokeExtensionRemoveQute(pom);
-        CliDriver.invokeExtensionRemoveMultiple(pom);
+        CliDriver.invokeExtensionAddQute(project, pom);
+        CliDriver.invokeExtensionAddRedundantQute(project);
+        CliDriver.invokeExtensionListInstallable(project);
+        CliDriver.invokeExtensionAddMultiple(project, pom);
+        CliDriver.invokeExtensionRemoveQute(project, pom);
+        CliDriver.invokeExtensionRemoveMultiple(project, pom);
 
-        CliDriver.invokeExtensionListInstallableSearch();
-        CliDriver.invokeExtensionListFormatting();
+        CliDriver.invokeExtensionListInstallableSearch(project);
+        CliDriver.invokeExtensionListFormatting(project);
 
         // TODO: Maven and Gradle give different return codes
-        result = CliDriver.invokeExtensionRemoveNonexistent();
+        result = CliDriver.invokeExtensionRemoveNonexistent(project);
         Assertions.assertEquals(CommandLine.ExitCode.SOFTWARE, result.exitCode,
                 "Expected error return code. Result:\n" + result);
     }
 
     @Test
     public void testCreateArgPassthrough() throws Exception {
-        CliDriver.Result result = CliDriver.execute("create",
+        Path nested = workspaceRoot.resolve("cli-nested");
+        project = nested.resolve("my-project");
+
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create",
                 "--verbose", "-e", "-B",
                 "--dryrun", "--no-wrapper", "--package-name=custom.pkg",
-                "--output-directory=nested",
+                "--output-directory=" + nested,
                 "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0");
 
         // We don't need to retest this, just need to make sure all of the arguments were passed through
@@ -158,7 +144,7 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(pom.toFile().exists(),
                 "pom.xml should exist: " + pom.toAbsolutePath().toString());
-        String pomContent = CliDriver.readFileAsString(pom);
+        String pomContent = CliDriver.readFileAsString(project, pom);
         Assertions.assertTrue(pomContent.contains("<groupId>" + group + "</groupId>"),
                 "pom.xml should contain group id:\n" + pomContent);
         Assertions.assertTrue(pomContent.contains("<artifactId>" + artifact + "</artifactId>"),

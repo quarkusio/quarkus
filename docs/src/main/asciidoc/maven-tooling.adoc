@@ -440,7 +440,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
             <version>${quarkus-plugin.version}</version>
-            <extensions>true</extensions>
+            <extensions>true</extensions> <3>
             <executions>
                 <execution>
                     <goals>
@@ -451,7 +451,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
                 </execution>
             </executions>
         </plugin>
-        <plugin> <3>
+        <plugin> <4>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <version>${surefire-plugin.version}</version>
@@ -466,14 +466,14 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 </build>
 
 <profiles>
-    <profile> <4>
+    <profile> <5>
         <id>native</id>
-        <properties> <5>
+        <properties> <6>
             <quarkus.package.type>native</quarkus.package.type>
         </properties>
         <build>
             <plugins>
-                <plugin> <6>
+                <plugin> <7>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${surefire-plugin.version}</version>
@@ -501,11 +501,12 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 
 <1> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
 <2> Use the Quarkus Maven plugin that will hook into the build process.
-<3> Add system properties to `maven-surefire-plugin`. +
+<3> Enabling Maven plugin extensions will register a Quarkus `MavenLifecycleParticipant` which will make sure the Quarkus classloaders used during the build are properly closed. During the `generate-code` and `generate-code-tests` goals the Quarkus application bootstrap is initialized and re-used in the `build` goal (which actually builds and packages a production application). The Quarkus classloaders will be properly closed in the `build` goal of the `quarkus-maven-plugin`. However, if the build fails in between the `generate-code` or `generate-code-tests` and `build` then the Quarkus augmentation classloader won't be properly closed, which may lead to locking of JAR files that happened to be on the classpath on Windows OS.
+<4> Add system properties to `maven-surefire-plugin`. +
 `maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
-<4> Use a specific `native` profile for native executable building.
-<5> Enable the `native` package type. The build will therefore produce a native executable.
-<6> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
+<5> Use a specific `native` profile for native executable building.
+<6> Enable the `native` package type. The build will therefore produce a native executable.
+<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
 
 [[fast-jar]]
 === Using fast-jar
@@ -551,7 +552,7 @@ unless it is the main application module already configured with the quarkus-mav
     <plugin>
       <groupId>org.jboss.jandex</groupId>
       <artifactId>jandex-maven-plugin</artifactId>
-      <version>1.0.7</version>
+      <version>1.1.0</version>
       <executions>
         <execution>
           <id>make-index</id>
@@ -566,6 +567,208 @@ unless it is the main application module already configured with the quarkus-mav
 ----
 
 More information on this topic can be found on the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
+
+[[maven-configuration-profile]]
+=== Building with a specific configuration profile
+
+Quarkus supports xref:config-reference.adoc#profiles[configuration profiles] in order to provide a specific configuration according to the target environment.
+
+The profile can be provided directly in the Maven build's command thanks to the system property `quarkus.profile` with a command of type `./mvnw package -Dquarkus.profile=<profile-name-here>`,
+however it is also possible to specify the profile directly in the POM file of the project using project properties, the Quarkus Maven plugin configuration properties or system properties set in the Quarkus Maven plugin configuration.
+
+In order of precedence (greater precedence first):
+
+.1. System properties set in the Quarkus Maven plugin configuration
+
+[source,xml]
+----
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  ...
+  <build>
+    <plugins>
+      ...
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <systemProperties>
+            <quarkus.profile>prod-aws</quarkus.profile> <1>
+          </systemProperties>
+        </configuration>
+     </plugin>
+     ...
+    </plugins>
+  </build>
+...
+</project>
+----
+<1> The default configuration profile of this project is `prod-aws`.
+
+.2. Quarkus Maven plugin configuration properties
+
+[source,xml]
+----
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  ...
+  <build>
+    <plugins>
+      ...
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <properties>
+            <quarkus.profile>prod-aws</quarkus.profile> <1>
+          </properties>
+        </configuration>
+     </plugin>
+     ...
+    </plugins>
+  </build>
+...
+</project>
+----
+<1> The default configuration profile of this project is `prod-aws`.
+
+.3. Project properties
+
+[source,xml]
+----
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  ...
+  <properties>
+    <quarkus.profile>prod-aws</quarkus.profile> <1>
+    ...
+  </properties>
+...
+</project>
+----
+<1> The default configuration profile of this project is `prod-aws`.
+
+NOTE: Whatever the approach is chosen, the profile can still be overridden with the `quarkus.profile` system property or the `QUARKUS_PROFILE` environment variable.
+
+[[maven-multi-build]]
+=== Building several artifacts from a single module
+
+In some particular use cases, it can be interesting to build several artifacts of your application from the same module.
+A typical example is when you want to build your application with different configuration profiles.
+
+In that case, it is possible to add as many executions as needed to the Quarkus Maven plugin configuration.
+
+Below is an example of a Quarkus Maven plugin configuration that will produce two builds of the same application: one  using the `prod-oracle` profile and the other one using the `prod-postgresql` profile.
+
+[source,xml]
+----
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  ...
+  <build>
+    <plugins>
+      ...
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <id>oracle</id>
+            <goals>
+              <goal>build</goal>
+            </goals>
+            <configuration>
+              <properties>
+                <quarkus.profile>prod-oracle</quarkus.profile> <1>
+                <quarkus.package.output-directory>oracle-quarkus-app</quarkus.package.output-directory> <2>
+              </properties>
+            </configuration>
+          </execution>
+          <execution>
+            <id>postgresql</id>
+            <goals>
+              <goal>build</goal>
+            </goals>
+            <configuration>
+              <properties>
+                <quarkus.profile>prod-postgresql</quarkus.profile> <3>
+                <quarkus.package.output-directory>postgresql-quarkus-app</quarkus.package.output-directory> <4>
+              </properties>
+            </configuration>
+          </execution>
+        </executions>
+     </plugin>
+     ...
+    </plugins>
+  </build>
+...
+</project>
+----
+<1> The default configuration profile of the first execution of the plugin is `prod-oracle`.
+<2> The output directory of the first execution of the plugin is set to `oracle-quarkus-app` instead of `quarkus-app` to have a dedicated directory.
+<3> The default configuration profile of the second execution of the plugin is `prod-postgresql`.
+<4> The output directory of the second execution of the plugin is set to `postgresql-quarkus-app` instead of `quarkus-app` to have a dedicated directory.
+
+NOTE: With the configuration above, both profile builds will be using the same dependencies, so if we added dependencies on the Oracle and PostgreSQL drivers to the application, both of the drivers will appear in both builds.
+
+
+To isolate profile-specific dependencies from other profiles, the JDBC drivers could be added as optional dependencies to the application but configured to be included in each profile that requires them, e.g.:
+
+[source,xml]
+----
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  ...
+  <dependencies>
+    ...
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgresql.driver.version}</version>
+      <optional>true</optional> <1>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      ...
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          ...
+          <execution>
+            <id>postgresql</id>
+            <goals>
+              <goal>build</goal>
+            </goals>
+            <configuration>
+              <properties>
+                <quarkus.profile>prod-postgresql</quarkus.profile>
+                <quarkus.package.output-directory>postgresql-quarkus-app</quarkus.package.output-directory>
+                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies> <2>
+                <quarkus.package.included-optional-dependencies>org.postgresql:postgresql::jar</quarkus.package.included-optional-dependencies> <3>
+              </properties>
+            </configuration>
+          </execution>
+        </executions>
+     </plugin>
+     ...
+    </plugins>
+  </build>
+...
+</project>
+----
+<1> The JDBC driver of PostgreSQL is defined as an optional dependency
+<2> For backward compatibility reasons, it is necessary to explicitly indicate that the optional dependencies need to be filtered.
+<3> Only the optional dependency corresponding to the JDBC driver of PostgreSQL is expected in the final artifact.
 
 [[configuration-reference]]
 == Configuring the Project Output

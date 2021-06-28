@@ -1,6 +1,7 @@
 package io.quarkus.elytron.security.jdbc;
 
 import org.wildfly.security.auth.realm.jdbc.mapper.PasswordKeyMapper;
+import org.wildfly.security.password.spec.Encoding;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -30,7 +31,7 @@ public class BcryptPasswordKeyMapperConfig implements PasswordKeyMapperConfig {
      * A string referencing the password hash encoding ("BASE64" or "HEX")
      */
     @ConfigItem(defaultValue = "BASE64")
-    public PasswordKeyMapper.Encoding hashEncoding;
+    public Encoding hashEncoding;
 
     /**
      * The index (1 based numbering) of the column containing the Bcrypt salt
@@ -42,7 +43,7 @@ public class BcryptPasswordKeyMapperConfig implements PasswordKeyMapperConfig {
      * A string referencing the salt encoding ("BASE64" or "HEX")
      */
     @ConfigItem(defaultValue = "BASE64")
-    public PasswordKeyMapper.Encoding saltEncoding;
+    public Encoding saltEncoding;
 
     /**
      * The index (1 based numbering) of the column containing the Bcrypt iteration count

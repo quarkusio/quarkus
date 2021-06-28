@@ -335,45 +335,6 @@ public class DocGeneratorUtil {
     }
 
     /**
-     * Guess extension name from given configuration root class name
-     */
-    public static String computeExtensionGeneralConfigDocFileName(String configRoot) {
-        StringBuilder extensionNameBuilder = new StringBuilder();
-        final Matcher matcher = Constants.PKG_PATTERN.matcher(configRoot);
-        if (!matcher.find()) {
-            extensionNameBuilder.append(configRoot);
-        } else {
-            String extensionName = matcher.group(1);
-            final String subgroup = matcher.group(2);
-            extensionNameBuilder.append(Constants.QUARKUS);
-            extensionNameBuilder.append(Constants.DASH);
-
-            if (Constants.DEPLOYMENT.equals(extensionName) || Constants.RUNTIME.equals(extensionName)) {
-                extensionNameBuilder.append(CORE);
-            } else if (subgroup != null && !Constants.DEPLOYMENT.equals(subgroup)
-                    && !Constants.RUNTIME.equals(subgroup) && !Constants.COMMON.equals(subgroup)
-                    && subgroup.matches(Constants.DIGIT_OR_LOWERCASE)) {
-                extensionNameBuilder.append(extensionName);
-                extensionNameBuilder.append(Constants.DASH);
-                extensionNameBuilder.append(subgroup);
-
-                final String qualifier = matcher.group(3);
-                if (qualifier != null && !Constants.DEPLOYMENT.equals(qualifier)
-                        && !Constants.RUNTIME.equals(qualifier) && !Constants.COMMON.equals(qualifier)
-                        && qualifier.matches(Constants.DIGIT_OR_LOWERCASE)) {
-                    extensionNameBuilder.append(Constants.DASH);
-                    extensionNameBuilder.append(qualifier);
-                }
-            } else {
-                extensionNameBuilder.append(extensionName);
-            }
-        }
-
-        extensionNameBuilder.append(Constants.ADOC_EXTENSION);
-        return extensionNameBuilder.toString();
-    }
-
-    /**
      * Guess config group file name from given configuration group class name
      */
     public static String computeConfigGroupDocFileName(String configGroupClassName) {

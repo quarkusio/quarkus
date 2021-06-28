@@ -9,7 +9,6 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
@@ -18,10 +17,12 @@ import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Instances of this class are thread-safe. It lists extensions according to the options passed in as properties of
@@ -41,8 +42,10 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         final boolean all = invocation.getValue(ListExtensions.ALL, true);
         final boolean installedOnly = invocation.getValue(ListExtensions.INSTALLED, false);
         final boolean cli = invocation.getValue(ListExtensions.FROM_CLI, false);
-        final String format = invocation.getValue(ListExtensions.FORMAT, "concise");
+        final String format = invocation.getValue(ListExtensions.FORMAT, "");
         final String search = invocation.getValue(ListExtensions.SEARCH, "*");
+        final String category = invocation.getValue(ListExtensions.CATEGORY, "");
+        final boolean batchMode = invocation.getValue(ListExtensions.BATCH_MODE, false);
         final ExtensionManager extensionManager = invocation.getValue(ListExtensions.EXTENSION_MANAGER,
                 invocation.getQuarkusProject().getExtensionManager());
 
@@ -55,18 +58,16 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
             return QuarkusCommandOutcome.success();
         }
 
-        if (!cli) {
+        if (!batchMode) {
             String extensionStatus = all ? "available" : "installable";
             if (installedOnly)
                 extensionStatus = "installed";
-            log.info("%nCurrent Quarkus extensions %s: ", extensionStatus);
+            log.info("Current Quarkus extensions %s: ", extensionStatus);
+            log.info("");
         }
 
         BiConsumer<MessageWriter, Object[]> currentFormatter;
         switch (format.toLowerCase()) {
-            case "name":
-                currentFormatter = this::nameFormatter;
-                break;
             case "full":
                 currentFormatter = this::fullFormatter;
                 log.info(String.format(FULL_FORMAT, "Status", "Extension", "ArtifactId", "Updated Version", "Guide"));
@@ -75,8 +76,12 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
                 currentFormatter = this::originsFormatter;
                 break;
             case "concise":
-            default:
                 currentFormatter = this::conciseFormatter;
+                break;
+            case "id":
+            default:
+                currentFormatter = this::nameFormatter;
+                break;
         }
 
         Map<ArtifactKey, ArtifactCoords> installedByKey;
@@ -86,30 +91,19 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         } catch (IOException e) {
             throw new QuarkusCommandException("Failed to determine the list of installed extensions", e);
         }
+
+        Predicate<Extension> categoryFilter;
+        if (category != null && !category.isBlank()) {
+            categoryFilter = e -> ExtensionProcessor.of(e).getCategories().contains(category);
+        } else {
+            categoryFilter = e -> true;
+        }
+
         extensions.stream()
                 .filter(e -> !ExtensionProcessor.of(e).isUnlisted())
+                .filter(categoryFilter)
+                .sorted(Comparator.comparing(e -> e.getArtifact().getArtifactId()))
                 .forEach(e -> display(log, e, installedByKey.get(toKey(e)), all, installedOnly, currentFormatter));
-        final BuildTool buildTool = invocation.getQuarkusProject().getBuildTool();
-        boolean isGradle = BuildTool.GRADLE.equals(buildTool) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildTool);
-
-        if (!cli) {
-            if ("concise".equalsIgnoreCase(format)) {
-                if (isGradle) {
-                    log.info("\nTo get more information, append --format=full to your command line.");
-                } else {
-                    log.info(
-                            "\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
-                }
-            }
-
-            if (isGradle) {
-                log.info("\nAdd an extension to your project by adding the dependency to your " +
-                        "build.gradle or use `./gradlew addExtension --extensions=\"artifactId\"`");
-            } else {
-                log.info("\nAdd an extension to your project by adding the dependency to your " +
-                        "pom.xml or use `./mvnw quarkus:add-extension -Dextensions=\"artifactId\"`");
-            }
-        }
 
         return QuarkusCommandOutcome.success();
     }

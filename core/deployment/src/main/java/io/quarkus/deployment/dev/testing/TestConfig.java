@@ -56,18 +56,20 @@ public class TestConfig {
     public Optional<List<String>> excludeTags;
 
     /**
-     * Tests that should be included for continuous testing. This is a regular expression.
+     * Tests that should be included for continuous testing. This is a regular expression and
+     * is matched against the test class name (not the file name).
      */
     @ConfigItem
     public Optional<String> includePattern;
 
     /**
-     * Tests that should be excluded with continuous testing. This is a regular expression.
+     * Tests that should be excluded with continuous testing. This is a regular expression and
+     * is matched against the test class name (not the file name).
      *
      * This is ignored if include-pattern has been set.
      *
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = ".*\\.IT[^.]+|.*IT|.*ITCase")
     public Optional<String> excludePattern;
     /**
      * Disable the testing status/prompt message at the bottom of the console
@@ -130,6 +132,12 @@ public class TestConfig {
      */
     @ConfigItem
     Profile profile;
+
+    /**
+     * JVM parameters that are used to launch jar based integration tests.
+     */
+    @ConfigItem
+    Optional<String> integrationJvmArgLine;
 
     /**
      * Configures the hang detection in @QuarkusTest. If no activity happens (i.e. no test callbacks are called) over

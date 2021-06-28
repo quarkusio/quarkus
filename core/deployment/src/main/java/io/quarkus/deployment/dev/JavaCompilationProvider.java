@@ -34,6 +34,7 @@ public class JavaCompilationProvider implements CompilationProvider {
     // -parameters is used to generate metadata for reflection on method parameters
     // this is useful when people using debuggers against their hot-reloaded app
     private static final Set<String> COMPILER_OPTIONS = new HashSet<>(Arrays.asList("-g", "-parameters"));
+    private static final Set<String> IGNORE_NAMESPACES = new HashSet<>(Collections.singletonList("org.osgi"));
 
     JavaCompiler compiler;
     StandardJavaFileManager fileManager;
@@ -71,20 +72,19 @@ public class JavaCompilationProvider implements CompilationProvider {
                     compilerFlags.toList(), null, sources);
 
             if (!task.call()) {
-                throw new RuntimeException("Compilation failed" + diagnostics.getDiagnostics());
+                StringBuilder sb = new StringBuilder("\u001B[91mCompilation Failed:");
+                for (Diagnostic<? extends JavaFileObject> i : diagnostics.getDiagnostics()) {
+                    sb.append("\n");
+                    sb.append(i.toString());
+                }
+                sb.append("\u001b[0m");
+                throw new RuntimeException(sb.toString());
             }
 
-            for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
-                log.logf(diagnostic.getKind() == Diagnostic.Kind.ERROR ? Logger.Level.ERROR : Logger.Level.WARN,
-                        "%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
-                        diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
-            }
+            logDiagnostics(diagnostics);
+
             if (!fileManagerDiagnostics.getDiagnostics().isEmpty()) {
-                for (Diagnostic<? extends JavaFileObject> diagnostic : fileManagerDiagnostics.getDiagnostics()) {
-                    log.logf(diagnostic.getKind() == Diagnostic.Kind.ERROR ? Logger.Level.ERROR : Logger.Level.WARN,
-                            "%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
-                            diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
-                }
+                logDiagnostics(fileManagerDiagnostics);
                 fileManager.close();
                 fileManagerDiagnostics = null;
                 fileManager = null;
@@ -115,6 +115,28 @@ public class JavaCompilationProvider implements CompilationProvider {
             fileManager = null;
             fileManagerDiagnostics = null;
         }
+    }
+
+    private void logDiagnostics(final DiagnosticCollector<JavaFileObject> diagnostics) {
+        for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
+            Logger.Level level = diagnostic.getKind() == Diagnostic.Kind.ERROR ? Logger.Level.ERROR : Logger.Level.WARN;
+            String message = diagnostic.getMessage(null);
+            if (level.equals(Logger.Level.WARN) && ignoreWarningForNamespace(message)) {
+                continue;
+            }
+
+            log.logf(level, "%s, line %d in %s", message, diagnostic.getLineNumber(),
+                    diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
+        }
+    }
+
+    private static boolean ignoreWarningForNamespace(String message) {
+        for (String ignoreNamespace : IGNORE_NAMESPACES) {
+            if (message.contains(ignoreNamespace)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static class RuntimeUpdatesClassVisitor extends ClassVisitor {

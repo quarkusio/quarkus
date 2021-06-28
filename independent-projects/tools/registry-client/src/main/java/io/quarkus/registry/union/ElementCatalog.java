@@ -2,14 +2,14 @@ package io.quarkus.registry.union;
 
 import java.util.Collection;
 
-public interface ElementCatalog {
+public interface ElementCatalog<T> {
 
     /**
      * All elements of the catalog
      *
      * @return elements of the catalog
      */
-    Collection<Element> elements();
+    Collection<Element<T>> elements();
 
     /**
      * All element keys
@@ -24,7 +24,7 @@ public interface ElementCatalog {
      * @param elementKey element key
      * @return element associated with the key or null
      */
-    Element get(Object elementKey);
+    Element<T> get(Object elementKey);
 
     /**
      * Checks whether the catalog contains any elements.

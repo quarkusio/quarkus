@@ -10,12 +10,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-websockets-parent</artifactId>
-    <name>Quarkus - WebSockets</name>
+    <artifactId>quarkus-websockets-aggregator</artifactId>
+    <name>Quarkus - WebSockets Aggregator</name>
     <packaging>pom</packaging>
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
+        <module>server</module>
+        <module>client</module>
         <module>legacy</module>
     </modules>
 

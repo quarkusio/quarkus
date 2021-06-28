@@ -16,6 +16,8 @@ import org.jboss.logging.Logger;
 /**
  * A representation of the Quarkus dependency model for a given application.
  *
+ * Changes made to this class should also be reflected in {@link PersistentAppModel}
+ *
  * @author Alexey Loubyansky
  */
 public class AppModel implements Serializable {

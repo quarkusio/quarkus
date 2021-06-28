@@ -70,10 +70,15 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-graphql-client-quickstart \
     -DclassName="org.acme.microprofile.graphql.client.StarWarsResource" \
-    -Dextensions="resteasy-reactive-jsonb,graphql-client"
+    -Dextensions="resteasy-reactive-jsonb,graphql-client,rest-client-reactive"
 cd microprofile-graphql-client-quickstart
 ----
 
+NOTE: The typesafe GraphQL client depends on REST client, thus we included the `rest-client-reactive` extension
+in the `extensions` list. You may also switch to the traditional non-reactive `rest-client` if the rest of
+your application depends on the non-reactive RESTEasy stack (you can't mix reactive and non-reactive RESTEasy).
+If you're only going to use the dynamic GraphQL client and don't use RESTEasy in your application,
+you may leave out the REST client dependency completely.
 This command generates a Maven project, importing the `smallrye-graphql-client` extension.
 
 If you already have your Quarkus project configured, you can add the `smallrye-graphql-client` extension
@@ -81,8 +86,10 @@ to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="graphql-client"
+./mvnw quarkus:add-extension -Dextensions="graphql-client,rest-client-reactive"
 ----
+
+Again, you may leave out `rest-client-reactive` if you're only going to use the dynamic client.
 
 This will add the following to your `pom.xml`:
 
@@ -91,6 +98,10 @@ This will add the following to your `pom.xml`:
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-graphql-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-rest-client-reactive</artifactId>
 </dependency>
 ----
 
@@ -286,7 +297,7 @@ import static io.smallrye.graphql.client.core.Operation.operation;
 // ....
 
 @Inject
-@NamedClient("star-wars-dynamic")    // <1>
+@GraphQLClient("star-wars-dynamic")    // <1>
 DynamicGraphQLClient dynamicClient;
 
 @GET

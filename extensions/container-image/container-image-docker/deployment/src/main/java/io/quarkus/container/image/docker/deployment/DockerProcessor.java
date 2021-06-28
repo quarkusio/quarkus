@@ -13,7 +13,6 @@ import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,8 +86,10 @@ public class DockerProcessor {
                 false,
                 pushRequest.isPresent(), packageConfig);
 
+        // a pull is not required when using this image locally because the docker strategy always builds the container image
+        // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
-                Collections.singletonMap("container-image", builtContainerImage)));
+                Map.of("container-image", builtContainerImage, "pull-required", "false")));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
@@ -122,8 +123,11 @@ public class DockerProcessor {
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
                 pushRequest.isPresent(), packageConfig);
+
+        // a pull is not required when using this image locally because the docker strategy always builds the container image
+        // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
-                Collections.singletonMap("container-image", builtContainerImage)));
+                Map.of("container-image", builtContainerImage, "pull-required", "false")));
     }
 
     private String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,

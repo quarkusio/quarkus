@@ -4,6 +4,7 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -107,6 +108,8 @@ public final class RunTimeConfigurationGenerator {
     static final FieldDescriptor C_SPECIFIED_RUN_TIME_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
             "specifiedRunTimeConfigSource",
             ConfigSource.class);
+    static final FieldDescriptor C_UNUSED = FieldDescriptor.of(CONFIG_CLASS_NAME, "unused", List.class);
+    static final FieldDescriptor C_UNUSED_RUNTIME = FieldDescriptor.of(CONFIG_CLASS_NAME, "unusedRuntime", List.class);
 
     static final MethodDescriptor CD_INVALID_VALUE = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "invalidValue",
             void.class, String.class, IllegalArgumentException.class);
@@ -115,10 +118,10 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor CD_MISSING_VALUE = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "missingValue",
             void.class, String.class, NoSuchElementException.class);
     static final MethodDescriptor CD_RESET_ERROR = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "resetError", void.class);
-    static final MethodDescriptor CD_UNKNOWN = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "unknown",
-            void.class, NameIterator.class);
-    static final MethodDescriptor CD_UNKNOWN_RT = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "unknownRunTime",
-            void.class, NameIterator.class);
+    static final MethodDescriptor CD_UNKNOWN_PROPERTIES = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "unknownProperties",
+            void.class, List.class);
+    static final MethodDescriptor CD_UNKNOWN_PROPERTIES_RT = MethodDescriptor.ofMethod(ConfigDiagnostic.class,
+            "unknownPropertiesRuntime", void.class, List.class);
 
     static final MethodDescriptor CONVS_NEW_ARRAY_CONVERTER = MethodDescriptor.ofMethod(Converters.class,
             "newArrayConverter", Converter.class, Converter.class, Class.class);
@@ -162,6 +165,9 @@ public final class RunTimeConfigurationGenerator {
             void.class, SmallRyeConfigBuilder.class, ConfigSourceProvider.class);
     static final MethodDescriptor CU_ADD_SOURCE_PROVIDERS = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProviders",
             void.class, SmallRyeConfigBuilder.class, Collection.class);
+
+    static final MethodDescriptor AL_NEW = MethodDescriptor.ofConstructor(ArrayList.class);
+    static final MethodDescriptor AL_ADD = MethodDescriptor.ofMethod(ArrayList.class, "add", boolean.class, Object.class);
 
     static final MethodDescriptor HM_NEW = MethodDescriptor.ofConstructor(HashMap.class);
     static final MethodDescriptor HM_PUT = MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class,
@@ -345,6 +351,12 @@ public final class RunTimeConfigurationGenerator {
             // create <clinit>
             clinit = cc.getMethodCreator(MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "<clinit>", void.class));
             clinit.setModifiers(Opcodes.ACC_STATIC);
+
+            cc.getFieldCreator(C_UNUSED).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            clinit.writeStaticField(C_UNUSED, clinit.newInstance(AL_NEW));
+
+            cc.getFieldCreator(C_UNUSED_RUNTIME).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            clinit.writeStaticField(C_UNUSED_RUNTIME, clinit.newInstance(AL_NEW));
 
             clinit.invokeStaticMethod(PM_SET_RUNTIME_DEFAULT_PROFILE, clinit.load(ProfileManager.getActiveProfile()));
             clinitNameBuilder = clinit.newInstance(SB_NEW);
@@ -748,11 +760,17 @@ public final class RunTimeConfigurationGenerator {
             // generate sweep for clinit
             configSweepLoop(siParserBody, clinit, clinitConfig);
 
+            clinit.invokeStaticMethod(CD_UNKNOWN_PROPERTIES,
+                    clinit.readStaticField(FieldDescriptor.of(cc.getClassName(), "unused", List.class)));
+
             if (devMode) {
                 configSweepLoop(siParserBody, readConfig, runTimeConfig);
             }
             // generate sweep for run time
             configSweepLoop(rtParserBody, readConfig, runTimeConfig);
+
+            readConfig.invokeStaticMethod(CD_UNKNOWN_PROPERTIES_RT,
+                    readConfig.readStaticField(FieldDescriptor.of(cc.getClassName(), "unusedRuntime", List.class)));
 
             if (bootstrapConfigSetupNeeded()) {
                 // generate sweep for bootstrap config
@@ -1099,7 +1117,7 @@ public final class RunTimeConfigurationGenerator {
                 // return;
                 matchedBody.returnValue(null);
             }
-            body.invokeStaticMethod(CD_UNKNOWN_RT, keyIter);
+            reportUnknownRuntime(body, keyIter);
             body.returnValue(null);
 
             body = cc.getMethodCreator(EMPTY_PARSER);
@@ -1110,7 +1128,7 @@ public final class RunTimeConfigurationGenerator {
                 // return;
                 matchedBody.returnValue(null);
             }
-            body.invokeStaticMethod(CD_UNKNOWN, keyIter);
+            reportUnknown(body, keyIter);
             body.returnValue(null);
         }
 
@@ -1188,7 +1206,11 @@ public final class RunTimeConfigurationGenerator {
                         }
                     } else if (ignoreMatched == null) {
                         // name is unknown
-                        matchedBody.invokeStaticMethod(type == Type.BUILD_TIME ? CD_UNKNOWN : CD_UNKNOWN_RT, keyIter);
+                        if (type == Type.BUILD_TIME) {
+                            reportUnknown(matchedBody, keyIter);
+                        } else {
+                            reportUnknownRuntime(matchedBody, keyIter);
+                        }
                     }
                     // return;
                     matchedBody.returnValue(null);
@@ -1279,7 +1301,11 @@ public final class RunTimeConfigurationGenerator {
                         matchedBody.returnValue(null);
                     }
                 }
-                body.invokeStaticMethod(type == Type.BUILD_TIME ? CD_UNKNOWN : CD_UNKNOWN_RT, keyIter);
+                if (type == Type.BUILD_TIME) {
+                    reportUnknown(body, keyIter);
+                } else {
+                    reportUnknownRuntime(body, keyIter);
+                }
                 body.returnValue(null);
                 return body.getMethodDescriptor();
             }
@@ -1578,6 +1604,18 @@ public final class RunTimeConfigurationGenerator {
                 convertersToRegister.put(fd, type.getLeafType());
             }
             return fd;
+        }
+
+        private void reportUnknown(BytecodeCreator methodCreator, ResultHandle unusedProperty) {
+            ResultHandle unused = methodCreator.readStaticField(C_UNUSED);
+            methodCreator.invokeVirtualMethod(AL_ADD, unused,
+                    methodCreator.invokeVirtualMethod(NI_GET_NAME, unusedProperty));
+        }
+
+        private void reportUnknownRuntime(BytecodeCreator methodCreator, ResultHandle unusedProperty) {
+            ResultHandle unused = methodCreator.readStaticField(C_UNUSED_RUNTIME);
+            methodCreator.invokeVirtualMethod(AL_ADD, unused,
+                    methodCreator.invokeVirtualMethod(NI_GET_NAME, unusedProperty));
         }
 
         public void close() {

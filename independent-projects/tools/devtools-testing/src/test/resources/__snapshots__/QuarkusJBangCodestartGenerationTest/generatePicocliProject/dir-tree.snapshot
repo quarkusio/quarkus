@@ -4,4 +4,4 @@ README.md
 jbang
 jbang.cmd
 src/
-src/GreetingCommand.java
+src/main.java

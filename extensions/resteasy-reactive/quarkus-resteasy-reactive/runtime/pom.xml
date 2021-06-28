@@ -48,10 +48,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jsonp</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-safer-annotations</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

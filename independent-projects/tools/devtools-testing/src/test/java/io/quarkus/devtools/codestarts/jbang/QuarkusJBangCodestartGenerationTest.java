@@ -33,7 +33,7 @@ class QuarkusJBangCodestartGenerationTest {
         final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
         assertThatDirectoryTreeMatchSnapshots(testInfo, projectDir);
-        assertThatMatchSnapshot(testInfo, projectDir, "src/GreetingResource.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main.java");
     }
 
     @Test
@@ -47,7 +47,7 @@ class QuarkusJBangCodestartGenerationTest {
         final Path projectDir = testDirPath.resolve("picocli");
         getCatalog().createProject(input).generate(projectDir);
         assertThatDirectoryTreeMatchSnapshots(testInfo, projectDir);
-        assertThatMatchSnapshot(testInfo, projectDir, "src/GreetingCommand.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main.java");
     }
 
     private QuarkusJBangCodestartCatalog getCatalog() throws IOException {

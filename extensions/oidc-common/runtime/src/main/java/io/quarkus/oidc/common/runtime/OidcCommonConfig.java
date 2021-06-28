@@ -2,6 +2,7 @@ package io.quarkus.oidc.common.runtime;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -70,6 +71,12 @@ public class OidcCommonConfig {
     public Duration connectionTimeout = Duration.ofSeconds(10);
 
     /**
+     * The maximum size of the connection pool used by the WebClient
+     */
+    @ConfigItem
+    public OptionalInt maxPoolSize = OptionalInt.empty();
+
+    /**
      * Credentials which the OIDC adapter will use to authenticate to the OIDC server.
      */
     @ConfigItem
@@ -128,6 +135,14 @@ public class OidcCommonConfig {
             this.clientSecret = clientSecret;
         }
 
+        public Jwt getJwt() {
+            return jwt;
+        }
+
+        public void setJwt(Jwt jwt) {
+            this.jwt = jwt;
+        }
+
         /**
          * Supports the client authentication methods which involve sending a client secret.
          *
@@ -151,10 +166,16 @@ public class OidcCommonConfig {
             }
 
             /**
-             * The client secret
+             * The client secret value - it will be ignored if 'secret.key' is set
              */
             @ConfigItem
             public Optional<String> value = Optional.empty();
+
+            /**
+             * The Secret CredentialsProvider
+             */
+            @ConfigItem
+            public Provider provider = new Provider();
 
             /**
              * Authentication method.
@@ -177,6 +198,14 @@ public class OidcCommonConfig {
             public void setMethod(Method method) {
                 this.method = Optional.of(method);
             }
+
+            public Provider getSecretProvider() {
+                return provider;
+            }
+
+            public void setSecretProvider(Provider secretProvider) {
+                this.provider = secretProvider;
+            }
         }
 
         /**
@@ -194,6 +223,12 @@ public class OidcCommonConfig {
              */
             @ConfigItem
             public Optional<String> secret = Optional.empty();
+
+            /**
+             * If provided, indicates that JWT is signed using a secret key provided by Secret CredentialsProvider
+             */
+            @ConfigItem
+            public Provider secretProvider = new Provider();
 
             /**
              * If provided, indicates that JWT is signed using a private key in PEM or JWK format
@@ -226,6 +261,12 @@ public class OidcCommonConfig {
             public String keyPassword;
 
             /**
+             * Key identifier of the signing key added as a JWT 'kid' header
+             */
+            @ConfigItem
+            public Optional<String> tokenKeyId = Optional.empty();
+
+            /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
              */
             @ConfigItem(defaultValue = "10")
@@ -245,6 +286,58 @@ public class OidcCommonConfig {
 
             public void setLifespan(int lifespan) {
                 this.lifespan = lifespan;
+            }
+
+            public Optional<String> getTokenKeyId() {
+                return tokenKeyId;
+            }
+
+            public void setTokenKeyId(String tokenKeyId) {
+                this.tokenKeyId = Optional.of(tokenKeyId);
+            }
+
+            public Provider getSecretProvider() {
+                return secretProvider;
+            }
+
+            public void setSecretProvider(Provider secretProvider) {
+                this.secretProvider = secretProvider;
+            }
+
+        }
+
+        /**
+         * CredentialsProvider which provides a client secret
+         */
+        @ConfigGroup
+        public static class Provider {
+
+            /**
+             * The CredentialsProvider name which should only be set if more than one CredentialsProvider is registered
+             */
+            @ConfigItem
+            public Optional<String> name = Optional.empty();
+
+            /**
+             * The CredentialsProvider client secret key
+             */
+            @ConfigItem
+            public Optional<String> key = Optional.empty();
+
+            public Optional<String> getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = Optional.of(name);
+            }
+
+            public Optional<String> getKey() {
+                return key;
+            }
+
+            public void setKey(String key) {
+                this.key = Optional.of(key);
             }
         }
     }
@@ -372,5 +465,13 @@ public class OidcCommonConfig {
 
     public void setConnectionTimeout(Duration connectionTimeout) {
         this.connectionTimeout = connectionTimeout;
+    }
+
+    public OptionalInt getMaxPoolSize() {
+        return maxPoolSize;
+    }
+
+    public void setMaxPoolSize(int maxPoolSize) {
+        this.maxPoolSize = OptionalInt.of(maxPoolSize);
     }
 }

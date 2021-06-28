@@ -75,7 +75,14 @@ public class CertificateConfig {
     public String keyStorePassword;
 
     /**
-     * An optional trust store which holds the certificate information of the certificates to trust
+     * An optional parameter to select a specific key in the key store. When SNI is disabled, if the key store contains multiple
+     * keys and no alias is specified, the behavior is undefined.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreKeyAlias;
+
+    /**
+     * An optional trust store which holds the certificate information of the certificates to trust.
      */
     @ConfigItem
     public Optional<Path> trustStoreFile;
@@ -99,4 +106,11 @@ public class CertificateConfig {
      */
     @ConfigItem
     public Optional<String> trustStorePassword;
+
+    /**
+     * An optional parameter to trust only one specific certificate in the trust store (instead of trusting all certificates in
+     * the store).
+     */
+    @ConfigItem
+    public Optional<String> trustStoreCertAlias;
 }

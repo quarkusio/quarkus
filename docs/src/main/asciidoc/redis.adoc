@@ -551,6 +551,7 @@ So when you access the `/q/health/ready` endpoint of your application you will h
 
 This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
 
+[[multiple-clients-configuration]]
 == Multiple Redis Clients
 
 The Redis extension allows you to configure multiple clients.
@@ -585,6 +586,36 @@ RedisClient redisClient2;
 ReactiveRedisClient reactiveClient2;
 ----
 
+=== Creating Clients Programmatically
+
+The `RedisClient` and `ReactiveRedisClient` provide factory methods to create clients programmatically.
+The client to be created are configured using the usual <<config-reference,Redis configuration>>.
+
+[NOTE]
+====
+This is useful to create a client dynamically in a non-CDI bean e.g a link:hibernate-orm-panache.adoc[Panache entity].
+Or to create a different client when running in pub/sub mode. This mode requires two different connections
+because once a connection invokes a subscriber mode then it cannot be used for running other commands
+than the command to leave that mode.
+====
+
+The below code snippet shows how we can create dynamic clients using the configurations in <<multiple-clients-configuration>>.
+[source,java,indent=0]
+----
+// creating default redis client
+RedisClient defaultRedisClient = RedisClient.createClient();
+
+// creating named redis client whose configuration name is "second"
+RedisClient namedRedisClient = RedisClient.createClient("second");
+
+// creating a default reactive redis client
+ReactiveRedisClient defaultReactiveRedisClient = ReactiveRedisClient.createClient();
+
+// creating a named reactive redis client whose configuration name is "second"
+ReactiveRedisClient namedReactiveRedisClient = ReactiveRedisClient.createClient("second");
+----
+
+
 [[dev-services]]
 === DevServices (Configuration Free Redis)
 
@@ -599,6 +630,7 @@ When running the production version of the application, the Redis connection nee
 so if you want to include a production database config in your `application.properties` and continue to use DevServices
 we recommend that you use the `%prod.` profile to define your Redis settings.
 
+[[config-reference]]
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional, leveloffset=+1]

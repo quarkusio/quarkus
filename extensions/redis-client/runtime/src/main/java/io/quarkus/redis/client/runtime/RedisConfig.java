@@ -8,6 +8,7 @@ import java.util.Set;
 
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -78,7 +79,7 @@ public class RedisConfig {
          * Used when `quarkus.redis.hosts` is not set.
          */
         @ConfigItem
-        public Optional<String> hostsProviderName = Optional.empty();
+        public Optional<String> hostsProviderName;
 
         /**
          * The maximum delay to wait before a blocking command to redis server times out
@@ -109,6 +110,14 @@ public class RedisConfig {
          */
         @ConfigItem(defaultValueDocumentation = "never")
         public Optional<RedisReplicas> replicas;
+
+        /**
+         * The default password for cluster/sentinel connections.
+         * <p>
+         * If not set it will try to extract the value from the current default {@code #hosts}.
+         */
+        @ConfigItem
+        public Optional<String> password;
 
         /**
          * The maximum size of the connection pool. When working with cluster or sentinel.
@@ -150,5 +159,43 @@ public class RedisConfig {
          */
         @ConfigItem(defaultValue = "32")
         public int maxNestedArrays;
+
+        /**
+         * The number of reconnection attempts when a pooled connection cannot be established on first try.
+         */
+        @ConfigItem(defaultValue = "0")
+        public int reconnectAttempts;
+
+        /**
+         * The interval between reconnection attempts when a pooled connection cannot be established on first try.
+         */
+        @ConfigItem(defaultValue = "1")
+        public Duration reconnectInterval;
+
+        /**
+         * The maximum time a connection remains unused in the pool before it is closed.
+         */
+        @ConfigItem(defaultValueDocumentation = "no timeout")
+        public Optional<Integer> idleTimeout;
+
+        /**
+         * Whether TCP keep alive is enabled
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean tcpKeepAlive;
+
+        /**
+         * Whether TCP no delay is enabled
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean tcpNoDelay;
+
+        /**
+         * SSL/TLS config.
+         */
+        @ConfigItem
+        @ConfigDocSection
+        public SslConfig ssl;
+
     }
 }

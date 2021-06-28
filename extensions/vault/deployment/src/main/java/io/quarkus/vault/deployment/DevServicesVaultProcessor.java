@@ -17,12 +17,13 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.vault.deployment.devservices.DevServicesVaultResultBuildItem;
 import io.quarkus.vault.runtime.VaultVersions;
 import io.quarkus.vault.runtime.config.DevServicesConfig;
 import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
@@ -40,10 +41,11 @@ public class DevServicesVaultProcessor {
     private static volatile boolean first = true;
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
+    @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class)
-    public DevServicesVaultResultBuildItem startVaultContainers(LaunchModeBuildItem launchMode,
+    public void startVaultContainers(LaunchModeBuildItem launchMode,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer, VaultBuildTimeConfig config) {
+            BuildProducer<DevServicesNativeConfigResultBuildItem> devConfig, VaultBuildTimeConfig config) {
 
         DevServicesConfig currentDevServicesConfiguration = config.devservices;
 
@@ -55,7 +57,7 @@ public class DevServicesVaultProcessor {
                 restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
             }
             if (!restartRequired) {
-                return null;
+                return;
             }
             for (Closeable closeable : closeables) {
                 try {
@@ -72,7 +74,7 @@ public class DevServicesVaultProcessor {
 
         StartResult startResult = startContainer(currentDevServicesConfiguration);
         if (startResult == null) {
-            return null;
+            return;
         }
 
         runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(URL_CONFIG_KEY, startResult.url));
@@ -115,7 +117,9 @@ public class DevServicesVaultProcessor {
                 }
             });
         }
-        return new DevServicesVaultResultBuildItem(connectionProperties);
+        for (Map.Entry<String, String> entry : connectionProperties.entrySet()) {
+            devConfig.produce(new DevServicesNativeConfigResultBuildItem(entry.getKey(), entry.getValue()));
+        }
     }
 
     private StartResult startContainer(DevServicesConfig devServicesConfig) {

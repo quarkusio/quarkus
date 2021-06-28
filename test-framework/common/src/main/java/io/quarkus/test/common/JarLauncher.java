@@ -26,6 +26,7 @@ public class JarLauncher implements ArtifactLauncher {
 
     private final Path jarPath;
     private final String profile;
+    private final String argLine;
     private Process quarkusProcess;
     private final int httpPort;
     private final int httpsPort;
@@ -39,6 +40,7 @@ public class JarLauncher implements ArtifactLauncher {
                 config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                 config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                 config.getValue("quarkus.test.jar-wait-time", OptionalLong.class).orElse(DEFAULT_JAR_WAIT_TIME),
+                config.getOptionalValue("quarkus.test.argLine", String.class).orElse(null),
                 config.getOptionalValue("quarkus.test.native-image-profile", String.class)
                         .orElse(null));
     }
@@ -47,11 +49,12 @@ public class JarLauncher implements ArtifactLauncher {
         this(jarPath, installAndGetSomeConfig());
     }
 
-    public JarLauncher(Path jarPath, int httpPort, int httpsPort, long jarWaitTime, String profile) {
+    public JarLauncher(Path jarPath, int httpPort, int httpsPort, long jarWaitTime, String argLine, String profile) {
         this.jarPath = jarPath;
         this.httpPort = httpPort;
         this.httpsPort = httpsPort;
         this.jarWaitTime = jarWaitTime;
+        this.argLine = argLine;
         this.profile = profile;
     }
 
@@ -61,6 +64,9 @@ public class JarLauncher implements ArtifactLauncher {
 
         List<String> args = new ArrayList<>();
         args.add("java");
+        if (argLine != null) {
+            args.add(argLine);
+        }
         args.add("-Dquarkus.http.port=" + httpPort);
         args.add("-Dquarkus.http.ssl-port=" + httpsPort);
         // this won't be correct when using the random port but it's really only used by us for the rest client tests
@@ -81,6 +87,8 @@ public class JarLauncher implements ArtifactLauncher {
         System.out.println("Executing " + args);
 
         Files.deleteIfExists(logFile);
+        Files.createDirectories(logFile.getParent());
+
         quarkusProcess = LauncherUtil.launchProcess(args);
         ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, jarWaitTime);
         updateConfigForPort(result.getPort());

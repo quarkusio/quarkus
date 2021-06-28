@@ -50,6 +50,7 @@
         <module>jpa-db2</module>
         <module>jpa-derby</module>
         <module>jpa-postgresql</module>
+        <module>jpa-postgresql-withxml</module>
         <module>vault</module>
         <module>vault-agroal</module>
         <module>vault-app</module>
@@ -185,6 +186,8 @@
         <module>grpc-interceptors</module>
         <module>grpc-proto-v2</module>
         <module>grpc-health</module>
+        <module>grpc-hibernate</module>
+        <module>grpc-hibernate-reactive</module>
         <module>google-cloud-functions-http</module>
         <module>google-cloud-functions</module>
     </modules>

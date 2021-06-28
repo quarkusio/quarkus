@@ -50,7 +50,7 @@ You can verify which JDK Maven uses by running `mvn --version`.
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
 dependency injection, this endpoint uses a `greeting` bean.
 
-image::getting-started-architecture.png[alt=Architecture]
+image::getting-started-architecture.png[alt=Architecture, align=center]
 
 This guide also covers the testing of the endpoint.
 
@@ -493,7 +493,7 @@ Furthermore, users can supply a custom banner by placing the banner file in `src
 This guide covered the creation of an application using Quarkus.
 However, there is much more.
 We recommend continuing the journey with the link:building-native-image[building a native executable guide], where you learn about creating a native executable and packaging it in a container.
-If you are interested in reactive, we recommend the link:getting-started-reactive[Getting started with reactive guide], where you can see how to implement reactive applications with Quarkus.
+If you are interested in reactive, we recommend the xref:getting-started-reactive.adoc[Getting Started with Reactive guide], where you can see how to implement reactive applications with Quarkus.
 
 In addition, the link:tooling[tooling guide] document explains how to:
 

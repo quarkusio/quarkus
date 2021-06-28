@@ -8,6 +8,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.opentelemetry.exporter.jaeger.runtime.JaegerExporterConfig;
 import io.quarkus.opentelemetry.exporter.jaeger.runtime.JaegerExporterProvider;
 import io.quarkus.opentelemetry.exporter.jaeger.runtime.JaegerRecorder;
@@ -37,7 +38,8 @@ public class JaegerExporterProcessor {
     @BuildStep(onlyIf = JaegerExporterEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void installBatchSpanProcessorForJaeger(JaegerRecorder recorder,
+            LaunchModeBuildItem launchModeBuildItem,
             JaegerExporterConfig.JaegerExporterRuntimeConfig runtimeConfig) {
-        recorder.installBatchSpanProcessorForJaeger(runtimeConfig);
+        recorder.installBatchSpanProcessorForJaeger(runtimeConfig, launchModeBuildItem.getLaunchMode());
     }
 }

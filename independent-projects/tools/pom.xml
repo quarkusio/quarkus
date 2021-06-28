@@ -48,12 +48,12 @@
         <commons-compress.version>1.20</commons-compress.version>
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>
         <maven-core.version>3.8.1</maven-core.version>
-        <mockito.version>3.10.0</mockito.version>
+        <mockito.version>3.11.2</mockito.version>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>18</maven-model-helper.version>
-        <commons-io.version>2.9.0</commons-io.version>
+        <commons-io.version>2.10.0</commons-io.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
     </properties>
     <modules>

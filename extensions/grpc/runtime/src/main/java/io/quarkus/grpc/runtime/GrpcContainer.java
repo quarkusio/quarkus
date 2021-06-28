@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Prioritized;
 import javax.inject.Inject;
@@ -13,7 +14,6 @@ import javax.inject.Inject;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
 import io.quarkus.grpc.GrpcService;
-import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 
 @ApplicationScoped
 public class GrpcContainer {
@@ -23,10 +23,8 @@ public class GrpcContainer {
     Instance<BindableService> services;
 
     @Inject
+    @Any
     Instance<ServerInterceptor> interceptors;
-
-    @Inject
-    Instance<GrpcHealthStorage> healthStorage;
 
     List<ServerInterceptor> getSortedInterceptors() {
         if (interceptors.isUnsatisfied()) {
@@ -50,10 +48,6 @@ public class GrpcContainer {
                 return Integer.compare(p1, p2);
             }
         }).collect(Collectors.toList());
-    }
-
-    public Instance<GrpcHealthStorage> getHealthStorage() {
-        return healthStorage;
     }
 
     public Instance<BindableService> getServices() {

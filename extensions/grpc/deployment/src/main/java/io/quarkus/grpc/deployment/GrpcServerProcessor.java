@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -24,20 +25,20 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
-import io.grpc.BindableService;
 import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -58,8 +59,6 @@ import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
-import io.quarkus.grpc.runtime.supports.context.GrpcEnableRequestContext;
-import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextCdiInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -68,6 +67,8 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class GrpcServerProcessor {
+
+    private static final Set<String> BLOCKING_SKIPPED_METHODS = Set.of("bindService", "<init>", "withCompression");
 
     private static final Logger logger = Logger.getLogger(GrpcServerProcessor.class);
 
@@ -138,12 +139,8 @@ public class GrpcServerProcessor {
             }
             if (!excluded) {
                 logger.debugf("Registering generated gRPC bean %s that will delegate to %s", generatedBean, userDefinedBean);
-                Set<MethodInfo> blockingMethods = new HashSet<>();
-                for (MethodInfo method : userDefinedBean.methods()) {
-                    if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
-                        blockingMethods.add(method);
-                    }
-                }
+                Set<MethodInfo> blockingMethods = gatherBlockingMethods(userDefinedBean);
+
                 generatedBeans.put(generatedBean.name(), blockingMethods);
             }
         }
@@ -193,13 +190,27 @@ public class GrpcServerProcessor {
                 continue;
             }
             BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
-            for (MethodInfo method : service.methods()) {
-                if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
-                    item.registerBlockingMethod(method.name());
-                }
+            Set<MethodInfo> blockingMethods = gatherBlockingMethods(service);
+            for (MethodInfo method : blockingMethods) {
+                item.registerBlockingMethod(method.name());
             }
             bindables.produce(item);
         }
+    }
+
+    private Set<MethodInfo> gatherBlockingMethods(ClassInfo service) {
+        Set<MethodInfo> result = new HashSet<>();
+        boolean classHasBlocking = service.classAnnotation(GrpcDotNames.BLOCKING) != null;
+        for (MethodInfo method : service.methods()) {
+            if (BLOCKING_SKIPPED_METHODS.contains(method.name())) {
+                continue;
+            }
+            if (method.hasAnnotation(GrpcDotNames.BLOCKING)
+                    || (classHasBlocking && !method.hasAnnotation(GrpcDotNames.NON_BLOCKING))) {
+                result.add(method);
+            }
+        }
+        return result;
     }
 
     @BuildStep
@@ -226,14 +237,11 @@ public class GrpcServerProcessor {
                     @Override
                     public void transform(TransformationContext context) {
                         ClassInfo clazz = context.getTarget().asClass();
-                        if (userDefinedServices.contains(clazz.name())) {
-                            // Add @GrpcEnableRequestContext to activate the request context during each call
-                            Transformation transform = context.transform().add(GrpcDotNames.GRPC_ENABLE_REQUEST_CONTEXT);
-                            if (!customScopes.isScopeDeclaredOn(clazz)) {
-                                // Add @Singleton to make it a bean
-                                transform.add(BuiltinScope.SINGLETON.getName());
-                            }
-                            transform.done();
+                        if (userDefinedServices.contains(clazz.name()) && !customScopes.isScopeDeclaredOn(clazz)) {
+                            // Add @Singleton to make it a bean
+                            context.transform()
+                                    .add(BuiltinScope.SINGLETON.getName())
+                                    .done();
                         }
                     }
                 });
@@ -242,18 +250,35 @@ public class GrpcServerProcessor {
     @BuildStep
     void validateBindableServices(ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
-        Type generatedBeanType = Type.create(GrpcDotNames.MUTINY_BEAN, org.jboss.jandex.Type.Kind.CLASS);
-        for (BeanInfo bean : validationPhase.getContext().beans().classBeans().withBeanType(BindableService.class)) {
-            if (!bean.getTypes().contains(generatedBeanType) && bean.getQualifiers().stream().map(AnnotationInstance::name)
-                    .noneMatch(GrpcDotNames.GRPC_SERVICE::equals)) {
-                errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                        new IllegalStateException(
-                                "A gRPC service bean must be annotated with @io.quarkus.grpc.GrpcService: " + bean)));
+        Type mutinyBeanType = Type.create(GrpcDotNames.MUTINY_BEAN, org.jboss.jandex.Type.Kind.CLASS);
+        Type mutinyServiceType = Type.create(GrpcDotNames.MUTINY_SERVICE, org.jboss.jandex.Type.Kind.CLASS);
+        Type bindableServiceType = Type.create(GrpcDotNames.BINDABLE_SERVICE, org.jboss.jandex.Type.Kind.CLASS);
+        Predicate<Set<Type>> predicate = new Predicate<Set<Type>>() {
+            @Override
+            public boolean test(Set<Type> types) {
+                return types.contains(bindableServiceType) || types.contains(mutinyServiceType);
             }
-            if (!bean.getScope().getDotName().equals(BuiltinScope.SINGLETON.getName())) {
-                errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                        new IllegalStateException("A gRPC service bean must have the javax.inject.Singleton scope: " + bean)));
-            }
+        };
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans().matchBeanTypes(predicate)) {
+            validateBindableService(bean, mutinyBeanType, errors);
+        }
+        // Validate the removed beans as well - detect beans not annotated with @GrpcService
+        for (BeanInfo bean : validationPhase.getContext().removedBeans().classBeans().matchBeanTypes(predicate)) {
+            validateBindableService(bean, mutinyBeanType, errors);
+        }
+    }
+
+    private void validateBindableService(BeanInfo bean, Type generatedBeanType,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
+        if (!bean.getTypes().contains(generatedBeanType) && bean.getQualifiers().stream().map(AnnotationInstance::name)
+                .noneMatch(GrpcDotNames.GRPC_SERVICE::equals)) {
+            errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                    new IllegalStateException(
+                            "A gRPC service bean must be annotated with @io.quarkus.grpc.GrpcService: " + bean)));
+        }
+        if (!bean.getScope().getDotName().equals(BuiltinScope.SINGLETON.getName())) {
+            errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                    new IllegalStateException("A gRPC service bean must have the javax.inject.Singleton scope: " + bean)));
         }
     }
 
@@ -272,8 +297,6 @@ public class GrpcServerProcessor {
             List<BindableServiceBuildItem> bindables, BuildProducer<FeatureBuildItem> features) {
         // @GrpcService is a CDI qualifier
         beans.produce(new AdditionalBeanBuildItem(GrpcService.class));
-        beans.produce(new AdditionalBeanBuildItem(GrpcRequestContextCdiInterceptor.class));
-        beans.produce(new AdditionalBeanBuildItem(GrpcEnableRequestContext.class));
 
         if (!bindables.isEmpty() || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcContainer.class));
@@ -285,6 +308,7 @@ public class GrpcServerProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     ServiceStartBuildItem initializeServer(GrpcServerRecorder recorder, GrpcConfiguration config,
             ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
             LaunchModeBuildItem launchModeBuildItem,
@@ -298,7 +322,7 @@ public class GrpcServerProcessor {
             }
         }
 
-        if (!bindables.isEmpty()) {
+        if (!bindables.isEmpty() || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown, blocking, launchModeBuildItem.getLaunchMode());
             return new ServiceStartBuildItem(GRPC_SERVER);
         }

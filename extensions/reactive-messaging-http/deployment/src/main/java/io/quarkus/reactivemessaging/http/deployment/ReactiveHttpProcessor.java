@@ -107,7 +107,7 @@ public class ReactiveHttpProcessor {
                     });
         }
         if (!wsConfigs.isEmpty()) {
-            Handler<RoutingContext> handler = recorder.createWebSocketeHandler();
+            Handler<RoutingContext> handler = recorder.createWebSocketHandler();
 
             wsConfigs.stream()
                     .map(WebSocketStreamConfig::path)

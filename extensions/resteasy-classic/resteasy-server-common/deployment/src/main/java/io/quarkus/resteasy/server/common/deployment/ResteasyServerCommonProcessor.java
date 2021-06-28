@@ -143,11 +143,11 @@ public class ResteasyServerCommonProcessor {
         /**
          * Whether or not detailed JAX-RS metrics should be enabled if the smallrye-metrics
          * extension is present.
-         *
+         * <p>
          * See <a href=
          * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile
          * Metrics: Optional REST metrics</a>.
-         *
+         * <p>
          * Deprecated. Use {@code quarkus.smallrye-metrics.jaxrs.enabled}.
          */
         @ConfigItem(name = "metrics.enabled", defaultValue = "false")
@@ -327,6 +327,14 @@ public class ResteasyServerCommonProcessor {
                 if (!implementor.hasNoArgsConstructor()) {
                     withoutDefaultCtor.put(implementor.name(), implementor);
                 }
+            }
+        }
+
+        // look for all annotated providers with no default constructor
+        for (final String cls : jaxrsProvidersToRegisterBuildItem.getAnnotatedProviders()) {
+            final ClassInfo info = index.getClassByName(DotName.createSimple(cls));
+            if (info != null && !info.hasNoArgsConstructor()) {
+                withoutDefaultCtor.put(info.name(), info);
             }
         }
 

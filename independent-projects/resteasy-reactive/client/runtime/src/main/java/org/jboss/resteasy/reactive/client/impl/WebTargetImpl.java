@@ -10,6 +10,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
@@ -24,6 +25,10 @@ public class WebTargetImpl implements WebTarget {
     private final ClientImpl restClient;
     final HandlerChain handlerChain;
     final ThreadSetupAction requestContext;
+
+    // an additional handler that is passed to the handlerChain
+    // used to support observability features
+    private ClientRestHandler preClientSendHandler = null;
 
     public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration,
@@ -260,8 +265,11 @@ public class WebTargetImpl implements WebTarget {
 
     protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration) {
-        return new WebTargetImpl(restClient, client, uriBuilder, configuration, handlerChain,
+        WebTargetImpl result = new WebTargetImpl(restClient, client, uriBuilder, configuration,
+                handlerChain.setPreClientSendHandler(preClientSendHandler),
                 requestContext);
+        result.setPreClientSendHandler(preClientSendHandler);
+        return result;
     }
 
     @Override
@@ -296,7 +304,8 @@ public class WebTargetImpl implements WebTarget {
 
     protected InvocationBuilderImpl createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             ConfigurationImpl configuration) {
-        return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration, handlerChain, requestContext);
+        return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration,
+                handlerChain.setPreClientSendHandler(preClientSendHandler), requestContext);
     }
 
     @Override
@@ -375,6 +384,11 @@ public class WebTargetImpl implements WebTarget {
 
     public ClientImpl getRestClient() {
         return restClient;
+    }
+
+    @SuppressWarnings("unused")
+    public void setPreClientSendHandler(ClientRestHandler preClientSendHandler) {
+        this.preClientSendHandler = preClientSendHandler;
     }
 
     Serialisers getSerialisers() {

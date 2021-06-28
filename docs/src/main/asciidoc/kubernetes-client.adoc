@@ -204,12 +204,13 @@ Furthermore, to get a mock server that replies with empty lists by default (inst
 you can use the `EmptyDefaultKubernetesMockServerTestResource.class` instead of
 `KubernetesMockServerTestResource.class`.
 
+[#note-on-generic-types]
+== Note on implementing or extending generic types
 
-== Note on implementing the Watcher interface
-
-Due to the restrictions imposed by GraalVM, extra care needs to be taken when implementing an `io.fabric8.kubernetes.client.Watcher` if the application is intended to work in native mode.
-Essentially every `Watcher` implementation needs to specify the Kubernetes model class that it handles via the ``Watcher``'s generic type at class definition time.
-To better understand this, suppose we want to watch for changes to Kubernetes `Pod` resources. There are a couple ways to write such a `Watcher` that are guaranteed to work in native:
+Due to the restrictions imposed by GraalVM, extra care needs to be taken when implementing or extending generic types provided by the client if the application is intended to work in native mode.
+Essentially every implementation or extension of generic classes such as `Watcher`, `ResourceHandler` or `CustomResource` needs to specify their associated Kubernetes model class (or, in the case of `CustomResource`, regular Java types) at class definition time.
+To better understand this, suppose we want to watch for changes to Kubernetes `Pod` resources.
+There are a couple ways to write such a `Watcher` that are guaranteed to work in native:
 
 [source%nowrap,java]
 ----

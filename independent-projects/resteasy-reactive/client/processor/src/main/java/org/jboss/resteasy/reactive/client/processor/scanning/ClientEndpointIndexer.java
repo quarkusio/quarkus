@@ -32,6 +32,7 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.IndexedParameter;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonArrayHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObjectHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonStructureHandler;
@@ -70,6 +71,7 @@ public class ClientEndpointIndexer
                     clazz.getPathParameters());
             clazz.getMethods().addAll(methods);
 
+            warnForUnsupportedAnnotations(classInfo);
             return MaybeRestClientInterface.success(clazz);
         } catch (Exception e) {
             //kinda bogus, but we just ignore failed interfaces for now
@@ -77,6 +79,16 @@ public class ClientEndpointIndexer
 
             log.warn("Ignoring interface for creating client proxy" + classInfo.name(), e);
             return MaybeRestClientInterface.failure(e.getMessage());
+        }
+    }
+
+    private void warnForUnsupportedAnnotations(ClassInfo classInfo) {
+        if ((classInfo.annotations().get(ResteasyReactiveDotNames.BLOCKING) != null)
+                || (classInfo.annotations().get(ResteasyReactiveDotNames.NON_BLOCKING) != null)) {
+            log.warn(
+                    "'@Blocking' and '@NonBlocking' annotations are not necessary (or supported) on REST Client interfaces. Offending class is '"
+                            + classInfo.name()
+                            + "'. Whether or not the call blocks the calling thread depends on the return type of the method - returning 'Uni', 'Multi' or 'CompletionStage' results in the implementation being non-blocking.");
         }
     }
 

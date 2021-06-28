@@ -18,12 +18,14 @@ import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
 import org.apache.kafka.common.security.authenticator.DefaultLogin;
 import org.apache.kafka.common.security.authenticator.SaslClientCallbackHandler;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerToken;
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerRefreshingLogin;
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClient;
+import org.apache.kafka.common.security.scram.internals.ScramSaslClient;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
@@ -44,6 +46,7 @@ import org.apache.kafka.common.serialization.ShortDeserializer;
 import org.apache.kafka.common.serialization.ShortSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
@@ -408,12 +411,21 @@ public class KafkaProcessor {
 
     @BuildStep
     public void withSasl(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
 
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, AbstractLogin.DefaultLoginCallbackHandler.class));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, SaslClientCallbackHandler.class));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, DefaultLogin.class));
+        reflectiveClass
+                .produce(new ReflectiveClassBuildItem(true, false, false, ScramSaslClient.ScramSaslClientFactory.class));
+
+        // Enable SSL support if kafka.security.protocol is set to something other than PLAINTEXT, which is the default
+        String securityProtocol = ConfigProvider.getConfig().getConfigValue("kafka.security.protocol").getValue();
+        if (securityProtocol != null && SecurityProtocol.forName(securityProtocol) != SecurityProtocol.PLAINTEXT) {
+            sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KAFKA_CLIENT));
+        }
 
         final Type loginModuleType = Type
                 .create(DotName.createSimple(LoginModule.class.getName()), Kind.CLASS);

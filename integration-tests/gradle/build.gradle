@@ -35,7 +35,7 @@ dependencies {
     testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"
     testImplementation "io.quarkus:quarkus-devtools-common:${version}"
     testImplementation "io.quarkus:io.quarkus.gradle.plugin:${version}"
-    testImplementation 'org.assertj:assertj-core:3.19.0'
+    testImplementation 'org.assertj:assertj-core:3.20.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
     testImplementation 'org.awaitility:awaitility:4.1.0'
 }

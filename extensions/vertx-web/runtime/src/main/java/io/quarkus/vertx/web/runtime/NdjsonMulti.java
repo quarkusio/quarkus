@@ -6,7 +6,7 @@ import io.smallrye.mutiny.operators.AbstractMulti;
 import io.smallrye.mutiny.subscription.MultiSubscriber;
 
 /**
- * Just a wrapped to capture the fact that the items must be written as SSE.
+ * Just a wrapped to capture the fact that the items must be written with newline delimited JSON.
  * 
  * @param <T> the type of item.
  */

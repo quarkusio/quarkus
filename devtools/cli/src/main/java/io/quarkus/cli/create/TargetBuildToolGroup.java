@@ -28,8 +28,7 @@ public class TargetBuildToolGroup {
             return BuildTool.GRADLE;
         }
         if (jbang) {
-            // JBang is special/buildless
-            return null;
+            return BuildTool.JBANG;
         }
         if (maven) {
             return BuildTool.MAVEN;

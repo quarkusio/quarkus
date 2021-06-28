@@ -106,13 +106,15 @@ public class TestConsoleHandler implements TestListener {
                             System.exit(0);
                         }
                     }, "Quarkus exit thread").run();
+                } else if (k == 'o' && devModeType != DevModeType.TEST_ONLY) {
+                    testController.toggleTestOutput();
                 } else {
                     if (disabled) {
                         if (k == 'r') {
                             promptHandler.setStatus(BLUE + "Starting tests" + RESET);
                             TestSupport.instance().get().start();
                         }
-                    } else if (!firstRun) {
+                    } else {
                         //TODO: some of this is a bit yuck, this needs some work
                         if (k == 'r') {
                             testController.runAllTests();
@@ -120,8 +122,6 @@ public class TestConsoleHandler implements TestListener {
                             testController.runFailedTests();
                         } else if (k == 'v') {
                             testController.printFullResults();
-                        } else if (k == 'o' && devModeType != DevModeType.TEST_ONLY) {
-                            testController.toggleTestOutput();
                         } else if (k == 'p') {
                             TestSupport.instance().get().stop();
                         } else if (k == 'b') {
@@ -155,12 +155,10 @@ public class TestConsoleHandler implements TestListener {
             System.out.println(helpOption("b", "Toggle 'broken only' mode, where only failing tests are run",
                     testController.isBrokenOnlyMode()));
             System.out.println(helpOption("v", "Print failures from the last test run"));
-            if (devModeType != DevModeType.TEST_ONLY) {
-                System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
-            }
             System.out.println(helpOption("p", "Pause tests"));
         }
         if (devModeType != DevModeType.TEST_ONLY) {
+            System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
             System.out
                     .println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
             System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
@@ -175,13 +173,12 @@ public class TestConsoleHandler implements TestListener {
         disabled = false;
         if (firstRun) {
             promptHandler.setStatus(null);
-            promptHandler.setResults(null);
-            promptHandler.setPrompt(FIRST_RUN_PROMPT);
+            promptHandler.setResults(FIRST_RUN_PROMPT);
         } else {
-            promptHandler.setPrompt(hasHttp ? RUNNING_PROMPT : RUNNING_PROMPT_NO_HTTP);
             promptHandler.setResults(lastResults);
             promptHandler.setStatus(null);
         }
+        promptHandler.setPrompt(hasHttp ? RUNNING_PROMPT : RUNNING_PROMPT_NO_HTTP);
     }
 
     @Override

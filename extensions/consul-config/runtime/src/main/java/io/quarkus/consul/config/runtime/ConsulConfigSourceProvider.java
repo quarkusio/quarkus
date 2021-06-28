@@ -42,7 +42,8 @@ class ConsulConfigSourceProvider implements ConfigSourceProvider {
     @Override
     public Iterable<ConfigSource> getConfigSources(ClassLoader cl) {
         Map<String, ValueType> keys = config.keysAsMap();
-        if (keys.isEmpty()) {
+        Map<String, ValueType> folders = config.foldersAsMap();
+        if (keys.isEmpty() && folders.isEmpty()) {
             log.debug("No keys were configured for config source lookup");
             return Collections.emptyList();
         }
@@ -52,7 +53,7 @@ class ConsulConfigSourceProvider implements ConfigSourceProvider {
         List<Uni<?>> allUnis = new ArrayList<>();
 
         for (Map.Entry<String, ValueType> entry : keys.entrySet()) {
-            String fullKey = config.prefix.isPresent() ? config.prefix.get() + "/" + entry.getKey() : entry.getKey();
+            String fullKey = buildFullKey(entry);
             allUnis.add(consulConfigGateway.getValue(fullKey).invoke(new Consumer<Response>() {
                 @Override
                 public void accept(Response response) {
@@ -60,6 +61,26 @@ class ConsulConfigSourceProvider implements ConfigSourceProvider {
                         result.add(
                                 responseConfigSourceUtil.toConfigSource(response, entry.getValue(),
                                         config.prefix));
+                    } else {
+                        String message = "Key '" + fullKey + "' not found in Consul.";
+                        if (config.failOnMissingKey) {
+                            throw new RuntimeException(message);
+                        } else {
+                            log.info(message);
+                        }
+                    }
+                }
+            }));
+        }
+
+        for (Map.Entry<String, ValueType> entry : folders.entrySet()) {
+            String fullKey = buildFullKey(entry);
+            allUnis.add(consulConfigGateway.getValueRecursive(fullKey).invoke(new Consumer<MultiResponse>() {
+                @Override
+                public void accept(MultiResponse response) {
+                    if (response != null) {
+                        response.getResponses().forEach(
+                                r -> result.add(responseConfigSourceUtil.toConfigSource(r, entry.getValue(), config.prefix)));
                     } else {
                         String message = "Key '" + fullKey + "' not found in Consul.";
                         if (config.failOnMissingKey) {
@@ -86,5 +107,9 @@ class ConsulConfigSourceProvider implements ConfigSourceProvider {
         }
 
         return result;
+    }
+
+    private String buildFullKey(Map.Entry<String, ValueType> entry) {
+        return config.prefix.map(s -> s + "/" + entry.getKey()).orElseGet(entry::getKey);
     }
 }

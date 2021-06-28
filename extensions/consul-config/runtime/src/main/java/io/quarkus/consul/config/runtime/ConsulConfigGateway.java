@@ -9,5 +9,7 @@ interface ConsulConfigGateway {
      */
     Uni<Response> getValue(String key);
 
+    Uni<MultiResponse> getValueRecursive(String key);
+
     void close();
 }

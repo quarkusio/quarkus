@@ -1,6 +1,7 @@
 package io.quarkus.consul.config.runtime;
 
 import static io.quarkus.consul.config.runtime.ResponseUtil.emptyResponse;
+import static io.quarkus.consul.config.runtime.ResponseUtil.validMultiResponse;
 import static io.quarkus.consul.config.runtime.ResponseUtil.validResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -211,11 +212,112 @@ class ConsulConfigSourceProviderTest {
         verify(mockGateway, times(1)).getValue("config/second");
     }
 
+    @Test
+    void testRawFoldersWithoutPrefix() throws IOException {
+        ConsulConfig config = defaultConfig();
+        config.rawValueFolders = keyValues("greeting");
+
+        ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
+        when(mockGateway.getValueRecursive("greeting"))
+                .thenReturn(validMultiResponse(Arrays.asList("greeting/message", "greeting/name"),
+                        Arrays.asList("hello", "quarkus")));
+
+        ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
+
+        Iterable<ConfigSource> configSources = sut.getConfigSources(null);
+        assertThat(configSources).hasSize(2);
+        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hello"));
+        });
+        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("greeting.name", "quarkus"));
+        });
+
+        verify(mockGateway, times(1)).getValueRecursive("greeting");
+    }
+
+    @Test
+    void testRawFoldersWithPrefix() throws IOException {
+        ConsulConfig config = defaultConfig();
+        config.prefix = Optional.of("whatever");
+        config.rawValueFolders = keyValues("greeting");
+
+        ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
+        when(mockGateway.getValueRecursive("whatever/greeting"))
+                .thenReturn(validMultiResponse(Arrays.asList("greeting/message", "greeting/name"),
+                        Arrays.asList("hello", "quarkus")));
+
+        ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
+
+        Iterable<ConfigSource> configSources = sut.getConfigSources(null);
+        assertThat(configSources).hasSize(2);
+        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hello"));
+        });
+        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("greeting.name", "quarkus"));
+        });
+
+        verify(mockGateway, times(1)).getValueRecursive("whatever/greeting");
+    }
+
+    @Test
+    void testCombinedRawFoldersAndKeys() throws IOException {
+        ConsulConfig config = defaultConfig();
+        config.rawValueKeys = keyValues("config/provider");
+        config.rawValueFolders = keyValues("greeting", "salut");
+
+        ConsulConfigGateway mockGateway = mock(ConsulConfigGateway.class);
+        when(mockGateway.getValue("config/provider"))
+                .thenReturn(validResponse("config/provider", "Consul"));
+
+        when(mockGateway.getValueRecursive("greeting"))
+                .thenReturn(validMultiResponse(Arrays.asList("greeting/message-en", "greeting/name"),
+                        Arrays.asList("hello", "quarkus")));
+        when(mockGateway.getValueRecursive("salut"))
+                .thenReturn(validMultiResponse(Arrays.asList("salut/message-fr", "salut/nom"),
+                        Arrays.asList("bonjour", "quarkus")));
+
+        ConsulConfigSourceProvider sut = new ConsulConfigSourceProvider(config, mockGateway);
+
+        Iterable<ConfigSource> configSources = sut.getConfigSources(null);
+        assertThat(configSources).hasSize(5);
+        assertThat(configSources).filteredOn(c -> c.getName().contains("config")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("config.provider", "Consul"));
+        });
+        assertThat(configSources).filteredOn(c -> c.getName().contains("message-en")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("greeting.message-en", "hello"));
+        });
+        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("greeting.name", "quarkus"));
+        });
+        assertThat(configSources).filteredOn(c -> c.getName().contains("message-fr")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("salut.message-fr", "bonjour"));
+        });
+        assertThat(configSources).filteredOn(c -> c.getName().contains("nom")).singleElement().satisfies(c -> {
+            assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
+            assertThat(c.getProperties()).containsOnly(entry("salut.nom", "quarkus"));
+        });
+
+        verify(mockGateway, times(1)).getValue("config/provider");
+        verify(mockGateway, times(1)).getValueRecursive("greeting");
+        verify(mockGateway, times(1)).getValueRecursive("salut");
+    }
+
     private ConsulConfig defaultConfig() {
         ConsulConfig config = new ConsulConfig();
         config.enabled = true;
         config.failOnMissingKey = true;
         config.rawValueKeys = Optional.empty();
+        config.rawValueFolders = Optional.empty();
         config.propertiesValueKeys = Optional.empty();
         config.prefix = Optional.empty();
         config.agent = new ConsulConfig.AgentConfig();

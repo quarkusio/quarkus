@@ -7,6 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -37,7 +39,7 @@ public class ConsulConfig {
 
     /**
      * Keys whose value is a raw string.
-     * When this is used, the keys that end up in the user configuration are the keys specified her with '/' replaced by '.'
+     * When this is used, the keys that end up in the user configuration are the keys specified here with '/' replaced by '.'
      */
     @ConfigItem
     Optional<List<String>> rawValueKeys;
@@ -49,6 +51,15 @@ public class ConsulConfig {
      */
     @ConfigItem
     Optional<List<String>> propertiesValueKeys;
+
+    /**
+     * A folder which will be recursively searched for raw string values.
+     * When this is used, the keys that end up in the user configuration are all the raw keys found under the specified folders
+     * and their sub-folders.
+     * The folder and sub-folder names are also part of the keys, separated by '.'
+     */
+    @ConfigItem
+    Optional<List<String>> rawValueFolders;
 
     /**
      * If set to true, the application will not start if any of the configured config sources cannot be located
@@ -69,6 +80,13 @@ public class ConsulConfig {
             }
         }
         return result;
+    }
+
+    Map<String, ValueType> foldersAsMap() {
+        return rawValueFolders
+                .map(folders -> folders.stream()
+                        .collect(Collectors.toMap(Function.identity(), s -> ValueType.RAW)))
+                .orElse(new LinkedHashMap<>());
     }
 
     @ConfigGroup

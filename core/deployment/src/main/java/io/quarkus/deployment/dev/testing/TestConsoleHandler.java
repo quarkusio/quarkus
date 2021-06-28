@@ -263,7 +263,7 @@ public class TestConsoleHandler implements TestListener {
                             GREEN + "All %d tests are passing (%d skipped), %d tests were run in %dms." + end + RESET,
                             results.getPassedCount(),
                             results.getSkippedCount(),
-                            results.getCurrentTotalCount() - results.getSkippedCount(), results.getTotalTime());
+                            results.getCurrentTotalCount() - results.getCurrentSkippedCount(), results.getTotalTime());
                 } else {
                     currentlyFailing = true;
                     //TODO: this should not use the logger, it should print a nicer status
@@ -281,7 +281,7 @@ public class TestConsoleHandler implements TestListener {
                             RED + "%d tests failed" + RESET + " (" + GREEN + "%d passing" + RESET + ", " + BLUE + "%d skipped"
                                     + RESET + ")" + RED + ", %d tests were run in %dms." + end + RESET,
                             results.getCurrentFailedCount(), results.getPassedCount(), results.getSkippedCount(),
-                            results.getCurrentTotalCount(), results.getTotalTime());
+                            results.getCurrentTotalCount() - results.getCurrentSkippedCount(), results.getTotalTime());
                 }
                 //this will re-print when using the basic console
                 if (!disabled) {

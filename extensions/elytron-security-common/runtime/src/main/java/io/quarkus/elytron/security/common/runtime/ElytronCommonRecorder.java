@@ -15,12 +15,14 @@ public class ElytronCommonRecorder {
 
     public void registerPasswordProvider(ShutdownContext shutdownContext) {
         WildFlyElytronPasswordProvider provider = new WildFlyElytronPasswordProvider();
-        Security.addProvider(provider);
-        shutdownContext.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                Security.removeProvider(provider.getName());
-            }
-        });
+        if (Security.getProvider(provider.getName()) == null) {
+            Security.addProvider(provider);
+            shutdownContext.addShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    Security.removeProvider(provider.getName());
+                }
+            });
+        }
     }
 }

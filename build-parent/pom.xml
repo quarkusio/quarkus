@@ -38,8 +38,9 @@
            what we work with by self downloading it: -->
         <graal-sdk.version-for-documentation>21.1.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
-        <rest-assured.version>4.3.2</rest-assured.version>
-        <mutiny-client.version>1.1.0</mutiny-client.version>
+
+        <htmlunit.version>2.40.0</htmlunit.version>
+        <subethasmtp.version>3.1.7</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -283,6 +284,22 @@
                 <scope>test</scope>
             </dependency>
 
+            <dependency>
+                <groupId>net.sourceforge.htmlunit</groupId>
+                <artifactId>htmlunit</artifactId>
+                <version>${htmlunit.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.httpcomponents</groupId>
+                        <artifactId>httpmime</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <!-- Webjars for UI related -->
             <dependency>
                 <groupId>org.webjars</groupId>
@@ -298,6 +315,13 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>jquery</artifactId>
                 <version>${webjar.jquery.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.subethamail</groupId>
+                <artifactId>subethasmtp</artifactId>
+                <version>${subethasmtp.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

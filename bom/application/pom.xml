@@ -99,7 +99,6 @@
         <agroal.version>1.11</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <elasticsearch-rest-client.version>7.10.0</elasticsearch-rest-client.version>
-        <rxjava1.version>1.3.8</rxjava1.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>
@@ -129,7 +128,6 @@
         <junit.jupiter.version>5.7.2</junit.jupiter.version>
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.19.0</assertj.version>
-        <json-smart.version>2.4.1</json-smart.version>
         <infinispan.version>12.1.4.Final</infinispan.version>
         <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
         <caffeine.version>2.9.1</caffeine.version>
@@ -170,7 +168,6 @@
         <proton-j.version>0.33.8</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
         <sentry.version>4.3.0</sentry.version>
-        <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>5.4.1</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
@@ -178,7 +175,6 @@
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <htmlunit.version>2.40.0</htmlunit.version>
         <mockito.version>3.11.2</mockito.version>
         <jna.version>5.3.1</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.8</antlr.version>
@@ -2937,11 +2933,6 @@
                 <version>${rxjava.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.reactivex</groupId>
-                <artifactId>rxjava</artifactId>
-                <version>${rxjava1.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.opentracing</groupId>
                 <artifactId>opentracing-api</artifactId>
                 <version>${opentracing.version}</version>
@@ -3694,11 +3685,6 @@
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.subethamail</groupId>
-                <artifactId>subethasmtp</artifactId>
-                <version>${subethasmtp.version}</version>
-            </dependency>
 
             <dependency>
                 <groupId>org.mongodb</groupId>
@@ -3730,11 +3716,6 @@
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-crypt</artifactId>
                 <version>${mongo-crypt.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.minidev</groupId>
-                <artifactId>json-smart</artifactId>
-                <version>${json-smart.version}</version>
             </dependency>
             <dependency>
                 <!-- Solves version conflicts -->
@@ -4467,21 +4448,6 @@
                 <artifactId>org.jacoco.agent</artifactId>
                 <version>${jacoco.version}</version>
                 <classifier>runtime</classifier>
-            </dependency>
-            <dependency>
-                <groupId>net.sourceforge.htmlunit</groupId>
-                <artifactId>htmlunit</artifactId>
-                <version>${htmlunit.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpmime</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

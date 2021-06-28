@@ -11,7 +11,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "{command.name}", mixinStandardHelpOptions = true)
-public class {command.class-name} {
+public class {command.class-name} implements Runnable {
 
     @Parameters(paramLabel = "<name>", defaultValue = "picocli",
         description = "Your name.")

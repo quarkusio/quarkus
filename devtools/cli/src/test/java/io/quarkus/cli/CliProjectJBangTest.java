@@ -77,6 +77,33 @@ public class CliProjectJBangTest {
         CliDriver.invokeValidateBuild(project);
     }
 
+    @Test
+    public void testCreateCliDefaults() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "--jbang", "--verbose", "-e", "-B");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+
+        Assertions.assertTrue(project.resolve("jbang").toFile().exists(),
+                "Wrapper should exist by default");
+
+        validateBasicIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
+                CreateProjectHelper.DEFAULT_ARTIFACT_ID,
+                CreateProjectHelper.DEFAULT_VERSION);
+
+        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+
+        String source = CliDriver.readFileAsString(project, javaMain);
+        Assertions.assertFalse(source.contains("quarkus-resteasy"),
+                "Generated source should reference resteasy. Found:\n" + source);
+        Assertions.assertTrue(source.contains("quarkus-picocli"),
+                "Generated source should not reference picocli. Found:\n" + source);
+
+        result = CliDriver.invokeValidateDryRunBuild(project);
+
+        CliDriver.invokeValidateBuild(project);
+    }
+
     void validateBasicIdentifiers(Path project, String group, String artifact, String version) throws Exception {
         Assertions.assertTrue(project.resolve("README.md").toFile().exists(),
                 "README.md should exist: " + project.resolve("README.md").toAbsolutePath().toString());

@@ -120,6 +120,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
     public static final String CDI_WRAPPER_SUFFIX = "$$CDIWrapper";
 
+    public static final String METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY = "METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY";
+
     static {
         Map<String, String> prims = new HashMap<>();
         prims.put(byte.class.getName(), Byte.class.getName());
@@ -468,7 +470,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
 
-            Type nonAsyncReturnType = getNonAsyncReturnType(currentMethodInfo.returnType());
+            Type nonAsyncReturnType = getNonAsyncReturnType(methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
+                    ? (Type) methodContext.get(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
+                    : currentMethodInfo.returnType());
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
             String[] produces = extractProducesConsumesValues(currentMethodInfo.annotation(PRODUCES), classProduces);

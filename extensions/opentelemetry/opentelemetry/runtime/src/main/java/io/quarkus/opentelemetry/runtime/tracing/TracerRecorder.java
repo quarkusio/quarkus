@@ -35,7 +35,8 @@ public class TracerRecorder {
     }
 
     /* STATIC INIT */
-    public RuntimeValue<SdkTracerProvider> createTracerProvider(TracerConfig config,
+    public RuntimeValue<SdkTracerProvider> createTracerProvider(
+            String quarkusVersion,
             String serviceName,
             String serviceVersion,
             ShutdownContext shutdownContext) {
@@ -58,7 +59,9 @@ public class TracerRecorder {
                 .merge(Resource.create(
                         Attributes.of(
                                 ResourceAttributes.SERVICE_NAME, serviceName,
-                                ResourceAttributes.SERVICE_VERSION, serviceVersion)))
+                                ResourceAttributes.SERVICE_VERSION, serviceVersion,
+                                ResourceAttributes.WEBENGINE_NAME, "Quarkus",
+                                ResourceAttributes.WEBENGINE_VERSION, quarkusVersion)))
                 .getAttributes());
 
         // Define Service Resource

@@ -23,6 +23,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.builder.Version;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -127,7 +128,7 @@ public class TracerProcessor {
 
     @BuildStep(onlyIf = TracerEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
-    TracerProviderBuildItem createTracerProvider(OpenTelemetryConfig config,
+    TracerProviderBuildItem createTracerProvider(
             TracerRecorder recorder,
             ApplicationInfoBuildItem appInfo,
             ShutdownContextBuildItem shutdownContext,
@@ -135,7 +136,7 @@ public class TracerProcessor {
         String serviceName = appInfo.getName();
         String serviceVersion = appInfo.getVersion();
         return new TracerProviderBuildItem(
-                recorder.createTracerProvider(config.tracer, serviceName, serviceVersion, shutdownContext));
+                recorder.createTracerProvider(Version.getVersion(), serviceName, serviceVersion, shutdownContext));
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)

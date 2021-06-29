@@ -504,13 +504,13 @@ All that is needed to enable the fault tolerance features in Quarkus is:
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/5.1.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/5.2.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
-Support for Mutiny is present, so your `@Asynchronous` methods can return `Uni`.
+Support for Mutiny is present, so your asynchronous methods can return `Uni` in addition to `CompletionStage`.
 
-MicroProfile Context Propagation is integrated with Fault Tolerance, so existing contexts are automatically propagated to your `@Asynchronous` methods.
+MicroProfile Context Propagation is integrated with Fault Tolerance, so existing contexts are automatically propagated to your asynchronous methods.
 
 [NOTE]
 ====
@@ -519,4 +519,17 @@ This is contrary to MicroProfile Fault Tolerance specification, which states tha
 
 We believe that in presence of MicroProfile Context Propagation, this requirement should not apply.
 The entire point of context propagation is to make sure the new thread has the same contexts as the original thread.
+====
+
+Non-compatible mode is enabled by default, so methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without any `@Asynchronous`, `@Blocking` or `@NonBlocking` annotation.
+
+[NOTE]
+====
+This mode is not compatible with the MicroProfile Fault Tolerance specification, albeit the incompatibility is very small.
+To restore full compatibility, add this configuration property:
+
+[source,properties]
+----
+smallrye.faulttolerance.mp-compatibility=true
+----
 ====

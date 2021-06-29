@@ -15,7 +15,7 @@
     
     <properties>
         <jdbc-db2.url>jdbc:db2://localhost:50000/hreact</jdbc-db2.url>
-        <db2.image>ibmcom/db2:11.5.5.0</db2.image>
+        <db2.image>ibmcom/db2:11.5.6.0</db2.image>
     </properties>
     
     <dependencies>

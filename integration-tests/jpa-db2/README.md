@@ -30,7 +30,7 @@ docker run \
   -e LICENSE=accept \
   -p 50000:50000 \
   --privileged \
-  ibmcom/db2:11.5.5.0
+  ibmcom/db2:11.5.6.0
 ```
 
 2. Run the test, specifying the JDBC URL for the container you started in the previous step

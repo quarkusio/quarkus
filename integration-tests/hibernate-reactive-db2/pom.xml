@@ -14,7 +14,7 @@
     <description>Hibernate Reactive related tests running with the DB2 database</description>
 
     <properties>
-        <db2.image>ibmcom/db2:11.5.5.0</db2.image>
+        <db2.image>ibmcom/db2:11.5.6.0</db2.image>
         <reactive-db2.url>vertx-reactive:db2://localhost:50000/hreact</reactive-db2.url>
     </properties>
     <dependencies>

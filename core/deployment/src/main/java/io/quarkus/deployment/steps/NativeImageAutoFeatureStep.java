@@ -13,11 +13,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.StreamSupport;
 
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+
+import com.google.common.collect.Iterables;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -67,6 +71,7 @@ public class NativeImageAutoFeatureStep {
     private static final MethodDescriptor RESOURCES_REGISTRY_IGNORE_RESOURCES = ofMethod(
             "com.oracle.svm.core.configure.ResourcesRegistry",
             "ignoreResources", void.class, String.class);
+    private static final int MAXIMUM_JAVAMETHOD_SIZE = (1 << Short.SIZE) - 1;
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
@@ -99,10 +104,12 @@ public class NativeImageAutoFeatureStep {
                 Object.class.getName(), Feature.class.getName());
         file.addAnnotation("com.oracle.svm.core.annotate.AutomaticFeature");
 
+        // Unique id for additional 'beforeAnalysis' methods
+        AtomicInteger beforeAnSubId = new AtomicInteger(1);
+
         //MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
         MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
-        //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
         ResultHandle beforeAnalysisParam = beforeAn.getMethodParam(0);
         for (UnsafeAccessedFieldBuildItem unsafeAccessedField : unsafeAccessedFields) {
@@ -195,12 +202,7 @@ public class NativeImageAutoFeatureStep {
             }
         }
 
-        for (NativeImageResourceBuildItem i : resources) {
-            for (String j : i.getResources()) {
-                overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
-                        overallCatch.load(j));
-            }
-        }
+        registerResources(file, overallCatch, beforeAnSubId, resources);
 
         /* Resource includes and excludes */
         if (!resourcePatterns.isEmpty()) {
@@ -458,6 +460,32 @@ public class NativeImageAutoFeatureStep {
         } else {
             existing.methodSet.add(methodInfo);
         }
+    }
+
+    private void registerResources(ClassCreator file, TryBlock overallCatch, AtomicInteger beforeAnSubId,
+            List<NativeImageResourceBuildItem> resources) {
+        // Methods exists of 1 byte for the return statement, and 6 bytes per resource (LDC_W, INVOKESTATIC)
+        int partitionSize = (MAXIMUM_JAVAMETHOD_SIZE - 1) / 6;
+
+        Iterable<List<String>> resourcePartitions = Iterables.partition(resources.stream()
+                .map(NativeImageResourceBuildItem::getResources)
+                .flatMap(List::stream)::iterator, partitionSize);
+
+        StreamSupport.stream(resourcePartitions.spliterator(), false)
+                .forEach(resourcesPartition -> {
+                    MethodCreator beforeAnCustom = file.getMethodCreator("beforeAnalysis_" + beforeAnSubId.getAndIncrement(),
+                            "V", BEFORE_ANALYSIS_ACCESS);
+                    resourcesPartition.stream()
+                            .map(beforeAnCustom::load)
+                            .forEach(handle -> beforeAnCustom.invokeStaticMethod(
+                                    ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
+                                    handle));
+
+                    beforeAnCustom.returnValue(null);
+
+                    overallCatch.invokeVirtualMethod(beforeAnCustom.getMethodDescriptor(), overallCatch.getThis(),
+                            overallCatch.getMethodParam(0));
+                });
     }
 
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,

@@ -1,6 +1,7 @@
 package io.quarkus.micrometer.test;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
@@ -52,5 +53,12 @@ public class Util {
                     return x.getId().getTag(tag);
                 })
                 .collect(Collectors.joining(","));
+    }
+
+    public static <T> void waitForMeters(Collection<T> collection, int count) throws InterruptedException {
+        int i = 0;
+        do {
+            Thread.sleep(3);
+        } while (collection.size() < count && i++ < 10);
     }
 }

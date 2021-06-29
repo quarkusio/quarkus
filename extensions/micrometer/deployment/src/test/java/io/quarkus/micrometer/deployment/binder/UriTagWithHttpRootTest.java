@@ -63,6 +63,9 @@ public class UriTagWithHttpRootTest {
         when().get("/foo/async-ping/two").then().statusCode(200);
         when().get("/foo/async-ping/three").then().statusCode(200);
 
+        Util.waitForMeters(registry.find("http.server.requests").timers(), 5);
+        Util.waitForMeters(registry.find("http.client.requests").timers(), 1);
+
         System.out.println("Server paths\n" + Util.listMeters(registry, "http.server.requests"));
         System.out.println("Client paths\n" + Util.listMeters(registry, "http.client.requests"));
 

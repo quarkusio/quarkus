@@ -243,6 +243,7 @@ Do the same with _Names count to use static import with '\*'_.
 * Navigate to the directory: `cd quarkus`
 * Set Maven heap to 4GB `export MAVEN_OPTS="-Xmx4g"`
 * Invoke `./mvnw -Dquickly` from the root directory
+* _Note: On Windows, it may be necessary to run the build from an elevated shell. If you experience a failed build with the error `"A required privilege is not held by the client"`, this should fix it._
 
 ```bash
 git clone https://github.com/quarkusio/quarkus.git

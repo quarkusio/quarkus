@@ -25,8 +25,10 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
             for (Field field : current.getDeclaredFields()) {
                 InjectMock injectMockAnnotation = field.getAnnotation(InjectMock.class);
                 if (injectMockAnnotation != null) {
+                    boolean returnsDeepMocks = injectMockAnnotation.returnsDeepMocks();
                     Object beanInstance = getBeanInstance(testInstance, field, InjectMock.class);
-                    Optional<Object> result = createMockAndSetTestField(testInstance, field, beanInstance);
+                    Optional<Object> result = createMockAndSetTestField(testInstance, field, beanInstance,
+                            new MockConfiguration(returnsDeepMocks));
                     if (result.isPresent()) {
                         MockitoMocksTracker.track(testInstance, result.get(), beanInstance);
                     }
@@ -36,7 +38,8 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, Object beanInstance) {
+    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, Object beanInstance,
+            MockConfiguration mockConfiguration) {
         Class<?> beanClass = beanInstance.getClass();
         // make sure we don't mock proxy classes, especially given that they don't have generics info
         if (ClientProxy.class.isAssignableFrom(beanClass)) {
@@ -51,7 +54,11 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
             mock = currentMock.get();
             isNew = false;
         } else {
-            mock = Mockito.mock(beanClass);
+            if (mockConfiguration.useDeepMocks) {
+                mock = Mockito.mock(beanClass, Mockito.RETURNS_DEEP_STUBS);
+            } else {
+                mock = Mockito.mock(beanClass);
+            }
             isNew = true;
         }
         field.setAccessible(true);
@@ -91,5 +98,14 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
             }
         }
         return qualifiers.toArray(new Annotation[0]);
+    }
+
+    private static class MockConfiguration {
+        final boolean useDeepMocks;
+
+        private MockConfiguration(boolean useDeepMocks) {
+            this.useDeepMocks = useDeepMocks;
+        }
+
     }
 }

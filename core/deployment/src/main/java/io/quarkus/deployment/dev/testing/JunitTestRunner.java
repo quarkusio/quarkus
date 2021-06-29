@@ -193,6 +193,7 @@ public class JunitTestRunner {
                 QuarkusConsole.INSTANCE.setOutputFilter(logHandler);
 
                 final Deque<Set<String>> touchedClasses = new LinkedBlockingDeque<>();
+                Map<TestIdentifier, Long> startTimes = new HashMap<>();
                 final AtomicReference<Set<String>> startupClasses = new AtomicReference<>();
                 TracingHandler.setTracingHandler(new TracingHandler.TraceListener() {
                     @Override
@@ -217,6 +218,7 @@ public class JunitTestRunner {
                         if (aborted) {
                             return;
                         }
+                        startTimes.put(testIdentifier, System.currentTimeMillis());
                         String className = "";
                         Class<?> clazz = null;
                         if (testIdentifier.getSource().isPresent()) {
@@ -259,7 +261,7 @@ public class JunitTestRunner {
                                     s -> new HashMap<>());
                             TestResult result = new TestResult(displayName, testClass.getName(), id,
                                     TestExecutionResult.aborted(null),
-                                    logHandler.captureOutput(), testIdentifier.isTest(), runId);
+                                    logHandler.captureOutput(), testIdentifier.isTest(), runId, 0);
                             results.put(id, result);
                             if (result.isTest()) {
                                 for (TestRunListener listener : listeners) {
@@ -318,7 +320,8 @@ public class JunitTestRunner {
                             Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
                                     s -> new HashMap<>());
                             TestResult result = new TestResult(displayName, testClass.getName(), id, testExecutionResult,
-                                    logHandler.captureOutput(), testIdentifier.isTest(), runId);
+                                    logHandler.captureOutput(), testIdentifier.isTest(), runId,
+                                    System.currentTimeMillis() - startTimes.get(testIdentifier));
                             results.put(id, result);
                             if (result.isTest()) {
                                 for (TestRunListener listener : listeners) {
@@ -423,6 +426,7 @@ public class JunitTestRunner {
             List<TestResult> passing = new ArrayList<>();
             List<TestResult> failing = new ArrayList<>();
             List<TestResult> skipped = new ArrayList<>();
+            long time = 0;
             for (TestResult i : Optional.ofNullable(resultsByClass.get(clazz)).orElse(Collections.emptyMap()).values()) {
                 if (i.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED) {
                     failing.add(i);
@@ -431,8 +435,11 @@ public class JunitTestRunner {
                 } else {
                     passing.add(i);
                 }
+                if (i.getUniqueId().getLastSegment().getType().equals("class")) {
+                    time = i.time;
+                }
             }
-            resultMap.put(clazz, new TestClassResult(clazz, passing, failing, skipped));
+            resultMap.put(clazz, new TestClassResult(clazz, passing, failing, skipped, time));
         }
         return resultMap;
     }

@@ -62,7 +62,7 @@
         <gradle-wrapper.version>6.9</gradle-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>3.0</microprofile-health-api.version>
+        <microprofile-health-api.version>3.1</microprofile-health-api.version>
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
         <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>

@@ -51,6 +51,14 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+            <exclusions>
+                <!-- TODO remove once reactive-messaging upgrades to MP Health 3.1 -->
+                <!-- avoid convergence error; use health-api version from quarkus-smallrye-health -->
+                <exclusion>
+                    <groupId>org.eclipse.microprofile.health</groupId>
+                    <artifactId>microprofile-health-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
 

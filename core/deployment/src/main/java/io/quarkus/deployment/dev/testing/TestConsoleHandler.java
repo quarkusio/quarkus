@@ -279,7 +279,8 @@ public class TestConsoleHandler implements TestListener {
                         }
                     }
                     log.error(
-                            statusFooter(RED + results.getCurrentFailedCount() + " TESTS FAILED"));
+                            statusFooter(RED + results.getCurrentFailedCount() + " "
+                                    + pluralize("TEST", "TESTS", results.getCurrentFailedCount()) + " FAILED"));
                     lastResults = String.format(
                             RED + "%d " + pluralize("test", "tests", results.getCurrentFailedCount()) + " failed"
                                     + RESET + " (" + GREEN + "%d passing" + RESET + ", " + BLUE + "%d skipped"

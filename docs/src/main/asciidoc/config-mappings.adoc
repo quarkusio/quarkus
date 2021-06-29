@@ -424,6 +424,44 @@ interface Server {
 
 WARNING: For validation to work, the `quarkus-hibernate-validator` extension is required.
 
+=== Mocking
+
+A mapping interface implementation is not a proxy, so it cannot be mocked directly with `@InjectMock` like other CDI
+beans. One trick is to make it a proxyable implementation:
+
+[source,java]
+----
+@ApplicationScoped
+@io.quarkus.test.Mock
+public class ServerMock implements Server {
+    public String host() {
+        // Mockito will provide the mocking code, so this is never called
+        throw new IllegalStateException();
+    }
+
+    public int port() {
+        throw new IllegalStateException();
+    }
+}
+----
+
+The `ServerMock` can be injected as a mock into a Quarkus test class:
+
+[source,java]
+----
+@QuarkusTest
+class ServerMockTest {
+    @InjectMock
+    ServerMock serverMock;
+
+    @Test
+    void localhost() {
+        Mockito.when(serverMock.host()).thenReturn("localhost");
+        assertEquals("localhost", serverMock.host());
+    }
+}
+----
+
 [[config-properties]]
 == [.line-through]#`@ConfigProperties`# (Deprecated)
 

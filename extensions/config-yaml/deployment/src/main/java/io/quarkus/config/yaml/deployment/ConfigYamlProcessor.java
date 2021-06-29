@@ -7,6 +7,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 
 public final class ConfigYamlProcessor {
 
@@ -17,10 +18,15 @@ public final class ConfigYamlProcessor {
 
     @BuildStep
     public void bootstrap(
-            BuildProducer<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProvider) {
+            BuildProducer<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProvider,
+            BuildProducer<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProvider) {
         additionalBootstrapConfigSourceProvider.produce(new AdditionalBootstrapConfigSourceProviderBuildItem(
                 ApplicationYamlConfigSourceLoader.InFileSystem.class.getName()));
         additionalBootstrapConfigSourceProvider.produce(new AdditionalBootstrapConfigSourceProviderBuildItem(
+                ApplicationYamlConfigSourceLoader.InClassPath.class.getName()));
+        staticInitConfigSourceProvider.produce(new StaticInitConfigSourceProviderBuildItem(
+                ApplicationYamlConfigSourceLoader.InFileSystem.class.getName()));
+        staticInitConfigSourceProvider.produce(new StaticInitConfigSourceProviderBuildItem(
                 ApplicationYamlConfigSourceLoader.InClassPath.class.getName()));
     }
 

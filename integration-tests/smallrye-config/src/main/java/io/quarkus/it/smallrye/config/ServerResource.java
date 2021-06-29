@@ -1,5 +1,6 @@
 package io.quarkus.it.smallrye.config;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -10,6 +11,7 @@ import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.smallrye.config.ConfigValidationException;
 import io.smallrye.config.SmallRyeConfig;
@@ -23,6 +25,9 @@ public class ServerResource {
     @Inject
     @ConfigProperties
     ServerProperties serverProperties;
+    @Inject
+    @ConfigProperty(name = "server.info.message")
+    Instance<String> message;
 
     @GET
     public Response getServer() {
@@ -53,5 +58,11 @@ public class ServerResource {
         }
 
         return Response.serverError().build();
+    }
+
+    @GET
+    @Path("/info")
+    public String info() {
+        return message.get();
     }
 }

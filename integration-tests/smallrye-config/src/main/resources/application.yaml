@@ -75,3 +75,8 @@ cloud:
 profile:
   main:
     yaml: main
+
+server:
+  info:
+    message: My application info
+    version: 1.2.3.4

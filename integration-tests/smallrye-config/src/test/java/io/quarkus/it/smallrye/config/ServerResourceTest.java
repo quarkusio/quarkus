@@ -5,6 +5,7 @@ import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -65,6 +66,16 @@ class ServerResourceTest {
                 .statusCode(OK.getStatusCode())
                 .body("host", equalTo("localhost"))
                 .body("port", equalTo(8080));
+    }
+
+    @Test
+    void info() {
+        given()
+                .get("/server/info")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .header("X-VERSION", "1.2.3.4")
+                .body(containsString("My application info"));
     }
 
     @Test

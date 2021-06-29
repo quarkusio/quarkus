@@ -19,7 +19,9 @@ public class PropertyNotFoundNoopTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("foos:{foos}"), "templates/test.html")
-                    .addAsResource(new StringAsset("quarkus.qute.property-not-found-strategy=noop"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.qute.property-not-found-strategy=noop"
+                            + "\nquarkus.qute.strict-rendering=false"),
+                            "application.properties"));
 
     @Inject
     Template test;

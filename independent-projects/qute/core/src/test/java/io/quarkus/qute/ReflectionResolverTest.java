@@ -33,7 +33,7 @@ public class ReflectionResolverTest {
     @Test
     public void testMethodWithParameterNotFound() {
         assertEquals("NOT_FOUND", Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build()
-                .parse("{foo.computeLength(true)}").data("foo", new Foo("box")).render());
+                .parse("{foo.computeLength(true) ?: 'NOT_FOUND'}").data("foo", new Foo("box")).render());
     }
 
     @Test

@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 final class ExpressionImpl implements Expression {
 
-    static final ExpressionImpl EMPTY = new ExpressionImpl(0, null, Collections.emptyList(), null, null);
+    static final ExpressionImpl EMPTY = new ExpressionImpl(0, null, Collections.emptyList(), Results.NotFound.EMPTY, null);
 
     /**
      * 

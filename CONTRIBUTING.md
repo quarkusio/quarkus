@@ -471,6 +471,10 @@ This project is an open source project, please act responsibly, be nice, polite 
 
   See section `IDEA Setup` as there are different possible solutions described.
 
+* IntelliJ does not recognize the project as a Java 11 project
+
+  In the Maven pane, uncheck the `include-jdk-misc` and `compile-java8-release-flag` profiles
+
 * Build hangs with DevMojoIT running infinitely
   ```
   ./mvnw clean install

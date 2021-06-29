@@ -189,7 +189,7 @@
         <google-http-client.version>1.38.0</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.35.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.39.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
         <protobuf-java.version>3.14.0</protobuf-java.version>
         <protoc.version>${protobuf-java.version}</protoc.version>

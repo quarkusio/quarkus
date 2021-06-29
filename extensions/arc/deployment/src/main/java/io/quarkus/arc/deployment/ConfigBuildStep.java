@@ -17,6 +17,7 @@ import static org.jboss.jandex.AnnotationValue.createStringValue;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -73,6 +74,7 @@ public class ConfigBuildStep {
     private static final DotName MP_CONFIG_VALUE_NAME = DotName.createSimple(ConfigValue.class.getName());
 
     private static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
+    private static final DotName MAP_NAME = DotName.createSimple(Map.class.getName());
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
     private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
     private static final DotName SUPPLIER_NAME = DotName.createSimple(Supplier.class.getName());
@@ -426,6 +428,7 @@ public class ConfigBuildStep {
                 DotNames.OPTIONAL_INT.equals(type.name()) ||
                 DotNames.OPTIONAL_LONG.equals(type.name()) ||
                 DotNames.OPTIONAL_DOUBLE.equals(type.name()) ||
+                MAP_NAME.equals(type.name()) ||
                 SET_NAME.equals(type.name()) ||
                 LIST_NAME.equals(type.name()) ||
                 DotNames.LONG.equals(type.name()) ||

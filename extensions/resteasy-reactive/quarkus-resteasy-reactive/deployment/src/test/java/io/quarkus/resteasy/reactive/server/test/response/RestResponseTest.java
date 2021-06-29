@@ -83,5 +83,17 @@ public class RestResponseTest {
                 .then().statusCode(404)
                 .and().body(Matchers.equalTo("Unknown cheese: Cheddar"))
                 .and().contentType("text/plain");
+        RestAssured.get("/rest-response-request-filter")
+                .then().statusCode(200)
+                .and().body(Matchers.equalTo("RestResponse request filter"))
+                .and().contentType("text/plain");
+        RestAssured.get("/optional-rest-response-request-filter")
+                .then().statusCode(200)
+                .and().body(Matchers.equalTo("Optional<RestResponse> request filter"))
+                .and().contentType("text/plain");
+        RestAssured.get("/uni-rest-response-request-filter")
+                .then().statusCode(200)
+                .and().body(Matchers.equalTo("Uni<RestResponse> request filter"))
+                .and().contentType("text/plain");
     }
 }

@@ -54,8 +54,10 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.Converters;
+import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * A configuration reader.
@@ -296,6 +298,7 @@ public final class BuildTimeConfigurationReader {
                 nameBuilder.setLength(len);
             }
             // sweep-up
+            SmallRyeConfig runtimeDefaultsConfig = getConfigForRuntimeDefaults();
             for (String propertyName : getAllProperties()) {
                 if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
                     continue;
@@ -380,12 +383,12 @@ public final class BuildTimeConfigurationReader {
                     if (matched != null) {
                         // it's a specified run-time default (record for later)
                         specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
-                                () -> config.getOptionalValue(propertyName, String.class).orElse("")));
+                                () -> runtimeDefaultsConfig.getOptionalValue(propertyName, String.class).orElse("")));
                     }
                 } else {
                     // it's not managed by us; record it
                     specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
-                            () -> config.getOptionalValue(propertyName, String.class).orElse("")));
+                            () -> runtimeDefaultsConfig.getOptionalValue(propertyName, String.class).orElse("")));
                 }
             }
             return new ReadResult(objectsByRootClass, specifiedRunTimeDefaultValues, buildTimeRunTimeVisibleValues,
@@ -733,6 +736,28 @@ public final class BuildTimeConfigurationReader {
                 properties.add(propertyName);
             }
             return properties;
+        }
+
+        /**
+         * Use this Config instance to record the specified runtime default values. We cannot use the main Config
+         * instance because it may record values coming from the EnvSource in build time. We do exclude the properties
+         * coming from the EnvSource, but a call to getValue may still provide values coming from the EnvSource, so we
+         * need to exclude it from sources when recoding values.
+         *
+         * We also do not want to completely exclude the EnvSource, because it may provide values for the build. This
+         * is only specific when recording the defaults.
+         *
+         * @return a new SmallRye instance without the EnvSources.
+         */
+        private SmallRyeConfig getConfigForRuntimeDefaults() {
+            SmallRyeConfigBuilder builder = ConfigUtils.emptyConfigBuilder();
+            for (ConfigSource configSource : config.getConfigSources()) {
+                if (configSource instanceof EnvConfigSource) {
+                    continue;
+                }
+                builder.withSources(configSource);
+            }
+            return builder.build();
         }
     }
 

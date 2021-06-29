@@ -36,9 +36,16 @@ public class TestConsoleHandler implements TestListener {
 
     public static final String PAUSED_PROMPT = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE + "h"
             + RESET + "] for more options>" + RESET;
-    public static final String FIRST_RUN_PROMPT = BLUE + "Running Tests for the first time" + RESET;
+    public static final String PAUSED_PROMPT_NO_HTTP = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE
+            + "s" + RESET + "] to restart with changes, [" + BLUE + "h"
+            + RESET + "] for more options>" + RESET;
+    public static final String FIRST_RUN_PROMPT = BLUE + "Running tests for the first time" + RESET;
     public static final String RUNNING_PROMPT = "Press [" + BLUE + "r" + RESET + "] to re-run, [" + BLUE
             + "v" + RESET + "] to view full results, [" + BLUE + "p" + RESET + "] to pause, [" + BLUE
+            + "h" + RESET + "] for more options>";
+    public static final String RUNNING_PROMPT_NO_HTTP = "Press [" + BLUE + "r" + RESET + "] to re-run, [" + BLUE
+            + "v" + RESET + "] to view full results, [" + BLUE + "p" + RESET + "] to pause, [" + BLUE + "s" + RESET
+            + "] to restart with changes, [" + BLUE
             + "h" + RESET + "] for more options>";
 
     final DevModeType devModeType;
@@ -50,8 +57,15 @@ public class TestConsoleHandler implements TestListener {
     volatile TestController testController;
     private String lastResults;
 
-    public TestConsoleHandler(DevModeType devModeType) {
+    /**
+     * If HTTP is not present we add the 'press s to reload' option to the prompt
+     * to make it clear to users they can restart their apps.
+     */
+    private final boolean hasHttp;
+
+    public TestConsoleHandler(DevModeType devModeType, boolean hasHttp) {
         this.devModeType = devModeType;
+        this.hasHttp = hasHttp;
     }
 
     public void install() {
@@ -92,13 +106,15 @@ public class TestConsoleHandler implements TestListener {
                             System.exit(0);
                         }
                     }, "Quarkus exit thread").run();
+                } else if (k == 'o' && devModeType != DevModeType.TEST_ONLY) {
+                    testController.toggleTestOutput();
                 } else {
                     if (disabled) {
                         if (k == 'r') {
                             promptHandler.setStatus(BLUE + "Starting tests" + RESET);
                             TestSupport.instance().get().start();
                         }
-                    } else if (!firstRun) {
+                    } else {
                         //TODO: some of this is a bit yuck, this needs some work
                         if (k == 'r') {
                             testController.runAllTests();
@@ -106,8 +122,6 @@ public class TestConsoleHandler implements TestListener {
                             testController.runFailedTests();
                         } else if (k == 'v') {
                             testController.printFullResults();
-                        } else if (k == 'o' && devModeType != DevModeType.TEST_ONLY) {
-                            testController.toggleTestOutput();
                         } else if (k == 'p') {
                             TestSupport.instance().get().stop();
                         } else if (k == 'b') {
@@ -127,7 +141,8 @@ public class TestConsoleHandler implements TestListener {
     @Override
     public void listenerRegistered(TestController testController) {
         this.testController = testController;
-        promptHandler.setPrompt(PAUSED_PROMPT);
+        promptHandler.setPrompt(hasHttp ? PAUSED_PROMPT : PAUSED_PROMPT_NO_HTTP);
+
     }
 
     public void printUsage() {
@@ -140,16 +155,14 @@ public class TestConsoleHandler implements TestListener {
             System.out.println(helpOption("b", "Toggle 'broken only' mode, where only failing tests are run",
                     testController.isBrokenOnlyMode()));
             System.out.println(helpOption("v", "Print failures from the last test run"));
-            if (devModeType != DevModeType.TEST_ONLY) {
-                System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
-            }
             System.out.println(helpOption("p", "Pause tests"));
         }
         if (devModeType != DevModeType.TEST_ONLY) {
+            System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
             System.out
                     .println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
             System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
-            System.out.println(helpOption("s", "Force live reload scan"));
+            System.out.println(helpOption("s", "Force restart with any changes"));
         }
         System.out.println(helpOption("h", "Display this help"));
         System.out.println(helpOption("q", "Quit"));
@@ -160,19 +173,18 @@ public class TestConsoleHandler implements TestListener {
         disabled = false;
         if (firstRun) {
             promptHandler.setStatus(null);
-            promptHandler.setResults(null);
-            promptHandler.setPrompt(FIRST_RUN_PROMPT);
+            promptHandler.setResults(FIRST_RUN_PROMPT);
         } else {
-            promptHandler.setPrompt(RUNNING_PROMPT);
             promptHandler.setResults(lastResults);
             promptHandler.setStatus(null);
         }
+        promptHandler.setPrompt(hasHttp ? RUNNING_PROMPT : RUNNING_PROMPT_NO_HTTP);
     }
 
     @Override
     public void testsDisabled() {
         disabled = true;
-        promptHandler.setPrompt(PAUSED_PROMPT);
+        promptHandler.setPrompt(hasHttp ? PAUSED_PROMPT : PAUSED_PROMPT_NO_HTTP);
         promptHandler.setStatus(null);
         promptHandler.setResults(null);
     }
@@ -245,10 +257,16 @@ public class TestConsoleHandler implements TestListener {
                     }
                     currentlyFailing = false;
                     lastResults = String.format(
-                            GREEN + "All %d tests are passing (%d skipped), %d tests were run in %dms." + end + RESET,
+                            GREEN + "All %d " + pluralize("test is", "tests are", results.getPassedCount()) + " passing "
+                                    + "(%d skipped), "
+                                    + "%d "
+                                    + pluralize("test was", "tests were",
+                                            results.getCurrentTotalCount() - results.getCurrentSkippedCount())
+                                    + " run in %dms."
+                                    + end + RESET,
                             results.getPassedCount(),
                             results.getSkippedCount(),
-                            results.getCurrentTotalCount() - results.getSkippedCount(), results.getTotalTime());
+                            results.getCurrentTotalCount() - results.getCurrentSkippedCount(), results.getTotalTime());
                 } else {
                     currentlyFailing = true;
                     //TODO: this should not use the logger, it should print a nicer status
@@ -263,14 +281,17 @@ public class TestConsoleHandler implements TestListener {
                     log.error(
                             statusFooter(RED + results.getCurrentFailedCount() + " TESTS FAILED"));
                     lastResults = String.format(
-                            RED + "%d tests failed" + RESET + " (" + GREEN + "%d passing" + RESET + ", " + BLUE + "%d skipped"
-                                    + RESET + ")" + RED + ", %d tests were run in %dms." + end + RESET,
+                            RED + "%d " + pluralize("test", "tests", results.getCurrentFailedCount()) + " failed"
+                                    + RESET + " (" + GREEN + "%d passing" + RESET + ", " + BLUE + "%d skipped"
+                                    + RESET + "), " + RED + "%d " + pluralize("test was", "tests were",
+                                            results.getCurrentTotalCount() - results.getCurrentSkippedCount())
+                                    + " run in %dms." + end + RESET,
                             results.getCurrentFailedCount(), results.getPassedCount(), results.getSkippedCount(),
-                            results.getCurrentTotalCount(), results.getTotalTime());
+                            results.getCurrentTotalCount() - results.getCurrentSkippedCount(), results.getTotalTime());
                 }
                 //this will re-print when using the basic console
                 if (!disabled) {
-                    promptHandler.setPrompt(RUNNING_PROMPT);
+                    promptHandler.setPrompt(hasHttp ? RUNNING_PROMPT : RUNNING_PROMPT_NO_HTTP);
                     promptHandler.setResults(lastResults);
                     promptHandler.setStatus(null);
                 }
@@ -290,7 +311,7 @@ public class TestConsoleHandler implements TestListener {
             public void testStarted(TestIdentifier testIdentifier, String className) {
                 String status = "Running " + methodCount.get() + "/" + totalNoTests
                         + (failureCount.get() == 0 ? "."
-                                : ". " + failureCount + " failures so far.")
+                                : ". " + failureCount + " " + pluralize("failure", "failures", failureCount) + " so far.")
                         + " Running: "
                         + className + "#" + testIdentifier.getDisplayName();
                 if (TestSupport.instance().get().isDisplayTestOutput() &&
@@ -333,6 +354,18 @@ public class TestConsoleHandler implements TestListener {
             return helpOption(key, description) + toggleStatus(enabled);
         }
 
+    }
+
+    private static String pluralize(String singular, String plural, long number) {
+        if (number == 1L) {
+            return singular;
+        }
+
+        return plural;
+    }
+
+    private static String pluralize(String singular, String plural, AtomicLong number) {
+        return pluralize(singular, plural, number.get());
     }
 
 }

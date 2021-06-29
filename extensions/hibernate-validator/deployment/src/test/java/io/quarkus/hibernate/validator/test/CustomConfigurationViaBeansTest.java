@@ -25,6 +25,8 @@ import javax.validation.ValidatorFactory;
 
 import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.internal.properties.DefaultGetterPropertySelectionStrategy;
+import org.hibernate.validator.spi.nodenameprovider.Property;
+import org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider;
 import org.hibernate.validator.spi.scripting.ScriptEvaluator;
 import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -55,6 +57,9 @@ public class CustomConfigurationViaBeansTest {
         assertThat(hibernateValidatorFactory.getScriptEvaluatorFactory()).isInstanceOf(MyScriptEvaluatorFactory.class);
         assertThat(hibernateValidatorFactory.getGetterPropertySelectionStrategy())
                 .isInstanceOf(MyGetterPropertySelectionStrategy.class);
+        // Waiting for https://hibernate.atlassian.net/browse/HV-1841 to be released
+        //assertThat(hibernateValidatorFactory.getPropertyNodeNameProvider())
+        //        .isInstanceOf(MyPropertyNodeNameProvider.class);
     }
 
     @ApplicationScoped
@@ -143,5 +148,14 @@ public class CustomConfigurationViaBeansTest {
 
     @ApplicationScoped
     public static class MyGetterPropertySelectionStrategy extends DefaultGetterPropertySelectionStrategy {
+    }
+
+    @ApplicationScoped
+    public static class MyPropertyNodeNameProvider implements PropertyNodeNameProvider {
+
+        @Override
+        public String getName(Property property) {
+            return property.getName();
+        }
     }
 }

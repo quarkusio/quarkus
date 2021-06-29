@@ -69,7 +69,6 @@
                                     <systemPropertyVariables>
                                         <native.image.path>/home/aloubyansky/git/quarkus/integration-tests/maven/target/quarkus-integration-test-maven-999-SNAPSHOT-runner</native.image.path>
                                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                        <maven.home>/home/aloubyansky/apache-maven-3.6.3</maven.home>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>

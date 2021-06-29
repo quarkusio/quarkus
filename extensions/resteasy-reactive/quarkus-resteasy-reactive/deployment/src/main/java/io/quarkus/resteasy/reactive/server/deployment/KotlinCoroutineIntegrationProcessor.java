@@ -12,6 +12,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
@@ -106,6 +107,14 @@ public class KotlinCoroutineIntegrationProcessor {
                 //look for methods that take a Continuation, these are suspendable and need to be handled differently
                 if (paramType.name().equals(CONTINUATION)) {
                     methodContext.put(NAME, true);
+                    if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                        Type firstGenericType = paramType.asParameterizedType().arguments().get(0);
+                        if (firstGenericType.kind() == Type.Kind.WILDCARD_TYPE) {
+                            methodContext.put(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY,
+                                    firstGenericType.asWildcardType().superBound());
+                        }
+
+                    }
                     return new NullParamExtractor();
                 }
                 return null;

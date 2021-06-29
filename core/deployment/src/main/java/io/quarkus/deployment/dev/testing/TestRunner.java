@@ -203,7 +203,6 @@ public class TestRunner {
                     .setTestState(testSupport.testState)
                     .setTestClassUsages(testClassUsages)
                     .setTestApplication(testApplication)
-                    .setDisplayInConsole(testSupport.displayTestOutput)
                     .setIncludeTags(testSupport.includeTags)
                     .setExcludeTags(testSupport.excludeTags)
                     .setInclude(testSupport.include)

@@ -42,6 +42,18 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-credential</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-asn1</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-keystore</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-provider-util</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-x500</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-util</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-base</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-password-impl</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

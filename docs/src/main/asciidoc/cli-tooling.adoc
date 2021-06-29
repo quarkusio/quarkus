@@ -146,6 +146,7 @@ $ quarkus create app --help
 $ quarkus create cli --help
 ----
 
+[[specifying-quarkus-version]]
 [NOTE]
 .Specifying the Quarkus version
 ====
@@ -202,7 +203,7 @@ The behavior of `quarkus ext ls` will vary depending on context.
 
 If you invoke the Quarkus CLI from outside of a project, Quarkus will list all of the extensions available for the Quarkus release used by the CLI itself.
 
-You can also list extensions for a specific release of Quarkus using `-P` or `-S`, as described in <<Specifying the Quarkus version>>.
+You can also list extensions for a specific release of Quarkus using `-P` or `-S`, as described in <<specifying-quarkus-version,Specifying the Quarkus version>>.
 
 This mode uses the `--origins` format by default.
 

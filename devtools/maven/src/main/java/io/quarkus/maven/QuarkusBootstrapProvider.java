@@ -290,6 +290,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                 curatedApp.close();
                 curatedApp = null;
             }
+            appArtifact = null;
             quarkusBootstrap = null;
         }
     }

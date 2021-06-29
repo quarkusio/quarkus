@@ -1,17 +1,22 @@
 package io.quarkus.oidc.common.runtime;
 
 import java.io.InputStream;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import javax.crypto.SecretKey;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
@@ -22,15 +27,21 @@ import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcCommonUtils {
+    public static final Duration CONNECTION_BACKOFF_DURATION = Duration.ofSeconds(2);
+
     static final byte AMP = '&';
     static final byte EQ = '=';
+
+    private static final Logger LOG = Logger.getLogger(OidcCommonUtils.class);
 
     private OidcCommonUtils() {
 
@@ -127,11 +138,6 @@ public class OidcCommonUtils {
         }
     }
 
-    public static long getConnectionRetryCount(OidcCommonConfig oidcConfig) {
-        final long connectionDelayInSecs = getConnectionDelay(oidcConfig);
-        return connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
-    }
-
     private static long getConnectionDelay(OidcCommonConfig oidcConfig) {
         return oidcConfig.getConnectionDelay().isPresent()
                 ? oidcConfig.getConnectionDelay().get().getSeconds()
@@ -139,7 +145,12 @@ public class OidcCommonUtils {
     }
 
     public static long getConnectionDelayInMillis(OidcCommonConfig oidcConfig) {
-        return getConnectionDelay(oidcConfig) * 1000;
+        final long connectionDelayInSecs = getConnectionDelay(oidcConfig);
+        final long connectionRetryCount = connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
+        if (connectionRetryCount > 1) {
+            LOG.infof("Connecting to OpenId Connect Provider for up to %d times every 2 seconds", connectionRetryCount);
+        }
+        return connectionDelayInSecs * 1000;
     }
 
     public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
@@ -256,5 +267,26 @@ public class OidcCommonUtils {
             return OidcCommonUtils.clientJwtKey(oidcConfig.credentials);
         }
         return null;
+    }
+
+    public static Predicate<? super Throwable> oidcEndpointNotAvailable() {
+        return t -> (t instanceof ConnectException
+                || (t instanceof OidcEndpointAccessException && ((OidcEndpointAccessException) t).getErrorStatus() == 404));
+    }
+
+    public static Uni<JsonObject> discoverMetadata(WebClient client, String authServerUrl, long connectionDelayInMillisecs) {
+        final String discoveryUrl = authServerUrl + OidcConstants.WELL_KNOWN_CONFIGURATION;
+        return client.getAbs(discoveryUrl).send().onItem().transform(resp -> {
+            if (resp.statusCode() == 200) {
+                return resp.bodyAsJsonObject();
+            } else {
+                LOG.tracef("Discovery has failed, status code: %d", resp.statusCode());
+                throw new OidcEndpointAccessException(resp.statusCode());
+            }
+        }).onFailure(oidcEndpointNotAvailable())
+                .retry()
+                .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
+                .expireIn(connectionDelayInMillisecs)
+                .onFailure().transform(t -> t.getCause());
     }
 }

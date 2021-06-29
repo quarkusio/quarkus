@@ -41,10 +41,13 @@ public class ReactiveService implements ReactiveTest {
     @Override
     public Multi<Test.Item> watch(Test.Empty request) {
         int contextId = contextChecker.newContextId("ReactiveService#watch");
+        Multi<Item> cached = broadcast.cache();
+        cached.subscribe().with(i -> {
+        });
         Multi<Test.Item> existing = Item.<Item> streamAll()
                 .map(item -> Test.Item.newBuilder().setText(item.text).build());
         return Multi.createBy().concatenating()
-                .streams(existing, broadcast.map(i -> i.text)
+                .streams(existing, cached.map(i -> i.text)
                         .map(Test.Item.newBuilder()::setText)
                         .map(Test.Item.Builder::build))
                 .onItem().invoke(

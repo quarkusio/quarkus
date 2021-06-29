@@ -140,7 +140,7 @@ public class TracerRecorder {
             lateBoundSampler.setSamplerDelegate(samplerBean.get());
         } else {
             // Define Sampler using config
-            lateBoundSampler.setSamplerDelegate(TracerUtil.mapSampler(config.sampler));
+            lateBoundSampler.setSamplerDelegate(TracerUtil.mapSampler(config.sampler, config.suppressNonApplicationUris));
         }
     }
 }

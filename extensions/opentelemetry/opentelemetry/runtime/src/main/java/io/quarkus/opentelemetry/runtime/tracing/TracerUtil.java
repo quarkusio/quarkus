@@ -41,8 +41,12 @@ public class TracerUtil {
         }
     }
 
-    public static Sampler mapSampler(TracerRuntimeConfig.SamplerConfig samplerConfig) {
+    public static Sampler mapSampler(TracerRuntimeConfig.SamplerConfig samplerConfig, boolean suppressNonApplicationUris) {
         Sampler sampler = getBaseSampler(samplerConfig.samplerName, samplerConfig.ratio);
+
+        if (suppressNonApplicationUris) {
+            sampler = new NonApplicationEndpointSampler(sampler);
+        }
 
         if (samplerConfig.parentBased) {
             return Sampler.parentBased(sampler);

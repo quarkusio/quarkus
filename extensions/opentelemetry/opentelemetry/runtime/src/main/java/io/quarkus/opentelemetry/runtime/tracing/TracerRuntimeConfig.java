@@ -22,6 +22,18 @@ public class TracerRuntimeConfig {
     /** Config for sampler */
     public SamplerConfig sampler;
 
+    /**
+     * Suppress non-application uris from trace collection.
+     * This will suppress tracing of `/q` endpoints.
+     * <p>
+     * Providing a custom {@code io.opentelemetry.sdk.trace.samplers.Sampler} CDI Bean
+     * will ignore this setting.
+     * <p>
+     * Suppressing non-application uris is enabled by default.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean suppressNonApplicationUris;
+
     @ConfigGroup
     public static class SamplerConfig {
         /**

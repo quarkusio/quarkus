@@ -21,6 +21,7 @@ public class OpenTelemetrySamplerConfigTest {
             .overrideConfigKey("quarkus.opentelemetry.tracer.sampler", "ratio")
             .overrideConfigKey("quarkus.opentelemetry.tracer.sampler.ratio", "0.5")
             .overrideConfigKey("quarkus.opentelemetry.tracer.sampler.parent-based", "false")
+            .overrideConfigKey("quarkus.opentelemetry.tracer.suppress-non-application-uris", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(TestUtil.class));
 
     @Inject

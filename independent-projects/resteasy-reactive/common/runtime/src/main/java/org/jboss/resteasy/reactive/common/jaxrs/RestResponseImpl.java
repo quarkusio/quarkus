@@ -51,6 +51,23 @@ public class RestResponseImpl<T> extends RestResponse<T> {
     protected boolean buffered;
 
     @Override
+    public Response toResponse() {
+        ResponseImpl ret = new ResponseImpl();
+        ret.status = status;
+        ret.reasonPhrase = reasonPhrase;
+        ret.entity = entity;
+        ret.headers = headers;
+        ret.entityStream = entityStream;
+        ret.statusType = statusType;
+        ret.stringHeaders = stringHeaders;
+        ret.entityAnnotations = entityAnnotations;
+        ret.consumed = consumed;
+        ret.closed = closed;
+        ret.buffered = buffered;
+        return ret;
+    }
+
+    @Override
     public int getStatus() {
         return status;
     }

@@ -75,5 +75,13 @@ public class RestResponseTest {
                 .then().statusCode(200)
                 .and().body(Matchers.equalTo("Uni<RestResponse> request filter"))
                 .and().contentType("text/plain");
+        RestAssured.get("/rest-response-exception")
+                .then().statusCode(404)
+                .and().body(Matchers.equalTo("Unknown cheese: Cheddar"))
+                .and().contentType("text/plain");
+        RestAssured.get("/uni-rest-response-exception")
+                .then().statusCode(404)
+                .and().body(Matchers.equalTo("Unknown cheese: Cheddar"))
+                .and().contentType("text/plain");
     }
 }

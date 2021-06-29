@@ -14,6 +14,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import io.smallrye.mutiny.Uni;
 
@@ -59,5 +60,27 @@ public class RestResponseResource {
     @Path("rest-response-uni")
     public RestResponse<Uni<String>> getUniString() {
         return RestResponse.ok(Uni.createFrom().item("Hello"));
+    }
+
+    @GET
+    @Path("rest-response-exception")
+    public String getRestResponseException() {
+        throw new UnknownCheeseException1("Cheddar");
+    }
+
+    @GET
+    @Path("uni-rest-response-exception")
+    public String getUniRestResponseException() {
+        throw new UnknownCheeseException2("Cheddar");
+    }
+
+    @ServerExceptionMapper
+    public RestResponse<String> mapException(UnknownCheeseException1 x) {
+        return RestResponse.status(Response.Status.NOT_FOUND, "Unknown cheese: " + x.name);
+    }
+
+    @ServerExceptionMapper
+    public Uni<RestResponse<String>> mapExceptionAsync(UnknownCheeseException2 x) {
+        return Uni.createFrom().item(RestResponse.status(Response.Status.NOT_FOUND, "Unknown cheese: " + x.name));
     }
 }

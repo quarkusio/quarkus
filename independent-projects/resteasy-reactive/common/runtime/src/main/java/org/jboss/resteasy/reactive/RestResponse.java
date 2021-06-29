@@ -18,6 +18,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.NoContentException;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.Response.StatusType;
 import javax.ws.rs.core.UriBuilder;
@@ -31,9 +32,9 @@ import javax.ws.rs.ext.RuntimeDelegate;
  * Defines the contract between a returned instance and the runtime when
  * an application needs to provide meta-data to the runtime.
  * <p>
- * An application class should not extend this class directly. {@code Response} class is
+ * An application class should not extend this class directly. {@code RestResponse} class is
  * reserved for an extension by API implementation providers. An application should use one
- * of the static methods to create a {@code Response} instance using a ResponseBuilder.
+ * of the static methods to create a {@code RestResponse} instance using a RestResponseBuilder.
  * </p>
  * <p>
  * Several methods have parameters of type URI, {@link UriBuilder} provides
@@ -41,7 +42,6 @@ import javax.ws.rs.ext.RuntimeDelegate;
  * </p>
  *
  * @see RestResponse.ResponseBuilder
- * @since 1.0
  */
 public abstract class RestResponse<T> implements AutoCloseable {
 
@@ -491,6 +491,13 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @see #getStringHeaders()
      */
     public abstract String getHeaderString(String name);
+
+    /**
+     * Turns this <code>RestResponse</code> into a JAX-RS {@link Response}.
+     * 
+     * @return a JAX-RS {@link Response} representing this response.
+     */
+    public abstract Response toResponse();
 
     /**
      * Create a new ResponseBuilder by performing a shallow copy of an

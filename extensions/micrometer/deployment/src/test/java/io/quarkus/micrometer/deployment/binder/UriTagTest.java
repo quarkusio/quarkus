@@ -81,6 +81,13 @@ public class UriTagTest {
         when().get("/async-ping/two").then().statusCode(200);
         when().get("/async-ping/three").then().statusCode(200);
 
+        // Try to let metrics gathering finish.
+        // Looking for server request timers: /vertx/item/{id}, /vertx/item/{id}/{sub}, /servlet/,
+        //   /ping/{message}, /async-ping/{message}, /pong/{message}, and 2 of both /hello/{message} and /vertx/echo/{msg}
+        // Looking for client request: /pong/{message}
+        Util.waitForMeters(registry.find("http.server.requests").timers(), 10);
+        Util.waitForMeters(registry.find("http.client.requests").timers(), 1);
+
         System.out.println("Server paths\n" + Util.listMeters(registry, "http.server.requests"));
         System.out.println("Client paths\n" + Util.listMeters(registry, "http.client.requests"));
 
@@ -107,7 +114,6 @@ public class UriTagTest {
                 Util.foundServerRequests(registry, "/vertx/echo/{msg} should have two timers (GET and HEAD)."));
 
         // URIs to trigger REST request: /ping/{message}, /async-ping/{message},
-        // URIs for inbound rest client request: /pong/{message}
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/ping/{message}").timers().size(),
                 Util.foundServerRequests(registry, "/ping/{message} should be returned by JAX-RS."));
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/async-ping/{message}").timers().size(),

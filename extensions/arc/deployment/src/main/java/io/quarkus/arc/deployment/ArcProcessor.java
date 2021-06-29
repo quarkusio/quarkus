@@ -116,12 +116,17 @@ public class ArcProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem quarkusApplication(CombinedIndexBuildItem combinedIndexBuildItem) {
+    AdditionalBeanBuildItem quarkusApplication(CombinedIndexBuildItem combinedIndex) {
+        List<String> quarkusApplications = new ArrayList<>();
+        for (ClassInfo quarkusApplication : combinedIndex.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName()))) {
+            if (quarkusApplication.classAnnotation(DotNames.DECORATOR) == null) {
+                quarkusApplications.add(quarkusApplication.name().toString());
+            }
+        }
         return AdditionalBeanBuildItem.builder().setUnremovable()
                 .setDefaultScope(DotName.createSimple(ApplicationScoped.class.getName()))
-                .addBeanClasses(combinedIndexBuildItem.getIndex()
-                        .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName())).stream()
-                        .map(s -> s.name().toString()).toArray(String[]::new))
+                .addBeanClasses(quarkusApplications)
                 .build();
     }
 

@@ -1,11 +1,11 @@
 ## Greet the world!
 
 ```shell script
-./jbang src/GreetingCommand.java hello
+./jbang src/main.java hello
 ```
 
 ## Show help
 
 ```shell script
-./jbang src/GreetingCommand.java -h
+./jbang src/main.java -h
 ```

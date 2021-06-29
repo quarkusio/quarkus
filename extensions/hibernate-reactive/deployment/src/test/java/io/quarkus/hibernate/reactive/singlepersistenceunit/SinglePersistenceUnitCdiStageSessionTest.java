@@ -25,6 +25,23 @@ public class SinglePersistenceUnitCdiStageSessionTest {
     @Inject
     Stage.Session session;
 
+    @Inject
+    Stage.SessionFactory sessionFactory;
+
+    @Test
+    @ActivateRequestContext
+    public void testWithFactory() {
+        DefaultEntity entity = new DefaultEntity("default");
+
+        DefaultEntity retrievedEntity = sessionFactory.withTransaction((session, tx) -> session.persist(entity))
+                .thenCompose(v -> sessionFactory.withSession(session -> session.find(DefaultEntity.class, entity.getId())))
+                .toCompletableFuture().join();
+
+        assertThat(retrievedEntity)
+                .isNotSameAs(entity)
+                .returns(entity.getName(), DefaultEntity::getName);
+    }
+
     @Test
     @Disabled("#14812: We're getting a ContextNotActiveException for some (unknown) reason")
     @ActivateRequestContext

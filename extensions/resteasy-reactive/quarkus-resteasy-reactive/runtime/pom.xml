@@ -29,6 +29,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-kotlin</artifactId>
+            <optional>true</optional> <!-- conditional dependency -->
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -10,8 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-resteasy-reactive-parent</artifactId>
-    <name>Quarkus - RESTEasy Reactive</name>
+    <artifactId>quarkus-resteasy-reactive-kotlin-parent</artifactId>
+    <name>Quarkus - RESTEasy Reactive - Kotlin</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

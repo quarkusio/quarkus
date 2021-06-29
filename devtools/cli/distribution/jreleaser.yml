@@ -1,0 +1,47 @@
+project:
+  name: quarkus
+  description: CLI for Quarkus
+  longDescription: |
+    Create projects, manage extensions and perform build and development tasks for Quarkus,
+    the Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM.
+  website: https://quarkus.io
+  authors:
+    - Quarkus Community
+  license: Apache-2
+  java:
+    groupId: io.quarkus
+    artifactId: quarkus-cli
+    version : 11
+  tags:
+    - cli
+    - quarkus
+    - java
+
+release:
+  github:
+    owner: quarkusio
+    name: quarkus
+    tagName: "{{projectVersion}}"
+    overwrite: false
+    update: true
+    skipTag: true
+    changelog:
+      enabled: false
+    milestone:
+      close: false
+
+distributions:
+  quarkus:
+    type: SINGLE_JAR
+    java:
+      mainClass: io.quarkus.cli.QuarkusCli
+    brew:
+      active: release
+      extraProperties:
+        javaSkip: true
+    artifacts:
+      - path: target/quarkus-cli-{{projectVersion}}-runner.jar
+
+
+announce:
+  enabled: false

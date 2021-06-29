@@ -27,7 +27,7 @@ public class NdjsonMultiRouteTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class));
 
     @Test
-    public void testSSEMultiRoute() {
+    public void testNdjsonMultiRoute() {
         when().get("/hello").then().statusCode(200)
                 .body(is("\"Hello world!\"\n"))
                 .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
@@ -131,7 +131,7 @@ public class NdjsonMultiRouteTest {
                     new Person("spiderman", 3)));
         }
 
-        @Route(path = "/people-content-type-stream-json", produces = {CONTENT_TYPE_STREAM_JSON})
+        @Route(path = "/people-content-type-stream-json", produces = { CONTENT_TYPE_STREAM_JSON })
         Multi<Person> peopleWithContentTypeStreamJson(RoutingContext context) {
             return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
                     new Person("superman", 1),

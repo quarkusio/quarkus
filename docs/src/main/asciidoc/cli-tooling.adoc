@@ -147,9 +147,8 @@ $ quarkus create cli --help
 ----
 
 [[specifying-quarkus-version]]
-[NOTE]
-.Specifying the Quarkus version
-====
+== Specifying the Quarkus version
+
 Both `quarkus create` and `quarkus extension list` allow you to explicitly specify a version of Quarkus in one of two ways:
 
 1. Specify a specific Platform Release BOM
@@ -172,7 +171,6 @@ A platform stream operates against the concept of a "registry". Each registry de
 Streams are identified using `platformKey:streamId` syntax. A specific stream can be specified using `-S platformKey:streamId`. When specifying a stream, empty segments will be replaced with _discovered_ defaults, based on stream resource resolution rules.
 +
 For `2.0.0.Final`, you must enable the registry client (`--registry-client`) explicitly to specify a stream. This will not be required in later releases.
-====
 
 == Dealing with extensions
 
@@ -313,3 +311,9 @@ Tests paused, press [r] to resume
 Note: Output will vary depending on the build tool your project is using (`maven`, `gradle`, or `jbang`).
 
 
+[[quarkus-version-compatibility]]
+[WARNING]
+.Compatibility with Quarkus 1.x
+====
+The version 2 Quarkus CLI can not be used with 1.x Quarkus projects or releases. Use the maven/gradle plugins when working with Quarkus 1.x projects.
+====

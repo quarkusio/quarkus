@@ -2,13 +2,16 @@ package io.quarkus.deployment.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
@@ -300,6 +303,72 @@ public class JandexUtilTest {
     }
 
     public static class ErasedRepo2 extends MultiBoundedRepo {
+    }
+
+    @Test
+    public void testLoadRawType() {
+        Index index = index(TestMethods.class);
+        ClassInfo clazz = index.getClassByName(DotName.createSimple(TestMethods.class.getName()));
+
+        assertEquals(void.class, JandexUtil.loadRawType(clazz.method("aaa").returnType()));
+        assertEquals(int.class, JandexUtil.loadRawType(clazz.method("bbb").returnType()));
+        assertEquals(String.class, JandexUtil.loadRawType(clazz.method("ccc").returnType()));
+        assertEquals(List.class, JandexUtil.loadRawType(clazz.method("ddd").returnType()));
+        assertEquals(String[][].class, JandexUtil.loadRawType(clazz.method("eee").returnType()));
+        assertEquals(Object.class, JandexUtil.loadRawType(clazz.method("fff").returnType()));
+        assertEquals(Number.class, JandexUtil.loadRawType(clazz.method("ggg").returnType()));
+        assertEquals(Number.class, JandexUtil.loadRawType(clazz.method("hhh").returnType()));
+        assertEquals(Comparable.class, JandexUtil.loadRawType(clazz.method("iii").returnType()));
+        assertEquals(Comparable.class, JandexUtil.loadRawType(clazz.method("jjj").returnType()));
+        assertEquals(Serializable.class, JandexUtil.loadRawType(clazz.method("kkk").returnType()));
+        assertEquals(Object.class, JandexUtil.loadRawType(clazz.method("lll").returnType()
+                .asParameterizedType().arguments().get(0)));
+        assertEquals(Number.class, JandexUtil.loadRawType(clazz.method("mmm").returnType()
+                .asParameterizedType().arguments().get(0)));
+        assertEquals(Object.class, JandexUtil.loadRawType(clazz.method("nnn").returnType()
+                .asParameterizedType().arguments().get(0)));
+        assertEquals(Object.class, JandexUtil.loadRawType(clazz.method("ooo").returnType()
+                .asParameterizedType().arguments().get(0)));
+        assertEquals(Number.class, JandexUtil.loadRawType(clazz.method("ppp").returnType()
+                .asParameterizedType().arguments().get(0)));
+        assertEquals(Object.class, JandexUtil.loadRawType(clazz.method("qqq").returnType()
+                .asParameterizedType().arguments().get(0)));
+    }
+
+    public interface TestMethods<X> {
+        void aaa();
+
+        int bbb();
+
+        String ccc();
+
+        List<String> ddd();
+
+        String[][] eee();
+
+        X fff();
+
+        <Y extends Number> Y ggg();
+
+        <Y extends Number & Comparable<Y>> Y hhh();
+
+        <Y extends Comparable<Y>> Y iii();
+
+        <Y extends Comparable<Y> & Serializable> Y jjj();
+
+        <Y extends Serializable & Comparable<Y>> Y kkk();
+
+        List<?> lll();
+
+        List<? extends Number> mmm();
+
+        List<? super String> nnn();
+
+        List<? extends X> ooo();
+
+        <Y extends Number> List<? extends Y> ppp();
+
+        <Y extends Number> List<? super Y> qqq();
     }
 
     private static Index index(Class<?>... classes) {

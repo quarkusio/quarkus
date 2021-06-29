@@ -4805,6 +4805,11 @@
                 <artifactId>kotlinx-coroutines-jdk8</artifactId>
                 <version>${kotlin.coroutine.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-coroutines-reactive</artifactId>
+                <version>${kotlin.coroutine.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.amazonaws</groupId>

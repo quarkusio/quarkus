@@ -8,6 +8,7 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -45,6 +47,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ResourceHelper;
+import io.quarkus.runtime.graal.ResourcesFeature;
 
 public class NativeImageAutoFeatureStep {
 
@@ -75,12 +78,28 @@ public class NativeImageAutoFeatureStep {
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
 
     @BuildStep
+    GeneratedResourceBuildItem generateNativeResourcesList(List<NativeImageResourceBuildItem> resources,
+            BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
+        StringBuilder sb = new StringBuilder();
+        for (NativeImageResourceBuildItem i : resources) {
+            for (String r : i.getResources()) {
+                sb.append(r);
+                sb.append("\n");
+            }
+        }
+        //we don't want this file in the final image
+        resourcePatternsBuildItemBuildProducer.produce(NativeImageResourcePatternsBuildItem.builder()
+                .excludePattern(ResourcesFeature.META_INF_QUARKUS_NATIVE_RESOURCES_TXT).build());
+        return new GeneratedResourceBuildItem(ResourcesFeature.META_INF_QUARKUS_NATIVE_RESOURCES_TXT,
+                sb.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
             List<NativeImageProxyDefinitionBuildItem> proxies,
-            List<NativeImageResourceBuildItem> resources,
             List<NativeImageResourcePatternsBuildItem> resourcePatterns,
             List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<ReflectiveMethodBuildItem> reflectiveMethods,
@@ -192,13 +211,6 @@ public class NativeImageAutoFeatureStep {
                 }
                 overallCatch.invokeInterfaceMethod(ofMethod(DYNAMIC_PROXY_REGISTRY,
                         "addProxyClass", void.class, Class[].class), proxySupport, array);
-            }
-        }
-
-        for (NativeImageResourceBuildItem i : resources) {
-            for (String j : i.getResources()) {
-                overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
-                        overallCatch.load(j));
             }
         }
 

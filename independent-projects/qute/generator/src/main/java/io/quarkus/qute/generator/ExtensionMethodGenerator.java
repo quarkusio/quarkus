@@ -283,7 +283,7 @@ public class ExtensionMethodGenerator {
                             whenEvaluatedParams, success.load(isVarArgs), paramTypesHandle))
                     .falseBranch();
             typeMatchFailed.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                    typeMatchFailed.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
+                    typeMatchFailed.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
             typeMatchFailed.returnValue(null);
 
             // try
@@ -530,7 +530,7 @@ public class ExtensionMethodGenerator {
                                     whenEvaluatedParams, success.load(isVarArgs), paramTypesHandle))
                             .falseBranch();
                     typeMatchFailed.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                            typeMatchFailed.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
+                            typeMatchFailed.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
                     typeMatchFailed.returnValue(null);
 
                     // try

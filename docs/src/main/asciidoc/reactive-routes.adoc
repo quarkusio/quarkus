@@ -502,6 +502,55 @@ id: 3
 
 ----
 
+=== Json Stream in NDJSON format
+
+You can return a `Multi` to produce a newline delimited stream of JSON values.
+To enable this feature, you need to wrap the returned `Multi` using `io.quarkus.vertx.web.ReactiveRoutes.asJsonStream`:
+
+[source, java]
+----
+@Route(path = "/people")
+Multi<Person> people(RoutingContext context) {
+    return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
+            new Person("superman", 1),
+            new Person("batman", 2),
+            new Person("spiderman", 3)
+            ));
+}
+----
+
+This method would produce:
+
+[source, text]
+----
+{"name":"superman", "id": 1}
+{"name":"batman", "id": 2}
+{"name":"spiderman", "id": 3}
+
+----
+
+You can also provide strings instead of Objects, in that case the strings will be wrapped in quotes to become valid JSON values:
+
+[source, java]
+----
+@Route(path = "/people")
+Multi<Person> people(RoutingContext context) {
+    return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
+            "superman",
+            "batman",
+            "spiderman"
+            ));
+}
+----
+
+[source, text]
+----
+"superman"
+"batman"
+"spiderman"
+
+----
+
 === Using Bean Validation
 
 You can combine reactive routes and Bean Validation.

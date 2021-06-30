@@ -15,6 +15,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityCustomizer;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
 public class ObservabilityProcessor {

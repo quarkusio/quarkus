@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.deployment;
+package io.quarkus.resteasy.reactive.server.spi;
 
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 

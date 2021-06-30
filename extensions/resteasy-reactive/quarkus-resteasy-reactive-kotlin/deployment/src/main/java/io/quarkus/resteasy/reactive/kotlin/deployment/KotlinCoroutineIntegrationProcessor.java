@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.deployment;
+package io.quarkus.resteasy.reactive.kotlin.deployment;
 
 import java.lang.reflect.Modifier;
 import java.util.Collections;
@@ -23,7 +23,6 @@ import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineMethodProcesso
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -31,7 +30,8 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
+import io.quarkus.resteasy.reactive.server.common.runtime.EndpointInvokerFactory;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 
 public class KotlinCoroutineIntegrationProcessor {
 
@@ -40,41 +40,26 @@ public class KotlinCoroutineIntegrationProcessor {
     private static final DotName BLOCKING_ANNOTATION = DotName.createSimple("io.smallrye.common.annotation.Blocking");
 
     @BuildStep
-    CoroutineConfigurationBuildItem producesCoroutineConfiguration() {
-        try {
-            Class.forName("kotlinx.coroutines.CoroutineScope", false, getClass().getClassLoader());
-            return new CoroutineConfigurationBuildItem(true);
-        } catch (ClassNotFoundException e) {
-            return new CoroutineConfigurationBuildItem(false);
-        }
+    void produceCoroutineScope(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer) {
+        buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClasses(
+                        "org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineInvocationHandlerFactory",
+                        "org.jboss.resteasy.reactive.server.runtime.kotlin.ApplicationCoroutineScope")
+                .setUnremovable().build());
     }
 
     @BuildStep
-    void produceCoroutineScope(
-            CoroutineConfigurationBuildItem coroutineConfigurationBuildItem,
-            BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer) {
-        if (coroutineConfigurationBuildItem.isEnabled()) {
-            buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClasses(
-                            "org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineInvocationHandlerFactory",
-                            "org.jboss.resteasy.reactive.server.runtime.kotlin.ApplicationCoroutineScope")
-                    .setUnremovable().build());
-        }
-    }
-
-    @BuildStep
-    MethodScannerBuildItem scanner(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem) {
+    MethodScannerBuildItem scanner() {
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                if (methodContext.containsKey(NAME)) {
-                    //method is suspendable, we need to handle the invocation differently
-                    ensureEnabled(coroutineConfigurationBuildItem, method);
+                if (methodContext.containsKey(NAME)) { //method is suspendable, we need to handle the invocation differently
+
                     ensureNotBlocking(method);
 
-                    ResteasyReactiveRecorder recorder = (ResteasyReactiveRecorder) methodContext
-                            .get(ResteasyReactiveRecorder.class.getName());
+                    EndpointInvokerFactory recorder = (EndpointInvokerFactory) methodContext
+                            .get(EndpointInvokerFactory.class.getName());
                     CoroutineMethodProcessor processor = new CoroutineMethodProcessor(createCoroutineInvoker(
                             method.declaringClass(), method,
                             (BuildProducer<GeneratedClassBuildItem>) methodContext.get(GeneratedClassBuildItem.class.getName()),
@@ -87,15 +72,6 @@ public class KotlinCoroutineIntegrationProcessor {
             private void ensureNotBlocking(MethodInfo method) {
                 if (method.annotation(BLOCKING_ANNOTATION) != null) {
                     String format = String.format("Suspendable @Blocking methods are not supported yet: %s.%s",
-                            method.declaringClass().name(), method.name());
-                    throw new IllegalStateException(format);
-                }
-            }
-
-            private void ensureEnabled(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem, MethodInfo method) {
-                if (!coroutineConfigurationBuildItem.isEnabled()) {
-                    String format = String.format(
-                            "Method %s.%s is suspendable but kotlinx-coroutines-core-jvm dependency not detected",
                             method.declaringClass().name(), method.name());
                     throw new IllegalStateException(format);
                 }
@@ -126,11 +102,11 @@ public class KotlinCoroutineIntegrationProcessor {
      * This method generates the same invocation code as for the standard invoker but also passes along the implicit
      * {@code Continuation} argument provided by kotlinc and the coroutines library.
      *
-     * @see QuarkusInvokerFactory#create(ResourceMethod, ClassInfo, MethodInfo)
+     * @see io.quarkus.resteasy.reactive.server.deployment.QuarkusInvokerFactory#create(ResourceMethod, ClassInfo, MethodInfo)
      */
     private Supplier<EndpointInvoker> createCoroutineInvoker(ClassInfo currentClassInfo,
             MethodInfo info, BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            ResteasyReactiveRecorder recorder) {
+            EndpointInvokerFactory factory) {
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(info.name())
                 .append(info.returnType());
@@ -170,18 +146,6 @@ public class KotlinCoroutineIntegrationProcessor {
             }
 
         }
-        return recorder.invoker(baseName);
-    }
-
-    public static final class CoroutineConfigurationBuildItem extends SimpleBuildItem {
-        private final boolean isEnabled;
-
-        public CoroutineConfigurationBuildItem(boolean isEnabled) {
-            this.isEnabled = isEnabled;
-        }
-
-        public boolean isEnabled() {
-            return isEnabled;
-        }
+        return factory.invoker(baseName);
     }
 }

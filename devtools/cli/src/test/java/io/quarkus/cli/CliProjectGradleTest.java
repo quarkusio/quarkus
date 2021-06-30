@@ -200,8 +200,8 @@ public class CliProjectGradleTest {
         // We don't need to retest this, just need to make sure all of the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        Assertions.assertTrue(result.stdout.contains("No subcommand specified, creating an app (see --help)"),
-                "Should contain 'No subcommand specified, creating an app (see --help)', found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("Creating an app (the project type was inferred, see --help)."),
+                "Should contain 'Creating an app (the project type was inferred, see --help).', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("GRADLE"),
                 "Should contain MAVEN, found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("Omit build tool wrapper   true"),

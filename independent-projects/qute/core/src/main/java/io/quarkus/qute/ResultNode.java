@@ -1,6 +1,6 @@
 package io.quarkus.qute;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 /**
@@ -8,7 +8,7 @@ import java.util.function.Consumer;
  */
 public interface ResultNode {
 
-    static CompletableFuture<ResultNode> NOOP = CompletableFuture.completedFuture(new ResultNode() {
+    static CompletionStage<ResultNode> NOOP = CompletedStage.of(new ResultNode() {
         @Override
         public void process(Consumer<String> resultConsumer) {
         }

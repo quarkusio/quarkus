@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -29,11 +28,11 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
     @Override
     public CompletionStage<ResultNode> apply(Object result) {
         if (result instanceof ResultNode) {
-            return CompletableFuture.completedFuture((ResultNode) result);
+            return CompletedStage.of((ResultNode) result);
         } else if (result instanceof CompletionStage) {
             return ((CompletionStage<?>) result).thenCompose(this);
         } else {
-            return CompletableFuture.completedFuture(new SingleResultNode(result, this));
+            return CompletedStage.of(new SingleResultNode(result, this));
         }
     }
 

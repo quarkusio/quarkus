@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -676,12 +675,7 @@ public class QuteProcessor {
                         if (name.equals("get") && params.size() == 1) {
                             // array.get(84)
                             Expression param = params.get(0);
-                            Object literalValue;
-                            try {
-                                literalValue = param.getLiteralValue().get();
-                            } catch (InterruptedException | ExecutionException e) {
-                                literalValue = null;
-                            }
+                            Object literalValue = param.getLiteral();
                             if (literalValue == null || literalValue instanceof Integer) {
                                 match.setValues(null, match.type().asArrayType().component());
                                 continue;
@@ -1452,12 +1446,7 @@ public class QuteProcessor {
             IndexView index) {
         if (valueExpr != null) {
             if (valueExpr.isLiteral()) {
-                Object literalValue;
-                try {
-                    literalValue = valueExpr.getLiteralValue().get();
-                } catch (InterruptedException | ExecutionException e) {
-                    literalValue = null;
-                }
+                Object literalValue = valueExpr.getLiteral();
                 if (literalValue == null) {
                     match.clearValues();
                 } else {

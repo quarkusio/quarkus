@@ -1,7 +1,6 @@
 package io.quarkus.qute;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -45,7 +44,7 @@ public interface NamespaceResolver extends Resolver, WithPriority {
         }
 
         public Builder resolve(Function<EvalContext, Object> func) {
-            this.resolve = ctx -> CompletableFuture.completedFuture(func.apply(ctx));
+            this.resolve = ctx -> CompletedStage.of(func.apply(ctx));
             return this;
         }
 

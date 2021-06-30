@@ -15,7 +15,6 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -175,17 +174,7 @@ public class IfSectionHelper implements SectionHelper {
         OperandCondition(Operator operator, Expression expression) {
             this.operator = operator;
             this.expression = expression;
-            CompletableFuture<Object> literalVal = expression.getLiteralValue();
-            if (literalVal != null) {
-                try {
-                    this.literalValue = literalVal.get();
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new IllegalStateException(e);
-                }
-            } else {
-                this.literalValue = null;
-            }
-
+            this.literalValue = expression.getLiteral();
         }
 
         @Override

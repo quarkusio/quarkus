@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -23,8 +22,7 @@ public class ReflectionValueResolver implements ValueResolver {
      */
     private final ConcurrentMap<MemberKey, Optional<AccessorCandidate>> candidates = new ConcurrentHashMap<>();
 
-    private static final AccessorCandidate ARRAY_GET_LENGTH = ec -> instance -> CompletableFuture
-            .completedFuture(Array.getLength(instance));
+    private static final AccessorCandidate ARRAY_GET_LENGTH = ec -> instance -> CompletedStage.of(Array.getLength(instance));
 
     public static final String GET_PREFIX = "get";
     public static final String IS_PREFIX = "is";

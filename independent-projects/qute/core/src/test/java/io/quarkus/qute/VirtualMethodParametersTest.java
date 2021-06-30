@@ -15,14 +15,14 @@ public class VirtualMethodParametersTest {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 if (context.getName().equals("item") || context.getName().equals("foo")) {
-                    return CompletableFuture.completedFuture(true);
+                    return CompletedStage.of(true);
                 }
                 if (context.getName().equals("name") && Boolean.parseBoolean(context.getBase().toString())) {
-                    return CompletableFuture.completedFuture(4);
+                    return CompletedStage.of(4);
                 }
                 if (context.getName().equals("ping") && Boolean.parseBoolean(context.getBase().toString())
                         && context.getParams().size() == 1) {
-                    return CompletableFuture.completedFuture(3);
+                    return CompletedStage.of(3);
                 }
                 if (context.getName().equals("call") && Boolean.parseBoolean(context.getBase().toString())
                         && context.getParams().size() == 2) {

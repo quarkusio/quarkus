@@ -12,7 +12,9 @@ include::./attributes.adoc[]
 :mutinyapi: https://smallrye.io/smallrye-mutiny/apidocs
 :httpspec: https://tools.ietf.org/html/rfc7231
 :jsonpapi: https://javadoc.io/doc/javax.json/javax.json-api/1.1.4
-:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/3.9.4
+:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/4.1.0
+:resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/2.0.0.Final
+:resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/2.0.0.Final
 
 This guide explains how to write REST Services with RESTEasy Reactive in Quarkus.
 
@@ -502,7 +504,7 @@ that resolve to one of the mentioned return types.
 === Setting other response properties
 
 If you need to set more properties on the HTTP response than just the body, such as the status code
-or headers, you can make your method return the link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
+or headers, you can make your method return the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`]
 type:
 
 [source,java]
@@ -517,15 +519,17 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
+
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 
 @Path("")
 public class Endpoint {
 
     @GET
-    public Response hello() {
+    public RestResponse<String> hello() {
         // HTTP OK status with text/plain content type
-        return Response.ok("Hello, World!", MediaType.TEXT_PLAIN_TYPE)
+        return ResponseBuilder.ok("Hello, World!", MediaType.TEXT_PLAIN_TYPE)
          // set a response header
          .header("X-FroMage", "Camembert")
          // set the Expires response header to two days from now
@@ -537,6 +541,9 @@ public class Endpoint {
     }
 }
 ----
+
+NOTE: You can also use the JAX-RS type link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] but it is
+not strongly typed to your entity.
 
 === Async/reactive support
 
@@ -1035,8 +1042,8 @@ If your endpoint method is delegating calls to another service layer which
 does not know of JAX-RS, you need a way to turn service exceptions to an
 HTTP response, and you can do that using the `@ServerExceptionMapper` annotation
 on a method, with one parameter of the exception type you want to handle, and turning
-that exception into a link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] (or a 
-link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]):
+that exception into a link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`] (or a 
+link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse<?>>`]):
 
 [source,java]
 ----
@@ -1052,6 +1059,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+import org.jboss.resteasy.reactive.RestResponse;
 
 class UnknownCheeseException extends RuntimeException {
     public final String name;
@@ -1082,10 +1090,8 @@ public class Endpoint {
     CheeseService cheeses;
     
     @ServerExceptionMapper
-    public Response mapException(UnknownCheeseException x) {
-        return Response.status(Response.Status.NOT_FOUND)
-                       .entity("Unknown cheese: " + x.name)
-                       .build();
+    public RestResponse<String> mapException(UnknownCheeseException x) {
+        return RestResponse.status(Response.Status.NOT_FOUND, "Unknown cheese: " + x.name);
     }
     
     @GET
@@ -1106,16 +1112,13 @@ simply define them outside a REST endpoint class:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.core.Response;
-
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+import org.jboss.resteasy.reactive.RestResponse;
 
 class ExceptionMappers {
     @ServerExceptionMapper
-    public Response mapException(UnknownCheeseException x) {
-        return Response.status(Response.Status.NOT_FOUND)
-                       .entity("Unknown cheese: " + x.name)
-                       .build();
+    public RestResponse<String> mapException(UnknownCheeseException x) {
+        return RestResponse.status(Response.Status.NOT_FOUND, "Unknown cheese: " + x.name);
     }
 }
 ----
@@ -1145,10 +1148,10 @@ It may declare any of the following return types:
 |===
 |Type|Usage
 
-|link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`] or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
 |The response to send to the client when the exception occurs
 
-|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
+|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse>`] or link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
 |An asynchronous response to send to the client when the exception occurs
 
 |===
@@ -1182,10 +1185,10 @@ class Filters {
     }
     
     @ServerRequestFilter
-    public Optional<Response> getFilter(ContainerRequestContext ctx) {
+    public Optional<RestResponse<Void>> getFilter(ContainerRequestContext ctx) {
         // only allow GET methods for now
         if(ctx.getMethod().equals(HttpMethod.GET)) {
-            return Optional.of(Response.status(Response.Status.METHOD_NOT_ALLOWED).build());
+            return Optional.of(RestResponse.status(Response.Status.METHOD_NOT_ALLOWED));
         }
         return Optional.empty();
     }
@@ -1249,13 +1252,13 @@ It may declare any of the following return types:
 |===
 |Type|Usage
 
-|link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`] or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
 |The response to send to the client instead of continuing the filter chain, or `null` if the filter chain should proceed
 
-|link:{jdkapi}/java/util/Optional.html[`Optional<Response>`]
+|link:{jdkapi}/java/util/Optional.html[`Optional<RestResponse<?>>`] or link:{jdkapi}/java/util/Optional.html[`Optional<Response>`]
 |An optional response to send to the client instead of continuing the filter chain, or an empty value if the filter chain should proceed
 
-|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
+|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse<?>>`] or link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
 |An asynchronous response to send to the client instead of continuing the filter chain, or `null` if the filter chain should proceed
 
 |===
@@ -1267,7 +1270,8 @@ NOTE: You can restrict the Resource methods for which a filter runs, by using li
 [[readers-writers]]
 
 Whenever your endpoint methods return a object (of when they return a 
-link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] with
+link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`]
+or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] with
 an entity), RESTEasy Reactive will look for a way to map that into an HTTP response body.
 
 Similarly, whenever your endpoint method takes an object as parameter, we will look for

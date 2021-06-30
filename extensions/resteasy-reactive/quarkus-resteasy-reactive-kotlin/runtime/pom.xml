@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
-            <artifactId>kotlinx-coroutines-core-jvm</artifactId>
+            <artifactId>kotlinx-coroutines-jdk8</artifactId>
         </dependency>
     </dependencies>
 

@@ -21,4 +21,9 @@ public @interface InjectMock {
      * as a proxy stands in place of the actual implementation)
      */
     boolean convertScopes() default false;
+
+    /**
+     * If true, the mock will be created with the {@link org.mockito.Mockito#RETURNS_DEEP_STUBS}
+     */
+    boolean returnsDeepMocks() default false;
 }

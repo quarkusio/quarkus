@@ -169,7 +169,7 @@
         <okhttp.version>3.14.9</okhttp.version>
         <sentry.version>4.3.0</sentry.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.4.1</kubernetes-client.version>
+        <kubernetes-client.version>5.5.0</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>

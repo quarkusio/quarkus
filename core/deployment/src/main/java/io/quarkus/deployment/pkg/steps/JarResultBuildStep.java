@@ -1224,6 +1224,7 @@ public class JarResultBuildStep {
                     while (entries.hasMoreElements()) {
                         ZipEntry entry = entries.nextElement();
                         if (!transformedFromThisArchive.contains(entry.getName())) {
+                            entry.setCompressedSize(-1);
                             out.putNextEntry(entry);
                             try (InputStream inStream = in.getInputStream(entry)) {
                                 int r = 0;

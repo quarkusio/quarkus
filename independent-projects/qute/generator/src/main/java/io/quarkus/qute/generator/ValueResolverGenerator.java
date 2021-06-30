@@ -434,7 +434,7 @@ public class ValueResolverGenerator {
                         whenEvaluatedParams, success.load(isVarArgs(method)), paramTypesHandle))
                 .falseBranch();
         typeMatchFailed.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                typeMatchFailed.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
+                typeMatchFailed.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
         typeMatchFailed.returnValue(null);
 
         ResultHandle[] paramsHandle = new ResultHandle[methodParams.size()];
@@ -637,7 +637,7 @@ public class ValueResolverGenerator {
 
         // No method matches - result not found
         whenComplete.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                whenComplete.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
+                whenComplete.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
         whenComplete.returnValue(null);
 
         matchScope.returnValue(ret);

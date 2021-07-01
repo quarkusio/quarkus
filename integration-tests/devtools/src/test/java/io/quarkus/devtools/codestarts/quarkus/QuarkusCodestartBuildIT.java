@@ -57,7 +57,6 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     }
 
     @Test
-    @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testRunTogetherCodestartsKotlin() throws Exception {
         generateProjectRunTests("maven", "kotlin", getExtensionCodestarts());
     }
@@ -91,7 +90,6 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     @ParameterizedTest
     @MethodSource("provideRunAloneCodestarts")
-    @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testRunAloneCodestartsKotlin(String codestart) throws Exception {
         generateProjectRunTests("maven", "kotlin", singletonList(codestart));
     }

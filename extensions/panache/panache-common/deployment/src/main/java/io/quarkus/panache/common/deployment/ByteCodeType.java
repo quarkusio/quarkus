@@ -53,6 +53,10 @@ public class ByteCodeType {
         return type.getInternalName();
     }
 
+    public boolean isPrimitive() {
+        return type().getSort() <= Type.DOUBLE;
+    }
+
     private Type toAsm(PrimitiveType primitive) {
         switch (primitive.name().toString()) {
             case "byte":

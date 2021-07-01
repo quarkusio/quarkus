@@ -19,7 +19,6 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
 public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
 
     @Test
-    @Tag("failsOnJDK16")
     public void testThatTheApplicationIsReloadedOnKotlinChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-kotlin", "projects/project-classic-run-kotlin-change");
         runAndCheck(false);

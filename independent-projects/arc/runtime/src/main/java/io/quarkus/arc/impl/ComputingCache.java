@@ -100,9 +100,7 @@ public class ComputingCache<K, V> {
 
     public void forEachEntry(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
-        for (Map.Entry<K, LazyValue<V>> entry : map.entrySet()) {
-            action.accept(entry.getKey(), entry.getValue().get());
-        }
+        map.forEach((k, v) -> action.accept(k, v.get()));
     }
 
     public boolean isEmpty() {

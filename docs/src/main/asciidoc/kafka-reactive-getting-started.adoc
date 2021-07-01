@@ -55,13 +55,13 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=kafka-quickstart-producer \
     -DclassName="org.acme.kafka.producer.QuotesResource" \
     -Dpath="/quotes" \
-    -Dextensions="resteasy-reactive,resteasy-reactive-jackson,smallrye-reactive-messaging-kafka"
+    -Dextensions="resteasy-reactive-jackson,smallrye-reactive-messaging-kafka"
 ----
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
 
 If you already have your Quarkus project configured, you can add the `smallrye-reactive-messaging-kafka`
-and `resteasy-jackson` extensions to your project by running the following command in your project base directory:
+and `resteasy-reactive-jackson` extensions to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
@@ -117,6 +117,9 @@ public class Quote {
     public String id;
     public int price;
 
+    /**
+    * Default constructor required for Jackson serializer
+    */
     public Quote() { }
 
     public Quote(String id, int price) {
@@ -244,7 +247,6 @@ As with the previous example we need to configure the connectors in the `applica
 mp.messaging.incoming.requests.connector=smallrye-kafka
 mp.messaging.incoming.requests.topic=quote-requests
 mp.messaging.incoming.requests.auto.offset.reset=earliest
-mp.messaging.incoming.requests.health-readiness-enabled=false
 
 # Configure the outgoing Kafka topic `quotes`
 mp.messaging.outgoing.quotes.connector=smallrye-kafka
@@ -307,8 +309,6 @@ mp.messaging.outgoing.quote-requests.connector=smallrye-kafka
 
 # Configure the incoming Kafka topic quotes
 mp.messaging.incoming.quotes.connector=smallrye-kafka
-mp.messaging.incoming.quotes.value.deserializer=org.acme.kafka.model.QuoteDeserializer
-mp.messaging.incoming.quotes.health-readiness-enabled=false
 ----
 
 == JSON serialization via Jackson
@@ -317,7 +317,6 @@ Finally, we will configure JSON serialization for messages using Jackson.
 Previously we've seen the usage of `ObjectMapperSerializer` to serialize objects via Jackson.
 For the corresponding deserializer class, we need to create a subclass of `ObjectMapperDeserializer`.
 
-You may have noticed the deserializer configuration on the previous step specifying `org.acme.kafka.model.QuoteDeserializer` class.
 So, let's create it inside `producer` project on `src/main/java/org/acme/kafka/model/QuoteDeserializer.java`
 
 [source,java]
@@ -333,6 +332,9 @@ public class QuoteDeserializer extends ObjectMapperDeserializer<Quote> {
     }
 }
 ----
+
+No need to add any configuration for this inside `application.properties` file.
+Quarkus will automatically detect this serializer.
 
 [TIP]
 ====

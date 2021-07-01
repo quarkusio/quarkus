@@ -67,6 +67,12 @@ public class UriTagWithHttpApplicationRootTest {
         when().get("/foo/bar/async-ping/two").then().statusCode(200);
         when().get("/foo/bar/async-ping/three").then().statusCode(200);
 
+        Util.waitForMeters(registry.find("http.server.requests").timers(), 5);
+        Util.waitForMeters(registry.find("http.client.requests").timers(), 1);
+
+        System.out.println("Server paths\n" + Util.listMeters(registry, "http.server.requests"));
+        System.out.println("Client paths\n" + Util.listMeters(registry, "http.client.requests"));
+
         // Application Path does not apply to non-rest endpoints: /vertx/item/{id}, /servlet
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/vertx/item/{id}").timers().size(),
                 Util.foundServerRequests(registry,

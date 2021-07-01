@@ -110,6 +110,30 @@ public class CliProjectMavenTest {
     }
 
     @Test
+    public void testCreateCliDefaults() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "-e", "-B", "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+
+        Assertions.assertTrue(project.resolve("mvnw").toFile().exists(),
+                "Wrapper should exist by default");
+        String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,
+                CreateProjectHelper.DEFAULT_ARTIFACT_ID,
+                CreateProjectHelper.DEFAULT_VERSION);
+        Assertions.assertFalse(pomContent.contains("<artifactId>quarkus-resteasy</artifactId>"),
+                "pom.xml should not contain quarkus-resteasy:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-picocli</artifactId>"),
+                "pom.xml should contain quarkus-picocli:\n" + pomContent);
+
+        CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
+
+        result = CliDriver.invokeValidateDryRunBuild(project);
+
+        CliDriver.invokeValidateBuild(project);
+    }
+
+    @Test
     public void testCreateArgPassthrough() throws Exception {
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
@@ -123,8 +147,8 @@ public class CliProjectMavenTest {
         // We don't need to retest this, just need to make sure all of the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        Assertions.assertTrue(result.stdout.contains("No subcommand specified, creating an app (see --help)"),
-                "Should contain 'No subcommand specified, creating an app (see --help)', found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("Creating an app (the project type was inferred, see --help)."),
+                "Should contain 'Creating an app (the project type was inferred, see --help).', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("MAVEN"),
                 "Should contain MAVEN, found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("Omit build tool wrapper   true"),

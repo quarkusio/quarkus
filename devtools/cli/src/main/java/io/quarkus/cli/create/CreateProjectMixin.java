@@ -83,7 +83,6 @@ public class CreateProjectMixin {
         setValue(ProjectGenerator.PACKAGE_NAME, codeGeneration.packageName);
         setValue(ProjectGenerator.APP_CONFIG, codeGeneration.getAppConfig());
 
-        // TODO: Can we drop the negative constant? Can we use the same one for JBang?
         setValue(CreateProject.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
     }
 

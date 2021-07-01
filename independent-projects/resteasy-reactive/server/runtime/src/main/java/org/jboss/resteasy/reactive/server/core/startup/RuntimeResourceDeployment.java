@@ -184,8 +184,9 @@ public class RuntimeResourceDeployment {
                     "Endpoints that return an AsyncFile cannot have any WriterInterceptor set");
         }
 
-        //spec doesn't seem to test this, but RESTEasy does not run request filters again for sub resources (which makes sense)
-        if (!locatableResource) {
+        //spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources (which makes sense)
+        //so only only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
+        if (method.getHttpMethod() != null) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
                     .setupRequestFilterHandler();
             if (blockingHandlerIndex.isPresent()) {

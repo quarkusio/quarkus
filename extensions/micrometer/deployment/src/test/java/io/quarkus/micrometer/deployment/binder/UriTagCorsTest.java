@@ -86,8 +86,9 @@ public class UriTagCorsTest {
                 .when().options("/hello/world").then()
                 .statusCode(200);
 
-        // Make sure other threads have time to finish
-        Thread.sleep(3);
+        // Try to let metrics gathering finish.
+        // Looking for 3 timers: uri=/cors-preflight, uri=/vertx/echo/{msg}, uri=/hello/{message}
+        Util.waitForMeters(registry.find("http.server.requests").timers(), 3);
 
         // CORS pre-flight
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/cors-preflight").timers().size(),

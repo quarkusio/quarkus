@@ -10,8 +10,8 @@ html{
     padding-bottom: 5px !important;
 }
 
-#swagger-ui .swagger-ui .topbar a{
-    max-width: 230px;
+#swagger-ui .swagger-ui .topbar a {
+    max-width: 180px;
 }
 
 #swagger-ui .topbar-wrapper .link a::after {
@@ -21,6 +21,16 @@ html{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+#swagger-ui .download-url-input {
+    z-index: 1;
+    min-width: 150px;
+    border: 2px solid #4695eb;
+}
+#swagger-ui .download-url-button {
+    z-index: 1;
+    min-width: 30px;
+}
+
 #swagger-ui .topbar-wrapper .download-url-wrapper::after {
     content: "{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion})";
     color: #9a9da0;
@@ -28,6 +38,32 @@ html{
     position: absolute;
     right: 15px;
     font-size: 0.83em;
+    z-index: 0;
+}
+
+@media (max-width: 1200px) {
+    #swagger-ui .topbar-wrapper .download-url-wrapper::after {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    #swagger-ui .topbar-wrapper .link a::after {
+        display: none;
+    }
+    #swagger-ui .swagger-ui .topbar a {
+        max-width: 50px;
+    }
+    #swagger-ui .download-url-button {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    #swagger-ui .topbar-wrapper .download-url-wrapper {
+        display: none;
+    }
 }
 
 #swagger-ui .topbar .wrapper {

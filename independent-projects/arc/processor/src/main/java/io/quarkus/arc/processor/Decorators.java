@@ -49,6 +49,11 @@ final class Decorators {
                 priority = annotation.value().asInt();
                 priorityDeclared = true;
             }
+            ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
+            if (scopeAnnotation != null && !BuiltinScope.DEPENDENT.is(scopeAnnotation)) {
+                throw new DefinitionException(
+                        "A decorator must be @Dependent but " + decoratorClass + " declares " + scopeAnnotation.getDotName());
+            }
         }
 
         //  The set includes all bean types which are Java interfaces, except for java.io.Serializable

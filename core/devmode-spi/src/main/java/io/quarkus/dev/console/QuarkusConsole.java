@@ -6,7 +6,7 @@ import java.util.function.Predicate;
 
 public abstract class QuarkusConsole {
 
-    public static final String LAUNCHED_FROM_IDE = "io.quarkus.launched-from-ide";
+    public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
@@ -40,7 +40,7 @@ public abstract class QuarkusConsole {
     private volatile boolean started = false;
 
     public static boolean hasColorSupport() {
-        if (Boolean.getBoolean(LAUNCHED_FROM_IDE)) {
+        if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
             return true; //assume the IDE run window has color support
         }
         if (IS_WINDOWS) {

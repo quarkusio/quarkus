@@ -9,7 +9,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "Greeting", mixinStandardHelpOptions = true)
-public class main {
+public class main implements Runnable {
 
     @Parameters(paramLabel = "<name>", defaultValue = "picocli",
         description = "Your name.")

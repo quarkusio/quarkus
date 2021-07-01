@@ -3,7 +3,10 @@ package io.quarkus.resteasy.reactive.jackson.deployment.processor;
 import java.util.Collections;
 import java.util.List;
 
+import javax.ws.rs.Priorities;
 import javax.ws.rs.core.MediaType;
+
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
@@ -11,6 +14,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
+import io.quarkus.resteasy.reactive.jackson.runtime.mappers.DefaultMismatchedInputException;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyReader;
@@ -18,6 +22,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonA
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyWriter;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.vertx.core.json.JsonArray;
@@ -44,7 +49,8 @@ public class ResteasyReactiveJacksonProcessor {
     void additionalProviders(List<JacksonFeatureBuildItem> jacksonFeatureBuildItems,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
-            BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
+            BuildProducer<MessageBodyWriterBuildItem> additionalWriters,
+            BuildProducer<ExceptionMapperBuildItem> exceptionMappers) {
         boolean applicationNeedsSpecialJacksonFeatures = jacksonFeatureBuildItems.isEmpty();
         // make these beans to they can get instantiated with the Quarkus CDI configured ObjectMapper object
         additionalBean.produce(AdditionalBeanBuildItem.builder()
@@ -75,6 +81,9 @@ public class ResteasyReactiveJacksonProcessor {
                 .produce(new MessageBodyWriterBuildItem(VertxJsonObjectMessageBodyWriter.class.getName(),
                         JsonObject.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
+
+        exceptionMappers.produce(new ExceptionMapperBuildItem(DefaultMismatchedInputException.class.getName(),
+                MismatchedInputException.class.getName(), Priorities.USER + 100, false));
     }
 
     private String getJacksonMessageBodyWriter(boolean applicationNeedsSpecialJacksonFeatures) {

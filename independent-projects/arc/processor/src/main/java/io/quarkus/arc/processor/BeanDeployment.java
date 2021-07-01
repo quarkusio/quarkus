@@ -780,8 +780,9 @@ public class BeanDeployment {
                 continue;
             }
 
-            if (annotationStore.hasAnnotation(beanClass, DotNames.INTERCEPTOR)) {
-                // Skip interceptors
+            if (annotationStore.hasAnnotation(beanClass, DotNames.INTERCEPTOR)
+                    || annotationStore.hasAnnotation(beanClass, DotNames.DECORATOR)) {
+                // Skip interceptors and decorators
                 continue;
             }
 

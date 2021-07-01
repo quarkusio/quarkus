@@ -136,6 +136,29 @@ public class CliProjectGradleTest {
     }
 
     @Test
+    public void testCreateCliDefaults() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "--gradle", "--verbose", "-e", "-B");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+
+        Assertions.assertTrue(project.resolve("gradlew").toFile().exists(),
+                "Wrapper should exist by default");
+        String buildGradleContent = validateBasicIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
+                CreateProjectHelper.DEFAULT_ARTIFACT_ID,
+                CreateProjectHelper.DEFAULT_VERSION);
+        Assertions.assertFalse(buildGradleContent.contains("quarkus-resteasy"),
+                "build/gradle should not contain quarkus-resteasy:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-picocli"),
+                "build/gradle should contain quarkus-picocli:\n" + buildGradleContent);
+
+        CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
+
+        startGradleDaemon(true);
+        CliDriver.invokeValidateBuild(project);
+    }
+
+    @Test
     public void testExtensionList() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
@@ -177,8 +200,8 @@ public class CliProjectGradleTest {
         // We don't need to retest this, just need to make sure all of the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        Assertions.assertTrue(result.stdout.contains("No subcommand specified, creating an app (see --help)"),
-                "Should contain 'No subcommand specified, creating an app (see --help)', found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("Creating an app (the project type was inferred, see --help)."),
+                "Should contain 'Creating an app (the project type was inferred, see --help).', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("GRADLE"),
                 "Should contain MAVEN, found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("Omit build tool wrapper   true"),

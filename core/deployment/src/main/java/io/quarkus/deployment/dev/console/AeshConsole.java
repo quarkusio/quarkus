@@ -22,6 +22,7 @@ public class AeshConsole extends QuarkusConsole {
     private String[] messages = new String[0];
     private int totalStatusLines = 0;
     private int lastWriteCursorX;
+    private volatile boolean doingReadline;
     /**
      * if the status area has gotten big then small again
      * this tracks how many lines of blank space we have
@@ -178,6 +179,14 @@ public class AeshConsole extends QuarkusConsole {
                     InputHolder handler = inputHandlers.peek();
                     if (handler != null) {
                         handler.handler.handleInput(keys);
+                    }
+                    if (doingReadline) {
+                        for (var k : keys) {
+                            if (k == '\n') {
+                                doingReadline = false;
+                                connection.enterRawMode();
+                            }
+                        }
                     }
                 });
             }
@@ -367,8 +376,17 @@ public class AeshConsole extends QuarkusConsole {
         @Override
         protected void setStatusMessage(String status) {
             setMessage(2, status);
-
         }
 
+        @Override
+        public void doReadLine() {
+            if (!inputSupport) {
+                return;
+            }
+            setPrompt("");
+            connection.setAttributes(attributes);
+            doingReadline = true;
+
+        }
     }
 }

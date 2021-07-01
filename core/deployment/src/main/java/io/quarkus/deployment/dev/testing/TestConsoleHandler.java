@@ -1,12 +1,12 @@
 package io.quarkus.deployment.dev.testing;
 
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.BLUE;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.GREEN;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RED;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RESET;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.helpOption;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusFooter;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusHeader;
+import static io.quarkus.deployment.dev.testing.MessageFormat.BLUE;
+import static io.quarkus.deployment.dev.testing.MessageFormat.GREEN;
+import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
+import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
+import static io.quarkus.deployment.dev.testing.MessageFormat.helpOption;
+import static io.quarkus.deployment.dev.testing.MessageFormat.statusFooter;
+import static io.quarkus.deployment.dev.testing.MessageFormat.statusHeader;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -322,38 +322,6 @@ public class TestConsoleHandler implements TestListener {
                 promptHandler.setStatus(status);
             }
         });
-
-    }
-
-    static class MessageFormat {
-
-        public static final String RED = "\u001B[91m";
-        public static final String GREEN = "\u001b[32m";
-        public static final String BLUE = "\u001b[34m";
-        public static final String RESET = "\u001b[0m";
-
-        private MessageFormat() {
-        }
-
-        public static String statusHeader(String header) {
-            return RESET + "==================== " + header + RESET + " ====================";
-        }
-
-        public static String statusFooter(String footer) {
-            return RESET + ">>>>>>>>>>>>>>>>>>>> " + footer + RESET + " <<<<<<<<<<<<<<<<<<<<";
-        }
-
-        public static String toggleStatus(boolean enabled) {
-            return " (" + (enabled ? GREEN + "enabled" + RESET + "" : RED + "disabled") + RESET + ")";
-        }
-
-        public static String helpOption(String key, String description) {
-            return "[" + BLUE + key + RESET + "] - " + description;
-        }
-
-        public static String helpOption(String key, String description, boolean enabled) {
-            return helpOption(key, description) + toggleStatus(enabled);
-        }
 
     }
 

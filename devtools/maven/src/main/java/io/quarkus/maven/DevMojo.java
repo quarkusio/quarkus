@@ -1,6 +1,5 @@
 package io.quarkus.maven;
 
-import static org.fusesource.jansi.internal.Kernel32.GetStdHandle;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
@@ -50,6 +49,7 @@ import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -142,8 +142,6 @@ public class DevMojo extends AbstractMojo {
             "verify",
             "install",
             "deploy"));
-    private static final String QUARKUS_PLUGIN_GROUPID = "io.quarkus";
-    private static final String QUARKUS_PLUGIN_ARTIFACTID = "quarkus-maven-plugin";
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
 
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
@@ -312,6 +310,8 @@ public class DevMojo extends AbstractMojo {
 
     @Component
     private ToolchainManager toolchainManager;
+
+    private Map<AppArtifactKey, Plugin> pluginMap;
 
     /**
      * console attributes, used to restore the console state
@@ -500,7 +500,8 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void triggerPrepare() throws MojoExecutionException {
-        executeIfConfigured(QUARKUS_PLUGIN_GROUPID, QUARKUS_PLUGIN_ARTIFACTID, QUARKUS_GENERATE_CODE_GOAL);
+        final PluginDescriptor pluginDescr = (PluginDescriptor) getPluginContext().get("pluginDescriptor");
+        executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(), QUARKUS_GENERATE_CODE_GOAL);
     }
 
     private void triggerCompile(boolean test) throws MojoExecutionException {
@@ -525,10 +526,12 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal) throws MojoExecutionException {
-        final Plugin plugin = project.getPlugin(pluginGroupId + ":" + pluginArtifactId);
+        final Plugin plugin = getConfiguredPluginOrNull(pluginGroupId, pluginArtifactId);
         if (plugin == null || plugin.getExecutions().stream().noneMatch(exec -> exec.getGoals().contains(goal))) {
             return;
         }
+        getLog().info("Invoking " + plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion() + ":" + goal
+                + " @ " + project.getArtifactId());
         executeMojo(
                 plugin(
                         groupId(pluginGroupId),
@@ -586,6 +589,17 @@ public class DevMojo extends AbstractMojo {
             throw new MojoExecutionException(
                     "Failed to obtain descriptor for Maven plugin " + plugin.getId() + " goal " + goal, e);
         }
+    }
+
+    private Plugin getConfiguredPluginOrNull(String groupId, String artifactId) {
+        if (pluginMap == null) {
+            pluginMap = new HashMap<>();
+            // the original plugin keys may include property expressions, so we can't rely on the exact groupId:artifactId keys
+            for (Plugin p : project.getBuildPlugins()) {
+                pluginMap.put(new AppArtifactKey(p.getGroupId(), p.getArtifactId()), p);
+            }
+        }
+        return pluginMap.get(new AppArtifactKey(groupId, artifactId));
     }
 
     private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {

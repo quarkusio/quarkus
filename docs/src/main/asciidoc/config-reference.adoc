@@ -259,17 +259,21 @@ example may be expressed as:
 [source,properties]
 ----
 quarkus.http.port=9090
+%staging.quarkus.http.test-port=9091
 ----
 
 .application-staging.properties
 [source,properties]
 ----
-quarkus.http.port=9999
+quarkus.http.port=9190
+quarkus.http.test-port=9191
 ----
 
 [NOTE]
 ====
 In this style, the configuration names in the profile aware file do not need to be prefixed with the profile name.
+
+Properties in the profile aware file have priority over profile aware properties defined in the main file.
 ====
 
 === Parent Profile

@@ -10,6 +10,7 @@ import java.util.concurrent.Callable;
 import javax.inject.Inject;
 
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
@@ -24,7 +25,8 @@ import picocli.CommandLine.UnmatchedArgumentException;
 
 @QuarkusMain
 @CommandLine.Command(name = "quarkus", versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = true, subcommands = {
-        Create.class, Build.class, Dev.class, ProjectExtensions.class, Completion.class, Version.class })
+        Create.class, Build.class, Dev.class, ProjectExtensions.class, Completion.class,
+        Version.class }, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     static {
@@ -41,6 +43,9 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     @CommandLine.Spec
     protected CommandLine.Model.CommandSpec spec;
+
+    @CommandLine.ArgGroup(exclusive = false, validate = false)
+    protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     @Override
     public int run(String... args) throws Exception {
@@ -66,7 +71,11 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
             UnmatchedArgumentException.printSuggestions(ex, output.err());
             output.err().println(cmd.getHelp().fullSynopsis()); // normal text to error stream
-            output.err().printf("Try '%s --help' for more information.%n", spec.qualifiedName());
+
+            if (spec.equals(spec.root())) {
+                output.err().println(cmd.getHelp().commandList()); // normal text to error stream
+            }
+            output.err().printf("See '%s --help' for more information.%n", spec.qualifiedName());
             output.err().flush();
 
             return cmd.getExitCodeExceptionMapper() != null ? cmd.getExitCodeExceptionMapper().getExitCode(ex)

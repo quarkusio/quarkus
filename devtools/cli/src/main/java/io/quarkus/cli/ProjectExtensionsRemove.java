@@ -12,7 +12,7 @@ import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "remove", aliases = "rm", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, description = "Remove extension(s) from this project.")
+@CommandLine.Command(name = "remove", aliases = "rm", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Remove extension(s) from this project.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
 public class ProjectExtensionsRemove extends BaseBuildCommand implements Callable<Integer> {
 
     @Mixin

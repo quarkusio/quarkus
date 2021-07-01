@@ -1,7 +1,5 @@
 package io.quarkus.cli.create;
 
-import static java.util.Objects.requireNonNull;
-
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,10 +52,29 @@ public class CreateProjectMixin {
         return outputPath;
     }
 
+    /**
+     * Resolve and remember the configured project directory.
+     * 
+     * @param log Output Mixin that will be used to emit error messages
+     * @return true IFF configured project root directory already exists
+     */
+    public boolean checkProjectRootAlreadyExists(OutputOptionMixin log) {
+        if (projectRootPath == null) {
+            try {
+                projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
+                return false;
+            } catch (IllegalArgumentException iex) {
+                log.error(iex.getMessage());
+                log.out().printf("Use '-a' or '--artifactId' to choose a new artifactId and directory name.%n");
+                log.out().printf("See '%s --help' for more information.%n", mixee.qualifiedName());
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Path projectRoot() {
         if (projectRootPath == null) {
-            requireNonNull(projectDirName,
-                    "Must configure project directory name (e.g. using setSingleProjectGAV or equivalent");
             projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
         }
         return projectRootPath;
@@ -96,17 +113,10 @@ public class CreateProjectMixin {
             OutputOptionMixin log, Map<String, String> properties)
             throws RegistryResolutionException {
 
-        // TODO: Allow this to be configured? infer from active Java version?
+        // TODO: Allow the Java version to be configured? infer from active Java version?
         CreateProjectHelper.setJavaVersion(values, null);
         CreateProjectHelper.handleSpringConfiguration(values);
         log.debug("Creating an app using the following settings: %s", values);
-
-        if (buildTool == null) {
-            // Adapt some settings for JBang
-            setValue("noJBangWrapper", values.get(CreateProject.NO_BUILDTOOL_WRAPPER));
-            // TODO: JBang should be a proper build tool
-            buildTool = BuildTool.MAVEN;
-        }
 
         QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, log);
 

@@ -65,11 +65,11 @@ public abstract class QuarkusConsole {
             holder.setEnabled(false);
         }
         holder = createHolder(inputHandler);
-        inputHandler.promptHandler(holder);
         if (started) {
             holder.setEnabled(true);
         }
         inputHandlers.push(holder);
+        inputHandler.promptHandler(holder);
     }
 
     public synchronized void popInputHandler() {

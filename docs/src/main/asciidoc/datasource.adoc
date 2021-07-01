@@ -662,6 +662,10 @@ include::{generated-dir}/config/quarkus-reactive-db2-client.adoc[opts=optional, 
 
 include::{generated-dir}/config/quarkus-reactive-mysql-client.adoc[opts=optional, leveloffset=+1]
 
+=== Reactive MS SQL Specific Configuration
+
+include::{generated-dir}/config/quarkus-reactive-mssql-client.adoc[opts=optional, leveloffset=+1]
+
 === Reactive PostgreSQL Specific Configuration
 
 include::{generated-dir}/config/quarkus-reactive-pg-client.adoc[opts=optional, leveloffset=+1]

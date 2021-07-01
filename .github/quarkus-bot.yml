@@ -476,9 +476,11 @@ triage:
       directories:
         - extensions/reactive-db2-client/
         - extensions/reactive-mysql-client/
+        - extensions/reactive-mssql-client/
         - extensions/reactive-pg-client/
         - integration-tests/reactive-db2-client/
         - integration-tests/reactive-mysql-client/
+        - integration-tests/reactive-mssql-client/
         - integration-tests/reactive-pg-client/
     - labels: [area/adr]
       title: "adr"

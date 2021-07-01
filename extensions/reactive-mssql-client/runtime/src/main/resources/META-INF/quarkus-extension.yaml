@@ -1,0 +1,17 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Reactive MS SQL client"
+metadata:
+  keywords:
+  - "eclipse-vert.x"
+  - "vertx"
+  - "vert.x"
+  - "reactive"
+  - "database"
+  - "data"
+  - "mssql"
+  guide: "https://quarkus.io/guides/reactive-sql-clients"
+  categories:
+  - "data"
+  - "reactive"
+  status: "preview"

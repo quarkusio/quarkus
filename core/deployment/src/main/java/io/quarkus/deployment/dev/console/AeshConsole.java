@@ -3,6 +3,8 @@ package io.quarkus.deployment.dev.console;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.Connection;
@@ -22,6 +24,7 @@ public class AeshConsole extends QuarkusConsole {
     private String[] messages = new String[0];
     private int totalStatusLines = 0;
     private int lastWriteCursorX;
+    private String lastColorCode; //foreground color code, or reset
     private volatile boolean doingReadline;
     /**
      * if the status area has gotten big then small again
@@ -45,6 +48,8 @@ public class AeshConsole extends QuarkusConsole {
             return false;
         }
     };
+
+    static final Pattern ESCAPE = Pattern.compile("\u001b\\[(\\d\\d?)[\\d;]*m");
 
     public AeshConsole(Connection connection, boolean inputSupport) {
         this.inputSupport = inputSupport;
@@ -244,7 +249,7 @@ public class AeshConsole extends QuarkusConsole {
     }
 
     private void clearStatusMessages(StringBuilder buffer) {
-        gotoLine(buffer, size.getHeight() - totalStatusLines);
+        gotoLine(buffer, size.getHeight() - totalStatusLines + 1);
         buffer.append("\033[J");
     }
 
@@ -279,6 +284,19 @@ public class AeshConsole extends QuarkusConsole {
         if (IN_WRITE.get()) {
             return;
         }
+        if (lastColorCode != null) {
+            s = lastColorCode + s;
+        }
+        Matcher m = ESCAPE.matcher(s);
+        while (m.find()) {
+            int val = Integer.parseInt(m.group(1));
+            if (val == 0 || //reset
+                    (val >= 30 && val <= 39) || //foreground colors
+                    (val >= 90 && val <= 97)) { //bright foreground colors
+                lastColorCode = m.group(0);
+            }
+        }
+
         StringBuilder buffer = new StringBuilder();
         synchronized (this) {
             if (outputFilter != null) {
@@ -329,7 +347,8 @@ public class AeshConsole extends QuarkusConsole {
                     int appendLines = Math.max(Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines), 1);
                     appendLines -= usedBlankSpace;
                     clearStatusMessages(buffer);
-                    buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank).append(";").append(0)
+                    buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank).append(";")
+                            .append(lastWriteCursorX)
                             .append("H");
                     buffer.append(s);
                     buffer.append("\033[").append(size.getHeight()).append(";").append(0).append("H");

@@ -5,7 +5,7 @@ public class MessageFormat {
     public static final String RED = "\u001B[91m";
     public static final String GREEN = "\u001b[32m";
     public static final String BLUE = "\u001b[34m";
-    public static final String RESET = "\u001b[0m";
+    public static final String RESET = "\u001b[39m";
 
     private MessageFormat() {
     }

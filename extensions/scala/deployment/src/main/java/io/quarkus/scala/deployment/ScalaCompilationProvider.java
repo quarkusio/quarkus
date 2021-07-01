@@ -13,7 +13,6 @@ import scala.collection.JavaConverters;
 import scala.tools.nsc.Global;
 import scala.tools.nsc.Settings;
 
-import dotty.tools.dotc.config.ScalaSettings;
 import dotty.tools.dotc.core.Contexts.ContextBase;
 import dotty.tools.dotc.interfaces.CompilerCallback;
 import dotty.tools.dotc.Main;
@@ -52,10 +51,18 @@ public class ScalaCompilationProvider implements CompilationProvider {
 }
 
 
-public class Scala3CompilationProvider implements CompilationProvider {
+class Scala3CompilationProvider implements CompilationProvider {
+
     @Override
     public Set<String> handledExtensions() {
         return Collections.singleton(".scala");
+    }
+
+    // TODO: What does this even do? The implementation has no docs, and it doesn't
+    // seem to exist on the Kotlin or Scala extensions.
+    @Override
+    public Set<String> handledSourcePaths() {
+        return CompilationProvider.super.handledSourcePaths();
     }
 
     @Override
@@ -63,30 +70,30 @@ public class Scala3CompilationProvider implements CompilationProvider {
         var reporter = new CustomReporter();
         var callback = new CustomCompilerCallback();
 
-        var scalaCtx = new ContextBase().initialCtx().fresh()
-                .setReporter(reporter)
-                .setCompilerCallback(callback);
+        var classPath = context.getClasspath().stream().map(File::getAbsolutePath)
+                .collect(Collectors.joining(File.pathSeparator));
 
-        // WRONG: This needs to be a string, separated by File.pathSeparator
-        var classPath = context.getClasspath().stream()
-            .map(File::getAbsolutePath)
-            .toString();
-
+        var scalaCtx = new ContextBase().initialCtx().fresh().setReporter(reporter).setCompilerCallback(callback);
         scalaCtx.setSetting(scalaCtx.settings().classpath(), classPath);
         scalaCtx.setSetting(scalaCtx.settings().outputDir(), context.getOutputDirectory().getAbsolutePath());
 
-        String[] args =  new String[]{};
+        var args = new String[] {};
         Main.process(args, scalaCtx);
     }
 
     @Override
-    public Path getSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath) {
+    public Path getSourcePath(Path classFilePath, PathsCollection sourcePaths, String classesPath) {
         return classFilePath;
     }
 
+    @Override
+    public void close() throws IOException {
+        CompilationProvider.super.close();
+    }
+
     private class CustomReporter extends Reporter
-            //  with UniqueMessagePositions
-            //  with HideNonSensicalMessages
+    // with UniqueMessagePositions
+    // with HideNonSensicalMessages
     {
         @Override
         public void doReport(Diagnostic message, Contexts.Context ctx) {

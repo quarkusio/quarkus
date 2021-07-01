@@ -1763,7 +1763,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-mysql-client-deployment</artifactId>
+            <artifactId>quarkus-reactive-mssql-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -1776,7 +1776,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-mssql-client-deployment</artifactId>
+            <artifactId>quarkus-reactive-mysql-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

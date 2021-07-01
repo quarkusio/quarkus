@@ -48,7 +48,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * 
      * @deprecated use {@link Panache#getEntityManager(Class)} instead to access an entity manager for any entity class
      */
-    @GenerateBridge
+    @GenerateBridge(ignoreEntityTypeParam = true)
     @Deprecated
     default EntityManager getEntityManager(Class<?> clazz) {
         throw implementationInjectionMissing();

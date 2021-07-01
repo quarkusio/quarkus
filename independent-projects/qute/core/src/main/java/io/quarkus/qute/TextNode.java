@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -9,12 +8,12 @@ import java.util.function.Consumer;
  */
 public class TextNode implements TemplateNode, ResultNode {
 
-    private final CompletableFuture<ResultNode> result;
+    private final CompletedStage<ResultNode> result;
     private final String value;
     private final Origin origin;
 
     public TextNode(String value, Origin origin) {
-        this.result = CompletableFuture.completedFuture(this);
+        this.result = CompletedStage.of(this);
         this.value = value;
         this.origin = origin;
     }

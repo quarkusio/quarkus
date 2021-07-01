@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -36,7 +35,6 @@ public class LoopSectionHelper implements SectionHelper {
         this.elseBlock = context.getBlock(ELSE);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         return context.resolutionContext().evaluate(iterable).thenCompose(it -> {
@@ -64,22 +62,8 @@ public class LoopSectionHelper implements SectionHelper {
             if (results.size() == 1) {
                 return results.get(0);
             }
-            CompletableFuture<ResultNode> result = new CompletableFuture<>();
-            CompletableFuture<ResultNode>[] allResults = new CompletableFuture[results.size()];
-            idx = 0;
-            for (CompletionStage<ResultNode> r : results) {
-                allResults[idx++] = r.toCompletableFuture();
-            }
-            CompletableFuture
-                    .allOf(allResults)
-                    .whenComplete((v, t) -> {
-                        if (t != null) {
-                            result.completeExceptionally(t);
-                        } else {
-                            result.complete(new MultiResultNode(allResults));
-                        }
-                    });
-            return result;
+
+            return Results.process(results);
         });
     }
 
@@ -209,17 +193,17 @@ public class LoopSectionHelper implements SectionHelper {
 
     static class IterationElement implements Mapper {
 
-        static final CompletableFuture<Object> EVEN = CompletableFuture.completedFuture("even");
-        static final CompletableFuture<Object> ODD = CompletableFuture.completedFuture("odd");
+        static final CompletedStage<Object> EVEN = CompletedStage.of("even");
+        static final CompletedStage<Object> ODD = CompletedStage.of("odd");;
 
         final String alias;
-        final CompletableFuture<Object> element;
+        final CompletedStage<Object> element;
         final int index;
         final boolean hasNext;
 
         public IterationElement(String alias, Object element, int index, boolean hasNext) {
             this.alias = alias;
-            this.element = CompletableFuture.completedFuture(element);
+            this.element = CompletedStage.of(element);
             this.index = index;
             this.hasNext = hasNext;
         }
@@ -232,9 +216,9 @@ public class LoopSectionHelper implements SectionHelper {
             // Iteration metadata
             switch (key) {
                 case "count":
-                    return CompletableFuture.completedFuture(index + 1);
+                    return CompletedStage.of(index + 1);
                 case "index":
-                    return CompletableFuture.completedFuture(index);
+                    return CompletedStage.of(index);
                 case "indexParity":
                     return index % 2 != 0 ? EVEN : ODD;
                 case "hasNext":

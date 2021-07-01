@@ -2,6 +2,7 @@ package io.quarkus.qute.generator;
 
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.qute.CompletedStage;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
@@ -34,8 +35,8 @@ public final class Descriptors {
     public static final MethodDescriptor EVALUATE = MethodDescriptor.ofMethod(EvalContext.class, "evaluate",
             CompletionStage.class, Expression.class);
     static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);
-    static final MethodDescriptor COMPLETED_FUTURE = MethodDescriptor.ofMethod(CompletableFuture.class,
-            "completedFuture", CompletableFuture.class, Object.class);
+    static final MethodDescriptor COMPLETED_STAGE = MethodDescriptor.ofMethod(CompletedStage.class,
+            "of", CompletedStage.class, Object.class);
     public static final MethodDescriptor COMPLETABLE_FUTURE_ALL_OF = MethodDescriptor.ofMethod(CompletableFuture.class,
             "allOf",
             CompletableFuture.class, CompletableFuture[].class);

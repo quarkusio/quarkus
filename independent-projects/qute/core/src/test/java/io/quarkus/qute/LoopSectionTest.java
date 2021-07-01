@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 
@@ -90,7 +89,7 @@ public class LoopSectionTest {
                         for (char c : context.getBase().toString().toCharArray()) {
                             chars.add(c);
                         }
-                        return CompletableFuture.completedFuture(chars);
+                        return CompletedStage.of(chars);
                     }
                 })
                 .build();

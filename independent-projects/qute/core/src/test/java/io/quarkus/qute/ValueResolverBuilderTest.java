@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 
 public class ValueResolverBuilderTest {
@@ -37,7 +36,7 @@ public class ValueResolverBuilderTest {
                         .applyToBaseClass(String.class)
                         .applyToName("upper")
                         .applyToNoParameters()
-                        .resolveAsync(ec -> CompletableFuture.completedFuture(ec.getBase().toString().toUpperCase()))
+                        .resolveAsync(ec -> CompletedStage.of(ec.getBase().toString().toUpperCase()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(String.class)

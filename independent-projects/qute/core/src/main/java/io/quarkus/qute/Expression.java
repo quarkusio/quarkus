@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +42,20 @@ public interface Expression {
      * @return the literal value, or null
      */
     CompletableFuture<Object> getLiteralValue();
+
+    /**
+     * 
+     * @return the literal value, or null
+     */
+    Object getLiteral();
+
+    /**
+     * 
+     * @return the literal value
+     * @throws IllegalStateException If the expression does not represent a literal
+     * @see Expression#isLiteral()
+     */
+    CompletionStage<Object> asLiteral();
 
     /**
      * 

@@ -1,12 +1,14 @@
 package io.quarkus.qute;
 
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public final class Results {
@@ -17,10 +19,10 @@ public final class Results {
      * @deprecated Use {@link #notFound(EvalContext)} or {@link #notFound(String)} instead
      */
     @Deprecated
-    public static final CompletionStage<Object> NOT_FOUND = CompletableFuture.completedFuture(Result.NOT_FOUND);
-    public static final CompletableFuture<Object> FALSE = CompletableFuture.completedFuture(false);
-    public static final CompletableFuture<Object> TRUE = CompletableFuture.completedFuture(true);
-    public static final CompletableFuture<Object> NULL = CompletableFuture.completedFuture(null);
+    public static final CompletionStage<Object> NOT_FOUND = CompletedStage.of(Result.NOT_FOUND);
+    public static final CompletedStage<Object> FALSE = CompletedStage.of(false);
+    public static final CompletedStage<Object> TRUE = CompletedStage.of(true);
+    public static final CompletedStage<Object> NULL = CompletedStage.of(null);
 
     private Results() {
     }
@@ -35,15 +37,59 @@ public final class Results {
     }
 
     public static CompletionStage<Object> notFound(EvalContext evalContext) {
-        return CompletableFuture.completedFuture(NotFound.from(evalContext));
+        return CompletedStage.of(NotFound.from(evalContext));
     }
 
     public static CompletionStage<Object> notFound(String name) {
-        return CompletableFuture.completedFuture(NotFound.from(name));
+        return CompletedStage.of(NotFound.from(name));
     }
 
     public static CompletionStage<Object> notFound() {
-        return CompletableFuture.completedFuture(NotFound.EMPTY);
+        return CompletedStage.of(NotFound.EMPTY);
+    }
+
+    static CompletableFuture<ResultNode> process(List<CompletionStage<ResultNode>> results) {
+        CompletableFuture<ResultNode> ret = new CompletableFuture<ResultNode>();
+
+        // Collect async results first 
+        @SuppressWarnings("unchecked")
+        Supplier<ResultNode>[] allResults = new Supplier[results.size()];
+        List<CompletableFuture<ResultNode>> asyncResults = null;
+        int idx = 0;
+        for (CompletionStage<ResultNode> result : results) {
+            if (result instanceof CompletedStage) {
+                allResults[idx++] = (CompletedStage<ResultNode>) result;
+                // No async computation needed
+                continue;
+            } else {
+                CompletableFuture<ResultNode> fu = result.toCompletableFuture();
+                if (asyncResults == null) {
+                    asyncResults = new LinkedList<>();
+                }
+                asyncResults.add(fu);
+                allResults[idx++] = Futures.toSupplier(fu);
+            }
+        }
+        if (asyncResults == null) {
+            // No async results present
+            ret.complete(new MultiResultNode(allResults));
+        } else {
+            CompletionStage<?> cs;
+            if (asyncResults.size() == 1) {
+                cs = asyncResults.get(0);
+            } else {
+                cs = CompletableFuture
+                        .allOf(asyncResults.toArray(new CompletableFuture[0]));
+            }
+            cs.whenComplete((v, t) -> {
+                if (t != null) {
+                    ret.completeExceptionally(t);
+                } else {
+                    ret.complete(new MultiResultNode(allResults));
+                }
+            });
+        }
+        return ret;
     }
 
     /**
@@ -63,7 +109,7 @@ public final class Results {
     }
 
     /**
-     * Represents various types of "result not found" values.
+     * Represents a "result not found" value.
      */
     public static final class NotFound {
 

@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +45,7 @@ public class SimpleTest {
             public CompletionStage<Object> resolve(EvalContext context) {
                 List<?> list = (List<?>) context.getBase();
                 return context.evaluate(context.getParams().get(0)).thenCompose(index -> {
-                    return CompletableFuture.completedFuture(list.get((Integer) index));
+                    return CompletedStage.of(list.get((Integer) index));
                 });
             }
 

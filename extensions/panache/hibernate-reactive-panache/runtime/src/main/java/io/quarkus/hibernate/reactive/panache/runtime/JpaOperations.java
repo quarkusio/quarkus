@@ -12,7 +12,7 @@ public class JpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
     public static final JpaOperations INSTANCE = new JpaOperations();
 
     @Override
-    protected PanacheQueryImpl<?> createPanacheQuery(Mutiny.Session session, String query, String orderBy,
+    protected PanacheQueryImpl<?> createPanacheQuery(Uni<Mutiny.Session> session, String query, String orderBy,
             Object paramsArrayOrMap) {
         return new PanacheQueryImpl<>(session, query, orderBy, paramsArrayOrMap);
     }

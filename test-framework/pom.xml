@@ -28,6 +28,7 @@
         <module>junit5-internal</module>
         <module>junit5</module>
         <module>junit5-mockito</module>
+        <module>junit5-vertx</module>
         <module>amazon-lambda</module>
         <module>arquillian</module>
         <module>devmode-test-utils</module>

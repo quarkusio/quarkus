@@ -21,12 +21,17 @@ To complete this guide, you need:
 
 == Architecture
 
-In this guide, we are going to generate (random) prices in one component.
-These prices are written in a Kafka topic (`prices`).
-A second component reads from the `prices` Kafka topic and apply some magic conversion to the price.
-The result is sent to an in-memory channel consumed by a JAX-RS resource.
-The data is sent to a browser using server-sent events.
+In this guide, we are going to develop two microservices for an application that will ask for some price and receive quotes from providers in real-time.
 
+The first component, the `producer`, will let the user request some quotes over a JAX-RS endpoint.
+For each quote request a random identifier is generated and returned to the user, to put the quote request on _pending_.
+At the same time the generated request id is sent over a Kafka topic `quote-requests`.
+
+The second component, the `processor`, in turn will read from the `quote-requests` topic put a magic random price to the quote and send it to a Kafka topic named `quotes`.
+Lastly, the first component will read the quotes and send them to the browser using server-sent events.
+The user will therefore see the quote price updated from _pending_ to the received price in real-time.
+
+// TODO update image
 image::kafka-guide-architecture.png[alt=Architecture, align=center]
 
 == Solution
@@ -40,18 +45,17 @@ The solution is located in the `kafka-quickstart` {quickstarts-tree-url}/kafka-q
 
 == Creating the Maven Project
 
-First, we need a new project.
-Create a new project with the following command:
+First, we need to create two projects.
+Create the `producer` project with the following command:
 
 [source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kafka-quickstart \
-    -DclassName="org.acme.kafka.PriceResource" \
-    -Dpath="/prices" \
+    -DprojectArtifactId=kafka-quickstart-producer \
+    -DclassName="org.acme.kafka.producer.QuotesResource" \
+    -Dpath="/quotes" \
     -Dextensions="resteasy-reactive,resteasy-reactive-jackson,smallrye-reactive-messaging-kafka"
-cd kafka-quickstart
 ----
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
@@ -78,6 +82,18 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+Now create the `processor` project:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=kafka-quickstart-processor \
+    -DclassName="org.acme.kafka.processor.QuoteProcessor" \
+    -Dextensions="smallrye-reactive-messaging-kafka"
+----
+
+
 [TIP]
 .Dev Services
 ====
@@ -86,171 +102,234 @@ Quarkus starts a broker for you automatically.
 See xref:kafka-dev-services.adoc[Dev Services for Kafka] for details.
 ====
 
-== The price object
+== The Quote object
 
-Create the `src/main/java/org/acme/kafka/Price.java` file, with the following content:
+The quote class will be used in both `producer` and `processor` projects.
+For the sake of simplicity we will duplicate the class.
+In both projects, create the `src/main/java/org/acme/kafka/model/Quote.java` file, with the following content:
 
 [source,java]
 ----
-package org.acme.kafka;
+package org.acme.kafka.model;
 
-public class Price {
+public class Quote {
 
-    public double value;
-    public String currency;
+    public String id;
+    public int price;
 
-    public Price() { }
+    public Quote() { }
 
-    public Price(double value, String currency) {
-        this.value = value;
-        this.currency = currency;
+    public Quote(String id, int price) {
+        this.id = id;
+        this.price = price;
     }
 }
 ----
 
-JSON representation of `Price` objects will be used in messages sent to the Kafka topic
+JSON representation of `Quote` objects will be used in messages sent to the Kafka topic
 and also server-sent events sent to browser clients.
 
 Quarkus has built-in capabilities to deal with JSON Kafka messages.
 In a following section we will create serializer/deserializer classes for Jackson.
 
-== The price generator
+== Sending quote request
 
-Create the `src/main/java/org/acme/kafka/PriceGenerator.java` file, with the following content:
-
-[source,java]
-----
-package org.acme.kafka;
-
-import java.time.Duration;
-import java.util.Random;
-
-import javax.enterprise.context.ApplicationScoped;
-
-import io.smallrye.mutiny.Multi;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
-
-/**
- * A bean producing random prices every 5 seconds.
- * The prices are written to a Kafka topic (prices).
- * The Kafka configuration is specified in the application configuration.
- */
-@ApplicationScoped
-public class PriceGenerator {
-
-    private Random random = new Random();
-
-    @Outgoing("generated-price")                        // <1>
-    public Multi<Integer> generate() {                  // <2>
-        return Multi.createFrom().ticks().every(Duration.ofSeconds(5))
-                .onOverflow().drop()
-                .map(tick -> new Price(random.nextInt(100), "$"));
-    }
-
-}
-----
-<1> Instruct Reactive Messaging to dispatch the items from returned stream to `generated-price`.
-<2> The method returns a Mutiny _stream_ (`Multi`) emitting a `Price` object containing random prices, every 5 seconds.
-
-The method returns a _Reactive Stream_.
-The generated items are sent to the stream named `generated-price`.
-This stream is mapped to Kafka using the `application.properties` file that we will create soon.
-
-== The price converter
-
-The price converter reads the prices from Kafka, and transforms them.
-Create the `src/main/java/org/acme/kafka/PriceConverter.java` file with the following content:
-
-[source, java]
-----
-package org.acme.kafka;
-
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
-
-import javax.enterprise.context.ApplicationScoped;
-
-/**
- * A bean consuming data from the "prices" Kafka topic and applying some conversion.
- * The result is pushed to the "my-data-stream" stream which is an in-memory stream.
- */
-@ApplicationScoped
-public class PriceConverter {
-
-    private static final double CONVERSION_RATE = 0.88;
-
-    @Incoming("prices")                                     // <1>
-    @Outgoing("my-data-stream")                             // <2>
-    public Price process(Price priceInUsd) {
-        return new Price(priceInUsd.value * CONVERSION_RATE, "€");
-    }
-
-}
-----
-<1> Indicates that the method consumes the items from the `prices` topic
-<2> Indicates that the objects returned by the method are sent to the `my-data-stream` stream
-
-The `process` method is called for every Kafka _record_ from the `prices` topic (configured in the application configuration).
-Every result is sent to the `my-data-stream` in-memory stream.
-
-== The price resource
-
-Let's bind our stream to a JAX-RS resource and send events to clients.
-Create the `src/main/java/org/acme/kafka/PriceResource.java` file with the following content:
+Inside the `producer` project locate the generated  `src/main/java/org/acme/kafka/producer/QuotesResource.java` file, and add the following content:
 
 [source,java]
 ----
-package org.acme.kafka;
+package org.acme.kafka.producer;
+
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.acme.kafka.model.Quote;
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.reactivestreams.Publisher;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-/**
- * A simple resource retrieving the prices topic and sending the items to a server sent event.
- */
-@Path("/")
-public class PriceResource {
+import io.smallrye.mutiny.Multi;
+
+@Path("/quotes")
+public class QuotesResource {
 
     @Inject
-    @Channel("my-data-stream") Publisher<Price> prices; // <1>
+    @Channel("quote-requests") Emitter<String> quoteRequestEmitter; // <1>
 
-    @GET
-    @Path("/prices")
-    @Produces(MediaType.SERVER_SENT_EVENTS) // <2>
-    public Publisher<Price> stream() { // <3>
-        return prices;
+    /**
+     * Endpoint to generate a new quote request id and send it to "quote-requests" Kafka topic using the emitter.
+     */
+    @POST
+    @Path("/request")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String createRequest() {
+        UUID uuid = UUID.randomUUID();
+        quoteRequestEmitter.send(uuid.toString()); // <2>
+        return uuid.toString();
     }
 }
 ----
-<1> Injects the `my-data-stream` channel using the `@Channel` qualifier
+<1> Inject a Reactive Messaging `Emitter` to send messsages to the `quote-requests` channel.
+<2> On a post request, generate a random UUID and send it to the Kafka topic using the emitter.
+
+This channel is mapped to Kafka using the configuration we will add to the `application.properties` file:
+
+[source, properties]
+----
+# Configure the outgoing Kafka topic quote-requests
+mp.messaging.outgoing.quote-requests.connector=smallrye-kafka
+----
+
+All we need to specify is the `smallrye-kafka` connector.
+By default reactive messaging will map the channel name `quote-requests` to the Kafka topic name.
+The serializer for `String` is automatically configured.
+
+== Processing quote requests
+
+Now let's consume the quote request and give out a price.
+Inside the `processor` project locate the `src/main/java/org/acme/kafka/processor/QuoteProcessor.java` file and add the following:
+
+[source, java]
+----
+package org.acme.kafka.processor;
+
+import java.util.Random;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import org.acme.kafka.model.Quote;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+import io.smallrye.reactive.messaging.annotations.Blocking;
+
+/**
+ * A bean consuming data from the "request" Kafka topic and giving out a random quote.
+ * The result is pushed to the "quotes" Kafka topic.
+ */
+@ApplicationScoped
+public class QuotesProcessor {
+
+    private Random random = new Random();
+
+    @Incoming("requests")       // <1>
+    @Outgoing("quotes")         // <2>
+    @Blocking                   // <3>
+    public Quote process(String quoteRequest) throws InterruptedException {
+        // simulate some hard working task
+        Thread.sleep(200);
+        return new Quote(quoteRequest, random.nextInt(100));
+    }
+}
+
+----
+<1> Indicates that the method consumes the items from the `requests` channel
+<2> Indicates that the objects returned by the method are sent to the `quotes` channel
+<3> Indicates that the processing is _blocking_ and cannot be run on the caller thread.
+
+The `process` method is called for every Kafka _record_ from the `quote-requests` topic, and will send a `Quote` object to the `quotes` topic.
+
+As with the previous example we need to configure the connectors in the `application.properties` file:
+
+[source, properties]
+----
+%dev.quarkus.http.port=8081
+
+# Configure the incoming Kafka topic `quote-requests`
+mp.messaging.incoming.requests.connector=smallrye-kafka
+mp.messaging.incoming.requests.topic=quote-requests
+mp.messaging.incoming.requests.auto.offset.reset=earliest
+mp.messaging.incoming.requests.health-readiness-enabled=false
+
+# Configure the outgoing Kafka topic `quotes`
+mp.messaging.outgoing.quotes.connector=smallrye-kafka
+mp.messaging.outgoing.quotes.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
+----
+
+Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
+The configuration keys are structured as follows:
+
+`mp.messaging.[outgoing|incoming].{channel-name}.property=value`
+
+The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
+
+* `quote-requests` -> Kafka topic from which we read the quote requests
+* `quotes` -> Kafka topic in which we write the quotes
+
+[NOTE]
+====
+More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`. An exhaustive list of configuration properties is available in <<kafka-configuration>>.
+====
+
+Also for the outgoing configuration we specified the serializer because we are sending a `Quote` object as the message payload.
+
+Quarkus provides default implementations for Kafka serializer/deserializer pairs using Jackson `ObjectMapper`.
+`ObjectMapperSerializer` can be used to serialize all objects via Jackson.
+
+== Receiving quotes
+
+Back to our `producer` project.
+Let's modify the `QuotesResource` to consume quotes, bind it to a JAX-RS resource and send events to clients:
+
+[source,java]
+----
+import io.smallrye.mutiny.Multi;
+[...]
+
+@Inject
+@Channel("quotes") Multi<Quote> quotes;     // <1>
+
+/**
+ * Endpoint retrieving the "quotes" Kafka topic and sending the items to a server sent event.
+ */
+@GET
+@Produces(MediaType.SERVER_SENT_EVENTS) // <2>
+public Multi<Quote> stream() {
+    return quotes; // <3>
+}
+----
+<1> Injects the `quotes` channel using the `@Channel` qualifier
 <2> Indicates that the content is sent using `Server Sent Events`
 <3> Returns the stream (_Reactive Stream_)
+
+Again we need to configure the incoming `quotes` channel inside `producer` project.
+Add the following inside `application.properties` file:
+
+[source, properties]
+----
+# Configure the outgoing Kafka topic quote-requests
+mp.messaging.outgoing.quote-requests.connector=smallrye-kafka
+
+# Configure the incoming Kafka topic quotes
+mp.messaging.incoming.quotes.connector=smallrye-kafka
+mp.messaging.incoming.quotes.value.deserializer=org.acme.kafka.model.QuoteDeserializer
+mp.messaging.incoming.quotes.health-readiness-enabled=false
+----
 
 == JSON serialization via Jackson
 
 Finally, we will configure JSON serialization for messages using Jackson.
-Quarkus provides default implementations for Kafka serializer/deserializer pairs using Jackson `ObjectMapper`.
-`ObjectMapperSerializer` can be used to serialize all objects via Jackson.
+Previously we've seen the usage of `ObjectMapperSerializer` to serialize objects via Jackson.
 For the corresponding deserializer class, we need to create a subclass of `ObjectMapperDeserializer`.
 
-So, let's create `src/main/java/org/acme/kafka/PriceDeserializer.java`
+You may have noticed the deserializer configuration on the previous step specifying `org.acme.kafka.model.QuoteDeserializer` class.
+So, let's create it inside `producer` project on `src/main/java/org/acme/kafka/model/QuoteDeserializer.java`
 
 [source,java]
 ----
-package org.acme.kafka;
+package org.acme.kafka.model;
 
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 
-public class PriceDeserializer extends ObjectMapperDeserializer<Price> {
-    public PriceDeserializer() {
+public class QuoteDeserializer extends ObjectMapperDeserializer<Quote> {
+    public QuoteDeserializer() {
         // pass the class to the parent.
-        super(Price.class);
+        super(Quote.class);
     }
 }
 ----
@@ -265,51 +344,14 @@ We strongly suggest adopting a contract-first approach using a schema registry.
 To learn more about how to use Apache Kafka with the schema registry and Avro follow the link:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] guide.
 ====
 
-== Configuring the Kafka connector
-
-We need to configure the Kafka connector.
-This is done in the `application.properties` file.
-The keys are structured as follows:
-
-`mp.messaging.[outgoing|incoming].{channel-name}.property=value`
-
-The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
-
-* `generated-price` -> Kafka topic in which we write the prices
-* `prices` -> Kafka topic from which we read the prices
-
-[source,properties]
-----
-
-# Configure the outgoing Kafka topic (we write to it)
-mp.messaging.outgoing.generated-price.connector=smallrye-kafka
-mp.messaging.outgoing.generated-price.topic=prices
-mp.messaging.outgoing.generated-price.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
-
-# Configure the incoming Kafka topic (we read from it)
-mp.messaging.incoming.prices.connector=smallrye-kafka
-mp.messaging.incoming.prices.topic=prices
-mp.messaging.incoming.prices.value.deserializer=org.acme.kafka.PriceDeserializer
-
-----
-
-This configuration does not set the Kafka _bootstrap.servers_.
-Quarkus starts a Kafka broker automatically and configures the application.
-See xref:kafka-dev-services.adoc[Dev Services for Kafka] for more details.
-
-More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`. An exhaustive list of configuration properties is available in <<kafka-configuration>>.
-
-NOTE: What about `my-data-stream`? This is an in-memory stream, not connected to a message broker.
-
 == The HTML page
 
 Final touch, the HTML page reading the converted prices using SSE.
 
-Create the `src/main/resources/META-INF/resources/prices.html` file, with the following content:
+Create inside the `producer` project `src/main/resources/META-INF/resources/quotes.html` file, with the following content:
 
 [source, html]
 ----
-
 <!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <title>Prices</title>
 
     <link rel="stylesheet" type="text/css"
@@ -319,20 +361,31 @@ Create the `src/main/resources/META-INF/resources/prices.html` file, with the fo
 </head>
 <body>
 <div class="container">
-
-    <h2>Last price</h2>
-    <div class="row">
-    <p class="col-md-12">The last price is <strong><span id="value">N/A</span>&nbsp;<span id="currency"></span></strong>.</p>
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Quotes</h2>
+            <button class="btn btn-info" id="request-quote">Request Quote</button>
+            <div class="quotes"></div>
+        </div>
     </div>
 </div>
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    var source = new EventSource("/prices");
-    source.onmessage = function (event) {
-        var json = JSON.parse(event.data);
-        document.getElementById("value").innerHTML = json.value;
-        document.getElementById("currency").innerHTML = json.currency;
+    $("#request-quote").click((event) => {
+        fetch("/quotes/request", {method: "POST"})
+        .then(res => res.text())
+        .then(qid => {
+            var row = $(`<h4 class='col-md-12' id='${qid}'>Quote # <i>${qid}</i> | <strong>Pending</strong></h4>`);
+            $(".quotes").append(row);
+        });
+    });
+    var source = new EventSource("/quotes");
+    source.onmessage = (event) => {
+      var json = JSON.parse(event.data);
+      $(`#${json.id}`).html(function(index, html) {
+        return html.replace("Pending", `\$\xA0${json.price}`);
+      });
     };
 </script>
 </html>
@@ -343,14 +396,18 @@ On each received price, it updates the page.
 
 == Get it running
 
-You just need to run the application using:
+You just need to run both applications using:
 
 [source,bash]
 ----
-./mvnw quarkus:dev
+./mvnw -f producer quarkus:dev
+./mvnw -f processor quarkus:dev
 ----
 
-Open `http://localhost:8080/prices.html` in your browser.
+Quarkus starts a Kafka broker automatically, configures the application and shares the Kafka broker instance between different applications.
+See xref:kafka-dev-services.adoc[Dev Services for Kafka] for more details.
+
+Open `http://localhost:8080/quotes.html` in your browser.
 
 == Running in JVM or Native mode
 
@@ -373,6 +430,8 @@ services:
       - "2181:2181"
     environment:
       LOG_DIR: /tmp/logs
+    networks:
+      - kafkaquickstart-network
 
   kafka:
     image: quay.io/strimzi/kafka:0.23.0-kafka-2.8.0
@@ -386,33 +445,49 @@ services:
       - "9092:9092"
     environment:
       LOG_DIR: "/tmp/logs"
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    networks:
+      - kafkaquickstart-network
+
+  producer:
+    image: quarkus-quickstarts/kafka-quickstart-producer:1.0
+    build:
+      context: producer
+      dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8080:8080"
+    networks:
+      - kafkaquickstart-network
+
+  processor:
+    image: quarkus-quickstarts/kafka-quickstart-processor:1.0
+    build:
+      context: processor
+      dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - kafkaquickstart-network
+
+networks:
+  kafkaquickstart-network:
+    name: kafkaquickstart
 ----
 
-Once created, run `docker-compose up`.
-
-NOTE: This is a development cluster, do not use in production.
-
-You can build and run the application in JVM mode with:
+Make sure you first build both applications in JVM mode with:
 
 [source, bash]
 ----
 ./mvnw package
-java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-NOTE: By default, the application tries to connect to a Kafka broker listening at `localhost:9092`.
-You can configure the bootstrap server using: `java -Dkafka.bootstrap.servers=... -jar target/quarkus-app/quarkus-run.jar`
+Once packaged, run `docker-compose up`.
 
-You can build and run the native executable with:
-
-[source,bash]
-----
-./mvnw package -Pnative
-./target/kafka-quickstart-1.0.0-SNAPSHOT-runner -Dkafka.bootstrap.servers=localhost:9092
-----
+NOTE: This is a development cluster, do not use in production.
 
 == Going further
 

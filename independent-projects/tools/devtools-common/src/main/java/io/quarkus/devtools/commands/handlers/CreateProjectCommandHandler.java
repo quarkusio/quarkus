@@ -68,7 +68,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 invocation.setValue(PACKAGE_NAME, className.substring(0, idx));
                 invocation.setValue(CLASS_NAME, className.substring(idx + 1));
             } else if (groupId != null) {
-                invocation.setValue(PACKAGE_NAME, groupId.replace("-", ".").replace("_", "."));
+                invocation.setValue(PACKAGE_NAME, groupId.replace('-', '.').replace('_', '.'));
             }
         }
 
@@ -116,7 +116,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         invocation.setValue(QUARKUS_VERSION, mainPlatform.getQuarkusCoreVersion());
         final Properties quarkusProps = ToolsUtils.readQuarkusProperties(mainPlatform);
         quarkusProps.forEach((k, v) -> {
-            final String name = k.toString().replace("-", "_");
+            final String name = k.toString().replace('-', '_');
             if (!invocation.hasValue(name)) {
                 invocation.setValue(name, v.toString());
             }

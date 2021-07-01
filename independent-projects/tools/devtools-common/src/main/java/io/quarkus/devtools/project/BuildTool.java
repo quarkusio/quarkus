@@ -6,6 +6,7 @@ import io.quarkus.devtools.project.buildfile.MavenBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * An enum of build tools, such as Maven and Gradle.
@@ -77,7 +78,7 @@ public enum BuildTool {
     }
 
     public String getKey() {
-        return toString().toLowerCase().replace("_", "-");
+        return toString().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 
     public static BuildTool resolveExistingProject(Path path) {

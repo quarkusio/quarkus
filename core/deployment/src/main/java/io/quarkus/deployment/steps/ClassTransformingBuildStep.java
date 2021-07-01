@@ -113,7 +113,7 @@ public class ClassTransformingBuildStep {
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(transformCl);
-                    String classFileName = className.replace(".", "/") + ".class";
+                    String classFileName = className.replace('.', '/') + ".class";
                     List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
                     if (!archives.isEmpty()) {
                         ClassPathElement classPathElement = archives.get(0);
@@ -153,7 +153,7 @@ public class ClassTransformingBuildStep {
                         }
                     }
                 }
-                String classFileName = className.replace(".", "/") + ".class";
+                String classFileName = className.replace('.', '/') + ".class";
                 List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
                 if (!archives.isEmpty()) {
                     ClassPathElement classPathElement = archives.get(0);
@@ -240,7 +240,7 @@ public class ClassTransformingBuildStep {
             if (!debugPath.exists()) {
                 debugPath.mkdir();
             }
-            File classFile = new File(debugPath, className.replace(".", "/") + ".class");
+            File classFile = new File(debugPath, className.replace('.', '/') + ".class");
             classFile.getParentFile().mkdirs();
             try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
                 classWriter.write(data);

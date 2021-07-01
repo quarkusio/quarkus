@@ -606,7 +606,7 @@ public class JarResultBuildStep {
         jars.add(generatedZip);
         try (FileSystem out = ZipUtils.newZip(generatedZip)) {
             for (GeneratedClassBuildItem i : generatedClasses) {
-                String fileName = i.getName().replace(".", "/") + ".class";
+                String fileName = i.getName().replace('.', '/') + ".class";
                 Path target = out.getPath(fileName);
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
@@ -714,7 +714,7 @@ public class JarResultBuildStep {
                 Map<AppArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Map.Entry<AppArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
                     relativePaths.put(e.getKey(),
-                            e.getValue().stream().map(s -> buildDir.relativize(s).toString().replace("\\", "/"))
+                            e.getValue().stream().map(s -> buildDir.relativize(s).toString().replace('\\', '/'))
                                     .collect(Collectors.toList()));
                 }
 
@@ -1156,7 +1156,7 @@ public class JarResultBuildStep {
             }
         }
         for (GeneratedClassBuildItem i : generatedClasses) {
-            String fileName = i.getName().replace(".", "/") + ".class";
+            String fileName = i.getName().replace('.', '/') + ".class";
             seen.put(fileName, "Current Application");
             Path target = runnerZipFs.getPath(fileName);
             handleParent(runnerZipFs, fileName, seen);

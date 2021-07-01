@@ -69,7 +69,7 @@ public class ConfigDescriptionBuildStep {
                         defVal = propDefVal;
                     }
                 }
-                String javadocKey = field.getDeclaringClass().getName().replace("$", ".") + "." + field.getName();
+                String javadocKey = field.getDeclaringClass().getName().replace('$', '.') + '.' + field.getName();
                 ret.add(new ConfigDescriptionBuildItem("quarkus." + node.getPropertyName(),
                         node.findEnclosingClass().getConfigurationClass(),
                         defVal, javadoc.getProperty(javadocKey)));

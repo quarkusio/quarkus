@@ -27,7 +27,7 @@ final class CodestartPathProcessor {
             String value = NestedMaps.<String> getValue(data, key)
                     .orElseThrow(() -> new CodestartStructureException("Missing required data for PathGen: {" + key + "}"));
             if (found.contains(PACKAGE_NAME_DIR_EXPRESSION) && value.contains(".")) {
-                value = value.replace(".", "/");
+                value = value.replace('.', '/');
             }
             m.appendReplacement(result, value);
         }

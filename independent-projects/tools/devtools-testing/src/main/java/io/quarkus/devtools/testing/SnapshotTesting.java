@@ -222,11 +222,11 @@ public class SnapshotTesting {
     }
 
     public static String getSnapshotDirName(TestInfo testInfo) {
-        return testInfo.getTestClass().get().getSimpleName() + "/" + testInfo.getTestMethod().get().getName();
+        return testInfo.getTestClass().get().getSimpleName() + '/' + testInfo.getTestMethod().get().getName();
     }
 
     public static String normalizePathAsName(String fileRelativePath) {
-        return fileRelativePath.replace("/", "_");
+        return fileRelativePath.replace('/', '_');
     }
 
     private static boolean shouldUpdateSnapshot(String identifier) {

@@ -46,6 +46,11 @@ public class CliProjectMavenTest {
         result = CliDriver.invokeValidateDryRunBuild(project);
 
         CliDriver.invokeValidateBuild(project);
+
+        // Test create project that already exists
+        result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
+        Assertions.assertTrue(result.stdout.contains("quarkus create app --help"),
+                "Response should reference --help:\n" + result);
     }
 
     @Test
@@ -147,8 +152,8 @@ public class CliProjectMavenTest {
         // We don't need to retest this, just need to make sure all of the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        Assertions.assertTrue(result.stdout.contains("Creating an app (the project type was inferred, see --help)."),
-                "Should contain 'Creating an app (the project type was inferred, see --help).', found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("Creating an app"),
+                "Should contain 'Creating an app', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("MAVEN"),
                 "Should contain MAVEN, found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("Omit build tool wrapper   true"),

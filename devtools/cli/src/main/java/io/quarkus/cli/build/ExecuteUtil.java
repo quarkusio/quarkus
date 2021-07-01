@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -99,13 +98,6 @@ public class ExecuteUtil {
             return SOFTWARE;
         } else {
             return OK;
-        }
-    }
-
-    static void propagatePropertyIfSet(String name, ArrayDeque<String> newArgs) {
-        final String value = System.getProperty(name);
-        if (value != null) {
-            newArgs.add("-D" + name + "=" + value);
         }
     }
 

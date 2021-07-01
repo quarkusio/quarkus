@@ -24,14 +24,17 @@ public class JBangRunner implements BuildSystemRunner {
 
     final OutputOptionMixin output;
     final RegistryClientMixin registryClient;
+    final PropertiesOptions propertiesOptions;
     final Path projectRoot;
 
     String mainPath;
 
-    public JBangRunner(OutputOptionMixin output, RegistryClientMixin registryClient, Path projectRoot) {
+    public JBangRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, RegistryClientMixin registryClient,
+            Path projectRoot) {
         this.output = output;
         this.registryClient = registryClient;
         this.projectRoot = projectRoot;
+        this.propertiesOptions = propertiesOptions;
     }
 
     @Override
@@ -67,8 +70,7 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, PropertiesOptions propertiesOptions, RunModeOption runMode,
-            List<String> params) {
+    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
 
         if (buildOptions.offline) {
@@ -87,8 +89,8 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
-            DebugOptions debugOptions, List<String> params) {
+    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
+            List<String> params) {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }
 

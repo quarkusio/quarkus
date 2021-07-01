@@ -11,7 +11,7 @@ import io.quarkus.devtools.project.codegen.SourceType;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "extension", sortOptions = false, mixinStandardHelpOptions = false, header = "Create a Quarkus extension project", description = "%n"
+@CommandLine.Command(name = "extension", sortOptions = false, mixinStandardHelpOptions = false, showDefaultValues = true, header = "Create a Quarkus extension project", description = "%n"
         + "Quarkus extensions are built from multiple modules: runtime, deployment, and "
         + "integration-test. This command will generate a Maven multi-module project in a directory called EXTENSION-ID "
         + " by applying naming conventions to the specified EXTENSION-ID.%n", footer = { "%nDefault Naming conventions%n",
@@ -39,7 +39,7 @@ import picocli.CommandLine.Mixin;
                 "  hello-world/integration-test:",
                 "    artifact:\torg.acme:hello-world-integration-tests:1.0.0-SNAPSHOT",
                 "    name:\tHello World - Integration Tests", "    package name: org.acme.hello.world.it",
-                "%nGenerated classes will use 'HelloWorld' as a class name prefix." }, showDefaultValues = true)
+                "%nGenerated classes will use 'HelloWorld' as a class name prefix." }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class CreateExtension extends BaseCreateCommand {
 
     @Mixin

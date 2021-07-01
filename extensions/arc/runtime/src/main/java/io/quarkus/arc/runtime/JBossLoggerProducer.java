@@ -15,7 +15,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.log.LoggerName;
 
 @Singleton
-public class LoggerProducer {
+public class JBossLoggerProducer {
 
     private final ConcurrentMap<String, Logger> loggers = new ConcurrentHashMap<>();
 

@@ -24,7 +24,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.AnnotationValue.Kind;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -176,7 +175,6 @@ public class ResteasyCommonProcessor {
                 annotatedProviders.add(i.target().asClass().name().toString());
             }
             checkProperConfigAccessInProvider(i);
-            checkProperConstructorInProvider(i);
         }
         contributedProviders.addAll(annotatedProviders);
         Set<String> availableProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
@@ -359,15 +357,6 @@ public class ResteasyCommonProcessor {
                             + " into a JAX-RS provider may lead to unexpected results. To ensure proper results, please change the type of the field to "
                             + ParameterizedType.create(ResteasyDotNames.CDI_INSTANCE, new Type[] { fieldType }, null)
                             + ". Offending field is '" + field.name() + "' of class '" + field.declaringClass() + "'");
-        }
-    }
-
-    private void checkProperConstructorInProvider(AnnotationInstance i) {
-        ClassInfo targetClass = i.target().asClass();
-        if (!targetClass.hasNoArgsConstructor()) {
-            LOGGER.warn(
-                    "Classes annotated with @Provider should have a single, no-argument constructor, otherwise dependency injection won't work properly. Offending class is "
-                            + targetClass);
         }
     }
 
@@ -656,10 +645,5 @@ public class ResteasyCommonProcessor {
         public boolean noProducesDefaultsToAll() {
             return noProducesDefaultsToAll;
         }
-    }
-
-    private enum NoMediaTypesDefault {
-        ALL,
-        JSON;
     }
 }

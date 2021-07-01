@@ -210,7 +210,7 @@ public class TestConsoleHandler implements TestListener {
             @Override
             public void runStarted(long toRun) {
                 totalNoTests.set(toRun);
-                promptHandler.setStatus("Running 0/" + toRun + ".");
+                promptHandler.setStatus("Starting test run, " + toRun + " tests to run.");
             }
 
             @Override
@@ -310,7 +310,7 @@ public class TestConsoleHandler implements TestListener {
 
             @Override
             public void testStarted(TestIdentifier testIdentifier, String className) {
-                String status = "Running " + methodCount.get() + "/" + totalNoTests
+                String status = "Running " + (methodCount.get() + 1) + "/" + totalNoTests
                         + (failureCount.get() == 0 ? "."
                                 : ". " + failureCount + " " + pluralize("failure", "failures", failureCount) + " so far.")
                         + " Running: "

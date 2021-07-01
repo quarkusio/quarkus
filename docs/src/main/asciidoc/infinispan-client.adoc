@@ -13,6 +13,7 @@ provides functionality to allow the client that can connect to said server when 
 Check out the https://infinispan.org/documentation[Infinispan documentation] to find out more about the Infinispan project,
 in particular the https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html[Hot Rod Java client guide].
 
+
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -43,14 +44,69 @@ This will add the following to your pom.xml
 ----
 
 The Infinispan client is configurable in the `application.properties` file that can be
-provided in the `src/main/resources` directory. These are the properties that
-can be configured in this file:
-
-include::{generated-dir}/config/quarkus-infinispan-client.adoc[opts=optional, leveloffset=+1]
+provided in the `src/main/resources` directory.
 
 It is also possible to configure a `hotrod-client.properties` as described in the Infinispan user guide. Note that
 the `hotrod-client.properties` values overwrite any matching property from the other configuration values (eg. near cache).
 This properties file is build time only and if it is changed, requires a full rebuild.
+
+== Running and connecting to Infinispan
+If you are new to Infinispan, check the 5 minutes https://infinispan.org/get-started/[Getting stated with Infinispan] tutorial to
+learn how to run a server locally.
+
+From Infinispan 12, authentication and authorization are enabled implicitly. Create a user named `admin` to implicitly have a user with the admin role.
+
+If you are running a container, passing the USER="admin" and PASS="password" will make the trick.
+
+If you are running a downloaded distribution, use the Command Line Tool from the downloaded server folder.
+[source,bash]
+----
+./bin/cli.sh user create admin -p password
+----
+
+Once your Infinispan Server is running, connect to the Infinispan Server witIh these properties.
+
+[source,properties]
+----
+# Your configuration properties
+quarkus.infinispan-client.server-list=localhost:11222
+
+# Authentication
+quarkus.infinispan-client.auth-username=admin
+quarkus.infinispan-client.auth-password=password
+
+## Docker 4 Mac workaround
+quarkus.infinispan-client.client-intelligence=BASIC
+----
+
+== Authentication
+
+This chart illustrates what mechanisms have been verified to be working properly with
+the Quarkus Infinispan Client extension.
+
+.Mechanisms
+|===
+| Name | Verified
+
+| DIGEST-MD5
+| [green]*Y*
+
+| PLAIN
+| [green]*Y*
+
+| SCRAM
+| [red]*N*
+
+| EXTERNAL
+| [green]*Y*
+
+| GSSAPI
+| [red]*N*
+
+| Custom
+| [red]*N*
+
+|===
 
 == Serialization (Key Value types support)
 
@@ -407,37 +463,15 @@ and/or keystore. This is further detailed https://infinispan.org/docs/stable/tit
 The Infinispan Client extension enables SSL by default. You can read more about this
 at link:native-and-ssl[Using SSL With Native Executables].
 
-== Authentication
-
-This chart illustrates what mechanisms have been verified to be working properly with
-the Quarkus Infinispan Client extension.
-
-.Mechanisms
-|===
-| Name | Verified
-
-| DIGEST-MD5
-| [green]*Y*
-
-| PLAIN
-| [green]*Y*
-
-| EXTERNAL
-| [green]*Y*
-
-| GSSAPI
-| [red]*N*
-
-| Custom
-| [red]*N*
-
-|===
-
 The guide for configuring these can be found https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_authentication[here].
-However you need to configure these through the `hotrod-client.properties` file if using Dependency Injection.
+However, you need to configure these through the `hotrod-client.properties` file if using Dependency Injection.
 
 == Additional Features
 
 The Infinispan Client has additional features that were not mentioned here. This means this
 feature was not tested in a Quarkus environment and they may or may not work. Please let us
 know if you need these added!
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-infinispan-client.adoc[opts=optional, leveloffset=+1]

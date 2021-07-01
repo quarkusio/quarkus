@@ -69,7 +69,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final AtomicBoolean running;
 
     private final List<InjectableBean<?>> beans;
-    private final List<RemovedBean> removedBeans;
+    private final ArrayList<RemovedBean> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableObserverMethod<?>> observers;
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
@@ -118,6 +118,7 @@ public class ArcContainerImpl implements ArcContainer {
                 }
             }
             removedBeans.addAll(components.getRemovedBeans());
+            removedBeans.trimToSize();
             observers.addAll(components.getObservers());
             // Add custom contexts
             for (InjectableContext context : components.getContexts()) {

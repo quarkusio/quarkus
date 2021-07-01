@@ -56,6 +56,7 @@ public class TestConsoleHandler implements TestListener {
     volatile InputHandler.ConsoleStatus promptHandler;
     volatile TestController testController;
     private String lastResults;
+    final Consumer<String> browserOpener;
 
     /**
      * If HTTP is not present we add the 'press s to reload' option to the prompt
@@ -63,8 +64,9 @@ public class TestConsoleHandler implements TestListener {
      */
     private final boolean hasHttp;
 
-    public TestConsoleHandler(DevModeType devModeType, boolean hasHttp) {
+    public TestConsoleHandler(DevModeType devModeType, Consumer<String> browserOpener, boolean hasHttp) {
         this.devModeType = devModeType;
+        this.browserOpener = browserOpener;
         this.hasHttp = hasHttp;
     }
 
@@ -87,8 +89,10 @@ public class TestConsoleHandler implements TestListener {
             for (int k : keys) {
                 if (k == 'h') {
                     printUsage();
-                } else if (k == 'i' && devModeType != DevModeType.TEST_ONLY) {
-                    testController.toggleInstrumentation();
+                } else if (k == 'b' && devModeType != DevModeType.TEST_ONLY) {
+                    browserOpener.accept("/");
+                } else if (k == 'd' && devModeType != DevModeType.TEST_ONLY) {
+                    browserOpener.accept("/q/dev");
                 } else if (k == 'l' && devModeType != DevModeType.TEST_ONLY) {
                     RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
                 } else if (k == 's' && devModeType != DevModeType.TEST_ONLY) {
@@ -163,6 +167,10 @@ public class TestConsoleHandler implements TestListener {
                     .println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
             System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
             System.out.println(helpOption("s", "Force restart with any changes"));
+            if (hasHttp) {
+                System.out.println(helpOption("b", "Open the application in a browser"));
+                System.out.println(helpOption("d", "Open the Dev UI in a browser"));
+            }
         }
         System.out.println(helpOption("h", "Display this help"));
         System.out.println(helpOption("q", "Quit"));

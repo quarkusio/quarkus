@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.deployment.devmode.console;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -28,10 +29,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -54,6 +57,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.dev.BrowserOpenerBuildItem;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
@@ -87,6 +91,8 @@ import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.utilities.OS;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
@@ -404,6 +410,49 @@ public class DevConsoleProcessor {
             producer.produce(new DevConsoleRouteBuildItem("openInIDE", "POST",
                     new OpenIdeHandler(effectiveIdeBuildItem.get().getIde())));
         }
+    }
+
+    @BuildStep
+    BrowserOpenerBuildItem builder(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np) {
+        return new BrowserOpenerBuildItem(new Consumer<String>() {
+            @Override
+            public void accept(String s) {
+                if (s.startsWith("/q")) {
+                    s = np.resolvePath(s.substring(3));
+                } else {
+                    s = rp.resolvePath(s.substring(1));
+                }
+
+                StringBuilder sb = new StringBuilder("http://");
+                Config c = ConfigProvider.getConfig();
+                sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
+                sb.append(":");
+                sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
+                sb.append(s);
+                String url = sb.toString();
+
+                Runtime rt = Runtime.getRuntime();
+                OS os = OS.determineOS();
+                try {
+                    switch (os) {
+                        case MAC:
+                            rt.exec("open " + url);
+                            break;
+                        case LINUX:
+                            rt.exec("xdg-open " + url);
+                            break;
+                        case WINDOWS:
+                            rt.exec("rundll32 url.dll,FileProtocolHandler " + url);
+                            break;
+                        case OTHER:
+                            log.error("Cannot launch browser on this operating system");
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to launch browser", e);
+                }
+
+            }
+        });
     }
 
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,
@@ -794,7 +843,7 @@ public class DevConsoleProcessor {
 
         /**
          * Return the most general packages used in the application
-         *
+         * <p>
          * TODO: this likely covers almost all typical use cases, but probably needs some tweaks for extreme corner cases
          */
         private List<String> sourcePackagesForLang(Path srcMainPath, String lang) {

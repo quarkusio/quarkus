@@ -18,7 +18,7 @@ public class AsyncDataTest {
                 engine.parse("{#for token in client.tokens}{token}:{/for}").data("client", new Client()).render());
         assertEquals("alpha:bravo:delta:",
                 engine.parse("{#for token in tokens}{token}:{/for}").data("tokens", new Client().getTokens()).render());
-        assertEquals("alpha", engine.parse("{token}").data("token", CompletableFuture.completedFuture("alpha")).render());
+        assertEquals("alpha", engine.parse("{token}").data("token", CompletedStage.of("alpha")).render());
     }
 
     static class Client {

@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.jboss.logging.Logger;
 
@@ -57,7 +56,7 @@ class EvaluatorImpl implements Evaluator {
             if (matching == null) {
                 String msg = "No namespace resolver found for: " + expression.getNamespace();
                 LOGGER.errorf(msg);
-                return Futures.failure(new TemplateException(msg));
+                return CompletedStage.failure(new TemplateException(msg));
             }
             EvalContext context = new EvalContextImpl(false, null, parts.next(), resolutionContext);
             if (matching.size() == 1) {
@@ -75,7 +74,7 @@ class EvaluatorImpl implements Evaluator {
             }
         } else {
             if (expression.isLiteral()) {
-                return expression.getLiteralValue();
+                return expression.asLiteral();
             } else {
                 parts = expression.getParts().iterator();
                 return resolveReference(true, resolutionContext.getData(), parts, resolutionContext);
@@ -156,7 +155,7 @@ class EvaluatorImpl implements Evaluator {
             LOGGER.tracef("Unable to resolve %s", evalContext);
             if (Results.isNotFound(evalContext.getBase())) {
                 // If the base is "not found" then just return it
-                return CompletableFuture.completedFuture(evalContext.getBase());
+                return CompletedStage.of(evalContext.getBase());
             }
             return Results.notFound(evalContext);
         }
@@ -184,7 +183,7 @@ class EvaluatorImpl implements Evaluator {
             // Subscribe to the Uni
             return ((Uni<Object>) result).subscribeAsCompletionStage();
         }
-        return CompletableFuture.completedFuture(result);
+        return CompletedStage.of(result);
     }
 
     static class EvalContextImpl implements EvalContext {

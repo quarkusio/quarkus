@@ -47,7 +47,7 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
         Path normal = file.normalize();
         String cn = name;
         if (File.separatorChar == '\\') {
-            cn = cn.replace("/", "\\");
+            cn = cn.replace('/', '\\');
         }
         if (!normal.startsWith(file)) {
             //don't allow directory escapes

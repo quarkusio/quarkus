@@ -556,12 +556,12 @@ public class JunitTestRunner {
             for (String i : classesToTransform) {
                 try {
                     byte[] classData = IoUtil
-                            .readBytes(deploymentClassLoader.getResourceAsStream(i.replace(".", "/") + ".class"));
+                            .readBytes(deploymentClassLoader.getResourceAsStream(i.replace('.', '/') + ".class"));
                     ClassReader cr = new ClassReader(classData);
                     ClassWriter writer = new QuarkusClassWriter(cr,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                     cr.accept(new TestTracingProcessor.TracingClassVisitor(writer, i), 0);
-                    transformedClasses.put(i.replace(".", "/") + ".class", writer.toByteArray());
+                    transformedClasses.put(i.replace('.', '/') + ".class", writer.toByteArray());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

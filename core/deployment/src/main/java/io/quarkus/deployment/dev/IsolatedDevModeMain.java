@@ -377,7 +377,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                                     .getContextClassLoader();
                                             //if the class file is present in this (and not the parent) CL then it is an application class
                                             List<ClassPathElement> res = cl
-                                                    .getElementsWithResource(s.replace(".", "/") + ".class", true);
+                                                    .getElementsWithResource(s.replace('.', '/') + ".class", true);
                                             return !res.isEmpty();
                                         }
                                     }));

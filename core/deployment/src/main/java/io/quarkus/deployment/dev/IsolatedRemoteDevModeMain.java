@@ -316,7 +316,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                hashes.put(appRoot.relativize(file).toString().replace("\\", "/"),
+                hashes.put(appRoot.relativize(file).toString().replace('\\', '/'),
                         HashUtil.sha1(Files.readAllBytes(file)));
                 return FileVisitResult.CONTINUE;
             }

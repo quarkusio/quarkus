@@ -152,7 +152,7 @@ public enum Feature {
     WEBJARS_LOCATOR;
 
     public String getName() {
-        return toString().toLowerCase().replace("_", "-");
+        return toString().toLowerCase().replace('_', '-');
     }
 
 }

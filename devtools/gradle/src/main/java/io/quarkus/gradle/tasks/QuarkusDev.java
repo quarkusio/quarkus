@@ -234,7 +234,7 @@ public class QuarkusDev extends QuarkusTask {
                 .suspend(System.getProperty("suspend"));
         if (System.getProperty(IO_QUARKUS_DEVMODE_ARGS) == null) {
             builder.jvmArgs("-Dquarkus.test.basic-console=true")
-                    .jvmArgs("-Dio.quarkus.launched-from-ide=true");
+                    .jvmArgs("-Dio.quarkus.io.quarkus.force-color-support=true");
         }
 
         if (getJvmArgs() != null) {

@@ -24,6 +24,10 @@ public class RegistryClientMixin {
     public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusVersionGroup targetVersion, BuildTool buildTool,
             OutputOptionMixin log) {
         ExtensionCatalog catalog = getExtensionCatalog(targetVersion, log);
+        if (catalog.getQuarkusCoreVersion().startsWith("1.")) {
+            throw new UnsupportedOperationException("The version 2 CLI can not be used with Quarkus 1.x projects.\n"
+                    + "Use the maven/gradle plugins when working with Quarkus 1.x projects.");
+        }
         return QuarkusProjectHelper.getProject(projectRoot, catalog, buildTool, log);
     }
 

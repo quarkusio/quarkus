@@ -78,7 +78,6 @@ public class CreateCli extends BaseCreateCommand {
             }
             return success ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
         } catch (Exception e) {
-            output.error("Project creation failed, " + e.getMessage());
             return output.handleCommandException(e,
                     "Unable to create project: " + e.getMessage());
         }

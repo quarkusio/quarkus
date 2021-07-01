@@ -84,7 +84,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final ComputingCache<String, InjectableBean<?>> beansById;
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
 
-    private final List<ResourceReferenceProvider> resourceProviders;
+    private final ArrayList<ResourceReferenceProvider> resourceProviders;
 
     final InstanceImpl<Object> instance;
 
@@ -148,6 +148,7 @@ public class ArcContainerImpl implements ArcContainer {
         for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
             resourceProviders.add(resourceProvider);
         }
+        resourceProviders.trimToSize();
 
         instance = InstanceImpl.of(Object.class, Collections.emptySet());
     }

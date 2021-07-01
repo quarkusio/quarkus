@@ -13,6 +13,7 @@ import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.ConsoleConfig;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.IsTest;
@@ -48,7 +49,7 @@ public class TestTracingProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Produce(TestSetupBuildItem.class)
     void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer,
-            LaunchModeBuildItem launchModeBuildItem, Capabilities capabilities) {
+            LaunchModeBuildItem launchModeBuildItem, Capabilities capabilities, ConsoleConfig consoleConfig) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
             return;
@@ -57,8 +58,8 @@ public class TestTracingProcessor {
             return;
         }
         consoleInstalled = true;
-        if (config.console) {
-            ConsoleHelper.installConsole(config);
+        if (config.console.orElse(consoleConfig.enabled)) {
+            ConsoleHelper.installConsole(config, consoleConfig);
             TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get(),
                     capabilities.isPresent(Capability.VERTX_HTTP));
             consoleHandler.install();

@@ -43,7 +43,7 @@ will start in development mode as normal, but down the bottom of the screen you 
 [source]
 ----
 --
-Tests paused, press [r] to resume
+Tests paused, press [r] to resume, [h] for more options>
 ----
 
 Press `r` and the tests will start running. You should see the status change down the bottom of the screen as they
@@ -96,12 +96,13 @@ The following commands are available:
 [f] - Re-run failed tests
 [b] - Toggle 'broken only' mode, where only failing tests are run (disabled)
 [v] - Print failures from the last test run
-[o] - Toggle test output (disabled)
 [p] - Pause tests
+[o] - Toggle test output (disabled)
 [i] - Toggle instrumentation based reload (disabled)
 [l] - Toggle live reload (enabled)
-[s] - Force live reload scan
+[s] - Force restart with any changes
 [h] - Display this help
+[q] - Quit
 ----
 
 These are explained below:
@@ -120,14 +121,14 @@ the failing one.
 [v] - Print failures from the last test run::
 Prints the failures to the console again, this can be useful if there has been lots of console output since the last run.
 
+[p] - Pause tests::
+Temporarily stops running tests. This can be useful if you are making lots of changes, and don't want feedback until they
+are all done.
+
 [o] - Toggle test output::
 By default test output is filtered and not displayed on the console, so that test output and dev mode output is not
 interleaved. Enabling test output will print output to the console when tests are run. Even when output is disabled
 the filtered output is saved and can be viewed in the Dev UI.
-
-[p] - Pause tests::
-Temporarily stops running tests. This can be useful if you are making lots of changes, and don't want feedback until they
-are all done.
 
 [i] - Toggle instrumentation based reload::
 This is not directly related to testing, but allows you to toggle instrumentation based reload. This will allow live reload
@@ -137,13 +138,13 @@ state.
 [l] - Toggle live reload::
 This is not directly related to testing, but allows you to turn live reload on and off.
 
-[s] - Force live reload scan::
+[s] - Force restart with any changes::
 This will force a scan for changed file, and will perform a live reload if anything has changed. This will still work even
 if live reload is disabled.
 
 == Continuous Testing Without Dev Mode
 
-It is possible to run continous testing without starting dev mode. This can be useful if dev mode will interfere with
+It is possible to run continuous testing without starting dev mode. This can be useful if dev mode will interfere with
 your tests (e.g. running wiremock on the same port), or if you only want to develop using tests. To start continuous testing
 mode run `mvn quarkus:test`.
 

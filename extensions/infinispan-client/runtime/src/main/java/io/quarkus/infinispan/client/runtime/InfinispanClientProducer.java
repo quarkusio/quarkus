@@ -56,41 +56,40 @@ public class InfinispanClientProducer {
 
     private void initialize() {
         log.debug("Initializing CacheManager");
-        Configuration conf;
         if (properties == null) {
-            // We already loaded and it wasn't present - so use an empty config
-            conf = new ConfigurationBuilder().build();
-        } else {
-            conf = builderFromProperties(properties).build();
+            // We already loaded and it wasn't present - so don't initialize the cache manager
+            return;
         }
+
+        Configuration conf = builderFromProperties(properties).build();
         cacheManager = new RemoteCacheManager(conf);
 
-        // TODO: do we want to automatically register all the proto file definitions?
-        RemoteCache<String, String> protobufMetadataCache = null;
-
-        Set<SerializationContextInitializer> initializers = (Set) properties.remove(PROTOBUF_INITIALIZERS);
-        if (initializers != null) {
-            for (SerializationContextInitializer initializer : initializers) {
-                if (protobufMetadataCache == null) {
-                    protobufMetadataCache = cacheManager.getCache(
-                            ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
-                }
-                protobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
-            }
-        }
-
-        for (Map.Entry<Object, Object> property : properties.entrySet()) {
-            Object key = property.getKey();
-            if (key instanceof String) {
-                String keyString = (String) key;
-                if (keyString.startsWith(InfinispanClientProducer.PROTOBUF_FILE_PREFIX)) {
-                    String fileName = keyString.substring(InfinispanClientProducer.PROTOBUF_FILE_PREFIX.length());
-                    String fileContents = (String) property.getValue();
+        InfinispanClientRuntimeConfig infinispanClientRuntimeConfig = this.infinispanClientRuntimeConfig.get();
+        if (infinispanClientRuntimeConfig.useSchemaRegistration.orElse(Boolean.TRUE)) {
+            RemoteCache<String, String> protobufMetadataCache = null;
+            Set<SerializationContextInitializer> initializers = (Set) properties.remove(PROTOBUF_INITIALIZERS);
+            if (initializers != null) {
+                for (SerializationContextInitializer initializer : initializers) {
                     if (protobufMetadataCache == null) {
                         protobufMetadataCache = cacheManager.getCache(
                                 ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
                     }
-                    protobufMetadataCache.put(fileName, fileContents);
+                    protobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
+                }
+            }
+            for (Map.Entry<Object, Object> property : properties.entrySet()) {
+                Object key = property.getKey();
+                if (key instanceof String) {
+                    String keyString = (String) key;
+                    if (keyString.startsWith(InfinispanClientProducer.PROTOBUF_FILE_PREFIX)) {
+                        String fileName = keyString.substring(InfinispanClientProducer.PROTOBUF_FILE_PREFIX.length());
+                        String fileContents = (String) property.getValue();
+                        if (protobufMetadataCache == null) {
+                            protobufMetadataCache = cacheManager.getCache(
+                                    ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                        }
+                        protobufMetadataCache.put(fileName, fileContents);
+                    }
                 }
             }
         }

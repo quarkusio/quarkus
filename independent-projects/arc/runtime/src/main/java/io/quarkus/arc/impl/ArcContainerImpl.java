@@ -68,7 +68,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final AtomicBoolean running;
 
-    private final List<InjectableBean<?>> beans;
+    private final ArrayList<InjectableBean<?>> beans;
     private final ArrayList<RemovedBean> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableObserverMethod<?>> observers;
@@ -136,7 +136,8 @@ public class ArcContainerImpl implements ArcContainer {
             qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
         }
         // register built-in beans
-        addBuiltInBeans();
+        addBuiltInBeans(beans);
+        beans.trimToSize();
 
         Collections.sort(interceptors, (i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
 
@@ -162,7 +163,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
     }
 
-    private void addBuiltInBeans() {
+    private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
         // BeanManager, Event<?>, Instance<?>
         beans.add(new BeanManagerBean());
         beans.add(new EventBean());

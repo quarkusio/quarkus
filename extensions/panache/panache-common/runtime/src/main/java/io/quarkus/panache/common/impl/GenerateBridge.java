@@ -22,4 +22,9 @@ public @interface GenerateBridge {
      * still inject interceptor calls and mock stubs.
      */
     boolean callSuperMethod() default false;
+
+    /**
+     * Set to false when the implemented method should not receive the entity type as one of its parameters
+     */
+    boolean ignoreEntityTypeParam() default false;
 }

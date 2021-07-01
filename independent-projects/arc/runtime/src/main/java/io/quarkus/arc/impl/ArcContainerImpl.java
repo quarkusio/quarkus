@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -158,7 +157,8 @@ public class ArcContainerImpl implements ArcContainer {
         if (values == null) {
             contexts.put(context.getScope(), Collections.singleton(context));
         } else {
-            List<InjectableContext> multi = new LinkedList<>(values);
+            List<InjectableContext> multi = new ArrayList<>(values.size() + 1);
+            multi.addAll(values);
             multi.add(context);
             contexts.put(context.getScope(), Collections.unmodifiableList(multi));
         }
@@ -533,7 +533,7 @@ public class ArcContainerImpl implements ArcContainer {
         } else {
             // Try to resolve the ambiguity
             if (beans.stream().allMatch(b -> b instanceof InjectableBean)) {
-                List<InjectableBean<?>> matching = new ArrayList<>();
+                List<InjectableBean<?>> matching = new ArrayList<>(beans.size());
                 for (Bean<? extends X> bean : beans) {
                     matching.add((InjectableBean<? extends X>) bean);
                 }
@@ -613,14 +613,14 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     List<InjectableBean<?>> getMatchingBeans(Resolvable resolvable) {
-        List<InjectableBean<?>> matching = new LinkedList<>();
+        List<InjectableBean<?>> matching = new ArrayList<>();
         for (InjectableBean<?> bean : beans) {
             if (matches(bean, resolvable.requiredType, resolvable.qualifiers)) {
                 matching.add(bean);
             }
         }
         if (matching.isEmpty() && !removedBeans.isEmpty()) {
-            List<RemovedBean> removedMatching = new LinkedList<>();
+            List<RemovedBean> removedMatching = new ArrayList<>();
             for (RemovedBean removedBean : removedBeans) {
                 if (matches(removedBean.getTypes(), removedBean.getQualifiers(), resolvable.requiredType,
                         resolvable.qualifiers)) {

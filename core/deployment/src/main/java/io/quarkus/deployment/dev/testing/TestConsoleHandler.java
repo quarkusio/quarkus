@@ -34,7 +34,8 @@ public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final String PAUSED_PROMPT = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE + "h"
+    public static final String PAUSED_PROMPT = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE + "w"
+            + RESET + "] to open the browser," + RESET + " [" + BLUE + "h"
             + RESET + "] for more options>" + RESET;
     public static final String PAUSED_PROMPT_NO_HTTP = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE
             + "s" + RESET + "] to restart with changes, [" + BLUE + "h"
@@ -89,7 +90,7 @@ public class TestConsoleHandler implements TestListener {
             for (int k : keys) {
                 if (k == 'h') {
                     printUsage();
-                } else if (k == 'b' && devModeType != DevModeType.TEST_ONLY) {
+                } else if (k == 'w' && devModeType != DevModeType.TEST_ONLY) {
                     browserOpener.accept("/");
                 } else if (k == 'd' && devModeType != DevModeType.TEST_ONLY) {
                     browserOpener.accept("/q/dev");
@@ -166,9 +167,9 @@ public class TestConsoleHandler implements TestListener {
             System.out
                     .println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
             System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
-            System.out.println(helpOption("s", "Force restart with any changes"));
+            System.out.println(helpOption("s", "Force restart"));
             if (hasHttp) {
-                System.out.println(helpOption("b", "Open the application in a browser"));
+                System.out.println(helpOption("w", "Open the application in a browser"));
                 System.out.println(helpOption("d", "Open the Dev UI in a browser"));
             }
         }

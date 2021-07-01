@@ -100,7 +100,7 @@ The following commands are available:
 [o] - Toggle test output (disabled)
 [i] - Toggle instrumentation based reload (disabled)
 [l] - Toggle live reload (enabled)
-[s] - Force restart with any changes
+[s] - Force restart
 [h] - Display this help
 [q] - Quit
 ----
@@ -138,9 +138,9 @@ state.
 [l] - Toggle live reload::
 This is not directly related to testing, but allows you to turn live reload on and off.
 
-[s] - Force restart with any changes::
-This will force a scan for changed file, and will perform a live reload if anything has changed. This will still work even
-if live reload is disabled.
+[s] - Force restart::
+This will force a scan for changed files, and will perform a live reload with and changes. Note that even if there are no
+changes the application will still restart. This will still work even if live reload is disabled.
 
 == Continuous Testing Without Dev Mode
 

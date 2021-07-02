@@ -800,7 +800,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private org.eclipse.aether.artifact.Artifact getDeploymentArtifact(org.eclipse.aether.artifact.Artifact a)
             throws MojoExecutionException {
-        final Properties props = getExtensionDescriptor(a, true);
+        final Properties props = getExtensionDescriptor(a, false);
         if (props == null) {
             return null;
         }
@@ -822,7 +822,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return null;
         }
         // if it hasn't been packaged yet, we skip it, we are not packaging yet
-        if (packaged && !isJarFile(f)) {
+        if (!a.getExtension().equals("jar") || packaged && !isJarFile(f)) {
             return null;
         }
         try {

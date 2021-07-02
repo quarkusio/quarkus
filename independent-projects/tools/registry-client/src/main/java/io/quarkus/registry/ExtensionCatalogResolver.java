@@ -22,6 +22,7 @@ import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.union.ElementCatalogBuilder;
 import io.quarkus.registry.union.ElementCatalogBuilder.UnionBuilder;
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -126,10 +127,27 @@ public class ExtensionCatalogResolver {
         }
 
         private RegistryClientFactory getClientFactory(RegistryConfig config) {
-            final Object providerValue = config.getExtra().get("client-factory-artifact");
-            if (providerValue == null) {
+            if (config.getExtra().isEmpty()) {
                 return getDefaultClientFactory();
             }
+            Object provider = config.getExtra().get("client-factory-artifact");
+            if (provider != null) {
+                return loadFromArtifact(config, provider);
+            }
+            provider = config.getExtra().get("client-factory-url");
+            if (provider != null) {
+                final URL url;
+                try {
+                    url = new URL((String) provider);
+                } catch (MalformedURLException e) {
+                    throw new IllegalStateException("Failed to translate " + provider + " to URL", e);
+                }
+                return loadFromUrl(url);
+            }
+            return getDefaultClientFactory();
+        }
+
+        public RegistryClientFactory loadFromArtifact(RegistryConfig config, final Object providerValue) {
             ArtifactCoords providerArtifact = null;
             try {
                 final String providerStr = (String) providerValue;
@@ -148,9 +166,19 @@ public class ExtensionCatalogResolver {
                         "Failed to resolve the registry client factory provider artifact " + providerArtifact, e);
             }
             log.debug("Loading registry client factory for %s from %s", config.getId(), providerArtifact);
+            final URL url;
+            try {
+                url = providerJar.toURI().toURL();
+            } catch (MalformedURLException e) {
+                throw new IllegalStateException("Failed to translate " + providerJar + " to URL", e);
+            }
+            return loadFromUrl(url);
+        }
+
+        private RegistryClientFactory loadFromUrl(final URL url) {
             final ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
             try {
-                ClassLoader providerCl = new URLClassLoader(new URL[] { providerJar.toURI().toURL() }, originalCl);
+                ClassLoader providerCl = new URLClassLoader(new URL[] { url }, originalCl);
                 final Iterator<RegistryClientFactoryProvider> i = ServiceLoader
                         .load(RegistryClientFactoryProvider.class, providerCl).iterator();
                 if (!i.hasNext()) {
@@ -169,7 +197,7 @@ public class ExtensionCatalogResolver {
                 }
                 return provider.newRegistryClientFactory(getClientEnv());
             } catch (Exception e) {
-                throw new IllegalStateException("Failed to load registry client factory from " + providerJar, e);
+                throw new IllegalStateException("Failed to load registry client factory from " + url, e);
             } finally {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
@@ -277,8 +305,12 @@ public class ExtensionCatalogResolver {
                                 .getOrCreateUnion(new PlatformStackIndex(platformIndex, streamIndex, releaseIndex));
                         for (ArtifactCoords bom : release.getMemberBoms()) {
                             final ExtensionCatalog ec = registry.resolvePlatformExtensions(bom);
-                            catalogs.add(ec);
-                            ElementCatalogBuilder.addUnionMember(union, ec);
+                            if (ec != null) {
+                                catalogs.add(ec);
+                                ElementCatalogBuilder.addUnionMember(union, ec);
+                            } else {
+                                log.warn("Failed to resolve extension catalog for %s from registry %s", bom, registry.getId());
+                            }
                         }
 
                         final Map<String, List<RegistryExtensionResolver>> registriesByQuarkusCore = new HashMap<>(2);

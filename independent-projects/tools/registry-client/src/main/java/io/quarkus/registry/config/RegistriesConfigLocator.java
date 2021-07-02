@@ -81,7 +81,7 @@ public class RegistriesConfigLocator {
         }
     }
 
-    private static Path locateConfigYaml() {
+    public static Path locateConfigYaml() {
         final String prop = PropertiesUtil.getProperty(CONFIG_FILE_PATH_PROPERTY);
         Path configYaml;
         if (prop != null) {

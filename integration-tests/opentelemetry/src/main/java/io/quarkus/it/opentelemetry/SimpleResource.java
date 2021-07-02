@@ -7,12 +7,48 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-@Path("/")
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+@Path("")
 @Produces(MediaType.APPLICATION_JSON)
 public class SimpleResource {
+    @RegisterRestClient(configKey = "simple")
+    public interface SimpleClient {
+        @Path("")
+        @GET
+        TraceData noPath();
+
+        @Path("/")
+        @GET
+        TraceData slashPath();
+    }
 
     @Inject
     TracedService tracedService;
+
+    @Inject
+    @RestClient
+    SimpleClient simpleClient;
+
+    @GET
+    public TraceData noPath() {
+        TraceData data = new TraceData();
+        data.message = "No path trace";
+        return data;
+    }
+
+    @GET
+    @Path("/nopath")
+    public TraceData noPathClient() {
+        return simpleClient.noPath();
+    }
+
+    @GET
+    @Path("/slashpath")
+    public TraceData slashPathClient() {
+        return simpleClient.slashPath();
+    }
 
     @GET
     @Path("/direct")

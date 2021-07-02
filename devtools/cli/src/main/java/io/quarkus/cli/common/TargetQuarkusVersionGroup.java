@@ -70,7 +70,7 @@ public class TargetQuarkusVersionGroup {
             } catch (IllegalArgumentException iex) {
                 throw new CommandLine.ParameterException(spec.commandLine(),
                         String.format("Invalid value '%s' for option '--platform-bom'. " +
-                                "Value should be specified as 'groupId:artifactId:version'. %s", bom, iex.getMessage()));
+                                "Value should be specified as 'GROUP-ID:ARTIFACT-ID:VERSION'. %s", bom, iex.getMessage()));
             }
         }
     }

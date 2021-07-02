@@ -64,9 +64,9 @@ public class CliProjectMavenTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--verbose", "-e", "-B",
                 "--no-wrapper", "--package-name=custom.pkg",
                 "--output-directory=" + nested,
-                "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0",
                 "--app-config=" + String.join(",", configs),
-                "resteasy-reactive");
+                "-x resteasy-reactive,micrometer",
+                "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
@@ -146,8 +146,10 @@ public class CliProjectMavenTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create",
                 "--verbose", "-e", "-B",
                 "--dryrun", "--no-wrapper", "--package-name=custom.pkg",
+                "-x resteasy-reactive",
+                "-x micrometer",
                 "--output-directory=" + nested,
-                "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0");
+                "silly:my-project:0.1.0");
 
         // We don't need to retest this, just need to make sure all of the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);

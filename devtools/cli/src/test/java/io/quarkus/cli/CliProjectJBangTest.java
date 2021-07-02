@@ -2,6 +2,8 @@ package io.quarkus.cli;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,11 +54,15 @@ public class CliProjectJBangTest {
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
+        List<String> configs = Arrays.asList("custom.app.config1=val1",
+                "custom.app.config2=val2", "lib.config=val3");
+
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "--verbose", "-e", "-B",
                 "--package-name=custom.pkg",
                 "--output-directory=" + nested,
-                "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0",
-                "vertx-web");
+                "--app-config=" + String.join(",", configs),
+                "-x vertx-web",
+                "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),

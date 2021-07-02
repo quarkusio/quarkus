@@ -9,13 +9,14 @@ import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.smallrye.common.classloader.ClassPathUtils;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
 
-@CommandLine.Command(name = "version", sortOptions = false, description = "Display version information")
+@CommandLine.Command(name = "version", sortOptions = false, header = "Display version information.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n")
 public class Version implements CommandLine.IVersionProvider, Callable<Integer> {
 
     private static String version;
@@ -25,6 +26,9 @@ public class Version implements CommandLine.IVersionProvider, Callable<Integer> 
 
     @Mixin
     HelpOption helpOption;
+
+    @CommandLine.ArgGroup(exclusive = false, validate = false)
+    protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     @Spec
     CommandSpec spec;

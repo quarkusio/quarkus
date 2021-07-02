@@ -1,13 +1,10 @@
 package io.quarkus.it.hibernate.reactive.db2;
 
-import java.util.concurrent.CompletionStage;
-
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.stage.Stage;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.db2client.DB2Pool;
@@ -19,23 +16,12 @@ import io.vertx.mutiny.sqlclient.Tuple;
 public class HibernateReactiveDB2TestEndpoint {
 
     @Inject
-    Stage.Session stageSession;
-
-    @Inject
     Mutiny.Session mutinySession;
 
     // Injecting a Vert.x Pool is not required, it us only used to
     // independently validate the contents of the database for the test
     @Inject
     DB2Pool db2Pool;
-
-    @GET
-    @Path("/reactiveFind")
-    public CompletionStage<GuineaPig> reactiveFind() {
-        final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
-        return populateDB().convert().toCompletionStage()
-                .thenCompose(junk -> stageSession.find(GuineaPig.class, expectedPig.getId()));
-    }
 
     @GET
     @Path("/reactiveFindMutiny")

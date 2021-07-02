@@ -16,14 +16,6 @@ import io.restassured.RestAssured;
 public class HibernateReactiveAlternativeTest {
 
     @Test
-    public void reactiveFind() {
-        RestAssured.when()
-                .get("/reactiveFind")
-                .then()
-                .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
-    }
-
-    @Test
     public void reactiveFindMutiny() {
         RestAssured.when()
                 .get("/reactiveFindMutiny")

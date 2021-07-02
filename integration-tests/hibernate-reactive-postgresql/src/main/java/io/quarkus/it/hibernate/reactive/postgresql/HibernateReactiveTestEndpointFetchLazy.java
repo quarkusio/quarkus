@@ -1,7 +1,6 @@
 package io.quarkus.it.hibernate.reactive.postgresql;
 
 import java.util.Collection;
-import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -10,7 +9,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.stage.Stage;
 
 import io.quarkus.it.hibernate.reactive.postgresql.lazy.Author;
 import io.quarkus.it.hibernate.reactive.postgresql.lazy.Book;
@@ -24,11 +22,6 @@ public class HibernateReactiveTestEndpointFetchLazy {
     @Inject
     Mutiny.Session mutinySession;
 
-    // I'm using the factory because there are some issues with an injected Stage.Session
-    // See issue https://github.com/quarkusio/quarkus/issues/14812
-    @Inject
-    Stage.SessionFactory stageSessionFactory;
-
     // Injecting a Vert.x Pool is not required, It's used to
     // independently validate the contents of the database for the test
     @Inject
@@ -39,14 +32,6 @@ public class HibernateReactiveTestEndpointFetchLazy {
     public Uni<Collection<Book>> findBooksWithMutiny(@PathParam("authorId") Integer authorId) {
         return mutinySession.find(Author.class, authorId)
                 .chain(author -> Mutiny.fetch(author.getBooks()));
-    }
-
-    @GET
-    @Path("/findBooksWithStage/{authorId}")
-    public CompletionStage<Collection<Book>> findBooksWithStage(@PathParam("authorId") Integer authorId) {
-        return stageSessionFactory.withTransaction((session, tx) -> session
-                .find(Author.class, authorId)
-                .thenCompose(author -> Stage.fetch(author.getBooks())));
     }
 
     @POST

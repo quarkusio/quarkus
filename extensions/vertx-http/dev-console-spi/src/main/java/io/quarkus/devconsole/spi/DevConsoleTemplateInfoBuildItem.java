@@ -18,7 +18,8 @@ public final class DevConsoleTemplateInfoBuildItem extends MultiBuildItem {
     private final Class<?> callerClass;
 
     public DevConsoleTemplateInfoBuildItem(String name, Object object) {
-        String callerClassName = new RuntimeException().getStackTrace()[1].getClassName();
+        String callerClassName = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass()
+                .getCanonicalName();
         try {
             callerClass = Thread.currentThread().getContextClassLoader().loadClass(callerClassName);
         } catch (ClassNotFoundException e) {

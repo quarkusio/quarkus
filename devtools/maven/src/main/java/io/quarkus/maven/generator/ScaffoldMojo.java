@@ -18,6 +18,8 @@ import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.QuarkusProjectMojoBase;
+import io.quarkus.maven.generator.handlers.RepositoryHandler;
+import io.quarkus.maven.generator.handlers.ServiceHandler;
 
 @Mojo(name = "scaffold")
 public class ScaffoldMojo extends QuarkusProjectMojoBase {
@@ -38,6 +40,9 @@ public class ScaffoldMojo extends QuarkusProjectMojoBase {
         //TODO: ScaffoldHandler unindo todos Generators
         ModelGenerator modelGenerator = new ModelGenerator("model.mustache", quarkusCommandInvocation, mavenProject);
         modelGenerator.generate(params);
+
+        new RepositoryHandler(quarkusProject, log, mavenProject).execute(params.split(" ")[0]);
+        new ServiceHandler(quarkusProject, log, mavenProject).execute(params.split(" ")[0]);
     }
 
     private void addDependencies(QuarkusProject quarkusProject, QuarkusCommandInvocation quarkusCommandInvocation) {

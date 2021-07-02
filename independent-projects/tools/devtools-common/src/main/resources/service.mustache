@@ -56,7 +56,7 @@ public class {{importModel}}Service {
     }
 
     @Transactional
-    public String deletePerson(long id) {
+    public String delete(long id) {
         this.findById(id);
         {{importModelLowerCase}}Repository.deleteById(id);
         return "deleted";

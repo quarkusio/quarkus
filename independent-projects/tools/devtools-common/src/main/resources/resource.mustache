@@ -1,0 +1,47 @@
+package {{packageValue}}.resource;
+
+import {{packageValue}}.model.{{importModel}};
+import {{packageValue}}.service.{{importModel}}Service;
+
+import javax.inject.Inject;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import static javax.ws.rs.core.Response.ok;
+
+
+@Path("/{{importModelLowerCase}}")
+@Produces(MediaType.APPLICATION_JSON)
+public class {{className}} {
+
+    @Inject
+    private {{importModel}}Service {{importModelLowerCase}}Service;
+
+    @GET
+    public Response findAll() {
+        return ok({{importModelLowerCase}}Service.listAll()).build();
+    }
+
+    @POST
+    public Response create({{importModel}} {{importModelLowerCase}}) {
+        return ok({{importModelLowerCase}}Service.create({{importModelLowerCase}})).status(201).build();
+    }
+
+    @GET
+    @Path(value = "/{id}")
+    public Response findById(@PathParam("id") Long id) {
+        return ok({{importModelLowerCase}}Service.findById(id)).build();
+    }
+
+    @PUT
+    @Path(value = "/{id}")
+    public Response update(@PathParam("id") Long id, {{importModel}} {{importModelLowerCase}}) {
+        return ok({{importModelLowerCase}}Service.update(id, {{importModelLowerCase}})).build();
+    }
+
+    @DELETE
+    @Path(value = "/{id}")
+    public Response delete(@PathParam("id") Long id) {
+        return ok({{importModelLowerCase}}Service.delete(id)).build();
+    }
+}

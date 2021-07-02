@@ -11,6 +11,13 @@ public class Model {
     private String packageValue;
     private List<Attribute> attributes;
 
+    public Model(String className, String packageValue, String importModel, String importModelLowerCase) {
+        this.className = className;
+        this.packageValue = packageValue;
+        this.importModel = importModel;
+        this.importModelLowerCase = importModelLowerCase;
+    }
+
     public Model(String className, String packageValue, String importModel) {
         this.className = className;
         this.packageValue = packageValue;
@@ -24,8 +31,12 @@ public class Model {
         this.tableName = tableName;
     }
 
+    public void setImportModelLowerCase(String importModelLowerCase) {
+        this.importModelLowerCase = importModelLowerCase;
+    }
+
     public String getImportModelLowerCase() {
-        return importModel.toLowerCase();
+        return importModelLowerCase;
     }
 
     public String getImportModel() {

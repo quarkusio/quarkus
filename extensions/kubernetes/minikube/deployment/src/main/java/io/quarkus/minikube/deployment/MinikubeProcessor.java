@@ -47,6 +47,7 @@ import io.quarkus.kubernetes.deployment.KubernetesConfig;
 import io.quarkus.kubernetes.deployment.PortConfig;
 import io.quarkus.kubernetes.deployment.ResourceNameUtil;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
+import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -111,12 +112,14 @@ public class MinikubeProcessor {
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             List<KubernetesRoleBuildItem> roles,
-            List<KubernetesRoleBindingBuildItem> roleBindings) {
+            List<KubernetesRoleBindingBuildItem> roleBindings,
+            Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
-        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, outputTarget, packageConfig);
+        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
+                packageConfig);
         result.addAll(KubernetesCommonHelper.createDecorators(project, MINIKUBE, name, config,
                 metricsConfiguration,
                 annotations, labels, command,

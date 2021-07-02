@@ -63,6 +63,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -77,13 +78,15 @@ public class KubernetesCommonHelper {
 
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
 
-    public static Optional<Project> createProject(ApplicationInfoBuildItem app, OutputTargetBuildItem outputTarget,
+    public static Optional<Project> createProject(ApplicationInfoBuildItem app,
+            Optional<CustomProjectRootBuildItem> customProjectRoot, OutputTargetBuildItem outputTarget,
             PackageConfig packageConfig) {
-        return createProject(app, outputTarget.getOutputDirectory()
+        return createProject(app, customProjectRoot, outputTarget.getOutputDirectory()
                 .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.runnerSuffix)));
     }
 
-    public static Optional<Project> createProject(ApplicationInfoBuildItem app, Path artifactPath) {
+    public static Optional<Project> createProject(ApplicationInfoBuildItem app,
+            Optional<CustomProjectRootBuildItem> customProjectRoot, Path artifactPath) {
         //Let dekorate create a Project instance and then override with what is found in ApplicationInfoBuildItem.
         try {
             Project project = FileProjectFactory.create(artifactPath.toFile());
@@ -94,7 +97,9 @@ public class KubernetesCommonHelper {
                     project.getBuildInfo().getClassOutputDir(),
                     project.getBuildInfo().getResourceDir());
 
-            return Optional.of(new Project(project.getRoot(), buildInfo, project.getScmInfo()));
+            return Optional
+                    .of(new Project(customProjectRoot.isPresent() ? customProjectRoot.get().getRoot() : project.getRoot(),
+                            buildInfo, project.getScmInfo()));
 
         } catch (Exception e) {
             return Optional.empty();

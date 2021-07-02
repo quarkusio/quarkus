@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.resteasy.reactive.server.runtime.websocket.VertxWebSocketParamExtractor;
 import io.quarkus.resteasy.reactive.server.runtime.websocket.VertxWebSocketRestHandler;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.vertx.core.http.ServerWebSocket;
 
 public class ResteasyReactiveVertxWebSocketIntegrationProcessor {

@@ -38,6 +38,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;
 import io.quarkus.resteasy.reactive.common.runtime.ArcThreadSetupAction;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
+import io.quarkus.resteasy.reactive.server.common.runtime.EndpointInvokerFactory;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -51,7 +52,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
-public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
+public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder implements EndpointInvokerFactory {
 
     public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<Executor>() {
         @Override
@@ -182,6 +183,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
         contextResolvers.addContextResolver(loadClass(string), resolver);
     }
 
+    @Override
     public Supplier<EndpointInvoker> invoker(String baseName) {
         return new Supplier<EndpointInvoker>() {
             @Override

@@ -12,8 +12,8 @@
 
     <artifactId>quarkus-reactive-mssql-client</artifactId>
 
-    <name>Quarkus - Reactive MS SQL Client - Runtime</name>
-    <description>Connect to the MS SQL database using the reactive pattern</description>
+    <name>Quarkus - Reactive Microsoft SQL Server Client - Runtime</name>
+    <description>Connect to the Microsoft SQL Server database using the reactive pattern</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-reactive-mssql-client-deployment</artifactId>
 
-    <name>Quarkus - Reactive MS SQL Client - Deployment</name>
+    <name>Quarkus - Reactive Microsoft SQL Server Client - Deployment</name>
 
     <properties>
         <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1433</reactive-mssql.url>

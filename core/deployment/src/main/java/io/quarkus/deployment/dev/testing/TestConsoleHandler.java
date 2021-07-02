@@ -7,18 +7,29 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
 import static io.quarkus.deployment.dev.testing.MessageFormat.helpOption;
 import static io.quarkus.deployment.dev.testing.MessageFormat.statusFooter;
 import static io.quarkus.deployment.dev.testing.MessageFormat.statusHeader;
+import static org.jboss.logmanager.Level.DEBUG;
+import static org.jboss.logmanager.Level.ERROR;
+import static org.jboss.logmanager.Level.FATAL;
+import static org.jboss.logmanager.Level.INFO;
+import static org.jboss.logmanager.Level.TRACE;
+import static org.jboss.logmanager.Level.WARN;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.LogManager;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestIdentifier;
 
@@ -59,6 +70,9 @@ public class TestConsoleHandler implements TestListener {
     private String lastResults;
     final Consumer<String> browserOpener;
 
+    private List<Runnable> restoreLogLevelsTasks;
+    private org.jboss.logmanager.Level currentLevel;
+
     /**
      * If HTTP is not present we add the 'press s to reload' option to the prompt
      * to make it clear to users they can restart their apps.
@@ -96,6 +110,43 @@ public class TestConsoleHandler implements TestListener {
                     browserOpener.accept("/q/dev");
                 } else if (k == 'l' && devModeType != DevModeType.TEST_ONLY) {
                     RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
+                } else if (k == 'j') {
+                    java.util.logging.Logger rootLogger = LogManager.getLogManager().getLogger("");
+                    if (currentLevel == null) {
+                        restoreLogLevelsTasks = new ArrayList<>();
+                        Iterator<String> names = LogManager.getLogManager().getLoggerNames().asIterator();
+                        while (names.hasNext()) {
+                            String name = names.next();
+                            java.util.logging.Logger logger = LogManager.getLogManager().getLogger(name);
+                            Level level = logger.getLevel();
+                            restoreLogLevelsTasks.add(new Runnable() {
+                                @Override
+                                public void run() {
+                                    logger.setLevel(level);
+                                }
+                            });
+                            logger.setLevel(DEBUG);
+                        }
+                        currentLevel = DEBUG;
+                        System.out.println("Set log level to DEBUG");
+                    } else if (currentLevel == DEBUG) {
+                        Iterator<String> names = LogManager.getLogManager().getLoggerNames().asIterator();
+                        while (names.hasNext()) {
+                            String name = names.next();
+                            java.util.logging.Logger logger = LogManager.getLogManager().getLogger(name);
+                            logger.setLevel(TRACE);
+                        }
+                        System.out.println("Set log level to TRACE");
+                        currentLevel = TRACE;
+                    } else {
+                        for (var i : restoreLogLevelsTasks) {
+                            i.run();
+                        }
+                        restoreLogLevelsTasks = null;
+                        currentLevel = null;
+                        System.out.println("Restored log levels to configured values");
+                    }
+
                 } else if (k == 's' && devModeType != DevModeType.TEST_ONLY) {
                     try {
                         RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
@@ -173,8 +224,27 @@ public class TestConsoleHandler implements TestListener {
                 System.out.println(helpOption("d", "Open the Dev UI in a browser"));
             }
         }
+        System.out.println(helpOption("j", "Toggle log levels",
+                (currentLevel == null ? toLevel(((LogManager) LogManager.getLogManager()).getLogger("").getLevel()).toString()
+                        : currentLevel.toString()),
+                currentLevel == null ? BLUE : RED));
         System.out.println(helpOption("h", "Display this help"));
         System.out.println(helpOption("q", "Quit"));
+    }
+
+    private org.jboss.logmanager.Level toLevel(Level level) {
+        if (level.intValue() >= FATAL.intValue()) {
+            return FATAL;
+        } else if (level.intValue() >= ERROR.intValue()) {
+            return ERROR;
+        } else if (level.intValue() >= WARN.intValue()) {
+            return WARN;
+        } else if (level.intValue() >= INFO.intValue()) {
+            return INFO;
+        } else if (level.intValue() >= DEBUG.intValue()) {
+            return DEBUG;
+        }
+        return TRACE;
     }
 
     @Override

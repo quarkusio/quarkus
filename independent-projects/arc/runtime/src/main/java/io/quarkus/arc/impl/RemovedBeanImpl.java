@@ -8,6 +8,11 @@ import java.util.Set;
 
 public final class RemovedBeanImpl implements RemovedBean {
 
+    /**
+     * Implementation note: this class needs to be optimised to
+     * minimize the size of retained memory: runtime efficiency is less important.
+     */
+
     private final Kind kind;
     private final String description;
     private final Set<Type> types;
@@ -39,6 +44,26 @@ public final class RemovedBeanImpl implements RemovedBean {
     @Override
     public Set<Annotation> getQualifiers() {
         return qualifiers;
+    }
+
+    @Override
+    public boolean matchesType(Type requiredType) {
+        for (Type t : this.types) {
+            if (BeanTypeAssignabilityRules.matches(requiredType, t)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public Iterable<Annotation> qualifiers() {
+        return qualifiers;
+    }
+
+    @Override
+    public Iterable<Type> types() {
+        return types;
     }
 
     @Override

@@ -34,7 +34,7 @@ public final class Qualifiers {
         }
     }
 
-    static boolean hasQualifiers(Set<Annotation> beanQualifiers, Map<String, Set<String>> qualifierNonbindingMembers,
+    static boolean hasQualifiers(Iterable<Annotation> beanQualifiers, Map<String, Set<String>> qualifierNonbindingMembers,
             Annotation... requiredQualifiers) {
         for (Annotation qualifier : requiredQualifiers) {
             if (!hasQualifier(beanQualifiers, qualifier, qualifierNonbindingMembers)) {

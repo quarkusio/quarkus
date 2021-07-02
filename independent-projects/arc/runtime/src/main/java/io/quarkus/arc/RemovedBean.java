@@ -21,12 +21,35 @@ public interface RemovedBean {
 
     /**
      * @return the bean types
+     * @deprecated use {@link #types} to allow for future optimisations.
      */
-    public Set<Type> getTypes();
+    @Deprecated(forRemoval = true)
+    Set<Type> getTypes();
 
     /**
      * @return the qualifiers
+     * @deprecated use {@link #qualifiers} to allow for future optimisations.
      */
-    public Set<Annotation> getQualifiers();
+    @Deprecated(forRemoval = true)
+    Set<Annotation> getQualifiers();
 
+    /**
+     * @param requiredType
+     * @return if this is a match for the requiredType
+     */
+    boolean matchesType(Type requiredType);
+
+    /**
+     * Iterates on all qualifiers of this bean
+     * 
+     * @return
+     */
+    Iterable<Annotation> qualifiers();
+
+    /**
+     * Iterates on all types of this bean
+     * 
+     * @return
+     */
+    Iterable<Type> types();
 }

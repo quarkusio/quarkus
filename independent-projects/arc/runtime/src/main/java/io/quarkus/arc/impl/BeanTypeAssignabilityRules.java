@@ -28,7 +28,7 @@ final class BeanTypeAssignabilityRules {
         return false;
     }
 
-    private static boolean matches(Type requiredType, Type beanType) {
+    static boolean matches(Type requiredType, Type beanType) {
         return matchesNoBoxing(Types.boxedType(requiredType), Types.boxedType(beanType));
     }
 

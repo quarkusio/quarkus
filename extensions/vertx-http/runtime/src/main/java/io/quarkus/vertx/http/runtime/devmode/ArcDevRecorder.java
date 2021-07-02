@@ -183,14 +183,14 @@ public class ArcDevRecorder {
                     bean.put("kind", removedBean.getKind().toString());
                     bean.put("description", removedBean.getDescription());
                     JsonArrayBuilder types = Json.array();
-                    for (Type beanType : removedBean.getTypes()) {
+                    for (Type beanType : removedBean.types()) {
                         types.add(beanType instanceof Class ? ((Class<?>) beanType).getName() : beanType.toString());
                     }
                     // java.lang.Object is always skipped
                     types.add(Object.class.getName());
                     bean.put("types", types);
                     JsonArrayBuilder qualifiers = Json.array();
-                    for (Annotation qualifier : removedBean.getQualifiers()) {
+                    for (Annotation qualifier : removedBean.qualifiers()) {
                         if (qualifier.annotationType().equals(Any.class) || qualifier.annotationType().equals(Default.class)) {
                             qualifiers.add("@" + qualifier.annotationType().getSimpleName());
                         } else {

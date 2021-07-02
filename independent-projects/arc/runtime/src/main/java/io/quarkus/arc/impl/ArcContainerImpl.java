@@ -622,8 +622,7 @@ public class ArcContainerImpl implements ArcContainer {
         if (matching.isEmpty() && !removedBeans.isEmpty()) {
             List<RemovedBean> removedMatching = new ArrayList<>();
             for (RemovedBean removedBean : removedBeans) {
-                if (matches(removedBean.getTypes(), removedBean.getQualifiers(), resolvable.requiredType,
-                        resolvable.qualifiers)) {
+                if (matches(removedBean, resolvable.requiredType, resolvable.qualifiers)) {
                     removedMatching.add(removedBean);
                 }
             }
@@ -744,6 +743,13 @@ public class ArcContainerImpl implements ArcContainer {
 
     private boolean matches(InjectableBean<?> bean, Type requiredType, Annotation... qualifiers) {
         return matches(bean.getTypes(), bean.getQualifiers(), requiredType, qualifiers);
+    }
+
+    private boolean matches(RemovedBean bean, Type requiredType, Annotation... qualifiers) {
+        if (!bean.matchesType(requiredType)) {
+            return false;
+        }
+        return Qualifiers.hasQualifiers(bean.qualifiers(), qualifierNonbindingMembers, qualifiers);
     }
 
     private boolean matches(Set<Type> beanTypes, Set<Annotation> beanQualifiers, Type requiredType, Annotation... qualifiers) {

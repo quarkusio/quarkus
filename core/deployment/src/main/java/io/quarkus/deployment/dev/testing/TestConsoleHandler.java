@@ -1,12 +1,12 @@
 package io.quarkus.deployment.dev.testing;
 
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.BLUE;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.GREEN;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RED;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RESET;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.helpOption;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusFooter;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusHeader;
+import static io.quarkus.deployment.dev.testing.MessageFormat.BLUE;
+import static io.quarkus.deployment.dev.testing.MessageFormat.GREEN;
+import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
+import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
+import static io.quarkus.deployment.dev.testing.MessageFormat.helpOption;
+import static io.quarkus.deployment.dev.testing.MessageFormat.statusFooter;
+import static io.quarkus.deployment.dev.testing.MessageFormat.statusHeader;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,7 +34,8 @@ public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final String PAUSED_PROMPT = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE + "h"
+    public static final String PAUSED_PROMPT = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE + "w"
+            + RESET + "] to open the browser," + RESET + " [" + BLUE + "h"
             + RESET + "] for more options>" + RESET;
     public static final String PAUSED_PROMPT_NO_HTTP = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE
             + "s" + RESET + "] to restart with changes, [" + BLUE + "h"
@@ -56,6 +57,7 @@ public class TestConsoleHandler implements TestListener {
     volatile InputHandler.ConsoleStatus promptHandler;
     volatile TestController testController;
     private String lastResults;
+    final Consumer<String> browserOpener;
 
     /**
      * If HTTP is not present we add the 'press s to reload' option to the prompt
@@ -63,8 +65,9 @@ public class TestConsoleHandler implements TestListener {
      */
     private final boolean hasHttp;
 
-    public TestConsoleHandler(DevModeType devModeType, boolean hasHttp) {
+    public TestConsoleHandler(DevModeType devModeType, Consumer<String> browserOpener, boolean hasHttp) {
         this.devModeType = devModeType;
+        this.browserOpener = browserOpener;
         this.hasHttp = hasHttp;
     }
 
@@ -87,8 +90,10 @@ public class TestConsoleHandler implements TestListener {
             for (int k : keys) {
                 if (k == 'h') {
                     printUsage();
-                } else if (k == 'i' && devModeType != DevModeType.TEST_ONLY) {
-                    testController.toggleInstrumentation();
+                } else if (k == 'w' && devModeType != DevModeType.TEST_ONLY) {
+                    browserOpener.accept("/");
+                } else if (k == 'd' && devModeType != DevModeType.TEST_ONLY) {
+                    browserOpener.accept("/q/dev");
                 } else if (k == 'l' && devModeType != DevModeType.TEST_ONLY) {
                     RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
                 } else if (k == 's' && devModeType != DevModeType.TEST_ONLY) {
@@ -162,7 +167,11 @@ public class TestConsoleHandler implements TestListener {
             System.out
                     .println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
             System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
-            System.out.println(helpOption("s", "Force restart with any changes"));
+            System.out.println(helpOption("s", "Force restart"));
+            if (hasHttp) {
+                System.out.println(helpOption("w", "Open the application in a browser"));
+                System.out.println(helpOption("d", "Open the Dev UI in a browser"));
+            }
         }
         System.out.println(helpOption("h", "Display this help"));
         System.out.println(helpOption("q", "Quit"));
@@ -322,38 +331,6 @@ public class TestConsoleHandler implements TestListener {
                 promptHandler.setStatus(status);
             }
         });
-
-    }
-
-    static class MessageFormat {
-
-        public static final String RED = "\u001B[91m";
-        public static final String GREEN = "\u001b[32m";
-        public static final String BLUE = "\u001b[34m";
-        public static final String RESET = "\u001b[0m";
-
-        private MessageFormat() {
-        }
-
-        public static String statusHeader(String header) {
-            return RESET + "==================== " + header + RESET + " ====================";
-        }
-
-        public static String statusFooter(String footer) {
-            return RESET + ">>>>>>>>>>>>>>>>>>>> " + footer + RESET + " <<<<<<<<<<<<<<<<<<<<";
-        }
-
-        public static String toggleStatus(boolean enabled) {
-            return " (" + (enabled ? GREEN + "enabled" + RESET + "" : RED + "disabled") + RESET + ")";
-        }
-
-        public static String helpOption(String key, String description) {
-            return "[" + BLUE + key + RESET + "] - " + description;
-        }
-
-        public static String helpOption(String key, String description, boolean enabled) {
-            return helpOption(key, description) + toggleStatus(enabled);
-        }
 
     }
 

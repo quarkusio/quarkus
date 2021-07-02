@@ -43,7 +43,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -344,8 +343,7 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    public void build(ApplicationArchivesBuildItem archivesBuildItem,
-            BuildProducer<FeatureBuildItem> feature,
+    public void build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
@@ -358,7 +356,7 @@ public class SmallRyeOpenApiProcessor {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENAPI));
-        OpenAPI staticModel = generateStaticModel(archivesBuildItem);
+        OpenAPI staticModel = generateStaticModel(openApiConfig);
 
         OpenAPI annotationModel;
 
@@ -456,15 +454,19 @@ public class SmallRyeOpenApiProcessor {
         return false;
     }
 
-    private OpenAPI generateStaticModel(ApplicationArchivesBuildItem archivesBuildItem) throws IOException {
-        Result result = findStaticModel(archivesBuildItem);
-        if (result != null) {
-            try (InputStream is = Files.newInputStream(result.path);
-                    OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
-                return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+    private OpenAPI generateStaticModel(SmallRyeOpenApiConfig openApiConfig) throws IOException {
+        if (openApiConfig.ignoreStaticDocument) {
+            return null;
+        } else {
+            Result result = findStaticModel();
+            if (result != null) {
+                try (InputStream is = result.inputStream;
+                        OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
+                    return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+                }
             }
+            return null;
         }
-        return null;
     }
 
     private OpenAPI generateAnnotationModel(IndexView indexView, Capabilities capabilities,
@@ -508,42 +510,43 @@ public class SmallRyeOpenApiProcessor {
         return scanners.toArray(new String[] {});
     }
 
-    private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {
+    private Result findStaticModel() {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
         // Check for the file in both META-INF and WEB-INF/classes/META-INF
         Format format = Format.YAML;
-        Path resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_YAML);
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
+        InputStream inputStream = cl.getResourceAsStream(META_INF_OPENAPI_YAML);
+        if (inputStream == null) {
+            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
         }
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_YML);
+        if (inputStream == null) {
+            inputStream = cl.getResourceAsStream(META_INF_OPENAPI_YML);
         }
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_YML);
+        if (inputStream == null) {
+            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_YML);
         }
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_JSON);
+        if (inputStream == null) {
+            inputStream = cl.getResourceAsStream(META_INF_OPENAPI_JSON);
             format = Format.JSON;
         }
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
+        if (inputStream == null) {
+            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
             format = Format.JSON;
         }
 
-        if (resourcePath == null) {
+        if (inputStream == null) {
             return null;
         }
 
-        return new Result(format, resourcePath);
+        return new Result(format, inputStream);
     }
 
     static class Result {
         final Format format;
-        final Path path;
+        final InputStream inputStream;
 
-        Result(Format format, Path path) {
+        Result(Format format, InputStream inputStream) {
             this.format = format;
-            this.path = path;
+            this.inputStream = inputStream;
         }
     }
 

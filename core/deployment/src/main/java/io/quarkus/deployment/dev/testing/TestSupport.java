@@ -19,6 +19,7 @@ import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusCompiler;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
+import io.quarkus.dev.spi.DevModeType;
 
 public class TestSupport implements TestController {
 
@@ -29,6 +30,7 @@ public class TestSupport implements TestController {
     final DevModeContext context;
     final List<TestListener> testListeners = new CopyOnWriteArrayList<>();
     final TestState testState = new TestState();
+    final DevModeType devModeType;
 
     volatile CuratedApplication testCuratedApplication;
     volatile QuarkusCompiler compiler;
@@ -45,10 +47,11 @@ public class TestSupport implements TestController {
     volatile TestType testType = TestType.ALL;
 
     public TestSupport(CuratedApplication curatedApplication, List<CompilationProvider> compilationProviders,
-            DevModeContext context) {
+            DevModeContext context, DevModeType devModeType) {
         this.curatedApplication = curatedApplication;
         this.compilationProviders = compilationProviders;
         this.context = context;
+        this.devModeType = devModeType;
     }
 
     public static Optional<TestSupport> instance() {
@@ -128,6 +131,7 @@ public class TestSupport implements TestController {
                         .setBaseClassLoader(getClass().getClassLoader())
                         .setTest(true)
                         .setAuxiliaryApplication(true)
+                        .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
                         .setApplicationRoot(PathsCollection.from(paths))
                         .build()
                         .bootstrap();

@@ -60,6 +60,7 @@ public class QuarkusAugmentor {
     private final Consumer<ConfigBuilder> configCustomizer;
     private final boolean rebuild;
     private final boolean auxiliaryApplication;
+    private final Optional<DevModeType> auxiliaryDevModeType;
 
     QuarkusAugmentor(Builder builder) {
         this.classLoader = builder.classLoader;
@@ -79,6 +80,7 @@ public class QuarkusAugmentor {
         this.rebuild = builder.rebuild;
         this.devModeType = builder.devModeType;
         this.auxiliaryApplication = builder.auxiliaryApplication;
+        this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
     }
 
     public BuildResult run() throws Exception {
@@ -143,7 +145,8 @@ public class QuarkusAugmentor {
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode,
-                            devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication))
+                            devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication,
+                            auxiliaryDevModeType))
                     .produce(new BuildSystemTargetBuildItem(targetDir, baseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
                     .produce(new AppModelProviderBuildItem(effectiveModel));
@@ -180,6 +183,7 @@ public class QuarkusAugmentor {
 
     public static final class Builder {
 
+        public DevModeType auxiliaryDevModeType;
         boolean rebuild;
         List<PathsCollection> additionalApplicationArchives = new ArrayList<>();
         Collection<Path> excludedFromIndexing = Collections.emptySet();
@@ -220,6 +224,11 @@ public class QuarkusAugmentor {
 
         public Builder setAuxiliaryApplication(boolean auxiliaryApplication) {
             this.auxiliaryApplication = auxiliaryApplication;
+            return this;
+        }
+
+        public Builder setAuxiliaryDevModeType(DevModeType auxiliaryDevModeType) {
+            this.auxiliaryDevModeType = auxiliaryDevModeType;
             return this;
         }
 

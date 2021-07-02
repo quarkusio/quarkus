@@ -38,7 +38,8 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         // Create new span
-        SpanBuilder builder = tracer.spanBuilder(requestContext.getUri().getPath().substring(1))
+        String spanName = getSpanName(requestContext);
+        SpanBuilder builder = tracer.spanBuilder(getSpanName(requestContext))
                 .setSpanKind(SpanKind.CLIENT);
 
         // Add attributes
@@ -50,11 +51,21 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
         TEXT_MAP_PROPAGATOR.inject(Context.current().with(clientSpan), requestContext.getHeaders(), SETTER);
     }
 
+    private String getSpanName(ClientRequestContext requestContext) {
+        final String uriPath = requestContext.getUri().getPath();
+        if (uriPath.length() > 1) {
+            return uriPath.substring(1);
+        } else {
+            // Generate span name as we have empty or "/" on @Path
+            return "HTTP " + ((ClientRequestContextImpl) requestContext).getInvocation().getMethod();
+        }
+    }
+
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
         if (clientSpan != null) {
             String pathTemplate = (String) requestContext.getProperty("UrlPathTemplate");
-            if (pathTemplate != null && !pathTemplate.isEmpty()) {
+            if (pathTemplate != null && pathTemplate.length() > 1) {
                 clientSpan.updateName(pathTemplate.substring(1));
             }
 

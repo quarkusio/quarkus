@@ -99,7 +99,7 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
 
             // Add attributes
             currentSpan.setAttribute(HTTP_FLAVOR, convertHttpVersion(httpServerRequest.version()));
-            currentSpan.setAttribute(HTTP_METHOD, httpServerRequest.method().name());
+            currentSpan.setAttribute(HTTP_METHOD, operation);
             currentSpan.setAttribute(HTTP_TARGET, httpServerRequest.path());
             currentSpan.setAttribute(HTTP_SCHEME, httpServerRequest.scheme());
             currentSpan.setAttribute(HTTP_HOST, httpServerRequest.host());
@@ -122,7 +122,12 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
 
     private <R> String operationName(R request, String operationName) {
         if (request instanceof HttpServerRequest) {
-            return ((HttpServerRequest) request).uri().substring(1);
+            final String uri = ((HttpServerRequest) request).uri();
+            if (uri.length() > 1) {
+                return uri.substring(1);
+            } else {
+                return "HTTP " + operationName;
+            }
         }
         return operationName;
     }

@@ -45,7 +45,7 @@ public class ServiceGenerator implements Generator {
     }
 
     private Model convertToModel(String className) {
-        return new Model(className.concat("Service"), mavenProject.getGroupId(), className);
+        return new Model(className.concat("Service"), mavenProject.getGroupId(), className, className.toLowerCase());
     }
 
 }

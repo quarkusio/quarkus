@@ -19,6 +19,7 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.QuarkusProjectMojoBase;
 import io.quarkus.maven.generator.handlers.RepositoryHandler;
+import io.quarkus.maven.generator.handlers.ResourceHandler;
 import io.quarkus.maven.generator.handlers.ServiceHandler;
 
 @Mojo(name = "scaffold")
@@ -43,6 +44,7 @@ public class ScaffoldMojo extends QuarkusProjectMojoBase {
 
         new RepositoryHandler(quarkusProject, log, mavenProject).execute(params.split(" ")[0]);
         new ServiceHandler(quarkusProject, log, mavenProject).execute(params.split(" ")[0]);
+        new ResourceHandler(quarkusProject, log, mavenProject).execute(params.split(" ")[0]);
     }
 
     private void addDependencies(QuarkusProject quarkusProject, QuarkusCommandInvocation quarkusCommandInvocation) {

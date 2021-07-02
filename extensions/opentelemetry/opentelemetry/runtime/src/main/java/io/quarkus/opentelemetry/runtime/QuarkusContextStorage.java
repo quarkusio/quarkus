@@ -6,40 +6,42 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.VertxInternal;
 
 public enum QuarkusContextStorage implements ContextStorage {
     INSTANCE;
 
     private static final Logger log = Logger.getLogger(QuarkusContextStorage.class);
 
-    private static final String CONTEXT_KEY = QuarkusContextStorage.class.getName() + ".activeContext";
+    public static final String ACTIVE_CONTEXT = QuarkusContextStorage.class.getName() + ".activeContext";
 
-    static VertxInternal vertx;
+    static Vertx vertx;
 
     @Override
     public Scope attach(Context toAttach) {
+        return attach(getVertxContext(), toAttach);
+    }
+
+    public Scope attach(io.vertx.core.Context vertxContext, Context toAttach) {
         if (toAttach == null) {
             // Not allowed
             return Scope.noop();
         }
 
-        Context beforeAttach = current();
+        Context beforeAttach = getContext(vertxContext);
         if (toAttach == beforeAttach) {
             return Scope.noop();
         }
 
-        io.vertx.core.Context vertxContext = getVertxContext();
         if (vertxContext != null) {
-            vertxContext.put(CONTEXT_KEY, toAttach);
+            vertxContext.putLocal(ACTIVE_CONTEXT, toAttach);
             return () -> {
-                if (current() != toAttach) {
+                if (getContext(vertxContext) != toAttach) {
                     log.warn("Context in storage not the expected context, Scope.close was not called correctly");
                 }
                 if (beforeAttach == null) {
-                    vertxContext.remove(CONTEXT_KEY);
+                    vertxContext.removeLocal(ACTIVE_CONTEXT);
                 } else {
-                    vertxContext.put(CONTEXT_KEY, beforeAttach);
+                    vertxContext.putLocal(ACTIVE_CONTEXT, beforeAttach);
                 }
             };
         }
@@ -49,21 +51,14 @@ public enum QuarkusContextStorage implements ContextStorage {
 
     @Override
     public Context current() {
-        io.vertx.core.Context vertxContext = getVertxContext();
+        return getContext(getVertxContext());
+    }
 
-        return vertxContext != null ? vertxContext.get(CONTEXT_KEY) : null;
+    private Context getContext(io.vertx.core.Context vertxContext) {
+        return vertxContext != null ? vertxContext.getLocal(ACTIVE_CONTEXT) : null;
     }
 
     private io.vertx.core.Context getVertxContext() {
-        io.vertx.core.Context vertxContext = null;
-
-        if (io.vertx.core.Context.isOnVertxThread() && Vertx.currentContext() != null) {
-            vertxContext = Vertx.currentContext();
-        } else {
-            if (vertx != null) {
-                vertxContext = vertx.getContext();
-            }
-        }
-        return vertxContext;
+        return vertx.getOrCreateContext();
     }
 }

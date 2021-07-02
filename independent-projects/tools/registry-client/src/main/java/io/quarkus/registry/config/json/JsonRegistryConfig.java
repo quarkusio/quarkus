@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonRegistryConfig implements RegistryConfig {
 
     private String id;
@@ -95,7 +95,14 @@ public class JsonRegistryConfig implements RegistryConfig {
     }
 
     boolean isIdOnly() {
-        return mavenConfig == null;
+        return this.mavenConfig == null
+                && !this.disabled
+                && this.descriptor == null
+                && this.nonPlatformExtensions == null
+                && this.platforms == null
+                && this.updatePolicy == null
+                && this.versionsConfig == null
+                && (this.extra == null || this.extra.isEmpty());
     }
 
     @JsonDeserialize(as = JsonRegistryMavenConfig.class)
@@ -137,6 +144,37 @@ public class JsonRegistryConfig implements RegistryConfig {
     }
 
     public String toString() {
-        return "[" + id + " maven=" + mavenConfig + "]";
+        final StringBuilder buf = new StringBuilder();
+        buf.append('[').append(id);
+        if (mavenConfig != null) {
+            buf.append(" maven=").append(mavenConfig);
+        }
+        if (extra != null && !extra.isEmpty()) {
+            buf.append(" extra=").append(extra);
+        }
+        return buf.append(']').toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(descriptor, disabled, extra, id, mavenConfig, nonPlatformExtensions, platforms,
+                updatePolicy, versionsConfig);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        JsonRegistryConfig other = (JsonRegistryConfig) obj;
+        return Objects.equals(descriptor, other.descriptor) && disabled == other.disabled
+                && Objects.equals(extra, other.extra) && Objects.equals(id, other.id)
+                && Objects.equals(mavenConfig, other.mavenConfig)
+                && Objects.equals(nonPlatformExtensions, other.nonPlatformExtensions)
+                && Objects.equals(platforms, other.platforms) && Objects.equals(updatePolicy, other.updatePolicy)
+                && Objects.equals(versionsConfig, other.versionsConfig);
     }
 }

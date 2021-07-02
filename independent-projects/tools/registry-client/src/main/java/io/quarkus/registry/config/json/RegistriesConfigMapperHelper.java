@@ -54,6 +54,10 @@ public class RegistriesConfigMapperHelper {
         jsonMapper().writeValue(writer, config);
     }
 
+    public static void toYaml(Object config, Writer writer) throws IOException {
+        yamlMapper().writeValue(writer, config);
+    }
+
     public static <T> T deserialize(Path p, Class<T> t) throws IOException {
         if (!Files.exists(p)) {
             throw new IllegalArgumentException("File " + p + " does not exist");

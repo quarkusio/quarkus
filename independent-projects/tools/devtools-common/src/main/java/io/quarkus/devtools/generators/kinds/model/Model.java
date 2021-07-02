@@ -6,6 +6,7 @@ public class Model {
 
     private String className;
     private String importModel;
+    private String importModelLowerCase;
     private String tableName;
     private String packageValue;
     private List<Attribute> attributes;
@@ -21,6 +22,10 @@ public class Model {
         this.attributes = attrs;
         this.packageValue = packageValue;
         this.tableName = tableName;
+    }
+
+    public String getImportModelLowerCase() {
+        return importModel.toLowerCase();
     }
 
     public String getImportModel() {

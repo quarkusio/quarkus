@@ -1,0 +1,65 @@
+package {{packageValue}}.service;
+
+import {{packageValue}}.model.{{importModel}};
+import {{packageValue}}.repository.{{importModel}}Repository;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@ApplicationScoped
+public class {{importModel}}Service {
+
+    private final {{importModel}}Repository {{importModelLowerCase}}Repository;
+    private final Validator validator;
+
+    @Inject
+    public {{importModel}}Service({{importModel}}Repository repository, Validator validator) {
+        this.{{importModelLowerCase}}Repository = repository;
+        this.validator = validator;
+    }
+
+    public List<{{importModel}}> listAll() {
+        return {{importModelLowerCase}}Repository.findOrderByName();
+    }
+
+    @Transactional
+    public {{importModel}} create({{importModel}} {{importModelLowerCase}}) {
+        var violations = validator.validate({{importModelLowerCase}});
+        if (violations.isEmpty()) {
+            {{importModelLowerCase}}Repository.persist({{importModelLowerCase}});
+            return {{importModelLowerCase}}Repository.findById({{importModelLowerCase}}.id);
+        }
+
+        String allViolations = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+        /*throw new AppException(400, allViolations);*/
+    }
+
+    public {{importModel}} findById(Long id) {
+        return {{importModelLowerCase}}Repository.findByIdOptional(id).orElseThrow(() -> {
+            /* throw new AppException(204, "{{importModelLowerCase}}_id ".concat(String.valueOf(id)).concat(" not found")); */
+        });
+    }
+
+    @Transactional
+    public {{importModel}} update(Long id, {{importModel}} {{importModelLowerCase}}ToUpdate) {
+        var {{importModelLowerCase}} = this.findById(id);
+
+        {{importModelLowerCase}}Repository.persist({{importModelLowerCase}});
+        return person;
+    }
+
+    @Transactional
+    public String deletePerson(long id) {
+        this.findById(id);
+        {{importModelLowerCase}}Repository.deleteById(id);
+        return "deleted";
+    }
+
+}

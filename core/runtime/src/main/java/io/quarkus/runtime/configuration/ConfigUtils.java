@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
@@ -46,6 +47,12 @@ import io.smallrye.config.common.utils.ConfigSourceUtil;
  *
  */
 public final class ConfigUtils {
+
+    /**
+     * The name of the property associated with a random UUID generated at launch time.
+     */
+    static final String UUID_KEY = "quarkus.uuid";
+
     private ConfigUtils() {
     }
 
@@ -97,6 +104,7 @@ public final class ConfigUtils {
         }
         if (runTime) {
             builder.addDefaultSources();
+            builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
             builder.withSources(dotEnvSources(classLoader));
         } else {
             final List<ConfigSource> sources = new ArrayList<>();

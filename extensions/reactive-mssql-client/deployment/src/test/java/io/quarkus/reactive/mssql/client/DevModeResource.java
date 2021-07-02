@@ -30,7 +30,6 @@ public class DevModeResource {
             if (ar.succeeded()) {
                 future.complete(Response.serverError().entity("Expected SQL query to fail").build());
             } else if (!expectedExceptionClass.isAssignableFrom(ar.cause().getClass())) {
-                ar.cause().printStackTrace();
                 future.complete(Response.serverError()
                         .entity("Expected " + expectedExceptionClass + ", got " + ar.cause().getClass()).build());
             } else {

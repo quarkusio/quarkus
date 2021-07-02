@@ -36,6 +36,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo.AnnotationCreator;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -132,7 +133,8 @@ public final class LoggingResourceProcessor {
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             List<LogCleanupFilterBuildItem> logCleanupFilters) {
-        if (!launchModeBuildItem.isAuxiliaryApplication()) {
+        if (!launchModeBuildItem.isAuxiliaryApplication()
+                || launchModeBuildItem.getAuxiliaryDevModeType().orElse(null) == DevModeType.TEST_ONLY) {
             final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
                     .map(LogHandlerBuildItem::getHandlerValue)
                     .collect(Collectors.toList());

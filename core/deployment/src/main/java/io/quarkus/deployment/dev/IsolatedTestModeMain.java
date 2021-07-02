@@ -56,7 +56,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
             } catch (Exception e) {
                 throw new RuntimeException("Failed to create compiler", e);
             }
-            TestSupport testSupport = new TestSupport(curatedApplication, compilationProviders, context);
+            TestSupport testSupport = new TestSupport(curatedApplication, compilationProviders, context, DevModeType.TEST_ONLY);
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(applicationRoot, context, compiler,
                     DevModeType.TEST_ONLY, this::regenerateApplication,
                     new BiConsumer<DevModeContext.ModuleInfo, String>() {

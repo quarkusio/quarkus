@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 
 public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<String, Object>> {
@@ -49,7 +50,11 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             builder.setBaseName(quarkusBootstrap.getBaseName());
         }
 
-        builder.setAuxiliaryApplication(curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication());
+        boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
+        builder.setAuxiliaryApplication(auxiliaryApplication);
+        builder.setAuxiliaryDevModeType(
+                curatedApplication.getQuarkusBootstrap().isHostApplicationIsTestOnly() ? DevModeType.TEST_ONLY
+                        : (auxiliaryApplication ? DevModeType.LOCAL : null));
         builder.setLaunchMode(LaunchMode.NORMAL);
         builder.setRebuild(quarkusBootstrap.isRebuild());
         builder.setLiveReloadState(

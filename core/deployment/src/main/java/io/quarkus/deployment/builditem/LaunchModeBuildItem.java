@@ -16,11 +16,14 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
     private final Optional<DevModeType> devModeType;
 
     private final boolean auxiliaryApplication;
+    private final Optional<DevModeType> auxiliaryDevModeType;
 
-    public LaunchModeBuildItem(LaunchMode launchMode, Optional<DevModeType> devModeType, boolean auxiliaryApplication) {
+    public LaunchModeBuildItem(LaunchMode launchMode, Optional<DevModeType> devModeType, boolean auxiliaryApplication,
+            Optional<DevModeType> auxiliaryDevModeType) {
         this.launchMode = launchMode;
         this.devModeType = devModeType;
         this.auxiliaryApplication = auxiliaryApplication;
+        this.auxiliaryDevModeType = auxiliaryDevModeType;
     }
 
     public LaunchMode getLaunchMode() {
@@ -45,5 +48,13 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
      */
     public boolean isAuxiliaryApplication() {
         return auxiliaryApplication;
+    }
+
+    /**
+     * The dev mode type of the main application.
+     *
+     */
+    public Optional<DevModeType> getAuxiliaryDevModeType() {
+        return auxiliaryDevModeType;
     }
 }

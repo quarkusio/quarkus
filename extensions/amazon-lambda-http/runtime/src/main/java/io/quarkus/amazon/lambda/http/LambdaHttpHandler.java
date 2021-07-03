@@ -45,8 +45,6 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
     private static final Logger log = Logger.getLogger("quarkus.amazon.lambda.http");
 
-    private static final int BUFFER_SIZE = 8096;
-
     private static final Headers errorHeaders = new Headers();
     static {
         errorHeaders.putSingle("Content-Type", "application/json");
@@ -77,7 +75,9 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         return null;
     }
 
-    private class NettyResponseHandler implements VirtualResponseHandler {
+    private static class NettyResponseHandler implements VirtualResponseHandler {
+        private static final int BUFFER_SIZE = 8096;
+
         APIGatewayV2HTTPResponse responseBuilder = new APIGatewayV2HTTPResponse();
         ByteArrayOutputStream baos;
         WritableByteChannel byteChannel;
@@ -158,6 +158,33 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
             }
         }
 
+        private ByteArrayOutputStream createByteStream() {
+            ByteArrayOutputStream baos;
+            baos = new ByteArrayOutputStream(BUFFER_SIZE);
+            return baos;
+        }
+
+        static Set<String> binaryTypes = new HashSet<>();
+
+        static {
+            binaryTypes.add("application/octet-stream");
+            binaryTypes.add("image/jpeg");
+            binaryTypes.add("image/png");
+            binaryTypes.add("image/gif");
+        }
+
+        private boolean isBinary(String contentType) {
+            if (contentType != null) {
+                int index = contentType.indexOf(';');
+                if (index >= 0) {
+                    return binaryTypes.contains(contentType.substring(0, index));
+                } else {
+                    return binaryTypes.contains(contentType);
+                }
+            }
+            return false;
+        }
+
         @Override
         public void close() {
             if (!future.isDone())
@@ -210,32 +237,4 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
             connection.close();
         }
     }
-
-    private ByteArrayOutputStream createByteStream() {
-        ByteArrayOutputStream baos;
-        baos = new ByteArrayOutputStream(BUFFER_SIZE);
-        return baos;
-    }
-
-    static Set<String> binaryTypes = new HashSet<>();
-
-    static {
-        binaryTypes.add("application/octet-stream");
-        binaryTypes.add("image/jpeg");
-        binaryTypes.add("image/png");
-        binaryTypes.add("image/gif");
-    }
-
-    private boolean isBinary(String contentType) {
-        if (contentType != null) {
-            int index = contentType.indexOf(';');
-            if (index >= 0) {
-                return binaryTypes.contains(contentType.substring(0, index));
-            } else {
-                return binaryTypes.contains(contentType);
-            }
-        }
-        return false;
-    }
-
 }

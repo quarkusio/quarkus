@@ -26,11 +26,11 @@ import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 class NettyResponseHandler implements VirtualResponseHandler {
     private static final int BUFFER_SIZE = 8096;
 
-    APIGatewayV2HTTPResponse responseBuilder = new APIGatewayV2HTTPResponse();
-    ByteArrayOutputStream baos;
-    WritableByteChannel byteChannel;
-    final APIGatewayV2HTTPEvent request;
-    CompletableFuture<APIGatewayV2HTTPResponse> future = new CompletableFuture<>();
+    private final APIGatewayV2HTTPResponse responseBuilder = new APIGatewayV2HTTPResponse();
+    private final CompletableFuture<APIGatewayV2HTTPResponse> future = new CompletableFuture<>();
+    private final APIGatewayV2HTTPEvent request;
+    private ByteArrayOutputStream baos;
+    private WritableByteChannel byteChannel;
 
     public NettyResponseHandler(APIGatewayV2HTTPEvent request) {
         this.request = request;
@@ -107,9 +107,7 @@ class NettyResponseHandler implements VirtualResponseHandler {
     }
 
     private ByteArrayOutputStream createByteStream() {
-        ByteArrayOutputStream baos;
-        baos = new ByteArrayOutputStream(BUFFER_SIZE);
-        return baos;
+        return new ByteArrayOutputStream(BUFFER_SIZE);
     }
 
     static Set<String> binaryTypes = new HashSet<>();
@@ -129,13 +127,15 @@ class NettyResponseHandler implements VirtualResponseHandler {
             } else {
                 return binaryTypes.contains(contentType);
             }
+        } else {
+            return false;
         }
-        return false;
     }
 
     @Override
     public void close() {
-        if (!future.isDone())
+        if (!future.isDone()) {
             future.completeExceptionally(new RuntimeException("Connection closed"));
+        }
     }
 }

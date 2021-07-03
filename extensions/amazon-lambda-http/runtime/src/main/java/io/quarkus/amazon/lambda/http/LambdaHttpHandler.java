@@ -1,11 +1,10 @@
 package io.quarkus.amazon.lambda.http;
 
-import static java.util.Optional.ofNullable;
-
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
@@ -69,21 +68,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.class, request);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.RequestContext.class, request.getRequestContext());
-        DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod()), ofNullable(request.getRawQueryString())
-                        .filter(q -> !q.isEmpty()).map(q -> request.getRawPath() + '?' + q).orElse(request.getRawPath()),
-                quarkusHeaders);
-        if (request.getHeaders() != null) { //apparently this can be null if no headers are sent
-            for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
-                if (header.getValue() != null) {
-                    for (String val : header.getValue().split(","))
-                        nettyRequest.headers().add(header.getKey(), val);
-                }
-            }
-        }
-        if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
-            nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
-        }
+        DefaultHttpRequest nettyRequest = createNettyRequest(request, quarkusHeaders);
 
         HttpContent requestContent = createRequestContent(request);
         NettyResponseHandler handler = new NettyResponseHandler(request);
@@ -97,6 +82,38 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         } finally {
             connection.close();
         }
+    }
+
+    private DefaultHttpRequest createNettyRequest(APIGatewayV2HTTPEvent request, QuarkusHttpHeaders quarkusHeaders) {
+        DefaultHttpRequest nettyRequest = new DefaultHttpRequest(
+                HttpVersion.HTTP_1_1,
+                extractHttpMethodFromRequest(request),
+                extractHttpUrlFromRequest(request),
+                quarkusHeaders);
+
+        if (request.getHeaders() != null) { //apparently this can be null if no headers are sent
+            for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
+                if (header.getValue() != null) {
+                    for (String val : header.getValue().split(","))
+                        nettyRequest.headers().add(header.getKey(), val);
+                }
+            }
+        }
+        if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
+            nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
+        }
+        return nettyRequest;
+    }
+
+    private HttpMethod extractHttpMethodFromRequest(APIGatewayV2HTTPEvent request) {
+        return HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod());
+    }
+
+    private String extractHttpUrlFromRequest(APIGatewayV2HTTPEvent request) {
+        return Optional.ofNullable(request.getRawQueryString())
+                .filter(q -> !q.isEmpty())
+                .map(q -> request.getRawPath() + '?' + q)
+                .orElse(request.getRawPath());
     }
 
     private HttpContent createRequestContent(APIGatewayV2HTTPEvent request) {

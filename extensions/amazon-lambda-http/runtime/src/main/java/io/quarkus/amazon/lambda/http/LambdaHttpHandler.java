@@ -47,18 +47,13 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
 
     private static final int BUFFER_SIZE = 8096;
 
-    private static Headers errorHeaders = new Headers();
+    private static final Headers errorHeaders = new Headers();
     static {
         errorHeaders.putSingle("Content-Type", "application/json");
     }
 
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
-        InetSocketAddress clientAddress = null;
-        if (request.getRequestContext() != null && request.getRequestContext().getHttp() != null) {
-            if (request.getRequestContext().getHttp().getSourceIp() != null) {
-                clientAddress = new InetSocketAddress(request.getRequestContext().getHttp().getSourceIp(), 443);
-            }
-        }
+        InetSocketAddress clientAddress = getClientAddress(request);
 
         try {
             return nettyDispatch(clientAddress, request, context);
@@ -71,6 +66,15 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
             return res;
         }
 
+    }
+
+    private InetSocketAddress getClientAddress(APIGatewayV2HTTPEvent request) {
+        if (request.getRequestContext() != null && request.getRequestContext().getHttp() != null) {
+            if (request.getRequestContext().getHttp().getSourceIp() != null) {
+                return new InetSocketAddress(request.getRequestContext().getHttp().getSourceIp(), 443);
+            }
+        }
+        return null;
     }
 
     private class NettyResponseHandler implements VirtualResponseHandler {

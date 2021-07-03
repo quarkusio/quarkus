@@ -34,6 +34,33 @@ public class DevServicesConfig {
     @ConfigItem
     public OptionalInt port;
 
+    /**
+     * Indicates if the Redis server managed by Quarkus Dev Services is shared.
+     * When shared, Quarkus looks for running containers using label-based service discovery.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services for Redis starts a new container.
+     * <p>
+     * The discovery uses the {@code quarkus-dev-service-redis} label.
+     * The value is configured using the {@code service-name} property.
+     * <p>
+     * Container sharing is only used in dev mode.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean shared;
+
+    /**
+     * The value of the {@code quarkus-dev-service-redis} label attached to the started container.
+     * This property is used when {@code shared} is set to {@code true}.
+     * In this case, before starting a container, Dev Services for Redis looks for a container with the
+     * {@code quarkus-dev-service-redis} label
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * starts a new container with the {@code quarkus-dev-service-redis} label set to the specified value.
+     * <p>
+     * This property is used when you need multiple shared Redis servers.
+     */
+    @ConfigItem(defaultValue = "redis")
+    public String serviceName;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -43,11 +70,13 @@ public class DevServicesConfig {
         DevServicesConfig that = (DevServicesConfig) o;
         return enabled == that.enabled &&
                 Objects.equals(imageName, that.imageName) &&
-                Objects.equals(port, that.port);
+                Objects.equals(port, that.port) &&
+                Objects.equals(shared, that.shared) &&
+                Objects.equals(serviceName, that.serviceName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, imageName, port);
+        return Objects.hash(enabled, imageName, port, shared, serviceName);
     }
 }

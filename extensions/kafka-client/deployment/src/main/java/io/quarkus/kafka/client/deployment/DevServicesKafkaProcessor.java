@@ -2,13 +2,13 @@ package io.quarkus.kafka.client.deployment;
 
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -16,8 +16,6 @@ import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.ContainerPort;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDockerWorking;
@@ -28,6 +26,8 @@ import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.devservices.common.ContainerAddress;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -45,6 +45,8 @@ public class DevServicesKafkaProcessor {
      * This allows other applications to discover the running service and use it instead of starting a new instance.
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kafka";
+
+    private static final ContainerLocator kafkaContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, KAFKA_PORT);
 
     static volatile Closeable closeable;
     static volatile KafkaDevServiceCfg cfg;
@@ -86,27 +88,19 @@ public class DevServicesKafkaProcessor {
         // Configure the watch dog
         if (first) {
             first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (closeable != null) {
-                        shutdownBroker();
-                    }
-                    first = true;
-                    closeable = null;
-                    cfg = null;
+            Runnable closeTask = () -> {
+                if (closeable != null) {
+                    shutdownBroker();
                 }
+                first = true;
+                closeable = null;
+                cfg = null;
             };
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
             Thread closeHookThread = new Thread(closeTask, "Kafka container shutdown thread");
             Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                }
-            });
+            ((QuarkusClassLoader) cl.parent()).addCloseTask(() -> Runtime.getRuntime().removeShutdownHook(closeHookThread));
         }
         cfg = configuration;
 
@@ -138,28 +132,6 @@ public class DevServicesKafkaProcessor {
         }
     }
 
-    private static Container lookup(String expectedLabelValue) {
-        List<Container> containers = DockerClientFactory.lazyClient().listContainersCmd().exec();
-        for (Container container : containers) {
-            String s = container.getLabels().get(DEV_SERVICE_LABEL);
-            if (expectedLabelValue.equalsIgnoreCase(s)) {
-                return container;
-            }
-        }
-        return null;
-    }
-
-    private static ContainerPort getMappedPort(Container container, int port) {
-        for (ContainerPort p : container.getPorts()) {
-            Integer mapped = p.getPrivatePort();
-            Integer publicPort = p.getPublicPort();
-            if (mapped != null && mapped == port && publicPort != null) {
-                return p;
-            }
-        }
-        return null;
-    }
-
     private KafkaBroker startKafka(KafkaDevServiceCfg config,
             LaunchModeBuildItem launchMode) {
         if (!config.devServicesEnabled) {
@@ -186,37 +158,25 @@ public class DevServicesKafkaProcessor {
             return null;
         }
 
-        if (config.shared && launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            // Detect if there is a broker already started using container labels.
-            Container container = lookup(config.serviceName);
-            if (container != null) {
-                ContainerPort port = getMappedPort(container, KAFKA_PORT);
-                if (port != null) {
-                    String url = port.getIp() + ":" + port.getPublicPort();
-                    log.infof("Dev Services for Kafka container found: %s (%s). "
-                            + "Connecting to: %s.",
-                            container.getId(),
-                            container.getImage(), url);
-                    return new KafkaBroker(url, null);
-                }
-            }
-        }
+        final Optional<ContainerAddress> maybeContainerAddress = kafkaContainerLocator.locateContainer(config.serviceName,
+                config.shared,
+                launchMode.getLaunchMode());
 
         // Starting the broker
-        RedPandaKafkaContainer container = new RedPandaKafkaContainer(
-                DockerImageName.parse(config.imageName),
-                config.fixedExposedPort,
-                launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);
-        container.start();
+        final Supplier<KafkaBroker> defaultKafkaBrokerSupplier = () -> {
+            RedPandaKafkaContainer container = new RedPandaKafkaContainer(
+                    DockerImageName.parse(config.imageName),
+                    config.fixedExposedPort,
+                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);
+            container.start();
 
-        return new KafkaBroker(
-                container.getBootstrapServers(),
-                new Closeable() {
-                    @Override
-                    public void close() {
-                        container.close();
-                    }
-                });
+            return new KafkaBroker(
+                    container.getBootstrapServers(),
+                    container::close);
+        };
+
+        return maybeContainerAddress.map(containerAddress -> new KafkaBroker(containerAddress.getUrl(), null))
+                .orElseGet(defaultKafkaBrokerSupplier);
     }
 
     private boolean hasKafkaChannelWithoutBootstrapServers() {

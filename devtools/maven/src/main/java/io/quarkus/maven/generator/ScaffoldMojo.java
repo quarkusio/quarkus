@@ -13,14 +13,11 @@ import org.apache.maven.project.MavenProject;
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
-import io.quarkus.devtools.generators.kinds.model.ModelGenerator;
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.QuarkusProjectMojoBase;
-import io.quarkus.maven.generator.handlers.RepositoryHandler;
-import io.quarkus.maven.generator.handlers.ResourceHandler;
-import io.quarkus.maven.generator.handlers.ServiceHandler;
+import io.quarkus.maven.generator.handlers.*;
 
 @Mojo(name = "scaffold")
 public class ScaffoldMojo extends QuarkusProjectMojoBase {
@@ -38,19 +35,17 @@ public class ScaffoldMojo extends QuarkusProjectMojoBase {
         QuarkusCommandInvocation quarkusCommandInvocation = new QuarkusCommandInvocation(quarkusProject);
         addDependencies(quarkusProject, quarkusCommandInvocation);
 
-        //TODO: ScaffoldHandler unindo todos Generators
-        ModelGenerator modelGenerator = new ModelGenerator("model.mustache", quarkusCommandInvocation, mavenProject);
-        modelGenerator.generate(params);
-
+        new ModelHandler(quarkusProject, log, mavenProject).execute(params, true);
         new RepositoryHandler(quarkusProject, log, mavenProject).execute(params.split(" ")[0]);
         new ServiceHandler(quarkusProject, log, mavenProject).execute(params.split(" ")[0]);
         new ResourceHandler(quarkusProject, log, mavenProject).execute(params.split(" ")[0]);
+        new ExceptionHandler(quarkusProject, log, mavenProject).execute("");
     }
 
     private void addDependencies(QuarkusProject quarkusProject, QuarkusCommandInvocation quarkusCommandInvocation) {
         quarkusCommandInvocation.log().info(MessageIcons.NOOP_ICON + " Analyzing dependencies");
 
-        String extension = "hibernate-orm-panache, hibernate-validator";
+        String extension = "hibernate-orm-panache, hibernate-validator, resteasy, resteasy-jsonb, agroal, jdbc-postgresql, smallrye-health, smallrye-openapi";
 
         Set<String> ext = new HashSet<>(Arrays.stream(extension.split(",")).map(String::trim).collect(toSet()));
         AddExtensions addExtensions = new AddExtensions(quarkusProject)

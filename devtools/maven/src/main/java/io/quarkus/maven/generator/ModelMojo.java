@@ -21,6 +21,6 @@ public class ModelMojo extends QuarkusProjectMojoBase {
     @Override
     protected void doExecute(QuarkusProject quarkusProject, MessageWriter log) {
         ModelHandler modelHandler = new ModelHandler(quarkusProject, log, mavenProject);
-        modelHandler.execute(params);
+        modelHandler.execute(params, false);
     }
 }

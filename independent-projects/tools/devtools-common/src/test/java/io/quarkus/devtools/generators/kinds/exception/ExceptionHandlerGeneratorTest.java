@@ -1,5 +1,8 @@
 package io.quarkus.devtools.generators.kinds.exception;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.generators.file.FileGenerator;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -8,21 +11,17 @@ import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.helpers.FileHelper;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import org.apache.maven.project.MavenProject;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mockito;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+import org.apache.maven.project.MavenProject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 
 class ExceptionHandlerGeneratorTest {
 

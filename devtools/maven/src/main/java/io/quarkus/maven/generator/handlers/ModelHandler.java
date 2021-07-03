@@ -29,13 +29,15 @@ public class ModelHandler {
         this.mavenProject = mavenProject;
     }
 
-    public QuarkusCommandOutcome execute(String params) {
+    public QuarkusCommandOutcome execute(String params, Boolean skipDeps) {
         if (validateParams(params)) {
             return QuarkusCommandOutcome.failure();
         }
 
         QuarkusCommandInvocation quarkusCommandInvocation = new QuarkusCommandInvocation(quarkusProject);
-        addDependencies(quarkusProject, quarkusCommandInvocation);
+        if (skipDeps) {
+            addDependencies(quarkusProject, quarkusCommandInvocation);
+        }
 
         ModelGenerator modelGenerator = new ModelGenerator("model.mustache", quarkusCommandInvocation, mavenProject);
         modelGenerator.generate(params);

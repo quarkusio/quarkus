@@ -6,10 +6,9 @@ import com.github.mustachejava.MustacheFactory;
 import io.quarkus.devtools.generators.Generator;
 import io.quarkus.devtools.generators.file.FileGenerator;
 import io.quarkus.devtools.generators.kinds.model.Model;
-import org.apache.maven.project.MavenProject;
-
 import java.io.IOException;
 import java.io.StringWriter;
+import org.apache.maven.project.MavenProject;
 
 public class ExceptionHandlerGenerator implements Generator {
 

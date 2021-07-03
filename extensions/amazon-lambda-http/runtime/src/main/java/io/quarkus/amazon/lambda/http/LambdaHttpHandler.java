@@ -19,6 +19,7 @@ import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
@@ -91,16 +92,17 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 extractHttpUrlFromRequest(request),
                 quarkusHeaders);
 
+        HttpHeaders nettyRequestHeaders = nettyRequest.headers();
         if (request.getHeaders() != null) { //apparently this can be null if no headers are sent
             for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
                 if (header.getValue() != null) {
                     for (String val : header.getValue().split(","))
-                        nettyRequest.headers().add(header.getKey(), val);
+                        nettyRequestHeaders.add(header.getKey(), val);
                 }
             }
         }
-        if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
-            nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
+        if (!nettyRequestHeaders.contains(HttpHeaderNames.HOST)) {
+            nettyRequestHeaders.add(HttpHeaderNames.HOST, "localhost");
         }
         return nettyRequest;
     }

@@ -70,7 +70,7 @@ class NettyResponseHandler implements VirtualResponseHandler {
                 HttpContent content = (HttpContent) msg;
                 int readable = content.content().readableBytes();
                 if (baos == null && readable > 0) {
-                    baos = createByteStream();
+                    baos = new ByteArrayOutputStream(BUFFER_SIZE);
                 }
                 for (int i = 0; i < readable; i++) {
                     baos.write(content.content().readByte());
@@ -80,7 +80,7 @@ class NettyResponseHandler implements VirtualResponseHandler {
                 FileRegion file = (FileRegion) msg;
                 if (file.count() > 0 && file.transferred() < file.count()) {
                     if (baos == null)
-                        baos = createByteStream();
+                        baos = new ByteArrayOutputStream(BUFFER_SIZE);
                     if (byteChannel == null)
                         byteChannel = Channels.newChannel(baos);
                     file.transferTo(byteChannel, file.transferred());
@@ -104,10 +104,6 @@ class NettyResponseHandler implements VirtualResponseHandler {
                 ReferenceCountUtil.release(msg);
             }
         }
-    }
-
-    private ByteArrayOutputStream createByteStream() {
-        return new ByteArrayOutputStream(BUFFER_SIZE);
     }
 
     static Set<String> binaryTypes = new HashSet<>();

@@ -110,8 +110,9 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                 body = Unpooled.copiedBuffer(request.getBody(), StandardCharsets.UTF_8);
             }
             return new DefaultLastHttpContent(body);
+        } else {
+            return LastHttpContent.EMPTY_LAST_CONTENT;
         }
-        return LastHttpContent.EMPTY_LAST_CONTENT;
     }
 
     private String getPathWithQueryStringFromRequest(AwsProxyRequest request) throws UnsupportedEncodingException {

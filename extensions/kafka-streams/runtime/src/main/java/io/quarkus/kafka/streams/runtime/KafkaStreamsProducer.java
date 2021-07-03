@@ -39,6 +39,7 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KafkaStreams.StateListener;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.processor.StateRestoreListener;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -73,7 +74,8 @@ public class KafkaStreamsProducer {
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
             Instance<Topology> topology, Instance<KafkaClientSupplier> kafkaClientSupplier,
             @Identifier("default-kafka-broker") Instance<Map<String, Object>> defaultConfiguration,
-            Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener) {
+            Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener,
+            Instance<StreamsUncaughtExceptionHandler> uncaughtExceptionHandlerListener) {
         shutdown = false;
         // No producer for Topology -> nothing to do
         if (topology.isUnsatisfied()) {
@@ -104,7 +106,8 @@ public class KafkaStreamsProducer {
         this.executorService = Executors.newSingleThreadExecutor();
 
         this.kafkaStreams = initializeKafkaStreams(kafkaStreamsProperties, runtimeConfig, kafkaAdminClient, topology.get(),
-                kafkaClientSupplier, stateListener, globalStateRestoreListener, executorService);
+                kafkaClientSupplier, stateListener, globalStateRestoreListener, uncaughtExceptionHandlerListener,
+                executorService);
         this.kafkaStreamsTopologyManager = new KafkaStreamsTopologyManager(kafkaAdminClient);
     }
 
@@ -149,7 +152,7 @@ public class KafkaStreamsProducer {
             KafkaStreamsRuntimeConfig runtimeConfig, Admin adminClient, Topology topology,
             Instance<KafkaClientSupplier> kafkaClientSupplier,
             Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener,
-            ExecutorService executorService) {
+            Instance<StreamsUncaughtExceptionHandler> uncaughtExceptionHandlerListener, ExecutorService executorService) {
         KafkaStreams kafkaStreams;
         if (kafkaClientSupplier.isUnsatisfied()) {
             kafkaStreams = new KafkaStreams(topology, kafkaStreamsProperties);
@@ -162,6 +165,9 @@ public class KafkaStreamsProducer {
         }
         if (!globalStateRestoreListener.isUnsatisfied()) {
             kafkaStreams.setGlobalStateRestoreListener(globalStateRestoreListener.get());
+        }
+        if (!uncaughtExceptionHandlerListener.isUnsatisfied()) {
+            kafkaStreams.setUncaughtExceptionHandler(uncaughtExceptionHandlerListener.get());
         }
 
         executorService.execute(new Runnable() {

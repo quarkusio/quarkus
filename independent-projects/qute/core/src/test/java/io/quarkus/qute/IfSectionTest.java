@@ -73,9 +73,9 @@ public class IfSectionTest {
     public void testCompositeParameters() {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("OK", engine.parse("{#if (true || false) && true}OK{/if}").render());
-        assertEquals("OK", engine.parse("{#if (foo || false || true) && (true)}OK{/if}").render());
-        assertEquals("NOK", engine.parse("{#if foo || false}OK{#else}NOK{/if}").render());
-        assertEquals("OK", engine.parse("{#if false || (foo || (false || true))}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if (foo.or(false) || false || true) && (true)}OK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if foo.or(false) || false}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if false || (foo.or(false) || (false || true))}OK{#else}NOK{/if}").render());
         assertEquals("NOK", engine.parse("{#if (true && false)}OK{#else}NOK{/if}").render());
         assertEquals("OK", engine.parse("{#if true && true}OK{#else}NOK{/if}").render());
         assertEquals("NOK", engine.parse("{#if true && false}OK{#else}NOK{/if}").render());
@@ -181,8 +181,8 @@ public class IfSectionTest {
         assertEquals("0", engine.parse("{#if arrayEmpty && name}1{#else}0{/if}").render(data));
         assertEquals("1", engine.parse("{#if array && intTwo}1{#else}0{/if}").render(data));
         assertEquals("1", engine.parse("{#if (array && intZero) || true}1{#else}0{/if}").render(data));
-        assertEquals("0", engine.parse("{#if nonExistent}1{#else}0{/if}").render(data));
-        assertEquals("1", engine.parse("{#if !nonExistent}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if nonExistent.or(false)}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if !nonExistent.or(false)}1{#else}0{/if}").render(data));
     }
 
     @Test

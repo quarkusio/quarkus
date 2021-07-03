@@ -28,7 +28,7 @@ public class CollectionTemplateExtensionsTest {
     @Test
     public void testListGetByIndex() {
         assertEquals("true=true=NOT_FOUND",
-                engine.parse("{@java.util.List<Boolean> list}{list.0.booleanValue}={list[0]}={list[100]}")
+                engine.parse("{@java.util.List<Boolean> list}{list.0.booleanValue}={list[0]}={list[100] ?: 'NOT_FOUND'}")
                         .data("list", Collections.singletonList(true)).render());
     }
 

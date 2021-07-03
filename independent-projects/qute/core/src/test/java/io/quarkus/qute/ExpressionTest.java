@@ -58,8 +58,16 @@ public class ExpressionTest {
         } catch (TemplateException expected) {
             assertTrue(expected.getMessage().contains("Non-literal value"));
         }
-        //verify("name[1l]['foo']", null, null, name("name"), name("1"), name("foo"));
+        verify("name[1l]['foo']", null, null, name("name"), name("1"), name("foo"));
         verify("foo[\"name.dot\"].value", null, null, name("foo"), name("name.dot"), name("value"));
+        verify("list[100] or 'NOT_FOUND'", null, null, name("list"), name("100"),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "'NOT_FOUND'")));
+        verify("hero.name.isBlank ? hulk.name : hero.name", null, null, name("hero"), name("name"), name("isBlank"),
+                virtualMethod("?", ExpressionImpl.from("hulk.name")),
+                virtualMethod(":", ExpressionImpl.from("hero.name")));
+        verify("hero.name.isBlank ? 'Hulk' : hero.name", null, null, name("hero"), name("name"), name("isBlank"),
+                virtualMethod("?", ExpressionImpl.literalFrom(-1, "'Hulk'")),
+                virtualMethod(":", ExpressionImpl.from("hero.name")));
     }
 
     @Test

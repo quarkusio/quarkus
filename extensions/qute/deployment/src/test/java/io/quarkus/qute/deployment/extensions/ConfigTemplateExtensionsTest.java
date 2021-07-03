@@ -19,7 +19,7 @@ public class ConfigTemplateExtensionsTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset(
-                            "{config:foo}={config:property('foo')} {config:nonExistent}={config:property('nonExistent')} {config:['foo.bar.baz']}={config:property('foo.bar.baz')} {config:['quarkus.qute.remove-standalone-lines']}={config:property('quarkus.qute.remove-standalone-lines')} {config:property(name)}"),
+                            "{config:foo}={config:property('foo')} {config:nonExistent ?: 'NOT_FOUND'}={config:property('nonExistent') ?: 'NOT_FOUND'} {config:['foo.bar.baz']}={config:property('foo.bar.baz')} {config:['quarkus.qute.remove-standalone-lines']}={config:property('quarkus.qute.remove-standalone-lines')} {config:property(name)}"),
                             "templates/foo.html")
                     .addAsResource(new StringAsset("foo=false\nfoo.bar.baz=11"), "application.properties"));
 

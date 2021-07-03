@@ -20,7 +20,7 @@ public final class Futures {
                 try {
                     return fu.get();
                 } catch (InterruptedException | ExecutionException e) {
-                    throw new IllegalStateException(e);
+                    throw new TemplateException(e);
                 }
             }
         };

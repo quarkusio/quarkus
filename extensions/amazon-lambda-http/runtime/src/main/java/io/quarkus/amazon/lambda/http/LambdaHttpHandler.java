@@ -21,6 +21,7 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.quarkus.amazon.lambda.http.model.Headers;
@@ -69,15 +70,13 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.class, request);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.RequestContext.class, request.getRequestContext());
-        DefaultHttpRequest nettyRequest = createNettyRequest(request, quarkusHeaders);
 
-        HttpContent requestContent = createRequestContent(request);
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
 
-        connection.sendMessage(nettyRequest);
-        connection.sendMessage(requestContent);
+        connection.sendMessage(createHttpRequestHead(request, quarkusHeaders));
+        connection.sendMessage(createHttpRequestBody(request));
         try {
             return handler.getFuture().get();
         } finally {
@@ -85,7 +84,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         }
     }
 
-    private DefaultHttpRequest createNettyRequest(APIGatewayV2HTTPEvent request, QuarkusHttpHeaders quarkusHeaders) {
+    private HttpRequest createHttpRequestHead(APIGatewayV2HTTPEvent request, QuarkusHttpHeaders quarkusHeaders) {
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(
                 HttpVersion.HTTP_1_1,
                 extractHttpMethodFromRequest(request),
@@ -118,7 +117,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 .orElse(request.getRawPath());
     }
 
-    private HttpContent createRequestContent(APIGatewayV2HTTPEvent request) {
+    private HttpContent createHttpRequestBody(APIGatewayV2HTTPEvent request) {
         if (request.getBody() != null) {
             ByteBuf body;
             if (request.getIsBase64Encoded()) {

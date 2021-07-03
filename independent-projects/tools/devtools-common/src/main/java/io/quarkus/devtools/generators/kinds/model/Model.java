@@ -11,6 +11,11 @@ public class Model {
     private String packageValue;
     private List<Attribute> attributes;
 
+    public Model(String className, String packageValue) {
+        this.packageValue = packageValue;
+        this.className = className;
+    }
+
     public Model(String className, String packageValue, String importModel, String importModelLowerCase) {
         this.className = className;
         this.packageValue = packageValue;

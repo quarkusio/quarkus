@@ -2,6 +2,7 @@ package {{packageValue}}.service;
 
 import {{packageValue}}.model.{{importModel}};
 import {{packageValue}}.repository.{{importModel}}Repository;
+import {{packageValue}}.exceptions.AppException;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -24,7 +25,7 @@ public class {{importModel}}Service {
     }
 
     public List<{{importModel}}> listAll() {
-        return {{importModelLowerCase}}Repository.findOrderByName();
+        return {{importModelLowerCase}}Repository.findAll().list();
     }
 
     @Transactional
@@ -38,12 +39,12 @@ public class {{importModel}}Service {
         String allViolations = violations.stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining(", "));
-        /*throw new AppException(400, allViolations);*/
+        throw new AppException(400, allViolations);
     }
 
     public {{importModel}} findById(Long id) {
         return {{importModelLowerCase}}Repository.findByIdOptional(id).orElseThrow(() -> {
-            /* throw new AppException(204, "{{importModelLowerCase}}_id ".concat(String.valueOf(id)).concat(" not found")); */
+            throw new AppException(204, "{{importModelLowerCase}}_id ".concat(String.valueOf(id)).concat(" not found"));
         });
     }
 
@@ -52,7 +53,7 @@ public class {{importModel}}Service {
         var {{importModelLowerCase}} = this.findById(id);
 
         {{importModelLowerCase}}Repository.persist({{importModelLowerCase}});
-        return person;
+        return {{importModelLowerCase}};
     }
 
     @Transactional

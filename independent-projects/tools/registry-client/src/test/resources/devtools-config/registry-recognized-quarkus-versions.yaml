@@ -1,0 +1,5 @@
+---
+registries:
+- registry.acme.org:
+    quarkus-versions:
+      recognized-versions-expression: "*-acme-*"

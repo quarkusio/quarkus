@@ -1,0 +1,5 @@
+---
+registries:
+- registry.acme.org:
+    custom:
+      prop: "value"

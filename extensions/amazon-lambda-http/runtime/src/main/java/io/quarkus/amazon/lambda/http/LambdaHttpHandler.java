@@ -33,9 +33,10 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
     private static final Logger log = Logger.getLogger("quarkus.amazon.lambda.http");
 
-    private static final Headers errorHeaders = new Headers();
+    private static final Headers ERROR_HEADERS = new Headers();
+
     static {
-        errorHeaders.putSingle("Content-Type", "application/json");
+        ERROR_HEADERS.putSingle("Content-Type", "application/json");
     }
 
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
@@ -48,7 +49,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
             APIGatewayV2HTTPResponse res = new APIGatewayV2HTTPResponse();
             res.setStatusCode(500);
             res.setBody("{ \"message\": \"Internal Server Error\" }");
-            res.setMultiValueHeaders(errorHeaders);
+            res.setMultiValueHeaders(ERROR_HEADERS);
             return res;
         }
 

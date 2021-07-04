@@ -36,10 +36,10 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsProxyResponse> {
     private static final Logger log = Logger.getLogger("quarkus.amazon.lambda.http");
 
-    private static final Headers errorHeaders = new Headers();
+    private static final Headers ERROR_HEADERS = new Headers();
 
     static {
-        errorHeaders.putSingle("Content-Type", "application/json");
+        ERROR_HEADERS.putSingle("Content-Type", "application/json");
     }
 
     @Override
@@ -49,7 +49,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
             return nettyDispatch(clientAddress, request, context);
         } catch (Exception e) {
             log.error("Request Failure", e);
-            return new AwsProxyResponse(500, errorHeaders, "{ \"message\": \"Internal Server Error\" }");
+            return new AwsProxyResponse(500, ERROR_HEADERS, "{ \"message\": \"Internal Server Error\" }");
         }
     }
 

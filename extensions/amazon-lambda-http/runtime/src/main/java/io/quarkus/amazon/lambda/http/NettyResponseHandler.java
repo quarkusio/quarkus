@@ -26,6 +26,15 @@ import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 class NettyResponseHandler implements VirtualResponseHandler {
     private static final int BUFFER_SIZE = 8096;
 
+    private static final Set<String> BINARY_TYPES = new HashSet<>();
+
+    static {
+        BINARY_TYPES.add("application/octet-stream");
+        BINARY_TYPES.add("image/jpeg");
+        BINARY_TYPES.add("image/png");
+        BINARY_TYPES.add("image/gif");
+    }
+
     private final APIGatewayV2HTTPResponse responseBuilder = new APIGatewayV2HTTPResponse();
     private final CompletableFuture<APIGatewayV2HTTPResponse> future = new CompletableFuture<>();
     private final APIGatewayV2HTTPEvent request;
@@ -106,22 +115,13 @@ class NettyResponseHandler implements VirtualResponseHandler {
         }
     }
 
-    static Set<String> binaryTypes = new HashSet<>();
-
-    static {
-        binaryTypes.add("application/octet-stream");
-        binaryTypes.add("image/jpeg");
-        binaryTypes.add("image/png");
-        binaryTypes.add("image/gif");
-    }
-
     private boolean isBinary(String contentType) {
         if (contentType != null) {
             int index = contentType.indexOf(';');
             if (index >= 0) {
-                return binaryTypes.contains(contentType.substring(0, index));
+                return BINARY_TYPES.contains(contentType.substring(0, index));
             } else {
-                return binaryTypes.contains(contentType);
+                return BINARY_TYPES.contains(contentType);
             }
         } else {
             return false;

@@ -120,8 +120,8 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <!-- plugins>
-            <plugin>
+        <plugins>
+            <!-- <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
@@ -131,7 +131,17 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin> -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <!-- to verify that MAVEN_OPTS filtering works in BootstrapMavenOptions -->
+                        <MAVEN_OPTS>--add-opens java.base/java.util=ALL-UNNAMED</MAVEN_OPTS>
+                    </environmentVariables>
+                </configuration>
             </plugin>
-        </plugins -->
+        </plugins>
     </build>
 </project>

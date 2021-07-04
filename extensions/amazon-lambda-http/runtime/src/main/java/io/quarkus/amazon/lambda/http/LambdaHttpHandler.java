@@ -39,6 +39,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         ERROR_HEADERS.putSingle("Content-Type", "application/json");
     }
 
+    @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
         InetSocketAddress clientAddress = getClientAddress(request);
 

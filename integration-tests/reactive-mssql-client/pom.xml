@@ -16,7 +16,7 @@
 
     <properties>
         <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1433</reactive-mssql.url>
-        <mssql.image>mcr.microsoft.com/mssql/server:2019-latest</mssql.image>
+        <mssql.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssql.image>
     </properties>
 
     <dependencies>
@@ -166,9 +166,6 @@
                                     <name>${mssql.image}</name>
                                     <alias>quarkus-test-mssql</alias>
                                     <run>
-                                        <network>
-                                            <mode>bridge</mode>
-                                        </network>
                                         <ports>
                                             <port>1435:1433</port>
                                         </ports>
@@ -182,13 +179,9 @@
                                             <color>cyan</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>direct</mode>
-                                                <ports>
-                                                    <port>1433</port>
-                                                </ports>
-                                            </tcp>
+                                            <log>SQL Server is now ready for client connections</log>
+                                            <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
+                                            <time>40000</time>
                                         </wait>
                                     </run>
                                 </image>

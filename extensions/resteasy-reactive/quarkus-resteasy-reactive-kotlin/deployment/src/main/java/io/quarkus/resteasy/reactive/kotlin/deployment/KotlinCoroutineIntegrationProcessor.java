@@ -16,10 +16,13 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
+import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
+import org.jboss.resteasy.reactive.server.model.FixedHandlersChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineEndpointInvoker;
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineMethodProcessor;
+import org.jboss.resteasy.reactive.server.runtime.kotlin.FlowToPublisherHandler;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -36,6 +39,7 @@ import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 public class KotlinCoroutineIntegrationProcessor {
 
     static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
+    static final DotName FLOW = DotName.createSimple("kotlinx.coroutines.flow.Flow");
     public static final String NAME = KotlinCoroutineIntegrationProcessor.class.getName();
     private static final DotName BLOCKING_ANNOTATION = DotName.createSimple("io.smallrye.common.annotation.Blocking");
 
@@ -147,5 +151,22 @@ public class KotlinCoroutineIntegrationProcessor {
 
         }
         return factory.invoker(baseName);
+    }
+
+    @BuildStep
+    public MethodScannerBuildItem flowSupport() {
+        return new MethodScannerBuildItem(new MethodScanner() {
+            @Override
+            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                    Map<String, Object> methodContext) {
+                DotName returnTypeName = method.returnType().name();
+                if (returnTypeName.equals(FLOW)) {
+                    return Collections.singletonList(new FixedHandlersChainCustomizer(
+                            List.of(new FlowToPublisherHandler(), new PublisherResponseHandler()),
+                            HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
+                }
+                return Collections.emptyList();
+            }
+        });
     }
 }

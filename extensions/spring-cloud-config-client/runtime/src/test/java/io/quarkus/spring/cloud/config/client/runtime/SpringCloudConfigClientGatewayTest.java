@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
+import io.quarkus.runtime.TlsConfig;
+
 class SpringCloudConfigClientGatewayTest {
 
     private static final int MOCK_SERVER_PORT = 9300;
@@ -24,7 +26,7 @@ class SpringCloudConfigClientGatewayTest {
 
     private static final SpringCloudConfigClientConfig springCloudConfigClientConfig = configForTesting();
     private final SpringCloudConfigClientGateway sut = new VertxSpringCloudConfigGateway(
-            springCloudConfigClientConfig);
+            springCloudConfigClientConfig, new TlsConfig());
 
     @BeforeAll
     static void start() {

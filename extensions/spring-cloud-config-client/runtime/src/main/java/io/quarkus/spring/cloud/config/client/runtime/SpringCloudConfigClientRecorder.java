@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ProfileManager;
 
@@ -17,7 +18,7 @@ public class SpringCloudConfigClientRecorder {
     private static final Logger log = Logger.getLogger(SpringCloudConfigClientRecorder.class);
 
     public RuntimeValue<ConfigSourceProvider> create(SpringCloudConfigClientConfig springCloudConfigClientConfig,
-            ApplicationConfig applicationConfig) {
+            ApplicationConfig applicationConfig, TlsConfig tlsConfig) {
         if (!springCloudConfigClientConfig.enabled) {
             log.debug(
                     "No attempt will be made to obtain configuration from the Spring Cloud Config Server because the functionality has been disabled via configuration");
@@ -31,7 +32,7 @@ public class SpringCloudConfigClientRecorder {
         }
 
         return new RuntimeValue<>(new SpringCloudConfigServerClientConfigSourceProvider(
-                springCloudConfigClientConfig, applicationConfig.name.get(), ProfileManager.getActiveProfile()));
+                springCloudConfigClientConfig, applicationConfig.name.get(), ProfileManager.getActiveProfile(), tlsConfig));
     }
 
     private RuntimeValue<ConfigSourceProvider> emptyRuntimeValue() {

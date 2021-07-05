@@ -1,0 +1,26 @@
+name: Extension Proposal
+description: Propose a new extension in Quarkus
+labels: kind/extension-proposal
+body:
+  - type: textarea
+    validations:
+      required: true
+    attributes:
+      label: Description
+      description: >-
+        Describe the extension clearly and concisely.
+      value:
+        Interested in this extension, please +1 via the emoji/reaction feature of GitHub (top right).
+  - type: textarea
+    attributes:
+      label: Configuration suggestion
+      placeholder: >-
+        ```properties
+        # Add your application.properties here, if applicable.
+
+        ```
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: >
+        Add any other context about the proposal here.

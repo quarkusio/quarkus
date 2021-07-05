@@ -162,6 +162,10 @@ public class QuarkusProjectHelper {
         return toolsConfig == null ? toolsConfig = RegistriesConfigLocator.resolveConfig() : toolsConfig;
     }
 
+    public static void resetToolsConfig() {
+        toolsConfig = null;
+    }
+
     public static void setMessageWriter(MessageWriter newLog) {
         if (log == null) {
             log = newLog;

@@ -28,6 +28,7 @@ public class TestRegistryClient implements RegistryClient {
     private final MessageWriter log;
     private final RegistryConfig config;
     private final Path registryDir;
+    private final boolean enableMavenResolver;
 
     public TestRegistryClient(RegistryClientEnvironment env, RegistryConfig clientConfig) {
         this.resolver = env.resolver();
@@ -63,6 +64,9 @@ public class TestRegistryClient implements RegistryClient {
         if (clientConfig.getQuarkusVersions() != null) {
             registryConfig.setQuarkusVersions(clientConfig.getQuarkusVersions());
         }
+
+        final Object o = clientConfig.getExtra().get("enable-maven-resolver");
+        enableMavenResolver = o == null ? false : Boolean.parseBoolean(o.toString());
         this.config = registryConfig;
     }
 
@@ -80,12 +84,22 @@ public class TestRegistryClient implements RegistryClient {
             throws RegistryResolutionException {
         final ArtifactCoords coords = PlatformArtifacts.ensureCatalogArtifact(platformCoords);
         log.debug("%s resolvePlatformExtensions %s", config.getId(), coords);
-        final Path p;
-        try {
-            p = resolver.resolve(new DefaultArtifact(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(),
-                    coords.getType(), coords.getVersion())).getArtifact().getFile().toPath();
-        } catch (BootstrapMavenException e) {
-            throw new RegistryResolutionException("Failed to resolve " + coords, e);
+
+        Path p = TestRegistryClientBuilder.getRegistryMemberCatalogPath(registryDir,
+                PlatformArtifacts.ensureBomArtifact(coords));
+        if (!Files.exists(p)) {
+            if (enableMavenResolver) {
+                try {
+                    p = resolver
+                            .resolve(new DefaultArtifact(coords.getGroupId(), coords.getArtifactId(),
+                                    coords.getClassifier(), coords.getType(), coords.getVersion()))
+                            .getArtifact().getFile().toPath();
+                } catch (BootstrapMavenException e) {
+                    throw new RegistryResolutionException("Failed to resolve " + coords, e);
+                }
+            } else {
+                return null;
+            }
         }
         try {
             return JsonCatalogMapperHelper.deserialize(p, JsonExtensionCatalog.class);

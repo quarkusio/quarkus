@@ -46,6 +46,16 @@ public class TestResource {
         return new TestGenericsPojo<>("I know it");
     }
 
+    @Query
+    public TestPojo businesserror() throws BusinessException {
+        throw new BusinessException("Some invalid case");
+    }
+
+    @Query
+    public TestPojo systemserror() {
+        throw new RuntimeException("Some system problem");
+    }
+
     @Mutation
     public TestPojo moo(String name) {
         return new TestPojo(name);

@@ -1,0 +1,13 @@
+name: "Scala 3"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "scala"
+  - "scala3"
+  categories:
+  - "alt-languages"
+  status: "preview"
+  codestart:
+    name: "scala3"
+    kind: "core"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

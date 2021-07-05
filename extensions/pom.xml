@@ -157,6 +157,8 @@
         <!-- Additional languages -->
         <module>kotlin</module>
         <module>scala</module>
+        <module>scala3</module>
+
 
         <!-- Kubernetes -->
         <module>container-image</module>

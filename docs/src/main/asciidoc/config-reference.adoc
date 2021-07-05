@@ -380,6 +380,21 @@ application.host=${HOST:${remote.host}}
 This will expand the `HOST` environment variable and use the value of the property `remote.host` as the default value
 if `HOST` is not set.
 
+== Accessing a generating UUID
+
+The default config source from Quarkus provides a random UUID value.
+It generates the UUID at startup time.
+So, the value changes between startups, including reloads in dev mode.
+
+You can access the generated value using the `quarkus.uuid` property.
+Use <<property-expressions, expressions>> to access it: `${quarkus.uuid}`.
+For example, it can be useful to configure a Kafka client with a unique consumer group:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.group.id=${quarkus.uuid}
+----
+
 == Clearing properties
 
 Run time properties which are optional, and which have had values set at build time or which have a default value,

@@ -41,7 +41,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
-                                "{\"accessToken\":\"access_token_n\", \"expiresIn\":4, \"refreshToken\":\"refresh_token_n\"}")));
+                                "{\"accessToken\":\"access_token_n\", \"expiresIn\":\"4\", \"refreshToken\":\"refresh_token_n\"}")));
 
         server.stubFor(WireMock.post("/tokens")
                 .withRequestBody(matching("grant_type=refresh_token&refresh_token=refresh_token_1"))

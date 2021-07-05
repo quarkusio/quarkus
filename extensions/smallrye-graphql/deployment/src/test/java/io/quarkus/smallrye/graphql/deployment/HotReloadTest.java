@@ -20,7 +20,8 @@ public class HotReloadTest extends AbstractGraphQLTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class)
+                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
+                            BusinessException.class)
                     .addAsResource(new StringAsset(getPropertyAsString()), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

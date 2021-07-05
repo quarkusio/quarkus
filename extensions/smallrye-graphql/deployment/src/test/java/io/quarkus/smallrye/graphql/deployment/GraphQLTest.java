@@ -30,7 +30,8 @@ public class GraphQLTest extends AbstractGraphQLTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class)
+                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
+                            BusinessException.class)
                     .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

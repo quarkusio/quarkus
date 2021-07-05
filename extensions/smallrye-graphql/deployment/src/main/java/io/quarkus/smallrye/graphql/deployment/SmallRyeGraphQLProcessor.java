@@ -362,34 +362,6 @@ public class SmallRyeGraphQLProcessor {
         return classes;
     }
 
-    // Other Config Mappings
-
-    @BuildStep
-    void configMapping(SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
-
-        if (graphQLConfig.errorExtensionFields.isPresent()) {
-            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ERROR_EXTENSION_FIELDS,
-                    graphQLConfig.errorExtensionFields.get().stream().collect(Collectors.joining(", "))));
-        }
-
-        if (graphQLConfig.showRuntimeExceptionMessage.isPresent()) {
-            systemProperties.produce(new SystemPropertyBuildItem("mp.graphql.showErrorMessage",
-                    graphQLConfig.showRuntimeExceptionMessage.get().stream().collect(Collectors.joining(", "))));
-        }
-
-        if (graphQLConfig.hideCheckedExceptionMessage.isPresent()) {
-            systemProperties.produce(new SystemPropertyBuildItem("mp.graphql.hideErrorMessage",
-                    graphQLConfig.hideCheckedExceptionMessage.get().stream().collect(Collectors.joining(", "))));
-        }
-
-        if (graphQLConfig.defaultErrorMessage.isPresent()) {
-            systemProperties.produce(
-                    new SystemPropertyBuildItem(ConfigKey.DEFAULT_ERROR_MESSAGE, graphQLConfig.defaultErrorMessage.get()));
-        }
-
-    }
-
     // Services Integrations
 
     @BuildStep

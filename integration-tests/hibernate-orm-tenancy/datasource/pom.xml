@@ -4,15 +4,15 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
-        <artifactId>quarkus-integration-tests-parent</artifactId>
+        <artifactId>quarkus-integration-test-hibernate-orm-tenancy</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-hibernate-tenancy</artifactId>
-    <name>Quarkus - Integration Tests - Hibernate - Multitenancy</name>
-    <description>Module that contains Hibernate Multitenancy related tests running with the MariaDB database</description>
+    <artifactId>quarkus-integration-test-hibernate-orm-tenancy-datasource</artifactId>
+    <name>Quarkus - Integration Tests - Hibernate - Tenancy - Datasource</name>
+    <description>Tests for Hibernate ORM Multitenancy using one datasource per tenant, running with the MariaDB database</description>
 
     <properties>
         <mariadb.base_url>jdbc:mariadb://localhost:3306</mariadb.base_url>

@@ -68,7 +68,7 @@
         <module>hibernate-reactive-panache</module>
         <module>hibernate-search-orm-elasticsearch</module>
         <module>hibernate-search-orm-elasticsearch-aws</module>
-        <module>hibernate-tenancy</module>
+        <module>hibernate-orm-tenancy</module>
         <module>hibernate-orm-envers</module>
         <module>vertx-http</module>
         <module>vertx-web</module>

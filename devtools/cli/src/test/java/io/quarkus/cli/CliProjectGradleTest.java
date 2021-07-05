@@ -100,9 +100,9 @@ public class CliProjectGradleTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
                 "--package-name=custom.pkg",
                 "--output-directory=" + nested,
-                "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0",
                 "--app-config=" + String.join(",", configs),
-                "resteasy-reactive");
+                "-x resteasy-reactive",
+                "silly:my-project:0.1.0");
 
         // TODO: would love a test that doesn't use a wrapper, but CI path..
 
@@ -188,7 +188,7 @@ public class CliProjectGradleTest {
                 "--verbose", "-e", "-B",
                 "--dryrun", "--no-wrapper", "--package-name=custom.pkg",
                 "--output-directory=" + nested,
-                "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0");
+                "silly:my-project:0.1.0");
 
         // We don't need to retest this, just need to make sure all of the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);

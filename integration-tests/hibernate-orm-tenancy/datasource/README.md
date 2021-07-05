@@ -1,4 +1,4 @@
-# Hibernate example with multitenancy
+# Hibernate ORM example with datasource-based multitenancy
 
 ## Running the tests
 

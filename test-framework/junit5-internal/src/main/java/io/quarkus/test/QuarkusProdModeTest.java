@@ -57,6 +57,8 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.builder.BuildStep;
+import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -74,6 +76,12 @@ public class QuarkusProdModeTest
     private static final int DEFAULT_HTTP_PORT_INT = 8081;
     private static final String DEFAULT_HTTP_PORT = "" + DEFAULT_HTTP_PORT_INT;
     private static final String QUARKUS_HTTP_PORT_PROPERTY = "quarkus.http.port";
+
+    static final String BUILD_CONTEXT_BUILD_STEP_ENTRIES = "buildStepEntries";
+    static final String BUILD_CONTEXT_BUILD_STEP_ENTRY_CONSUMES = "buildStepEntryConsumes";
+    static final String BUILD_CONTEXT_BUILD_STEP_ENTRY_PRODUCES = "buildStepEntryProduces";
+
+    public static String BUILD_CONTEXT_CUSTOM_SOURCES_PATH_KEY = "customSourcesDir";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
@@ -103,6 +111,11 @@ public class QuarkusProdModeTest
     // by default, we use these lower heap settings
     private List<String> jvmArgs = Collections.singletonList("-Xmx128m");
     private Map<String, String> testResourceProperties = new HashMap<>();
+    // these will be used to create a directory that can then be obtained by the buildChainCustomizersProducer function
+    // values are meant to be resources that exist on the test classpath
+    // which should be copied to the files represented by the keys
+    private Map<Path, String> customSourcesMap = new HashMap<>();
+    private List<BuildChainCustomizerEntry> buildChainCustomizerEntries = new ArrayList<>();
 
     private Process process;
 
@@ -139,6 +152,19 @@ public class QuarkusProdModeTest
     public QuarkusProdModeTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
         Objects.requireNonNull(archiveProducer);
         this.archiveProducer = archiveProducer;
+        return this;
+    }
+
+    public QuarkusProdModeTest addBuildChainCustomizerEntries(BuildChainCustomizerEntry entry) {
+        Objects.requireNonNull(entry);
+        this.buildChainCustomizerEntries.add(entry);
+        return this;
+    }
+
+    public QuarkusProdModeTest addCustomResourceEntry(Path outputPath, String classPathLocation) {
+        Objects.requireNonNull(outputPath);
+        Objects.requireNonNull(classPathLocation);
+        this.customSourcesMap.put(outputPath, classPathLocation);
         return this;
     }
 
@@ -350,6 +376,8 @@ public class QuarkusProdModeTest
 
             Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
 
+            Path customSourcesDir = createCustomSources(testClass);
+
             // This is a bit of a hack but if the current project does not contain any
             // sources nor resources, we need to create an empty classes dir to satisfy the resolver
             // as this project will appear as the root application artifact during the bootstrap
@@ -372,9 +400,44 @@ public class QuarkusProdModeTest
             if (applicationName != null) {
                 builder.setBaseName(applicationName);
             }
+
+            Map<String, Object> buildContext = new HashMap<>();
+            buildContext.put(BUILD_CONTEXT_CUSTOM_SOURCES_PATH_KEY, customSourcesDir);
+
+            if (!buildChainCustomizerEntries.isEmpty()) {
+                // we need to make sure all the classes needed to support the customizer flow are available at bootstrap time
+                // for that purpose we add them to a new archive that is then added to Quarkus bootstrap
+                Path additionalDeploymentDir = Files.createDirectories(outputDir.resolve("additional-deployment"));
+                JavaArchive additionalDeploymentArchive = ShrinkWrap.create(JavaArchive.class)
+                        .addClasses(ProdModeTestBuildChainCustomizerProducer.class, ProdModeTestBuildChainBuilderConsumer.class,
+                                ProdModeTestBuildStep.class);
+
+                // we push data from the test extension down to the customizers via JDK classes only because this data needs to be
+                // accessible by different classloaders
+                Map<Object, Object> entriesMap = new HashMap<>();
+                buildContext.put(BUILD_CONTEXT_BUILD_STEP_ENTRIES, entriesMap);
+
+                for (BuildChainCustomizerEntry entry : buildChainCustomizerEntries) {
+                    additionalDeploymentArchive.addClasses(entry.getBuildStepClass());
+                    entriesMap.put(entry.getBuildStepClass().getName(),
+                            Map.of(BUILD_CONTEXT_BUILD_STEP_ENTRY_PRODUCES,
+                                    entry.getProduces().stream().map(Class::getName).collect(Collectors.toList()),
+                                    BUILD_CONTEXT_BUILD_STEP_ENTRY_CONSUMES,
+                                    entry.getConsumes().stream().map(Class::getName).collect(Collectors.toList())));
+                }
+                additionalDeploymentArchive.as(ExplodedExporter.class)
+                        .exportExplodedInto(additionalDeploymentDir.toFile());
+                builder.addAdditionalDeploymentArchive(additionalDeploymentDir);
+            }
             curatedApplication = builder.build().bootstrap();
 
-            AugmentAction action = curatedApplication.createAugmentor();
+            AugmentAction action;
+            if (buildChainCustomizerEntries.isEmpty()) {
+                action = curatedApplication.createAugmentor();
+            } else {
+                action = curatedApplication.createAugmentor(ProdModeTestBuildChainCustomizerProducer.class.getName(),
+                        buildContext);
+            }
             AugmentResult result;
             try {
                 result = action.createProductionApplication();
@@ -427,6 +490,22 @@ public class QuarkusProdModeTest
             current = current.getSuperclass();
         }
 
+    }
+
+    private Path createCustomSources(Class<?> testClass) throws IOException {
+        Path customSourcesDir = outputDir.resolve("custom-sources");
+        for (Map.Entry<Path, String> entry : customSourcesMap.entrySet()) {
+            Path finalResourcePath = customSourcesDir.resolve(entry.getKey());
+            Files.createDirectories(finalResourcePath.getParent());
+
+            InputStream classPathResource = testClass.getClassLoader().getResourceAsStream(entry.getValue());
+            if (classPathResource == null) {
+                throw new IllegalArgumentException("Resource '" + finalResourcePath.getFileName()
+                        + "' supplied as a value of customSourcesMap does not exist on the test classpath");
+            }
+            Files.write(finalResourcePath, classPathResource.readAllBytes());
+        }
+        return customSourcesDir;
     }
 
     private void logOutputPathForPostMortem() {
@@ -631,6 +710,11 @@ public class QuarkusProdModeTest
             timeoutTask.cancel();
             timeoutTask = null;
 
+            if (!buildChainCustomizerEntries.isEmpty()) {
+                buildChainCustomizerEntries.clear();
+                buildChainCustomizerEntries = null;
+            }
+
             if ((outputDir != null) && !preventOutputDirCleanup) {
                 FileUtil.deleteDirectory(outputDir);
             }
@@ -701,4 +785,33 @@ public class QuarkusProdModeTest
             }
         }
     }
+
+    // the reason for using is this class is that we need to be able to copy the BuildStep into a new deployment archive that
+    // is then added to the build
+    public static class BuildChainCustomizerEntry {
+        private final Class<? extends ProdModeTestBuildStep> buildStepClass;
+        private final List<Class<? extends BuildItem>> produces;
+        private final List<Class<? extends BuildItem>> consumes;
+
+        public BuildChainCustomizerEntry(Class<? extends ProdModeTestBuildStep> buildStepClass,
+                List<Class<? extends BuildItem>> produces,
+                List<Class<? extends BuildItem>> consumes) {
+            this.buildStepClass = Objects.requireNonNull(buildStepClass);
+            this.produces = produces == null ? Collections.emptyList() : produces;
+            this.consumes = consumes == null ? Collections.emptyList() : consumes;
+        }
+
+        public Class<? extends BuildStep> getBuildStepClass() {
+            return buildStepClass;
+        }
+
+        public List<Class<? extends BuildItem>> getProduces() {
+            return produces;
+        }
+
+        public List<Class<? extends BuildItem>> getConsumes() {
+            return consumes;
+        }
+    }
+
 }

@@ -82,26 +82,32 @@ public class EngineProducer {
         // Note that arrays are handled specifically during validation
         builder.addValueResolver(ValueResolvers.arrayResolver());
 
-        // If needed use a specific result mapper for the selected strategy  
-        if (runtimeConfig.propertyNotFoundStrategy.isPresent()) {
-            switch (runtimeConfig.propertyNotFoundStrategy.get()) {
-                case THROW_EXCEPTION:
-                    builder.addResultMapper(new PropertyNotFoundThrowException());
-                    break;
-                case NOOP:
-                    builder.addResultMapper(new PropertyNotFoundNoop());
-                    break;
-                case OUTPUT_ORIGINAL:
-                    builder.addResultMapper(new PropertyNotFoundOutputOriginal());
-                    break;
-                default:
-                    // Use the default strategy
-                    break;
-            }
+        // Enable/disable strict rendering
+        if (runtimeConfig.strictRendering) {
+            builder.strictRendering(true);
         } else {
-            // Throw an expection in the development mode
-            if (launchMode == LaunchMode.DEVELOPMENT) {
-                builder.addResultMapper(new PropertyNotFoundThrowException());
+            builder.strictRendering(false);
+            // If needed use a specific result mapper for the selected strategy  
+            if (runtimeConfig.propertyNotFoundStrategy.isPresent()) {
+                switch (runtimeConfig.propertyNotFoundStrategy.get()) {
+                    case THROW_EXCEPTION:
+                        builder.addResultMapper(new PropertyNotFoundThrowException());
+                        break;
+                    case NOOP:
+                        builder.addResultMapper(new PropertyNotFoundNoop());
+                        break;
+                    case OUTPUT_ORIGINAL:
+                        builder.addResultMapper(new PropertyNotFoundOutputOriginal());
+                        break;
+                    default:
+                        // Use the default strategy
+                        break;
+                }
+            } else {
+                // Throw an expection in the development mode
+                if (launchMode == LaunchMode.DEVELOPMENT) {
+                    builder.addResultMapper(new PropertyNotFoundThrowException());
+                }
             }
         }
 

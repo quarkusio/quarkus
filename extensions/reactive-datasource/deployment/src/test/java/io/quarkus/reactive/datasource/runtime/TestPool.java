@@ -1,11 +1,14 @@
 package io.quarkus.reactive.datasource.runtime;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
@@ -44,6 +47,21 @@ class TestPool implements TestPoolInterface {
     }
 
     @Override
+    public Pool connectHandler(Handler<SqlConnection> handler) {
+        return null;
+    }
+
+    @Override
+    public Pool connectionProvider(Function<Context, Future<SqlConnection>> provider) {
+        return null;
+    }
+
+    @Override
+    public int size() {
+        return 0;
+    }
+
+    @Override
     public Future<Void> close() {
         isClosed.set(true);
         return Future.succeededFuture();
@@ -53,4 +71,5 @@ class TestPool implements TestPoolInterface {
     public boolean isClosed() {
         return isClosed.get();
     }
+
 }

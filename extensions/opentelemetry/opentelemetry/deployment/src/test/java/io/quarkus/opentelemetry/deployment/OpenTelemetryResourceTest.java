@@ -27,7 +27,6 @@ public class OpenTelemetryResourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.opentelemetry.tracer.resources", "os")
             .setBeforeAllCustomizer(() -> System.setProperty(RESOURCE_ATTRIBUTES, "service.name=authservice"))
             .setAfterAllCustomizer(() -> System.getProperties().remove(RESOURCE_ATTRIBUTES))
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)

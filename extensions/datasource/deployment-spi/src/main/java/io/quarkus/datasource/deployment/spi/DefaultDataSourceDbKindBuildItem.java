@@ -24,7 +24,8 @@ public final class DefaultDataSourceDbKindBuildItem extends MultiBuildItem {
 
     public DefaultDataSourceDbKindBuildItem(String dbKind) {
         this.dbKind = dbKind;
-        String callerClassName = new RuntimeException().getStackTrace()[1].getClassName();
+        String callerClassName = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass()
+                .getCanonicalName();
         try {
             callerClass = Thread.currentThread().getContextClassLoader().loadClass(callerClassName);
         } catch (ClassNotFoundException e) {

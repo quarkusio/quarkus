@@ -18,20 +18,20 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, description = "%n"
-        + "List platforms and extensions for this project. ", footer = { "%nList modes:%n",
-                "relative: Active when invoked within a project unless an explicit release is specified. " +
-                        "The current project configuration will determine what extensions are listed, " +
-                        "with installed (available) extensions listed by default.%n",
-                "absolute: Active when invoked outside of a project or when an explicit release is specified. " +
-                        "All extensions for the specified release will be listed. " +
-                        "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" })
+@CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List platforms and extensions. ", footer = {
+        "%nList modes:%n",
+        "(relative). Active when invoked within a project unless an explicit release is specified. " +
+                "The current project configuration will determine what extensions are listed, " +
+                "with installed (available) extensions listed by default.%n",
+        "(absolute). Active when invoked outside of a project or when an explicit release is specified. " +
+                "All extensions for the specified release will be listed. " +
+                "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
 public class ProjectExtensionsList extends BaseBuildCommand implements Callable<Integer> {
 
     @Mixin
     RunModeOption runMode;
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute)%n")
+    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
 
     @CommandLine.Option(names = { "-i",
@@ -39,14 +39,14 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
     boolean installable = false;
 
     @CommandLine.Option(names = { "-s",
-            "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3, description = "Search filter on extension list (Java Pattern syntax).")
+            "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3, description = "Search for matching extensions (simple glob using '*' and '?').")
     String searchPattern;
 
     @CommandLine.Option(names = { "-c",
-            "--category" }, defaultValue = "", paramLabel = "CATEGORY_ID", order = 4, description = "Only list extensions from given category.")
+            "--category" }, defaultValue = "", paramLabel = "CATEGORY_ID", order = 4, description = "Only list extensions from the specified category.")
     String category;
 
-    @CommandLine.ArgGroup(heading = "%nOutput format%n")
+    @CommandLine.ArgGroup(heading = "%nOutput format:%n")
     ListFormatOptions format = new ListFormatOptions();
 
     @Override

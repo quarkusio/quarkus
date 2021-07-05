@@ -97,6 +97,10 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-common</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -225,9 +225,17 @@ public class DevServicesDatasourceProcessor {
         }
 
         if (devDbProvider.isDockerRequired() && !isDockerWorking.getAsBoolean()) {
-            log.warn("Please configure datasource URL for "
-                    + (dbName == null ? "default datasource" : dbName) + " or get a working docker instance");
-            return null;
+            String message = "Please configure the datasource URL for "
+                    + (dbName == null ? "the default datasource" : " datasource '" + dbName + "'")
+                    + " or ensure the Docker daemon is up and running.";
+            if (launchMode == LaunchMode.TEST) {
+                throw new IllegalStateException(message);
+            } else {
+                // in dev-mode we just want to warn users and allow them to recover
+                log.warn(message);
+                return null;
+            }
+
         }
 
         if (!enabled.isPresent()) {

@@ -177,7 +177,8 @@ public final class Results {
                 if (!(base instanceof Map)
                         // Just ignore the data map
                         || !((Map<?, ?>) base).containsKey(TemplateInstanceBase.DATA_MAP_KEY)) {
-                    builder.append(" on base object \"").append(base == null ? "null" : base.getClass().getName()).append("\"");
+                    builder.append(" on the base object \"").append(base == null ? "null" : base.getClass().getName())
+                            .append("\"");
                 }
                 return builder.toString();
             } else {

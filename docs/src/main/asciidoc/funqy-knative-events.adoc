@@ -117,7 +117,7 @@ quarkus.funqy.knative-events.mapping.configChain.response-source=configChain
 In this case, the configuration maps the incoming Cloud Event type `defaultChain.output` to the `configChain` function.
 The `configChain` function maps its response to the `annotated` Cloud Event type, and the Cloud Event source `configChain`.
 
-* `quarkus.funqy.knative-events.mapping.{function name}.trigger` sets the Cloud Event type that triggers a specific function
+* `quarkus.funqy.knative-events.mapping.{function name}.trigger` sets the Cloud Event type that triggers a specific function. It is possible to use the special value `*` as a catch-all value. The function will in this case be used for all event types.
 * `quarkus.funqy.knative-events.mapping.{function name}.response-type` sets the Cloud Event type of the response
 * `quarkus.funqy.knative-events.mapping.{function name}.resource-source` sets the Cloud Event source of the response
 

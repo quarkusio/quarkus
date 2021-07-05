@@ -130,6 +130,9 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             // map by type trigger
             invoker = typeTriggers.get(ceType);
             if (invoker == null) {
+                invoker = typeTriggers.get("*"); // Catch-all type
+            }
+            if (invoker == null) {
                 routingContext.fail(404);
                 log.error("Could not map ce-type header: " + ceType + " to a function");
                 return;

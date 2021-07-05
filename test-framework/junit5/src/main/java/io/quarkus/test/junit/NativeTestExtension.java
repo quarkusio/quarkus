@@ -1,5 +1,8 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
+import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_JAR_WAIT_TIME_SECONDS;
+import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
@@ -8,12 +11,16 @@ import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevDb;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -22,10 +29,13 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
+import io.quarkus.test.common.DefaultNativeImageLauncher;
+import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
+import io.quarkus.test.junit.launcher.NativeImageLauncherProvider;
 
 public class NativeTestExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestInstancePostProcessor {
@@ -147,11 +157,11 @@ public class NativeTestExtension
                     });
             additionalProperties.putAll(resourceManagerProps);
 
-            NativeImageLauncher launcher = new NativeImageLauncher(requiredTestClass);
+            NativeImageLauncher launcher = createLauncher(requiredTestClass);
             startLauncher(launcher, additionalProperties, () -> ssl = true);
 
-            final IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, launcher,
-                    sysPropRestore);
+            final IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager,
+                    launcher, sysPropRestore);
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
@@ -167,6 +177,20 @@ public class NativeTestExtension
             }
             throw e;
         }
+    }
+
+    private DefaultNativeImageLauncher createLauncher(Class<?> requiredTestClass) {
+        DefaultNativeImageLauncher launcher = new DefaultNativeImageLauncher();
+        Config config = LauncherUtil.installAndGetSomeConfig();
+        launcher.init(new NativeImageLauncherProvider.DefaultNativeImageInitContext(
+                config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
+                config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
+                Duration.ofSeconds(config.getValue("quarkus.test.jar-wait-time", OptionalLong.class)
+                        .orElse(DEFAULT_JAR_WAIT_TIME_SECONDS)),
+                config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
+                System.getProperty("native.image.path"),
+                requiredTestClass));
+        return launcher;
     }
 
     @Override

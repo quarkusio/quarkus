@@ -2,13 +2,27 @@ package io.quarkus.test.common;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 
-public interface ArtifactLauncher extends Closeable {
+public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extends Closeable {
+
+    void init(T t);
 
     void start() throws IOException;
 
-    void addSystemProperties(Map<String, String> systemProps);
+    void includeAsSysProps(Map<String, String> systemProps);
 
     boolean listensOnSsl();
+
+    interface InitContext {
+
+        int httpPort();
+
+        int httpsPort();
+
+        Duration waitTime();
+
+        String testProfile();
+    }
 }

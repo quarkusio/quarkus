@@ -12,7 +12,8 @@ import io.quarkus.logging.sentry.SentryHandlerValueFactory;
 import io.sentry.Breadcrumb;
 import io.sentry.SentryBaseEvent;
 import io.sentry.SentryEvent;
-import io.sentry.SentryTransaction;
+import io.sentry.protocol.SentryTransaction;
+import io.sentry.protocol.SentrySpan;
 import io.sentry.SpanContext;
 import io.sentry.SpanId;
 import io.sentry.SpanStatus;
@@ -90,6 +91,7 @@ class SentryProcessor {
                 SentryStackTrace.class.getName(),
                 SentryThread.class.getName(),
                 SentryTransaction.class.getName(),
+                SentrySpan.class.getName(),
                 User.class.getName());
     }
 }

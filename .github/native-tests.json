@@ -15,7 +15,7 @@
         {
             "category": "Data2",
             "timeout": 65,
-            "test-modules": "jpa, jpa-mysql, jpa-db2, jpa-oracle",
+            "test-modules": "jpa, jpa-mapping-xml/legacy-app, jpa-mapping-xml/modern-app, jpa-mysql, jpa-db2, jpa-oracle",
             "os-name": "ubuntu-latest"
         },
         {

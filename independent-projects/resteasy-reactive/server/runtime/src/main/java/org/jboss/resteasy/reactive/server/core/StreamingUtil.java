@@ -58,9 +58,14 @@ public class StreamingUtil {
         for (MessageBodyWriter<Object> writer : writers) {
             // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations 
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
-                // FIXME: spec doesn't really say what headers we should use here
-                writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
-                        Serialisers.EMPTY_MULTI_MAP, baos);
+                // FIXME: Hack to enforce double quotes being written (our JSON writers won't do due to some TCK hack)
+                if (entityClass.equals(String.class) && mediaType.toString().startsWith(MediaType.APPLICATION_JSON)) {
+                    baos.write(("\"" + entity + "\"").getBytes(StandardCharsets.UTF_8));
+                } else {
+                    // FIXME: spec doesn't really say what headers we should use here
+                    writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
+                            Serialisers.EMPTY_MULTI_MAP, baos);
+                }
                 wrote = true;
                 break;
             }

@@ -235,6 +235,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return Multi.createFrom().empty();
     }
 
+    @GET
+    @Path("/multiString")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Multi<String> getMultiString() {
+        return Multi.createFrom().items("Hello", "Stu");
+    }
+
     @POST
     @Path("/genericInput")
     public String genericInputTest(DataItem<Item> item) {

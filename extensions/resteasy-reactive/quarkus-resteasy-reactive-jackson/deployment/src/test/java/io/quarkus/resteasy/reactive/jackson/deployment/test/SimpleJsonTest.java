@@ -237,6 +237,14 @@ public class SimpleJsonTest {
                 .statusCode(200)
                 .contentType("application/json")
                 .body(Matchers.equalTo("[]"));
+        RestAssured
+                .with()
+                .get("/simple/multiString")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("[0]", Matchers.equalTo("Hello"))
+                .body("[1]", Matchers.equalTo("Stu"));
     }
 
     @Test

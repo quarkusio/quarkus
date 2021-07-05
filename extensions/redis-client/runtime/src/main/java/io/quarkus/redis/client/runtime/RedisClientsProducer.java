@@ -39,8 +39,8 @@ public class RedisClientsProducer {
                 RedisAPI redisAPI = RedisAPI.api(redis);
                 MutinyRedis mutinyRedis = new MutinyRedis(redis);
                 MutinyRedisAPI mutinyRedisAPI = new MutinyRedisAPI(redisAPI);
-                RedisClient redisClient = new RedisClientImpl(mutinyRedisAPI, timeout);
-                ReactiveRedisClient reactiveClient = new ReactiveRedisClientImpl(mutinyRedisAPI);
+                RedisClient redisClient = new RedisClientImpl(mutinyRedisAPI, mutinyRedis, timeout);
+                ReactiveRedisClient reactiveClient = new ReactiveRedisClientImpl(mutinyRedisAPI, mutinyRedis);
                 return new RedisAPIContainer(redis, redisAPI, redisClient, reactiveClient, mutinyRedis, mutinyRedisAPI);
             }
         });
@@ -52,9 +52,10 @@ public class RedisClientsProducer {
         Duration timeout = redisConfiguration.timeout.orElse(DEFAULT_TIMEOUT);
         RedisOptions options = RedisClientUtil.buildOptions(redisConfiguration);
         Redis redis = Redis.createClient(vertx, options);
+        MutinyRedis mutinyRedis = new MutinyRedis(redis);
         RedisAPI redisAPI = RedisAPI.api(redis);
         MutinyRedisAPI mutinyRedisAPI = new MutinyRedisAPI(redisAPI);
-        return new RedisClientImpl(mutinyRedisAPI, timeout);
+        return new RedisClientImpl(mutinyRedisAPI, mutinyRedis, timeout);
     }
 
     public ReactiveRedisClient getReactiveRedisClient(String name) {
@@ -63,8 +64,9 @@ public class RedisClientsProducer {
         RedisOptions options = RedisClientUtil.buildOptions(redisConfiguration);
         Redis redis = Redis.createClient(vertx, options);
         RedisAPI redisAPI = RedisAPI.api(redis);
+        MutinyRedis mutinyRedis = new MutinyRedis(redis);
         MutinyRedisAPI mutinyRedisAPI = new MutinyRedisAPI(redisAPI);
-        return new ReactiveRedisClientImpl(mutinyRedisAPI);
+        return new ReactiveRedisClientImpl(mutinyRedisAPI, mutinyRedis);
     }
 
     @PreDestroy

@@ -834,6 +834,10 @@ public interface ReactiveRedisClient {
 
     Response zscoreAndAwait(String arg0, String arg1);
 
+    Uni<Response> zunion(List<String> args);
+
+    Response zunionAndAwait(List<String> args);
+
     Uni<Response> zunionstore(List<String> args);
 
     Response zunionstoreAndAwait(List<String> args);

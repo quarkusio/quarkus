@@ -5,15 +5,19 @@ import java.util.List;
 
 import io.quarkus.redis.client.RedisClient;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.RedisAPI;
+import io.vertx.redis.client.Request;
 import io.vertx.redis.client.Response;
 
 class RedisClientImpl implements RedisClient {
     private final RedisAPI redisAPI;
+    private final MutinyRedis mutinyRedis;
     private final Duration timeout;
 
-    public RedisClientImpl(RedisAPI redisAPI, Duration timeout) {
+    public RedisClientImpl(RedisAPI redisAPI, MutinyRedis mutinyRedis, Duration timeout) {
         this.redisAPI = redisAPI;
+        this.mutinyRedis = mutinyRedis;
         this.timeout = timeout;
     }
 
@@ -1015,6 +1019,17 @@ class RedisClientImpl implements RedisClient {
     @Override
     public Response zscore(String arg0, String arg1) {
         return await(redisAPI.zscore(arg0, arg1));
+    }
+
+    @Override
+    public Response zunion(List<String> args) {
+        final io.vertx.mutiny.redis.client.Command ZUNION = Command.create("zunion", -3, 0, 0, 0, false, true, true, false);
+        final io.vertx.mutiny.redis.client.Request requestWithArgs = args.stream().reduce(
+                io.vertx.mutiny.redis.client.Request.cmd(ZUNION),
+                (request, s) -> request.arg(s),
+                (request, request2) -> request);
+
+        return await(mutinyRedis.send(requestWithArgs));
     }
 
     @Override

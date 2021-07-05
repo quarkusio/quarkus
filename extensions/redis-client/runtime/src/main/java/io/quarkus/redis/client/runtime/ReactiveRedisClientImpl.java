@@ -4,14 +4,18 @@ import java.util.List;
 
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Request;
 
 class ReactiveRedisClientImpl implements ReactiveRedisClient {
     private final RedisAPI redisAPI;
+    private final MutinyRedis mutinyRedis;
 
-    public ReactiveRedisClientImpl(RedisAPI redisAPI) {
+    public ReactiveRedisClientImpl(RedisAPI redisAPI, MutinyRedis mutinyRedis) {
         this.redisAPI = redisAPI;
+        this.mutinyRedis = mutinyRedis;
     }
 
     @Override
@@ -2007,6 +2011,22 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
     @Override
     public Response zscoreAndAwait(String arg0, String arg1) {
         return redisAPI.zscoreAndAwait(arg0, arg1);
+    }
+
+    @Override
+    public Uni<Response> zunion(List<String> args) {
+        final Command ZUNION = Command.create("zunion", -3, 0, 0, 0, false, true, true, false);
+        final io.vertx.mutiny.redis.client.Request requestWithArgs = args.stream().reduce(
+                io.vertx.mutiny.redis.client.Request.cmd(ZUNION),
+                (request, s) -> request.arg(s),
+                (request, request2) -> request);
+
+        return mutinyRedis.send(requestWithArgs);
+    }
+
+    @Override
+    public Response zunionAndAwait(List<String> args) {
+        return zunion(args).await().indefinitely();
     }
 
     @Override

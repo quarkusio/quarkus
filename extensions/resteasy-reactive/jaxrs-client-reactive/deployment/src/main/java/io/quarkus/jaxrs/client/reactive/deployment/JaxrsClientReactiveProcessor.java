@@ -28,6 +28,7 @@ import java.util.function.Function;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.AsyncInvoker;
+import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -53,6 +54,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -157,6 +159,10 @@ public class JaxrsClientReactiveProcessor {
     void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         serviceProviders.produce(new ServiceProviderBuildItem(ResponseBuilderFactory.class.getName(),
                 ClientResponseBuilderFactory.class.getName()));
+
+        serviceProviders.produce(new ServiceProviderBuildItem(ClientBuilder.class.getName(),
+                ClientBuilderImpl.class.getName()));
+
     }
 
     @BuildStep

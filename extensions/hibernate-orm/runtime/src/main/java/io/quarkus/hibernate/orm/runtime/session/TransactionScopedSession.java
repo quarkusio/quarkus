@@ -51,6 +51,7 @@ import org.hibernate.stat.SessionStatistics;
 
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 
 public class TransactionScopedSession implements Session {
 
@@ -107,7 +108,7 @@ public class TransactionScopedSession implements Session {
 
     private void checkBlocking() {
         if (!BlockingOperationControl.isBlockingAllowed()) {
-            throw new IllegalStateException(
+            throw new BlockingOperationNotAllowedException(
                     "You have attempted to perform a blocking operation on a IO thread. This is not allowed, as blocking the IO thread will cause major performance issues with your application. If you want to perform blocking EntityManager operations make sure you are doing it from a worker thread.");
         }
     }

@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.panache.test;
+package io.quarkus.hibernate.orm.panache.deployment.test;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,8 +30,7 @@ public class PanacheJAXBTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(JAXBEntity.class, JAXBTestResource.class)
-                    .addAsResource("application.properties"));
+                    .addClasses(JAXBEntity.class, JAXBTestResource.class));
 
     @Test
     public void testJaxbAnnotationTransfer() throws Exception {

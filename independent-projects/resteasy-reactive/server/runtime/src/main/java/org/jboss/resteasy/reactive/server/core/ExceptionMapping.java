@@ -35,6 +35,7 @@ public class ExceptionMapping {
         // we match superclasses only if not a WebApplicationException according to spec 3.3.4 Exceptions
         ExceptionMapper exceptionMapper = getExceptionMapper((Class<Throwable>) klass, context);
         if (exceptionMapper != null) {
+            context.requireCDIRequestScope();
             if (exceptionMapper instanceof ResteasyReactiveAsyncExceptionMapper) {
                 ((ResteasyReactiveAsyncExceptionMapper) exceptionMapper).asyncResponse(throwable,
                         new AsyncExceptionMapperContextImpl(context));

@@ -25,8 +25,8 @@ import picocli.CommandLine.UnmatchedArgumentException;
 
 @QuarkusMain
 @CommandLine.Command(name = "quarkus", versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = true, subcommands = {
-        Create.class, Build.class, Dev.class, ProjectExtensions.class, Completion.class,
-        Version.class }, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+        Create.class, Build.class, Dev.class, ProjectExtensions.class, Registry.class, Version.class,
+        Completion.class }, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     static {

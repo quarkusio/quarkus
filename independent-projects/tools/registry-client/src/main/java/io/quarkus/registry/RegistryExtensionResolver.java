@@ -74,4 +74,8 @@ class RegistryExtensionResolver {
     ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platform) throws RegistryResolutionException {
         return extensionResolver.resolvePlatformExtensions(platform);
     }
+
+    void clearCache() throws RegistryResolutionException {
+        extensionResolver.clearCache();
+    }
 }

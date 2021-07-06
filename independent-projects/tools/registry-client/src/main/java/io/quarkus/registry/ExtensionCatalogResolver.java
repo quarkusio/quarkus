@@ -469,13 +469,6 @@ public class ExtensionCatalogResolver {
         return catalog;
     }
 
-    private void ensureRegistriesConfigured() throws RegistryResolutionException {
-        final int registriesTotal = registries.size();
-        if (registriesTotal == 0) {
-            throw new RegistryResolutionException("No registries configured");
-        }
-    }
-
     public ExtensionCatalog resolveExtensionCatalog(Collection<ArtifactCoords> platforms)
             throws RegistryResolutionException {
         if (platforms.isEmpty()) {
@@ -516,6 +509,19 @@ public class ExtensionCatalogResolver {
         }
         appendNonPlatformExtensions(registriesByQuarkusCore, null, catalogs);
         return JsonCatalogMerger.merge(catalogs);
+    }
+
+    public void clearRegistryCache() throws RegistryResolutionException {
+        for (RegistryExtensionResolver registry : registries) {
+            registry.clearCache();
+        }
+    }
+
+    private void ensureRegistriesConfigured() throws RegistryResolutionException {
+        final int registriesTotal = registries.size();
+        if (registriesTotal == 0) {
+            throw new RegistryResolutionException("No registries configured");
+        }
     }
 
     private ExtensionCatalog resolvePlatformExtensions(ArtifactCoords bom, List<RegistryExtensionResolver> registries) {

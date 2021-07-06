@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-resteasy-mutiny-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.0.1.Final</version>
     </parent>
 
     <artifactId>quarkus-resteasy-mutiny-deployment</artifactId>

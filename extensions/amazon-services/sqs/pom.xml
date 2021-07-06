@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-amazon-services-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>2.0.1.Final</version>
     </parent>
 
     <artifactId>quarkus-amazon-sqs-parent</artifactId>

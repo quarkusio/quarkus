@@ -88,7 +88,6 @@ public class HibernateHotReloadTestCase {
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         TEST.modifyTestResourceFile("import.sql", new Function<String, String>() {
             @Override
@@ -101,7 +100,6 @@ public class HibernateHotReloadTestCase {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         TEST.modifyTestSourceFile(HibernateET.class, new Function<String, String>() {
             @Override
@@ -114,7 +112,6 @@ public class HibernateHotReloadTestCase {
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
     }
 
     private void assertBodyIs(String expectedBody) {

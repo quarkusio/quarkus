@@ -41,7 +41,6 @@ public class TestBrokenOnlyTestCase {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //start broken only mode
         RestAssured.post("q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-broken-only");
@@ -57,7 +56,6 @@ public class TestBrokenOnlyTestCase {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed()); //passing test should not have been run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifySourceFile(BrokenOnlyResource.class, new Function<String, String>() {
             @Override
@@ -70,7 +68,6 @@ public class TestBrokenOnlyTestCase {
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //now add a new failing test
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
@@ -84,7 +81,6 @@ public class TestBrokenOnlyTestCase {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //now make it pass
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
@@ -98,7 +94,6 @@ public class TestBrokenOnlyTestCase {
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
     }
 }

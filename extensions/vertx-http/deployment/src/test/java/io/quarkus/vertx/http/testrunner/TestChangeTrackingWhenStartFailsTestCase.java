@@ -39,7 +39,6 @@ public class TestChangeTrackingWhenStartFailsTestCase {
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //fail the startup
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
@@ -53,7 +52,6 @@ public class TestChangeTrackingWhenStartFailsTestCase {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(3L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
         //fail again
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
             @Override
@@ -66,7 +64,6 @@ public class TestChangeTrackingWhenStartFailsTestCase {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(3L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
         //now lets pass
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
             @Override
@@ -79,6 +76,5 @@ public class TestChangeTrackingWhenStartFailsTestCase {
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
     }
 }

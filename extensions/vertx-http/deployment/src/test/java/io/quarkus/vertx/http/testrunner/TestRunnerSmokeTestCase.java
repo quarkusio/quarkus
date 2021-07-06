@@ -45,7 +45,6 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(3L, ts.getTotalTestsFailed());
         Assertions.assertEquals(1L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         SuiteResult suiteResult = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/result")
                 .as(SuiteResult.class);
@@ -77,7 +76,6 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(2L, ts.getTotalTestsFailed());
         Assertions.assertEquals(2L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //fix the unit test
 
@@ -95,7 +93,6 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(1L, ts.getTotalTestsFailed());
         Assertions.assertEquals(3L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
             @Override
@@ -111,7 +108,6 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(0L, ts.getTotalTestsFailed());
         Assertions.assertEquals(4L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //disable the unit test
         test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
@@ -128,7 +124,6 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(0L, ts.getTotalTestsFailed());
         Assertions.assertEquals(2L, ts.getTotalTestsPassed());
         Assertions.assertEquals(2L, ts.getTotalTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //delete the unit test
         test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
@@ -145,7 +140,6 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(0L, ts.getTotalTestsFailed());
         Assertions.assertEquals(2L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
     }
 }

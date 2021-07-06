@@ -40,7 +40,6 @@ public class TestParameterizedTestCase {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyTestSourceFile(ParamET.class, new Function<String, String>() {
             @Override
@@ -53,7 +52,6 @@ public class TestParameterizedTestCase {
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(5L, ts.getTestsPassed()); //passing test should not have been run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
         Assertions.assertEquals(5L, ts.getTotalTestsPassed());
 
         test.modifySourceFile(HelloResource.class, new Function<String, String>() {
@@ -68,7 +66,6 @@ public class TestParameterizedTestCase {
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(4L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
     }
 }

@@ -38,7 +38,6 @@ public class UnitTestTypeTestCase {
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
     }
 }

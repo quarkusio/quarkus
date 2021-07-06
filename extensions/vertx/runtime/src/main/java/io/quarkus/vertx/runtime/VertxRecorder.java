@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
 
@@ -17,6 +18,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -24,6 +26,7 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.impl.VertxInternal;
 
 @Recorder
 public class VertxRecorder {
@@ -36,7 +39,7 @@ public class VertxRecorder {
     public void configureVertx(Supplier<Vertx> vertx, Map<String, ConsumeEvent> messageConsumerConfigurations,
             LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass) {
         VertxRecorder.vertx = vertx.get();
-        VertxRecorder.messageConsumers = new ArrayList<>();
+        VertxRecorder.messageConsumers = new CopyOnWriteArrayList<>();
 
         registerMessageConsumers(messageConsumerConfigurations);
         registerCodecs(codecByClass);
@@ -69,24 +72,48 @@ public class VertxRecorder {
     void registerMessageConsumers(Map<String, ConsumeEvent> messageConsumerConfigurations) {
         if (!messageConsumerConfigurations.isEmpty()) {
             EventBus eventBus = vertx.eventBus();
+            VertxInternal vi = (VertxInternal) VertxRecorder.vertx;
             CountDownLatch latch = new CountDownLatch(messageConsumerConfigurations.size());
-            final List<Throwable> registrationFailures = new ArrayList();
+            final List<Throwable> registrationFailures = new ArrayList<>();
             for (Entry<String, ConsumeEvent> entry : messageConsumerConfigurations.entrySet()) {
                 EventConsumerInvoker invoker = createInvoker(entry.getKey());
                 String address = entry.getValue().value();
-                MessageConsumer<Object> consumer;
-                if (entry.getValue().local()) {
-                    consumer = eventBus.localConsumer(address);
-                } else {
-                    consumer = eventBus.consumer(address);
-                }
-                consumer.handler(new Handler<Message<Object>>() {
+                // Create a context attached to each consumer
+                // If we don't all consumers will use the same event loop and so published messages (dispatched to all
+                // consumers) delivery is serialized.
+                Context context = vi.createEventLoopContext();
+                context.runOnContext(new Handler<Void>() {
                     @Override
-                    public void handle(Message<Object> m) {
-                        if (invoker.isBlocking()) {
-                            vertx.executeBlocking(new Handler<Promise<Object>>() {
-                                @Override
-                                public void handle(Promise<Object> event) {
+                    public void handle(Void x) {
+                        MessageConsumer<Object> consumer;
+                        if (entry.getValue().local()) {
+                            consumer = eventBus.localConsumer(address);
+                        } else {
+                            consumer = eventBus.consumer(address);
+                        }
+
+                        consumer.handler(new Handler<Message<Object>>() {
+                            @Override
+                            public void handle(Message<Object> m) {
+                                if (invoker.isBlocking()) {
+                                    context.executeBlocking(new Handler<Promise<Object>>() {
+                                        @Override
+                                        public void handle(Promise<Object> event) {
+                                            try {
+                                                invoker.invoke(m);
+                                            } catch (Exception e) {
+                                                if (m.replyAddress() == null) {
+                                                    // No reply handler
+                                                    throw wrapIfNecessary(e);
+                                                } else {
+                                                    m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                                }
+                                            }
+                                            event.complete();
+                                        }
+                                    }, invoker.isOrdered(), null);
+                                } else {
+                                    // Will run on the context used for the consumer registration
                                     try {
                                         invoker.invoke(m);
                                     } catch (Exception e) {
@@ -97,34 +124,22 @@ public class VertxRecorder {
                                             m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
                                         }
                                     }
-                                    event.complete();
-                                }
-                            }, invoker.isOrdered(), null);
-                        } else {
-                            try {
-                                invoker.invoke(m);
-                            } catch (Exception e) {
-                                if (m.replyAddress() == null) {
-                                    // No reply handler
-                                    throw wrapIfNecessary(e);
-                                } else {
-                                    m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
                                 }
                             }
-                        }
-                    }
-                });
-                consumer.completionHandler(new Handler<AsyncResult<Void>>() {
+                        });
 
-                    @Override
-                    public void handle(AsyncResult<Void> ar) {
-                        latch.countDown();
-                        if (ar.failed()) {
-                            registrationFailures.add(ar.cause());
-                        }
+                        consumer.completionHandler(new Handler<AsyncResult<Void>>() {
+                            @Override
+                            public void handle(AsyncResult<Void> ar) {
+                                latch.countDown();
+                                if (ar.failed()) {
+                                    registrationFailures.add(ar.cause());
+                                }
+                            }
+                        });
+                        messageConsumers.add(consumer);
                     }
                 });
-                messageConsumers.add(consumer);
             }
             try {
                 latch.await();

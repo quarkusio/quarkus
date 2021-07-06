@@ -30,4 +30,8 @@ public class MessageFormat {
         return helpOption(key, description) + toggleStatus(enabled);
     }
 
+    public static String helpOption(String key, String description, String status, String color) {
+        return helpOption(key, description) + " (" + color + status + RESET + ")";
+    }
+
 }

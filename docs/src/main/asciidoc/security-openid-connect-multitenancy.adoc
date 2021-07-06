@@ -319,8 +319,8 @@ package io.quarkus.it.keycloak;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
-import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped

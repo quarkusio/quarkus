@@ -611,6 +611,10 @@ public class Endpoint {
 }
 ----
 
+NOTE: Response filters are not invoked on streamed responses, because they would give a false
+impression that you can set headers or HTTP status codes, which is not true after the initial
+response.
+
 === Server-Sent Event (SSE) support
 
 If you want to stream JSON objects in your response, you can use 

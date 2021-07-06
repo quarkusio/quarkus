@@ -11,6 +11,8 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.TlsConfig;
+
 public class SpringCloudConfigServerClientConfigSourceProvider implements ConfigSourceProvider {
 
     private static final Logger log = Logger.getLogger(SpringCloudConfigServerClientConfigSourceProvider.class);
@@ -23,12 +25,12 @@ public class SpringCloudConfigServerClientConfigSourceProvider implements Config
 
     public SpringCloudConfigServerClientConfigSourceProvider(SpringCloudConfigClientConfig springCloudConfigClientConfig,
             String applicationName,
-            String activeProfile) {
+            String activeProfile, TlsConfig tlsConfig) {
         this.springCloudConfigClientConfig = springCloudConfigClientConfig;
         this.applicationName = applicationName;
         this.activeProfile = activeProfile;
 
-        springCloudConfigClientGateway = new VertxSpringCloudConfigGateway(springCloudConfigClientConfig);
+        springCloudConfigClientGateway = new VertxSpringCloudConfigGateway(springCloudConfigClientConfig, tlsConfig);
     }
 
     @Override

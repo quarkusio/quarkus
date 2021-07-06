@@ -42,6 +42,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_SSE_ELEMENT_TYPE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
@@ -623,11 +624,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             case VOID:
                 return returnType;
             case PARAMETERIZED_TYPE:
-                // NOTE: same code in QuarkusRestRecorder.getNonAsyncReturnType
+                // NOTE: same code in RuntimeResourceDeployment.getNonAsyncReturnType
                 ParameterizedType parameterizedType = returnType.asParameterizedType();
                 if (COMPLETION_STAGE.equals(parameterizedType.name())
                         || UNI.equals(parameterizedType.name())
-                        || MULTI.equals(parameterizedType.name())) {
+                        || MULTI.equals(parameterizedType.name())
+                        || REST_RESPONSE.equals(parameterizedType.name())) {
                     return parameterizedType.arguments().get(0);
                 }
                 return returnType;

@@ -160,6 +160,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
+    public static final DotName TRANSACTIONAL = DotName.createSimple("javax.transaction.Transactional");
 
     public static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
     public static final DotName LIST = DotName.createSimple(List.class.getName());

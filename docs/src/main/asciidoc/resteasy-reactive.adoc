@@ -1000,6 +1000,10 @@ public class Endpoint {
 }
 ----
 
+If a method or class is annotated with `javax.transaction.Transactional` then it will also be treated as a blocking
+method. This is because JTA is a blocking technology, and is generally used with other blocking technology such as
+Hibernate and JDBC. An explicit `@Blocking` or `@NonBlocking` on the class will override this behaviour.
+
 === Exception mapping
 
 If your application needs to return non-nominal HTTP codes in error cases, the best is

@@ -13,7 +13,7 @@ public class BuildOptions {
     @CommandLine.Option(order = 5, names = { "--offline" }, description = "Work offline.", defaultValue = "false")
     public boolean offline = false;
 
-    @CommandLine.Option(order = 6, names = { "--tests" }, description = "Run tests.", negatable = true)
+    @CommandLine.Option(order = 6, names = { "--skip-tests" }, description = "Skip tests.")
     public boolean runTests = true;
 
     public boolean skipTests() {

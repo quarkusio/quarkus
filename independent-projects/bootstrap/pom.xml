@@ -25,6 +25,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>
     <modules>
         <module>bom</module>

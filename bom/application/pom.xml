@@ -93,7 +93,7 @@
         <hibernate-orm.version>5.5.3.Final</hibernate-orm.version>
         <hibernate-reactive.version>1.0.0.CR7</hibernate-reactive.version>
         <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
-        <hibernate-search.version>6.0.4.Final</hibernate-search.version>
+        <hibernate-search.version>6.0.5.Final</hibernate-search.version>
         <narayana.version>5.12.0.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.11</agroal.version>
@@ -130,7 +130,7 @@
         <assertj.version>3.20.2</assertj.version>
         <infinispan.version>12.1.4.Final</infinispan.version>
         <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
-        <caffeine.version>2.9.1</caffeine.version>
+        <caffeine.version>2.9.2</caffeine.version>
         <netty.version>4.1.65.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>

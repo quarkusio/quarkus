@@ -82,6 +82,12 @@ public class CertificateConfig {
     public Optional<String> keyStoreKeyAlias;
 
     /**
+     * An optional parameter to define the password for the key, in case it's different from {@link #keyStorePassword}.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreKeyPassword;
+
+    /**
      * An optional trust store which holds the certificate information of the certificates to trust.
      */
     @ConfigItem

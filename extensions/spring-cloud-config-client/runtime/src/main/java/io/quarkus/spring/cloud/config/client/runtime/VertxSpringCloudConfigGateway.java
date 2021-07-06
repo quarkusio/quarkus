@@ -18,6 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.runtime.TlsConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.KeyStoreOptionsBase;
@@ -43,7 +44,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private final WebClient webClient;
     private final URI baseURI;
 
-    public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig springCloudConfigClientConfig) {
+    public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig springCloudConfigClientConfig, TlsConfig tlsConfig) {
         this.springCloudConfigClientConfig = springCloudConfigClientConfig;
         try {
             this.baseURI = determineBaseUri(springCloudConfigClientConfig);
@@ -52,16 +53,17 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                     + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
         }
         this.vertx = Vertx.vertx();
-        this.webClient = createHttpClient(vertx, springCloudConfigClientConfig);
+        this.webClient = createHttpClient(vertx, springCloudConfigClientConfig, tlsConfig);
     }
 
-    public static WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig springCloudConfig) {
+    public static WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig springCloudConfig,
+            TlsConfig tlsConfig) {
 
         WebClientOptions webClientOptions = new WebClientOptions()
                 .setConnectTimeout((int) springCloudConfig.connectionTimeout.toMillis())
                 .setIdleTimeout((int) springCloudConfig.readTimeout.getSeconds());
 
-        boolean trustAll = springCloudConfig.trustCerts;
+        boolean trustAll = springCloudConfig.trustCerts || tlsConfig.trustAll;
         try {
             if (springCloudConfig.trustStore.isPresent()) {
                 Path trustStorePath = springCloudConfig.trustStore.get();

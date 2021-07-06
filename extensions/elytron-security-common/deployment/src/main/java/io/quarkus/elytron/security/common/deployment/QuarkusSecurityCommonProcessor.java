@@ -4,7 +4,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.elytron.security.common.BcryptUtil;
@@ -19,8 +18,8 @@ public class QuarkusSecurityCommonProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void registerPasswordProvider(ElytronCommonRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem) {
-        recorder.registerPasswordProvider(shutdownContextBuildItem);
+    public void registerPasswordProvider(ElytronCommonRecorder recorder) {
+        recorder.registerPasswordProvider();
     }
 
     /**

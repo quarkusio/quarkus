@@ -622,7 +622,8 @@ public class VertxHttpRecorder {
                     keystorePassword,
                     sslConfig.certificate.keyStoreFileType,
                     sslConfig.certificate.keyStoreProvider,
-                    sslConfig.certificate.keyStoreKeyAlias);
+                    sslConfig.certificate.keyStoreKeyAlias,
+                    sslConfig.certificate.keyStoreKeyPassword);
             serverOptions.setKeyCertOptions(options);
         } else {
             return null;
@@ -637,7 +638,8 @@ public class VertxHttpRecorder {
                     trustStorePassword.get(),
                     sslConfig.certificate.trustStoreFileType,
                     sslConfig.certificate.trustStoreProvider,
-                    sslConfig.certificate.trustStoreCertAlias);
+                    sslConfig.certificate.trustStoreCertAlias,
+                    Optional.empty());
             serverOptions.setTrustOptions(options);
         }
 
@@ -664,22 +666,23 @@ public class VertxHttpRecorder {
         return serverOptions;
     }
 
-    private static KeyStoreOptions createKeyStoreOptions(Path keyStorePath, String password, Optional<String> keyStoreFileType,
-            Optional<String> keyStoreProvider, Optional<String> keyStoreAlias) throws IOException {
+    private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,
+            Optional<String> provider, Optional<String> alias, Optional<String> aliasPassword) throws IOException {
         final String type;
-        if (keyStoreFileType.isPresent()) {
-            type = keyStoreFileType.get().toLowerCase();
+        if (fileType.isPresent()) {
+            type = fileType.get().toLowerCase();
         } else {
-            type = findKeystoreFileType(keyStorePath);
+            type = findKeystoreFileType(path);
         }
 
-        byte[] data = getFileContent(keyStorePath);
+        byte[] data = getFileContent(path);
         KeyStoreOptions options = new KeyStoreOptions()
                 .setPassword(password)
                 .setValue(Buffer.buffer(data))
                 .setType(type.toUpperCase())
-                .setProvider(keyStoreProvider.orElse(null))
-                .setAlias(keyStoreAlias.orElse(null));
+                .setProvider(provider.orElse(null))
+                .setAlias(alias.orElse(null))
+                .setAliasPassword(aliasPassword.orElse(null));
         return options;
     }
 

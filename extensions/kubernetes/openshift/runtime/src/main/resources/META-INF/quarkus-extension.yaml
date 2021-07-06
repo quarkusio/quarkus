@@ -5,7 +5,7 @@ metadata:
   keywords:
   - "kubernetes"
   - "openshift"
-  guide: "https://quarkus.io/guides/openshift"
+  guide: "https://quarkus.io/guides/deploying-to-openshift"
   categories:
   - "cloud"
   status: "stable"

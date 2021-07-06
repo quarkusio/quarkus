@@ -224,8 +224,10 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     // Register the quarkus-generated-code
                     for (String provider : QuarkusGenerateCode.CODE_GENERATION_PROVIDER) {
-                        mainSourceSet.getJava().srcDir(new File(generatedSourceSet.getJava().getOutputDir(), provider));
-                        testSourceSet.getJava().srcDir(new File(generatedTestSourceSet.getJava().getOutputDir(), provider));
+                        mainSourceSet.getJava().srcDir(
+                                new File(generatedSourceSet.getJava().getClassesDirectory().get().getAsFile(), provider));
+                        testSourceSet.getJava().srcDir(
+                                new File(generatedTestSourceSet.getJava().getClassesDirectory().get().getAsFile(), provider));
                     }
 
                 });

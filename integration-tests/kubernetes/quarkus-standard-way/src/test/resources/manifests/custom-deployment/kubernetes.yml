@@ -15,11 +15,11 @@ spec:
         app: quickstart
     spec:
       containers:
-      - name: kubernetes-with-existing-manifest
-        image: quickstart:1.0
-        ports:
-        - containerPort: 80
-          name: http
-        env:
-          - name: FOO
-            value: BAR
+        - name: kubernetes-with-existing-manifest
+          image: quickstart:1.0
+          ports:
+            - containerPort: 80
+              name: http
+          env:
+            - name: FOO
+              value: BAR

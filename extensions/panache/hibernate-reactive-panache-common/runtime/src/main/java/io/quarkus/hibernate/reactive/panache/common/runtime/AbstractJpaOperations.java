@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -116,35 +117,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         if (io.vertx.core.Context.isOnVertxThread()) {
             return Uni.createFrom().item(Arc.container().instance(Mutiny.Session.class).get());
         } else {
-            // FIXME: we may need context propagation
-            Vertx vertx = Arc.container().instance(Vertx.class).get();
-            Executor executor = runnable -> {
-                // this will be the context for a VertxThread, or a ThreadLocal context otherwise, but not null
-                Context context = vertx.getOrCreateContext();
-                // currentContext() returns null for non-VertxThread
-                if (Vertx.currentContext() == context) {
-                    runnable.run();
-                } else {
-                    // this needs to be sync
-                    CompletableFuture<Void> cf = new CompletableFuture<>();
-                    vertx.runOnContext(v -> {
-                        try {
-                            runnable.run();
-                            cf.complete(null);
-                        } catch (Throwable t) {
-                            cf.completeExceptionally(t);
-                        }
-                    });
-                    try {
-                        cf.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-            };
-            return Uni.createFrom().item(() -> Arc.container().instance(Mutiny.Session.class).get())
-                    .runSubscriptionOn(executor);
+            throw new IllegalStateException("You can only use Panache Reactive in a reactive context (on a Vert.x Thread).");
         }
     }
 

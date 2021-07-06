@@ -159,6 +159,7 @@
         <flyway.version>7.14.0</flyway.version>
         <yasson.version>1.0.9</yasson.version>
         <liquibase.version>4.4.3</liquibase.version>
+        <liquibase-mongodb.version>4.4.3</liquibase-mongodb.version>
         <snakeyaml.version>1.29</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <neo4j-java-driver.version>4.3.4</neo4j-java-driver.version>
@@ -818,6 +819,16 @@
                 <artifactId>quarkus-liquibase-deployment</artifactId>
                 <version>${project.version}</version>
              </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-liquibase-mongodb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-liquibase-mongodb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-orm</artifactId>
@@ -5060,6 +5071,11 @@
                         <artifactId>jaxb-api</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.liquibase.ext</groupId>
+                <artifactId>liquibase-mongodb</artifactId>
+                <version>${liquibase-mongodb.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.yaml</groupId>

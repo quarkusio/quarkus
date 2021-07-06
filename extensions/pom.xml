@@ -175,6 +175,7 @@
         <!-- Database migrations -->
         <module>flyway</module>
         <module>liquibase</module>
+        <module>liquibase-mongodb</module>
 
         <!-- Vault -->
         <module>vault</module>

@@ -180,6 +180,7 @@
                 <module>elytron-undertow</module>
                 <module>flyway</module>
                 <module>liquibase</module>
+                <module>liquibase-mongodb</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
                 <module>oidc-client-reactive</module>

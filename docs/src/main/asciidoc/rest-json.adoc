@@ -182,6 +182,7 @@ If you don't rely on the JSON default, it is heavily recommended to annotate you
 It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
 ====
 
+[[json]]
 === Configuring JSON support
 
 ==== Jackson

@@ -18,20 +18,20 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, description = "%n"
-        + "List platforms and extensions for this project. ", footer = { "%nList modes:%n",
-                "relative: Active when invoked within a project unless an explicit release is specified. " +
-                        "The current project configuration will determine what extensions are listed, " +
-                        "with installed (available) extensions listed by default.%n",
-                "absolute: Active when invoked outside of a project or when an explicit release is specified. " +
-                        "All extensions for the specified release will be listed. " +
-                        "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" })
+@CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List platforms and extensions. ", footer = {
+        "%nList modes:%n",
+        "(relative). Active when invoked within a project unless an explicit release is specified. " +
+                "The current project configuration will determine what extensions are listed, " +
+                "with installed (available) extensions listed by default.%n",
+        "(absolute). Active when invoked outside of a project or when an explicit release is specified. " +
+                "All extensions for the specified release will be listed. " +
+                "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
 public class ProjectExtensionsList extends BaseBuildCommand implements Callable<Integer> {
 
     @Mixin
     RunModeOption runMode;
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute)%n")
+    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
 
     @CommandLine.Option(names = { "-i",
@@ -39,10 +39,14 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
     boolean installable = false;
 
     @CommandLine.Option(names = { "-s",
-            "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3, description = "Search filter on extension list (Java Pattern syntax).")
+            "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3, description = "Search for matching extensions (simple glob using '*' and '?').")
     String searchPattern;
 
-    @CommandLine.ArgGroup(heading = "%nOutput format%n")
+    @CommandLine.Option(names = { "-c",
+            "--category" }, defaultValue = "", paramLabel = "CATEGORY_ID", order = 4, description = "Only list extensions from the specified category.")
+    String category;
+
+    @CommandLine.ArgGroup(heading = "%nOutput format:%n")
     ListFormatOptions format = new ListFormatOptions();
 
     @Override
@@ -53,24 +57,33 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
 
             // Test for an existing project
             BuildTool buildTool = QuarkusProjectHelper.detectExistingBuildTool(projectRoot()); // nullable
+            boolean categorySet = category != null && !category.isBlank();
 
             if (buildTool == null || targetQuarkusVersion.isPlatformSpecified() || targetQuarkusVersion.isStreamSpecified()) {
                 // do not evaluate installables for list of arbitrary version (project-agnostic)
                 installable = false;
+                // check if any format was specified
+                boolean formatSpecified = format.isSpecified();
                 // show origins by default
                 format.useOriginsUnlessSpecified();
 
                 if (runMode.isDryRun()) {
                     return dryRunList(spec.commandLine().getHelp(), null);
                 }
-                return listPlatformExtensions();
+
+                Integer exitCode = listPlatformExtensions();
+                printHints(buildTool, !formatSpecified, !categorySet, buildTool != null);
+                return exitCode;
             } else {
                 BuildSystemRunner runner = getRunner();
 
                 if (runMode.isDryRun()) {
                     return dryRunList(spec.commandLine().getHelp(), runner.getBuildTool());
                 }
-                return runner.listExtensions(runMode, format, installable, searchPattern);
+
+                Integer exitCode = runner.listExtensions(runMode, format, installable, searchPattern, category);
+                printHints(buildTool, !format.isSpecified(), installable && !categorySet, installable);
+                return exitCode;
             }
         } catch (Exception e) {
             return output.handleCommandException(e,
@@ -98,6 +111,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
         dryRunOutput.put("List format", format.getFormatString());
         dryRunOutput.put("List installable extensions", Boolean.toString(installable));
         dryRunOutput.put("Search pattern", searchPattern);
+        dryRunOutput.put("Category", category);
 
         output.info(help.createTextTable(dryRunOutput).toString());
         return CommandLine.ExitCode.OK;
@@ -112,9 +126,35 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
                 .all(true)
                 .format(format.getFormatString())
                 .search(searchPattern)
+                .category(category)
+                .batchMode(runMode.isBatchMode())
                 .execute();
 
         return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+    }
+
+    private void printHints(BuildTool buildTool, boolean formatHint, boolean filterHint, boolean addExtensionHint) {
+        if (runMode.isBatchMode())
+            return;
+
+        if (formatHint) {
+            output.info("");
+            output.info(ListExtensions.MORE_INFO_HINT, "--full");
+        }
+
+        if (filterHint) {
+            output.info("");
+            output.info(ListExtensions.FILTER_HINT, "--category \"categoryId\"");
+        }
+
+        if (addExtensionHint) {
+            output.info("");
+            if (BuildTool.GRADLE.equals(buildTool) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildTool)) {
+                output.info(ListExtensions.ADD_EXTENSION_HINT, "build.gradle", "quarkus extension add \"artifactId\"");
+            } else if (BuildTool.MAVEN.equals(buildTool)) {
+                output.info(ListExtensions.ADD_EXTENSION_HINT, "pom.xml", "quarkus extension add \"artifactId\"");
+            }
+        }
     }
 
     @Override

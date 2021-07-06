@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
@@ -24,21 +25,21 @@ import picocli.CommandLine;
 
 public interface BuildSystemRunner {
 
-    static BuildSystemRunner getRunner(OutputOptionMixin output, RegistryClientMixin registryClient, Path projectRoot,
-            BuildTool buildTool) {
+    static BuildSystemRunner getRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions,
+            RegistryClientMixin registryClient, Path projectRoot, BuildTool buildTool) {
         if (buildTool == null) {
             throw new IllegalStateException("Is this a project directory? Unable to find a build file in: " + projectRoot);
         }
         switch (buildTool) {
             default:
             case MAVEN:
-                return new MavenRunner(output, projectRoot);
+                return new MavenRunner(output, propertiesOptions, projectRoot);
             case GRADLE_KOTLIN_DSL:
-                return new GradleRunner(output, projectRoot, BuildTool.GRADLE_KOTLIN_DSL);
+                return new GradleRunner(output, propertiesOptions, projectRoot, BuildTool.GRADLE_KOTLIN_DSL);
             case GRADLE:
-                return new GradleRunner(output, projectRoot, BuildTool.GRADLE);
+                return new GradleRunner(output, propertiesOptions, projectRoot, BuildTool.GRADLE);
             case JBANG:
-                return new JBangRunner(output, registryClient, projectRoot);
+                return new JBangRunner(output, propertiesOptions, registryClient, projectRoot);
         }
     }
 
@@ -83,18 +84,20 @@ public interface BuildSystemRunner {
         return getProjectRoot().relativize(absolutePath).toString();
     }
 
-    Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern)
+    Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format)
+            throws Exception;
+
+    Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
+            String category)
             throws Exception;
 
     Integer addExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
     Integer removeExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
-    BuildCommandArgs prepareBuild(BuildOptions buildOptions, PropertiesOptions propertiesOptions, RunModeOption runMode,
-            List<String> params);
+    BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 
-    List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
-            DebugOptions debugOptions,
+    List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
             List<String> params);
 
     Path getProjectRoot();

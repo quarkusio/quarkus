@@ -292,7 +292,7 @@ GraphiQL UI is a great tool permitting easy interaction with your GraphQL APIs.
 The Quarkus `smallrye-graphql` extension ships with `GraphiQL` and enables it by default in `dev` and `test` modes,
 but it can also be explicitly configured for `production` mode as well.
 
-GraphiQL can be accessed from http://localhost:8080/graphql-ui/ .
+GraphiQL can be accessed from http://localhost:8080/q/graphql-ui/ .
 
 image:graphql-ui-screenshot01.png[alt=GraphQL UI]
 

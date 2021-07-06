@@ -20,26 +20,27 @@ import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
 @CommandLine.Command(name = "cli", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Create a Quarkus command-line project.", description = "%n"
-        + "This command will create a Java project in a new ARTIFACT-ID directory. ", footer = { "%n"
-                + "Using default values: a new Java project will be created in a 'code-with-quarkus' directory; "
-                + "it will use Maven to build an artifact with groupId='org.acme', artifactId='code-with-quarkus', and version='1.0.0-SNAPSHOT'.%n" })
+        + "This command will create a Java project in a new ARTIFACT-ID directory.", footer = { "%n"
+                + "For example (using default values), a new Java project will be created in a 'code-with-quarkus' directory; "
+                + "it will use Maven to build an artifact with groupId='org.acme', artifactId='code-with-quarkus', and version='1.0.0-SNAPSHOT'."
+                + "%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class CreateCli extends BaseCreateCommand {
     @Mixin
     CreateProjectMixin createProject;
 
-    @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nProject identifiers%n")
+    @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nProject identifiers:%n")
     TargetGAVGroup gav = new TargetGAVGroup();
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version%n")
+    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version:%n")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
 
-    @CommandLine.ArgGroup(order = 3, heading = "%nBuild tool (Default: Maven)%n")
+    @CommandLine.ArgGroup(order = 3, heading = "%nBuild tool (Maven):%n")
     TargetBuildToolGroup targetBuildTool = new TargetBuildToolGroup();
 
-    @CommandLine.ArgGroup(order = 4, heading = "%nTarget language (Default: Java)%n")
+    @CommandLine.ArgGroup(order = 4, heading = "%nTarget language (Java):%n")
     TargetLanguageGroup targetLanguage = new TargetLanguageGroup();
 
-    @CommandLine.ArgGroup(order = 5, exclusive = false, heading = "%nCode Generation%n")
+    @CommandLine.ArgGroup(order = 5, exclusive = false, heading = "%nCode Generation:%n")
     CodeGenerationGroup codeGeneration = new CodeGenerationGroup();
 
     @CommandLine.ArgGroup(order = 6, exclusive = false, validate = false)
@@ -58,7 +59,9 @@ public class CreateCli extends BaseCreateCommand {
 
             createProject.setSingleProjectGAV(gav);
             createProject.setTestOutputDirectory(output.getTestDirectory());
-            createProject.projectRoot(); // verify project directories early
+            if (createProject.checkProjectRootAlreadyExists(output)) {
+                return CommandLine.ExitCode.USAGE;
+            }
 
             BuildTool buildTool = targetBuildTool.getBuildTool(BuildTool.MAVEN);
             SourceType sourceType = targetLanguage.getSourceType(buildTool, extensions, output);
@@ -76,9 +79,14 @@ public class CreateCli extends BaseCreateCommand {
             } else {
                 success = new CreateProjectCommandHandler().execute(invocation).isSuccess();
             }
-            return success ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+
+            if (success) {
+                output.info(
+                        "Navigate into this directory and get started: " + spec.root().qualifiedName() + " dev");
+                return CommandLine.ExitCode.OK;
+            }
+            return CommandLine.ExitCode.SOFTWARE;
         } catch (Exception e) {
-            output.error("Project creation failed, " + e.getMessage());
             return output.handleCommandException(e,
                     "Unable to create project: " + e.getMessage());
         }

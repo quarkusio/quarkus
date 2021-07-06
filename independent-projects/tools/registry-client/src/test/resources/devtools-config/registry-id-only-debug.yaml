@@ -1,0 +1,4 @@
+---
+debug: true
+registries:
+- "registry.quarkus.io"

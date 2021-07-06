@@ -2905,26 +2905,5 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>jdk16-workarounds</id>
-            <activation>
-                <jdk>[16,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <!-- It seems there is no way preventing add-opens to be propagated to AllConfigGenerator
-                         which fails due to https://github.com/quarkusio/quarkus/issues/16862
-                         (and add-opens is only required until https://github.com/quarkusio/quarkus/issues/16806#issuecomment-834788411).
-                         So skip the entire plugin until then. -->
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 </project>

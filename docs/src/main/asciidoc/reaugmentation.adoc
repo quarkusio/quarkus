@@ -10,8 +10,10 @@ include::./attributes.adoc[]
 == What is augmentation?
 
 Quarkus application configuration may include two types of configuration options: 
+
 - Build time options, handled during the application build time;
 - Runtime options, that may be adjusted after the application has been built but before it has been launched.
+
 The augmentation is a phase of an application build process during which the byte code of the application is optimized according to the application build time configuration.
 Initialization steps that used to happen when an EAR file was deployed on a Jakarta EE server such as parsing static configuration, creating proxy instances, etc. now happen at augmentation time.
 CDI beans added after augmentation won't work (because of the missing proxy classes) as well as build time properties (e.g. `quarkus.datasource.db-kind`) changed after augmentation will be ignored.

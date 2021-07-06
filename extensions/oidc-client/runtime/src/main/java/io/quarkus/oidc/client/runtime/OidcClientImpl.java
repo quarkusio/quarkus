@@ -120,9 +120,11 @@ public class OidcClientImpl implements OidcClient {
             JsonObject json = resp.bodyAsJsonObject();
             final String accessToken = json.getString(oidcConfig.grant.accessTokenProperty);
             final String refreshToken = json.getString(oidcConfig.grant.refreshTokenProperty);
+            final Object expiresInValue = json.getValue(oidcConfig.grant.expiresInProperty);
             Long accessTokenExpiresAt;
-            Long accessTokenExpiresIn = json.getLong(oidcConfig.grant.expiresInProperty);
-            if (accessTokenExpiresIn != null) {
+            if (expiresInValue != null) {
+                long accessTokenExpiresIn = expiresInValue instanceof Number ? ((Number) expiresInValue).longValue()
+                        : Long.parseLong(expiresInValue.toString());
                 accessTokenExpiresAt = Instant.now().getEpochSecond() + accessTokenExpiresIn;
             } else {
                 accessTokenExpiresAt = getExpiresJwtClaim(accessToken);

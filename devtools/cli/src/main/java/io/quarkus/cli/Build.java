@@ -9,23 +9,19 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.BuildOptions;
-import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 
-@CommandLine.Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, showEndOfOptionsDelimiterInUsageHelp = true, description = "Build the current project.")
+@CommandLine.Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Build extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Mixin
     protected RunModeOption runMode;
 
-    @CommandLine.ArgGroup(order = 1, exclusive = false, validate = false, heading = "%nBuild options%n")
+    @CommandLine.ArgGroup(order = 1, exclusive = false, validate = false, heading = "%nBuild options:%n")
     BuildOptions buildOptions = new BuildOptions();
-
-    @CommandLine.ArgGroup(order = 2, exclusive = false, validate = false)
-    PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     @Parameters(description = "Additional parameters passed to the build system")
     List<String> params = new ArrayList<>();
@@ -37,8 +33,7 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
-            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, propertiesOptions, runMode,
-                    params);
+            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, runMode, params);
 
             if (runMode.isDryRun()) {
                 dryRunBuild(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs);

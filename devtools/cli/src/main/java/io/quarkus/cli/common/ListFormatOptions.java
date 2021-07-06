@@ -3,10 +3,14 @@ package io.quarkus.cli.common;
 import picocli.CommandLine;
 
 public class ListFormatOptions {
-    @CommandLine.Option(names = { "--name" }, order = 4, description = "Display extension name only.")
+
+    @CommandLine.Option(names = { "--id" }, order = 4, description = "Display extension artifactId only. (default)")
+    boolean id = false;
+
+    @CommandLine.Option(names = { "--name" }, hidden = true, description = "Display extension artifactId only. (deprecated)")
     boolean name = false;
 
-    @CommandLine.Option(names = { "--concise" }, order = 5, description = "Display extension name and description.")
+    @CommandLine.Option(names = { "--concise" }, order = 5, description = "Display extension name and artifactId.")
     boolean concise = false;
 
     @CommandLine.Option(names = {
@@ -22,14 +26,21 @@ public class ListFormatOptions {
      * make origins true. Used with specific platform list.
      */
     public void useOriginsUnlessSpecified() {
-        if (name || concise || full || origins) {
+        if (id || name || concise || full || origins) {
             return;
         }
         origins = true;
     }
 
+    /**
+     * Check if any format has been specified on the command line.
+     */
+    public boolean isSpecified() {
+        return id || name || concise || full || origins;
+    }
+
     public String getFormatString() {
-        String formatString = "name";
+        String formatString = "id";
         if (concise)
             formatString = "concise";
         else if (full)

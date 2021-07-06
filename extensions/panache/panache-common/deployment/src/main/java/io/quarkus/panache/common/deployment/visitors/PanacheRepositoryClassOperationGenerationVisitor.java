@@ -16,6 +16,7 @@ import java.util.StringJoiner;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -126,7 +127,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
             if (!userMethods.contains(method.name() + "/" + descriptor)) {
                 AnnotationInstance bridge = method.annotation(PanacheConstants.DOTNAME_GENERATE_BRIDGE);
                 if (bridge != null) {
-                    generateModelBridge(method);
+                    generateModelBridge(method, bridge);
                     if (needsJvmBridge(method)) {
                         generateJvmBridge(method);
                     }
@@ -200,7 +201,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
 
     }
 
-    protected void generateModelBridge(MethodInfo method) {
+    protected void generateModelBridge(MethodInfo method, AnnotationInstance bridge) {
         // JpaOperations erases the Id type to Object
         List<org.jboss.jandex.Type> parameters = method.parameters();
 
@@ -213,17 +214,28 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         loadOperations(mv);
-        loadArguments(parameters, mv);
-        invokeOperations(mv, method);
+        boolean ignoreEntityTypeParam = isIgnoreEntityTypeParam(bridge);
+        loadArguments(parameters, mv, ignoreEntityTypeParam);
+        invokeOperations(mv, method, ignoreEntityTypeParam);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
     }
 
-    private void invokeOperations(MethodVisitor mv, MethodInfo method) {
+    private boolean isIgnoreEntityTypeParam(AnnotationInstance bridge) {
+        AnnotationValue ignoreEntityTypeParam = bridge.value("ignoreEntityTypeParam");
+        if (ignoreEntityTypeParam == null) {
+            return false; // default value
+        }
+        return ignoreEntityTypeParam.asBoolean();
+    }
+
+    private void invokeOperations(MethodVisitor mv, MethodInfo method, boolean ignoreEntityTypeParam) {
         String operationDescriptor;
 
         StringJoiner joiner = new StringJoiner("", "(", ")");
-        joiner.add(CLASS.descriptor());
+        if (!ignoreEntityTypeParam) {
+            joiner.add(CLASS.descriptor());
+        }
         descriptors(method, joiner);
 
         org.jboss.jandex.Type returnType = method.returnType();
@@ -274,9 +286,11 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
         return descriptor;
     }
 
-    private void loadArguments(List<org.jboss.jandex.Type> parameters, MethodVisitor mv) {
-        // inject Class
-        injectModel(mv);
+    private void loadArguments(List<org.jboss.jandex.Type> parameters, MethodVisitor mv, boolean ignoreEntityTypeParam) {
+        if (!ignoreEntityTypeParam) {
+            // inject Class
+            injectModel(mv);
+        }
         for (int i = 0; i < parameters.size(); i++) {
             mv.visitIntInsn(Opcodes.ALOAD, i + 1);
         }

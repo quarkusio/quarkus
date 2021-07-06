@@ -25,6 +25,7 @@ import picocli.CommandLine;
 public class CliProjectGradleTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
             .resolve("target/test-project/CliProjectGradleTest");
+
     Path project;
     File gradle;
 
@@ -46,11 +47,7 @@ public class CliProjectGradleTest {
         args.add("--daemon");
         args.add("-q");
         args.add("--project-dir=" + project.toAbsolutePath());
-
-        String localMavenRepo = System.getProperty("maven.repo.local", null);
-        if (localMavenRepo != null) {
-            args.add("-Dmaven.repo.local=" + localMavenRepo);
-        }
+        CliDriver.preserveLocalRepoSettings(args);
 
         CliDriver.Result result = CliDriver.executeArbitraryCommand(project, args.toArray(new String[0]));
         Assertions.assertEquals(0, result.exitCode, "Gradle daemon should start properly");
@@ -64,11 +61,7 @@ public class CliProjectGradleTest {
             args.add(gradle.getAbsolutePath());
             args.add("--stop");
             args.add("--project-dir=" + project.toAbsolutePath());
-
-            String localMavenRepo = System.getProperty("maven.repo.local", null);
-            if (localMavenRepo != null) {
-                args.add("-Dmaven.repo.local=" + localMavenRepo);
-            }
+            CliDriver.preserveLocalRepoSettings(args);
 
             CliDriver.Result result = CliDriver.executeArbitraryCommand(project, args.toArray(new String[0]));
             Assertions.assertEquals(0, result.exitCode, "Gradle daemon should stop properly");
@@ -200,8 +193,8 @@ public class CliProjectGradleTest {
         // We don't need to retest this, just need to make sure all of the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        Assertions.assertTrue(result.stdout.contains("Creating an app (the project type was inferred, see --help)."),
-                "Should contain 'Creating an app (the project type was inferred, see --help).', found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("Creating an app"),
+                "Should contain 'Creating an app', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("GRADLE"),
                 "Should contain MAVEN, found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("Omit build tool wrapper   true"),

@@ -156,6 +156,14 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <JBANG_REPO>${settings.localRepository}</JBANG_REPO>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

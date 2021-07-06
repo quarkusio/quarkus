@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
@@ -19,7 +20,6 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 
 public class GradleRunner implements BuildSystemRunner {
     public static final String[] windowsWrapper = { "gradlew.cmd", "gradlew.bat" };
@@ -28,11 +28,13 @@ public class GradleRunner implements BuildSystemRunner {
     final OutputOptionMixin output;
     final Path projectRoot;
     final BuildTool buildTool;
+    final PropertiesOptions propertiesOptions;
 
-    public GradleRunner(OutputOptionMixin output, Path projectRoot, BuildTool buildTool) {
+    public GradleRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, Path projectRoot, BuildTool buildTool) {
         this.output = output;
         this.projectRoot = projectRoot;
         this.buildTool = buildTool;
+        this.propertiesOptions = propertiesOptions;
         verifyBuildFile();
     }
 
@@ -64,13 +66,28 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern) {
+    public Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format) {
+        ArrayDeque<String> args = new ArrayDeque<>();
+        setGradleProperties(args, runMode.isBatchMode());
+
+        args.add("listCategories");
+        args.add("--fromCli");
+        args.add("--format=" + format.getFormatString());
+        return run(prependExecutable(args));
+    }
+
+    @Override
+    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
+            String category) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, runMode.isBatchMode());
 
         args.add("listExtensions");
         args.add("--fromCli");
         args.add("--format=" + format.getFormatString());
+        if (category != null && !category.isBlank()) {
+            args.add("--category=" + category);
+        }
         if (!installable) {
             args.add("--installed");
         }
@@ -103,8 +120,7 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, PropertiesOptions propertiesOptions, RunModeOption runMode,
-            List<String> params) {
+    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, runMode.isBatchMode());
 
@@ -124,6 +140,7 @@ public class GradleRunner implements BuildSystemRunner {
 
         // add any other discovered properties
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
+
         // Add any other unmatched arguments
         args.addAll(params);
 
@@ -131,8 +148,8 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, PropertiesOptions propertiesOptions,
-            DebugOptions debugOptions, List<String> params) {
+    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
+            List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, false);
 
@@ -141,14 +158,12 @@ public class GradleRunner implements BuildSystemRunner {
         }
         args.addFirst("quarkusDev");
 
-        if (devOptions.skipTests()) { // TODO: does this make sense?
+        if (devOptions.skipTests()) { // TODO: does this make sense for dev mode?
             setSkipTests(args);
         }
 
         //TODO: addDebugArguments(args, debugOptions);
 
-        // add any other discovered properties
-        args.addAll(flattenMappedProperties(propertiesOptions.properties));
         // Add any other unmatched arguments
         args.addAll(params);
         try {
@@ -196,9 +211,9 @@ public class GradleRunner implements BuildSystemRunner {
             args.addFirst("--console=rich");
         }
         args.add("--project-dir=" + projectRoot.toAbsolutePath());
-        ExecuteUtil.propagatePropertyIfSet("maven.repo.local", args);
-        ExecuteUtil.propagatePropertyIfSet(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, args);
-        ExecuteUtil.propagatePropertyIfSet("io.quarkus.maven.secondary-local-repo", args);
+
+        // add any other discovered properties
+        args.addAll(flattenMappedProperties(propertiesOptions.properties));
     }
 
     void verifyBuildFile() {

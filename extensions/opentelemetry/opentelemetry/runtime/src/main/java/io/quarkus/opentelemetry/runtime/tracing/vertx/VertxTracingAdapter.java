@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.runtime.tracing.vertx;
 
-import static io.opentelemetry.context.Context.current;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_FLAVOR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_HOST;
@@ -24,7 +23,6 @@ import javax.enterprise.inject.spi.CDI;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
@@ -32,11 +30,11 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.vertx.core.Context;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -45,8 +43,8 @@ import io.vertx.core.tracing.TracingOptions;
 import io.vertx.core.tracing.TracingPolicy;
 
 public class VertxTracingAdapter extends TracingOptions implements VertxTracer<Span, Span>, VertxTracerFactory {
-    private static final String SCOPE_KEY = VertxTracingAdapter.class.getName() + ".scope";
-    private static final String SPAN_KEY = VertxTracingAdapter.class.getName() + ".activeSpan";
+    private static final String RECEIVE_SCOPE_KEY = VertxTracingAdapter.class.getName() + ".scope.receive";
+    private static final String SEND_SCOPE_KEY = VertxTracingAdapter.class.getName() + ".scope.send";
     private static TextMapPropagator TEXT_MAP_PROPAGATOR;
 
     private Tracer tracer;
@@ -80,52 +78,56 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
             final Iterable<Map.Entry<String, String>> headers,
             final TagExtractor<R> tagExtractor) {
 
-        ((ContextInternal) context).dispatch(() -> {
-            io.opentelemetry.context.Context currentContext = current();
+        io.opentelemetry.context.Context openTelemetryContext = context.getLocal(QuarkusContextStorage.ACTIVE_CONTEXT);
+        if (openTelemetryContext == null) {
+            openTelemetryContext = io.opentelemetry.context.Context.root();
+        }
 
-            // Retrieve any incoming Span
-            io.opentelemetry.context.Context propagatedContext = TEXT_MAP_PROPAGATOR.extract(currentContext, headers, GETTER);
+        // Retrieve any incoming Span
+        openTelemetryContext = TEXT_MAP_PROPAGATOR.extract(openTelemetryContext, headers, GETTER);
 
-            SpanBuilder builder;
+        // Create new span
+        final Span currentSpan = tracer.spanBuilder(operationName(request, operation))
+                .setParent(openTelemetryContext)
+                .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER
+                        : io.opentelemetry.api.trace.SpanKind.CONSUMER)
+                .startSpan();
 
-            // Create new span
-            builder = tracer.spanBuilder(operationName(request, operation))
-                    .setParent(propagatedContext)
-                    .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER
-                            : io.opentelemetry.api.trace.SpanKind.CONSUMER);
+        //TODO - Figure out how to handle span name in a better way.
+        if (request instanceof HttpServerRequest) {
+            HttpServerRequest httpServerRequest = (HttpServerRequest) request;
 
-            //TODO - Figure out how to handle span name in a better way.
-            if (request instanceof HttpServerRequest) {
-                HttpServerRequest httpServerRequest = (HttpServerRequest) request;
+            // Add attributes
+            currentSpan.setAttribute(HTTP_FLAVOR, convertHttpVersion(httpServerRequest.version()));
+            currentSpan.setAttribute(HTTP_METHOD, operation);
+            currentSpan.setAttribute(HTTP_TARGET, httpServerRequest.path());
+            currentSpan.setAttribute(HTTP_SCHEME, httpServerRequest.scheme());
+            currentSpan.setAttribute(HTTP_HOST, httpServerRequest.host());
+            currentSpan.setAttribute(HTTP_CLIENT_IP, extractClientIP(httpServerRequest));
+            currentSpan.setAttribute(HTTP_USER_AGENT, httpServerRequest.getHeader(USER_AGENT));
 
-                // Add attributes
-                builder.setAttribute(HTTP_FLAVOR, convertHttpVersion(httpServerRequest.version()));
-                builder.setAttribute(HTTP_METHOD, httpServerRequest.method().name());
-                builder.setAttribute(HTTP_TARGET, httpServerRequest.path());
-                builder.setAttribute(HTTP_SCHEME, httpServerRequest.scheme());
-                builder.setAttribute(HTTP_HOST, httpServerRequest.host());
-                builder.setAttribute(HTTP_CLIENT_IP, extractClientIP(httpServerRequest));
-                builder.setAttribute(HTTP_USER_AGENT, httpServerRequest.getHeader(USER_AGENT));
-
-                String contentLength = httpServerRequest.getHeader(CONTENT_LENGTH);
-                if (contentLength != null && contentLength.length() > 0 && Long.parseLong(contentLength) > 0) {
-                    builder.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, Long.valueOf(contentLength));
-                } else {
-                    builder.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, httpServerRequest.bytesRead());
-                }
+            String contentLength = httpServerRequest.getHeader(CONTENT_LENGTH);
+            if (contentLength != null && contentLength.length() > 0 && Long.parseLong(contentLength) > 0) {
+                currentSpan.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, Long.valueOf(contentLength));
+            } else {
+                currentSpan.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, httpServerRequest.bytesRead());
             }
+        }
 
-            final Span currentSpan = builder.startSpan();
-            context.putLocal(SPAN_KEY, currentSpan);
-            context.putLocal(SCOPE_KEY, currentSpan.makeCurrent());
-        });
+        openTelemetryContext = openTelemetryContext.with(currentSpan);
+        context.putLocal(RECEIVE_SCOPE_KEY, QuarkusContextStorage.INSTANCE.attach(context, openTelemetryContext));
 
-        return context.getLocal(SPAN_KEY);
+        return currentSpan;
     }
 
     private <R> String operationName(R request, String operationName) {
         if (request instanceof HttpServerRequest) {
-            return ((HttpServerRequest) request).uri().substring(1);
+            final String uri = ((HttpServerRequest) request).uri();
+            if (uri.length() > 1) {
+                return uri.substring(1);
+            } else {
+                return "HTTP " + operationName;
+            }
         }
         return operationName;
     }
@@ -138,40 +140,36 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
             final Throwable failure,
             final TagExtractor<R> tagExtractor) {
 
-        context.removeLocal(SPAN_KEY);
-
         if (span == null) {
             return;
         }
 
-        // Update Span name if parameterized path present
-        String pathTemplate = context.getLocal("UrlPathTemplate");
-        if (pathTemplate != null && !pathTemplate.isEmpty()) {
-            span.updateName(pathTemplate.substring(1));
-            span.setAttribute(HTTP_ROUTE, pathTemplate);
+        if (failure != null) {
+            span.setStatus(StatusCode.ERROR);
+            span.recordException(failure);
         }
 
-        ((ContextInternal) context).dispatch(() -> {
-            if (failure != null) {
-                span.setStatus(StatusCode.ERROR);
-                span.recordException(failure);
-            }
+        if (response != null) {
+            if (response instanceof HttpServerResponse) {
+                HttpServerResponse httpServerResponse = (HttpServerResponse) response;
+                span.setAttribute(HTTP_STATUS_CODE, httpServerResponse.getStatusCode());
 
-            if (response != null) {
-                if (response instanceof HttpServerResponse) {
-                    HttpServerResponse httpServerResponse = (HttpServerResponse) response;
-                    span.setAttribute(HTTP_STATUS_CODE, httpServerResponse.getStatusCode());
+                // Update Span name if parameterized path present
+                String pathTemplate = context.getLocal("UrlPathTemplate");
+                if (pathTemplate != null && pathTemplate.length() > 1) {
+                    span.updateName(pathTemplate.substring(1));
+                    span.setAttribute(HTTP_ROUTE, pathTemplate);
                 }
             }
+        }
 
-            span.end();
+        span.end();
 
-            Scope spanScope = context.getLocal(SCOPE_KEY);
-            if (spanScope != null) {
-                spanScope.close();
-                context.removeLocal(SCOPE_KEY);
-            }
-        });
+        Scope spanScope = context.getLocal(RECEIVE_SCOPE_KEY);
+        if (spanScope != null) {
+            spanScope.close();
+            context.removeLocal(RECEIVE_SCOPE_KEY);
+        }
     }
 
     @Override
@@ -184,39 +182,33 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
             final BiConsumer<String, String> headers,
             final TagExtractor<R> tagExtractor) {
 
-        if (policy.equals(TracingPolicy.IGNORE)) {
-            /*
-             * SmallRye Reactive Messaging with Kafka is responsible for creating spans for outgoing messages.
-             * In this SPI call there is no way to know whether it has happened.
-             * The current approach to prevent duplicate spans is for the Kafka client in SmallRye Reactive Messaging
-             * to set TracingPolicy.IGNORE
-             * Disabling tracing in Quarkus will not be done with TracingPolicy.IGNORE,
-             * allowing it to be used for this purpose.
-             */
-            return null;
+        io.opentelemetry.context.Context openTelemetryContext = context.getLocal(QuarkusContextStorage.ACTIVE_CONTEXT);
+        if (openTelemetryContext == null) {
+            openTelemetryContext = io.opentelemetry.context.Context.root();
         }
 
-        ((ContextInternal) context).dispatch(() -> {
-            // Create new span
-            SpanBuilder builder = tracer.spanBuilder(operationName(request, operation))
-                    .setSpanKind(SpanKind.RPC.equals(kind)
-                            ? io.opentelemetry.api.trace.SpanKind.CLIENT
-                            : io.opentelemetry.api.trace.SpanKind.PRODUCER);
+        // Create new span
+        final Span outgoingSpan = tracer.spanBuilder(operationName(request, operation))
+                .setParent(openTelemetryContext)
+                .setSpanKind(SpanKind.RPC.equals(kind)
+                        ? io.opentelemetry.api.trace.SpanKind.CLIENT
+                        : io.opentelemetry.api.trace.SpanKind.PRODUCER)
+                .startSpan();
 
-            if (request instanceof HttpServerRequest) {
-                HttpServerRequest httpServerRequest = (HttpServerRequest) request;
+        if (request instanceof HttpServerRequest) {
+            HttpServerRequest httpServerRequest = (HttpServerRequest) request;
 
-                // Add attributes
-                builder.setAttribute(HTTP_METHOD, httpServerRequest.method().name());
-                builder.setAttribute(HTTP_URL, httpServerRequest.uri());
-            }
+            // Add attributes
+            outgoingSpan.setAttribute(HTTP_METHOD, httpServerRequest.method().name());
+            outgoingSpan.setAttribute(HTTP_URL, httpServerRequest.uri());
+        }
 
-            final Span outgoingSpan = builder.startSpan();
-            TEXT_MAP_PROPAGATOR.inject(io.opentelemetry.context.Context.current().with(outgoingSpan), headers, SETTER);
-            context.putLocal(SPAN_KEY, outgoingSpan);
-        });
+        openTelemetryContext = openTelemetryContext.with(outgoingSpan);
+        TEXT_MAP_PROPAGATOR.inject(openTelemetryContext, headers, SETTER);
 
-        return context.getLocal(SPAN_KEY);
+        context.putLocal(SEND_SCOPE_KEY, QuarkusContextStorage.INSTANCE.attach(context, openTelemetryContext));
+
+        return outgoingSpan;
     }
 
     @Override
@@ -227,28 +219,30 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
             final Throwable failure,
             final TagExtractor<R> tagExtractor) {
 
-        context.removeLocal(SPAN_KEY);
-
         if (span == null) {
             return;
         }
 
-        ((ContextInternal) context).dispatch(() -> {
-            if (failure != null) {
-                span.recordException(failure);
+        if (failure != null) {
+            span.recordException(failure);
+        }
+
+        if (response != null) {
+            if (response instanceof HttpServerResponse) {
+                HttpServerResponse httpServerResponse = (HttpServerResponse) response;
+
+                // Add attributes
+                span.setAttribute(HTTP_STATUS_CODE, httpServerResponse.getStatusCode());
             }
+        }
 
-            if (response != null) {
-                if (response instanceof HttpServerResponse) {
-                    HttpServerResponse httpServerResponse = (HttpServerResponse) response;
+        span.end();
 
-                    // Add attributes
-                    span.setAttribute(HTTP_STATUS_CODE, httpServerResponse.getStatusCode());
-                }
-            }
-
-            span.end();
-        });
+        Scope spanScope = context.getLocal(SEND_SCOPE_KEY);
+        if (spanScope != null) {
+            spanScope.close();
+            context.removeLocal(SEND_SCOPE_KEY);
+        }
     }
 
     private static String convertHttpVersion(HttpVersion version) {

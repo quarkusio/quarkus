@@ -101,7 +101,10 @@ public class CliProjectJBangTest {
 
         result = CliDriver.invokeValidateDryRunBuild(project);
 
-        CliDriver.invokeValidateBuild(project);
+        result = CliDriver.execute(project, "build", "-e", "-B", "--clean", "--verbose",
+                "-Dproperty=value1", "-Dproperty2=value2");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
     }
 
     void validateBasicIdentifiers(Path project, String group, String artifact, String version) throws Exception {

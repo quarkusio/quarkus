@@ -87,9 +87,13 @@ public class CliHelpTest {
 
     @Test
     @Order(51)
-    public void testExtAddHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "add", "--help");
+    public void testExtCatHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "cat", "--help");
         result.echoSystemOut();
+
+        CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "ext", "cat", "--help");
+        Assertions.assertEquals(result.stdout, result2.stdout, "Help output for command aliases should be the same.");
+        CliDriver.println("-- same as above\n\n");
     }
 
     @Test
@@ -101,6 +105,13 @@ public class CliHelpTest {
         CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "ext", "list", "--help");
         Assertions.assertEquals(result.stdout, result2.stdout, "Help output for command aliases should be the same.");
         CliDriver.println("-- same as above\n\n");
+    }
+
+    @Test
+    @Order(53)
+    public void testExtAddHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "add", "--help");
+        result.echoSystemOut();
     }
 
     @Test
@@ -117,7 +128,7 @@ public class CliHelpTest {
     @Order(60)
     @Test
     public void testGenerateCompletionHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "generate-completion", "--help");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "completion", "--help");
         result.echoSystemOut();
     }
 

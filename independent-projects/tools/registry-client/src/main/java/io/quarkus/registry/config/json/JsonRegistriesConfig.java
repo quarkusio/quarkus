@@ -9,8 +9,9 @@ import io.quarkus.registry.config.RegistryConfig;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonRegistriesConfig implements RegistriesConfig {
 
     private boolean debug;
@@ -46,5 +47,39 @@ public class JsonRegistriesConfig implements RegistriesConfig {
     @JsonIgnore
     public boolean isEmpty() {
         return registries.isEmpty();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(debug, registries);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        JsonRegistriesConfig other = (JsonRegistriesConfig) obj;
+        return debug == other.debug && Objects.equals(registries, other.registries);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder buf = new StringBuilder();
+        buf.append('[');
+        if (debug) {
+            buf.append("debug ");
+        }
+        if (!registries.isEmpty()) {
+            RegistryConfig r = registries.get(0);
+            buf.append(r);
+            for (int i = 1; i < registries.size(); ++i) {
+                buf.append(", ").append(registries.get(i));
+            }
+        }
+        return buf.append(']').toString();
     }
 }

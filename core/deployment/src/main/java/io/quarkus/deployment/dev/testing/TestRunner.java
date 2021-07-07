@@ -77,14 +77,20 @@ public class TestRunner {
     }
 
     public void runFailedTests() {
-        runTests(null, true);
+        runTests(null, true, false);
     }
 
     public void runTests(ClassScanResult classScanResult) {
-        runTests(classScanResult, false);
+        runTests(classScanResult, false, false);
     }
 
-    private void runTests(ClassScanResult classScanResult, boolean reRunFailures) {
+    /**
+     *
+     * @param classScanResult The changed classes
+     * @param reRunFailures If failures should be re-run
+     * @param runningQueued If this is running queued up changes, so we expect 'testsRunning' to be true
+     */
+    private void runTests(ClassScanResult classScanResult, boolean reRunFailures, boolean runningQueued) {
         if (compileProblem != null) {
             return;
         }
@@ -99,7 +105,7 @@ public class TestRunner {
             return;
         }
         synchronized (TestRunner.this) {
-            if (testsRunning) {
+            if (testsRunning && !runningQueued) {
                 if (reRunFailures) {
                     log.error("Not re-running failed tests, as tests are already in progress.");
                     return;
@@ -133,14 +139,15 @@ public class TestRunner {
                                 if (testsQueued) {
                                     testsQueued = false;
                                     run = true;
+                                } else {
+                                    testsRunning = false;
                                 }
                                 current = queuedChanges;
                                 queuedChanges = null;
                             }
-                            testsRunning = false;
                         }
                         if (run) {
-                            runTests(current);
+                            runTests(current, true, true);
                         }
                     }
                 } catch (Throwable t) {

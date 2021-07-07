@@ -15,26 +15,33 @@ import io.restassured.RestAssured;
  */
 public class ContinuousTestingTestUtils {
 
-    public static TestStatus waitForFirstRunToComplete() {
-        return waitForRun(1);
-    }
+    long runtToWaitFor = 1;
 
-    public static TestStatus waitForRun(long id) {
+    public TestStatus waitForNextCompletion() {
         try {
             Awaitility.waitAtMost(1, TimeUnit.MINUTES).pollInterval(50, TimeUnit.MILLISECONDS).until(new Callable<Boolean>() {
                 @Override
                 public Boolean call() throws Exception {
                     TestStatus ts = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/status").as(TestStatus.class);
-                    if (ts.getLastRun() > id) {
+                    if (ts.getLastRun() > runtToWaitFor) {
                         throw new RuntimeException(
-                                "Waiting for run " + id + " but run " + ts.getLastRun() + " has already occurred");
+                                "Waiting for run " + runtToWaitFor + " but run " + ts.getLastRun() + " has already occurred");
                     }
-                    return ts.getLastRun() == id;
+                    boolean runComplete = ts.getLastRun() == runtToWaitFor;
+                    if (runComplete && ts.getRunning() > 0) {
+                        //there is a small chance of a race, where changes are picked up twice, due to how filesystems work
+                        //this works around it by waiting for the next run
+                        runtToWaitFor = ts.getRunning();
+                        return false;
+                    } else if (runComplete) {
+                        runtToWaitFor++;
+                    }
+                    return runComplete;
                 }
             });
         } catch (Exception e) {
             TestStatus ts = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/status").as(TestStatus.class);
-            throw new ConditionTimeoutException("Failed to wait for test run" + id + " " + ts);
+            throw new ConditionTimeoutException("Failed to wait for test run" + runtToWaitFor + " " + ts);
         }
         return RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/status").as(TestStatus.class);
     }

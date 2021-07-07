@@ -537,8 +537,10 @@ public class BeanInfo implements InjectionTargetInfo {
         Collections.sort(bound, Comparator.comparingInt(DecoratorInfo::getPriority).thenComparing(DecoratorInfo::getBeanClass));
 
         Map<MethodKey, DecorationInfo> candidates = new HashMap<>();
-        addDecoratedMethods(candidates, target.get().asClass(), bound,
-                new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom));
+        ClassInfo classInfo = target.get().asClass();
+        addDecoratedMethods(candidates, classInfo, classInfo, bound,
+                new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
+                        beanDeployment.getBeanArchiveIndex()));
 
         Map<MethodInfo, DecorationInfo> decoratedMethods = new HashMap<>(candidates.size());
         for (Entry<MethodKey, DecorationInfo> entry : candidates.entrySet()) {
@@ -548,8 +550,8 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     private void addDecoratedMethods(Map<MethodKey, DecorationInfo> decoratedMethods, ClassInfo classInfo,
-            List<DecoratorInfo> boundDecorators, SubclassSkipPredicate skipPredicate) {
-        skipPredicate.startProcessing(classInfo);
+            ClassInfo originalClassInfo, List<DecoratorInfo> boundDecorators, SubclassSkipPredicate skipPredicate) {
+        skipPredicate.startProcessing(classInfo, originalClassInfo);
         for (MethodInfo method : classInfo.methods()) {
             if (skipPredicate.test(method)) {
                 continue;
@@ -563,7 +565,7 @@ public class BeanInfo implements InjectionTargetInfo {
         if (!classInfo.superName().equals(DotNames.OBJECT)) {
             ClassInfo superClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClassInfo != null) {
-                addDecoratedMethods(decoratedMethods, superClassInfo, boundDecorators, skipPredicate);
+                addDecoratedMethods(decoratedMethods, superClassInfo, originalClassInfo, boundDecorators, skipPredicate);
             }
         }
     }

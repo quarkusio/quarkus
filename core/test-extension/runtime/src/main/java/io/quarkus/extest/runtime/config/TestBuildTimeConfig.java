@@ -1,7 +1,9 @@
 package io.quarkus.extest.runtime.config;
 
+import java.util.List;
 import java.util.Map;
 
+import io.quarkus.extest.runtime.classpath.RecordedClasspathEntries;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -28,6 +30,13 @@ public class TestBuildTimeConfig {
     public AllValuesConfig allValues;
 
     public Map<String, Map<String, String>> mapMap;
+
+    /**
+     * Names of resources for which classpath entries should be recorded.
+     * 
+     * @see RecordedClasspathEntries#get(RecordedClasspathEntries.Phase, String)
+     */
+    public List<String> classpathEntriesToRecord;
 
     public TestBuildTimeConfig() {
 

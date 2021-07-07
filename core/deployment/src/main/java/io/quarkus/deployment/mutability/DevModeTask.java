@@ -3,6 +3,7 @@ package io.quarkus.deployment.mutability;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.BUILD_SYSTEM_PROPERTIES;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEPLOYMENT_LIB;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.LIB;
+import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -42,7 +43,7 @@ public class DevModeTask {
                 Files.newInputStream(appRoot.resolve(LIB).resolve(DEPLOYMENT_LIB).resolve(JarResultBuildStep.APPMODEL_DAT)))) {
             Properties buildSystemProperties = new Properties();
             try (InputStream buildIn = Files
-                    .newInputStream(appRoot.resolve(LIB).resolve(DEPLOYMENT_LIB).resolve(BUILD_SYSTEM_PROPERTIES))) {
+                    .newInputStream(appRoot.resolve(QUARKUS).resolve(BUILD_SYSTEM_PROPERTIES))) {
                 buildSystemProperties.load(buildIn);
             }
 

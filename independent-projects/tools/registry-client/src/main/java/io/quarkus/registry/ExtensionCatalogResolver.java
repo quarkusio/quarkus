@@ -602,8 +602,7 @@ public class ExtensionCatalogResolver {
                 if (nonPlatformCatalog != null) {
                     extensionCatalogs.add(nonPlatformCatalog);
                     if (union != null) {
-                        final UnionBuilder<ExtensionCatalog> union1 = union;
-                        ElementCatalogBuilder.addUnionMember(union1, nonPlatformCatalog);
+                        ElementCatalogBuilder.addUnionMember(union, nonPlatformCatalog);
                     }
                 }
             }

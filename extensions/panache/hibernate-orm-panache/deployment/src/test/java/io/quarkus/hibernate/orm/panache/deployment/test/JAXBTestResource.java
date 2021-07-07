@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.panache.test;
+package io.quarkus.hibernate.orm.panache.deployment.test;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

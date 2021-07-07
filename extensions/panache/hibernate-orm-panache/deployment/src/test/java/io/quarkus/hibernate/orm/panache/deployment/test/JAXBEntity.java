@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.panache.test;
+package io.quarkus.hibernate.orm.panache.deployment.test;
 
 import javax.persistence.Entity;
 import javax.persistence.Transient;
@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
-import io.quarkus.hibernate.reactive.panache.PanacheEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 @Entity
 @XmlRootElement(name = "JAXBEntity")

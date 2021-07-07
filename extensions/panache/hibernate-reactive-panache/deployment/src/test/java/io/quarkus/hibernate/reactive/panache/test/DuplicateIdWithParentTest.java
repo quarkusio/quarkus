@@ -14,6 +14,7 @@ public class DuplicateIdWithParentTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setExpectedException(BuildException.class)
+            .overrideConfigKey("quarkus.datasource.devservices", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DuplicateIdWithParentEntity.class, DuplicateIdParentEntity.class));
 

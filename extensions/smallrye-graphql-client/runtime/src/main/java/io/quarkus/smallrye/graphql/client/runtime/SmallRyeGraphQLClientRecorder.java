@@ -30,7 +30,7 @@ public class SmallRyeGraphQLClientRecorder {
                 throw new RuntimeException(e);
             }
         }).collect(Collectors.toList());
-        configBean.apiClasses(classes);
+        configBean.apiClasses(classes, true);
     }
 
     public RuntimeValue<GraphQLClientSupport> clientSupport(Map<String, String> shortNamesToQualifiedNames) {

@@ -120,8 +120,7 @@ public class ReflectiveHierarchyStep {
                 type instanceof UnresolvedTypeVariable) {
             return;
         } else if (type instanceof ClassType) {
-            if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())
-                    || processedReflectiveHierarchies.contains(type.name())) {
+            if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
                 return;
             }
 

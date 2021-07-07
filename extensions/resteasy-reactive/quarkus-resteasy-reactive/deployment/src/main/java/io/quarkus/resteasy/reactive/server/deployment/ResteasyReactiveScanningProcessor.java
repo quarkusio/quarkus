@@ -63,6 +63,7 @@ import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ParamConverterBuildItem;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 
 /**
  * Processor that handles scanning for types and turning them into build items
@@ -99,6 +100,7 @@ public class ResteasyReactiveScanningProcessor {
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
         ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
                 .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
+        exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         for (Map.Entry<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers()
                 .entrySet()) {
             beanBuilder.addBeanClass(i.getValue().getClassName());

@@ -34,6 +34,7 @@ import org.jboss.resteasy.spi.RunnableWithException;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.vertx.core.Context;
 import io.vertx.ext.web.RoutingContext;
 
@@ -280,7 +281,8 @@ public final class VertxHttpRequest extends BaseHttpRequest {
             } else {
                 CompletableFuture<Void> ret = new CompletableFuture<>();
                 ret.completeExceptionally(
-                        new RuntimeException("Cannot use blocking IO with interceptors when we're on the IO thread"));
+                        new BlockingOperationNotAllowedException(
+                                "Cannot use blocking IO with interceptors when we're on the IO thread"));
                 return ret;
             }
         }

@@ -1,13 +1,21 @@
 package org.jboss.resteasy.reactive.server.core;
 
+import io.smallrye.common.annotation.Blocking;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
@@ -18,6 +26,14 @@ public class ExceptionMapping {
     private static final Logger log = Logger.getLogger(ExceptionMapping.class);
 
     private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
+
+    /**
+     * Exceptions that indicate an blocking operation was performed on an IO thread.
+     * <p>
+     * We have a special log message for this.
+     */
+    private final Set<Class<? extends Throwable>> blockingProblemExceptionClasses = new HashSet<>(
+            Arrays.asList(BlockingNotAllowedException.class));
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void mapException(Throwable throwable, ResteasyReactiveRequestContext context) {
@@ -39,6 +55,7 @@ public class ExceptionMapping {
             if (exceptionMapper instanceof ResteasyReactiveAsyncExceptionMapper) {
                 ((ResteasyReactiveAsyncExceptionMapper) exceptionMapper).asyncResponse(throwable,
                         new AsyncExceptionMapperContextImpl(context));
+                logBlockingErrorIfRequired(throwable, context);
                 return;
             } else if (exceptionMapper instanceof ResteasyReactiveExceptionMapper) {
                 response = ((ResteasyReactiveExceptionMapper) exceptionMapper).toResponse(throwable, context);
@@ -46,10 +63,12 @@ public class ExceptionMapping {
                 response = exceptionMapper.toResponse(throwable);
             }
             context.setResult(response);
+            logBlockingErrorIfRequired(throwable, context);
             return;
         }
         if (isWebApplicationException) {
             context.setResult(response);
+            logBlockingErrorIfRequired(throwable, context);
             return;
         }
         if (throwable instanceof IOException) {
@@ -59,7 +78,39 @@ public class ExceptionMapping {
         } else {
             log.error("Request failed ", throwable);
         }
+        logBlockingErrorIfRequired(throwable, context);
         context.handleUnmappedException(throwable);
+    }
+
+    private void logBlockingErrorIfRequired(Throwable throwable, ResteasyReactiveRequestContext context) {
+        boolean blockingProblem = isBlockingProblem(throwable);
+        if (blockingProblem) {
+            log.error("A blocking operation occurred on the IO thread. This likely means you need to annotate "
+                    + context.getTarget().getResourceClass().getName() + "#" + context.getTarget().getJavaMethodName() + "("
+                    + Arrays.stream(context.getTarget().getParameterTypes()).map(Objects::toString)
+                            .collect(Collectors.joining(", "))
+                    + ") with @"
+                    + Blocking.class.getName()
+                    + ". Alternatively you can annotate the class " + context.getTarget().getResourceClass().getName()
+                    + " to make every method on the class blocking, or annotate your sub class of the "
+                    + Application.class.getName() + " class to make the whole application blocking");
+        }
+    }
+
+    private boolean isBlockingProblem(Throwable throwable) {
+        Throwable e = throwable;
+        Set<Throwable> seen = new HashSet<>();
+        while (e != null) {
+            if (seen.contains(e)) {
+                return false;
+            }
+            seen.add(e);
+            if (blockingProblemExceptionClasses.contains(e.getClass())) {
+                return true;
+            }
+            e = e.getCause();
+        }
+        return false;
     }
 
     /**
@@ -103,6 +154,10 @@ public class ExceptionMapping {
         return null;
     }
 
+    public void addBlockingProblem(Class<? extends Throwable> clazz) {
+        blockingProblemExceptionClasses.add(clazz);
+    }
+
     public <T extends Throwable> void addExceptionMapper(Class<T> exceptionClass, ResourceExceptionMapper<T> mapper) {
         ResourceExceptionMapper<? extends Throwable> existing = mappers.get(exceptionClass);
         if (existing != null) {
@@ -116,6 +171,10 @@ public class ExceptionMapping {
 
     public Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getMappers() {
         return mappers;
+    }
+
+    public Set<Class<? extends Throwable>> getBlockingProblemExceptionClasses() {
+        return blockingProblemExceptionClasses;
     }
 
     public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {

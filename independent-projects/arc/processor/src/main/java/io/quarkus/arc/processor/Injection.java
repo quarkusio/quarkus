@@ -192,7 +192,13 @@ public class Injection {
         for (FieldInfo field : beanClass.fields()) {
             AnnotationInstance inject = beanDeployment.getAnnotation(field, name);
             if (inject != null) {
-                injectAnnotations.add(inject);
+                if (Modifier.isFinal(field.flags()) || Modifier.isStatic(field.flags())) {
+                    LOGGER.warn("An injection field must be non-static and non-final - ignoring: "
+                            + field.declaringClass().name() + "#"
+                            + field.name());
+                } else {
+                    injectAnnotations.add(inject);
+                }
             }
         }
         for (MethodInfo method : beanClass.methods()) {

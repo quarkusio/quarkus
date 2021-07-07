@@ -27,6 +27,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
@@ -548,6 +549,9 @@ public class RuntimeResourceDeployment {
                 return type.getActualTypeArguments()[0];
             }
             if (type.getRawType() == Multi.class) {
+                return type.getActualTypeArguments()[0];
+            }
+            if (type.getRawType() == RestResponse.class) {
                 return type.getActualTypeArguments()[0];
             }
             return returnType;

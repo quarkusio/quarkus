@@ -25,6 +25,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.headers.LinkHeaders;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
@@ -35,19 +36,36 @@ import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
  * object has more deserialising powers in @{link {@link io.quarkus.rest.server.runtime.client.QuarkusRestClientResponse}.
  */
 @SuppressWarnings("JavadocReference")
-public class ResponseImpl extends Response {
+public class RestResponseImpl<T> extends RestResponse<T> {
 
     int status;
     String reasonPhrase;
-    protected Object entity;
+    protected T entity;
     MultivaluedTreeMap<String, Object> headers;
     InputStream entityStream;
-    StatusTypeImpl statusType;
-    MultivaluedMap<String, String> stringHeaders;
+    private StatusTypeImpl statusType;
+    private MultivaluedMap<String, String> stringHeaders;
     Annotation[] entityAnnotations;
     protected boolean consumed;
     protected boolean closed;
     protected boolean buffered;
+
+    @Override
+    public Response toResponse() {
+        ResponseImpl ret = new ResponseImpl();
+        ret.status = status;
+        ret.reasonPhrase = reasonPhrase;
+        ret.entity = entity;
+        ret.headers = headers;
+        ret.entityStream = entityStream;
+        ret.statusType = statusType;
+        ret.stringHeaders = stringHeaders;
+        ret.entityAnnotations = entityAnnotations;
+        ret.consumed = consumed;
+        ret.closed = closed;
+        ret.buffered = buffered;
+        return ret;
+    }
 
     @Override
     public int getStatus() {
@@ -63,7 +81,7 @@ public class ResponseImpl extends Response {
     }
 
     @Override
-    public StatusType getStatusInfo() {
+    public Response.StatusType getStatusInfo() {
         if (statusType == null) {
             statusType = new StatusTypeImpl(status, reasonPhrase);
         }
@@ -73,13 +91,13 @@ public class ResponseImpl extends Response {
     /**
      * Internal: this is just cheaper than duplicating the response just to change the status
      */
-    public void setStatusInfo(StatusType statusType) {
+    public void setStatusInfo(Response.StatusType statusType) {
         this.statusType = StatusTypeImpl.valueOf(statusType);
         status = statusType.getStatusCode();
     }
 
     @Override
-    public Object getEntity() {
+    public T getEntity() {
         // The spec says that getEntity() can be called after readEntity() to obtain the same entity,
         // but it also sort-of implies that readEntity() calls Response.close(), and the TCK does check
         // that we throw if closed and non-buffered
@@ -89,13 +107,13 @@ public class ResponseImpl extends Response {
         if (entity instanceof GenericEntity) {
             GenericEntity<?> genericEntity = (GenericEntity<?>) entity;
             if (genericEntity.getRawType().equals(genericEntity.getType())) {
-                return ((GenericEntity<?>) entity).getEntity();
+                return (T) ((GenericEntity<?>) entity).getEntity();
             }
         }
         return entity;
     }
 
-    protected void setEntity(Object entity) {
+    protected void setEntity(T entity) {
         this.entity = entity;
         if (entity instanceof InputStream) {
             this.entityStream = (InputStream) entity;
@@ -123,25 +141,25 @@ public class ResponseImpl extends Response {
     }
 
     @Override
-    public <T> T readEntity(Class<T> entityType) {
+    public <OtherT> OtherT readEntity(Class<OtherT> entityType) {
         return readEntity(entityType, entityType, null);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T readEntity(GenericType<T> entityType) {
-        return (T) readEntity(entityType.getRawType(), entityType.getType(), null);
+    public <OtherT> OtherT readEntity(GenericType<OtherT> entityType) {
+        return (OtherT) readEntity(entityType.getRawType(), entityType.getType(), null);
     }
 
     @Override
-    public <T> T readEntity(Class<T> entityType, Annotation[] annotations) {
+    public <OtherT> OtherT readEntity(Class<OtherT> entityType, Annotation[] annotations) {
         return readEntity(entityType, entityType, annotations);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T readEntity(GenericType<T> entityType, Annotation[] annotations) {
-        return (T) readEntity(entityType.getRawType(), entityType.getType(), annotations);
+    public <OtherT> OtherT readEntity(GenericType<OtherT> entityType, Annotation[] annotations) {
+        return (OtherT) readEntity(entityType.getRawType(), entityType.getType(), annotations);
     }
 
     @Override

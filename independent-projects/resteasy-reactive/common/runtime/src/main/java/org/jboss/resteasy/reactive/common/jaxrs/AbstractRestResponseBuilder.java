@@ -5,6 +5,7 @@ import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -18,13 +19,64 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
-public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
+public abstract class AbstractRestResponseBuilder<T> extends RestResponse.ResponseBuilder<T> {
+
+    static final Map<Integer, String> defaultReasonPhrases = new HashMap<>();
+    static {
+        defaultReasonPhrases.put(100, "Continue");
+        defaultReasonPhrases.put(101, "Switching Protocols");
+        defaultReasonPhrases.put(200, "OK");
+        defaultReasonPhrases.put(201, "Created");
+        defaultReasonPhrases.put(202, "Accepted");
+        defaultReasonPhrases.put(203, "Non-Authoritative Information");
+        defaultReasonPhrases.put(204, "No Content");
+        defaultReasonPhrases.put(205, "Reset Content");
+        defaultReasonPhrases.put(206, "Partial Content");
+        defaultReasonPhrases.put(300, "Multiple Choices");
+        defaultReasonPhrases.put(301, "Moved Permanently");
+        defaultReasonPhrases.put(302, "Found");
+        defaultReasonPhrases.put(303, "See Other");
+        defaultReasonPhrases.put(304, "Not Modified");
+        defaultReasonPhrases.put(305, "Use Proxy");
+        defaultReasonPhrases.put(307, "Temporary Redirect");
+        defaultReasonPhrases.put(308, "Permanent Redirect");
+        defaultReasonPhrases.put(400, "Bad Request");
+        defaultReasonPhrases.put(401, "Unauthorized");
+        defaultReasonPhrases.put(402, "Payment Required");
+        defaultReasonPhrases.put(403, "Forbidden");
+        defaultReasonPhrases.put(404, "Not Found");
+        defaultReasonPhrases.put(405, "Method Not Allowed");
+        defaultReasonPhrases.put(406, "Not Acceptable");
+        defaultReasonPhrases.put(407, "Proxy Authentication Required");
+        defaultReasonPhrases.put(408, "Request Timeout");
+        defaultReasonPhrases.put(409, "Conflict");
+        defaultReasonPhrases.put(410, "Gone");
+        defaultReasonPhrases.put(411, "Length Required");
+        defaultReasonPhrases.put(412, "Precondition Failed");
+        defaultReasonPhrases.put(413, "Request Entity Too Large");
+        defaultReasonPhrases.put(414, "Request-URI Too Long");
+        defaultReasonPhrases.put(415, "Unsupported Media Type");
+        defaultReasonPhrases.put(416, "Requested Range Not Satisfiable");
+        defaultReasonPhrases.put(417, "Expectation Failed");
+        defaultReasonPhrases.put(426, "Upgrade Required");
+        defaultReasonPhrases.put(428, "Expectation Failed");
+        defaultReasonPhrases.put(429, "Precondition Required");
+        defaultReasonPhrases.put(431, "Too Many Requests");
+        defaultReasonPhrases.put(500, "Internal Server Error");
+        defaultReasonPhrases.put(501, "Not Implemented");
+        defaultReasonPhrases.put(502, "Bad Gateway");
+        defaultReasonPhrases.put(503, "Service Unavailable");
+        defaultReasonPhrases.put(504, "Gateway Timeout");
+        defaultReasonPhrases.put(505, "HTTP Version Not Supported");
+        defaultReasonPhrases.put(511, "Network Authentication Required");
+    }
 
     protected int status = -1;
     protected String reasonPhrase;
@@ -91,12 +143,12 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public ResponseImpl build() {
-        return populateResponse(new ResponseImpl());
+    public RestResponseImpl<T> build() {
+        return populateResponse(new RestResponseImpl<T>());
     }
 
-    public ResponseImpl build(boolean copyHeaders) {
-        return populateResponse(new ResponseImpl(), copyHeaders);
+    public RestResponseImpl<T> build(boolean copyHeaders) {
+        return populateResponse(new RestResponseImpl<T>(), copyHeaders);
     }
 
     /**
@@ -104,12 +156,13 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
      *
      * @return The given response
      */
-    public <T extends ResponseImpl> T populateResponse(T response) {
+    public <OtherT extends RestResponseImpl<T>> OtherT populateResponse(OtherT response) {
         return populateResponse(response, true);
     }
 
-    public <T extends ResponseImpl> T populateResponse(T response, boolean copyHeaders) {
-        response.entity = entity;
+    @SuppressWarnings("unchecked")
+    public <OtherT extends RestResponseImpl<T>> OtherT populateResponse(OtherT response, boolean copyHeaders) {
+        response.entity = (T) entity;
         if ((entity == null) && (status == -1)) {
             response.status = 204; // spec says that when no status is set and the entity is null, we need to return 204
         } else if (status == -1) {
@@ -136,11 +189,11 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         }
     }
 
-    protected abstract AbstractResponseBuilder doClone();
+    protected abstract AbstractRestResponseBuilder<T> doClone();
 
     @Override
-    public AbstractResponseBuilder clone() {
-        AbstractResponseBuilder responseBuilder = doClone();
+    public AbstractRestResponseBuilder<T> clone() {
+        AbstractRestResponseBuilder<T> responseBuilder = doClone();
         responseBuilder.status = status;
         responseBuilder.reasonPhrase = reasonPhrase;
         responseBuilder.entity = entity;
@@ -149,33 +202,34 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         return responseBuilder;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Response.ResponseBuilder status(int status, String reasonPhrase) {
+    public <Ret extends T> RestResponse.ResponseBuilder<Ret> status(int status, String reasonPhrase) {
         this.status = status;
         this.reasonPhrase = reasonPhrase;
-        return this;
+        return (ResponseBuilder<Ret>) this;
     }
 
     @Override
-    public Response.ResponseBuilder status(int status) {
-        return status(status, AbstractRestResponseBuilder.defaultReasonPhrases.get(status));
+    public <Ret extends T> RestResponse.ResponseBuilder<Ret> status(int status) {
+        return status(status, defaultReasonPhrases.get(status));
     }
 
     @Override
-    public Response.ResponseBuilder entity(Object entity) {
+    public RestResponse.ResponseBuilder<T> entity(T entity) {
         this.entity = entity;
         return this;
     }
 
     @Override
-    public Response.ResponseBuilder entity(Object entity, Annotation[] annotations) {
+    public RestResponse.ResponseBuilder<T> entity(T entity, Annotation[] annotations) {
         this.entity = entity;
         this.entityAnnotations = annotations;
         return this;
     }
 
     @Override
-    public Response.ResponseBuilder type(MediaType type) {
+    public RestResponse.ResponseBuilder<T> type(MediaType type) {
         if (type == null) {
             metadata.remove(HttpHeaders.CONTENT_TYPE);
             return this;
@@ -185,7 +239,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder type(String type) {
+    public RestResponse.ResponseBuilder<T> type(String type) {
         if (type == null) {
             metadata.remove(HttpHeaders.CONTENT_TYPE);
             return this;
@@ -195,7 +249,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder variant(Variant variant) {
+    public RestResponse.ResponseBuilder<T> variant(Variant variant) {
         if (variant == null) {
             type((String) null);
             language((String) null);
@@ -212,19 +266,19 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder variants(List<Variant> variants) {
+    public RestResponse.ResponseBuilder<T> variants(List<Variant> variants) {
         if (variants == null) {
             metadata.remove(HttpHeaders.VARY);
             return this;
         }
-        String vary = AbstractResponseBuilder.createVaryHeader(variants);
+        String vary = AbstractRestResponseBuilder.createVaryHeader(variants);
         metadata.putSingle(HttpHeaders.VARY, vary);
 
         return this;
     }
 
     @Override
-    public Response.ResponseBuilder language(String language) {
+    public RestResponse.ResponseBuilder<T> language(String language) {
         if (language == null) {
             metadata.remove(HttpHeaders.CONTENT_LANGUAGE);
             return this;
@@ -234,7 +288,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder tag(EntityTag tag) {
+    public RestResponse.ResponseBuilder<T> tag(EntityTag tag) {
         if (tag == null) {
             metadata.remove(HttpHeaders.ETAG);
             return this;
@@ -244,7 +298,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder tag(String tag) {
+    public RestResponse.ResponseBuilder<T> tag(String tag) {
         if (tag == null) {
             metadata.remove(HttpHeaders.ETAG);
             return this;
@@ -253,7 +307,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder lastModified(Date lastModified) {
+    public RestResponse.ResponseBuilder<T> lastModified(Date lastModified) {
         if (lastModified == null) {
             metadata.remove(HttpHeaders.LAST_MODIFIED);
             return this;
@@ -263,7 +317,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder cacheControl(CacheControl cacheControl) {
+    public RestResponse.ResponseBuilder<T> cacheControl(CacheControl cacheControl) {
         if (cacheControl == null) {
             metadata.remove(HttpHeaders.CACHE_CONTROL);
             return this;
@@ -273,7 +327,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder header(String name, Object value) {
+    public RestResponse.ResponseBuilder<T> header(String name, Object value) {
         if (value == null) {
             metadata.remove(name);
             return this;
@@ -283,7 +337,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder cookie(NewCookie... cookies) {
+    public RestResponse.ResponseBuilder<T> cookie(NewCookie... cookies) {
         if (cookies == null) {
             metadata.remove(HttpHeaders.SET_COOKIE);
             return this;
@@ -294,7 +348,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         return this;
     }
 
-    public Response.ResponseBuilder language(Locale language) {
+    public RestResponse.ResponseBuilder<T> language(Locale language) {
         if (language == null) {
             metadata.remove(HttpHeaders.CONTENT_LANGUAGE);
             return this;
@@ -303,16 +357,16 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         return this;
     }
 
-    public Response.ResponseBuilder expires(Date expires) {
+    public RestResponse.ResponseBuilder<T> expires(Date expires) {
         if (expires == null) {
             metadata.remove(HttpHeaders.EXPIRES);
             return this;
         }
-        metadata.putSingle(HttpHeaders.EXPIRES, AbstractResponseBuilder.getDateFormatRFC822().format(expires));
+        metadata.putSingle(HttpHeaders.EXPIRES, AbstractRestResponseBuilder.getDateFormatRFC822().format(expires));
         return this;
     }
 
-    public Response.ResponseBuilder allow(String... methods) {
+    public RestResponse.ResponseBuilder<T> allow(String... methods) {
         if (methods == null) {
             return allow((Set<String>) null);
         }
@@ -320,13 +374,13 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         return allow(set);
     }
 
-    public Response.ResponseBuilder allow(Set<String> methods) {
+    public RestResponse.ResponseBuilder<T> allow(Set<String> methods) {
         HeaderUtil.setAllow(this.metadata, methods);
         return this;
     }
 
     @Override
-    public Response.ResponseBuilder encoding(String encoding) {
+    public RestResponse.ResponseBuilder<T> encoding(String encoding) {
         if (encoding == null) {
             metadata.remove(HttpHeaders.CONTENT_ENCODING);
             return this;
@@ -336,12 +390,12 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder variants(Variant... variants) {
+    public RestResponse.ResponseBuilder<T> variants(Variant... variants) {
         return this.variants(Arrays.asList(variants));
     }
 
     @Override
-    public Response.ResponseBuilder links(Link... links) {
+    public RestResponse.ResponseBuilder<T> links(Link... links) {
         if (links == null) {
             metadata.remove(HttpHeaders.LINK);
             return this;
@@ -353,21 +407,21 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
-    public Response.ResponseBuilder link(URI uri, String rel) {
+    public RestResponse.ResponseBuilder<T> link(URI uri, String rel) {
         Link link = Link.fromUri(uri).rel(rel).build();
         metadata.add(HttpHeaders.LINK, link);
         return this;
     }
 
     @Override
-    public Response.ResponseBuilder link(String uri, String rel) {
+    public RestResponse.ResponseBuilder<T> link(String uri, String rel) {
         Link link = Link.fromUri(uri).rel(rel).build();
         metadata.add(HttpHeaders.LINK, link);
         return this;
     }
 
     @Override
-    public Response.ResponseBuilder replaceAll(MultivaluedMap<String, Object> headers) {
+    public RestResponse.ResponseBuilder<T> replaceAll(MultivaluedMap<String, Object> headers) {
         metadata.clear();
         if (headers == null)
             return this;

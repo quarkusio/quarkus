@@ -52,7 +52,7 @@ The solution is located in the `tests-with-coverage-quickstart` {quickstarts-tre
 
 == Starting from a simple project and two tests
 
-Let's start from an empty application created with the Quarkus Maven plugin: 
+Let's start from an empty application created with the Quarkus Maven plugin:
 
 [source,bash,subs=attributes+]
 ----
@@ -143,7 +143,7 @@ public class GreetingResourceTest {
         given()
           .when().get("/hello")
           .then()
-             .statusCode(200)  
+             .statusCode(200)
              .body(is("hello"));
     }
 
@@ -315,6 +315,56 @@ In order to run the integration tests as a jar with the Jacoco agent, add the fo
     ...
 </build>
 
+----
+
+== Setting coverage thresholds for the Maven build
+
+You can set thresholds for code coverage using the Jacoco Maven plugin. Note the element `<dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>`. You must set it matching your choice for `quarkus.jacoco.data-file`.
+
+[source, xml]
+----
+<build>
+    ...
+    <plugins>
+        ...
+        <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <executions>
+                <execution>
+                    <id>jacoco-check</id>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                    <phase>test</phase>
+                    <configuration>
+                        <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
+                        <rules>
+                            <rule>
+                                <element>BUNDLE</element>
+                                <limits>
+                                    <limit>
+                                        <counter>LINE</counter>
+                                        <value>COVEREDRATIO</value>
+                                        <minimum>0.8</minimum>
+                                    </limit>
+                                    <limit>
+                                        <counter>BRANCH</counter>
+                                        <value>COVEREDRATIO</value>
+                                        <minimum>0.72</minimum>
+                                    </limit>
+                                </limits>
+                            </rule>
+                        </rules>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        ...
+    </plugins>
+    ...
+</build>
 ----
 
 == Conclusion

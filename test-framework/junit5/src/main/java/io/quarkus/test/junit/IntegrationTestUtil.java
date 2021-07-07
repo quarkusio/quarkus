@@ -49,7 +49,11 @@ import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
-final class IntegrationTestUtil {
+public final class IntegrationTestUtil {
+
+    public static final int DEFAULT_PORT = 8081;
+    public static final int DEFAULT_HTTPS_PORT = 8444;
+    public static final long DEFAULT_JAR_WAIT_TIME_SECONDS = 60;
 
     private IntegrationTestUtil() {
     }
@@ -165,7 +169,7 @@ final class IntegrationTestUtil {
 
     static void startLauncher(ArtifactLauncher launcher, Map<String, String> additionalProperties, Runnable sslSetter)
             throws IOException {
-        launcher.addSystemProperties(additionalProperties);
+        launcher.includeAsSysProps(additionalProperties);
         try {
             launcher.start();
         } catch (IOException e) {

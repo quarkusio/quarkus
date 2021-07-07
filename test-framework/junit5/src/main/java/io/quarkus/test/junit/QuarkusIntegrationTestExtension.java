@@ -3,12 +3,14 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.junit.IntegrationTestUtil.*;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -20,12 +22,10 @@ import org.opentest4j.TestAbortedException;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
-import io.quarkus.test.common.DockerContainerLauncher;
-import io.quarkus.test.common.JarLauncher;
-import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
+import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 
 public class QuarkusIntegrationTestExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestInstancePostProcessor {
@@ -150,44 +150,18 @@ public class QuarkusIntegrationTestExtension
             if (artifactType == null) {
                 throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");
             }
-            ArtifactLauncher launcher;
-            // TODO: replace with ServiceLoader mechanism
-            switch (artifactType) {
-                case "native": {
-                    String pathStr = quarkusArtifactProperties.getProperty("path");
-                    if ((pathStr != null) && !pathStr.isEmpty()) {
-                        String previousNativeImagePathValue = System.setProperty("native.image.path",
-                                determineBuildOutputDirectory(context).resolve(pathStr).toAbsolutePath().toString());
-                        sysPropRestore.put("native.image.path", previousNativeImagePathValue);
-                        launcher = new NativeImageLauncher(requiredTestClass);
-                    } else {
-                        throw new IllegalStateException("The path of the native binary could not be determined");
-                    }
+            ArtifactLauncher<?> launcher = null;
+            ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
+            for (ArtifactLauncherProvider launcherProvider : loader) {
+                if (launcherProvider.supportsArtifactType(artifactType)) {
+                    launcher = launcherProvider.create(
+                            new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass));
                     break;
                 }
-                case "jar": {
-                    String pathStr = quarkusArtifactProperties.getProperty("path");
-                    if ((pathStr != null) && !pathStr.isEmpty()) {
-                        launcher = new JarLauncher(determineBuildOutputDirectory(context).resolve(pathStr));
-                    } else {
-                        throw new IllegalStateException("The path of the native binary could not be determined");
-                    }
-                    break;
-                }
-                case "jar-container":
-                case "native-container":
-                    String containerImage = quarkusArtifactProperties.getProperty("metadata.container-image");
-                    boolean pullRequired = Boolean
-                            .parseBoolean(quarkusArtifactProperties.getProperty("metadata.pull-required", "false"));
-                    if ((containerImage != null) && !containerImage.isEmpty()) {
-                        launcher = new DockerContainerLauncher(containerImage, pullRequired);
-                    } else {
-                        throw new IllegalStateException("The container image to be launched could not be determined");
-                    }
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Artifact type + '" + artifactType + "' is not supported by @QuarkusIntegrationTest");
+            }
+            if (launcher == null) {
+                throw new IllegalStateException(
+                        "Artifact type + '" + artifactType + "' is not supported by @QuarkusIntegrationTest");
             }
 
             startLauncher(launcher, additionalProperties, () -> ssl = true);
@@ -224,6 +198,34 @@ public class QuarkusIntegrationTestExtension
             throw new RuntimeException(throwable);
         } else {
             throw new TestAbortedException("Boot failed");
+        }
+    }
+
+    private static class DefaultArtifactLauncherCreateContext implements ArtifactLauncherProvider.CreateContext {
+        private final Properties quarkusArtifactProperties;
+        private final ExtensionContext context;
+        private final Class<?> requiredTestClass;
+
+        DefaultArtifactLauncherCreateContext(Properties quarkusArtifactProperties, ExtensionContext context,
+                Class<?> requiredTestClass) {
+            this.quarkusArtifactProperties = quarkusArtifactProperties;
+            this.context = context;
+            this.requiredTestClass = requiredTestClass;
+        }
+
+        @Override
+        public Properties quarkusArtifactProperties() {
+            return quarkusArtifactProperties;
+        }
+
+        @Override
+        public Path buildOutputDirectory() {
+            return determineBuildOutputDirectory(context);
+        }
+
+        @Override
+        public Class<?> testClass() {
+            return requiredTestClass;
         }
     }
 }

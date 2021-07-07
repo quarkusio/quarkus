@@ -24,12 +24,12 @@ import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.smallrye.config.SmallRyeConfig;
 
-final class LauncherUtil {
+public final class LauncherUtil {
 
     private LauncherUtil() {
     }
 
-    static Config installAndGetSomeConfig() {
+    public static Config installAndGetSomeConfig() {
         final SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.NORMAL).build();
         QuarkusConfigFactory.setConfig(config);
         final ConfigProviderResolver cpr = ConfigProviderResolver.instance();

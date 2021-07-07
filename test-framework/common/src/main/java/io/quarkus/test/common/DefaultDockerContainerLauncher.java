@@ -1,6 +1,5 @@
 package io.quarkus.test.common;
 
-import static io.quarkus.test.common.LauncherUtil.installAndGetSomeConfig;
 import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
@@ -14,52 +13,31 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
-
-import org.eclipse.microprofile.config.Config;
 
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
-public class DockerContainerLauncher implements ArtifactLauncher {
+public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
 
-    private static final int DEFAULT_PORT = 8081;
-    private static final int DEFAULT_HTTPS_PORT = 8444;
-    private static final long DEFAULT_WAIT_TIME = 60;
-
-    private final String containerImage;
-    private final String profile;
     private Process quarkusProcess;
     private int httpPort;
     private int httpsPort;
-    private final long jarWaitTime;
+    private long waitTimeSeconds;
+    private String testProfile;
+    private String containerImage;
+    private boolean pullRequired;
+
     private final Map<String, String> systemProps = new HashMap<>();
-    private final boolean pullRequired;
 
     private boolean isSsl;
 
-    private DockerContainerLauncher(String containerImage, Config config, boolean pullRequired) {
-        this(containerImage,
-                config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
-                config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                config.getValue("quarkus.test.jar-wait-time", OptionalLong.class).orElse(DEFAULT_WAIT_TIME),
-                config.getOptionalValue("quarkus.test.native-image-profile", String.class)
-                        .orElse(null),
-                pullRequired);
-    }
-
-    public DockerContainerLauncher(String containerImage, boolean pullRequired) {
-        this(containerImage, installAndGetSomeConfig(), pullRequired);
-    }
-
-    private DockerContainerLauncher(String containerImage, int httpPort, int httpsPort, long jarWaitTime, String profile,
-            boolean pullRequired) {
-        this.containerImage = containerImage;
-        this.httpPort = httpPort;
-        this.httpsPort = httpsPort;
-        this.jarWaitTime = jarWaitTime;
-        this.profile = profile;
-        this.pullRequired = pullRequired;
+    @Override
+    public void init(DockerContainerArtifactLauncher.DockerInitContext initContext) {
+        this.httpPort = initContext.httpPort();
+        this.httpsPort = initContext.httpsPort();
+        this.waitTimeSeconds = initContext.waitTime().getSeconds();
+        this.testProfile = initContext.testProfile();
+        this.containerImage = initContext.containerImage();
+        this.pullRequired = initContext.pullRequired();
     }
 
     public void start() throws IOException {
@@ -99,8 +77,8 @@ public class DockerContainerLauncher implements ArtifactLauncher {
         // this won't be correct when using the random port but it's really only used by us for the rest client tests
         // in the main module, since those tests hit the application itself
         args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
-        if (profile != null) {
-            args.addAll(toEnvVar("quarkus.profile", profile));
+        if (testProfile != null) {
+            args.addAll(toEnvVar("quarkus.profile", testProfile));
         }
 
         for (Map.Entry<String, String> e : systemProps.entrySet()) {
@@ -119,7 +97,7 @@ public class DockerContainerLauncher implements ArtifactLauncher {
         // the log itself is written inside the container
         quarkusProcess = new ProcessBuilder(args).redirectError(logFile.toFile()).redirectOutput(logFile.toFile()).start();
 
-        ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, jarWaitTime);
+        ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
         updateConfigForPort(result.getPort());
         isSsl = result.isSsl();
     }
@@ -134,7 +112,7 @@ public class DockerContainerLauncher implements ArtifactLauncher {
         return isSsl;
     }
 
-    public void addSystemProperties(Map<String, String> systemProps) {
+    public void includeAsSysProps(Map<String, String> systemProps) {
         this.systemProps.putAll(systemProps);
     }
 
@@ -156,4 +134,5 @@ public class DockerContainerLauncher implements ArtifactLauncher {
     public void close() {
         quarkusProcess.destroy();
     }
+
 }

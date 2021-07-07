@@ -100,9 +100,9 @@ public class TestRegistryClientBuilder {
         private JsonRegistryDescriptorConfig descrConfig = new JsonRegistryDescriptorConfig();
         private boolean external;
         private PlatformCatalog platformCatalog;
-        private List<JsonExtension> nonPlatformExtensions = new ArrayList<>(0);
 
         private List<TestPlatformCatalogMemberBuilder> memberCatalogs;
+        private List<TestNonPlatformCatalogBuilder> nonPlatformCatalogs;
         private boolean enableMavenResolver;
 
         private TestRegistryBuilder(TestRegistryClientBuilder parent, String id) {
@@ -148,6 +148,15 @@ public class TestRegistryClientBuilder {
             final TestPlatformCatalogPlatformBuilder platformBuilder = new TestPlatformCatalogPlatformBuilder(this,
                     platform);
             return platformBuilder;
+        }
+
+        public TestNonPlatformCatalogBuilder newNonPlatformCatalog(String quarkusVersion) {
+            final TestNonPlatformCatalogBuilder builder = new TestNonPlatformCatalogBuilder(this, quarkusVersion);
+            if (nonPlatformCatalogs == null) {
+                nonPlatformCatalogs = new ArrayList<>();
+            }
+            nonPlatformCatalogs.add(builder);
+            return builder;
         }
 
         public TestRegistryClientBuilder clientBuilder() {
@@ -232,11 +241,14 @@ public class TestRegistryClientBuilder {
             registryConfig.setPlatforms(platformConfig);
 
             final JsonRegistryNonPlatformExtensionsConfig nonPlatformConfig = new JsonRegistryNonPlatformExtensionsConfig();
-            nonPlatformConfig.setArtifact(
-                    new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_NON_PLATFORM_EXTENSIONS_CATALOG_ARTIFACT_ID,
-                            null, "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
-            if (nonPlatformExtensions.isEmpty()) {
+            nonPlatformConfig.setArtifact(getRegistryNonPlatformCatalogArtifact());
+            if (nonPlatformCatalogs == null || nonPlatformCatalogs.isEmpty()) {
                 nonPlatformConfig.setDisabled(true);
+            } else {
+                final Path nonPlatformDir = getRegistryNonPlatformDir(registryDir);
+                for (TestNonPlatformCatalogBuilder nonPlatformCatalog : nonPlatformCatalogs) {
+                    nonPlatformCatalog.persist(nonPlatformDir);
+                }
             }
             registryConfig.setNonPlatformExtensions(nonPlatformConfig);
 
@@ -258,6 +270,11 @@ public class TestRegistryClientBuilder {
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to persist registry descriptor " + descriptorJson, e);
             }
+        }
+
+        private ArtifactCoords getRegistryNonPlatformCatalogArtifact() {
+            return new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_NON_PLATFORM_EXTENSIONS_CATALOG_ARTIFACT_ID,
+                    null, "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION);
         }
     }
 
@@ -440,6 +457,44 @@ public class TestRegistryClientBuilder {
         }
     }
 
+    public static class TestNonPlatformCatalogBuilder {
+
+        private final TestRegistryBuilder registry;
+        private final JsonExtensionCatalog extensions = new JsonExtensionCatalog();
+
+        private TestNonPlatformCatalogBuilder(TestRegistryBuilder registry, String quarkusVersion) {
+            this.registry = registry;
+            final ArtifactCoords baseCoords = registry.getRegistryNonPlatformCatalogArtifact();
+            extensions.setId(new ArtifactCoords(baseCoords.getGroupId(), baseCoords.getArtifactId(), quarkusVersion,
+                    baseCoords.getType(), baseCoords.getVersion()).toString());
+            extensions.setPlatform(false);
+            extensions.setQuarkusCoreVersion(quarkusVersion);
+            extensions.setBom(new ArtifactCoords("io.quarkus", "quarkus-bom", null, "pom", quarkusVersion));
+        }
+
+        public TestNonPlatformCatalogBuilder addExtension(String groupId, String artifactId, String version) {
+            final JsonExtension e = new JsonExtension();
+            e.setArtifact(new ArtifactCoords(groupId, artifactId, null, "jar", version));
+            e.setName(artifactId);
+            e.setOrigins(Collections.singletonList(extensions));
+            extensions.addExtension(e);
+            return this;
+        }
+
+        public TestRegistryBuilder registry() {
+            return registry;
+        }
+
+        private void persist(Path nonPlatformDir) {
+            final Path json = getNonPlatformCatalogPath(nonPlatformDir, extensions.getQuarkusCoreVersion());
+            try {
+                JsonCatalogMapperHelper.serialize(extensions, json);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to persist extension catalog " + json, e);
+            }
+        }
+    }
+
     private static void persistPlatformCatalog(PlatformCatalog catalog, Path dir) {
         final Path platformsJson = dir.resolve("platforms.json");
         try {
@@ -458,9 +513,21 @@ public class TestRegistryClientBuilder {
         return memberDir.resolve(bom.getGroupId() + "." + bom.getArtifactId() + "." + bom.getVersion() + ".json");
     }
 
+    static Path getRegistryNonPlatformCatalogPath(Path registryDir, String quarkusVersion) {
+        return getNonPlatformCatalogPath(registryDir.resolve("non-platform"), quarkusVersion);
+    }
+
+    private static Path getNonPlatformCatalogPath(Path nonPlatformDir, String quarkusVersion) {
+        return nonPlatformDir.resolve(quarkusVersion + ".json");
+    }
+
     static Path getRegistryPlatformsCatalogPath(Path registryDir, String quarkusVersion) {
         return quarkusVersion == null ? getRegistryPlatformsDir(registryDir).resolve("platforms.json")
                 : getRegistryPlatformsDir(registryDir).resolve(quarkusVersion).resolve("platforms.json");
+    }
+
+    private static Path getRegistryNonPlatformDir(Path registryDir) {
+        return registryDir.resolve("non-platform");
     }
 
     private static Path getRegistryPlatformsDir(Path registryDir) {

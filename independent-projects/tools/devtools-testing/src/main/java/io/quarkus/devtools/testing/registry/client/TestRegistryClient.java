@@ -75,7 +75,11 @@ public class TestRegistryClient implements RegistryClient {
         if (config.getNonPlatformExtensions() == null || config.getNonPlatformExtensions().isDisabled()) {
             return null;
         }
-        log.info("%s resolveNonPlatformExtensions %s", config.getId(), quarkusVersion);
+        log.debug("%s resolveNonPlatformExtensions %s", config.getId(), quarkusVersion);
+        final Path json = TestRegistryClientBuilder.getRegistryNonPlatformCatalogPath(registryDir, quarkusVersion);
+        if (Files.exists(json)) {
+            return deserializeExtensionCatalog(json);
+        }
         return null;
     }
 
@@ -101,6 +105,10 @@ public class TestRegistryClient implements RegistryClient {
                 return null;
             }
         }
+        return deserializeExtensionCatalog(p);
+    }
+
+    private ExtensionCatalog deserializeExtensionCatalog(Path p) throws RegistryResolutionException {
         try {
             return JsonCatalogMapperHelper.deserialize(p, JsonExtensionCatalog.class);
         } catch (IOException e) {

@@ -1,5 +1,6 @@
 package io.quarkus.devtools.testing;
 
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.config.RegistriesConfigLocator;
@@ -28,6 +29,7 @@ public class RegistryClientTestHelper {
 
         final ArtifactCoords bom = new ArtifactCoords("io.quarkus", "quarkus-bom", null, "pom", projectVersion);
 
+        QuarkusProjectHelper.resetToolsConfig();
         TestRegistryClientBuilder.newInstance()
                 .baseDir(toolsConfigPath.getParent())
                 //.debug()

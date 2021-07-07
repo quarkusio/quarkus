@@ -70,6 +70,7 @@ import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.configuration.RuntimeConfigSource;
 import io.quarkus.runtime.configuration.RuntimeConfigSourceFactory;
 import io.quarkus.runtime.configuration.RuntimeConfigSourceProvider;
+import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.Converters;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
@@ -172,6 +173,8 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor CU_ADD_SOURCE_FACTORY_PROVIDER = MethodDescriptor.ofMethod(ConfigUtils.class,
             "addSourceFactoryProvider",
             void.class, SmallRyeConfigBuilder.class, ConfigSourceFactoryProvider.class);
+    static final MethodDescriptor CU_WITH_MAPPING = MethodDescriptor.ofMethod(ConfigUtils.class, "addMapping",
+            void.class, SmallRyeConfigBuilder.class, String.class, String.class);
 
     static final MethodDescriptor RCS_NEW = MethodDescriptor.ofConstructor(RuntimeConfigSource.class, String.class);
     static final MethodDescriptor RCSP_NEW = MethodDescriptor.ofConstructor(RuntimeConfigSourceProvider.class, String.class);
@@ -296,6 +299,7 @@ public final class RunTimeConfigurationGenerator {
         final Set<String> runtimeConfigSources;
         final Set<String> runtimeConfigSourceProviders;
         final Set<String> runtimeConfigSourceFactories;
+        final Set<ConfigClassWithPrefix> configMappings;
         /**
          * Regular converters organized by type. Each converter is stored in a separate field. Some are used
          * only at build time, some only at run time, and some at both times.
@@ -333,6 +337,7 @@ public final class RunTimeConfigurationGenerator {
             runtimeConfigSources = builder.getRuntimeConfigSources();
             runtimeConfigSourceProviders = builder.getRuntimeConfigSourceProviders();
             runtimeConfigSourceFactories = builder.getRuntimeConfigSourceFactories();
+            configMappings = builder.getConfigMappings();
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
             generateEmptyParsers(cc);
             // not instantiable
@@ -420,6 +425,11 @@ public final class RunTimeConfigurationGenerator {
             for (String discoveredConfigSourceFactory : staticConfigSourceFactories) {
                 clinit.invokeStaticMethod(CU_ADD_SOURCE_FACTORY_PROVIDER, buildTimeBuilder,
                         clinit.newInstance(RCSF_NEW, clinit.load(discoveredConfigSourceFactory)));
+            }
+            // add mappings
+            for (ConfigClassWithPrefix configMapping : configMappings) {
+                clinit.invokeStaticMethod(CU_WITH_MAPPING, buildTimeBuilder,
+                        clinit.load(configMapping.getKlass().getName()), clinit.load(configMapping.getPrefix()));
             }
 
             clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
@@ -662,6 +672,12 @@ public final class RunTimeConfigurationGenerator {
             for (String discoveredConfigSourceFactory : runtimeConfigSourceFactories) {
                 readConfig.invokeStaticMethod(CU_ADD_SOURCE_FACTORY_PROVIDER, runTimeBuilder,
                         readConfig.newInstance(RCSF_NEW, readConfig.load(discoveredConfigSourceFactory)));
+            }
+
+            // add mappings
+            for (ConfigClassWithPrefix configMapping : configMappings) {
+                readConfig.invokeStaticMethod(CU_WITH_MAPPING, runTimeBuilder,
+                        readConfig.load(configMapping.getKlass().getName()), readConfig.load(configMapping.getPrefix()));
             }
 
             ResultHandle bootstrapConfig = null;
@@ -1683,6 +1699,8 @@ public final class RunTimeConfigurationGenerator {
             private Set<String> runtimeConfigSourceProviders;
             private Set<String> runtimeConfigSourceFactories;
 
+            private Set<ConfigClassWithPrefix> configMappings;
+
             Builder() {
             }
 
@@ -1791,6 +1809,15 @@ public final class RunTimeConfigurationGenerator {
 
             public Builder setRuntimeConfigSourceFactories(final Set<String> runtimeConfigSourceFactories) {
                 this.runtimeConfigSourceFactories = runtimeConfigSourceFactories;
+                return this;
+            }
+
+            Set<ConfigClassWithPrefix> getConfigMappings() {
+                return configMappings;
+            }
+
+            public Builder setConfigMappings(final Set<ConfigClassWithPrefix> configMappings) {
+                this.configMappings = configMappings;
                 return this;
             }
 

@@ -21,18 +21,22 @@ To complete this guide, you need:
 
 == Architecture
 
-In this guide, we are going to develop two microservices for an application that will ask for some price and receive quotes from providers in real-time.
+In this guide, we are going to develop two applications communicating with Kafka.
+The first application sends a _quote request_ to Kafka and consumes Kafka messages from the _quote_ topic.
+The second application receives the _quote request_ and sends a _quote_ back.
 
-The first component, the `producer`, will let the user request some quotes over a JAX-RS endpoint.
+image::kafka-qs-architecture.png[alt=Architecture, align=center]
+
+The first application, the `producer`, will let the user request some quotes over a HTTP endpoint.
 For each quote request a random identifier is generated and returned to the user, to put the quote request on _pending_.
 At the same time the generated request id is sent over a Kafka topic `quote-requests`.
 
-The second component, the `processor`, in turn will read from the `quote-requests` topic put a magic random price to the quote and send it to a Kafka topic named `quotes`.
-Lastly, the first component will read the quotes and send them to the browser using server-sent events.
-The user will therefore see the quote price updated from _pending_ to the received price in real-time.
+image::kafka-qs-app-screenshot.png[alt=Producer App UI, align=center]
 
-// TODO update image
-image::kafka-guide-architecture.png[alt=Architecture, align=center]
+The second application, the `processor`, in turn, will read from the `quote-requests` topic put a random price to the quote, and send it to a Kafka topic named `quotes`.
+
+Lastly, the `producer` will read the quotes and send them to the browser using server-sent events.
+The user will therefore see the quote price updated from _pending_ to the received price in real-time.
 
 == Solution
 
@@ -145,7 +149,6 @@ package org.acme.kafka.producer;
 
 import java.util.UUID;
 
-import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -161,7 +164,6 @@ import io.smallrye.mutiny.Multi;
 @Path("/quotes")
 public class QuotesResource {
 
-    @Inject
     @Channel("quote-requests") Emitter<String> quoteRequestEmitter; // <1>
 
     /**
@@ -265,7 +267,8 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 
 [NOTE]
 ====
-More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`. An exhaustive list of configuration properties is available in <<kafka-configuration>>.
+More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`. An exhaustive list of configuration properties is available in
+xref:kafka.adoc#kafka-configuration[Using Apache Kafka with Reactive Messaging - Configuration].
 ====
 
 Also for the outgoing configuration we specified the serializer because we are sending a `Quote` object as the message payload.
@@ -283,7 +286,6 @@ Let's modify the `QuotesResource` to consume quotes, bind it to a JAX-RS resourc
 import io.smallrye.mutiny.Multi;
 [...]
 
-@Inject
 @Channel("quotes") Multi<Quote> quotes;     // <1>
 
 /**
@@ -340,10 +342,12 @@ Quarkus will automatically detect this serializer.
 ====
 .Message serialization in Kafka
 In this example we used Jackson to serialize/deserialize Kafka messages.
-For more options on message serialization see <<kafka-serialization>>.
+For more options on message serialization see
+xref:kafka.adoc#kafka-serialization[Using Apache Kafka with Reactive Messaging - Serialization].
 
 We strongly suggest adopting a contract-first approach using a schema registry.
-To learn more about how to use Apache Kafka with the schema registry and Avro follow the link:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] guide.
+To learn more about how to use Apache Kafka with the schema registry and Avro follow the
+xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] guide.
 ====
 
 == The HTML page
@@ -354,7 +358,7 @@ Create inside the `producer` project `src/main/resources/META-INF/resources/quot
 
 [source, html]
 ----
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <title>Prices</title>
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <title>Quotes</title>
 
     <link rel="stylesheet" type="text/css"
           href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
@@ -394,7 +398,7 @@ Create inside the `producer` project `src/main/resources/META-INF/resources/quot
 ----
 
 Nothing spectacular here.
-On each received price, it updates the page.
+On each received quote, it updates the page.
 
 == Get it running
 
@@ -403,13 +407,19 @@ You just need to run both applications using:
 [source,bash]
 ----
 ./mvnw -f producer quarkus:dev
+----
+
+And in a separate terminal:
+
+[source, bash]
+----
 ./mvnw -f processor quarkus:dev
 ----
 
 Quarkus starts a Kafka broker automatically, configures the application and shares the Kafka broker instance between different applications.
 See xref:kafka-dev-services.adoc[Dev Services for Kafka] for more details.
 
-Open `http://localhost:8080/quotes.html` in your browser.
+Open `http://localhost:8080/quotes.html` in your browser and request some quotes by clicking the button.
 
 == Running in JVM or Native mode
 
@@ -496,7 +506,7 @@ NOTE: This is a development cluster, do not use in production.
 This guide has shown how you can interact with Kafka using Quarkus.
 It utilizes SmallRye Reactive Messaging to build data streaming applications.
 
-If you want to go further check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.
+If you want to go further check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging].
 
 For the exhaustive list of features and configuration options check the
 xref:kafka.adoc[Reference guide for Apache Kafka Extension].

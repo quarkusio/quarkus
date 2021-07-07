@@ -1,5 +1,6 @@
 package io.quarkus.oidc.common.runtime;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -362,12 +363,54 @@ public class OidcCommonConfig {
         @ConfigItem
         public Optional<Verification> verification = Optional.empty();
 
+        /**
+         * An optional trust store which holds the certificate information of the certificates to trust
+         */
+        @ConfigItem
+        public Optional<Path> trustStoreFile = Optional.empty();
+
+        /**
+         * A parameter to specify the password of the trust store file.
+         */
+        @ConfigItem
+        public Optional<String> trustStorePassword = Optional.empty();
+
+        /**
+         * A parameter to specify the alias of the trust store certificate.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreCertAlias = Optional.empty();
+
         public Optional<Verification> getVerification() {
             return verification;
         }
 
         public void setVerification(Verification verification) {
             this.verification = Optional.of(verification);
+        }
+
+        public Optional<Path> getTrustStoreFile() {
+            return trustStoreFile;
+        }
+
+        public void setTrustStoreFile(Path trustStoreFile) {
+            this.trustStoreFile = Optional.of(trustStoreFile);
+        }
+
+        public Optional<String> getTrustStorePassword() {
+            return trustStorePassword;
+        }
+
+        public void setTrustStorePassword(String trustStorePassword) {
+            this.trustStorePassword = Optional.of(trustStorePassword);
+        }
+
+        public Optional<String> getTrustStoreCertAlias() {
+            return trustStoreCertAlias;
+        }
+
+        public void setTrustStoreCertAlias(String trustStoreCertAlias) {
+            this.trustStoreCertAlias = Optional.of(trustStoreCertAlias);
         }
 
     }

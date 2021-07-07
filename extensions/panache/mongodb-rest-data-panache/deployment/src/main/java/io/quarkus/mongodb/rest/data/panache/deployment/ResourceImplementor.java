@@ -1,5 +1,7 @@
 package io.quarkus.mongodb.rest.data.panache.deployment;
 
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -7,6 +9,7 @@ import javax.enterprise.context.ApplicationScoped;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.logging.Logger;
 
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -60,7 +63,13 @@ class ResourceImplementor {
         MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
-        methodCreator.returnValue(dataAccessImplementor.findAll(methodCreator, page, sort));
+        ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
+        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
+
+        BranchResult isEmptySortBranch = methodCreator.ifTrue(isEmptySort);
+        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
+        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
+
         methodCreator.close();
     }
 

@@ -71,7 +71,7 @@ The `quarkus-smallrye-health` extension will expose the Health UI when Quarkus i
 
 === Mock mailer
 
-The `quarkus-mailer` extension will enable an in-memory mock mail server when Quarkus is running in dev-mode. See link:mailer.adoc#testing[this] for more details.
+The `quarkus-mailer` extension will enable an in-memory mock mail server when Quarkus is running in dev-mode. See link:mailer-reference.adoc#testing[this] for more details.
 
 
 === gRPC

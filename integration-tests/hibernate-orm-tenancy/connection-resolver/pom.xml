@@ -34,10 +34,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-flyway</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
         </dependency>
         <dependency>
@@ -58,19 +54,6 @@
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-flyway-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment</artifactId>
@@ -236,7 +219,8 @@
                                         <wait>
                                             <time>20000</time>
                                             <exec>
-                                                <postStart>mysqladmin ping -h localhost -uroot -psecret</postStart>
+                                                <breakOnError>true</breakOnError>
+                                                <postStart>bash -c eval\ ${@} -- mysql -h localhost -uroot -psecret &lt;/etc/mysql/conf.d/init.sql</postStart>
                                             </exec>
                                         </wait>
                                         <volumes>

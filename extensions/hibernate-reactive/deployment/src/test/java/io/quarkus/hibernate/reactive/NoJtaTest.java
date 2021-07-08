@@ -34,7 +34,7 @@ public class NoJtaTest {
     SessionFactory sessionFactory; // This is an ORM SessionFactory, but it's backing Hibernate Reactive.
 
     @Inject
-    Mutiny.Session session;
+    Mutiny.SessionFactory factory;
 
     @Test
     @ActivateRequestContext
@@ -48,8 +48,8 @@ public class NoJtaTest {
 
         // Quick test to make sure HRX works
         MyEntity entity = new MyEntity("default");
-        MyEntity retrievedEntity = session.withTransaction(tx -> session.persist(entity))
-                .chain(() -> session.withTransaction(tx -> session.clear().find(MyEntity.class, entity.getId())))
+        MyEntity retrievedEntity = factory.withTransaction((session, tx) -> session.persist(entity))
+                .chain(() -> factory.withTransaction((session, tx) -> session.clear().find(MyEntity.class, entity.getId())))
                 .await().indefinitely();
         assertThat(retrievedEntity)
                 .isNotSameAs(entity)

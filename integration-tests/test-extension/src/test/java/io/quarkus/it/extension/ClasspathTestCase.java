@@ -31,8 +31,6 @@ public class ClasspathTestCase {
     }
 
     @Test
-    @Disabled("For some reason, class files are not accessible as resources through the static init classloader;"
-            + " that's beside the point of this PR though, so we'll ignore that.")
     public void testStaticInitMainClassNoDuplicate() {
         given().param("resourceName", CLASS_FILE)
                 .param("phase", "static_init")
@@ -49,7 +47,7 @@ public class ClasspathTestCase {
     }
 
     @Test
-    @Disabled("For some reason, class files are not accessible as resources through the static init classloader;"
+    @Disabled("For some reason, class files are not accessible as resources through the runtime init classloader;"
             + " that's beside the point of this PR though, so we'll ignore that.")
     public void testRuntimeInitMainClassNoDuplicate() {
         given().param("resourceName", CLASS_FILE)

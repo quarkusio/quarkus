@@ -148,6 +148,9 @@ public class PanacheJpaUtil {
             return "DELETE FROM " + getEntityName(entityClass);
 
         String trimmedLc = trimmed.toLowerCase();
+        if (trimmedLc.startsWith("delete ")) {
+            return query;
+        }
         if (trimmedLc.startsWith("from ")) {
             return "DELETE " + query;
         }

@@ -53,7 +53,7 @@ public final class IntegrationTestUtil {
 
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
-    public static final long DEFAULT_JAR_WAIT_TIME_SECONDS = 60;
+    public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
 
     private IntegrationTestUtil() {
     }

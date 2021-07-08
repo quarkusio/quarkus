@@ -1,13 +1,12 @@
 package io.quarkus.test.junit.launcher;
 
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
-import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_JAR_WAIT_TIME_SECONDS;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
 
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.ServiceLoader;
 
 import org.eclipse.microprofile.config.Config;
@@ -39,9 +38,9 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
             launcher.init(new NativeImageLauncherProvider.DefaultNativeImageInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    Duration.ofSeconds(config.getValue("quarkus.test.jar-wait-time", OptionalLong.class)
-                            .orElse(DEFAULT_JAR_WAIT_TIME_SECONDS)),
+                    ConfigUtil.waitTimeValue(config),
                     config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
+                    ConfigUtil.argLineValue(config),
                     System.getProperty("native.image.path"),
                     context.testClass()));
             return launcher;
@@ -57,8 +56,9 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
         private final Class<?> testClass;
 
         public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
+                List<String> argLine,
                 String nativeImagePath, Class<?> testClass) {
-            super(httpPort, httpsPort, waitTime, testProfile);
+            super(httpPort, httpsPort, waitTime, testProfile, argLine);
             this.nativeImagePath = nativeImagePath;
             this.testClass = testClass;
         }

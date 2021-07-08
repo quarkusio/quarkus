@@ -1,7 +1,9 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
 import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
+import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
 
 import java.io.IOException;
@@ -13,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
@@ -23,6 +26,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private int httpsPort;
     private long waitTimeSeconds;
     private String testProfile;
+    private List<String> argLine;
     private String containerImage;
     private boolean pullRequired;
 
@@ -36,6 +40,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.httpsPort = initContext.httpsPort();
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
         this.testProfile = initContext.testProfile();
+        this.argLine = initContext.argLine();
         this.containerImage = initContext.containerImage();
         this.pullRequired = initContext.pullRequired();
     }
@@ -67,6 +72,9 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         List<String> args = new ArrayList<>();
         args.add("docker"); // TODO: determine this dynamically?
         args.add("run");
+        if (!argLine.isEmpty()) {
+            args.addAll(argLine);
+        }
         args.add("--rm");
         args.add("-p");
         args.add(httpPort + ":" + httpPort);
@@ -92,14 +100,22 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
         System.out.println("Executing " + args);
 
+        Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
+
         // the idea here is to obtain the logs of the application simply by redirecting all its output the a file
         // this is done in contrast with the JarLauncher and NativeImageLauncher because in the case of the container
         // the log itself is written inside the container
         quarkusProcess = new ProcessBuilder(args).redirectError(logFile.toFile()).redirectOutput(logFile.toFile()).start();
 
-        ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
-        updateConfigForPort(result.getPort());
-        isSsl = result.isSsl();
+        if (startedFunction != null) {
+            IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
+                    waitTimeSeconds, logFile);
+            isSsl = result.isSsl();
+        } else {
+            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
+            updateConfigForPort(result.getPort());
+            isSsl = result.isSsl();
+        }
     }
 
     private int getRandomPort() throws IOException {

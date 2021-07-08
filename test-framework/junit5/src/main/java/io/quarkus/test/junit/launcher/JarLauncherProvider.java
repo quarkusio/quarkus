@@ -1,12 +1,13 @@
 package io.quarkus.test.junit.launcher;
 
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
-import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_JAR_WAIT_TIME_SECONDS;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
+import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_WAIT_TIME_SECONDS;
 
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.ServiceLoader;
@@ -42,9 +43,9 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                     Duration.ofSeconds(config.getValue("quarkus.test.jar-wait-time", OptionalLong.class)
-                            .orElse(DEFAULT_JAR_WAIT_TIME_SECONDS)),
+                            .orElse(DEFAULT_WAIT_TIME_SECONDS)),
                     config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
-                    config.getOptionalValue("quarkus.test.argLine", String.class).orElse(null),
+                    ConfigUtil.argLineValue(config),
                     context.buildOutputDirectory().resolve(pathStr)));
             return launcher;
         } else {
@@ -54,19 +55,12 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
 
     static class DefaultJarInitContext extends DefaultInitContextBase implements JarArtifactLauncher.JarInitContext {
 
-        private final String argLine;
         private final Path jarPath;
 
-        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile, String argLine,
+        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile, List<String> argLine,
                 Path jarPath) {
-            super(httpPort, httpsPort, waitTime, testProfile);
-            this.argLine = argLine;
+            super(httpPort, httpsPort, waitTime, testProfile, argLine);
             this.jarPath = jarPath;
-        }
-
-        @Override
-        public String argLine() {
-            return argLine;
         }
 
         @Override

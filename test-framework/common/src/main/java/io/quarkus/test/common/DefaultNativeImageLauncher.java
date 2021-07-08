@@ -1,7 +1,10 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
+import static io.quarkus.test.common.LauncherUtil.launchProcess;
 import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
+import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -28,12 +32,12 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     private int httpsPort;
     private long waitTimeSeconds;
     private String testProfile;
+    private List<String> argLine;
     private String nativeImagePath;
     private Class<?> testClass;
 
     private Process quarkusProcess;
     private final Map<String, String> systemProps = new HashMap<>();
-    private Supplier<Boolean> startedSupplier = null;
 
     private boolean isSsl;
 
@@ -44,14 +48,17 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
         this.testProfile = initContext.testProfile();
         this.nativeImagePath = initContext.nativeImagePath();
+        this.argLine = initContext.argLine();
         this.testClass = initContext.testClass();
+    }
 
+    private Supplier<Boolean> createStartedSupplier() {
         List<NativeImageStartedNotifier> startedNotifiers = new ArrayList<>();
         for (NativeImageStartedNotifier i : ServiceLoader.load(NativeImageStartedNotifier.class)) {
             startedNotifiers.add(i);
         }
         if (!startedNotifiers.isEmpty()) {
-            this.startedSupplier = () -> {
+            return () -> {
                 for (NativeImageStartedNotifier i : startedNotifiers) {
                     if (i.isNativeImageStarted()) {
                         return true;
@@ -60,6 +67,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
                 return false;
             };
         }
+        return null;
     }
 
     public void start() throws IOException {
@@ -70,6 +78,9 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         }
         List<String> args = new ArrayList<>();
         args.add(nativeImagePath);
+        if (!argLine.isEmpty()) {
+            args.addAll(argLine);
+        }
         args.add("-Dquarkus.http.port=" + httpPort);
         args.add("-Dquarkus.http.ssl-port=" + httpsPort);
         // this won't be correct when using the random port but it's really only used by us for the rest client tests
@@ -90,10 +101,17 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         Files.deleteIfExists(logFile);
         Files.createDirectories(logFile.getParent());
 
-        quarkusProcess = LauncherUtil.launchProcess(args);
+        Supplier<Boolean> startedSupplier = createStartedSupplier(); // keep the legacy SPI handling
+        Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
+
+        quarkusProcess = launchProcess(args);
 
         if (startedSupplier != null) {
-            waitForStartedSupplier(quarkusProcess, startedSupplier, waitTimeSeconds);
+            waitForStartedSupplier(startedSupplier, quarkusProcess, waitTimeSeconds);
+        } else if (startedFunction != null) {
+            IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
+                    waitTimeSeconds, logFile);
+            isSsl = result.isSsl();
         } else {
             ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
             updateConfigForPort(result.getPort());
@@ -101,7 +119,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         }
     }
 
-    private void waitForStartedSupplier(Process quarkusProcess, Supplier<Boolean> startedSupplier, long waitTime) {
+    private void waitForStartedSupplier(Supplier<Boolean> startedSupplier, Process quarkusProcess, long waitTime) {
         long bailout = System.currentTimeMillis() + waitTime * 1000;
         boolean started = false;
         while (System.currentTimeMillis() < bailout) {

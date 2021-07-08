@@ -62,9 +62,11 @@ public class SerializationTestEndpoint extends HttpServlet {
             writer.write(" ");
         }
         writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
+        if (e != null) {
+            writer.append("\n\t");
+            e.printStackTrace(writer);
+        }
+        writer.append("\n");
     }
 
 }

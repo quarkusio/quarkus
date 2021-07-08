@@ -12,7 +12,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
@@ -82,6 +85,7 @@ import io.vertx.ext.web.RoutingContext;
 public class SmallRyeGraphQLProcessor {
     private static final Logger LOG = Logger.getLogger(SmallRyeGraphQLProcessor.class);
     private static final String SCHEMA_PATH = "schema.graphql";
+    private static final DotName APPLICATION_SCOPE = DotName.createSimple(ApplicationScoped.class.getName());
 
     // For Service integration
     private static final String SERVICE_NOT_AVAILABLE_WARNING = "The %s property is true, but the %s extension is not present. SmallRye GraphQL %s will be disabled.";
@@ -127,7 +131,8 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void additionalBeanDefiningAnnotation(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotationProducer) {
         // Make ArC discover the beans marked with the @GraphQlApi qualifier
-        beanDefiningAnnotationProducer.produce(new BeanDefiningAnnotationBuildItem(Annotations.GRAPHQL_API));
+        beanDefiningAnnotationProducer
+                .produce(new BeanDefiningAnnotationBuildItem(Annotations.GRAPHQL_API, APPLICATION_SCOPE, false));
     }
 
     @BuildStep

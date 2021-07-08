@@ -17,7 +17,6 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -44,11 +43,6 @@ public class Neo4jDriverRecorder {
         Driver driver = GraphDatabase.driver(uri, authToken, configBuilder.build());
         shutdownContext.addShutdownTask(driver::close);
         return new RuntimeValue<>(driver);
-    }
-
-    public void configureNeo4jProducer(BeanContainer beanContainer, RuntimeValue<Driver> driverHolder) {
-        Neo4jDriverProducer driverProducer = beanContainer.instance(Neo4jDriverProducer.class);
-        driverProducer.initialize(driverHolder.getValue());
     }
 
     public Consumer<MetricsFactory> registerMetrics(Neo4jConfiguration configuration) {

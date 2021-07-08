@@ -15,7 +15,7 @@
 
     <modules>
         <module>datasource</module>
-        <!-- TODO add more -->
+        <module>connection-resolver</module>
     </modules>
 
 </project>

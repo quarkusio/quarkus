@@ -25,6 +25,7 @@ import org.infinispan.commons.util.Util;
 import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.EnumMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.GeneratedSchema;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.RawProtobufMarshaller;
 import org.infinispan.protostream.SerializationContextInitializer;
@@ -149,6 +150,9 @@ class InfinispanClientProcessor {
             InfinispanClientProducer.handleProtoStreamRequirements(properties);
             Collection<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
                     SerializationContextInitializer.class.getName()));
+            initializerClasses
+                    .addAll(index.getAllKnownImplementors(DotName.createSimple(GeneratedSchema.class.getName())));
+
             Set<SerializationContextInitializer> initializers = new HashSet<>(initializerClasses.size());
             for (ClassInfo ci : initializerClasses) {
                 Class<?> initializerClass = Thread.currentThread().getContextClassLoader().loadClass(ci.toString());

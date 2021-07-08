@@ -9,7 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 public class RecordedClasspathEntries {
+    private static final Logger log = Logger.getLogger("RecordedClasspathEntries");
 
     /*
      * This needs to be a static method, because CDI beans are available in all phases
@@ -21,6 +24,12 @@ public class RecordedClasspathEntries {
     public static synchronized void put(Path recordFilePath, Record record) {
         // Assuming that this will never get called concurrently from separate JVMs.
         try {
+            if (!Files.exists(recordFilePath.getParent())) {
+                log.warnf("Could not record classpath entries because the parent directory of %s does not exist;"
+                        + " assuming we're running GraalVM in a container and ignoring this recording."
+                        + " Record was: %s.", recordFilePath, record);
+                return;
+            }
             Files.writeString(recordFilePath, Record.serialize(record) + System.lineSeparator(),
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
@@ -94,6 +103,15 @@ public class RecordedClasspathEntries {
             this.phase = phase;
             this.resourceName = resourceName;
             this.classpathEntries = classpathEntries;
+        }
+
+        @Override
+        public String toString() {
+            return "Record{" +
+                    "phase=" + phase +
+                    ", resourceName='" + resourceName + '\'' +
+                    ", classpathEntries=" + classpathEntries +
+                    '}';
         }
 
         public Phase getPhase() {

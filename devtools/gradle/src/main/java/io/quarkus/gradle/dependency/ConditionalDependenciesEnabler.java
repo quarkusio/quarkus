@@ -24,6 +24,7 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.util.ZipUtils;
 
 public class ConditionalDependenciesEnabler {
@@ -197,11 +198,11 @@ public class ConditionalDependenciesEnabler {
                 conditionalDependencies.add(DependencyUtils.create(project.getDependencies(), conditionalDep));
             }
         }
-        List<Dependency> constraints = new ArrayList<>();
+        List<AppArtifactKey> constraints = new ArrayList<>();
         if (extensionProperties.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
             String constraintDeps = extensionProperties.getProperty(BootstrapConstants.DEPENDENCY_CONDITION);
             for (String constraint : constraintDeps.split(",")) {
-                constraints.add(DependencyUtils.create(project.getDependencies(), constraint));
+                constraints.add(AppArtifactKey.fromString(constraint));
             }
         }
         return new ExtensionDependency(exentionId, deploymentModule, conditionalDependencies, constraints);

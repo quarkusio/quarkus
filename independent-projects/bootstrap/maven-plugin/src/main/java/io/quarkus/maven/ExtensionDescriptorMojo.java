@@ -249,9 +249,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (!dependencyCondition.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
             int i = 0;
-            buf.append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+            buf.append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toGacString());
             while (i < dependencyCondition.size()) {
-                buf.append(' ').append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+                buf.append(' ').append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toGacString());
             }
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
 
@@ -532,7 +532,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                             extensionDeps.set(deps);
                         }
                         deps.add(new AppArtifactKey(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension())
-                                .toString());
+                                .toGacString());
                     }
                 }
                 return true;

@@ -2,12 +2,14 @@ package io.quarkus.extest.runtime.classpath;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -27,15 +29,17 @@ public class ClasspathEntriesRecorder {
         return classpathEntries;
     }
 
-    public void gatherAndRecord(RecordedClasspathEntries.Phase phase, List<String> resourceNames)
-            throws IOException {
-        record(phase, gather(resourceNames));
+    public static void record(Path recordFilePath, RecordedClasspathEntries.Phase phase,
+            Map<String, List<String>> classpathEntries) {
+        for (Map.Entry<String, List<String>> entry : classpathEntries.entrySet()) {
+            RecordedClasspathEntries.put(recordFilePath,
+                    new RecordedClasspathEntries.Record(phase, entry.getKey(), entry.getValue()));
+        }
     }
 
-    public void record(RecordedClasspathEntries.Phase phase, Map<String, List<String>> classpathEntries) {
-        for (Map.Entry<String, List<String>> entry : classpathEntries.entrySet()) {
-            RecordedClasspathEntries.put(phase, entry.getKey(), entry.getValue());
-        }
+    public void gatherAndRecord(String recordFilePath, RecordedClasspathEntries.Phase phase, List<String> resourceNames)
+            throws IOException {
+        record(Path.of(recordFilePath), phase, gather(resourceNames));
     }
 
     private static ClassLoader getClassLoader() {
@@ -46,4 +50,7 @@ public class ClasspathEntriesRecorder {
         return cl;
     }
 
+    public RuntimeValue<RecordedClasspathEntries> recordedClasspathEntries(String recordFilePath) {
+        return new RuntimeValue<>(new RecordedClasspathEntries(Path.of(recordFilePath)));
+    }
 }

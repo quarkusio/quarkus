@@ -1,38 +1,111 @@
 package io.quarkus.extest.runtime.classpath;
 
-import java.util.HashMap;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
-public final class RecordedClasspathEntries {
+public class RecordedClasspathEntries {
 
-    private RecordedClasspathEntries() {
-    }
-
-    private static final Map<Phase, Map<String, List<String>>> content;
-    static {
-        content = new HashMap<>();
-        for (Phase phase : Phase.values()) {
-            content.put(phase, new HashMap<>());
+    /*
+     * This needs to be a static method, because CDI beans are available in all phases
+     * where we need to record classpath entries.
+     *
+     * Also, we need to push the result to a file, not to a static variable or a build item,
+     * because this may be executed multiple times from multiple JVMs.
+     */
+    public static synchronized void put(Path recordFilePath, Record record) {
+        // Assuming that this will never get called concurrently from separate JVMs.
+        try {
+            Files.writeString(recordFilePath, Record.serialize(record) + System.lineSeparator(),
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    public static void put(Phase phase, String resourceName, List<String> classpathEntries) {
-        content.get(phase).put(resourceName, classpathEntries);
+    Path recordFilePath;
+
+    RecordedClasspathEntries(Path recordFilePath) {
+        this.recordFilePath = recordFilePath;
     }
 
-    public static List<String> get(Phase phase, String resourceName) {
-        List<String> entries = content.get(phase).get(resourceName);
-        if (entries == null) {
-            throw new IllegalStateException("Classpath entries for resource '" + resourceName + "' were not recorded;"
-                    + " make sure to set application property 'bt.augment-phase-classpath-resources-to-record' correctly.");
+    public List<Record> get(Phase phase, String resourceName) {
+        // It may seem strange, but a given phase (e.g. augmentation) can be executed multiple times.
+        // So this method returns a list instead of a single record.
+        List<Record> result;
+        try {
+            result = Files.readAllLines(recordFilePath).stream()
+                    .map(Record::deserialize)
+                    .filter(r -> r.phase == phase && r.resourceName.equals(resourceName))
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        return entries;
+        if (result.isEmpty()) {
+            throw new IllegalStateException("Classpath entries for phase '" + phase
+                    + "' and resource '" + resourceName + "' were not recorded;"
+                    + " make sure to set application property 'quarkus.bt.classpath-recording.resources' correctly.");
+        }
+        return result;
     }
 
     public enum Phase {
         AUGMENTATION,
         STATIC_INIT,
         RUNTIME_INIT;
+    }
+
+    public static class Record {
+        private static final String SEPARATOR = "\t";
+
+        static String serialize(Record record) {
+            StringBuilder builder = new StringBuilder();
+            builder.append(record.phase.name());
+            builder.append(SEPARATOR);
+            builder.append(record.resourceName);
+            for (String classpathEntry : record.classpathEntries) {
+                builder.append(SEPARATOR);
+                builder.append(classpathEntry);
+            }
+            return builder.toString();
+        }
+
+        static Record deserialize(String line) {
+            String[] elements = line.split(SEPARATOR);
+            Phase phase = Phase.valueOf(elements[0]);
+            String resourceName = elements[1];
+            List<String> classpathEntries = new ArrayList<>();
+            for (int i = 2; i < elements.length; i++) {
+                classpathEntries.add(elements[i]);
+            }
+            return new Record(phase, resourceName, classpathEntries);
+        }
+
+        private final Phase phase;
+        private final String resourceName;
+        private final List<String> classpathEntries;
+
+        public Record(Phase phase, String resourceName, List<String> classpathEntries) {
+            this.phase = phase;
+            this.resourceName = resourceName;
+            this.classpathEntries = classpathEntries;
+        }
+
+        public Phase getPhase() {
+            return phase;
+        }
+
+        public String getResourceName() {
+            return resourceName;
+        }
+
+        public List<String> getClasspathEntries() {
+            return classpathEntries;
+        }
     }
 }

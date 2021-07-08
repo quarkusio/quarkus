@@ -48,11 +48,15 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .redirectError(logOutput)
                 .start();
 
-        p.waitFor(5, TimeUnit.MINUTES);
+        boolean done = p.waitFor(5, TimeUnit.MINUTES);
+        if (!done) {
+            p.destroy();
+        }
         try (InputStream is = new FileInputStream(logOutput)) {
             final BuildResult commandResult = BuildResult.of(is);
-            if (p.exitValue() != 0) {
-                printCommandOutput(command, commandResult);
+            int exitCode = p.exitValue();
+            if (exitCode != 0) {
+                printCommandOutput(command, commandResult, exitCode);
             }
             return commandResult;
         }
@@ -100,8 +104,9 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         return new StringBuilder().append("-D=").append(name).append("=").append(value).toString();
     }
 
-    private void printCommandOutput(List<String> command, BuildResult commandResult) {
-        System.err.println("Command: " + String.join(" ", command) + " failed with the following output:");
+    private void printCommandOutput(List<String> command, BuildResult commandResult, int exitCode) {
+        System.err.println(
+                "Command: " + String.join(" ", command) + " failed with exit code: " + exitCode + " and the following output:");
         System.err.println(commandResult.getOutput());
     }
 }

@@ -68,10 +68,11 @@ public class CustomRoleDecoderDevModeTest extends JdbcSecurityRealmTest {
 
     @Test
     public void testContinuousTesting() {
+        ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         RestAssured.given().auth().preemptive().basic("user", "user")
                 .when().get("/servlet-secured").then()
                 .statusCode(200);
-        TestStatus status = ContinuousTestingTestUtils.waitForFirstRunToComplete();
+        TestStatus status = utils.waitForNextCompletion();
         Assertions.assertEquals(0, status.getTotalTestsFailed());
         RestAssured.given().auth().preemptive().basic("user", "user")
                 .when().get("/servlet-secured").then()

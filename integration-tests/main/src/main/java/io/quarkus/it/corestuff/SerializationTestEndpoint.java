@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.graalvm.home.Version;
+
 import io.quarkus.it.corestuff.serialization.ExternalizablePerson;
 import io.quarkus.it.corestuff.serialization.Person;
 import io.quarkus.it.corestuff.serialization.SomeSerializationObject;
@@ -28,6 +30,12 @@ public class SerializationTestEndpoint extends HttpServlet {
     }
 
     private void reflectiveSetterInvoke(HttpServletResponse resp) throws IOException {
+        // we don't test serialization for GraalVM < 21 as they don't support it
+        if (Version.getCurrent().compareTo(21) < 0) {
+            resp.getWriter().write("OK");
+            return;
+        }
+
         try {
             SomeSerializationObject instance = new SomeSerializationObject();
             instance.setPerson(new Person("Sheldon"));
@@ -62,9 +70,11 @@ public class SerializationTestEndpoint extends HttpServlet {
             writer.write(" ");
         }
         writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
+        if (e != null) {
+            writer.append("\n\t");
+            e.printStackTrace(writer);
+        }
+        writer.append("\n");
     }
 
 }

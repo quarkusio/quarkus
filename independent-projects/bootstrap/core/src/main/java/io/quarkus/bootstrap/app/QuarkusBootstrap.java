@@ -135,7 +135,7 @@ public class QuarkusBootstrap implements Serializable {
         //once we have this it is up to augment to set up the class loader to actually use them
 
         if (existingModel != null) {
-            return new CuratedApplication(this, new CurationResult(existingModel), classLoadingConfig, assertionsEnabled);
+            return new CuratedApplication(this, new CurationResult(existingModel), classLoadingConfig);
         }
         //first we check for updates
         if (mode != Mode.PROD) {
@@ -170,7 +170,7 @@ public class QuarkusBootstrap implements Serializable {
                 appModelFactory.setEnableClasspathCache(true);
             }
         }
-        return new CuratedApplication(this, appModelFactory.resolveAppModel(), classLoadingConfig, assertionsEnabled);
+        return new CuratedApplication(this, appModelFactory.resolveAppModel(), classLoadingConfig);
     }
 
     private static ConfiguredClassLoading createClassLoadingConfig(PathsCollection applicationRoot, Mode mode) {
@@ -283,6 +283,10 @@ public class QuarkusBootstrap implements Serializable {
 
     public boolean isRebuild() {
         return rebuild;
+    }
+
+    public boolean isAssertionsEnabled() {
+        return assertionsEnabled;
     }
 
     public List<ClassLoaderEventListener> getClassLoaderEventListeners() {

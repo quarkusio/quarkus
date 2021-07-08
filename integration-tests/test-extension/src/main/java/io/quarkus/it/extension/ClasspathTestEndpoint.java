@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -14,9 +15,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import io.quarkus.extest.runtime.classpath.RecordedClasspathEntries;
 import io.quarkus.extest.runtime.classpath.RecordedClasspathEntries.Phase;
+import io.quarkus.extest.runtime.classpath.RecordedClasspathEntries.Record;
 
 @WebServlet(name = "ClasspathTestEndpoint", urlPatterns = "/core/classpath")
 public class ClasspathTestEndpoint extends HttpServlet {
+
+    @Inject
+    RecordedClasspathEntries recordedClasspathEntries;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -31,13 +36,17 @@ public class ClasspathTestEndpoint extends HttpServlet {
     }
 
     private void checkUniqueResource(Phase phase, String resourceName) throws IOException {
-        List<String> resources = RecordedClasspathEntries.get(phase, resourceName);
+        List<Record> records = recordedClasspathEntries.get(phase, resourceName);
 
-        if (resources.size() != 1) {
-            throw new AssertionError(
-                    format("during phase '%s', classpath resources for name '%s' are not unique as expected; got: %s",
-                            phase, resourceName, resources));
+        for (Record record : records) {
+            List<String> resources = record.getClasspathEntries();
+            if (resources.size() != 1) {
+                throw new AssertionError(
+                        format("during phase '%s', classpath resources for name '%s' are not unique as expected; got: %s",
+                                phase, resourceName, resources));
+            }
         }
+
     }
 
     private void reportThrowable(final Throwable t, final HttpServletResponse resp) throws IOException {

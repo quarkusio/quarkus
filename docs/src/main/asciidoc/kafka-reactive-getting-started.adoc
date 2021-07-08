@@ -40,7 +40,7 @@ The user will therefore see the quote price updated from _pending_ to the receiv
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
+We recommend that you follow the instructions in the next sections and create applications step by step.
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
@@ -62,7 +62,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="resteasy-reactive-jackson,smallrye-reactive-messaging-kafka"
 ----
 
-This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
+This command generates a Maven project, importing the RESTEasy Reactive (to implement the HTTP endpoint), Reactive Messaging, and Kafka connector extensions.
 
 If you already have your Quarkus project configured, you can add the `smallrye-reactive-messaging-kafka`
 and `resteasy-reactive-jackson` extensions to your project by running the following command in your project base directory:
@@ -108,7 +108,7 @@ See xref:kafka-dev-services.adoc[Dev Services for Kafka] for details.
 
 == The Quote object
 
-The quote class will be used in both `producer` and `processor` projects.
+The `Quote` class will be used in both `producer` and `processor` projects.
 For the sake of simplicity we will duplicate the class.
 In both projects, create the `src/main/java/org/acme/kafka/model/Quote.java` file, with the following content:
 
@@ -130,11 +130,19 @@ public class Quote {
         this.id = id;
         this.price = price;
     }
+
+    @Override
+    public String toString() {
+        return "Quote{" +
+                "id='" + id + '\'' +
+                ", price=" + price +
+                '}';
+    }
 }
 ----
 
 JSON representation of `Quote` objects will be used in messages sent to the Kafka topic
-and also server-sent events sent to browser clients.
+and also in the server-sent events sent to browser clients.
 
 Quarkus has built-in capabilities to deal with JSON Kafka messages.
 In a following section we will create serializer/deserializer classes for Jackson.
@@ -197,7 +205,7 @@ The serializer for `String` is automatically configured.
 == Processing quote requests
 
 Now let's consume the quote request and give out a price.
-Inside the `processor` project locate the `src/main/java/org/acme/kafka/processor/QuoteProcessor.java` file and add the following:
+Inside the `processor` project, locate the `src/main/java/org/acme/kafka/processor/QuoteProcessor.java` file and add the following:
 
 [source, java]
 ----
@@ -279,7 +287,7 @@ Quarkus provides default implementations for Kafka serializer/deserializer pairs
 == Receiving quotes
 
 Back to our `producer` project.
-Let's modify the `QuotesResource` to consume quotes, bind it to a JAX-RS resource and send events to clients:
+Let's modify the `QuotesResource` to consume quotes, bind it to an HTTP endpoint to send events to clients:
 
 [source,java]
 ----

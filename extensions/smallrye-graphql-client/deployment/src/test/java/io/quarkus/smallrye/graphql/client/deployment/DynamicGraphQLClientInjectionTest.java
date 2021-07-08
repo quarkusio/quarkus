@@ -35,13 +35,13 @@ public class DynamicGraphQLClientInjectionTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestingGraphQLApi.class, Person.class)
-                    .addAsResource(new StringAsset("people/mp-graphql/url=" + url + "\n" +
-                            "people/mp-graphql/header/My-Header=My-Value"),
+                    .addAsResource(new StringAsset("people-client/mp-graphql/url=" + url + "\n" +
+                            "people-client/mp-graphql/header/My-Header=My-Value"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
-    @GraphQLClient("people")
+    @GraphQLClient("people-client")
     DynamicGraphQLClient client;
 
     @Test

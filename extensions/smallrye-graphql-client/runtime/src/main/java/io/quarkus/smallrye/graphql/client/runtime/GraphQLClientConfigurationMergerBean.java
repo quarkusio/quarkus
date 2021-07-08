@@ -46,14 +46,12 @@ public class GraphQLClientConfigurationMergerBean {
             if (!upstreamConfiguration.getClients().containsKey(configKey)) {
                 GraphQLClientConfiguration transformed = new GraphQLClientConfiguration();
                 transformed.setHeaders(quarkusConfig.headers);
-                transformed.setUrl(quarkusConfig.url);
+                quarkusConfig.url.ifPresent(transformed::setUrl);
                 upstreamConfiguration.getClients().put(configKey, transformed);
             } else {
                 // if SmallRye configuration already contains this client, override it with the Quarkus configuration
                 GraphQLClientConfiguration upstreamConfig = upstreamConfiguration.getClients().get(configKey);
-                if (quarkusConfig.url != null) {
-                    upstreamConfig.setUrl(quarkusConfig.url);
-                }
+                quarkusConfig.url.ifPresent(upstreamConfig::setUrl);
                 // merge the headers
                 if (quarkusConfig.headers != null) {
                     upstreamConfig.getHeaders().putAll(quarkusConfig.headers);

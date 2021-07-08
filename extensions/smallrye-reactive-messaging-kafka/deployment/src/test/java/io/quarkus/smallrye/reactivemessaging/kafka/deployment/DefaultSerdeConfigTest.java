@@ -55,7 +55,7 @@ public class DefaultSerdeConfigTest {
 
         assertThat(configs)
                 .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
-                .containsOnly(expectations);
+                .containsExactlyInAnyOrder(expectations);
     }
 
     private static IndexView index(Class<?>... classes) {
@@ -1976,5 +1976,63 @@ public class DefaultSerdeConfigTest {
         @Inject
         @Channel("channel25")
         Multi<ConsumerRecord<Float, JsonArray>> consumer25;
+    }
+
+    @Test
+    void produceDefaultConfigOnce() {
+        // @formatter:off
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JsonbDtoSerializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
+                tuple("mp.messaging.incoming.channel3.key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.incoming.channel3.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
+                tuple("mp.messaging.outgoing.channel4.key.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel4.value.serializer", "org.apache.kafka.common.serialization.IntegerSerializer"),
+        };
+        // @formatter:on
+
+        doTest(expectations, JsonbDto.class, JsonbDtoSerializer.class, JacksonDto.class, JacksonDtoDeserializer.class,
+                MultipleChannels.class);
+    }
+
+    private static class MultipleChannels {
+
+        @Channel("channel1")
+        Emitter<JsonbDto> emitter1;
+
+        @Outgoing("channel1")
+        Publisher<Message<JsonbDto>> method1() {
+            return null;
+        }
+
+        @Outgoing("channel1")
+        Publisher<JsonbDto> method1Duplicate() {
+            return null;
+        }
+
+        @Channel("channel2")
+        Multi<JacksonDto> channel2;
+
+        @Incoming("channel2")
+        void channel2Duplicate(JacksonDto jacksonDto) {
+
+        }
+
+        @Channel("channel3")
+        Multi<Record<Integer, JacksonDto>> channel3;
+
+        @Incoming("channel3")
+        void channel3Duplicate(Record<Integer, JacksonDto> jacksonDto) {
+
+        }
+
+        @Channel("channel4")
+        Emitter<ProducerRecord<String, Integer>> emitterChannel4;
+
+        @Outgoing("channel4")
+        ProducerRecord<String, Integer> method4() {
+            return null;
+        };
+
     }
 }

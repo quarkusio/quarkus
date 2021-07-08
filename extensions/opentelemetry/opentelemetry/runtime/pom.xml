@@ -36,7 +36,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-opentelemetry-rest-client</artifactId>
+            <artifactId>quarkus-rest-client</artifactId>
             <optional>true</optional>
         </dependency>
 

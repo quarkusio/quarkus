@@ -3,9 +3,11 @@ package io.quarkus.it.rest.client.main;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -15,8 +17,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.quarkus.it.rest.client.main.MyResponseExceptionMapper.MyException;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -30,6 +34,9 @@ public class ClientCallingResource {
 
     @RestClient
     ClientWithExceptionMapper clientWithExceptionMapper;
+
+    @Inject
+    InMemorySpanExporter inMemorySpanExporter;
 
     void init(@Observes Router router) {
         router.post().handler(BodyHandler.create());
@@ -87,6 +94,18 @@ public class ClientCallingResource {
                     .build(HelloClient.class);
             String greeting = client.greeting("John", 2);
             rc.response().end(greeting);
+        });
+
+        router.route("/export-clear").blockingHandler(rc -> {
+            inMemorySpanExporter.reset();
+            rc.response().end();
+        });
+
+        router.route("/export").blockingHandler(rc -> {
+            rc.response().putHeader("content-type", "application/json")
+                    .end(Json.encodePrettily(inMemorySpanExporter.getFinishedSpanItems()
+                            .stream().filter(sd -> !sd.getName().contains("export"))
+                            .collect(Collectors.toList())));
         });
     }
 

@@ -167,9 +167,6 @@
                                     <name>${db2.image}</name>
                                     <alias>quarkus-test-db2</alias>
                                     <run>
-                                        <network>
-                                            <mode>bridge</mode>
-                                        </network>
                                         <privileged>true</privileged>
                                         <ports>
                                             <port>50005:50000</port>

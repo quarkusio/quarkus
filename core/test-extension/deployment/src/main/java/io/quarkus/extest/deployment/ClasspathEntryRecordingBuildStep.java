@@ -1,6 +1,7 @@
 package io.quarkus.extest.deployment;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -31,21 +32,23 @@ public class ClasspathEntryRecordingBuildStep {
     void recordDuringAugmentation(ClasspathEntriesRecorder classpathEntriesRecorder, TestBuildTimeConfig config)
             throws IOException {
         classpathEntriesRecorder.record(Phase.AUGMENTATION,
-                ClasspathEntriesRecorder.gather(config.classpathEntriesToRecord));
+                ClasspathEntriesRecorder.gather(config.classpathEntriesToRecord.orElse(Collections.emptyList())));
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void recordDuringStaticInit(ClasspathEntriesRecorder classpathEntriesRecorder, TestBuildTimeConfig config)
             throws IOException {
-        classpathEntriesRecorder.gatherAndRecord(Phase.STATIC_INIT, config.classpathEntriesToRecord);
+        classpathEntriesRecorder.gatherAndRecord(Phase.STATIC_INIT,
+                config.classpathEntriesToRecord.orElse(Collections.emptyList()));
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void recordDuringRuntimeInit(ClasspathEntriesRecorder classpathEntriesRecorder, TestBuildTimeConfig config)
             throws IOException {
-        classpathEntriesRecorder.gatherAndRecord(Phase.RUNTIME_INIT, config.classpathEntriesToRecord);
+        classpathEntriesRecorder.gatherAndRecord(Phase.RUNTIME_INIT,
+                config.classpathEntriesToRecord.orElse(Collections.emptyList()));
     }
 
 }

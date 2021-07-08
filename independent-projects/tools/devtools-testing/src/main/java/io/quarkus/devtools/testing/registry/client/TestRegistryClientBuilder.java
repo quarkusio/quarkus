@@ -1,5 +1,6 @@
 package io.quarkus.devtools.testing.registry.client;
 
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.Constants;
@@ -33,6 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
 
 public class TestRegistryClientBuilder {
 
@@ -357,8 +361,11 @@ public class TestRegistryClientBuilder {
 
         @SuppressWarnings("unchecked")
         public TestPlatformCatalogReleaseBuilder addCoreMember() {
+            if (release.getQuarkusCoreVersion() == null) {
+                throw new RuntimeException("Quarkus core version hasn't been set");
+            }
             final TestPlatformCatalogMemberBuilder quarkusBom = newMember("quarkus-bom");
-            quarkusBom.addExtension("quarkus-core");
+            quarkusBom.addExtension("io.quarkus", "quarkus-core", release.getQuarkusCoreVersion());
             Map<String, Object> metadata = quarkusBom.extensions.getMetadata();
             if (metadata.isEmpty()) {
                 metadata = new HashMap<>();
@@ -418,6 +425,7 @@ public class TestRegistryClientBuilder {
 
         private final TestPlatformCatalogReleaseBuilder release;
         private final JsonExtensionCatalog extensions = new JsonExtensionCatalog();
+        private final Model pom;
 
         private TestPlatformCatalogMemberBuilder(TestPlatformCatalogReleaseBuilder release, ArtifactCoords bom) {
             this.release = release;
@@ -425,15 +433,39 @@ public class TestRegistryClientBuilder {
             extensions.setBom(bom);
             extensions.setId(PlatformArtifacts.ensureCatalogArtifact(bom).toString());
             extensions.setPlatform(true);
+
+            pom = new Model();
+            pom.setModelVersion("4.0.0");
+            pom.setGroupId(bom.getGroupId());
+            pom.setArtifactId(bom.getArtifactId());
+            pom.setVersion(bom.getVersion());
+            pom.setPackaging("pom");
+            pom.setDependencyManagement(new DependencyManagement());
         }
 
         public TestPlatformCatalogMemberBuilder addExtension(String artifactId) {
+            return addExtension(extensions.getBom().getGroupId(), artifactId, extensions.getBom().getVersion());
+        }
+
+        public TestPlatformCatalogMemberBuilder addExtension(String groupId, String artifactId, String version) {
             final JsonExtension e = new JsonExtension();
-            final ArtifactCoords bom = extensions.getBom();
-            e.setArtifact(new ArtifactCoords(bom.getGroupId(), artifactId, null, "jar", bom.getVersion()));
+            final ArtifactCoords coords = new ArtifactCoords(groupId, artifactId, null, "jar", version);
+            e.setArtifact(coords);
             e.setName(artifactId);
             e.setOrigins(Collections.singletonList(extensions));
             extensions.addExtension(e);
+
+            final Dependency d = new Dependency();
+            d.setGroupId(coords.getGroupId());
+            d.setArtifactId(coords.getArtifactId());
+            if (!coords.getClassifier().isBlank()) {
+                d.setClassifier(coords.getClassifier());
+            }
+            if (!coords.getType().equals("jar")) {
+                d.setType(coords.getType());
+            }
+            d.setVersion(coords.getVersion());
+            pom.getDependencyManagement().addDependency(d);
             return this;
         }
 
@@ -453,6 +485,23 @@ public class TestRegistryClientBuilder {
                 JsonCatalogMapperHelper.serialize(extensions, json);
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to persist extension catalog " + json, e);
+            }
+
+            Path pomPath = release.stream.platform.registry.parent.getMavenRepoDir();
+            for (String s : pom.getGroupId().split("\\.")) {
+                pomPath = pomPath.resolve(s);
+            }
+            pomPath = pomPath.resolve(pom.getArtifactId()).resolve(pom.getVersion());
+            try {
+                Files.createDirectories(pomPath);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to create directory " + pomPath, e);
+            }
+            pomPath = pomPath.resolve(pom.getArtifactId() + "-" + pom.getVersion() + ".pom");
+            try {
+                ModelUtils.persistModel(pomPath, pom);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to persist BOM at " + pomPath, e);
             }
         }
     }
@@ -540,6 +589,14 @@ public class TestRegistryClientBuilder {
 
     static Path getRegistryDir(Path baseDir, String registryId) {
         return baseDir.resolve(registryId);
+    }
+
+    private Path getMavenRepoDir() {
+        return getMavenRepoDir(baseDir);
+    }
+
+    public static Path getMavenRepoDir(Path baseDir) {
+        return baseDir.resolve("maven-repo");
     }
 
     private static String registryIdToGroupId(String id) {

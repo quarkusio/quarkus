@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -23,11 +24,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Repository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
+public class MavenProjectImportingMultipleBomsFromSinglePlatformTest {
 
     private static final String PLATFORM_GROUP_ID_POM_PROP = "quarkus.platform.group-id";
     private static final String PLATFORM_GROUP_ID_POM_EXPR = "${" + PLATFORM_GROUP_ID_POM_PROP + "}";
@@ -40,12 +42,13 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
 
     private static final String PLATFORM_KEY = "org.acme.platform";
 
+    private static Path configDir;
     private static String prevConfigPath;
     private static String prevRegistryClient;
 
     @BeforeAll
     public static void setup() throws Exception {
-        final Path configDir = getProjectDir("registry-client");
+        configDir = getProjectDir("registry-client");
         TestRegistryClientBuilder.newInstance()
                 //.debug()
                 .baseDir(configDir)
@@ -101,7 +104,7 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
         prevConfigPath = System.setProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY,
                 configDir.resolve("config.yaml").toString());
         prevRegistryClient = System.setProperty("quarkusRegistryClient", "true");
-        QuarkusProjectHelper.resetToolsConfig();
+        QuarkusProjectHelper.reset();
     }
 
     @AfterAll
@@ -119,7 +122,7 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
     }
 
     @Test
-    public void testAddNonPlatformExtensionCompatibleWithTheOldestQuarkusVersion() throws Exception {
+    public void createWithNonPlatformExtensionCompatibleWithTheOldestQuarkusVersion() throws Exception {
         final Path projectDir = newProjectDir("non-platform-extension-oldest-quarkus-version");
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-five-zero"));
 
@@ -130,7 +133,7 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
     }
 
     @Test
-    public void testAddNonPlatformExtensionCompatibleWithTheLatestQuarkusVersion() throws Exception {
+    public void createWithNonPlatformExtensionCompatibleWithTheLatestQuarkusVersion() throws Exception {
         final Path projectDir = newProjectDir("non-platform-extension-latest-quarkus-version");
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-six-zero"));
 
@@ -141,7 +144,7 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
     }
 
     @Test
-    public void testAddNonPlatformExtensionCompatibleWithQuarkusVersion112() throws Exception {
+    public void createWithNonPlatformExtensionCompatibleWithQuarkusVersion112() throws Exception {
         final Path projectDir = newProjectDir("non-platform-extension-quarkus-version-112");
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-five-one"));
 
@@ -152,7 +155,7 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
     }
 
     @Test
-    public void testAddExtensionsPresentInTheLatestReleaseOfTheLatestStream() throws Exception {
+    public void createWithExtensionsPresentInTheLatestReleaseOfTheLatestStream() throws Exception {
         final Path projectDir = newProjectDir("latest-release-latest-stream");
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension"));
 
@@ -162,7 +165,7 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
     }
 
     @Test
-    public void testAddExtensionsPresentInTheLatestReleaseOfAnOldStream() throws Exception {
+    public void createWithExtensionsPresentInTheLatestReleaseOfAnOldStream() throws Exception {
         final Path projectDir = newProjectDir("latest-release-old-stream");
         createProject(projectDir, Arrays.asList("acme-baz", "acme-foo", "other-extension"));
 
@@ -172,7 +175,7 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
     }
 
     @Test
-    public void testAddExtensionPresentInTheOldReleaseOfAnOldStream() throws Exception {
+    public void createWithExtensionPresentInTheOldReleaseOfAnOldStream() throws Exception {
         final Path projectDir = newProjectDir("old-release-old-stream");
         createProject(projectDir, Arrays.asList("acme-bar", "acme-foo", "other-extension"));
 
@@ -182,8 +185,58 @@ public class CreateMavenProjectImportingMultipleBomsFromSinglePlatformTest {
                 expectedExtensions, "1.0.0");
     }
 
-    private QuarkusCommandOutcome createProject(Path projectDir, List<String> extensions)
+    @Test
+    public void addExtensionAndImportMemberBom() throws Exception {
+        final Path projectDir = newProjectDir("add-extension-import-bom");
+        createProject(projectDir, Arrays.asList("other-five-one"));
+
+        assertModel(projectDir, toPlatformBomCoords(), Arrays.asList(ArtifactCoords.fromString("org.other:other-five-one:5.1")),
+                "1.0.1");
+
+        addExtensions(projectDir, Arrays.asList("acme-baz"));
+
+        final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-baz");
+        expectedExtensions.add(ArtifactCoords.fromString("org.other:other-five-one:5.1"));
+        assertModel(projectDir, toPlatformBomCoords("acme-baz-bom"), expectedExtensions, "1.0.1");
+    }
+
+    @Test
+    public void attemptCreateWithIncompatibleExtensions() throws Exception {
+        final Path projectDir = newProjectDir("create-with-incompatible-extensions");
+        assertThat(createProject(projectDir, Arrays.asList("acme-bar", "other-five-one")).isSuccess()).isFalse();
+    }
+
+    @Test
+    public void attemptAddingExtensionFromIncompatibleMemberBom() throws Exception {
+        final Path projectDir = newProjectDir("add-extension-incompatible-member-bom");
+        createProject(projectDir, Arrays.asList("other-five-one"));
+
+        assertModel(projectDir, toPlatformBomCoords(), Arrays.asList(ArtifactCoords.fromString("org.other:other-five-one:5.1")),
+                "1.0.1");
+
+        assertThat(addExtensions(projectDir, Arrays.asList("acme-bar")).isSuccess()).isFalse();
+    }
+
+    private QuarkusCommandOutcome addExtensions(Path projectDir, List<String> extensions)
             throws IOException, QuarkusCommandException {
+
+        final Path pomXml = projectDir.resolve("pom.xml");
+        final Model model = ModelUtils.readModel(pomXml);
+        if (model.getRepositories().isEmpty()) {
+            final Repository r = new Repository();
+            r.setId("devtools-registry-client-test-repo");
+            r.setUrl(TestRegistryClientBuilder.getMavenRepoDir(configDir).toAbsolutePath().toUri().toURL().toString());
+            model.getRepositories().add(r);
+            ModelUtils.persistModel(pomXml, model);
+        }
+
+        return new AddExtensions(getQuarkusProject(projectDir))
+                .extensions(new HashSet<>(extensions))
+                .execute();
+    }
+
+    private QuarkusCommandOutcome createProject(Path projectDir, List<String> extensions)
+            throws Exception {
         return new CreateProject(getQuarkusProject(projectDir))
                 .groupId("org.acme")
                 .artifactId("acme-app")

@@ -389,6 +389,10 @@ public class ElementCatalogBuilder<M> {
         }
     }
 
+    public static boolean hasElementCatalog(ExtensionCatalog extCatalog) {
+        return extCatalog.getMetadata().containsKey("element-catalog");
+    }
+
     public static <T> ElementCatalog<T> getElementCatalog(ExtensionCatalog extCatalog, Class<T> t) {
         return (ElementCatalog<T>) extCatalog.getMetadata().get("element-catalog");
     }

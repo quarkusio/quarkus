@@ -198,7 +198,6 @@ public class TestConsoleHandler implements TestListener {
     public void listenerRegistered(TestController testController) {
         this.testController = testController;
         promptHandler.setPrompt(hasHttp ? PAUSED_PROMPT : PAUSED_PROMPT_NO_HTTP);
-
     }
 
     public void printUsage() {

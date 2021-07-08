@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
@@ -55,6 +56,9 @@ import io.quarkus.runtime.graal.ResourcesFeature;
 public class NativeImageAutoFeatureStep {
 
     private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
+    private static final MethodDescriptor VERSION_CURRENT = ofMethod(Version.class, "getCurrent", Version.class);
+    private static final MethodDescriptor VERSION_COMPARE_TO = ofMethod(Version.class, "compareTo", int.class, int[].class);
+
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
     private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(
@@ -380,10 +384,18 @@ public class NativeImageAutoFeatureStep {
                 }
             }
             if (entry.getValue().fields) {
-                tc.invokeStaticMethod(
+                BranchResult graalVm21Test = tc.ifGreaterEqualZero(
+                        tc.invokeVirtualMethod(VERSION_COMPARE_TO,
+                                tc.invokeStaticMethod(VERSION_CURRENT),
+                                tc.marshalAsArray(int.class, tc.load(21))));
+                graalVm21Test.trueBranch().invokeStaticMethod(
                         ofMethod(RUNTIME_REFLECTION, "register", void.class,
                                 boolean.class, boolean.class, Field[].class),
                         tc.load(entry.getValue().finalFieldsWritable), tc.load(entry.getValue().serialization), fields);
+                graalVm21Test.falseBranch().invokeStaticMethod(
+                        ofMethod(RUNTIME_REFLECTION, "register", void.class,
+                                boolean.class, Field[].class),
+                        tc.load(entry.getValue().finalFieldsWritable), fields);
             } else if (!entry.getValue().fieldSet.isEmpty()) {
                 ResultHandle farray = tc.newArray(Field.class, tc.load(1));
                 for (String field : entry.getValue().fieldSet) {
@@ -476,22 +488,41 @@ public class NativeImageAutoFeatureStep {
     private MethodDescriptor createRegisterSerializationForClassMethod(ClassCreator file) {
         //register serialization feature as requested
         MethodCreator requiredFeatures = file.getMethodCreator("getRequiredFeatures", "java.util.List");
+
         TryBlock requiredCatch = requiredFeatures.tryBlock();
 
-        ResultHandle serializationFeatureClass = requiredCatch
-                .loadClass("com.oracle.svm.reflect.serialize.hosted.SerializationFeature");
-        ResultHandle requiredFeaturesList = requiredCatch.invokeStaticMethod(
-                ofMethod("java.util.Collections", "singletonList", List.class, Object.class),
-                serializationFeatureClass);
+        // It's too early in the GraalVM build to use Version.getCurrent()
+        BranchResult featuresGraalVm20Test = requiredCatch.ifTrue(requiredCatch
+                .invokeVirtualMethod(ofMethod(String.class, "startsWith", boolean.class, String.class),
+                        requiredCatch.invokeStaticMethod(
+                                ofMethod(System.class, "getProperty", String.class, String.class),
+                                requiredCatch.load("org.graalvm.version")),
+                        requiredCatch.load("20.")));
 
-        requiredCatch.returnValue(requiredFeaturesList);
+        BytecodeCreator featuresIfGraalVM21Plus = featuresGraalVm20Test.falseBranch();
+
+        ResultHandle serializationFeatureClass = featuresIfGraalVM21Plus
+                .loadClass("com.oracle.svm.reflect.serialize.hosted.SerializationFeature");
+        featuresIfGraalVM21Plus.returnValue(featuresIfGraalVM21Plus.invokeStaticMethod(
+                ofMethod("java.util.Collections", "singletonList", List.class, Object.class),
+                serializationFeatureClass));
+
+        BytecodeCreator featuresIfNotGraalVM21Plus = featuresGraalVm20Test.trueBranch();
+        featuresIfNotGraalVM21Plus
+                .returnValue(featuresIfNotGraalVM21Plus
+                        .invokeStaticMethod(ofMethod("java.util.Collections", "emptyList", List.class)));
 
         // method to register class for registration
         MethodCreator addSerializationForClass = file.getMethodCreator("registerSerializationForClass", "V", Class.class);
         addSerializationForClass.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
         ResultHandle clazz = addSerializationForClass.getMethodParam(0);
 
-        TryBlock tc = addSerializationForClass.tryBlock();
+        BranchResult graalVm21Test = addSerializationForClass.ifGreaterEqualZero(
+                addSerializationForClass.invokeVirtualMethod(VERSION_COMPARE_TO,
+                        addSerializationForClass.invokeStaticMethod(VERSION_CURRENT),
+                        addSerializationForClass.marshalAsArray(int.class, addSerializationForClass.load(21))));
+
+        TryBlock tc = graalVm21Test.trueBranch().tryBlock();
 
         ResultHandle currentThread = tc
                 .invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));

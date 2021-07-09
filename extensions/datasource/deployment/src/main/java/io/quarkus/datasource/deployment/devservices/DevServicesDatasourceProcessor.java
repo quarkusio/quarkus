@@ -224,6 +224,18 @@ public class DevServicesDatasourceProcessor {
             return null;
         }
 
+        if (!enabled.isPresent()) {
+            for (DevServicesDatasourceConfigurationHandlerBuildItem i : configHandlers) {
+                if (i.getCheckConfiguredFunction().test(dbName)) {
+                    //this database has explicit configuration
+                    //we don't start the devservices
+                    log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
+                            + " as it has explicit configuration");
+                    return null;
+                }
+            }
+        }
+
         if (devDbProvider.isDockerRequired() && !isDockerWorking.getAsBoolean()) {
             String message = "Please configure the datasource URL for "
                     + (dbName == null ? "the default datasource" : " datasource '" + dbName + "'")
@@ -236,18 +248,6 @@ public class DevServicesDatasourceProcessor {
                 return null;
             }
 
-        }
-
-        if (!enabled.isPresent()) {
-            for (DevServicesDatasourceConfigurationHandlerBuildItem i : configHandlers) {
-                if (i.getCheckConfiguredFunction().test(dbName)) {
-                    //this database has explicit configuration
-                    //we don't start the devservices
-                    log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
-                            + " as it has explicit configuration");
-                    return null;
-                }
-            }
         }
 
         //ok, so we know we need to start one

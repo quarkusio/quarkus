@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -235,7 +236,19 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public void close() {
         super.close();
         if (!result.isDone()) {
-            result.completeExceptionally(new IllegalStateException("Client request did not complete")); //should never happen
+            try {
+                ClientRestHandler[] handlers = this.handlers;
+                String[] handlerClassNames = new String[handlers.length];
+                for (int i = 0; i < handlers.length; i++) {
+                    handlerClassNames[i] = handlers[i].getClass().getName();
+                }
+                log.error("Client was closed, however the result was not completed. Handlers array is: "
+                        + Arrays.toString(handlerClassNames)
+                        + ". Last executed handler is: " + handlers[position - 1].getClass().getName());
+            } catch (Exception ignored) {
+                // we don't want some mistake in the code above to compromise the ability to return a result
+            }
+            result.completeExceptionally(new IllegalStateException("Client request did not complete"));
         }
     }
 

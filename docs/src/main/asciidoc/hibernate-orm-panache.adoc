@@ -583,6 +583,12 @@ If your update query does not start with `update`, we support the following addi
 - `set? <singleColumnName>` (and single parameter) which will expand to `update from EntityName set <singleColumnName> = ?`
 - `set? <update-query>` will expand to `update from EntityName set <update-query>`
 
+If your delete query does not start with `delete`, we support the following additional forms:
+
+- `from EntityName ...` which will expand to `delete from EntityName ...`
+- `<singleColumnName>` (and single parameter) which will expand to `delete from EntityName where <singleColumnName> = ?`
+- `<query>` will expand to `delete from EntityName where <query>`
+
 NOTE: You can also write your queries in plain
 link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#hql[HQL]:
 

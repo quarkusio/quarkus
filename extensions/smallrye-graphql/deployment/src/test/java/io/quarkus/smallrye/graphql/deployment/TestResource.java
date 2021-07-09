@@ -61,6 +61,11 @@ public class TestResource {
         return new TestPojo(name);
     }
 
+    @Query
+    public String testCharset(String characters) {
+        return characters;
+    }
+
     // <placeholder>
 
     public TestRandom getRandomNumber(@Source TestPojo testPojo) {

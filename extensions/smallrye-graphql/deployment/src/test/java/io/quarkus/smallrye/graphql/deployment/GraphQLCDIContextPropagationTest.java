@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 
 /**
  * Testing scenarios which require CDI context propagation to work under the hood.
@@ -51,8 +50,8 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
                 "}");
 
         RestAssured.given().when()
-                .accept(ContentType.JSON)
-                .contentType(ContentType.JSON)
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
                 .body(pingRequest)
                 .post("/graphql")
                 .then()
@@ -74,8 +73,8 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
                 "}");
 
         RestAssured.given().when()
-                .accept(ContentType.JSON)
-                .contentType(ContentType.JSON)
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
                 .body(pingRequest)
                 .post("/graphql")
                 .then()
@@ -98,8 +97,8 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
                 "}");
 
         RestAssured.given().when()
-                .accept(ContentType.JSON)
-                .contentType(ContentType.JSON)
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
                 .body(pingRequest)
                 .post("/graphql")
                 .then()

@@ -321,6 +321,13 @@ mp.messaging.outgoing.quote-requests.connector=smallrye-kafka
 mp.messaging.incoming.quotes.connector=smallrye-kafka
 ----
 
+[NOTE]
+====
+In this guide we explore Smallrye Reactive Messaging framework to interact with Apache Kafka.
+Quarkus extension for Kafka also allows
+xref:kafka.adoc#kafka-bare-clients[using Kafka clients directly].
+====
+
 == JSON serialization via Jackson
 
 Finally, we will configure JSON serialization for messages using Jackson.
@@ -512,9 +519,6 @@ NOTE: This is a development cluster, do not use in production.
 == Going further
 
 This guide has shown how you can interact with Kafka using Quarkus.
-It utilizes SmallRye Reactive Messaging to build data streaming applications.
+It utilizes https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging] to build data streaming applications.
 
-If you want to go further check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging].
-
-For the exhaustive list of features and configuration options check the
-xref:kafka.adoc[Reference guide for Apache Kafka Extension].
+For the exhaustive list of features and configuration options check the xref:kafka.adoc[Reference guide for Apache Kafka Extension].

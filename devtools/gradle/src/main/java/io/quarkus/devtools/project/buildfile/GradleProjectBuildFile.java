@@ -49,6 +49,25 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
         return coords;
     }
 
+    @Override
+    public String getProperty(String name) {
+        final Object o = project.getProperties().get(name);
+        return o == null ? null : o.toString();
+    }
+
+    protected ArtifactCoords toBomImportCoords(ArtifactCoords rawBomCoords) {
+        if (rawBomCoords.getGroupId().equals(getProperty("quarkusPlatformGroupId"))
+                && rawBomCoords.getVersion().equals(getProperty("quarkusPlatformVersion"))) {
+            return new ArtifactCoords("${quarkusPlatformGroupId}",
+                    rawBomCoords.getArtifactId().equals(getProperty("quarkusPlatformArtifactId"))
+                            ? "${quarkusPlatformArtifactId}"
+                            : rawBomCoords.getArtifactId(),
+                    "pom",
+                    "${quarkusPlatformVersion}");
+        }
+        return rawBomCoords;
+    }
+
     private List<Dependency> boms() {
         final List<Dependency> boms = new ArrayList<>();
         // collect enforced platforms

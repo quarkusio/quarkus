@@ -41,7 +41,6 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         final MessageWriter log = invocation.log();
         final boolean all = invocation.getValue(ListExtensions.ALL, true);
         final boolean installedOnly = invocation.getValue(ListExtensions.INSTALLED, false);
-        //final boolean cli = invocation.getValue(ListExtensions.FROM_CLI, false);
         final String format = invocation.getValue(ListExtensions.FORMAT, "");
         final String search = invocation.getValue(ListExtensions.SEARCH, "*");
         final String category = invocation.getValue(ListExtensions.CATEGORY, "");

@@ -37,7 +37,7 @@ public class IsDockerWorking implements BooleanSupplier {
         //so we just see if the DOCKER_HOST is set and we can connect to it
         //we can't actually verify it is docker listening on the other end
         String dockerHost = System.getenv("DOCKER_HOST");
-        if (dockerHost != null) {
+        if (dockerHost != null && !dockerHost.startsWith("unix:")) {
             try {
                 URI url = new URI(dockerHost);
                 try (Socket s = new Socket(url.getHost(), url.getPort())) {

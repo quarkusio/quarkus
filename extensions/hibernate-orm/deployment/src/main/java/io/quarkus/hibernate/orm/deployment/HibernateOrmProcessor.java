@@ -852,13 +852,12 @@ public final class HibernateOrmProcessor {
             dataSource = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
         }
 
-        Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
-        if (!dialect.isPresent()) {
+        Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
+        String dialect;
+        if (explicitDialect.isPresent()) {
+            dialect = explicitDialect.get();
+        } else {
             dialect = Dialects.guessDialect(jdbcDataSource.getDbKind());
-        }
-
-        if (!dialect.isPresent()) {
-            return;
         }
 
         // we found one
@@ -883,7 +882,7 @@ public final class HibernateOrmProcessor {
         }
 
         descriptor.setTransactionType(PersistenceUnitTransactionType.JTA);
-        descriptor.getProperties().setProperty(AvailableSettings.DIALECT, dialect.get());
+        descriptor.getProperties().setProperty(AvailableSettings.DIALECT, dialect);
 
         // The storage engine has to be set as a system property.
         if (persistenceUnitConfig.dialect.storageEngine.isPresent()) {
@@ -1014,7 +1013,7 @@ public final class HibernateOrmProcessor {
         }
 
         // Collect the storage engines if MySQL or MariaDB
-        if (isMySQLOrMariaDB(dialect.get()) && persistenceUnitConfig.dialect.storageEngine.isPresent()) {
+        if (isMySQLOrMariaDB(dialect) && persistenceUnitConfig.dialect.storageEngine.isPresent()) {
             storageEngineCollector.add(persistenceUnitConfig.dialect.storageEngine.get());
         }
 

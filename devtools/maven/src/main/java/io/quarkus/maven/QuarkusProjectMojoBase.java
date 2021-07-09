@@ -237,7 +237,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         ArtifactCoords platformBom = null;
         List<ArtifactCoords> matches = null;
         for (Platform p : platformCatalog.getPlatforms()) {
-            if (bomGroupId != null && !p.getPlatformKey().equals(bomGroupId)) {
+            if (!p.getPlatformKey().equals(bomGroupId)) {
                 continue;
             }
             for (PlatformStream s : p.getStreams()) {

@@ -55,16 +55,15 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     /**
      * The element that holds resettable in-memory classses.
-     *
+     * <p>
      * A reset occurs when new transformers and in-memory classes are added to a ClassLoader. It happens after each
      * start in dev mode, however in general the reset resources will be the same. There are some cases where this is
      * not the case though:
-     *
+     * <p>
      * - Dev mode failed start will not end up with transformers or generated classes being registered. The reset
      * in this case will add them.
      * - Platform CDI beans that are considered to be removed and have the removed status changed will result in
      * additional classes being added to the class loader.
-     *
      */
     private volatile MemoryClassPathElement resettableElement;
     private volatile MemoryClassPathElement transformedClasses;
@@ -160,6 +159,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Enumeration<URL> getResources(String unsanitisedName) throws IOException {
+        return getResources(unsanitisedName, false);
+    }
+
+    public Enumeration<URL> getResources(String unsanitisedName, boolean parentAlreadyFoundResources) throws IOException {
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.enumeratingResourceURLs(unsanitisedName, this.name);
         }
@@ -221,8 +224,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             }
         }
         if (!banned) {
-            if (resources.isEmpty() || aggregateParentResources) {
-                Enumeration<URL> res = parent.getResources(unsanitisedName);
+            if ((resources.isEmpty() && !parentAlreadyFoundResources) || aggregateParentResources) {
+                Enumeration<URL> res;
+                if (parent instanceof QuarkusClassLoader) {
+                    res = ((QuarkusClassLoader) parent).getResources(unsanitisedName, !resources.isEmpty());
+                } else {
+                    res = parent.getResources(unsanitisedName);
+                }
                 while (res.hasMoreElements()) {
                     resources.add(res.nextElement());
                 }
@@ -612,10 +620,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         /**
          * Adds an element that can be used to load classes.
-         *
+         * <p>
          * Order is important, if there are multiple elements that provide the same
          * class then the first one passed to this method will be used.
-         *
+         * <p>
          * The provided element will be closed when the ClassLoader is closed.
          *
          * @param element The element to add
@@ -629,10 +637,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         /**
          * Adds a resettable MemoryClassPathElement to the class loader.
-         *
+         * <p>
          * This element is mutable, and its contents will be modified if the class loader
          * is reset.
-         *
+         * <p>
          * If this is not explicitly added to the elements list then it will be automatically
          * added as the highest priority element.
          *
@@ -646,11 +654,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         /**
          * Adds an element that contains classes that will always be loaded in a parent first manner.
-         *
+         * <p>
          * Note that this does not mean that the parent will always have this class, it is possible that
          * in some cases the class will end up being loaded by this loader, however an attempt will always
          * be made to load these from the parent CL first
-         *
+         * <p>
          * Note that elements passed to this method will not be automatically closed, as
          * references to this element are not retained after the class loader has been built.
          *
@@ -665,13 +673,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         /**
          * Adds an element that contains classes that should never be loaded by this loader.
-         *
+         * <p>
          * Note that elements passed to this method will not be automatically closed, as
          * references to this element are not retained after the class loader has been built.
-         *
+         * <p>
          * This is because banned elements are generally expected to be loaded by another ClassLoader,
          * so this prevents the need to create multiple ClassPathElements for the same resource.
-         *
+         * <p>
          * Banned elements have the highest priority, a banned element will never be loaded,
          * and resources will never appear to be present.
          *
@@ -698,9 +706,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         /**
          * If this is true then a getResources call will always include the parent resources.
-         *
+         * <p>
          * If this is false then getResources will not return parent resources if local resources were found.
-         *
+         * <p>
          * This only takes effect if parentFirst is false.
          */
         public Builder setAggregateParentResources(boolean aggregateParentResources) {

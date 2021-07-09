@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import java.util.Optional;
-
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.configuration.ConfigurationError;
 
@@ -11,7 +9,7 @@ public final class Dialects {
         //utility
     }
 
-    public static String guessDialect(String resolvedDbKind) {
+    public static String guessDialect(String persistenceUnitName, String resolvedDbKind) {
         // For now select the latest dialect from the driver
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
@@ -41,7 +39,7 @@ public final class Dialects {
         }
 
         String error = "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind
-                + "'. Add an explicit '" + HibernateOrmProcessor.HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property.";
+                + "'. Add an explicit '" + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "dialect") + "' property.";
         throw new ConfigurationError(error);
     }
 }

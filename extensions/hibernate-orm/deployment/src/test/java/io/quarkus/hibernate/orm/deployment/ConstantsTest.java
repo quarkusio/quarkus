@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.deployment;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import java.util.Optional;
 import java.util.Set;
 
 import org.hibernate.dialect.DB297Dialect;
@@ -18,6 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 
@@ -46,7 +46,7 @@ public class ConstantsTest {
     }
 
     private void assertDialectMatch(String dbName, Class<?> dialectClass) {
-        final String guessDialect = Dialects.guessDialect(dbName);
+        final String guessDialect = Dialects.guessDialect(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, dbName);
         Assertions.assertEquals(dialectClass.getName(), guessDialect);
     }
 

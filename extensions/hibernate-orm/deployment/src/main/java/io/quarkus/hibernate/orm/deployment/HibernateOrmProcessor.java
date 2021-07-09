@@ -857,7 +857,7 @@ public final class HibernateOrmProcessor {
         if (explicitDialect.isPresent()) {
             dialect = explicitDialect.get();
         } else {
-            dialect = Dialects.guessDialect(jdbcDataSource.getDbKind());
+            dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.getDbKind());
         }
 
         // we found one
@@ -974,7 +974,8 @@ public final class HibernateOrmProcessor {
             } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
                 //raise exception if explicit file is not present (i.e. not the default)
                 throw new ConfigurationError(
-                        "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX + "sql-load-script="
+                        "Unable to find file referenced in '"
+                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
                                 + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
             }
             // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist

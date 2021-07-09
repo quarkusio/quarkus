@@ -755,7 +755,7 @@ public class SecuredResource {
 == Token Decryption
 
 If your application needs to accept the tokens with the encrypted claims or with the encrypted inner signed claims then all you have to do is to set
-`smallrye.jwt.decrypt.key-location` pointing to the decryption key.
+`smallrye.jwt.decrypt.key.location` pointing to the decryption key.
 
 If this is the only key property which is set then the incoming token is expected to contain the encrypted claims only.
 If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain
@@ -1042,7 +1042,7 @@ The only minor difference is that encrypting the claims always requires a `jwe()
 import io.smallrye.jwt.build.Jwt;
 ...
 
-// Encrypt the claims using the public key loaded from the location set with a 'smallrye.jwt.encrypt.key-location' property.
+// Encrypt the claims using the public key loaded from the location set with a 'smallrye.jwt.encrypt.key.location' property.
 String jwt1 = Jwt.claims("/tokenClaims.json").jwe().encrypt();
 
 // Set the headers and encrypt the claims with an RSA public key loaded in the code (the implementation of this method is omitted).

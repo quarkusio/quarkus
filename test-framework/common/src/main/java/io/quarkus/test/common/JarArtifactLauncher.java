@@ -10,8 +10,6 @@ public interface JarArtifactLauncher extends ArtifactLauncher<JarArtifactLaunche
 
     interface JarInitContext extends InitContext {
 
-        String argLine();
-
         Path jarPath();
     }
 }

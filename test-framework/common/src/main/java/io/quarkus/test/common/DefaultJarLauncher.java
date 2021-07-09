@@ -1,7 +1,9 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
 import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
+import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
@@ -19,7 +22,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private int httpsPort;
     private long waitTimeSeconds;
     private String testProfile;
-    private String argLine;
+    private List<String> argLine;
     private Path jarPath;
 
     private final Map<String, String> systemProps = new HashMap<>();
@@ -43,8 +46,8 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
         List<String> args = new ArrayList<>();
         args.add("java");
-        if (argLine != null) {
-            args.add(argLine);
+        if (!argLine.isEmpty()) {
+            args.addAll(argLine);
         }
         args.add("-Dquarkus.http.port=" + httpPort);
         args.add("-Dquarkus.http.ssl-port=" + httpsPort);
@@ -68,10 +71,19 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         Files.deleteIfExists(logFile);
         Files.createDirectories(logFile.getParent());
 
+        Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
+
         quarkusProcess = LauncherUtil.launchProcess(args);
-        ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
-        updateConfigForPort(result.getPort());
-        isSsl = result.isSsl();
+        if (startedFunction != null) {
+            IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
+                    waitTimeSeconds, logFile);
+            isSsl = result.isSsl();
+        } else {
+            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
+            updateConfigForPort(result.getPort());
+            isSsl = result.isSsl();
+        }
+
     }
 
     @Override

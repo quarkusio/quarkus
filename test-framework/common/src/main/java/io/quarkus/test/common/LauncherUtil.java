@@ -8,10 +8,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -65,11 +68,12 @@ public final class LauncherUtil {
                 Duration.ofSeconds(waitTimeSeconds), signal, resultReference);
         new Thread(captureListeningDataReader, "capture-listening-data").start();
         try {
-            signal.await(10, TimeUnit.SECONDS);
+            signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the capturing thread
             ListeningAddress result = resultReference.get();
             if (result != null) {
                 return result;
             }
+            // a null result means that we could not determine the status of the process so we need to abort testing
             destroyProcess(quarkusProcess);
             throw new IllegalStateException(
                     "Unable to determine the status of the running process. See the above logs for details");
@@ -99,6 +103,58 @@ public final class LauncherUtil {
         if (quarkusProcess.isAlive()) {
             quarkusProcess.destroyForcibly();
         }
+    }
+
+    static Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> createStartedFunction() {
+        List<IntegrationTestStartedNotifier> startedNotifiers = new ArrayList<>();
+        for (IntegrationTestStartedNotifier i : ServiceLoader.load(IntegrationTestStartedNotifier.class)) {
+            startedNotifiers.add(i);
+        }
+        if (startedNotifiers.isEmpty()) {
+            return null;
+        }
+        return (ctx) -> {
+            for (IntegrationTestStartedNotifier startedNotifier : startedNotifiers) {
+                IntegrationTestStartedNotifier.Result result = startedNotifier.check(ctx);
+                if (result.isStarted()) {
+                    return result;
+                }
+            }
+            return IntegrationTestStartedNotifier.Result.NotStarted.INSTANCE;
+        };
+    }
+
+    /**
+     * Waits for {@param startedFunction} to indicate that the application has started.
+     *
+     * @return the {@link io.quarkus.test.common.IntegrationTestStartedNotifier.Result} indicating a successful start
+     * @throws RuntimeException if no successful start was indicated by {@param startedFunction}
+     */
+    static IntegrationTestStartedNotifier.Result waitForStartedFunction(
+            Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction,
+            Process quarkusProcess, long waitTimeSeconds, Path logFile) {
+        long bailout = System.currentTimeMillis() + waitTimeSeconds * 1000;
+        IntegrationTestStartedNotifier.Result result = null;
+        SimpleContext context = new SimpleContext(logFile);
+        while (System.currentTimeMillis() < bailout) {
+            if (!quarkusProcess.isAlive()) {
+                throw new RuntimeException("Failed to start target quarkus application, process has exited");
+            }
+            try {
+                Thread.sleep(100);
+                result = startedFunction.apply(context);
+                if (result.isStarted()) {
+                    break;
+                }
+            } catch (Exception ignored) {
+
+            }
+        }
+        if (result == null) {
+            destroyProcess(quarkusProcess);
+            throw new RuntimeException("Unable to start target quarkus application " + waitTimeSeconds + "s");
+        }
+        return result;
     }
 
     /**
@@ -227,6 +283,19 @@ public final class LauncherUtil {
             } catch (IOException e) {
                 //ignore
             }
+        }
+    }
+
+    private static class SimpleContext implements IntegrationTestStartedNotifier.Context {
+        private final Path logFile;
+
+        public SimpleContext(Path logFile) {
+            this.logFile = logFile;
+        }
+
+        @Override
+        public Path logFile() {
+            return logFile;
         }
     }
 }

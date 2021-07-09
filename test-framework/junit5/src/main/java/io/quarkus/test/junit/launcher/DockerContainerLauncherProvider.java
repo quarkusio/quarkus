@@ -1,11 +1,12 @@
 package io.quarkus.test.junit.launcher;
 
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
-import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_JAR_WAIT_TIME_SECONDS;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
+import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_WAIT_TIME_SECONDS;
 
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.ServiceLoader;
@@ -42,8 +43,9 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                     Duration.ofSeconds(config.getValue("quarkus.test.jar-wait-time", OptionalLong.class)
-                            .orElse(DEFAULT_JAR_WAIT_TIME_SECONDS)),
+                            .orElse(DEFAULT_WAIT_TIME_SECONDS)),
                     config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
+                    ConfigUtil.argLineValue(config),
                     containerImage,
                     pullRequired));
             return launcher;
@@ -58,8 +60,9 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final boolean pullRequired;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
+                List<String> argLine,
                 String containerImage, boolean pullRequired) {
-            super(httpPort, httpsPort, waitTime, testProfile);
+            super(httpPort, httpsPort, waitTime, testProfile, argLine);
             this.containerImage = containerImage;
             this.pullRequired = pullRequired;
         }

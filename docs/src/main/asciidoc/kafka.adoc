@@ -435,6 +435,7 @@ This approach is not intrusive as it's based on built-in metrics.
 Using the `health-readiness-topic-verification=true` attribute, you can also check the topics used by the application exist in the broker.
 Note that, to achieve this, an _admin connection_ is required.
 
+[[kafka-serialization]]
 == JSON serialization
 
 Quarkus has built-in capabilities to deal with JSON Kafka messages.
@@ -907,6 +908,7 @@ However, to compile your application to a native executable, you need to:
 
 In native mode, Snappy is disabled by default as the use of Snappy requires embedding a native library and unpacking it when the application starts.
 
+[[kafka-configuration]]
 == Configuration
 
 More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/2.8/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].

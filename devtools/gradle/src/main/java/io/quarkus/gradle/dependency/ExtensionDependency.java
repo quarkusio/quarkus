@@ -7,7 +7,6 @@ import java.util.Set;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
-import org.gradle.api.artifacts.ModuleVersionSelector;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
@@ -79,12 +78,6 @@ public class ExtensionDependency {
 
     public String asDependencyNotation() {
         return String.join(":", this.extensionId.getGroup(), this.extensionId.getName(), this.extensionId.getVersion());
-    }
-
-    public boolean match(ModuleVersionSelector selector) {
-        return selector.getGroup().equals(extensionId.getGroup())
-                && selector.getName().equals(extensionId.getName())
-                && selector.getVersion().equals(extensionId.getVersion());
     }
 
     private Dependency findConditionalDependency(ModuleVersionIdentifier capability) {

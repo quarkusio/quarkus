@@ -3,10 +3,15 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
@@ -14,9 +19,11 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
@@ -198,8 +205,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void processIncomingType(DefaultSerdeDiscoveryState discovery, Type incomingType,
             BiConsumer<String, String> deserializerAcceptor) {
-        extractKeyValueType(incomingType, (key, value) ->
-                deserializerAcceptor.accept(deserializerFor(discovery, key), deserializerFor(discovery, value)));
+        extractKeyValueType(incomingType, (key, value) -> deserializerAcceptor.accept(deserializerFor(discovery, key),
+                deserializerFor(discovery, value)));
     }
 
     private void processOutgoingMethod(DefaultSerdeDiscoveryState discovery, MethodInfo method,
@@ -267,8 +274,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void processOutgoingType(DefaultSerdeDiscoveryState discovery, Type outgoingType,
             BiConsumer<String, String> serializerAcceptor) {
-        extractKeyValueType(outgoingType, (key, value) ->
-                serializerAcceptor.accept(serializerFor(discovery, key), serializerFor(discovery, value)));
+        extractKeyValueType(outgoingType,
+                (key, value) -> serializerAcceptor.accept(serializerFor(discovery, key), serializerFor(discovery, value)));
     }
 
     private void extractKeyValueType(Type type, BiConsumer<Type, Type> keyValueTypeAcceptor) {
@@ -540,5 +547,112 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         // unknown
         return null;
+    }
+
+    @BuildStep
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    public void reflectiveValueSerializerPayload(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        IndexView index = combinedIndex.getIndex();
+        Config config = ConfigProvider.getConfig();
+
+        processOutgoingForReflectiveClassPayload(index, config,
+                (annotation, payloadType) -> produceReflectiveClass(reflectiveClass, payloadType));
+
+        processOutgoingChannelForReflectiveClassPayload(index, config,
+                (annotation, payloadType) -> produceReflectiveClass(reflectiveClass, payloadType));
+
+        processIncomingForReflectiveClassPayload(index, config,
+                (annotation, payloadType) -> produceReflectiveClass(reflectiveClass, payloadType));
+
+        processIncomingChannelForReflectiveClassPayload(index, config,
+                (annotation, payloadType) -> produceReflectiveClass(reflectiveClass, payloadType));
+
+    }
+
+    void produceReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, Type type) {
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, type.name().toString()));
+    }
+
+    // visible for testing
+    void processOutgoingForReflectiveClassPayload(IndexView index, Config config,
+            BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
+        processAnnotationsForReflectiveClassPayload(index, config, DotNames.OUTGOING, true,
+                annotation -> getOutgoingType(annotation.target().asMethod()), annotationAcceptor);
+    }
+
+    // visible for testing
+    void processOutgoingChannelForReflectiveClassPayload(IndexView index, Config config,
+            BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
+        processAnnotationsForReflectiveClassPayload(index, config, DotNames.CHANNEL, true,
+                annotation -> getOutgoingChannelType(getInjectionPointTypeFromChannel(annotation)), annotationAcceptor);
+    }
+
+    // visible for testing
+    void processIncomingForReflectiveClassPayload(IndexView index, Config config,
+            BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
+        processAnnotationsForReflectiveClassPayload(index, config, DotNames.INCOMING, false,
+                annotation -> getIncomingType(annotation.target().asMethod()), annotationAcceptor);
+    }
+
+    // visible for testing
+    void processIncomingChannelForReflectiveClassPayload(IndexView index, Config config,
+            BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
+        processAnnotationsForReflectiveClassPayload(index, config, DotNames.CHANNEL, false,
+                annotation -> getIncomingChannelType(getInjectionPointTypeFromChannel(annotation)),
+                annotationAcceptor);
+    }
+
+    private void processAnnotationsForReflectiveClassPayload(IndexView index, Config config, DotName annotationType,
+            boolean serializer, Function<AnnotationInstance, Type> typeExtractor,
+            BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
+        for (AnnotationInstance annotation : index.getAnnotations(annotationType)) {
+            String channelName = annotation.value().asString();
+            Type type = typeExtractor.apply(annotation);
+            extractKeyValueType(type, (key, value) -> {
+                if (key != null && isSerdeJson(index, config, channelName, serializer, true)) {
+                    annotationAcceptor.accept(annotation, key);
+                }
+                if (value != null && isSerdeJson(index, config, channelName, serializer, false)) {
+                    annotationAcceptor.accept(annotation, value);
+                }
+            });
+        }
+    }
+
+    private boolean isSerdeJson(IndexView index, Config config, String channelName, boolean serializer, boolean isKey) {
+        ConfigValue configValue = config.getConfigValue(getConfigName(channelName, serializer, isKey));
+        if (configValue.getValue() != null) {
+            DotName serdeName = DotName.createSimple(configValue.getValue());
+            return serializer ? isSubclassOfJsonSerializer(index, serdeName) : isSubclassOfJsonDeserializer(index, serdeName);
+        }
+        return false;
+    }
+
+    String getConfigName(String channelName, boolean serializer, boolean isKey) {
+        return "mp.messaging." +
+                (serializer ? "outgoing" : "incoming") + "." +
+                channelName + "." +
+                (isKey ? "key" : "value") + "." +
+                (serializer ? "serializer" : "deserializer");
+    }
+
+    private boolean isSubclassOfJsonSerializer(IndexView index, DotName serializerName) {
+        return isSubclassOf(index, DotNames.OBJECT_MAPPER_SERIALIZER, serializerName) ||
+                isSubclassOf(index, DotNames.JSONB_SERIALIZER, serializerName);
+    }
+
+    private boolean isSubclassOfJsonDeserializer(IndexView index, DotName serializerName) {
+        return isSubclassOf(index, DotNames.OBJECT_MAPPER_DESERIALIZER, serializerName) ||
+                isSubclassOf(index, DotNames.JSONB_DESERIALIZER, serializerName);
+    }
+
+    private boolean isSubclassOf(IndexView index, DotName superclass, DotName expectedType) {
+        if (superclass.equals(expectedType)) {
+            return true;
+        }
+        return index.getKnownDirectSubclasses(superclass)
+                .stream()
+                .anyMatch(ci -> ci.name().equals(expectedType));
     }
 }

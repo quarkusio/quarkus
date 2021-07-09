@@ -5,6 +5,7 @@ import static java.util.stream.StreamSupport.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -60,7 +61,10 @@ public class ConfigMappingTest {
                             "override.server.host=localhost\n" +
                             "override.server.port=8080\n" +
                             "cloud.server.host=cloud\n" +
-                            "cloud.server.port=9000\n"), "application.properties"));
+                            "cloud.server.port=9000\n" +
+                            "cloud.server.port=9000\n" +
+                            "hierarchy.foo=bar"),
+                            "application.properties"));
     @Inject
     Config config;
 
@@ -290,4 +294,26 @@ public class ConfigMappingTest {
     void converters() {
         assertEquals("bar", converters.foo());
     }
+
+    public interface Base {
+
+        String foo();
+    }
+
+    @ConfigMapping(prefix = "hierarchy")
+    public interface ExtendsBase extends Base {
+    }
+
+    @Inject
+    Base base;
+
+    @Inject
+    ExtendsBase extendsBase;
+
+    @Test
+    void hierarchy() {
+        assertSame(base, extendsBase);
+        assertEquals("bar", extendsBase.foo());
+    }
+
 }

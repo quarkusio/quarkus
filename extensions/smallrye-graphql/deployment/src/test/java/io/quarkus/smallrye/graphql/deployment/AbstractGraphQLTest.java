@@ -14,11 +14,16 @@ import javax.json.JsonReader;
 import org.hamcrest.CoreMatchers;
 
 import io.restassured.RestAssured;
+import io.restassured.parsing.Parser;
 
 /**
  * Some shared methods
  */
 public abstract class AbstractGraphQLTest {
+
+    static {
+        RestAssured.registerParser("application/graphql+json", Parser.JSON);
+    }
 
     protected void pingTest() {
         pingPongTest("ping", "pong");

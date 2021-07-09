@@ -2,6 +2,7 @@ package io.quarkus.smallrye.graphql.deployment;
 
 import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
 
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -104,6 +105,67 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 .body(CoreMatchers.containsString(
                         "{\"data\":{\"foo\":{\"message\":\"bar\",\"randomNumber\":{\"value\":123.0},\"list\":[\"a\",\"b\",\"c\"]}}}"));
 
+    }
+
+    @Test
+    public void testWrongAcceptType() {
+        String fooRequest = getPayload("{\n" +
+                "  foo {\n" +
+                "    message\n" +
+                "    randomNumber{\n" +
+                "       value\n" +
+                "    }\n" +
+                "    list\n" +
+                "  }\n" +
+                "}");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_TEXT)
+                .contentType(MEDIATYPE_JSON)
+                .body(fooRequest)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(406);
+    }
+
+    @Test
+    public void testUTF8Charset() {
+        String fooRequest = getPayload("{\n" +
+                "  testCharset(characters:\"óôöúüýáâäçéëíî®©\")\n" +
+                "}");
+
+        byte[] response = RestAssured.given().when()
+                .body(fooRequest)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .extract().body().asByteArray();
+
+        String decodedResponse = new String(response, Charset.forName("UTF-8"));
+        Assertions.assertTrue(decodedResponse.contains("{\"data\":{\"testCharset\":\"óôöúüýáâäçéëíî®©\"}}"));
+    }
+
+    @Test
+    public void testCP1250Charset() {
+        String fooRequest = getPayload("{\n" +
+                "  testCharset(characters:\"óôöúüýáâäçéëíî®©\")\n" +
+                "}");
+
+        byte[] response = RestAssured.given().when()
+                .accept("application/json;charset=CP1250")
+                .body(fooRequest)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .extract().body().asByteArray();
+
+        String decodedResponse = new String(response, Charset.forName("CP1250"));
+        Assertions.assertTrue(decodedResponse.contains("{\"data\":{\"testCharset\":\"óôöúüýáâäçéëíî®©\"}}"));
     }
 
     @Test

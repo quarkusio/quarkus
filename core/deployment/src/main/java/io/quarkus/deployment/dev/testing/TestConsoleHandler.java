@@ -102,7 +102,9 @@ public class TestConsoleHandler implements TestListener {
         public void handleInput(int[] keys) {
             //common commands, work every time
             for (int k : keys) {
-                if (k == 'h') {
+                if (k == 13) {
+                    printBlankLine();
+                } else if (k == 'h') {
                     printUsage();
                 } else if (k == 'w' && devModeType != DevModeType.TEST_ONLY) {
                     browserOpener.accept("/");
@@ -199,6 +201,10 @@ public class TestConsoleHandler implements TestListener {
         this.testController = testController;
         promptHandler.setPrompt(hasHttp ? PAUSED_PROMPT : PAUSED_PROMPT_NO_HTTP);
 
+    }
+
+    private void printBlankLine() {
+        System.out.println("");
     }
 
     public void printUsage() {

@@ -19,7 +19,7 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
         final Extension resteasy = findExtension(catalog, "quarkus-resteasy");
         final ExtensionProcessor extensionProcessor = ExtensionProcessor.of(resteasy);
 
-        assertThat(extensionProcessor.getTags()).contains("provides-code");
+        assertThat(extensionProcessor.getTags()).contains("code");
         assertThat(extensionProcessor.getShortName()).contains("jax-rs");
         assertThat(extensionProcessor.getCategories()).contains("web");
         assertThat(extensionProcessor.getCodestartKind()).isEqualTo(ExtensionProcessor.CodestartKind.EXTENSION_CODESTART);

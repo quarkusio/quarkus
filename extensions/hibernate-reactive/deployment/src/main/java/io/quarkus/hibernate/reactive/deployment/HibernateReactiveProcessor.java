@@ -206,17 +206,20 @@ public final class HibernateReactiveProcessor {
         HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
 
         //we have no persistence.xml so we will create a default one
-        Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
-        if (!dialect.isPresent()) {
+
+        Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
+        String dialect;
+        if (explicitDialect.isPresent()) {
+            dialect = explicitDialect.get();
+        } else {
             dialect = Dialects.guessDialect(dbKind);
         }
 
-        String dialectClassName = dialect.get();
         // we found one
         ParsedPersistenceXmlDescriptor desc = new ParsedPersistenceXmlDescriptor(null); //todo URL
         desc.setName("default-reactive");
         desc.setTransactionType(PersistenceUnitTransactionType.RESOURCE_LOCAL);
-        desc.getProperties().setProperty(AvailableSettings.DIALECT, dialectClassName);
+        desc.getProperties().setProperty(AvailableSettings.DIALECT, dialect);
         desc.setExcludeUnlistedClasses(true);
         desc.addClasses(new ArrayList<>(jpaModel.getAllModelClassNames()));
 

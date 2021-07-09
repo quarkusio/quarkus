@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -74,9 +75,14 @@ public abstract class BuildFile implements ExtensionManager {
 
     @Override
     public final Collection<ArtifactCoords> getInstalled() throws IOException {
+        if (catalog == null) {
+            return Collections.emptyList();
+        }
         this.refreshData();
-        return this.getDependencies().stream()
-                .filter(d -> this.isQuarkusExtension(d.getKey()))
+        final Set<ArtifactKey> catalogKeys = catalog.getExtensions().stream().map(e -> e.getArtifact().getKey())
+                .collect(Collectors.toSet());
+        return getDependencies().stream()
+                .filter(d -> catalogKeys.contains(d.getKey()))
                 .collect(toList());
     }
 
@@ -146,10 +152,6 @@ public abstract class BuildFile implements ExtensionManager {
 
     protected void writeToProjectFile(final String fileName, final byte[] content) throws IOException {
         Files.write(projectDirPath.resolve(fileName), content);
-    }
-
-    private boolean isQuarkusExtension(final ArtifactKey key) {
-        return catalog != null ? isDefinedInRegistry(catalog.getExtensions(), key) : false;
     }
 
     private Set<ArtifactKey> getDependenciesKeys() throws IOException {

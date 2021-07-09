@@ -73,6 +73,7 @@ public enum BuildTool {
                 return new KotlinGradleBuildFile();
             case MAVEN:
             default:
+                // TODO it should never get here, this needs a proper refactoring
                 return new MavenBuildFile(projectDirPath, catalog);
         }
     }

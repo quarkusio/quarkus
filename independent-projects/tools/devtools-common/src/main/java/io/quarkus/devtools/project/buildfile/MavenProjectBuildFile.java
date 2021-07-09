@@ -102,7 +102,7 @@ public class MavenProjectBuildFile extends BuildFile {
             }
         }
         final MavenProjectBuildFile extensionManager = new MavenProjectBuildFile(projectDir, extensionCatalog,
-                projectModel, deps, managedDeps, projectProps);
+                projectModel, deps, managedDeps, projectProps, projectPom == null ? null : mvnResolver);
         final List<ResourceLoader> codestartResourceLoaders = codestartLoadersBuilder().catalog(extensionCatalog)
                 .artifactResolver(mvnResolver).build();
         return QuarkusProject.of(projectDir, extensionCatalog,
@@ -114,7 +114,7 @@ public class MavenProjectBuildFile extends BuildFile {
         try {
             return MavenArtifactResolver.builder()
                     .setArtifactTransferLogging(toolsConfig.isDebug())
-                    .setCurrentProject(projectDir.toString())
+                    .setCurrentProject(projectDir.toAbsolutePath().toString())
                     .setPreferPomsFromWorkspace(true)
                     .build();
         } catch (BootstrapMavenException e) {
@@ -176,16 +176,18 @@ public class MavenProjectBuildFile extends BuildFile {
     private Supplier<List<ArtifactCoords>> projectDepsSupplier;
     private List<ArtifactCoords> dependencies;
     private List<ArtifactCoords> importedPlatforms;
+    private MavenArtifactResolver resolver;
 
     private MavenProjectBuildFile(Path projectDirPath, ExtensionCatalog extensionsCatalog, Model model,
             Supplier<List<ArtifactCoords>> projectDeps,
             List<ArtifactCoords> projectManagedDeps,
-            Properties projectProps) {
+            Properties projectProps, MavenArtifactResolver resolver) {
         super(projectDirPath, extensionsCatalog);
         this.model = model;
         this.projectDepsSupplier = projectDeps;
         this.managedDependencies = projectManagedDeps;
         this.projectProps = projectProps;
+        this.resolver = resolver;
     }
 
     @Override
@@ -198,6 +200,16 @@ public class MavenProjectBuildFile extends BuildFile {
         if (!"pom".equalsIgnoreCase(coords.getType())) {
             throw new IllegalArgumentException(coords + " is not a POM");
         }
+        final String depKey = depKey(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
+        if (coords.getGroupId().equals(getProperty("quarkus.platform.group-id"))
+                && coords.getVersion().equals(getProperty("quarkus.platform.version"))) {
+            coords = new ArtifactCoords("${quarkus.platform.group-id}",
+                    coords.getArtifactId().equals(getProperty("quarkus.platform.artifact-id"))
+                            ? "${quarkus.platform.artifact-id}"
+                            : coords.getArtifactId(),
+                    "pom", "${quarkus.platform.version}");
+        }
+
         final Dependency d = new Dependency();
         d.setGroupId(coords.getGroupId());
         d.setArtifactId(coords.getArtifactId());
@@ -212,7 +224,7 @@ public class MavenProjectBuildFile extends BuildFile {
         if (dependencyManagement.getDependencies()
                 .stream()
                 .filter(t -> t.getScope().equals("import"))
-                .noneMatch(thisDep -> d.getManagementKey().equals(resolveKey(thisDep)))) {
+                .noneMatch(thisDep -> depKey.equals(resolveKey(thisDep)))) {
             dependencyManagement.addDependency(d);
             // the effective managed dependencies set may already include it
             if (!getManagedDependencies().contains(coords)) {
@@ -333,20 +345,24 @@ public class MavenProjectBuildFile extends BuildFile {
     @Override
     protected void refreshData() {
         final Path projectPom = getProjectDirPath().resolve("pom.xml");
-        if (Files.exists(projectPom)) {
-            try {
-                model = ModelUtils.readModel(projectPom);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to read " + projectPom, e);
-            }
-            projectProps = model.getProperties();
-            final ArtifactDescriptorResult descriptor = describe(getMavenResolver(getProjectDirPath()), new DefaultArtifact(
-                    ModelUtils.getGroupId(model), model.getArtifactId(), "pom", ModelUtils.getVersion(model)));
-            managedDependencies = toArtifactCoords(descriptor.getManagedDependencies());
-            dependencies = null;
-            projectDepsSupplier = () -> toArtifactCoords(descriptor.getDependencies());
-
+        if (!Files.exists(projectPom)) {
+            return;
         }
+        try {
+            model = ModelUtils.readModel(projectPom);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read " + projectPom, e);
+        }
+        projectProps = model.getProperties();
+        final ArtifactDescriptorResult descriptor = describe(resolver(), new DefaultArtifact(
+                ModelUtils.getGroupId(model), model.getArtifactId(), "pom", ModelUtils.getVersion(model)));
+        managedDependencies = toArtifactCoords(descriptor.getManagedDependencies());
+        projectDepsSupplier = () -> toArtifactCoords(descriptor.getDependencies());
+        dependencies = null;
+    }
+
+    private MavenArtifactResolver resolver() {
+        return resolver == null ? resolver = getMavenResolver(getProjectDirPath()) : resolver;
     }
 
     private int getIndexToAddExtension() {
@@ -373,10 +389,18 @@ public class MavenProjectBuildFile extends BuildFile {
         if (!resolvedGroupId.equals(dependency.getGroupId())
                 || !resolvedArtifactId.equals(dependency.getArtifactId())
                 || !resolvedVersion.equals(dependency.getVersion())) {
-            return resolvedGroupId + ":" + resolvedArtifactId + ":" + dependency.getType()
-                    + (dependency.getClassifier() != null ? ":" + dependency.getClassifier() : "");
+            return depKey(resolvedGroupId, resolvedArtifactId, dependency.getClassifier(), dependency.getType());
         }
         return dependency.getManagementKey();
+    }
+
+    private static String depKey(String groupId, String artifactId, String classifier, String type) {
+        final StringBuilder buf = new StringBuilder();
+        buf.append(groupId).append(':').append(artifactId).append(':').append(type);
+        if (classifier != null && !classifier.isEmpty()) {
+            buf.append(':').append(classifier);
+        }
+        return buf.toString();
     }
 
     /**

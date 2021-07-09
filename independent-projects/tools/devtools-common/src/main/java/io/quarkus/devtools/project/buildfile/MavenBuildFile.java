@@ -28,6 +28,10 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 
+/**
+ * {@link io.quarkus.devtools.project.buildfile.MavenProjectBuildFile} should be used in place of this class.
+ */
+@Deprecated
 public class MavenBuildFile extends BuildFile {
 
     private static final Pattern PROPERTY_PATTERN = Pattern.compile("\\$\\{(.+)}");

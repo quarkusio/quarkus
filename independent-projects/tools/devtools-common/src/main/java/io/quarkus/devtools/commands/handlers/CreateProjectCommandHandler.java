@@ -6,6 +6,7 @@ import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_CODE;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeExtensionsFromQuery;
+import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.APP_CONFIG;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_ARTIFACT_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_GROUP_ID;
@@ -73,8 +74,8 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         List<Extension> extensionsToAdd = computeRequiredExtensions(invocation.getExtensionsCatalog(), extensionsQuery,
                 invocation.log());
 
-        ExtensionCatalog mainPlatform = invocation.getExtensionsCatalog(); // legacy platform initialization
-        final List<ExtensionCatalog> extensionOrigins = getExtensionOrigins(mainPlatform, extensionsToAdd);
+        ExtensionCatalog mainCatalog = invocation.getExtensionsCatalog(); // legacy platform initialization
+        final List<ExtensionCatalog> extensionOrigins = getExtensionOrigins(mainCatalog, extensionsToAdd);
         final List<ArtifactCoords> platformBoms = new ArrayList<>(Math.max(extensionOrigins.size(), 1));
         if (extensionOrigins.size() > 0) {
             // necessary to set the versions from the selected origins
@@ -87,13 +88,23 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     continue;
                 }
                 if (c.getBom().getArtifactId().equals("quarkus-bom") || !sawFirstPlatform) {
-                    mainPlatform = c;
+                    mainCatalog = c;
                     sawFirstPlatform = true;
                 }
                 platformBoms.add(c.getBom());
             }
+        } else if (ElementCatalogBuilder.hasElementCatalog(mainCatalog)) {
+            final StringBuilder buf = new StringBuilder();
+            buf.append(ERROR_ICON);
+            buf.append(" Failed to determine a compatible Quarkus version for the requested extensions: ");
+            buf.append(extensionsToAdd.get(0).getArtifact().getKey().toGacString());
+            for (int i = 1; i < extensionsToAdd.size(); ++i) {
+                buf.append(", ").append(extensionsToAdd.get(i).getArtifact().getKey().toGacString());
+            }
+            invocation.log().info(buf.toString());
+            return QuarkusCommandOutcome.failure();
         } else {
-            platformBoms.add(mainPlatform.getBom());
+            platformBoms.add(mainCatalog.getBom());
         }
 
         final List<ArtifactCoords> extensionCoords = new ArrayList<>(extensionsToAdd.size());
@@ -108,11 +119,11 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             extensionCoords.add(coords);
         }
 
-        invocation.setValue(BOM_GROUP_ID, mainPlatform.getBom().getGroupId());
-        invocation.setValue(BOM_ARTIFACT_ID, mainPlatform.getBom().getArtifactId());
-        invocation.setValue(BOM_VERSION, mainPlatform.getBom().getVersion());
-        invocation.setValue(QUARKUS_VERSION, mainPlatform.getQuarkusCoreVersion());
-        final Properties quarkusProps = ToolsUtils.readQuarkusProperties(mainPlatform);
+        invocation.setValue(BOM_GROUP_ID, mainCatalog.getBom().getGroupId());
+        invocation.setValue(BOM_ARTIFACT_ID, mainCatalog.getBom().getArtifactId());
+        invocation.setValue(BOM_VERSION, mainCatalog.getBom().getVersion());
+        invocation.setValue(QUARKUS_VERSION, mainCatalog.getQuarkusCoreVersion());
+        final Properties quarkusProps = ToolsUtils.readQuarkusProperties(mainCatalog);
         quarkusProps.forEach((k, v) -> {
             final String name = k.toString().replace('-', '_');
             if (!invocation.hasValue(name)) {
@@ -122,11 +133,11 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
         try {
             Map<String, Object> platformData = new HashMap<>();
-            if (mainPlatform.getMetadata().get("maven") != null) {
-                platformData.put("maven", mainPlatform.getMetadata().get("maven"));
+            if (mainCatalog.getMetadata().get("maven") != null) {
+                platformData.put("maven", mainCatalog.getMetadata().get("maven"));
             }
-            if (mainPlatform.getMetadata().get("gradle") != null) {
-                platformData.put("gradle", mainPlatform.getMetadata().get("gradle"));
+            if (mainCatalog.getMetadata().get("gradle") != null) {
+                platformData.put("gradle", mainCatalog.getMetadata().get("gradle"));
             }
             final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                     .addPlatforms(platformBoms)

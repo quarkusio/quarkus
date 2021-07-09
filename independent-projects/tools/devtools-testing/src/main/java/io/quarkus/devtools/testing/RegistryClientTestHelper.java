@@ -29,7 +29,6 @@ public class RegistryClientTestHelper {
 
         final ArtifactCoords bom = new ArtifactCoords("io.quarkus", "quarkus-bom", null, "pom", projectVersion);
 
-        QuarkusProjectHelper.resetToolsConfig();
         TestRegistryClientBuilder.newInstance()
                 .baseDir(toolsConfigPath.getParent())
                 //.debug()
@@ -45,6 +44,7 @@ public class RegistryClientTestHelper {
 
         properties.setProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, toolsConfigPath.toString());
         properties.setProperty("quarkusRegistryClient", "true");
+        QuarkusProjectHelper.reset();
     }
 
     public static void disableRegistryClientTestConfig() {

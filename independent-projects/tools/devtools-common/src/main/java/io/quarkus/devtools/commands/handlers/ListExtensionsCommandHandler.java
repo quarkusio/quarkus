@@ -41,7 +41,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         final MessageWriter log = invocation.log();
         final boolean all = invocation.getValue(ListExtensions.ALL, true);
         final boolean installedOnly = invocation.getValue(ListExtensions.INSTALLED, false);
-        final boolean cli = invocation.getValue(ListExtensions.FROM_CLI, false);
+        //final boolean cli = invocation.getValue(ListExtensions.FROM_CLI, false);
         final String format = invocation.getValue(ListExtensions.FORMAT, "");
         final String search = invocation.getValue(ListExtensions.SEARCH, "*");
         final String category = invocation.getValue(ListExtensions.CATEGORY, "");
@@ -160,16 +160,12 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         String version = "";
 
         if (installed != null) {
-            final String installedVersion = installed.getVersion();
-            if (installedVersion == null) {
+            if (e.getArtifact().getVersion().equals(installed.getVersion()) || installed.getVersion() == null) {
                 label = "default";
                 version = e.getArtifact().getVersion();
-            } else if (installedVersion.equalsIgnoreCase(e.getArtifact().getVersion())) {
-                label = "custom";
-                version = installedVersion;
             } else {
                 label = "custom*";
-                version = String.format("%s* <> %s", installedVersion, e.getArtifact().getVersion());
+                version = String.format("%s* <> %s", installed.getVersion(), e.getArtifact().getVersion());
             }
         }
 

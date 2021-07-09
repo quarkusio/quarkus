@@ -161,7 +161,7 @@ public class ConditionalDependenciesEnabler {
     private ExtensionDependency getExtensionInfoOrNull(ResolvedArtifact artifact) {
         ModuleVersionIdentifier artifactId = artifact.getModuleVersion().getId();
         File artifactFile = artifact.getFile();
-        if (!artifactFile.exists()) {
+        if (!artifactFile.exists() || !"jar".equals(artifact.getExtension())) {
             return null;
         }
         if (artifactFile.isDirectory()) {

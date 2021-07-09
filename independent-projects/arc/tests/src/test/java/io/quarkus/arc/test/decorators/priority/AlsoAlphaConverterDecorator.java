@@ -7,7 +7,7 @@ import javax.inject.Inject;
 
 @Priority(20)
 @Decorator
-class AlphaConverterDecorator implements Converter<String> {
+class AlsoAlphaConverterDecorator implements Converter<String> {
 
     @Inject
     @Delegate

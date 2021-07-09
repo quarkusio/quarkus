@@ -262,7 +262,7 @@ TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerIntercepto
 
 When you have multiple server interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
 
-source, java]
+[source, java]
 ----
 @ApplicationScoped
 public class MyInterceptor implements ServerInterceptor, Prioritized {
@@ -282,3 +282,30 @@ public class MyInterceptor implements ServerInterceptor, Prioritized {
 
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
+
+
+== Testing your services
+
+The easiest way to test a gRPC service is to use a gRPC client as described
+in link:./grpc-service-consumption.adoc[Consuming a gRPC Service].
+
+Please note that in the case of using a client to test an exposed service that does not use TLS,
+there is no need to provide any configuration. E.g. to test the `HelloService`
+defined above, one could create the following test:
+
+[source,java]
+----
+public class HelloServiceTest implements Greeter {
+
+    @GrpcClient
+    Greeter client;
+
+    @Test
+    void shouldReturnHello() throws Exception {
+        CompletableFuture<String> message = new CompletableFuture<>();
+        client.sayHello(HelloRequest.newBuilder().setName("Quarkus").build())
+                .subscribe().with(reply -> message.complete(reply.getMessage()));
+        assertThat(message.get(5, TimeUnit.SECONDS)).isEqualTo("Hello Quarkus");
+    }
+}
+----

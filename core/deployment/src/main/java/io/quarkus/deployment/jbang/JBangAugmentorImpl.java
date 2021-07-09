@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.dev.spi.DevModeType;
@@ -81,6 +82,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
         builder.addFinal(MainClassBuildItem.class);
         builder.addFinal(GeneratedResourceBuildItem.class);
         builder.addFinal(TransformedClassesBuildItem.class);
+        builder.addFinal(DeploymentResultBuildItem.class);
         boolean nativeRequested = "native".equals(System.getProperty("quarkus.package.type"));
         boolean containerBuildRequested = Boolean.getBoolean("quarkus.container-image.build");
         if (nativeRequested) {

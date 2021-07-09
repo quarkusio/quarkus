@@ -254,19 +254,31 @@ The `create` method allows adding a new fruit to the database:
 ----
 @POST
 public Uni<Response> create(Fruit fruit) {
-    return Panache.withTransaction(fruit::persist)
-        .replaceWith(Response.ok(fruit).status(Response.Status.CREATED)::build);
+    return Panache.<Fruit>withTransaction(fruit::persist)
+            .onItem().transform(inserted -> Response.created(URI.create("/fruits/" + inserted.id)).build());
 }
 ----
 
-The code is a bit more involved. To write to a database, we need a transaction.
+The code is a bit more involved.
+To write to a database, we need a transaction.
 So we use `Panache.withTransaction` to get one (asynchronously) and call the `persist` method when we receive the transaction.
 The `persist` method is also returning a `Uni`.
 This `Uni` emits the result of the insertion of the fruit in the database.
 Once the insertion completes (and that's our continuation), we create a `201 CREATED` response.
 RESTEasy Reactive automatically reads the request body as JSON and creates the `Fruit` instance.
 
-If you have https://httpie.io/[httpie] on your machine, you can try the endpoint using `http POST :8080/fruits name=peach`.
+NOTE: The `.onItem().transform(...)` can be replaced with `.map(...)`.
+`map` is a shortcut.
+
+If you have https://curl.se/[curl] on your machine, you can try the endpoint using:
+
+[source, bash]
+----
+> curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"name":"peach"}' \
+  http://localhost:8080/fruits
+----
 
 Following the same ideas, you can implement the other CRUD methods.
 

@@ -14,8 +14,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 
-import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 public class CliDriver {
@@ -23,12 +21,6 @@ public class CliDriver {
     static final PrintStream stderr = System.err;
 
     private static final String localRepo = convertToProperty("maven.repo.local");
-
-    public static void afterEachCleanup() {
-        System.clearProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY);
-        System.clearProperty("quarkusRegistryClient");
-        QuarkusProjectHelper.reset();
-    }
 
     public static void preserveLocalRepoSettings(Collection<String> args) {
         if (localRepo != null) {

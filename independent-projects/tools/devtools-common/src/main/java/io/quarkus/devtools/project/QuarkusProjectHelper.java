@@ -33,7 +33,7 @@ public class QuarkusProjectHelper {
         if (value == null) {
             value = System.getenv("QUARKUS_REGISTRY_CLIENT");
         }
-        registryClientEnabled = Boolean.parseBoolean(value);
+        registryClientEnabled = value == null || value.isBlank() || Boolean.parseBoolean(value);
     }
 
     public static boolean isRegistryClientEnabled() {

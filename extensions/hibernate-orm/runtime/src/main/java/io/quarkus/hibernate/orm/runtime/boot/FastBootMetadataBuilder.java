@@ -102,7 +102,7 @@ public class FastBootMetadataBuilder {
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
     private final Collection<ProvidedService> providedServices;
     private final PreGeneratedProxies preGeneratedProxies;
-    private final String dataSource;
+    private final Optional<String> dataSource;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;

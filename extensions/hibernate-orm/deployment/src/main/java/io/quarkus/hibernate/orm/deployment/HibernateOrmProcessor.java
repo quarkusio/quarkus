@@ -275,7 +275,7 @@ public final class HibernateOrmProcessor {
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(persistenceXmlDescriptorBuildItem.getDescriptor(),
-                            DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                            Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                             getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                     .getProperties().getProperty(AvailableSettings.MULTI_TENANT))),
                             null,
@@ -818,46 +818,40 @@ public final class HibernateOrmProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             Set<String> storageEngineCollector) {
-        // Find the associated datasource
-        JdbcDataSourceBuildItem jdbcDataSource;
-        String dataSource;
-        if (persistenceUnitConfig.datasource.isPresent()) {
-            jdbcDataSource = jdbcDataSources.stream()
-                    .filter(i -> persistenceUnitConfig.datasource.get().equals(i.getName()))
-                    .findFirst()
-                    .orElseThrow(() -> new ConfigurationException(
-                            String.format(Locale.ROOT,
-                                    "The datasource '%1$s' is not configured but the persistence unit '%2$s' uses it."
-                                            + " To solve this, configure datasource '%1$s'."
-                                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                                    persistenceUnitConfig.datasource.get(), persistenceUnitName)));
-            dataSource = persistenceUnitConfig.datasource.get();
-        } else {
-            if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-                // if it's not the default persistence unit, we mandate a datasource to prevent common errors
-                throw new ConfigurationException(
-                        String.format(Locale.ROOT, "Datasource must be defined for persistence unit '%s'.",
-                                persistenceUnitName));
-            }
-
-            jdbcDataSource = jdbcDataSources.stream()
-                    .filter(i -> i.isDefault())
-                    .findFirst()
-                    .orElseThrow(() -> new ConfigurationException(
-                            String.format(Locale.ROOT,
-                                    "The default datasource is not configured but the persistence unit '%s' uses it."
-                                            + " To solve this, configure the default datasource."
-                                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                                    persistenceUnitName)));
-            dataSource = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
-        }
+        Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
+                jdbcDataSources);
 
         Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
         String dialect;
-        if (explicitDialect.isPresent()) {
-            dialect = explicitDialect.get();
+        MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant);
+        if (multiTenancyStrategy == MultiTenancyStrategy.DATABASE) {
+            // The datasource is optional for the DATABASE multi-tenancy strategy,
+            // since the datasource will be resolved separately for each tenant.
+            if (explicitDialect.isPresent()) {
+                dialect = explicitDialect.get();
+            } else if (jdbcDataSource.isPresent()) {
+                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind());
+            } else {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "The Hibernate ORM extension could not infer the dialect for persistence unit '%s'."
+                                + " When using database multi-tenancy, you must either configure a datasource for that persistence unit"
+                                + " (refer to https://quarkus.io/guides/datasource for guidance),"
+                                + " or set the dialect explicitly through property '"
+                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "dialect") + "'.",
+                        persistenceUnitName));
+            }
         } else {
-            dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.getDbKind());
+            if (!jdbcDataSource.isPresent()) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Datasource must be defined for persistence unit '%s'."
+                                + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                        persistenceUnitName));
+            }
+            if (explicitDialect.isPresent()) {
+                dialect = explicitDialect.get();
+            } else {
+                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind());
+            }
         }
 
         // we found one
@@ -1023,11 +1017,32 @@ public final class HibernateOrmProcessor {
                 String.valueOf(persistenceUnitConfig.discriminator.ignoreExplicitForJoined));
 
         persistenceUnitDescriptors.produce(
-                new PersistenceUnitDescriptorBuildItem(descriptor, dataSource,
-                        getMultiTenancyStrategy(persistenceUnitConfig.multitenant),
+                new PersistenceUnitDescriptorBuildItem(descriptor, jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
+                        multiTenancyStrategy,
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
                         false, false));
+    }
+
+    private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,
+            HibernateOrmConfigPersistenceUnit persistenceUnitConfig, List<JdbcDataSourceBuildItem> jdbcDataSources) {
+        if (persistenceUnitConfig.datasource.isPresent()) {
+            return Optional.of(jdbcDataSources.stream()
+                    .filter(i -> persistenceUnitConfig.datasource.get().equals(i.getName()))
+                    .findFirst()
+                    .orElseThrow(() -> new ConfigurationException(String.format(Locale.ROOT,
+                            "The datasource '%1$s' is not configured but the persistence unit '%2$s' uses it."
+                                    + " To solve this, configure datasource '%1$s'."
+                                    + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                            persistenceUnitConfig.datasource.get(), persistenceUnitName))));
+        } else if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
+            return jdbcDataSources.stream()
+                    .filter(i -> i.isDefault())
+                    .findFirst();
+        } else {
+            // if it's not the default persistence unit, we mandate an explicit datasource to prevent common errors
+            return Optional.empty();
+        }
     }
 
     private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {

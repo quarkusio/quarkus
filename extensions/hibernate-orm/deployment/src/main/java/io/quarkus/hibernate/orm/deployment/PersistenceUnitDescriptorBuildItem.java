@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
@@ -21,7 +22,7 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStati
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     private final ParsedPersistenceXmlDescriptor descriptor;
-    private final String dataSource;
+    private final Optional<String> dataSource;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
@@ -30,11 +31,11 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor,
             List<RecordableXmlMapping> xmlMappings, boolean isReactive, boolean fromPersistenceXml) {
-        this(descriptor, DataSourceUtil.DEFAULT_DATASOURCE_NAME, MultiTenancyStrategy.NONE, null,
+        this(descriptor, Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), MultiTenancyStrategy.NONE, null,
                 xmlMappings, isReactive, fromPersistenceXml);
     }
 
-    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String dataSource,
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, Optional<String> dataSource,
             MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
             boolean isReactive, boolean fromPersistenceXml) {
@@ -59,7 +60,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getName();
     }
 
-    public String getDataSource() {
+    public Optional<String> getDataSource() {
         return dataSource;
     }
 

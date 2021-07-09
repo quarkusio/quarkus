@@ -40,19 +40,17 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     private final RuntimeSettings runtimeSettings;
     private final Object validatorFactory;
     private final Object cdiBeanManager;
-    protected final MultiTenancyStrategy multiTenancyStrategy;
 
     public FastBootEntityManagerFactoryBuilder(
             PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager, MultiTenancyStrategy strategy) {
+            Object cdiBeanManager) {
         this.metadata = metadata;
         this.persistenceUnitName = persistenceUnitName;
         this.standardServiceRegistry = standardServiceRegistry;
         this.runtimeSettings = runtimeSettings;
         this.validatorFactory = validatorFactory;
         this.cdiBeanManager = cdiBeanManager;
-        this.multiTenancyStrategy = strategy;
     }
 
     @Override
@@ -69,7 +67,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     public EntityManagerFactory build() {
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-            populate(persistenceUnitName, optionsBuilder, standardServiceRegistry, multiTenancyStrategy);
+            populate(persistenceUnitName, optionsBuilder, standardServiceRegistry);
             return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(), HQLQueryPlan::new);
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
@@ -119,8 +117,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         return "[PersistenceUnit: " + persistenceUnitName + "] ";
     }
 
-    protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr,
-            MultiTenancyStrategy strategy) {
+    protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr) {
 
         // will use user override value or default to false if not supplied to follow
         // JPA spec.
@@ -163,8 +160,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         BytecodeProvider bytecodeProvider = ssr.getService(BytecodeProvider.class);
         options.addSessionFactoryObservers(new SessionFactoryObserverForBytecodeEnhancer(bytecodeProvider));
 
-        if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
-            options.applyMultiTenancyStrategy(strategy);
+        if (options.getMultiTenancyStrategy() != MultiTenancyStrategy.NONE) {
             options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
         }
 

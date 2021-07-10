@@ -8,16 +8,16 @@ import javax.enterprise.context.ApplicationScoped;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class MultipleDecoratorsTest {
+public class MultipleDecoratorsSamePriorityTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Converter.class, ToUpperCaseConverter.class,
-            AlphaConverterDecorator.class, BravoConverterDecorator.class);
+            AlphaConverterDecorator.class, AlsoAlphaConverterDecorator.class);
 
     @Test
     public void testDecoration() {
         ToUpperCaseConverter converter = Arc.container().instance(ToUpperCaseConverter.class).get();
-        assertEquals("JE", converter.convert("hej"));
+        assertEquals("J", converter.convert("hej"));
     }
 
     @ApplicationScoped

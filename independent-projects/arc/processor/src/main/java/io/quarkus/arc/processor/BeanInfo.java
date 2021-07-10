@@ -383,12 +383,15 @@ public class BeanInfo implements InjectionTargetInfo {
                 }
             }
         }
-        // Sort by priority (highest goes first) and by bean class
+        // Sort by priority (highest goes first) and by bean class (reversed lexicographic-order)
         // Highest priority first because the decorators are instantiated in the reverse order, 
         // i.e. when the subclass constructor is generated the delegate subclass of the first decorator 
         // (lower priority) needs a reference to the next decorator in the chain (higher priority)
+        // Note that this set must be always reversed compared to the result coming from the BeanInfo#getNextDecorators(DecoratorInfo)
         Collections.sort(bound,
-                Comparator.comparing(DecoratorInfo::getPriority).reversed().thenComparing(DecoratorInfo::getBeanClass));
+                Comparator.comparing(DecoratorInfo::getPriority)
+                        .thenComparing(DecoratorInfo::getBeanClass)
+                        .reversed());
         return bound;
     }
 
